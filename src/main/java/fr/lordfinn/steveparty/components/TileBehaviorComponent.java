@@ -1,0 +1,15 @@
+package fr.lordfinn.steveparty.components;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.math.BlockPos;
+import java.util.List;
+
+public record TileBehaviorComponent(List<BlockPos> destinations, String tileType) {
+    public static final Codec<TileBehaviorComponent> CODEC = RecordCodecBuilder.create(builder -> {
+        return builder.group(
+                Codec.list(BlockPos.CODEC).fieldOf("destinations").forGetter(TileBehaviorComponent::destinations),
+                Codec.STRING.optionalFieldOf("tileType", "default").forGetter(TileBehaviorComponent::tileType)
+        ).apply(builder, TileBehaviorComponent::new);
+    });
+}
