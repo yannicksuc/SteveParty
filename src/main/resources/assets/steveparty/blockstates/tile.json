@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "steveparty:block/tile", "y":  0, "uvlock": false },
+    "facing=east":  { "model": "steveparty:block/tile", "y":  90, "uvlock": false },
+    "facing=south": { "model": "steveparty:block/tile", "y": 180, "uvlock": false },
+    "facing=west":  { "model": "steveparty:block/tile", "y": 270, "uvlock": false }
+  }
+}

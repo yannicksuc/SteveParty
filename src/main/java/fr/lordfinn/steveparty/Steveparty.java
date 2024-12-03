@@ -1,10 +1,26 @@
 package fr.lordfinn.steveparty;
 
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.api.ModInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Steveparty implements ModInitializer {
 
+    public static final String MOD_ID = "steveparty";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
     @Override
     public void onInitialize() {
+        ModBlocks.registerBlocks();
+        ModItems.initialize();
+        ModBlockEntities.initialize();
+        ModComponents.initialize();
+
+        System.out.println("StevePartyMod initialized and blocks registered!");
+
     }
 }
