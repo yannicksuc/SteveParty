@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "steveparty",
+  "version": "${version}",
+  "name": "SteveParty",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/steveparty/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "fr.lordfinn.steveparty.client.StevepartyClient"
+    ],
+    "main": [
+      "fr.lordfinn.steveparty.Steveparty"
+    ]
+  },
+  "mixins": [
+    "steveparty.mixins.json",
+    {
+      "config": "steveparty.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
