@@ -18,7 +18,7 @@ import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 
 public class ModItems {
     public static final Item WRENCH = register(
-            new WrenchItem(getSettings(new WrenchItem.Settings(), "wrench")),
+            new WrenchItem(getSettings(new WrenchItem.Settings().maxCount(1).fireproof(), "wrench")),
             "wrench"
     );
     private static final Item TILE_BEHAVIOR = register(
