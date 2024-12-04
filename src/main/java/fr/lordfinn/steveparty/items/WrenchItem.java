@@ -23,6 +23,7 @@ public class WrenchItem extends Item {
         BlockPos pos = context.getBlockPos();
         PlayerEntity player = context.getPlayer();
         BlockEntity blockEntity = world.getBlockEntity(pos);
+        sendMessageToPlayer("Used Wrench", player);
 
         if (player == null)
             return ActionResult.PASS;
@@ -45,11 +46,7 @@ public class WrenchItem extends Item {
     }
 
     private void sendMessageToPlayer(String message, PlayerEntity player) {
-        if (boundTile != null && boundTile.getPos() != null) {
-            if (boundTile.getWorld() != null) {
-                player.sendMessage(Text.of(message), false);
-            }
-        }
+        player.sendMessage(Text.of(message), false);
     }
 
     public void resetBoundTile() {

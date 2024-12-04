@@ -1,21 +1,28 @@
 package fr.lordfinn.steveparty.blocks;
 
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-public class TileEntity extends BlockEntity implements TileInventory {
+public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory, TileInventory {
     private UUID uniqueId;
     private List<BlockPos> ingoingTiles = new ArrayList<>();
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(16, ItemStack.EMPTY);
@@ -91,5 +98,15 @@ public class TileEntity extends BlockEntity implements TileInventory {
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
         return TileInventory.super.canPlayerUse(player);
+    }
+
+    @Override
+    public Text getDisplayName() {
+        return Text.of("Tile");//Text.translatable(getCachedState().getBlock().getTranslationKey());
+    }
+
+    @Override
+    public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+        return new TileScreenHandler(syncId, playerInventory, this);
     }
 }
