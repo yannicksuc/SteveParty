@@ -1,6 +1,11 @@
 {
-  "item.steveparty.tile": "Tile",
+  "block.steveparty.tile": "Tile",
   "item.steveparty.wrench": "Wrench",
   "item.steveparty.tile-behavior": "Tile Behavior",
-  "itemgroup.steveparty": "Steve Party"
+  "itemgroup.steveparty": "Steve Party",
+  "message.steveparty.removed_position": "Removed position: ({0}, {1}, {2})",
+  "message.steveparty.added_position": "Added position: ({0}, {1}, {2})",
+  "tooltip.steveparty.destinations": "Destinations:",
+  "tooltip.steveparty.destination_position": "  - ({0}, {1}, {2})",
+  "tooltip.steveparty.no_destinations": "No destinations set."
 }

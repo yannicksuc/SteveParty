@@ -21,7 +21,7 @@ public class ModItems {
             new WrenchItem(getSettings(new WrenchItem.Settings().maxCount(1).fireproof(), "wrench")),
             "wrench"
     );
-    private static final Item TILE_BEHAVIOR = register(
+    public static final Item TILE_BEHAVIOR = register(
             new TileBehavior(getSettings(new TileBehavior.Settings(), "tile-behavior")),
             "tile-behavior"
     );

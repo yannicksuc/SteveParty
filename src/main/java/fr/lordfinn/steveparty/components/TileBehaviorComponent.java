@@ -12,4 +12,9 @@ public record TileBehaviorComponent(List<BlockPos> destinations, String tileType
                 Codec.STRING.optionalFieldOf("tileType", "default").forGetter(TileBehaviorComponent::tileType)
         ).apply(builder, TileBehaviorComponent::new);
     });
+
+    public static final TileBehaviorComponent DEFAULT_TILE_BEHAVIOR = new TileBehaviorComponent(
+            List.of(), // Empty destinations list
+            "default"  // Default tile type
+    );
 }
