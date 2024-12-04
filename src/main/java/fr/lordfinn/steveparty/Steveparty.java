@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.screens.ModScreens;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
@@ -18,6 +19,7 @@ public class Steveparty implements ModInitializer {
     @Override
     public void onInitialize() {
         ModSounds.initialize();
+        ModParticles.initialize();
         ModBlocks.registerBlocks();
         ModItems.initialize();
         ModBlockEntities.initialize();

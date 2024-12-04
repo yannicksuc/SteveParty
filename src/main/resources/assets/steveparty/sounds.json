@@ -1,12 +1,22 @@
 {
   "close-tile-gui": {
     "sounds": [
-      "steveparty:sounds/close_tile_gui"
+      "steveparty:close-tile-gui"
     ]
   },
   "open-tile-gui": {
     "sounds": [
-      "steveparty:sounds/open_tile_gui"
+      "steveparty:open-tile-gui"
+    ]
+  },
+  "select": {
+    "sounds": [
+      "steveparty:select"
+    ]
+  },
+  "cancel": {
+    "sounds": [
+      "steveparty:cancel"
     ]
   }
 }
