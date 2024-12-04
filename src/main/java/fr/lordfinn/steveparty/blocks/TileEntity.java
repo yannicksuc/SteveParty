@@ -1,7 +1,8 @@
 package fr.lordfinn.steveparty.blocks;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,6 +23,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import static fr.lordfinn.steveparty.items.ModItems.TILE_BEHAVIOR;
+
 public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory, TileInventory {
     private UUID uniqueId;
     private List<BlockPos> ingoingTiles = new ArrayList<>();
@@ -35,25 +38,32 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
 
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
+        Inventories.writeNbt(nbt, items, wrapper);
         super.writeNbt(nbt, wrapper);
-        Inventories.readNbt(nbt, items, wrapper);
-        nbt.putUuid("UniqueId", uniqueId);
-
-        // Save input and output tiles
-        nbt.putIntArray("IngoingTiles", ingoingTiles.stream().flatMapToInt(pos -> IntStream.of(pos.getX(), pos.getY(), pos.getZ())).toArray());
     }
 
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
-        uniqueId = nbt.getUuid("UniqueId");
+        Inventories.readNbt(nbt, items, wrapper);
+    }
+//        System.out.println("TileEntity data written: " + nbt);
+    //nbt.putUuid("UniqueId", uniqueId);
 
-        int[] ingoingTileData = nbt.getIntArray("IngoingTiles");
+    // Save input and output tiles
+    //nbt.putIntArray("IngoingTiles", ingoingTiles.stream().flatMapToInt(pos -> IntStream.of(pos.getX(), pos.getY(), pos.getZ())).toArray());
+
+    // Debug log
+    //        uniqueId = nbt.getUuid("UniqueId");
+
+  /*      int[] ingoingTileData = nbt.getIntArray("IngoingTiles");
         for (int i = 0; i < ingoingTileData.length; i += 3) {
             ingoingTiles.add(new BlockPos(ingoingTileData[i], ingoingTileData[i + 1], ingoingTileData[i + 2]));
         }
-        Inventories.writeNbt(nbt, items, wrapper);
-    }
+               // Debug log
+        System.out.println("TileEntity data read: " + nbt.toString());*/
+
+
 
     @Override
     public DefaultedList<ItemStack> getItems() {
@@ -87,7 +97,9 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        TileInventory.super.setStack(slot, stack);
+        if (!stack.isEmpty() && stack.getItem() == TILE_BEHAVIOR) {
+            TileInventory.super.setStack(slot, stack);
+        }
     }
 
     @Override

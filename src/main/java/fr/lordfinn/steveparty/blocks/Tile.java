@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
@@ -9,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
@@ -64,6 +66,7 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
 
             if (screenHandlerFactory != null) {
                 // With this call the server will request the client to open the appropriate Screenhandler
+                world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
                 player.openHandledScreen(screenHandlerFactory);
             }
         }
