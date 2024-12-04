@@ -2,12 +2,17 @@ package fr.lordfinn.steveparty.blocks;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TileBehaviorComponent;
+import fr.lordfinn.steveparty.items.TileBehavior;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.sound.SoundCategory;
@@ -26,6 +31,8 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
@@ -117,4 +124,5 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
         }
         return null;
     }
+
 }
