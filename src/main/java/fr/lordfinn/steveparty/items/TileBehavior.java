@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.items;
 
+import fr.lordfinn.steveparty.blocks.TileDestination;
+import fr.lordfinn.steveparty.blocks.TileService;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
 import fr.lordfinn.steveparty.particles.ModParticles;
@@ -24,6 +26,7 @@ import net.minecraft.particle.ParticleTypes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static fr.lordfinn.steveparty.components.TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR;
 import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
@@ -75,17 +78,18 @@ public class TileBehavior extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, DEFAULT_TILE_BEHAVIOR);
-        List<BlockPos> destinations = component.destinations();
+        Entity holder = stack.getHolder();
+        List<TileDestination> tileDestinations = TileService.getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
 
-        if (!destinations.isEmpty()) {
+        if (!tileDestinations.isEmpty()) {
             // Add a heading for the destinations with a different color
             tooltip.add(Text.literal("Destinations:")
                     .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
 
-            for (BlockPos pos : destinations) {
+            for (TileDestination destination : tileDestinations) {
                 // Format each BlockPos with its coordinates in a distinct color
-                tooltip.add(Text.literal(String.format("(%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ()))
-                        .setStyle(Style.EMPTY.withColor(Formatting.GREEN)));
+                tooltip.add(Text.literal(String.format("(%d, %d, %d)", destination.position().getX(), destination.position().getY(), destination.position().getZ()))
+                        .setStyle(Style.EMPTY.withColor(destination.isTile() ? Formatting.GREEN : Formatting.RED)));
             }
         } else {
             // Display a message when there are no destinations
@@ -94,6 +98,7 @@ public class TileBehavior extends Item {
         }
     }
 
+    @Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
         if (!selected)
             return;

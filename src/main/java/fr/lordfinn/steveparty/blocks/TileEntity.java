@@ -8,6 +8,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
@@ -103,5 +104,9 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
     @Override
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
         return new TileScreenHandler(syncId, playerInventory, this);
+    }
+
+    public Inventory getInventory() {
+        return this.getInventory();
     }
 }
