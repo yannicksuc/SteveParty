@@ -47,23 +47,6 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         super.readNbt(nbt, wrapper);
         Inventories.readNbt(nbt, items, wrapper);
     }
-//        System.out.println("TileEntity data written: " + nbt);
-    //nbt.putUuid("UniqueId", uniqueId);
-
-    // Save input and output tiles
-    //nbt.putIntArray("IngoingTiles", ingoingTiles.stream().flatMapToInt(pos -> IntStream.of(pos.getX(), pos.getY(), pos.getZ())).toArray());
-
-    // Debug log
-    //        uniqueId = nbt.getUuid("UniqueId");
-
-  /*      int[] ingoingTileData = nbt.getIntArray("IngoingTiles");
-        for (int i = 0; i < ingoingTileData.length; i += 3) {
-            ingoingTiles.add(new BlockPos(ingoingTileData[i], ingoingTileData[i + 1], ingoingTileData[i + 2]));
-        }
-               // Debug log
-        System.out.println("TileEntity data read: " + nbt.toString());*/
-
-
 
     @Override
     public DefaultedList<ItemStack> getItems() {

@@ -9,6 +9,8 @@ import net.minecraft.util.Identifier;
 public class ModSounds {
     public static final SoundEvent CLOSE_TILE_GUI_SOUND_EVENT = register("close-tile-gui");
     public static final SoundEvent OPEN_TILE_GUI_SOUND_EVENT = register("open-tile-gui");
+    public static final SoundEvent SELECT_SOUND_EVENT = register("select");
+    public static final SoundEvent CANCEL_SOUND_EVENT = register("cancel");
     public static void initialize() {
     }
 
