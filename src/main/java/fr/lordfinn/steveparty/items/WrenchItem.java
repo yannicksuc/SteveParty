@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.TileEntity;
 import fr.lordfinn.steveparty.blocks.TileService;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
+import fr.lordfinn.steveparty.particles.ParticleUtils;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -20,11 +21,10 @@ import net.minecraft.world.World;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
 
+import java.awt.*;
 import java.util.List;
 
-import static fr.lordfinn.steveparty.components.TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR;
 import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
-import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
 
 public class WrenchItem extends Item {
     private long lastTimeItemHoldParticleUpdate = 0;
@@ -94,14 +94,19 @@ public class WrenchItem extends Item {
                 BlockPos offset = destination.position().subtract(boundTile.getPos());
                 Vector3f normalizedOffset = new Vector3f(offset.getX(), offset.getY(), offset.getZ()).normalize().mul(1.5f);
 
+                Color color = destination.isTile() ? Color.GREEN : Color.RED;
 
-                world.addParticle(ARROW_PARTICLE,
+                //addImportantParticle only accepts one velocity Vector3f per particle, I use it to encode the color and the distance
+                Vector3f encodedVelocity = ParticleUtils.encodeVelocity(
+                        color,
+                        offset.getX() - (normalizedOffset.x() * 2),
+                        offset.getY() - (normalizedOffset.y() * 2),
+                        offset.getZ() - (normalizedOffset.z() * 2));
+                world.addImportantParticle(ARROW_PARTICLE,
                         boundTile.getPos().getX() + 0.5 + normalizedOffset.x(),
                         boundTile.getPos().getY() + 0.3 + normalizedOffset.y(),
                         boundTile.getPos().getZ() + 0.5 + normalizedOffset.z(),
-                        offset.getX() - (normalizedOffset.x() * 2),
-                        offset.getY() - (normalizedOffset.y() * 2),
-                        offset.getZ() - (normalizedOffset.z()) * 2);
+                        encodedVelocity.x(), encodedVelocity.y(), encodedVelocity.z());
             }
         }
     }
