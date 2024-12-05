@@ -1,11 +1,14 @@
 package fr.lordfinn.steveparty.items;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.TileDestination;
 import fr.lordfinn.steveparty.blocks.TileService;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -14,6 +17,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Style;
@@ -22,11 +26,9 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.particle.ParticleTypes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static fr.lordfinn.steveparty.components.TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR;
 import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
@@ -53,9 +55,14 @@ public class TileBehavior extends Item {
 
         // Get or create the TileBehaviorComponent
         TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, DEFAULT_TILE_BEHAVIOR);
-
-        // Check if clickedPos or blockAbove is already in destinations
+        String worldName = serverWorld.getRegistryKey().getValue().toString(); // Get current world as a string
         List<BlockPos> destinations = new ArrayList<>(component.destinations());
+
+        if (!destinations.isEmpty() && !component.world().isEmpty() && !worldName.equals(component.world())) {
+            player.sendMessage(Text.translatable("message.steveparty.invalid_world"), true);
+            return ActionResult.PASS;
+        }
+
         if (destinations.contains(clickedPos) || destinations.contains(blockAbove)) {
             // Remove the block position if already exists
             destinations.remove(clickedPos);
@@ -69,12 +76,12 @@ public class TileBehavior extends Item {
             player.getWorld().playSound(null, clickedPos, ModSounds.SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
         }
 
-        TileBehaviorComponent updatedComponent = new TileBehaviorComponent(destinations, component.tileType());
-
+        TileBehaviorComponent updatedComponent = new TileBehaviorComponent(destinations, component.tileType(), worldName);
         stack.set(ModComponents.TILE_BEHAVIOR_COMPONENT, updatedComponent);
         return ActionResult.SUCCESS;
     }
 
+    @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, DEFAULT_TILE_BEHAVIOR);
@@ -83,13 +90,16 @@ public class TileBehavior extends Item {
 
         if (!tileDestinations.isEmpty()) {
             // Add a heading for the destinations with a different color
+            tooltip.add(Text.literal("Bound to: ").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true))
+                    .append(Text.literal(component.world()).setStyle(Style.EMPTY.withColor(Formatting.WHITE).withBold(false))));
             tooltip.add(Text.literal("Destinations:")
                     .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
 
             for (TileDestination destination : tileDestinations) {
                 // Format each BlockPos with its coordinates in a distinct color
-                tooltip.add(Text.literal(String.format("(%d, %d, %d)", destination.position().getX(), destination.position().getY(), destination.position().getZ()))
-                        .setStyle(Style.EMPTY.withColor(destination.isTile() ? Formatting.GREEN : Formatting.RED)));
+                BlockPos pos = destination.position();
+                tooltip.add(Text.literal(String.format("  - (%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ()))
+                        .setStyle(Style.EMPTY.withColor(Formatting.WHITE)));
             }
         } else {
             // Display a message when there are no destinations

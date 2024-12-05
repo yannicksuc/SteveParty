@@ -71,4 +71,6 @@ public class ParticleUtils {
         // No change in alpha during the middle 60%
         return 1.0f;
     }
+
+
 }
