@@ -6,6 +6,8 @@ import net.minecraft.client.particle.*;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 
+import static fr.lordfinn.steveparty.particles.ParticleUtils.getFadingAlpha;
+
 public class HereParticle extends SpriteBillboardParticle {
     protected HereParticle(ClientWorld level, double xCoord, double yCoord, double zCoord,
                            SpriteProvider spriteSet, double xd, double yd, double zd) {
@@ -46,23 +48,8 @@ public class HereParticle extends SpriteBillboardParticle {
     @Override
     public void tick() {
         updatePosition();
-        fade();
+        this.alpha = getFadingAlpha(age, maxAge, 0.2f, 0.2f);
         super.tick();
-    }
-
-    private void fade() {
-        float ageFraction = (float) age / (float) maxAge;
-
-        if (ageFraction < 0.2) {
-            // Fade-in effect during the first 20%
-            this.alpha = ageFraction / 0.2f;
-        } else if (ageFraction > 0.8) {
-            // Fade-out effect during the last 20%
-            this.alpha = 1 - ((ageFraction - 0.8f) / 0.2f);
-        } else {
-            // No change in alpha during the middle 60%
-            this.alpha = 1.0f;
-        }
     }
 
     @Override
