@@ -1,11 +1,8 @@
 package fr.lordfinn.steveparty.items;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.TileDestination;
 import fr.lordfinn.steveparty.blocks.TileEntity;
 import fr.lordfinn.steveparty.blocks.TileService;
-import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.TileBehaviorComponent;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
@@ -19,18 +16,17 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.joml.Vector3f;
-import org.joml.Vector3i;
 
 import java.awt.*;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
 
-public class WrenchItem extends Item {
+public class Wrench extends Item {
     private long lastTimeItemHoldParticleUpdate = 0;
     private TileEntity boundTile = null;
 
-    public WrenchItem(Settings settings) {
+    public Wrench(Settings settings) {
         super(settings);
     }
 

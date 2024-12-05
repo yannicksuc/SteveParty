@@ -4,6 +4,7 @@
   "package": "fr.lordfinn.steveparty.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "TokenEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

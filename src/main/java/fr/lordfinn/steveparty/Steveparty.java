@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.screens.ModScreens;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
+import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,9 +16,11 @@ public class Steveparty implements ModInitializer {
 
     public static final String MOD_ID = "steveparty";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static Steveparty Instance = null;
 
     @Override
     public void onInitialize() {
+        Instance = this;
         ModSounds.initialize();
         ModParticles.initialize();
         ModBlocks.registerBlocks();

@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.blocks;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
 import fr.lordfinn.steveparty.items.TileBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -59,7 +61,13 @@ public class TileService {
      * @return true if the position is a valid tile block, false otherwise.
      */
     private static boolean isTileBlock(BlockPos pos, World world) {
-        return world != null && world.getBlockEntity(pos) instanceof TileEntity;
+        if (world == null) return false;
+        Steveparty.LOGGER.info("Checking if {} is a tile block", pos);
+        BlockState blockState = world.getBlockState(pos);
+        Steveparty.LOGGER.info("Block state: {}", blockState);
+        if (blockState == null) return false;
+        Steveparty.LOGGER.info("Block entity class: {}", blockState.getClass());
+        return blockState.getBlock() instanceof Tile;
     }
 }
 

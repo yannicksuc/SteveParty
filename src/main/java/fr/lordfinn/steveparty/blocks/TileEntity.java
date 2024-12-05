@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
@@ -46,7 +47,11 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
-        Inventories.readNbt(nbt, items, wrapper);
+        try {
+            Inventories.readNbt(nbt, items, wrapper);
+        } catch (Exception e) {
+            Steveparty.LOGGER.error("Failed to read NBT", e);
+        }
     }
 
     @Override

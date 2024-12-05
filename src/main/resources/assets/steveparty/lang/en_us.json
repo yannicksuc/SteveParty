@@ -2,9 +2,11 @@
   "block.steveparty.tile": "Tile",
   "item.steveparty.wrench": "Wrench",
   "item.steveparty.tile-behavior": "Tile Behavior",
+  "item.steveparty.tokenizer-wand": "Tokenizer Wand",
   "itemgroup.steveparty": "Steve Party",
   "message.steveparty.removed_position": "Removed position: ({0}, {1}, {2})",
   "message.steveparty.added_position": "Added position: ({0}, {1}, {2})",
+  "message.steveparty.invalid_world": "Can't add a destination to a different world",
   "tooltip.steveparty.destinations": "Destinations:",
   "tooltip.steveparty.destination_position": "  - ({0}, {1}, {2})",
   "tooltip.steveparty.no_destinations": "No destinations set."
