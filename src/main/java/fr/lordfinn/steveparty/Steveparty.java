@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.screens.ModScreens;
@@ -28,6 +29,7 @@ public class Steveparty implements ModInitializer {
         ModBlockEntities.initialize();
         ModComponents.initialize();
         ModScreens.initialize();
+        ModEffects.initialize();
 
         System.out.println("StevePartyMod initialized and blocks registered!");
 

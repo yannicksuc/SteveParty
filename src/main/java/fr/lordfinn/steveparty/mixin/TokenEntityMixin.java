@@ -38,25 +38,26 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     }
 
     // Utility method to check if the entity is tokenized
-    public boolean isTokenized() {
+    public boolean steveparty$isTokenized() {
         return this.dataTracker.get(TOKENIZED);
     }
 
     // Utility method to set the "tokenized" state
-    public void setTokenized(boolean tokenized) {
+    public void steveparty$setTokenized(boolean tokenized) {
         this.dataTracker.set(TOKENIZED, tokenized);
     }
 
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
     private void onReadCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
         if (nbt.contains("Tokenized", 99)) {
-            this.setTokenized(nbt.getBoolean("Tokenized"));
+            this.steveparty$setTokenized(nbt.getBoolean("Tokenized"));
         }
     }
 
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     private void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        nbt.putBoolean("Tokenized", this.isTokenized());
+        nbt.putBoolean("Tokenized", this.steveparty$isTokenized());
     }
+
 }
 

@@ -9,5 +9,6 @@
   "message.steveparty.invalid_world": "Can't add a destination to a different world",
   "tooltip.steveparty.destinations": "Destinations:",
   "tooltip.steveparty.destination_position": "  - ({0}, {1}, {2})",
-  "tooltip.steveparty.no_destinations": "No destinations set."
+  "tooltip.steveparty.no_destinations": "No destinations set.",
+  "effect.steveparty.squish": "Squishing"
 }

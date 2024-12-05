@@ -2,8 +2,8 @@ package fr.lordfinn.steveparty;
 
 public interface TokenizedEntityInterface {
 
-    public boolean isTokenized();
+    public boolean steveparty$isTokenized();
 
     // Utility method to set the "tokenized" state
-    public void setTokenized(boolean tokenized);
+    public void steveparty$setTokenized(boolean tokenized);
 }
