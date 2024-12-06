@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.particles;
 
 import fr.lordfinn.steveparty.Steveparty;
+import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
 
@@ -21,7 +22,7 @@ public class ParticleUtils {
      * @param distZ  Z component of the distance vector.
      * @return The encoded Vector3f.
      */
-    public static Vector3f encodeVelocity(Color color, float distX, float distY, float distZ) {
+    public static Vec3d encodeVelocity(Color color, float distX, float distY, float distZ) {
         // Clamp distance to two decimals
         int clampedX = (int) Math.floor(distX * 100);
         int clampedY = (int) Math.floor(distY * 100);
@@ -32,7 +33,7 @@ public class ParticleUtils {
         float encodedY = clampedY + ((float) color.getGreen() / 1000);
         float encodedZ = clampedZ + ((float) color.getBlue() / 1000);
 
-        return new Vector3f(encodedX, encodedY, encodedZ);
+        return new Vec3d(encodedX, encodedY, encodedZ);
     }
 
     /**

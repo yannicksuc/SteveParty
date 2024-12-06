@@ -1,14 +1,18 @@
 package fr.lordfinn.steveparty.blocks;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.TileOpener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
@@ -20,11 +24,15 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.world.World;
+import net.minecraft.world.block.WireOrientation;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
     public static final MapCodec<Tile> CODEC = Block.createCodec(Tile::new);
+    public static final EnumProperty<TileType> TILE_TYPE = EnumProperty.of("tile_type", TileType.class);
+
 
     public Tile(Settings settings) {
         super(settings.nonOpaque());
@@ -43,7 +51,8 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(Properties.HORIZONTAL_FACING);
+        super.appendProperties(builder);
+        builder.add(TILE_TYPE, Properties.HORIZONTAL_FACING);
     }
 
     @Override
@@ -55,10 +64,14 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!world.isClient) {
-            // This will call the createScreenHandlerFactory method from BlockWithEntity, which will return our blockEntity casted to
-            // a namedScreenHandlerFactory. If your block class does not extend BlockWithEntity, it needs to implement createScreenHandlerFactory.
-            NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
+            ItemStack mainHandStack = player.getMainHandStack();
+            ItemStack offHandStack = player.getOffHandStack();
 
+            // check if the player is holding a TileOpener
+            if (!(mainHandStack.getItem() instanceof TileOpener) && !(offHandStack.getItem() instanceof TileOpener))
+                return ActionResult.PASS;
+
+            NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
             if (screenHandlerFactory != null) {
                 // With this call the server will request the client to open the appropriate Screenhandler
                 world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -88,8 +101,8 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
-            BlockEntity blockEntity = world.getBlockEntity(pos);
-            if (blockEntity instanceof TileEntity tileEntity) {
+            TileEntity tileEntity = getTileEntity(world, pos);
+            if (tileEntity != null) {
                 ItemScatterer.spawn(world, pos, tileEntity);
                 // update comparators
                 world.updateComparators(pos,this);
@@ -110,6 +123,21 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
         if (blockEntity instanceof NamedScreenHandlerFactory) {
             return (NamedScreenHandlerFactory) blockEntity;
         }
+        return null;
+    }
+
+    @Override
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+        if (world.getBlockEntity(pos) instanceof TileEntity tileEntity) {
+            tileEntity.updateTileSkin();
+        }
+        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    }
+
+    public static TileEntity getTileEntity(World world, BlockPos pos) {
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+        if (blockEntity instanceof TileEntity tileEntity)
+            return tileEntity;
         return null;
     }
 

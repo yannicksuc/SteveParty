@@ -1,37 +1,20 @@
 package fr.lordfinn.steveparty.client.screens;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-import java.util.function.Function;
-
 public class TileScreen extends HandledScreen<TileScreenHandler> {
-    // A path to the gui texture. In this example we use the texture from the dispenser
-
     private static final Identifier TEXTURE = Identifier.of("steveparty", "textures/gui/tile.png");
-    private Function<Identifier, RenderLayer> func;
-    // For versions before 1.21:
-    // private static final Identifier TEXTURE = new Identifier("minecraft", "textures/gui/container/dispenser.png");
 
     public TileScreen(TileScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         backgroundHeight = 190;
     }
-
-    /*protected RenderLayer renderLayers(Identifier identifier) {
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        return RenderLayer.getEntityCutoutNoCullZOffset(identifier);
-    }*/
-    Function<Identifier, RenderLayer> renderLayers = RenderLayer::getEntityTranslucent;
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {

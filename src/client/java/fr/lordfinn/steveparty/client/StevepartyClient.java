@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
+import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.screens.TileScreen;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import net.fabricmc.api.ClientModInitializer;
@@ -20,5 +21,6 @@ public class StevepartyClient implements ClientModInitializer {
 
         ParticleFactoryRegistry.getInstance().register(ModParticles.HERE_PARTICLE, HereParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);
+        PayloadReceivers.initialize();
     }
 }

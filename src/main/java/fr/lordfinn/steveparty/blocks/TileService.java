@@ -1,4 +1,5 @@
 package fr.lordfinn.steveparty.blocks;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
 import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -23,6 +24,9 @@ public class TileService {
     public static List<TileDestination> getCurrentDestinations(TileEntity tileEntity, int slotNumber) {
         List<TileDestination> tileDestinations = new ArrayList<>();
         DefaultedList<ItemStack> stacks = tileEntity.getItems(); // Replace with the actual method if different.
+        Steveparty.LOGGER.info("Stacks: " + stacks);
+        Steveparty.LOGGER.info("Stacks: " + stacks.size());
+
 
         if (stacks != null
                 && slotNumber < stacks.size() && slotNumber >= 0
@@ -30,11 +34,10 @@ public class TileService {
             ItemStack stack = stacks.get(slotNumber);
 
             // Check if the item in the first slot is of type TileBehavior.
-            if (stack.getItem() instanceof TileBehavior tileBehaviorItem) {
+            if (stack.getItem() instanceof TileBehavior) {
                 TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR);
                 List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
-                World world = requireNonNull(tileEntity.getWorld());
-                tileDestinations = getDestinationsStatus(destinations, world);
+                tileDestinations = getDestinationsStatus(destinations, tileEntity.getWorld());
             }
         }
         return tileDestinations;
