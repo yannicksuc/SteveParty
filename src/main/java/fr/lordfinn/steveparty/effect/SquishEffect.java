@@ -52,7 +52,10 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     private double resetScaleFactor(LivingEntity entity, int amplifier) {
         double height = entity.getHeight();
         EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
-        double initialHeight = height / scaleAttribute.getBaseValue();
+        double initialHeight = 0;
+        if (scaleAttribute != null) {
+            initialHeight = height / scaleAttribute.getBaseValue();
+        }
         double maxHeight = BASE_MAX_HEIGHT + (0.1 * amplifier);
         double scaleFactor = maxHeight / initialHeight;
         maxScaleFactors.put(entity, amplifier == 0 ? 1 : scaleFactor);

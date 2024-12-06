@@ -9,8 +9,6 @@ import net.minecraft.particle.SimpleParticleType;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
 
-import java.awt.*;
-
 import static fr.lordfinn.steveparty.particles.ParticleUtils.getFadingAlpha;
 
 public class ArrowParticle extends SpriteBillboardParticle {
@@ -42,14 +40,6 @@ public class ArrowParticle extends SpriteBillboardParticle {
     public int getBrightness(float tint) {
         return 15728880; // Full brightness, equivalent to sunlight
     }
-
-    public ArrowParticle(ClientWorld level, double x, double y, double z, SpriteProvider sprites, double distanceX, double distanceY, double distanceZ, Color color) {
-        this(level, x, y, z, sprites, distanceX, distanceY, distanceZ);
-        this.red = color.getRed() / 255f;
-        this.green = color.getGreen() / 255f;
-        this.blue = color.getBlue() / 255f;
-    }
-
 
     private double calculateMaxAge(double distanceX, double distanceY, double distanceZ, double speed) {
         // Calculate the distance using the 3D Pythagorean theorem
