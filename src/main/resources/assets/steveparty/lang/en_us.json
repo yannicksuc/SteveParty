@@ -4,6 +4,7 @@
   "item.steveparty.tile-behavior": "Tile Behavior",
   "item.steveparty.tile-behavior-start": "Tile Behavior Start",
   "item.steveparty.tokenizer-wand": "Tokenizer Wand",
+  "item.steveparty.plunger": "Plunger",
   "itemgroup.steveparty": "Steve Party",
   "message.steveparty.removed_position": "Removed position: ({0}, {1}, {2})",
   "message.steveparty.added_position": "Added position: ({0}, {1}, {2})",

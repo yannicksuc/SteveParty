@@ -36,6 +36,11 @@ public class ModItems {
             "tokenizer-wand"
     );
 
+    public static final Item PLUNGER = register(
+            new Plunger(getSettings(new Plunger.Settings(), "plunger")),
+            "plunger"
+    );
+
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(TILE))
@@ -69,6 +74,7 @@ public class ModItems {
             itemGroup.add(TILE_BEHAVIOR);
             itemGroup.add(TILE_BEHAVIOR_START);
             itemGroup.add(TOKENIZER_WAND);
+            itemGroup.add(PLUNGER);
         });
     }
 }
