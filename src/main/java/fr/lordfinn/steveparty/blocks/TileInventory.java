@@ -11,20 +11,13 @@ public interface  TileInventory extends Inventory {
      * Retrieves the item list of this inventory.
      * Must return the same instance every time it's called.
      */
-    abstract DefaultedList<ItemStack> getItems();
+    DefaultedList<ItemStack> getItems();
 
     /**
      * Creates an inventory from the item list.
      */
     static TileInventory of(DefaultedList<ItemStack> items) {
         return () -> items;
-    }
-
-    /**
-     * Creates a new inventory with the specified size.
-     */
-    static TileInventory ofSize(int size) {
-        return of(DefaultedList.ofSize(size, ItemStack.EMPTY));
     }
 
     /**

@@ -8,6 +8,6 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(StatusEffect.class)
 public abstract class StatusEffectMixin implements StatusEffectExtension {
     @Override
-    public void onRemoved(LivingEntity livingEntity) {
+    public void steveparty$onRemoved(LivingEntity livingEntity) {
     }
 }

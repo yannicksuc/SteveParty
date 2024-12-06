@@ -1,9 +1,7 @@
 package fr.lordfinn.steveparty.particles;
 
-import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
-import org.joml.Vector3f;
 
 import java.awt.*;
 

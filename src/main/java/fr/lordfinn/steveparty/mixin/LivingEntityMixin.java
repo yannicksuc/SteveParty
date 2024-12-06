@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Collection;
-import java.util.Iterator;
+
 //
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity {
@@ -25,7 +25,7 @@ public abstract class LivingEntityMixin extends Entity {
     protected void callOnStatusEffectsRemovedForEntity(Collection<StatusEffectInstance> effects, CallbackInfo ci) {
         if (!this.getWorld().isClient) {
             for (StatusEffectInstance statusEffectInstance : effects) {
-                ((StatusEffectExtension) statusEffectInstance.getEffectType().value()).onRemoved((LivingEntity) (Object) this);
+                ((StatusEffectExtension) statusEffectInstance.getEffectType().value()).steveparty$onRemoved((LivingEntity) (Object) this);
             }
         }
     }

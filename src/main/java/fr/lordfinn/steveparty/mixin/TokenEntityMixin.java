@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.mixin;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -26,6 +25,7 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     private static final TrackedData<Boolean> TOKENIZED = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.BOOLEAN);
     @Unique
     private Vec3d targetPosition;
+    @Unique
     private double targetPositionSpeed;
 
     public TokenEntityMixin(EntityType<?> type, World world) {

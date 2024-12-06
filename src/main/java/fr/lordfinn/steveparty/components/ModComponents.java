@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.components;
 
-import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.component.ComponentType;
 import net.minecraft.registry.Registries;

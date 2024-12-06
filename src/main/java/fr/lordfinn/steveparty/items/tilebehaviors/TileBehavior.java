@@ -108,7 +108,7 @@ public class TileBehavior extends Item {
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
         if (!selected)
             return;
-        if (!(entity instanceof LivingEntity user))
+        if (!(entity instanceof LivingEntity))
             return;
         if (lastTimeItemHoldParticleUpdate + 150 > System.currentTimeMillis())
             return;

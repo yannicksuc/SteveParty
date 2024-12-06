@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.items;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -107,7 +106,8 @@ public class TokenizerWand extends Item implements TileOpener {
 
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
-        handleWandClickOnBlock(context.getStack(), context.getPlayer(), context.getBlockPos());
+        if (context.getPlayer() != null)
+            handleWandClickOnBlock(context.getStack(), context.getPlayer(), context.getBlockPos());
         return super.useOnBlock(context);
     }
 
@@ -126,8 +126,8 @@ public class TokenizerWand extends Item implements TileOpener {
             return;
         }
 
-        BlockState blockState = ((ServerWorld) user.getWorld()).getBlockState(targetPos);
-        double blockHeight = blockState.getCollisionShape(((ServerWorld) user.getWorld()), targetPos).getMax(Direction.Axis.Y);
+        BlockState blockState = user.getWorld().getBlockState(targetPos);
+        double blockHeight = blockState.getCollisionShape(user.getWorld(), targetPos).getMax(Direction.Axis.Y);
         Vector3d target = new Vector3d(targetPos.getX(), targetPos.getY() + blockHeight, targetPos.getZ());
         double distance = mob.squaredDistanceTo(target.x(), target.y(), target.z());
         // Check if the distance is greater than 20 blocks (400 blocks squared)

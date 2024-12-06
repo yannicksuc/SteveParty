@@ -1,12 +1,9 @@
 package fr.lordfinn.steveparty.client.particle;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.particle.*;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 import org.joml.Vector3d;
@@ -18,8 +15,7 @@ import static fr.lordfinn.steveparty.particles.ParticleUtils.getFadingAlpha;
 
 public class ArrowParticle extends SpriteBillboardParticle {
     private Vector3f direction = new Vector3f(0);
-    private Vector3f distance = new Vector3f(0);
-    private double speed; // Speed in blocks per second
+    private final double speed; // Speed in blocks per second
 
     protected ArrowParticle(ClientWorld level, double x, double y, double z,
                             SpriteProvider spriteSet, double velocityX, double velocityY, double velocityZ) {
@@ -35,9 +31,10 @@ public class ArrowParticle extends SpriteBillboardParticle {
         this.red = decodedVelocity[0][0];
         this.green = decodedVelocity[0][1];
         this.blue = decodedVelocity[0][2];
-        this.distance.set(decodedVelocity[1][0], decodedVelocity[1][1], decodedVelocity[1][2]);
-        this.maxAge = (int) calculateMaxAge(this.distance.x, this.distance.y, this.distance.z, speed);
-        this.direction = this.distance.normalize();
+        Vector3f distance = new Vector3f(0);
+        distance.set(decodedVelocity[1][0], decodedVelocity[1][1], decodedVelocity[1][2]);
+        this.maxAge = (int) calculateMaxAge(distance.x, distance.y, distance.z, speed);
+        this.direction = distance.normalize();
         tick();
     }
 
@@ -75,11 +72,9 @@ public class ArrowParticle extends SpriteBillboardParticle {
     }
 
     public Rotator getRotator() {
-        return (quaternion, camera, tickDelta) -> {
-            quaternion.set(0, 0, 0, 1)
-                    .rotateLocalX(calculateXAngle(this.direction.y))
-                    .rotateLocalY(calculateYAngle(-this.direction.x, -this.direction.z));
-        };
+        return (quaternion, camera, tickDelta) -> quaternion.set(0, 0, 0, 1)
+                .rotateLocalX(calculateXAngle(this.direction.y))
+                .rotateLocalY(calculateYAngle(-this.direction.x, -this.direction.z));
     }
 
     public static float calculateYAngle(double x, double z) {
@@ -112,11 +107,6 @@ public class ArrowParticle extends SpriteBillboardParticle {
         public Particle createParticle(SimpleParticleType particleType, ClientWorld level, double x, double y, double z,
                                        double dx, double dy, double dz) {
             return new ArrowParticle(level, x, y, z, this.sprites, dx, dy, dz);
-        }
-
-        public Particle createParticle(SimpleParticleType particleType, ClientWorld level, double x, double y, double z,
-                                       double dx, double dy, double dz, Color color) {
-            return new ArrowParticle(level, x, y, z, this.sprites, dx, dy, dz, color);
         }
     }
 }
