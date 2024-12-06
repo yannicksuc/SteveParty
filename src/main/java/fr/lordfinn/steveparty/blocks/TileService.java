@@ -1,11 +1,8 @@
 package fr.lordfinn.steveparty.blocks;
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
-import fr.lordfinn.steveparty.items.TileBehavior;
+import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
@@ -13,7 +10,6 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
