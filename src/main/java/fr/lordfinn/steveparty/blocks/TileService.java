@@ -62,11 +62,8 @@ public class TileService {
      */
     private static boolean isTileBlock(BlockPos pos, World world) {
         if (world == null) return false;
-        Steveparty.LOGGER.info("Checking if {} is a tile block", pos);
         BlockState blockState = world.getBlockState(pos);
-        Steveparty.LOGGER.info("Block state: {}", blockState);
         if (blockState == null) return false;
-        Steveparty.LOGGER.info("Block entity class: {}", blockState.getClass());
         return blockState.getBlock() instanceof Tile;
     }
 }
