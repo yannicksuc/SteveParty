@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.items;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
-import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -26,14 +26,12 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
 import org.joml.Vector3d;
 
 import java.util.List;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.components.ModComponents.MOB_ENTITY_COMPONENT;
-import static fr.lordfinn.steveparty.components.ModComponents.TEST;
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 import static net.minecraft.entity.effect.StatusEffects.LEVITATION;
 
@@ -49,12 +47,6 @@ public class TokenizerWand extends Item {
             tooltip.add(Text.of(String.format("TEST : %s", test.entityUUID())).copy().formatted(Formatting.GOLD));
     }
 
-    /*@Override
-    public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        user.getMainHandStack().set(TEST, "NONNNNNN");
-        return super.use(world, user, hand);
-    }*/
-
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (entity instanceof MobEntity mob) {
@@ -63,6 +55,7 @@ public class TokenizerWand extends Item {
             } else {
                 String uuid = entity.getUuidAsString();
                 user.getMainHandStack().set(MOB_ENTITY_COMPONENT, new MobEntityComponent(uuid));
+                user.getWorld().playSound(null, entity.getBlockPos(), ModSounds.SELECT_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
             }
             return ActionResult.SUCCESS;
         }
@@ -83,8 +76,6 @@ public class TokenizerWand extends Item {
 
             // Play sounds
             playSounds(mob);
-
-            Steveparty.LOGGER.info("Tokenized entity: {}", mob.getName().getString());
         }
 
         // Client-side particle effect
@@ -129,10 +120,8 @@ public class TokenizerWand extends Item {
         if (component == null || component.entityUUID() == null) {
             return;
         }
-        Steveparty.LOGGER.info("Entity UUID: {}", component.entityUUID());
 
         Entity entity = ((ServerWorld) user.getWorld()).getEntity(UUID.fromString(component.entityUUID()));
-        Steveparty.LOGGER.info("Entity: {}", entity);
         if (!(entity instanceof MobEntity mob)) {
             return;
         }
@@ -141,8 +130,6 @@ public class TokenizerWand extends Item {
         double blockHeight = blockState.getCollisionShape(((ServerWorld) user.getWorld()), targetPos).getMax(Direction.Axis.Y);
         Vector3d target = new Vector3d(targetPos.getX(), targetPos.getY() + blockHeight, targetPos.getZ());
         double distance = mob.squaredDistanceTo(target.x(), target.y(), target.z());
-
-        Steveparty.LOGGER.info("Target position: {}", target);
         // Check if the distance is greater than 20 blocks (400 blocks squared)
         if (distance > 400) {
             // Teleport the entity to the target position if it's too far away
@@ -161,9 +148,7 @@ public class TokenizerWand extends Item {
         }
 
         if (mob instanceof TokenizedEntityInterface) {
-            Steveparty.LOGGER.info("Tokenized entity: {}", mob.getName().getString());
-            Steveparty.LOGGER.info("Target position: {}", target);
-            ((TokenizedEntityInterface) entity).steveparty$setTargetPosition(target);
+            ((TokenizedEntityInterface) entity).steveparty$setTargetPosition(target, 0.5);
         }
         user.getWorld().playSound(
                 mob,

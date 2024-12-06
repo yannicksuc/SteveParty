@@ -26,6 +26,7 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     private static final TrackedData<Boolean> TOKENIZED = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.BOOLEAN);
     @Unique
     private Vec3d targetPosition;
+    private double targetPositionSpeed;
 
     public TokenEntityMixin(EntityType<?> type, World world) {
         super(type, world);
@@ -71,8 +72,9 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
      * Sets the target position for the entity to move towards.
      * @param target The target position.
      */
-    public void steveparty$setTargetPosition(Vector3d target) {
+    public void steveparty$setTargetPosition(Vector3d target, double speed) {
         this.targetPosition = new Vec3d(target.x(), target.y(), target.z());
+        this.targetPositionSpeed = speed;
     }
 
     /**
@@ -83,15 +85,13 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
         if (!this.getWorld().isClient && this.targetPosition != null) {
             Vec3d currentPosition = this.getPos();
             Vec3d direction = targetPosition.subtract(currentPosition).normalize();
-            double speed = 0.1; // Speed of the movement, adjust as needed.
 
             // Move the entity step by step toward the target.
-            Vec3d newPosition = currentPosition.add(direction.multiply(speed));
+            Vec3d newPosition = currentPosition.add(direction.multiply(targetPositionSpeed));
             this.setPosition(newPosition.x, newPosition.y, newPosition.z);
 
             // Check if the entity has reached the target (with a small tolerance).
-            if (currentPosition.squaredDistanceTo(targetPosition) < 0.1) {
-                Steveparty.LOGGER.info("Reached target position: {}", this.targetPosition);
+            if (currentPosition.squaredDistanceTo(targetPosition) < targetPositionSpeed) {
                 this.targetPosition = null; // Reset the target once reached.
             }
         }
