@@ -71,6 +71,7 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     /**
      * Sets the target position for the entity to move towards.
      * @param target The target position.
+     * @param speed The speed at which the entity should move towards the target.
      */
     public void steveparty$setTargetPosition(Vector3d target, double speed) {
         this.targetPosition = new Vec3d(target.x(), target.y(), target.z());
