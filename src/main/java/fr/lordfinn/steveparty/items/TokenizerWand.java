@@ -35,7 +35,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.MOB_ENTITY_COMPONE
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 import static net.minecraft.entity.effect.StatusEffects.LEVITATION;
 
-public class TokenizerWand extends Item {
+public class TokenizerWand extends Item implements TileOpener {
 
     public TokenizerWand(Settings settings) {
         super(settings);

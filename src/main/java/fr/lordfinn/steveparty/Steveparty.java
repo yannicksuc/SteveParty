@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
+import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.screens.ModScreens;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
@@ -30,6 +31,7 @@ public class Steveparty implements ModInitializer {
         ModComponents.initialize();
         ModScreens.initialize();
         ModEffects.initialize();
+        ModPayloads.initialize();
 
         System.out.println("StevePartyMod initialized and blocks registered!");
 

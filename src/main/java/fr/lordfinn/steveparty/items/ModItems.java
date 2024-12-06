@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.items.tilebehaviors.StartTileBehavior;
 import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -27,7 +28,7 @@ public class ModItems {
             "tile-behavior"
     );
     public static final Item TILE_BEHAVIOR_START = register(
-            new TileBehavior(getSettings(new TileBehavior.Settings(), "tile-behavior-start")),
+            new StartTileBehavior(getSettings(new StartTileBehavior.Settings(), "tile-behavior-start")),
             "tile-behavior-start"
     );
     public static final Item TOKENIZER_WAND = register(

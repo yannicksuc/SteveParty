@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.screens;
 
+import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -7,12 +8,8 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.item.Items; // Import the items you want to allow
-
-import static fr.lordfinn.steveparty.items.ModItems.TILE_BEHAVIOR;
 
 public class TileScreenHandler extends ScreenHandler {
     private final Inventory inventory;
@@ -23,7 +20,7 @@ public class TileScreenHandler extends ScreenHandler {
     }
 
     public TileScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
-        super((ScreenHandlerType<?>) ModScreens.TILE_SCREEN_HANDLER, syncId);
+        super(ModScreens.TILE_SCREEN_HANDLER, syncId);
         checkSize(inventory, 16);
         this.inventory = inventory;
         inventory.onOpen(playerInventory.player);
@@ -91,7 +88,7 @@ public class TileScreenHandler extends ScreenHandler {
     public ItemStack quickMove(PlayerEntity player, int invSlot) {
         ItemStack newStack = ItemStack.EMPTY;
         Slot slot = this.slots.get(invSlot);
-        if (slot != null && slot.hasStack()) {
+        if (slot.hasStack()) {
             ItemStack originalStack = slot.getStack();
             newStack = originalStack.copy();
             if (invSlot < this.inventory.size()) {
@@ -113,9 +110,8 @@ public class TileScreenHandler extends ScreenHandler {
     }
 
     private static boolean isAllowedItem(ItemStack originalStack) {
-        return originalStack.getItem() == TILE_BEHAVIOR;
+        return originalStack.getItem() instanceof TileBehavior;
     }
-
 
     @Override
     public void onClosed(PlayerEntity player) {
