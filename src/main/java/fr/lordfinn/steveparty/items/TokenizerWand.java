@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
+import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -25,6 +26,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 
 import java.util.List;
@@ -38,12 +40,6 @@ public class TokenizerWand extends Item implements TileOpener {
 
     public TokenizerWand(Settings settings) {
         super(settings);
-    }
-
-    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        MobEntityComponent test = stack.get(MOB_ENTITY_COMPONENT);
-        if (test != null)
-            tooltip.add(Text.of(String.format("TEST : %s", test.entityUUID())).copy().formatted(Formatting.GOLD));
     }
 
     @Override
@@ -112,51 +108,29 @@ public class TokenizerWand extends Item implements TileOpener {
     }
 
     public void handleWandClickOnBlock(ItemStack stack, PlayerEntity user, BlockPos targetPos) {
-        if (user.getWorld().isClient || !stack.contains(MOB_ENTITY_COMPONENT)) {
+        if (isInvalidContext(stack, user)) {
             return;
         }
 
         MobEntityComponent component = stack.get(MOB_ENTITY_COMPONENT);
-        if (component == null || component.entityUUID() == null) {
-            return;
-        }
-
-        Entity entity = ((ServerWorld) user.getWorld()).getEntity(UUID.fromString(component.entityUUID()));
+        Entity entity = getEntityFromComponent(component, ((ServerWorld) user.getWorld()));
         if (!(entity instanceof MobEntity mob)) {
             return;
         }
 
-        BlockState blockState = user.getWorld().getBlockState(targetPos);
-        double blockHeight = blockState.getCollisionShape(user.getWorld(), targetPos).getMax(Direction.Axis.Y);
-        Vector3d target = new Vector3d(targetPos.getX(), targetPos.getY() + blockHeight, targetPos.getZ());
-        double distance = mob.squaredDistanceTo(target.x(), target.y(), target.z());
-        // Check if the distance is greater than 20 blocks (400 blocks squared)
-        if (distance > 400) {
-            // Teleport the entity to the target position if it's too far away
-            mob.setPosition(target.x(), target.y(), target.z());
+        TokenMovementService.moveEntity(mob, targetPos, user);
+    }
 
-            // Play sound effect for teleportation
-            user.getWorld().playSound(
-                    mob,
-                    targetPos, // Position to play the sound at
-                    SoundEvents.ENTITY_ENDERMAN_TELEPORT, // Sound event to use
-                    SoundCategory.PLAYERS, // Category for the sound
-                    1.0F, // Volume (1.0 is full volume)
-                    1.0F // Pitch (1.0 is normal pitch)
-            );
-            return;
+    @Nullable
+    private static Entity getEntityFromComponent(MobEntityComponent component, ServerWorld world) {
+        if (component == null || component.entityUUID() == null) {
+            return null;
         }
+        UUID entityUUID = UUID.fromString(component.entityUUID());
+        return world.getEntity(entityUUID);
+    }
 
-        if (mob instanceof TokenizedEntityInterface) {
-            ((TokenizedEntityInterface) entity).steveparty$setTargetPosition(target, 0.5);
-        }
-        user.getWorld().playSound(
-                mob,
-                targetPos, // Position to play the sound at
-                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, // Example sound event for moving
-                SoundCategory.PLAYERS, // Category for the sound
-                1.0F, // Volume
-                1.0F // Pitch
-        );
+    private static boolean isInvalidContext(ItemStack stack, PlayerEntity user) {
+        return user.getWorld().isClient || !stack.contains(MOB_ENTITY_COMPONENT);
     }
 }

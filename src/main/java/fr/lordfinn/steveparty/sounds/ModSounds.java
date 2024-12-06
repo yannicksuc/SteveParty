@@ -11,6 +11,8 @@ public class ModSounds {
     public static final SoundEvent OPEN_TILE_GUI_SOUND_EVENT = register("open-tile-gui");
     public static final SoundEvent SELECT_SOUND_EVENT = register("select");
     public static final SoundEvent CANCEL_SOUND_EVENT = register("cancel");
+    public static final SoundEvent PLUNGER_SUCK_IN = register("plunger-suck-in");
+    public static final SoundEvent PLUNGER_SUCK_OUT = register("plunger-suck-out");
     public static void initialize() {
     }
 

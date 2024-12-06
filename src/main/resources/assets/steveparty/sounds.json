@@ -14,6 +14,16 @@
       "steveparty:select"
     ]
   },
+  "plunger-suck-in": {
+    "sounds": [
+      "steveparty:plunger-suck-in"
+    ]
+  },
+  "plunger-suck-out": {
+    "sounds": [
+      "steveparty:plunger-suck-out"
+    ]
+  },
   "cancel": {
     "sounds": [
       "steveparty:cancel"
