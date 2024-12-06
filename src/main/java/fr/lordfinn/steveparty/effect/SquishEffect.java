@@ -1,17 +1,13 @@
 package fr.lordfinn.steveparty.effect;
 
 import fr.lordfinn.steveparty.StatusEffectExtension;
-import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -157,7 +153,7 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     }
 
     @Override
-    public void onRemoved(LivingEntity livingEntity) {
+    public void steveparty$onRemoved(LivingEntity livingEntity) {
         EntityAttributeInstance scaleAttribute = livingEntity.getAttributeInstance(EntityAttributes.SCALE);
         if (scaleAttribute != null && maxScaleFactors.containsKey(livingEntity)) {
             double maxHeight = maxScaleFactors.remove(livingEntity);

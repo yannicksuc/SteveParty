@@ -15,7 +15,8 @@ public class ModBlocks {
     // Create and register the TILE block
     public static final Block TILE = register(Tile::new, Block.Settings.create().strength(4.0f), "tile", true);
 
-    private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name,  boolean shouldRegisterItem) {
+    @SuppressWarnings({"unused", "SameParameterValue"})
+    private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {
         Identifier identifier = Identifier.of(Steveparty.MOD_ID, name);
         RegistryKey<Block> registryKey = RegistryKey.of(RegistryKeys.BLOCK, identifier);
 

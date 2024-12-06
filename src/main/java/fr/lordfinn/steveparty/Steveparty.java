@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.screens.ModScreens;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

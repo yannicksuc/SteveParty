@@ -12,6 +12,7 @@ public class ModEffects {
 
     public static void initialize() {
     }
+    @SuppressWarnings("SameParameterValue")
     private static RegistryEntry<StatusEffect> register(String id, StatusEffect statusEffect) {
         return Registry.registerReference(Registries.STATUS_EFFECT, Identifier.of(Steveparty.MOD_ID, id), statusEffect);
     }

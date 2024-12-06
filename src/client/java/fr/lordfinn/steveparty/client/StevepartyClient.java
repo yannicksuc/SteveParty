@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreens;
 
 import static fr.lordfinn.steveparty.screens.ModScreens.TILE_SCREEN_HANDLER;
 
+@SuppressWarnings("unused")
 public class StevepartyClient implements ClientModInitializer {
 
     @Override

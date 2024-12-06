@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.blocks;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.TileOpener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;

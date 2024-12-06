@@ -12,8 +12,6 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Objects.requireNonNull;
-
 public class TileService {
     /**
      * Retrieves the destinations from the inventory of the block at the given position.
@@ -24,9 +22,6 @@ public class TileService {
     public static List<TileDestination> getCurrentDestinations(TileEntity tileEntity, int slotNumber) {
         List<TileDestination> tileDestinations = new ArrayList<>();
         DefaultedList<ItemStack> stacks = tileEntity.getItems(); // Replace with the actual method if different.
-        Steveparty.LOGGER.info("Stacks: " + stacks);
-        Steveparty.LOGGER.info("Stacks: " + stacks.size());
-
 
         if (stacks != null
                 && slotNumber < stacks.size() && slotNumber >= 0
