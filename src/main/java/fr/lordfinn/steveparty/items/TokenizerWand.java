@@ -2,82 +2,176 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.effect.ModEffects;
+import fr.lordfinn.steveparty.components.MobEntityComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.particle.ParticleTypes;
-import org.slf4j.Logger;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
+import org.joml.Vector3d;
 
+import java.util.List;
+import java.util.UUID;
+
+import static fr.lordfinn.steveparty.components.ModComponents.MOB_ENTITY_COMPONENT;
+import static fr.lordfinn.steveparty.components.ModComponents.TEST;
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 import static net.minecraft.entity.effect.StatusEffects.LEVITATION;
 
 public class TokenizerWand extends Item {
-    private static final Logger LOGGER = Steveparty.LOGGER; // Adjust this as necessary
 
     public TokenizerWand(Settings settings) {
         super(settings);
     }
 
+    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        MobEntityComponent test = stack.get(MOB_ENTITY_COMPONENT);
+        if (test != null)
+            tooltip.add(Text.of(String.format("TEST : %s", test.entityUUID())).copy().formatted(Formatting.GOLD));
+    }
+
+    /*@Override
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        user.getMainHandStack().set(TEST, "NONNNNNN");
+        return super.use(world, user, hand);
+    }*/
+
     @Override
-    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand)  {
-
-        if (entity instanceof MobEntity mob && !((TokenizedEntityInterface)mob).steveparty$isTokenized()) {
-
-            // Remove the mob's AI to make it "brainless"
-            if (!entity.getWorld().isClient) {
-                //nbtData.putBoolean(TOKENIZED_FLAG, true);
-                //mob.readNbt(nbtData);
-                ((TokenizedEntityInterface)mob).steveparty$setTokenized(true);
-                mob.setAiDisabled(true);
-                mob.setInvulnerable(true);
-                mob.clearGoalsAndTasks();
-
-                // Adjust the scale based on the mob's height
-                double height = mob.getHeight();
-                double maxHeight = 1.5; // Set this to the maximum size you want to allow
-
-                if (height > maxHeight) {
-                    double scaleFactor = maxHeight / height;
-                    EntityAttributeInstance scaleAttribute = mob.getAttributeInstance(EntityAttributes.SCALE);
-
-                    if (scaleAttribute != null) {
-                        scaleAttribute.setBaseValue(scaleFactor);
-                    }
-                }
-
-                mob.getWorld().playSound(mob, mob.getBlockPos(),
-                        SoundEvent.of(Identifier.ofVanilla("entity.illusioner.cast_spell")),
-                        SoundCategory.PLAYERS, 1.0F, 1.0F);
-                mob.getWorld().playSound(mob, mob.getBlockPos(),
-                        SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.cure")),
-                        SoundCategory.PLAYERS, 0.2F, 2.0F);
-                mob.addStatusEffect(new StatusEffectInstance(SQUISHED, 180, 10));
-                mob.addStatusEffect(new StatusEffectInstance(LEVITATION, 180, 3));
-                // Set the mob to glow
-                mob.setGlowing(true);
+    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        if (entity instanceof MobEntity mob) {
+            if (!((TokenizedEntityInterface) mob).steveparty$isTokenized()) {
+                tokenizeEntity(mob);
+            } else {
+                String uuid = entity.getUuidAsString();
+                user.getMainHandStack().set(MOB_ENTITY_COMPONENT, new MobEntityComponent(uuid));
             }
-            // Spawn multiple "wax-on" particles around the mob
-            if (entity.getWorld().isClient) {
-                for (int i = 0; i < 20; i++) { // Adjust the number as needed
-                    mob.getWorld().addImportantParticle(ParticleTypes.WAX_OFF, true, mob.getX(), mob.getY()+(mob.getHeight()/2), mob.getZ(),
-                            10 * mob.getWorld().getRandom().nextBetween(-1,1), 10 * mob.getWorld().getRandom().nextBetween(-1,1), 10 * mob.getWorld().getRandom().nextBetween(-1,1));
-                }
-            }
+            return ActionResult.SUCCESS;
+        }
+        return super.useOnEntity(stack, user, entity, hand);
+    }
+
+    private void tokenizeEntity(MobEntity mob) {
+        if (!mob.getWorld().isClient) {
+            ((TokenizedEntityInterface) mob).steveparty$setTokenized(true);
+            mob.clearGoalsAndTasks();
+            mob.setAiDisabled(true);
+            mob.setInvulnerable(true);
+            mob.setTarget(null);
+
+            // Add effects
+            mob.addStatusEffect(new StatusEffectInstance(SQUISHED, 130, 13)); //10 will be a height of 1 block
+            mob.addStatusEffect(new StatusEffectInstance(LEVITATION, 130, 1));
+
+            // Play sounds
+            playSounds(mob);
+
+            Steveparty.LOGGER.info("Tokenized entity: {}", mob.getName().getString());
         }
 
-        return ActionResult.SUCCESS;
+        // Client-side particle effect
+        if (mob.getWorld().isClient) {
+            spawnParticles(mob);
+        }
+    }
+
+    private void playSounds(MobEntity mob) {
+        mob.getWorld().playSound(null, mob.getBlockPos(),
+                SoundEvent.of(Identifier.ofVanilla("entity.illusioner.cast_spell")),
+                SoundCategory.PLAYERS, 1.0F, 1.0F);
+
+        mob.getWorld().playSound(null, mob.getBlockPos(),
+                SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.cure")),
+                SoundCategory.PLAYERS, 0.2F, 2.0F);
+    }
+
+    private void spawnParticles(MobEntity mob) {
+        for (int i = 0; i < 20; i++) {
+            mob.getWorld().addImportantParticle(ParticleTypes.WAX_OFF, true,
+                    mob.getX(), mob.getY() + mob.getHeight() / 2, mob.getZ(),
+                    mob.getWorld().getRandom().nextDouble() - 0.5,
+                    mob.getWorld().getRandom().nextDouble() - 0.5,
+                    mob.getWorld().getRandom().nextDouble() - 0.5);
+        }
+    }
+
+
+    @Override
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        handleWandClickOnBlock(context.getStack(), context.getPlayer(), context.getBlockPos());
+        return super.useOnBlock(context);
+    }
+
+    public void handleWandClickOnBlock(ItemStack stack, PlayerEntity user, BlockPos targetPos) {
+        if (user.getWorld().isClient || !stack.contains(MOB_ENTITY_COMPONENT)) {
+            return;
+        }
+
+        MobEntityComponent component = stack.get(MOB_ENTITY_COMPONENT);
+        if (component == null || component.entityUUID() == null) {
+            return;
+        }
+        Steveparty.LOGGER.info("Entity UUID: {}", component.entityUUID());
+
+        Entity entity = ((ServerWorld) user.getWorld()).getEntity(UUID.fromString(component.entityUUID()));
+        Steveparty.LOGGER.info("Entity: {}", entity);
+        if (!(entity instanceof MobEntity mob)) {
+            return;
+        }
+
+        BlockState blockState = ((ServerWorld) user.getWorld()).getBlockState(targetPos);
+        double blockHeight = blockState.getCollisionShape(((ServerWorld) user.getWorld()), targetPos).getMax(Direction.Axis.Y);
+        Vector3d target = new Vector3d(targetPos.getX(), targetPos.getY() + blockHeight, targetPos.getZ());
+        double distance = mob.squaredDistanceTo(target.x(), target.y(), target.z());
+
+        Steveparty.LOGGER.info("Target position: {}", target);
+        // Check if the distance is greater than 20 blocks (400 blocks squared)
+        if (distance > 400) {
+            // Teleport the entity to the target position if it's too far away
+            mob.setPosition(target.x(), target.y(), target.z());
+
+            // Play sound effect for teleportation
+            user.getWorld().playSound(
+                    mob,
+                    targetPos, // Position to play the sound at
+                    SoundEvents.ENTITY_ENDERMAN_TELEPORT, // Sound event to use
+                    SoundCategory.PLAYERS, // Category for the sound
+                    1.0F, // Volume (1.0 is full volume)
+                    1.0F // Pitch (1.0 is normal pitch)
+            );
+            return;
+        }
+
+        if (mob instanceof TokenizedEntityInterface) {
+            Steveparty.LOGGER.info("Tokenized entity: {}", mob.getName().getString());
+            Steveparty.LOGGER.info("Target position: {}", target);
+            ((TokenizedEntityInterface) entity).steveparty$setTargetPosition(target);
+        }
+        user.getWorld().playSound(
+                mob,
+                targetPos, // Position to play the sound at
+                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, // Example sound event for moving
+                SoundCategory.PLAYERS, // Category for the sound
+                1.0F, // Volume
+                1.0F // Pitch
+        );
     }
 }

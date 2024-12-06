@@ -92,7 +92,7 @@ public class Wrench extends Item {
 
                 Color color = destination.isTile() ? Color.GREEN : Color.RED;
 
-                //addImportantParticle only accepts one velocity Vector3f per particle, I use it to encode the color and the distance
+                //addImportantParticle only accepts one velocity Vector3d per particle, I use it to encode the color and the distance
                 Vector3f encodedVelocity = ParticleUtils.encodeVelocity(
                         color,
                         offset.getX() - (normalizedOffset.x() * 2),

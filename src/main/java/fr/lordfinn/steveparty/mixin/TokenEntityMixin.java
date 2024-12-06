@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -8,7 +9,9 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.joml.Vector3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -19,31 +22,36 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MobEntity.class)
 public abstract class TokenEntityMixin extends Entity implements TokenizedEntityInterface {
 
-    // Define a new TrackedData field for the "tokenized" state
     @Unique
     private static final TrackedData<Boolean> TOKENIZED = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.BOOLEAN);
+    @Unique
+    private Vec3d targetPosition;
 
     public TokenEntityMixin(EntityType<?> type, World world) {
         super(type, world);
     }
 
-    // Add this field to the DataTracker during initialization
     @Shadow
     protected abstract void initDataTracker(DataTracker.Builder builder);
 
-    // Modify the `initDataTracker` method to include the new data field
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void addTokenizedField(DataTracker.Builder builder, CallbackInfo ci) {
-        builder.add(TOKENIZED, false);  // Initialize with a default value (false)
+        builder.add(TOKENIZED, false);
     }
 
-    // Utility method to check if the entity is tokenized
     public boolean steveparty$isTokenized() {
         return this.dataTracker.get(TOKENIZED);
     }
 
-    // Utility method to set the "tokenized" state
     public void steveparty$setTokenized(boolean tokenized) {
+        MobEntity mob = (MobEntity) (Object) this;
+        mob.setAiDisabled(tokenized);
+        mob.clearGoalsAndTasks();
+        mob.setInvulnerable(tokenized);
+        if (tokenized) {
+            mob.clearGoalsAndTasks();
+            mob.setTarget(null);
+        }
         this.dataTracker.set(TOKENIZED, tokenized);
     }
 
@@ -59,5 +67,33 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
         nbt.putBoolean("Tokenized", this.steveparty$isTokenized());
     }
 
-}
+    /**
+     * Sets the target position for the entity to move towards.
+     * @param target The target position.
+     */
+    public void steveparty$setTargetPosition(Vector3d target) {
+        this.targetPosition = new Vec3d(target.x(), target.y(), target.z());
+    }
 
+    /**
+     * Called every tick to handle manual movement toward the target.
+     */
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void onTick(CallbackInfo ci) {
+        if (!this.getWorld().isClient && this.targetPosition != null) {
+            Vec3d currentPosition = this.getPos();
+            Vec3d direction = targetPosition.subtract(currentPosition).normalize();
+            double speed = 0.1; // Speed of the movement, adjust as needed.
+
+            // Move the entity step by step toward the target.
+            Vec3d newPosition = currentPosition.add(direction.multiply(speed));
+            this.setPosition(newPosition.x, newPosition.y, newPosition.z);
+
+            // Check if the entity has reached the target (with a small tolerance).
+            if (currentPosition.squaredDistanceTo(targetPosition) < 0.1) {
+                Steveparty.LOGGER.info("Reached target position: {}", this.targetPosition);
+                this.targetPosition = null; // Reset the target once reached.
+            }
+        }
+    }
+}
