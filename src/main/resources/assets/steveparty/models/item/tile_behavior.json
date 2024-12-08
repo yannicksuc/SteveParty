@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "steveparty:item/tile-behavior-start"
+    "layer0": "steveparty:item/tile_behavior"
   }
 }

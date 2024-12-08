@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.blocks;
+package fr.lordfinn.steveparty.blocks.tiles;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
 import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;

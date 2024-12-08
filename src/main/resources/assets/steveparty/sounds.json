@@ -1,12 +1,12 @@
 {
   "close-tile-gui": {
     "sounds": [
-      "steveparty:close-tile-gui"
+      "steveparty:close_tile_gui"
     ]
   },
   "open-tile-gui": {
     "sounds": [
-      "steveparty:open-tile-gui"
+      "steveparty:open_tile_gui"
     ]
   },
   "select": {
@@ -14,14 +14,14 @@
       "steveparty:select"
     ]
   },
-  "plunger-suck-in": {
+  "plunger_suck_in": {
     "sounds": [
-      "steveparty:plunger-suck-in"
+      "steveparty:plunger_suck_in"
     ]
   },
-  "plunger-suck-out": {
+  "plunger_suck_out": {
     "sounds": [
-      "steveparty:plunger-suck-out"
+      "steveparty:plunger_suck_out"
     ]
   },
   "cancel": {

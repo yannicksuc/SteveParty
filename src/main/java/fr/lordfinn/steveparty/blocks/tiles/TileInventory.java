@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.blocks;
+package fr.lordfinn.steveparty.blocks.tiles;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventories;

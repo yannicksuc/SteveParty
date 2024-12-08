@@ -7,12 +7,12 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public class ModSounds {
-    public static final SoundEvent CLOSE_TILE_GUI_SOUND_EVENT = register("close-tile-gui");
-    public static final SoundEvent OPEN_TILE_GUI_SOUND_EVENT = register("open-tile-gui");
+    public static final SoundEvent CLOSE_TILE_GUI_SOUND_EVENT = register("close_tile_gui");
+    public static final SoundEvent OPEN_TILE_GUI_SOUND_EVENT = register("open_tile_gui");
     public static final SoundEvent SELECT_SOUND_EVENT = register("select");
     public static final SoundEvent CANCEL_SOUND_EVENT = register("cancel");
-    public static final SoundEvent PLUNGER_SUCK_IN = register("plunger-suck-in");
-    public static final SoundEvent PLUNGER_SUCK_OUT = register("plunger-suck-out");
+    public static final SoundEvent PLUNGER_SUCK_IN = register("plunger_suck_in");
+    public static final SoundEvent PLUNGER_SUCK_OUT = register("plunger_suck_out");
     public static void initialize() {
     }
 

@@ -15,6 +15,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import static fr.lordfinn.steveparty.blocks.ModBlocks.PARTY_CONTROLLER;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.TILE;
 import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 
@@ -24,21 +25,26 @@ public class ModItems {
             "wrench"
     );
     public static final Item TILE_BEHAVIOR = register(
-            new TileBehavior(getSettings(new TileBehavior.Settings(), "tile-behavior")),
-            "tile-behavior"
+            new TileBehavior(getSettings(new TileBehavior.Settings(), "tile_behavior")),
+            "tile_behavior"
     );
     public static final Item TILE_BEHAVIOR_START = register(
-            new StartTileBehavior(getSettings(new StartTileBehavior.Settings(), "tile-behavior-start")),
-            "tile-behavior-start"
+            new StartTileBehavior(getSettings(new StartTileBehavior.Settings(), "tile_behavior_start")),
+            "tile_behavior_start"
     );
     public static final Item TOKENIZER_WAND = register(
-            new TokenizerWand(getSettings(new TokenizerWand.Settings(), "tokenizer-wand")),
-            "tokenizer-wand"
+            new TokenizerWand(getSettings(new TokenizerWand.Settings(), "tokenizer_wand")),
+            "tokenizer_wand"
     );
 
     public static final Item PLUNGER = register(
             new Plunger(getSettings(new Plunger.Settings(), "plunger")),
             "plunger"
+    );
+
+    public static final Item DEFAULT_DICE = register(
+            new DefaultDice(getSettings(new DefaultDice.Settings(), "default_dice")),
+            "default_dice"
     );
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
@@ -75,6 +81,8 @@ public class ModItems {
             itemGroup.add(TILE_BEHAVIOR_START);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(PLUNGER);
+            itemGroup.add(PARTY_CONTROLLER);
+            itemGroup.add(DEFAULT_DICE);
         });
     }
 }

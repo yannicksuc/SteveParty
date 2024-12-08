@@ -1,9 +1,10 @@
 package fr.lordfinn.steveparty.items.tilebehaviors;
 
-import fr.lordfinn.steveparty.blocks.TileDestination;
-import fr.lordfinn.steveparty.blocks.TileService;
+import fr.lordfinn.steveparty.blocks.tiles.TileDestination;
+import fr.lordfinn.steveparty.blocks.tiles.TileService;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
+import fr.lordfinn.steveparty.items.TileOpener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -29,7 +30,7 @@ import java.util.List;
 import static fr.lordfinn.steveparty.components.TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR;
 import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
 
-public class TileBehavior extends Item {
+public class TileBehavior extends Item implements TileOpener {
     private long lastTimeItemHoldParticleUpdate = 0;
     public TileBehavior(Settings settings) {
         super(settings);
