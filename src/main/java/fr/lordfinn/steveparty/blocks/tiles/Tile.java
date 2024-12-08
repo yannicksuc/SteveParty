@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.blocks;
+package fr.lordfinn.steveparty.blocks.tiles;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.TileOpener;

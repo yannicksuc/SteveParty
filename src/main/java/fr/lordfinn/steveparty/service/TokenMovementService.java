@@ -50,9 +50,22 @@ public class TokenMovementService {
     }
 
     private static void moveEntityToTarget(MobEntity mob, Vector3d target) {
+        // Set the target position (if applicable to your custom interface)
         if (mob instanceof TokenizedEntityInterface tokenizedEntity) {
             tokenizedEntity.steveparty$setTargetPosition(target, 0.5);
         }
+
+        // Calculate rotation
+        double deltaX = target.x() - mob.getX();
+        double deltaZ = target.z() - mob.getZ();
+        float yaw = (float) (Math.atan2(deltaZ, deltaX) * (180 / Math.PI)) - 90; // Convert radians to degrees
+        mob.setYaw(yaw);
+
+        // Optionally update pitch for vertical rotation
+        double deltaY = target.y() - mob.getY();
+        double horizontalDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+        float pitch = (float) -(Math.atan2(deltaY, horizontalDistance) * (180 / Math.PI)); // Convert radians to degrees
+        mob.setPitch(pitch);
     }
 
     private static void playSound(PlayerEntity user, BlockPos targetPos, SoundEvent soundEvent) {

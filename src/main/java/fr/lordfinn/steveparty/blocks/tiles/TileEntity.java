@@ -1,6 +1,7 @@
-package fr.lordfinn.steveparty.blocks;
+package fr.lordfinn.steveparty.blocks.tiles;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;

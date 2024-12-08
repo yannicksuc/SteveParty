@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.items;
 
-import fr.lordfinn.steveparty.blocks.Tile;
-import fr.lordfinn.steveparty.blocks.TileDestination;
-import fr.lordfinn.steveparty.blocks.TileEntity;
-import fr.lordfinn.steveparty.blocks.TileService;
+import fr.lordfinn.steveparty.blocks.tiles.Tile;
+import fr.lordfinn.steveparty.blocks.tiles.TileDestination;
+import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
+import fr.lordfinn.steveparty.blocks.tiles.TileService;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import fr.lordfinn.steveparty.payloads.ArrowParticlesPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;

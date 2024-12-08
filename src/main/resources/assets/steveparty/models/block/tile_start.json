@@ -2,8 +2,8 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [128, 128],
 	"textures": {
-		"particle": "steveparty:block/tile-start",
-		"0": "steveparty:block/tile-start"
+		"particle": "steveparty:block/tile_start",
+		"0": "steveparty:block/tile_start"
 	},
 	"elements": [
 		{

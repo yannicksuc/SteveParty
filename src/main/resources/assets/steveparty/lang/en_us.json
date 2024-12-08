@@ -1,10 +1,12 @@
 {
   "block.steveparty.tile": "Tile",
+  "block.steveparty.party_controller": "Party Controller",
   "item.steveparty.wrench": "Wrench",
-  "item.steveparty.tile-behavior": "Tile Behavior",
-  "item.steveparty.tile-behavior-start": "Tile Behavior Start",
-  "item.steveparty.tokenizer-wand": "Tokenizer Wand",
+  "item.steveparty.tile_behavior": "Tile Behavior",
+  "item.steveparty.tile_behavior_start": "Tile Behavior Start",
+  "item.steveparty.tokenizer_wand": "Tokenizer Wand",
   "item.steveparty.plunger": "Plunger",
+  "item.steveparty.default_dice": "Default Dice",
   "itemgroup.steveparty": "Steve Party",
   "message.steveparty.removed_position": "Removed position: ({0}, {1}, {2})",
   "message.steveparty.added_position": "Added position: ({0}, {1}, {2})",
@@ -12,5 +14,6 @@
   "tooltip.steveparty.destinations": "Destinations:",
   "tooltip.steveparty.destination_position": "  - ({0}, {1}, {2})",
   "tooltip.steveparty.no_destinations": "No destinations set.",
-  "effect.steveparty.squish": "Squishing"
+  "effect.steveparty.squish": "Squishing",
+  "entity.steveparty.dice": "Dice"
 }
