@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.items.tilebehaviors.StartTileBehavior;
-import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
+import fr.lordfinn.steveparty.items.tilebehaviors.StartTileBehaviorItem;
+import fr.lordfinn.steveparty.items.tilebehaviors.TileBehaviorItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
@@ -25,11 +25,11 @@ public class ModItems {
             "wrench"
     );
     public static final Item TILE_BEHAVIOR = register(
-            new TileBehavior(getSettings(new TileBehavior.Settings(), "tile_behavior")),
+            new TileBehaviorItem(getSettings(new TileBehaviorItem.Settings(), "tile_behavior")),
             "tile_behavior"
     );
     public static final Item TILE_BEHAVIOR_START = register(
-            new StartTileBehavior(getSettings(new StartTileBehavior.Settings(), "tile_behavior_start")),
+            new StartTileBehaviorItem(getSettings(new StartTileBehaviorItem.Settings(), "tile_behavior_start")),
             "tile_behavior_start"
     );
     public static final Item TOKENIZER_WAND = register(
