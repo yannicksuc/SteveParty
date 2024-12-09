@@ -41,6 +41,17 @@ public class ModComponents {
             ComponentType.<Boolean>builder().codec(Codec.BOOL).build()
     );
 
+    public static final ComponentType<String> TB_START_BOUND_ENTITY = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of(Steveparty.MOD_ID, "bound-entity"),
+            ComponentType.<String>builder().codec(Codec.STRING).build()
+    );
+    public static final ComponentType<String> TB_START_OWNER = Registry.register(
+            Registries.DATA_COMPONENT_TYPE,
+            Identifier.of(Steveparty.MOD_ID, "owner"),
+            ComponentType.<String>builder().codec(Codec.STRING).build()
+    );
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

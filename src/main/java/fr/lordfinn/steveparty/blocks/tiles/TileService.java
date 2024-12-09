@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.blocks.tiles;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
-import fr.lordfinn.steveparty.items.tilebehaviors.TileBehavior;
+import fr.lordfinn.steveparty.items.tilebehaviors.TileBehaviorItem;
 import fr.lordfinn.steveparty.components.ModComponents;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
@@ -28,7 +28,7 @@ public class TileService {
             ItemStack stack = stacks.get(slotNumber);
 
             // Check if the item in the first slot is of type TileBehavior.
-            if (stack.getItem() instanceof TileBehavior) {
+            if (stack.getItem() instanceof TileBehaviorItem) {
                 TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR);
                 List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
                 tileDestinations = getDestinationsStatus(destinations, tileEntity.getWorld());

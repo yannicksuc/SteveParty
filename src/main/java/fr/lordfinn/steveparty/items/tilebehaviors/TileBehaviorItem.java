@@ -30,9 +30,9 @@ import java.util.List;
 import static fr.lordfinn.steveparty.components.TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR;
 import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
 
-public class TileBehavior extends Item implements TileOpener {
+public class TileBehaviorItem extends Item implements TileOpener {
     private long lastTimeItemHoldParticleUpdate = 0;
-    public TileBehavior(Settings settings) {
+    public TileBehaviorItem(Settings settings) {
         super(settings);
     }
 
@@ -118,7 +118,6 @@ public class TileBehavior extends Item implements TileOpener {
         List<BlockPos> destinations = component.destinations();
         if (!destinations.isEmpty()) {
             for (BlockPos pos : destinations) {
-                // Summon the particle at each position for the player
                 world.addParticle(HERE_PARTICLE,
                         pos.getX() + 0.5, pos.getY() + 2, pos.getZ() + 0.5,
                         0.0, 0.0, 0.0);

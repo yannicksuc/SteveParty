@@ -37,7 +37,7 @@ public class TokenMovementService {
     private static Vector3d calculateTargetPosition(PlayerEntity user, BlockPos targetPos) {
         BlockState blockState = user.getWorld().getBlockState(targetPos);
         double blockHeight = blockState.getCollisionShape(user.getWorld(), targetPos).getMax(Direction.Axis.Y);
-        return new Vector3d(targetPos.getX(), targetPos.getY() + blockHeight, targetPos.getZ());
+        return new Vector3d(targetPos.getX() + 0.5, targetPos.getY() + blockHeight, targetPos.getZ() + 0.5);
     }
 
     private static boolean isTooFar(double distance) {

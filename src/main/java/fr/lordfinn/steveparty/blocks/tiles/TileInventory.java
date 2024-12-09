@@ -6,6 +6,8 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.collection.DefaultedList;
 
+import java.awt.*;
+
 public interface  TileInventory extends Inventory {
     /**
      * Retrieves the item list of this inventory.
@@ -105,7 +107,7 @@ public interface  TileInventory extends Inventory {
      */
     @Override
     default void markDirty() {
-        // Override if you want behavior.
+
     }
 
     /**

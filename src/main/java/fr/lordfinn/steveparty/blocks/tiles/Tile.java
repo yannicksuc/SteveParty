@@ -1,9 +1,15 @@
 package fr.lordfinn.steveparty.blocks.tiles;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.blocks.tiles.behaviors.ATileBehavior;
+import fr.lordfinn.steveparty.blocks.tiles.behaviors.TileBehaviorFactory;
 import fr.lordfinn.steveparty.items.TileOpener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
@@ -19,7 +25,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.world.World;
@@ -31,6 +36,9 @@ import java.util.Objects;
 public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
     public static final MapCodec<Tile> CODEC = Block.createCodec(Tile::new);
     public static final EnumProperty<TileType> TILE_TYPE = EnumProperty.of("tile_type", TileType.class);
+
+    private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0.0, 0, 16.0, 2.0, 16.0);
+
 
 
     public Tile(Settings settings) {
@@ -45,7 +53,42 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
 
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, ShapeContext context) {
-        return VoxelShapes.cuboid(-0.5f, 0f, -0.5f, 1.5f, 0.15f, 1.5f);
+        return SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getRaycastShape(BlockState state, BlockView world, BlockPos pos) {
+        return SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getCameraCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getCullingShape(BlockState state) {
+        return SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getSidesShape(BlockState state, BlockView world, BlockPos pos) {
+        return SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return SHAPE;
+    }
+
+    @Override
+    protected boolean isShapeFullCube(BlockState state, BlockView world, BlockPos pos) {
+        return false;
+    }
+
+    @Override
+    protected VoxelShape getInsideCollisionShape(BlockState state, World world, BlockPos pos) {
+        return SHAPE;
     }
 
     @Override
@@ -67,8 +110,9 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
             ItemStack offHandStack = player.getOffHandStack();
 
             // check if the player is holding a TileOpener
-            if (!(mainHandStack.getItem() instanceof TileOpener) && !(offHandStack.getItem() instanceof TileOpener))
-                return ActionResult.PASS;
+            if (!(mainHandStack.getItem() instanceof TileOpener) && !(offHandStack.getItem() instanceof TileOpener)) {
+                return TileBehaviorFactory.get(state.get(TILE_TYPE)).onUse(state, world, pos, player, hit);
+            }
 
             NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
             if (screenHandlerFactory != null) {
@@ -102,7 +146,7 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
         if (state.getBlock() != newState.getBlock()) {
             TileEntity tileEntity = getTileEntity(world, pos);
             if (tileEntity != null) {
-                ItemScatterer.spawn(world, pos, tileEntity);
+                ItemScatterer.spawn(world, pos, tileEntity.getInventory());
                 // update comparators
                 world.updateComparators(pos,this);
             }
@@ -140,4 +184,25 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
         return null;
     }
 
+    public ItemStack getBehaviorItemstack(TileEntity tileEntity) {
+        return tileEntity.getActiveTileBehaviorItemStack();
+    }
+
+    @Override
+    public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
+        super.onSteppedOn(world, pos, state, entity);
+    }
+
+    @Override
+    protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+        if (!world.isClient) {
+            TileBehaviorFactory.get(state.get(TILE_TYPE)).onSteppedOn(world, pos, state, entity);
+        }
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        return TickableBlockEntity.getTicker(world);
+    }
 }
