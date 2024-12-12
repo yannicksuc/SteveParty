@@ -10,11 +10,14 @@ import net.minecraft.util.Identifier;
 public class ModParticles {
     public static final SimpleParticleType HERE_PARTICLE = FabricParticleTypes.simple();
     public static final SimpleParticleType ARROW_PARTICLE = FabricParticleTypes.simple();
+    public static final SimpleParticleType ENCHANTED_CIRCULAR_PARTICLE = FabricParticleTypes.simple();
 
     public static void initialize() {
         Registry.register(Registries.PARTICLE_TYPE, Identifier.of(Steveparty.MOD_ID, "here"),
                 HERE_PARTICLE);
         Registry.register(Registries.PARTICLE_TYPE, Identifier.of(Steveparty.MOD_ID, "arrow"),
                 ARROW_PARTICLE);
+        Registry.register(Registries.PARTICLE_TYPE, Identifier.of(Steveparty.MOD_ID, "enchanted_circular"),
+                ENCHANTED_CIRCULAR_PARTICLE);
     }
 }

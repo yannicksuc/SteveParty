@@ -20,6 +20,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -32,6 +33,9 @@ import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+
+import static net.minecraft.util.ActionResult.PASS;
+import static net.minecraft.util.ActionResult.SUCCESS;
 
 public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
     public static final MapCodec<Tile> CODEC = Block.createCodec(Tile::new);
@@ -57,41 +61,6 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
     }
 
     @Override
-    protected VoxelShape getRaycastShape(BlockState state, BlockView world, BlockPos pos) {
-        return SHAPE;
-    }
-
-    @Override
-    protected VoxelShape getCameraCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPE;
-    }
-
-    @Override
-    protected VoxelShape getCullingShape(BlockState state) {
-        return SHAPE;
-    }
-
-    @Override
-    protected VoxelShape getSidesShape(BlockState state, BlockView world, BlockPos pos) {
-        return SHAPE;
-    }
-
-    @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPE;
-    }
-
-    @Override
-    protected boolean isShapeFullCube(BlockState state, BlockView world, BlockPos pos) {
-        return false;
-    }
-
-    @Override
-    protected VoxelShape getInsideCollisionShape(BlockState state, World world, BlockPos pos) {
-        return SHAPE;
-    }
-
-    @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
         builder.add(TILE_TYPE, Properties.HORIZONTAL_FACING);
@@ -105,23 +74,26 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (!world.isClient) {
-            ItemStack mainHandStack = player.getMainHandStack();
-            ItemStack offHandStack = player.getOffHandStack();
+        return TileBehaviorFactory.get(state.get(TILE_TYPE)).onUse(state, world, pos, player, hit);
+    }
 
-            // check if the player is holding a TileOpener
-            if (!(mainHandStack.getItem() instanceof TileOpener) && !(offHandStack.getItem() instanceof TileOpener)) {
-                return TileBehaviorFactory.get(state.get(TILE_TYPE)).onUse(state, world, pos, player, hit);
-            }
-
-            NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
-            if (screenHandlerFactory != null) {
-                // With this call the server will request the client to open the appropriate Screenhandler
-                world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
-                player.openHandledScreen(screenHandlerFactory);
-            }
+    @Override
+    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (world.isClient) return SUCCESS;
+        ItemStack mainHandStack = player.getMainHandStack();
+        ItemStack offHandStack = player.getOffHandStack();
+        if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return onUse(state, world, pos, player, hit);
+        if (!(mainHandStack.getItem() instanceof TileOpener) && !(offHandStack.getItem() instanceof TileOpener)) {
+            return TileBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit);
         }
-        return ActionResult.SUCCESS;
+        NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
+        if (screenHandlerFactory != null) {
+            // With this call the server will request the client to open the appropriate Screenhandler
+            world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            player.openHandledScreen(screenHandlerFactory);
+            return SUCCESS;
+        }
+        return PASS;
     }
 
     @Override
@@ -136,7 +108,6 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
 
     @Override
     public BlockRenderType getRenderType(BlockState state) {
-        //With inheriting from BlockWithEntity this defaults to INVISIBLE, so we need to change that!
         return BlockRenderType.MODEL;
     }
 

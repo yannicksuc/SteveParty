@@ -35,6 +35,12 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
     //private final DefaultedList<ItemStack> items = DefaultedList.ofSize(16, ItemStack.EMPTY);
     private int ticks = 0;
 
+
+
+    public TileEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.TILE_ENTITY, pos, state);
+    }
+
     private final SimpleInventory inventory = new SimpleInventory(16) {
         @Override
         public void markDirty() {
@@ -73,11 +79,6 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
     }
 
-
-    public TileEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.TILE_ENTITY, pos, state);
-    }
-
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         Inventories.writeNbt(nbt, inventory.getHeldStacks(), wrapper);
@@ -92,11 +93,6 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         } catch (Exception e) {
             Steveparty.LOGGER.error("Failed to read NBT", e);
         }
-        if (getCachedState().get(TILE_TYPE) == TileType.START)
-            inventory.getHeldStacks().forEach(item -> {
-                Steveparty.LOGGER.info("item : {}", item);
-            });
-
     }
 
     public DefaultedList<ItemStack> getItems() {
@@ -181,4 +177,10 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         TileType tileType = determineTileType(stack);
         TileBehaviorFactory.get(tileType).tick((ServerWorld) this.world, this, stack, ticks);
     }
+    @Override
+    public @Nullable Object getRenderData() {
+        // this is the method from `RenderDataBlockEntity` class.
+        return this;
+    }
+
 }

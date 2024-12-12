@@ -61,6 +61,7 @@ public class ArrowParticle extends SpriteBillboardParticle {
         super.tick();
     }
 
+    @Override
     public Rotator getRotator() {
         return (quaternion, camera, tickDelta) -> quaternion.set(0, 0, 0, 1)
                 .rotateLocalX(calculateXAngle(this.direction.y))

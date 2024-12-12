@@ -3,54 +3,44 @@ package fr.lordfinn.steveparty.components;
 import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.component.ComponentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 public class ModComponents {
-    public static final ComponentType<TileBehaviorComponent> TILE_BEHAVIOR_COMPONENT = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "tile-behavior-component"),
-            ComponentType.<TileBehaviorComponent>builder().codec(TileBehaviorComponent.CODEC).build()
-    );
 
-    public static final ComponentType<MobEntityComponent> MOB_ENTITY_COMPONENT = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "mob-entity-component"),
-            ComponentType.<MobEntityComponent>builder().codec(MobEntityComponent.CODEC).build()
-    );
+    // Static method to register a component type
+    public static <T> ComponentType<T> registerComponent(String name, Codec<T> codec) {
+        return Registry.register(
+                Registries.DATA_COMPONENT_TYPE,
+                Identifier.of(Steveparty.MOD_ID, name),
+                ComponentType.<T>builder().codec(codec).build()
+        );
+    }
 
-    public static final ComponentType<BlockPos> BLOCK_POS = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "block-pos"),
-            ComponentType.<BlockPos>builder().codec(BlockPos.CODEC).build()
-    );
-
-    public static final ComponentType<Integer> ROLLING_VALUE = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "rolling-value"),
-            ComponentType.<Integer>builder().codec(Codec.INT).build()
-    );
-
-    public static final ComponentType<Boolean> IS_ROLLING = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "is-rolling"),
-            ComponentType.<Boolean>builder().codec(Codec.BOOL).build()
-    );
-
-    public static final ComponentType<String> TB_START_BOUND_ENTITY = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "bound-entity"),
-            ComponentType.<String>builder().codec(Codec.STRING).build()
-    );
-    public static final ComponentType<String> TB_START_OWNER = Registry.register(
-            Registries.DATA_COMPONENT_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "owner"),
-            ComponentType.<String>builder().codec(Codec.STRING).build()
-    );
+    // Component definitions using the registerComponent method
+    public static final ComponentType<TileBehaviorComponent> TILE_BEHAVIOR_COMPONENT =
+            registerComponent("tile-behavior-component", TileBehaviorComponent.CODEC);
+    public static final ComponentType<MobEntityComponent> MOB_ENTITY_COMPONENT =
+            registerComponent("mob-entity-component", MobEntityComponent.CODEC);
+    public static final ComponentType<BlockPos> BLOCK_POS =
+            registerComponent("block-pos", BlockPos.CODEC);
+    public static final ComponentType<Integer> ROLLING_VALUE =
+            registerComponent("rolling-value", Codec.INT);
+    public static final ComponentType<Boolean> IS_ROLLING =
+            registerComponent("is-rolling", Codec.BOOL);
+    public static final ComponentType<String> TB_START_BOUND_ENTITY =
+            registerComponent("bound-entity", Codec.STRING);
+    public static final ComponentType<String> TB_START_OWNER =
+            registerComponent("owner", Codec.STRING);
+    public static final ComponentType<Integer> TB_START_COLOR =
+            registerComponent("color", Codec.INT);
+    public static final ComponentType<ItemStack> SOCKETED_STORY =
+            registerComponent("socketed-story", ItemStack.CODEC);
+    public static final ComponentType<ItemStack> CATALOGUE =
+            registerComponent("catalogue", ItemStack.CODEC);
 
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
