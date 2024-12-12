@@ -2,13 +2,13 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [64, 64],
 	"textures": {
-		"1": "steveparty:block/party_controller_off"
+		"1": "steveparty:block/party_controller_off",
+		"particle": "steveparty:block/party_controller_particles"
 	},
 	"elements": [
 		{
 			"from": [0, 0, 0],
 			"to": [16, 2, 16],
-			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 0]},
 			"faces": {
 				"north": {"uv": [6.5, 10, 10.5, 10.5], "texture": "#1"},
 				"east": {"uv": [10, 7.5, 14, 8], "texture": "#1"},
@@ -19,8 +19,8 @@
 			}
 		},
 		{
-			"from": [4.0, 2, 4],
-			"to": [12.0, 8, 12],
+			"from": [4, 2, 4],
+			"to": [12, 8, 12],
 			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 8]},
 			"faces": {
 				"north": {"uv": [2.5, 9, 4.5, 10.5], "texture": "#1"},
@@ -30,8 +30,8 @@
 			}
 		},
 		{
-			"from": [1.0, 5.2655, -2],
-			"to": [15.0, 13.2655, 12.0],
+			"from": [1, 5.2655, -2],
+			"to": [15, 13.2655, 12],
 			"rotation": {"angle": 22.5, "axis": "x", "origin": [8, 0, 8]},
 			"faces": {
 				"north": {"uv": [4, 7, 7.5, 9], "texture": "#1"},
@@ -43,8 +43,8 @@
 			}
 		},
 		{
-			"from": [3.0, 13.2655, 0],
-			"to": [13.0, 15.2655, 10],
+			"from": [3, 13.2655, 0],
+			"to": [13, 15.2655, 10],
 			"rotation": {"angle": 22.5, "axis": "x", "origin": [8, 0, 8]},
 			"faces": {
 				"north": {"uv": [2, 10.5, 4.5, 11], "texture": "#1"},
@@ -121,7 +121,7 @@
 			"origin": [-3, 13, 5],
 			"color": 0,
 			"boneType": "",
-			"children": [0, 1, 2, 3, 4, 5, 6]
+			"children": [0, 1, 2, 3, 4, 5]
 		}
 	]
 }

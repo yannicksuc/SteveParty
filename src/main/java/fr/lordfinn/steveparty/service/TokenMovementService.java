@@ -74,7 +74,7 @@ public class TokenMovementService {
                 targetPos,
                 soundEvent,
                 SoundCategory.PLAYERS,
-                1.0F,
+                100,
                 1.0F
         );
     }

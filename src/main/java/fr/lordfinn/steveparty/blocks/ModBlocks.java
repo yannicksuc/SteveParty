@@ -16,6 +16,7 @@ public class ModBlocks {
     // Create and register the TILE block
     public static final Block TILE = register(Tile::new, Block.Settings.create().strength(4.0f), "tile", true);
     public static final Block PARTY_CONTROLLER = register(PartyController::new, Block.Settings.create().strength(4.0f), "party_controller", true);
+    public static final Block BIG_BOOK = register(BigBook::new, Block.Settings.create().strength(10.0f), "big_book", true);
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {
@@ -28,7 +29,6 @@ public class ModBlocks {
     }
 
     public static void registerBlocks() {
-        // This ensures that the TILE block is registered when the mod is initialized.
         System.out.println("Registering blocks...");
     }
 }

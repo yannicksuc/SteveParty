@@ -23,4 +23,9 @@ public class DiceRenderer extends GeoEntityRenderer<DiceEntity> {
         }
         return Identifier.of(Steveparty.MOD_ID, "textures/entity/dice/default_dice"+animatable.getRollValue()+".png");
     }
+
+    @Override
+    public boolean hasLabel(DiceEntity animatable, double distToCameraSq) {
+        return false;
+    }
 }

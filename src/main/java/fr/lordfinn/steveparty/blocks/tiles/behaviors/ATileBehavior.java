@@ -17,6 +17,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import static net.minecraft.util.ActionResult.PASS;
+import static net.minecraft.util.ActionResult.SUCCESS;
 
 public abstract class ATileBehavior {
     protected final TileType tileType;
@@ -63,6 +64,10 @@ public abstract class ATileBehavior {
     public void tick(ServerWorld world, TileEntity state, ItemStack type, int ticks) {}
 
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        return PASS;
+        return SUCCESS;
+    }
+
+    public ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        return SUCCESS;
     }
 }

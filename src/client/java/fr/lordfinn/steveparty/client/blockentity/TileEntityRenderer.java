@@ -38,7 +38,6 @@ public class TileEntityRenderer implements BlockEntityRenderer<TileEntity> {
         TileType tileType = entity.getCachedState().get(TILE_TYPE);
         ItemStack stack = entity.getActiveTileBehaviorItemStack();
         String owner = stack.get(TB_START_OWNER);
-        Steveparty.LOGGER.info("Type : {}", stack.get(TB_START_OWNER));
         if (tileType != TileType.START || owner == null) return;
 
         // Validate UUID

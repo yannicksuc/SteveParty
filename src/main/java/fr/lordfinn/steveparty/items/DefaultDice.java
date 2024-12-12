@@ -36,14 +36,12 @@ public class DefaultDice extends Item {
             if (diceEntity != null) {
                 diceEntity.setPosition(spawnPos.x, spawnPos.y + 0.5, spawnPos.z);
                 diceEntity.setNoGravity(true);
+                diceEntity.setOwner(player.getUuid());
                 world.spawnEntity(diceEntity);
-
-                // Apply velocity to the entity
-                Vec3d velocity = lookVec.multiply(0.5);
+                Vec3d velocity = lookVec.multiply(0.6);
                 diceEntity.setVelocity(velocity);
-                diceEntity.findTarget(MobEntity.class, TargetPredicate.DEFAULT);
+                diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
                 diceEntity.setRolling(true);
-                diceEntity.setCustomNameVisible(false);
             }
         }
 

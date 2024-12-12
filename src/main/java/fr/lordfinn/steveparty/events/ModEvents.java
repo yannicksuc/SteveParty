@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.DyeItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.ColorHelper;
@@ -32,10 +33,11 @@ public class ModEvents {
      * @param isCreative    Whether the player is in creative mode.
      * @param dyeItem       The dye item being used.
      * @param livingEntity  The mob being interacted with.
-     * @param heldItemStack The player's held item stack.
+     * @param itemstack The player's held item stack.
      */
-    private static void handleDyeInteraction(boolean isCreative, DyeItem dyeItem, LivingEntity livingEntity, net.minecraft.item.ItemStack heldItemStack) {
+    public static void handleDyeInteraction(boolean isCreative, DyeItem dyeItem, LivingEntity livingEntity, ItemStack itemstack) {
         // Get the RGB color of the dye
+        if (!livingEntity.isCustomNameVisible() || !livingEntity.hasCustomName()) return;
         int colorRgb = dyeItem.getColor().getSignColor();
 
         // Create a TextColor using the RGB value
@@ -50,7 +52,7 @@ public class ModEvents {
 
         // Consume one dye item if not in creative mode
         if (!isCreative) {
-            heldItemStack.decrement(1);
+            itemstack.decrement(1);
         }
     }
 }

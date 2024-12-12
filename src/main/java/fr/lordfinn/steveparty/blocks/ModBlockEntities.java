@@ -16,6 +16,18 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(TileEntity::new, ModBlocks.TILE).build(null)
     );
 
+    public static final BlockEntityType<BigBookEntity> BIG_BOOK_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "big_book_entity"),
+            FabricBlockEntityTypeBuilder.create(BigBookEntity::new, ModBlocks.BIG_BOOK).build(null)
+    );
+
+    public static final BlockEntityType<PartyControllerEntity> PARTY_CONTROLLER_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "party_controller_entity"),
+            FabricBlockEntityTypeBuilder.create(PartyControllerEntity::new, ModBlocks.PARTY_CONTROLLER).build(null)
+    );
+
     public static void initialize() {
     }
 }
