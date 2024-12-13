@@ -13,9 +13,8 @@ import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.screens.ModScreens;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +23,7 @@ public class Steveparty implements ModInitializer {
     public static final String MOD_ID = "steveparty";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static Steveparty Instance = null;
+    public static final TaskScheduler SCHEDULER = new TaskScheduler();
 
     @Override
     public void onInitialize() {

@@ -8,6 +8,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
@@ -77,7 +78,6 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext context) {
-        boolean isWaterlogged = context.getWorld().getFluidState(context.getBlockPos()).isStill();
         boolean isCatalogued = false;
         BlockEntity entity = context.getWorld().getBlockEntity(context.getBlockPos());
         if (entity instanceof PartyControllerEntity partyEntity) {
@@ -89,15 +89,46 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     }
 
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        if (world.isClient) return ActionResult.PASS;
+        ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
+        if (success != null) return success;
         return ActionResult.SUCCESS;
     }
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
+        if (stack.getItem() instanceof MiniGamesCatalogue) {
+            ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state);
+            if (success != null) return success;
+        }
+        return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
+    }
+
+
+    private static ActionResult.@Nullable Success toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state) {
+        PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
+        if (entity != null) {
+            boolean isCatalogued = entity.setCatalogue(empty);
+            world.setBlockState(pos, state.with(PartyController.CATALOGUED, isCatalogued), Block.NOTIFY_ALL);
+            return ActionResult.SUCCESS;
+        }
+        return null;
+    }
+
+    @Override
+    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
         if (!world.isClient) {
             updatePoweredState(state, world, pos);
+            if (state.get(POWERED)) {
+                PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
+                if (entity != null) {
+                    entity.generateGameSteps();
+                }
+            }
         }
     }
+
 
     private void updatePoweredState(BlockState state, World world, BlockPos pos) {
         boolean isPowered = world.isReceivingRedstonePower(pos);
@@ -135,19 +166,5 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PartyControllerEntity(pos, state);
-    }
-
-    @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
-        if (stack.getItem() instanceof MiniGamesCatalogue) {
-            PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
-            if (entity != null) {
-                boolean isCatalogued = entity.setCatalogue(stack.copyAndEmpty());
-                world.setBlockState(pos, state.with(PartyController.CATALOGUED, isCatalogued), Block.NOTIFY_ALL);
-                return ActionResult.SUCCESS;
-            }
-        }
-        return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
     }
 }
