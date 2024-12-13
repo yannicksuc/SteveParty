@@ -17,6 +17,7 @@ import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
 import static fr.lordfinn.steveparty.particles.ModParticles.ENCHANTED_CIRCULAR_PARTICLE;
+import static org.joml.Math.lerp;
 
 public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
 
@@ -31,38 +32,59 @@ public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
         return RenderLayer.getEntityTranslucent(getTextureLocation(animatable));
     }
 
+
     @Override
-    public void renderFinal(MatrixStack poseStack, BigBookEntity animatable, BakedGeoModel model, VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+    public void render(BigBookEntity animatable, float partialTick, MatrixStack poseStack, VertexConsumerProvider bufferSource, int packedLight, int packedOverlay) {
         World world = animatable.getWorld();
         PlayerEntity player = null;
         if (world != null)
             player = world.getClosestPlayer(animatable.getPos().getX(), animatable.getPos().getY(), animatable.getPos().getZ(), 6, false);
         if (player != null) {
-            float finalNewYaw = getFinalNewYaw(animatable, player);
-            model.getBone("bone").ifPresent(bone -> bone.setRotY((float) Math.toRadians(-finalNewYaw)));
-            if (!animatable.catalogue.isEmpty() && System.currentTimeMillis()> animatable.lastTime + 150) {
-                double distance = player.getPos().distanceTo(animatable.getPos().toCenterPos());
-                double particleSpeed1 = 0.01 + (Math.max(0, 6 - distance) / 6) * (0.25 - 0.01); // Range: 0.05 to 0.5
-                double particleSpeed2 = 0.01 + (Math.max(0, 6 - distance) / 6) * (0.35 - 0.01); // Range: 0.05 to 0.6
-                double particleSpeed3 = 0.01 + (Math.max(0, 6 - distance) / 6) * (0.2 - 0.01); // Range: 0.05 to 0.6
-                int interpolatedColor = getInterpolatedColor(distance);
+            float targetYaw = getFinalNewYaw(animatable, player);
 
-                summonParticle(animatable.getPos().toCenterPos().add(0,1.4,0), world, 1.7, interpolatedColor, particleSpeed1);
-                if (distance < 4)
-                    summonParticle(animatable.getPos().toCenterPos(), world, 1.2, interpolatedColor, particleSpeed2);
-                if (distance < 2)
-                    summonParticle(animatable.getPos().toCenterPos().add(0,0.7,0), world, 2.5, interpolatedColor,  particleSpeed3);
+            // Smooth transition for the yaw
+            if (animatable.currentYaw == null) {
+                animatable.currentYaw = targetYaw; // Initialize if null
+            } else {
+                float smoothingFactor = 0.1f; // Adjust for smoother/slower transition
+                animatable.currentYaw = lerp(animatable.currentYaw, targetYaw, smoothingFactor);
+            }
+
+            model.getBone("bone6").ifPresent(bone -> bone.setRotY((float) Math.toRadians(-animatable.currentYaw)));
+            if (!animatable.catalogue.isEmpty() && System.currentTimeMillis()> animatable.lastTime + 300) {
+                double distance = player.getPos().distanceTo(animatable.getPos().toCenterPos());
+                double particleSpeed1 = 0.01 + (Math.max(0, 6 - distance) / 6) * (0.4 - 0.01);
+
+                int darkColor = 0xb16714;
+                int mediumColor = 0xc59138;
+                int lightColor = 0xdec253;
+
+                summonParticle(animatable.getPos().toCenterPos().add(0,-0.25,0), world, 0.8, lightColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,0,0), world, 0.8, lightColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,0.25,0), world, 0.8, lightColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,0.5,0), world, 0.8, mediumColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,0.75,0), world, 0.8, mediumColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,1,0), world, 0.8, darkColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,1.25,0), world, 1.2, mediumColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,1.5,0), world, 1.2, lightColor, particleSpeed1);
+                summonParticle(animatable.getPos().toCenterPos().add(0,1.75,0), world, 1.2, lightColor, particleSpeed1);
+                if (distance < 3) {
+                    summonParticle(animatable.getPos().toCenterPos().add(0,1.25,0), world, 1.2, mediumColor, particleSpeed1);
+                    summonParticle(animatable.getPos().toCenterPos().add(0,1.5,0), world, 1.2, lightColor, particleSpeed1);
+                    summonParticle(animatable.getPos().toCenterPos().add(0,1.75,0), world, 1.2, lightColor, particleSpeed1);
+                }
                 animatable.lastTime = System.currentTimeMillis();
             }
         }
-        super.renderFinal(poseStack, animatable, model, bufferSource, buffer, partialTick, packedLight, packedOverlay, renderColor);
+        super.render(animatable, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
     }
 
     private static int getInterpolatedColor(double distance) {
         float factor = (float) Math.max(0, Math.min(1, (6 - distance) / 6));
 
         // Define your colors
-        int[] colors = {0x4CBAE7, 0xC080FB, 0xFF82E6, 0xFF1087};
+        //int[] colors = {0x4CBAE7, 0xC080FB, 0xFF82E6, 0xFF1087};
+        int[] colors = {0xede553, 0xd9c230, 0xe8b600};
 
         // Determine the current color range
         int colorIndex = (int) (factor * (colors.length - 1));
@@ -74,7 +96,7 @@ public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
 
     private void summonParticle(Vec3d position, World world, double distance, double color, double angularVelocity) {
 
-        world.addImportantParticle(ENCHANTED_CIRCULAR_PARTICLE, position.x, position.y, position.z,
+        world.addParticle(ENCHANTED_CIRCULAR_PARTICLE, position.x, position.y, position.z,
                 distance, color, angularVelocity);
     }
 
@@ -96,8 +118,9 @@ public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
 
     private static float getFinalNewYaw(BigBookEntity animatable, PlayerEntity player) {
         Vec3d playerPos = player.getPos();
-        double xDiff = playerPos.getX() - (animatable.getPos().getX() + 0.5);
-        double zDiff = playerPos.getZ() - (animatable.getPos().getZ() + 0.5);
+        Vec3d blockCenter = animatable.getPos().toCenterPos(); // Ensure center position is used
+        double xDiff = playerPos.getX() - blockCenter.getX();
+        double zDiff = playerPos.getZ() - blockCenter.getZ();
         return (float) ((float) Math.atan2(zDiff, xDiff) / Math.PI * 180);
     }
 }

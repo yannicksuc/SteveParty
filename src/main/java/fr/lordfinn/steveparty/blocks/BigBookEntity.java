@@ -29,9 +29,11 @@ import static fr.lordfinn.steveparty.components.ModComponents.registerComponent;
 public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
     protected static final RawAnimation NO_STORY_ANIM = RawAnimation.begin().thenLoop("no-story");
     protected static final RawAnimation STORY_ANIM = RawAnimation.begin().thenLoop("story");
+    protected static final RawAnimation STORY_CLOSED_ANIM = RawAnimation.begin().thenLoop("story-closed");
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     public ItemStack catalogue = ItemStack.EMPTY;
     public long lastTime = 0;
+    public Float currentYaw = null;
 
     public BigBookEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.BIG_BOOK_ENTITY, pos, state);
@@ -39,8 +41,10 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "no-story", 0, this::noStoryAnimController));
-        controllers.add(new AnimationController<>(this, "story", 0, this::storyAnimController));
+        controllers.add(new AnimationController<>(this, "no-story", 0, this::noStoryAnimController).transitionLength(0));
+        controllers.add(new AnimationController<>(this, "story", 20, this::storyAnimController).transitionLength(20));
+        controllers.add(new AnimationController<>(this, "story-closed", 20, this::storyClosedAnimController).transitionLength(20));
+
     }
 
     @Override
@@ -100,9 +104,19 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
         super.markDirty();
     }
 
+
+
+    private PlayState storyClosedAnimController(AnimationState<BigBookEntity> event) {
+        if (world != null && !catalogue.isEmpty() && world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) == null)
+            return event.setAndContinue(STORY_CLOSED_ANIM);
+        event.setAnimation(STORY_ANIM);
+        return PlayState.STOP;
+    }
+
     protected <T extends BigBookEntity> PlayState storyAnimController(final AnimationState<T> event) {
-        if (!catalogue.isEmpty())
+        if (!catalogue.isEmpty() && (world == null || world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) != null))
          return event.setAndContinue(STORY_ANIM);
+        event.setAnimation(STORY_CLOSED_ANIM);
         return PlayState.STOP;
     }
 

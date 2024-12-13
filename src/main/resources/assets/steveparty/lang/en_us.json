@@ -1,7 +1,7 @@
 {
   "block.steveparty.tile": "Tile",
   "block.steveparty.party_controller": "Party Controller",
-  "block.steveparty.big_book": "Big Book of Teleportation",
+  "block.steveparty.big_book": "Teleportation pad",
   "item.steveparty.wrench": "Wrench",
   "item.steveparty.tile_behavior": "Tile Behavior",
   "item.steveparty.tile_behavior_start": "Tile Behavior Start",
@@ -9,6 +9,7 @@
   "item.steveparty.plunger": "Plunger",
   "item.steveparty.default_dice": "Default Dice",
   "item.steveparty.garnet_crystal_ball": "Garnet Crystal Ball",
+  "item.steveparty.mini_games_catalogue": "Mini Games Catalogue",
   "itemgroup.steveparty": "Steve Party",
   "message.steveparty.removed_position": "Removed position: ({0}, {1}, {2})",
   "message.steveparty.added_position": "Added position: ({0}, {1}, {2})",

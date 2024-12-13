@@ -24,13 +24,6 @@ public class TokenService extends PersistentState {
     private final Map<UUID, TokenData> tokenOwners = new HashMap<>();
     public static final Identifier TOKEN_UPDATE_PACKET = Identifier.of(Steveparty.MOD_ID, "token_update");
 
-
-    /**
-     * Définit le propriétaire d'une entité et sauvegarde cette information.
-     *
-     * @param mobEntity L'entité à laquelle attribuer un propriétaire.
-     * @param player    Le joueur à enregistrer comme propriétaire.
-     */
     public void setOwner(UUID entityId, UUID ownerUUID) {
         if (this.tokenOwners.containsKey(entityId)) {
             this.tokenOwners.get(entityId).setOwnerUuid(ownerUUID);

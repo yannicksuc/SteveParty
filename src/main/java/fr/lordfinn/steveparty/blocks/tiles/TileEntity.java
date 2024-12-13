@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.tiles;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.blocks.tiles.behaviors.ATileBehavior;
 import fr.lordfinn.steveparty.blocks.tiles.behaviors.TileBehaviorFactory;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.tilebehaviors.TileBehaviorItem;
@@ -100,13 +101,13 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
     }
 
     private TileType determineTileType(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return TileType.DEFAULT;
+        if (stack == null || stack.isEmpty()) {
+            return null;
         }
         if (stack.getItem() == ModItems.TILE_BEHAVIOR_START) {
             return TileType.START;
         }
-        return TileType.DEFAULT;
+        return null;
     }
 
     public void updateTileSkin() {
@@ -117,7 +118,7 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
 
             // Update the block state if necessary
             BlockState state = this.getCachedState();
-            if (state.getBlock() instanceof Tile && state.get(TILE_TYPE) != tileType) {
+            if (state.getBlock() instanceof Tile && tileType != null && state.get(TILE_TYPE) != tileType) {
                 this.world.setBlockState(this.pos, state.with(TILE_TYPE, tileType));
             }
         }
@@ -127,12 +128,17 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         if (this.world == null) {
             return ItemStack.EMPTY;
         }
-
-        int redstonePower = this.world.getReceivedRedstonePower(this.pos); // Get redstone signal strength
-        int slot = redstonePower; // Map signal (0–15) to slot (0–15)
-
-        // Get the stack in the corresponding slot
+        int slot = this.world.getReceivedRedstonePower(this.pos);
         return inventory.getStack(slot);
+    }
+
+    public ATileBehavior getTileBehavior() {
+        ItemStack stack = getActiveTileBehaviorItemStack();
+        TileType tileType = determineTileType(stack);
+        if (tileType == null)
+            return null;
+
+        return TileBehaviorFactory.get(tileType);
     }
 
     @Override
@@ -175,7 +181,8 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         ticks++;
         ItemStack stack = getActiveTileBehaviorItemStack();
         TileType tileType = determineTileType(stack);
-        TileBehaviorFactory.get(tileType).tick((ServerWorld) this.world, this, stack, ticks);
+        if (tileType != null)
+            TileBehaviorFactory.get(tileType).tick((ServerWorld) this.world, this, stack, ticks);
     }
     @Override
     public @Nullable Object getRenderData() {
