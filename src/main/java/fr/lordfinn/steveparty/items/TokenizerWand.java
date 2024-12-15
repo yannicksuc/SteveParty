@@ -118,7 +118,7 @@ public class TokenizerWand extends Item {
             return;
         }
 
-        TokenMovementService.moveEntity(mob, targetPos, user);
+        TokenMovementService.moveEntity(mob, targetPos);
     }
 
     @Nullable

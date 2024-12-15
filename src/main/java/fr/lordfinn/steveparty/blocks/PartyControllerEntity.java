@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.tiles.Tile;
 import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
 import fr.lordfinn.steveparty.blocks.tiles.TileType;
+import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.items.MiniGamesCatalogue;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -20,6 +21,7 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -40,6 +42,13 @@ public class PartyControllerEntity extends BlockEntity {
 
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
+
+        DiceRollEvent.EVENT.register((diceEntity, owner, rollValue) -> {
+            if (diceEntity.getWorld().isClient) return ActionResult.PASS;
+            if (players.contains(owner)) {
+            }
+            return ActionResult.SUCCESS;
+        });
     }
 
     @Override

@@ -79,7 +79,6 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
-        Steveparty.LOGGER.info("READ NBT");
         Optional<ItemStack> catalogueNbt = Optional.empty();
         if (nbt.contains("catalogue", NbtElement.COMPOUND_TYPE)) { // Ensure "catalogue" exists and is a compound
             catalogueNbt = ItemStack.fromNbt(wrapper, nbt.get("catalogue"));
@@ -100,7 +99,6 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
         if (this.world != null && !this.world.isClient && this.world instanceof ServerWorld) {
             this.world.updateListeners(this.pos, this.getCachedState(), this.getCachedState(), 3);
         }
-        Steveparty.LOGGER.info("MARK DIRTY CALLED");
         super.markDirty();
     }
 

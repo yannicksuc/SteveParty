@@ -27,6 +27,7 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 import java.util.List;
 
+import static fr.lordfinn.steveparty.blocks.tiles.TileEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR;
 import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
 
@@ -83,7 +84,7 @@ public class TileBehaviorItem extends Item implements TileOpener {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, DEFAULT_TILE_BEHAVIOR);
         Entity holder = stack.getHolder();
-        List<TileDestination> tileDestinations = TileService.getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
+        List<TileDestination> tileDestinations = getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
 
         if (!tileDestinations.isEmpty()) {
             // Add a heading for the destinations with a different color

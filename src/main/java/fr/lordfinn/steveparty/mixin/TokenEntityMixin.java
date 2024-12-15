@@ -1,6 +1,10 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
+import fr.lordfinn.steveparty.events.TileReachedEvent;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
@@ -24,6 +28,8 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     @Unique
     private static final TrackedData<Boolean> TOKENIZED = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.BOOLEAN);
     @Unique
+    private static final TrackedData<Integer> NB_STEPS = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.INTEGER);
+    @Unique
     private Vec3d targetPosition;
     @Unique
     private double targetPositionSpeed;
@@ -38,6 +44,7 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void addTokenizedField(DataTracker.Builder builder, CallbackInfo ci) {
         builder.add(TOKENIZED, false);
+        builder.add(NB_STEPS, 0);
     }
 
     public boolean steveparty$isTokenized() {
@@ -61,11 +68,15 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
         if (nbt.contains("Tokenized", 99)) {
             this.steveparty$setTokenized(nbt.getBoolean("Tokenized"));
         }
+        if (nbt.contains("NbSteps", 99)) {
+            this.steveparty$setNbSteps(nbt.getInt("NbSteps"));
+        }
     }
 
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     private void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
         nbt.putBoolean("Tokenized", this.steveparty$isTokenized());
+        nbt.putInt("NbSteps", this.steveparty$getNbSteps());
     }
 
     /**
@@ -78,12 +89,20 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
         this.targetPositionSpeed = speed;
     }
 
+    public void steveparty$setNbSteps(int step) {
+        this.dataTracker.set(NB_STEPS, step);
+    }
+
+    public int steveparty$getNbSteps() {
+        return this.dataTracker.get(NB_STEPS);
+    }
+
     /**
      * Called every tick to handle manual movement toward the target.
      */
     @Inject(method = "tick", at = @At("TAIL"))
     private void onTick(CallbackInfo ci) {
-        if (!this.getWorld().isClient && this.targetPosition != null) {
+        if (this.targetPosition != null && !this.getWorld().isClient) {
             Vec3d currentPosition = this.getPos();
             Vec3d direction = targetPosition.subtract(currentPosition).normalize();
 
@@ -93,7 +112,11 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
 
             // Check if the entity has reached the target (with a small tolerance).
             if (currentPosition.squaredDistanceTo(targetPosition) < targetPositionSpeed) {
-                this.targetPosition = null; // Reset the target once reached.
+                this.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
+                BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos().down());
+                this.targetPosition = null;
+                TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this,
+                        (blockEntity instanceof TileEntity) ? (TileEntity) blockEntity : null);
             }
         }
     }

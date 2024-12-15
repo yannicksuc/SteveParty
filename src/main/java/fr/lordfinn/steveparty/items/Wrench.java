@@ -22,12 +22,15 @@ import net.minecraft.world.World;
 import org.joml.Vector3f;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static fr.lordfinn.steveparty.components.ModComponents.BLOCK_POS;
+import static fr.lordfinn.steveparty.service.TokenMovementService.displayDestinations;
 
 public class Wrench extends Item implements TileOpener {
-    private long lastTimeItemHoldParticleUpdate = 0;
+    private final List<UUID> holders = new ArrayList<>();
 
     public Wrench(Settings settings) {
         super(settings);
@@ -62,11 +65,13 @@ public class Wrench extends Item implements TileOpener {
 
     private void unbindWrench(PlayerEntity player, ItemStack stack) {
         stack.remove(BLOCK_POS);
+        holders.remove(player.getUuid());
         sendMessageToPlayer("Wrench not bound anymore", player);
     }
 
     private void bindWrench(BlockPos pos, PlayerEntity player, ItemStack stack) {
         stack.set(BLOCK_POS, pos);
+        holders.remove(player.getUuid());
         sendMessageToPlayer("Wrench bound to tile at " + pos, player);
     }
 
@@ -79,33 +84,14 @@ public class Wrench extends Item implements TileOpener {
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
         if (entity.getWorld().isClient)
             return;
-        //Steveparty.LOGGER.info("TICK");
         if (!selected || !(entity instanceof ServerPlayerEntity player) || !(stack.get(BLOCK_POS) instanceof BlockPos blockPos))
             return;
         TileEntity boundTile = Tile.getTileEntity(world, blockPos);
-        //Steveparty.LOGGER.info("Bound tile: {} lastTimeItemHoldParticleUpdate: {} currentTimeMillis: {}", boundTile, lastTimeItemHoldParticleUpdate, System.currentTimeMillis());
-        if (boundTile == null || lastTimeItemHoldParticleUpdate + 1000 > System.currentTimeMillis())
+        if (boundTile == null || holders.contains(player.getUuid()))
             return;
-        lastTimeItemHoldParticleUpdate = System.currentTimeMillis();
-        List<TileDestination> tileDestinations = TileService.getCurrentDestinations(boundTile, 0);
-        if (!tileDestinations.isEmpty()) {
-            for (TileDestination destination : tileDestinations) {
-                // Summon the particle at each position for the player
-                BlockPos offset = destination.position().subtract(boundTile.getPos());
-                Vector3f normalizedOffset = new Vector3f(offset.getX(), offset.getY(), offset.getZ()).normalize().mul(1.5f);
-
-                Color color = destination.isTile() ? Color.GREEN : Color.RED;
-
-                Vec3d encodedVelocity = ParticleUtils.encodeVelocity(
-                        color,
-                        offset.getX() - (normalizedOffset.x() * 2),
-                        offset.getY() - (normalizedOffset.y() * 2),
-                        offset.getZ() - (normalizedOffset.z() * 2));
-                ServerPlayNetworking.send(player, new ArrowParticlesPayload(new Vec3d(boundTile.getPos().getX() + 0.5 + normalizedOffset.x(),
-                        boundTile.getPos().getY() + 0.6 + normalizedOffset.y(),
-                        boundTile.getPos().getZ() + 0.5 + normalizedOffset.z()), encodedVelocity));
-            }
-        }
+        holders.add(player.getUuid());
+        List<TileDestination> tileDestinations = TileEntity.getCurrentDestinations(boundTile);
+        displayDestinations(tileDestinations, blockPos, List.of(player), world, () -> player.isHolding(this) && holders.contains(player.getUuid()), () -> holders.remove(player.getUuid()));
         super.inventoryTick(stack, world, entity, slot, true);
     }
 }
