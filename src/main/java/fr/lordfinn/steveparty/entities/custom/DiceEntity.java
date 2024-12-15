@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -139,6 +140,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     protected void pickRollValue() {
         this.setRollValue(getRandomDiceValue());
+        this.getOwner().ifPresent(owner -> {
+            DiceRollEvent.EVENT.invoker().onRoll(this, owner, this.getRollValue());
+        });
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
