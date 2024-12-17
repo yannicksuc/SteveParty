@@ -1,11 +1,13 @@
 package fr.lordfinn.steveparty.blocks.tiles;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.tiles.behaviors.ATileBehavior;
 import fr.lordfinn.steveparty.blocks.tiles.behaviors.TileBehaviorFactory;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
+import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.tilebehaviors.TileBehaviorItem;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
@@ -13,6 +15,8 @@ import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
@@ -26,10 +30,12 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -130,6 +136,46 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         }
     }
 
+    public Boolean toggleDestinations(ServerPlayerEntity holder) {
+        if (world == null) return null;
+        List<DirectionDisplayEntity> e = getCurrentDestinations();
+        if (e.isEmpty()) {
+            displayDestinations(holder);
+            return true;
+        }
+        hideDestinations(e);
+        return false;
+    }
+
+
+    public void displayDestinations(ServerPlayerEntity holder, List<TileDestination> destinations) {
+        if (destinations.isEmpty()) return;
+        for (TileDestination destination : destinations) {
+            new DirectionDisplayEntity(world, destination, this.getPos(), holder);
+        }
+    }
+
+    public void displayDestinations(ServerPlayerEntity holder) {
+        List<TileDestination> destinations = getCurrentDestinations(this);
+        displayDestinations(holder, destinations);
+    }
+
+    public void hideDestinations() {
+        if (world == null) return;
+        List<DirectionDisplayEntity> e = getCurrentDestinations();
+        if (e.isEmpty()) return;
+        hideDestinations(e);
+    }
+
+    private void hideDestinations(List<DirectionDisplayEntity> e) {
+        e.forEach(entity -> {if (entity.getTileOrigin().equals(this.getPos())) entity.remove(Entity.RemovalReason.DISCARDED);});
+    }
+
+    private List<DirectionDisplayEntity> getCurrentDestinations() {
+        if (world == null) return new ArrayList<>();
+        return world.getEntitiesByClass(DirectionDisplayEntity.class, Box.of(this.getPos().toCenterPos(), 4, 4, 4), entity -> entity instanceof DirectionDisplayEntity);
+    }
+
     public ItemStack getActiveTileBehaviorItemStack() {
         if (this.world == null) {
             return ItemStack.EMPTY;
@@ -162,7 +208,10 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
     @Override
     public void markDirty() {
         super.markDirty();
-        if (this.world != null &&!this.world.isClient && this.world instanceof ServerWorld) {
+        if (this.world.isClient) {
+            world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), 3);
+        }
+        if (this.world != null && !this.world.isClient && this.world instanceof ServerWorld) {
             ((ServerWorld) this.world).getServer().submit(this::updateTileSkin);
         }
     }
@@ -234,5 +283,17 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         BlockState blockState = world.getBlockState(pos);
         if (blockState == null) return false;
         return blockState.getBlock() instanceof Tile;
+    }
+
+    public List<MobEntity> getTokensOnMe() {
+        List<MobEntity> tokens = new ArrayList<>();
+        if (this.world != null) {
+            for (MobEntity entity : ((ServerWorld) this.world).getEntitiesByClass(MobEntity.class, Box.of(this.getPos().toCenterPos(), 1, 1, 1), entity -> entity instanceof MobEntity)) {
+                if (entity instanceof TokenizedEntityInterface && ((TokenizedEntityInterface) entity).steveparty$isTokenized()) {
+                    tokens.add(entity);
+                }
+            }
+        }
+        return tokens;
     }
 }

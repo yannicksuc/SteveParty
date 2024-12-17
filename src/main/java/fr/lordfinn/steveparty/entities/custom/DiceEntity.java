@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.entities.custom;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
+import fr.lordfinn.steveparty.utils.MessageUtils;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.component.type.FireworkExplosionComponent;
@@ -143,6 +144,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.getOwner().ifPresent(owner -> {
             DiceRollEvent.EVENT.invoker().onRoll(this, owner, this.getRollValue());
         });
+        if (this.getWorld() instanceof ServerWorld)
+            MessageUtils.sendToNearby(this.getServer(), this.getPos(), 20, String.valueOf(this.getRollValue()), MessageUtils.MessageType.TITLE);
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -260,6 +263,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 return true;
             }
             setRolling(!isRolling());
+
             world.playSound(
                     null,
                     this.getPos().x,this.getPos().y,this.getPos().z,

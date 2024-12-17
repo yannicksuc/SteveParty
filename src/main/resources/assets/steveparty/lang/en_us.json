@@ -18,5 +18,7 @@
   "tooltip.steveparty.destination_position": "  - ({0}, {1}, {2})",
   "tooltip.steveparty.no_destinations": "No destinations set.",
   "effect.steveparty.squish": "Squishing",
-  "entity.steveparty.dice": "Default Dice"
+  "entity.steveparty.dice": "Default Dice",
+  "message.steveparty.steps_remaining_for": "%d steps remaining for %s",
+  "message.steveparty.arrived_at_destination": "%s as arrived at destination"
 }

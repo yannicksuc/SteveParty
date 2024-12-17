@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -13,23 +12,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
-import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3d;
 
-import java.util.List;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.components.ModComponents.MOB_ENTITY_COMPONENT;
@@ -46,7 +38,7 @@ public class TokenizerWand extends Item {
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (entity instanceof MobEntity mob) {
             if (!((TokenizedEntityInterface) mob).steveparty$isTokenized()) {
-                tokenizeEntity(mob);
+                tokenizeEntity(mob, user);
             } else {
                 String uuid = entity.getUuidAsString();
                 user.getMainHandStack().set(MOB_ENTITY_COMPONENT, new MobEntityComponent(uuid));
@@ -57,18 +49,13 @@ public class TokenizerWand extends Item {
         return super.useOnEntity(stack, user, entity, hand);
     }
 
-    private void tokenizeEntity(MobEntity mob) {
+    private void tokenizeEntity(MobEntity mob, PlayerEntity user) {
         if (!mob.getWorld().isClient) {
             ((TokenizedEntityInterface) mob).steveparty$setTokenized(true);
-            mob.clearGoalsAndTasks();
-            mob.setAiDisabled(true);
-            mob.setInvulnerable(true);
-            mob.setTarget(null);
-
+            ((TokenizedEntityInterface) mob).steveparty$setTokenOwner(user);
             // Add effects
             mob.addStatusEffect(new StatusEffectInstance(SQUISHED, 130, 13)); //10 will be a height of 1 block
             mob.addStatusEffect(new StatusEffectInstance(LEVITATION, 130, 1));
-
             // Play sounds
             playSounds(mob);
         }

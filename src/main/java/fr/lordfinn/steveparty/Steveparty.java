@@ -17,6 +17,8 @@ import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,10 +28,13 @@ public class Steveparty implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static Steveparty Instance = null;
     public static final TaskScheduler SCHEDULER = new TaskScheduler();
+    public static MinecraftServer SERVER = null;
 
     @Override
     public void onInitialize() {
         Instance = this;
+        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+        ServerLifecycleEvents.SERVER_STOPPED.register(this::onServerStopped);
         ModSounds.initialize();
         ModParticles.initialize();
         ModBlocks.registerBlocks();
@@ -46,6 +51,14 @@ public class Steveparty implements ModInitializer {
 
         new TokenMovementService();
         System.out.println("StevePartyMod initialized and blocks registered!");
+    }
+
+    private void onServerStopped(MinecraftServer minecraftServer) {
+        SERVER = minecraftServer;
+    }
+
+    private void onServerStarted(MinecraftServer minecraftServer) {
+        SERVER = null;
     }
 
 }
