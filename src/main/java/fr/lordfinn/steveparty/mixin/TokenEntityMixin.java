@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.mixin;
 
+import com.sun.jna.platform.win32.WinNT;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
@@ -11,6 +12,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -22,11 +24,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Mixin(MobEntity.class)
 public abstract class TokenEntityMixin extends Entity implements TokenizedEntityInterface {
 
     @Unique
     private static final TrackedData<Boolean> TOKENIZED = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.BOOLEAN);
+    @Unique
+    private static final TrackedData<Optional<UUID>> TOKEN_OWNER = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     @Unique
     private static final TrackedData<Integer> NB_STEPS = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique
@@ -44,11 +51,28 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     @Inject(method = "initDataTracker", at = @At("TAIL"))
     private void addTokenizedField(DataTracker.Builder builder, CallbackInfo ci) {
         builder.add(TOKENIZED, false);
+        builder.add(TOKEN_OWNER, Optional.empty());
         builder.add(NB_STEPS, 0);
     }
 
     public boolean steveparty$isTokenized() {
         return this.dataTracker.get(TOKENIZED);
+    }
+
+    public void steveparty$setTokenOwner(PlayerEntity owner) {
+        if (!this.steveparty$isTokenized() && owner != null) {
+            steveparty$setTokenized(true);
+        }
+        if (owner != null) {
+            this.dataTracker.set(TOKEN_OWNER, Optional.of(owner.getUuid()));
+        }
+    }
+
+    public void steveparty$setTokenOwner(UUID owner) {
+        if (!this.steveparty$isTokenized() && owner != null) {
+            steveparty$setTokenized(true);
+        }
+        this.dataTracker.set(TOKEN_OWNER, Optional.ofNullable(owner));
     }
 
     public void steveparty$setTokenized(boolean tokenized) {
@@ -60,7 +84,12 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
             mob.clearGoalsAndTasks();
             mob.setTarget(null);
         }
+        mob.setCustomNameVisible(tokenized);
         this.dataTracker.set(TOKENIZED, tokenized);
+    }
+
+    public UUID steveparty$getTokenOwner() {
+        return this.dataTracker.get(TOKEN_OWNER).orElse(null);
     }
 
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
@@ -71,12 +100,25 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
         if (nbt.contains("NbSteps", 99)) {
             this.steveparty$setNbSteps(nbt.getInt("NbSteps"));
         }
+
+        if (nbt.contains("TokenOwner", 11)) { // Use tag type 11 for UUID
+            UUID tokenOwner = nbt.getUuid("TokenOwner");
+            this.steveparty$setTokenOwner(tokenOwner);
+        } else {
+            this.steveparty$setTokenOwner((UUID) null); // Clear TOKEN_OWNER if missing
+        }
     }
 
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     private void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
         nbt.putBoolean("Tokenized", this.steveparty$isTokenized());
         nbt.putInt("NbSteps", this.steveparty$getNbSteps());
+        UUID tokenOwner = this.steveparty$getTokenOwner();
+        if (tokenOwner != null) { // Safely check if it's not null
+            nbt.putUuid("TokenOwner", tokenOwner);
+        } else {
+            nbt.remove("TokenOwner"); // Remove the key if the value is null
+        }
     }
 
     /**

@@ -1,17 +1,26 @@
 package fr.lordfinn.steveparty.client.payloads;
 
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
 import fr.lordfinn.steveparty.client.PartyService;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.EnchantedCircularParticlePayload;
 import fr.lordfinn.steveparty.payloads.ArrowParticlesPayload;
 import fr.lordfinn.steveparty.payloads.TokenPayload;
+import fr.lordfinn.steveparty.payloads.UpdateColoredTilePayload;
 import fr.lordfinn.steveparty.service.TokenData;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.joml.Vector2d;
 import org.joml.Vector3f;
 
 import java.util.Map;
 import java.util.UUID;
 
+import static fr.lordfinn.steveparty.blocks.tiles.Tile.getTileEntity;
 import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
 import static fr.lordfinn.steveparty.particles.ModParticles.ENCHANTED_CIRCULAR_PARTICLE;
 
@@ -32,6 +41,16 @@ public class PayloadReceivers {
         {
             Map<UUID, TokenData> tokens = payload.tokens();
             PartyService.tokens.putAll(tokens);
+        }));
+
+        ClientPlayNetworking.registerGlobalReceiver(UpdateColoredTilePayload.ID, (payload, context)  -> context.client().execute(() -> {
+            BlockPos pos = payload.position();
+            World world = context.player().getWorld();
+            TileEntity tileEntity = getTileEntity(world, pos);
+            if (tileEntity == null) return;
+            ItemStack behaviorItemstack = tileEntity.getActiveTileBehaviorItemStack();
+            behaviorItemstack.set(ModComponents.TB_START_COLOR, payload.color());
+            MinecraftClient.getInstance().worldRenderer.updateBlock(world, pos, world.getBlockState(pos), world.getBlockState(pos), 3);
         }));
     }
 

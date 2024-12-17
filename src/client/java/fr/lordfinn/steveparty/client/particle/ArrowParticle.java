@@ -10,6 +10,8 @@ import org.joml.Vector3d;
 import org.joml.Vector3f;
 
 import static fr.lordfinn.steveparty.particles.ParticleUtils.getFadingAlpha;
+import static fr.lordfinn.steveparty.utils.QuaternionsUtils.dirToXAngle;
+import static fr.lordfinn.steveparty.utils.QuaternionsUtils.dirToYAngle;
 
 public class ArrowParticle extends SpriteBillboardParticle {
     private Vector3f direction = new Vector3f(0);
@@ -57,28 +59,15 @@ public class ArrowParticle extends SpriteBillboardParticle {
             this.y += direction.y * movementStep;
             this.z += direction.z * movementStep;
         }
-        this.alpha = getFadingAlpha(age, maxAge, 0.2f, 0.2f);
+        this.alpha = getFadingAlpha(age, maxAge, 0.2f, 0.2f) / 2;
         super.tick();
     }
 
     @Override
     public Rotator getRotator() {
         return (quaternion, camera, tickDelta) -> quaternion.set(0, 0, 0, 1)
-                .rotateLocalX(calculateXAngle(this.direction.y))
-                .rotateLocalY(calculateYAngle(-this.direction.x, -this.direction.z));
-    }
-
-    public static float calculateYAngle(double x, double z) {
-        double angle = Math.PI - Math.atan2(z, x) - 90 * Math.PI / 180;
-        if (angle < 0) {
-            angle += 2 * Math.PI;
-        }
-        return (float) angle;
-    }
-
-    public static float calculateXAngle(double y) {
-        double angle = 90 * y - 90;
-        return (float) Math.toRadians(angle);
+                .rotateLocalX(dirToXAngle(this.direction.y))
+                .rotateLocalY(dirToYAngle(-this.direction.x, -this.direction.z));
     }
 
     @Override

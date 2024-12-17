@@ -1,34 +1,30 @@
 package fr.lordfinn.steveparty.service;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.tiles.Tile;
 import fr.lordfinn.steveparty.blocks.tiles.TileDestination;
 import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
+import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
-import fr.lordfinn.steveparty.particles.ParticleUtils;
-import fr.lordfinn.steveparty.payloads.ArrowParticlesPayload;
-import fr.lordfinn.steveparty.utils.TaskScheduler;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.util.math.*;
 import org.joml.Vector3d;
-import org.joml.Vector3f;
 
-import java.awt.*;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
+
+import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 
 public class TokenMovementService {
 
@@ -37,30 +33,87 @@ public class TokenMovementService {
             if (entity.getWorld().isClient) return ActionResult.PASS;
             int nbSteps = ((TokenizedEntityInterface)entity).steveparty$getNbSteps();
             if (nbSteps == 0) return ActionResult.PASS;
-            moveEntityOnBoard(entity, nbSteps);
+            moveEntityOnBoard(entity, nbSteps - 1);
+            return ActionResult.SUCCESS;
+        });
+
+        DiceRollEvent.EVENT.register((dice, ownerUUID, rollValue) -> {
+            double distance = -1d;
+            MobEntity chosenToken = null;
+            ServerWorld world = (ServerWorld) dice.getWorld();
+            if (world == null) return ActionResult.PASS;
+            for (Entity entity :  world.iterateEntities()) {
+                if (entity instanceof MobEntity token) {
+                    if (((TokenizedEntityInterface)entity).steveparty$getTokenOwner() != null && ((TokenizedEntityInterface)entity).steveparty$getNbSteps() == 0) {
+                        if (((TokenizedEntityInterface)entity).steveparty$getTokenOwner().equals(ownerUUID)) { //TODO Check for the current player when party as started
+                            double newDistance = dice.getPos().distanceTo(entity.getPos());
+                            if (distance == -1d || (newDistance < distance)) {
+                                chosenToken = token;
+                                distance = newDistance;
+                            }
+                        }
+                    }
+                }
+            }
+            if (chosenToken == null) return ActionResult.PASS;
+            //Add small delay so the players can appreciate the value of the dice
+            MobEntity finalChosenToken = chosenToken;
+            SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(finalChosenToken, rollValue));
             return ActionResult.SUCCESS;
         });
     }
 
+    private static Box getNearbyBox(ServerCommandSource source) {
+        return Box.of(source.getPosition(), 100, 100, 100);
+    }
+
     public static void moveEntityOnBoard(MobEntity mob, int rollNumber) {
-        if (rollNumber == 0) return;
+        ((TokenizedEntityInterface) mob).steveparty$setNbSteps(rollNumber);
+        if (rollNumber == 0) {
+            MessageUtils.sendToNearby(mob.getServer(), mob.getPos(), 100,
+                    Text.translatable("message.steveparty.arrived_at_destination", mob.getCustomName()),
+                    MessageUtils.MessageType.ACTION_BAR);
+            return;
+        }
         TileEntity tileEntity = Tile.getTileEntity(mob.getWorld(), mob.getBlockPos());
         if (tileEntity == null) return;
+        //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
+
+        MessageUtils.sendToNearby( mob.getServer(), mob.getPos(), 100,
+                Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName())
+                , MessageUtils.MessageType.ACTION_BAR);
 
         List<TileDestination> destinations = TileEntity.getCurrentDestinations(tileEntity).stream().filter(TileDestination::isTile).toList();
         if (destinations.size() > 1) {
-            Steveparty.LOGGER.info("Multiple destinations");
-            displayDestinations(destinations, mob.getBlockPos(), null,
-                    mob.getWorld(), () -> mob.getWorld().getPlayers().stream().anyMatch(player -> isWithinDistance(mob.getBlockPos(), player)),
-                    null);
+            tileEntity.displayDestinations((ServerPlayerEntity) mob.getWorld().getPlayers().getFirst(), destinations);
         } else if (destinations.size() == 1) {
             TileDestination destination = destinations.getFirst();
-            Steveparty.LOGGER.info("Destination: {}", destination);
             if (destination == null) return;
-            Steveparty.LOGGER.info("Destination position: {}", destination.position());
-            ((TokenizedEntityInterface) mob).steveparty$setNbSteps(rollNumber - 1);
-            moveEntity(mob, destination.position()); //TODO Detecter quand la prochaine tuile est atteinte
+            moveEntity(mob, destination.position());
         }
+    }
+
+    private void sendMessageToPlayer(String message, PlayerEntity player) {
+        if (player.getWorld().isClient)
+            player.sendMessage(Text.of(message), false);
+    }
+
+    public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, TileDestination tileDestination) {
+        if (tileDestination == null || tileOrigin == null) return;
+        TileEntity tileEntity = Tile.getTileEntity(world, tileOrigin);
+        if (tileEntity == null) return;
+        tileEntity.hideDestinations();
+        List<MobEntity> tokens = tileEntity.getTokensOnMe();
+        MobEntity mob = null;
+        for (MobEntity token : tokens) {
+            if (((TokenizedEntityInterface)token).steveparty$getNbSteps() != 0) {
+                mob = token;
+                break;
+            }
+        }
+        if (mob == null) return;
+        ((TokenizedEntityInterface) mob).steveparty$setNbSteps(((TokenizedEntityInterface) mob).steveparty$getNbSteps());
+        moveEntity(mob, tileDestination.position());
     }
 
     public static void moveEntity(MobEntity mob, BlockPos target) {
@@ -93,7 +146,6 @@ public class TokenMovementService {
     private static void moveEntityToTarget(MobEntity mob, Vector3d target) {
         // Set the target position (if applicable to your custom interface)
         if (mob instanceof TokenizedEntityInterface tokenizedEntity) {
-            Steveparty.LOGGER.info("New target: {}", target);
             tokenizedEntity.steveparty$setTargetPosition(target, 0.5);
         }
 
@@ -108,6 +160,7 @@ public class TokenMovementService {
         double horizontalDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
         float pitch = (float) -(Math.atan2(deltaY, horizontalDistance) * (180 / Math.PI)); // Convert radians to degrees
         mob.setPitch(pitch);
+        mob.setVelocity(deltaX, deltaY, deltaZ);
     }
 
     private static void playSound(MobEntity mob, BlockPos targetPos, SoundEvent soundEvent) {
@@ -119,45 +172,5 @@ public class TokenMovementService {
                 100,
                 1.0F
         );
-    }
-
-    public static void displayDestinations(List<TileDestination> destinations, BlockPos origin, List<ServerPlayerEntity> players, World world, Callable<Boolean> condition, Runnable lastCallback) {
-        if (destinations.isEmpty()) return;
-        if (world.isClient) return;
-        for (TileDestination destination : destinations) {
-            // Summon the particle at each position for the player
-            BlockPos offset = destination.position().subtract(origin);
-            Vector3f normalizedOffset = new Vector3f(offset.getX(), offset.getY(), offset.getZ()).normalize().mul(1.5f);
-
-            Color color = destination.isTile() ? Color.WHITE : Color.RED;
-
-            Vec3d encodedVelocity = ParticleUtils.encodeVelocity(
-                    color,
-                    offset.getX() - (normalizedOffset.x() * 2),
-                    offset.getY() - (normalizedOffset.y() * 2),
-                    offset.getZ() - (normalizedOffset.z() * 2));
-            if (players == null || players.isEmpty()) {
-                scheduleDestinationRendering(
-                        () -> world.getPlayers().stream().filter(player -> isWithinDistance(origin, player))
-                                .forEach(player -> renderDirection(origin, (ServerPlayerEntity) player, normalizedOffset, encodedVelocity)),
-                        condition, lastCallback);
-            }
-            else
-                scheduleDestinationRendering(() -> players.forEach(player -> renderDirection(origin, player, normalizedOffset, encodedVelocity)), condition, lastCallback);
-        }
-    }
-
-    private static void scheduleDestinationRendering(Runnable render, Callable<Boolean> condition, Runnable lastCallback) {
-        Steveparty.SCHEDULER.repeat(UUID.randomUUID(), 15, render, condition, lastCallback);
-    }
-
-    private static boolean isWithinDistance(BlockPos origin, PlayerEntity player) {
-        return player.getBlockPos().isWithinDistance(origin.toCenterPos(), 15);
-    }
-
-    private static void renderDirection(BlockPos origin, ServerPlayerEntity player, Vector3f normalizedOffset, Vec3d encodedVelocity) {
-        ServerPlayNetworking.send(player, new ArrowParticlesPayload(new Vec3d(origin.getX() + 0.5 + normalizedOffset.x(),
-                origin.getY() + 0.6 + normalizedOffset.y(),
-                origin.getZ() + 0.5 + normalizedOffset.z()), encodedVelocity));
     }
 }

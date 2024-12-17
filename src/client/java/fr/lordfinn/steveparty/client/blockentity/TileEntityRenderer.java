@@ -33,6 +33,8 @@ public class TileEntityRenderer implements BlockEntityRenderer<TileEntity> {
         this.model = new SkullEntityModel(ctx.getLayerRenderDispatcher().getModelPart(EntityModelLayers.PLAYER_HEAD));
     }
 
+
+
     @Override
     public void render(TileEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
         TileType tileType = entity.getCachedState().get(TILE_TYPE);

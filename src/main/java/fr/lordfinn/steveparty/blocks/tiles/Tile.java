@@ -118,8 +118,8 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
             TileEntity tileEntity = getTileEntity(world, pos);
             if (tileEntity != null) {
                 ItemScatterer.spawn(world, pos, tileEntity.getInventory());
-                // update comparators
                 world.updateComparators(pos,this);
+                tileEntity.hideDestinations();
             }
             super.onStateReplaced(state, world, pos, newState, moved);
         }
