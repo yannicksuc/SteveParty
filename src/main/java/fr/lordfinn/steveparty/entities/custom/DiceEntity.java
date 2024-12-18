@@ -15,9 +15,11 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -35,6 +37,7 @@ import software.bernie.geckolib.animation.AnimationState;
 import java.util.*;
 
 import static fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE;
+import static fr.lordfinn.steveparty.utils.PlayerUtils.getPlayerNameByUuid;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
 public class DiceEntity extends LivingEntity implements GeoEntity {
@@ -143,10 +146,14 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.setRollValue(getRandomDiceValue());
         this.getOwner().ifPresent(owner -> {
             DiceRollEvent.EVENT.invoker().onRoll(this, owner, this.getRollValue());
+            if (this.getWorld() instanceof ServerWorld world) {
+                String playerName = getPlayerNameByUuid(world.getServer(), owner);
+                MessageUtils.sendToNearby(this.getServer(), this.getPos(), 20, Text.translatable("message.steveparty.owned_dice_rolled", this.getRollValue(), playerName == null ? Text.translatable("message.steveparty.unknown_player") : playerName), MessageUtils.MessageType.CHAT);
+                }
         });
-        if (this.getWorld() instanceof ServerWorld)
-            MessageUtils.sendToNearby(this.getServer(), this.getPos(), 20, String.valueOf(this.getRollValue()), MessageUtils.MessageType.TITLE);
+
     }
+
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return LivingEntity.createLivingAttributes().add(EntityAttributes.MAX_HEALTH, 20.0D)
@@ -156,15 +163,10 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.3D);
     }
 
-    public int tickCounter = 200; // Counter for ticks
     @Override
     public void tick() {
         if (!this.getWorld().isClient) {
-            tickCounter++;
-
-            // Check if 10 seconds have passed (200 ticks at 20 TPS)
-            if (tickCounter >= 200) {
-                tickCounter = 0; // Reset counter
+            if (getTick(this) % 200 == 0) {
 
                 // Check and update the target if present
                 this.getTarget().ifPresent(uuid -> {
@@ -173,6 +175,16 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                         simulation.setTarget(entity);
                     }
                 });
+            }
+            if (getTick(this) % 20 == 0 && this.isRolling()) {
+                ((ServerWorld)this.getWorld()).playSound(
+                        null,
+                        this.getBlockPos(),
+                        SoundEvents.ENTITY_BREEZE_WHIRL,
+                        SoundCategory.AMBIENT,
+                        1F,
+                        0.7F
+                );
             }
             simulation.tick();
         }
