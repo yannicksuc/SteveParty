@@ -1,11 +1,15 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.tiles.Tile;
-import fr.lordfinn.steveparty.blocks.tiles.TileDestination;
-import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
+import fr.lordfinn.steveparty.events.TileUpdatedEvent;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -20,6 +24,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.*;
+import net.minecraft.util.shape.VoxelShape;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 
 import java.util.List;
@@ -29,13 +35,8 @@ import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 public class TokenMovementService {
 
     public TokenMovementService() {
-        TileReachedEvent.EVENT.register((entity, tile) -> {
-            if (entity.getWorld().isClient) return ActionResult.PASS;
-            int nbSteps = ((TokenizedEntityInterface)entity).steveparty$getNbSteps();
-            if (nbSteps == 0) return ActionResult.PASS;
-            moveEntityOnBoard(entity, nbSteps - 1);
-            return ActionResult.SUCCESS;
-        });
+        TileReachedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
+        TileUpdatedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
 
         DiceRollEvent.EVENT.register((dice, ownerUUID, rollValue) -> {
             double distance = -1d;
@@ -63,6 +64,19 @@ public class TokenMovementService {
         });
     }
 
+    private static @NotNull ActionResult tryToMoveEntityOnBoard(MobEntity entity, BoardSpaceEntity tile) {
+        if (entity.getWorld().isClient) return ActionResult.PASS;
+        int nbSteps = ((TokenizedEntityInterface) entity).steveparty$getNbSteps();
+        if (nbSteps == 0) return ActionResult.PASS;
+
+        ABoardSpaceBehavior behavior = tile.getTileBehavior();
+        if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos())) {
+            moveEntityOnBoard(entity, nbSteps - (entity.getWorld().getBlockState(tile.getPos()).getBlock() instanceof Tile ? 1 : 0));
+            return ActionResult.SUCCESS;
+        }
+        return ActionResult.PASS;
+    }
+
     private static Box getNearbyBox(ServerCommandSource source) {
         return Box.of(source.getPosition(), 100, 100, 100);
     }
@@ -71,23 +85,23 @@ public class TokenMovementService {
         ((TokenizedEntityInterface) mob).steveparty$setNbSteps(rollNumber);
         if (rollNumber == 0) {
             MessageUtils.sendToNearby(mob.getServer(), mob.getPos(), 100,
-                    Text.translatable("message.steveparty.arrived_at_destination", mob.getCustomName()),
+                    Text.translatable("message.steveparty.arrived_at_destination", mob.getCustomName() != null ? mob.getCustomName() : mob.getName()),
                     MessageUtils.MessageType.ACTION_BAR);
             return;
         }
-        TileEntity tileEntity = Tile.getTileEntity(mob.getWorld(), mob.getBlockPos());
+        BoardSpaceEntity tileEntity = BoardSpace.getTileEntity(mob.getWorld(), mob.getBlockPos());
         if (tileEntity == null) return;
         //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
 
         MessageUtils.sendToNearby( mob.getServer(), mob.getPos(), 100,
-                Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName())
+                Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName() != null ? mob.getCustomName() : mob.getName())
                 , MessageUtils.MessageType.ACTION_BAR);
 
-        List<TileDestination> destinations = TileEntity.getCurrentDestinations(tileEntity).stream().filter(TileDestination::isTile).toList();
+        List<BoardSpaceDestination> destinations = BoardSpaceEntity.getCurrentDestinations(tileEntity).stream().filter(BoardSpaceDestination::isTile).toList();
         if (destinations.size() > 1) {
             tileEntity.displayDestinations((ServerPlayerEntity) mob.getWorld().getPlayers().getFirst(), destinations);
         } else if (destinations.size() == 1) {
-            TileDestination destination = destinations.getFirst();
+            BoardSpaceDestination destination = destinations.getFirst();
             if (destination == null) return;
             moveEntity(mob, destination.position());
         }
@@ -98,9 +112,9 @@ public class TokenMovementService {
             player.sendMessage(Text.of(message), false);
     }
 
-    public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, TileDestination tileDestination) {
+    public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, BoardSpaceDestination tileDestination) {
         if (tileDestination == null || tileOrigin == null) return;
-        TileEntity tileEntity = Tile.getTileEntity(world, tileOrigin);
+        BoardSpaceEntity tileEntity = BoardSpace.getTileEntity(world, tileOrigin);
         if (tileEntity == null) return;
         tileEntity.hideDestinations();
         List<MobEntity> tokens = tileEntity.getTokensOnMe();
@@ -118,6 +132,7 @@ public class TokenMovementService {
 
     public static void moveEntity(MobEntity mob, BlockPos target) {
         Vector3d preciseTargetPos = calculateTargetPosition(mob, target);
+        Steveparty.LOGGER.info("Moving entity to {}", preciseTargetPos);
         double distance = mob.squaredDistanceTo(preciseTargetPos.x(), preciseTargetPos.y(), preciseTargetPos.z());
 
         if (isTooFar(distance)) {
@@ -130,7 +145,9 @@ public class TokenMovementService {
 
     private static Vector3d calculateTargetPosition(MobEntity mob, BlockPos targetPos) {
         BlockState blockState = mob.getWorld().getBlockState(targetPos);
-        double blockHeight = blockState.getCollisionShape(mob.getWorld(), targetPos).getMax(Direction.Axis.Y);
+        VoxelShape shape = blockState.getCollisionShape(mob.getWorld(), targetPos);
+
+        double blockHeight = shape.isEmpty() ? 0 : shape.getMax(Direction.Axis.Y);
         return new Vector3d(targetPos.getX() + 0.5, targetPos.getY() + blockHeight, targetPos.getZ() + 0.5);
     }
 

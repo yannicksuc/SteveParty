@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.items;
+package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.MobEntityComponent;

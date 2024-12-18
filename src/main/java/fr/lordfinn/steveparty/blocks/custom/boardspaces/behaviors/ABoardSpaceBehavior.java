@@ -1,10 +1,9 @@
-package fr.lordfinn.steveparty.blocks.tiles.behaviors;
+package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.tiles.Tile;
-import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
-import fr.lordfinn.steveparty.blocks.tiles.TileType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
@@ -16,17 +15,16 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import static net.minecraft.util.ActionResult.PASS;
 import static net.minecraft.util.ActionResult.SUCCESS;
 
-public abstract class ATileBehavior {
-    protected final TileType tileType;
+public abstract class ABoardSpaceBehavior {
+    protected final BoardSpaceType tileType;
 
-    public ATileBehavior(TileType tileType) {
+    public ABoardSpaceBehavior(BoardSpaceType tileType) {
         this.tileType = tileType;
     }
 
-    public TileType getTileType() {
+    public BoardSpaceType getTileType() {
         return tileType;
     }
 
@@ -41,27 +39,27 @@ public abstract class ATileBehavior {
     private void onPlayerStep(World world, BlockPos pos, BlockState state, Entity entity) {
     }
 
-    protected Tile getTile(BlockState state) {
-        return (Tile) state.getBlock();
+    protected BoardSpace getTile(BlockState state) {
+        return (BoardSpace) state.getBlock();
     }
 
-    protected TileEntity getTileEntity(World world, BlockPos pos) {
-        return Tile.getTileEntity(world, pos);
+    protected static BoardSpaceEntity getTileEntity(World world, BlockPos pos) {
+        return BoardSpace.getTileEntity(world, pos);
     }
 
-    protected ItemStack getBehaviorItemstack(World world, BlockPos pos) {
-        TileEntity tileEntity = getTileEntity(world, pos);
+    protected static ItemStack getBehaviorItemstack(World world, BlockPos pos) {
+        BoardSpaceEntity tileEntity = getTileEntity(world, pos);
         return getBehaviorItemstack(tileEntity);
     }
 
-    protected ItemStack getBehaviorItemstack(TileEntity tileEntity) {
+    protected static ItemStack getBehaviorItemstack(BoardSpaceEntity tileEntity) {
         if (tileEntity == null) return null;
         return tileEntity.getActiveTileBehaviorItemStack();
     }
 
     public void onPieceStep(World world, BlockPos pos, BlockState state, MobEntity entity) {};
 
-    public void tick(ServerWorld world, TileEntity state, ItemStack type, int ticks) {}
+    public void tick(ServerWorld world, BoardSpaceEntity state, ItemStack type, int ticks) {}
 
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         return SUCCESS;
@@ -69,5 +67,9 @@ public abstract class ATileBehavior {
 
     public ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         return SUCCESS;
+    }
+
+    public boolean needToStop(World world, BlockPos pos) {
+        return false;
     }
 }

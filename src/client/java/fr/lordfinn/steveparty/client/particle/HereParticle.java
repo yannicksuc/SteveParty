@@ -18,7 +18,7 @@ public class HereParticle extends SpriteBillboardParticle {
         this.y = yCoord;
         this.z = zCoord;
         this.scale = 1F;
-        this.maxAge = 150;
+        this.maxAge = 60;
         this.setSpriteForAge(spriteSet);
 
 

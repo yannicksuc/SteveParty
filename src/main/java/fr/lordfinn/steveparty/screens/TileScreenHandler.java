@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.screens;
 
-import fr.lordfinn.steveparty.items.tilebehaviors.TileBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -110,7 +110,7 @@ public class TileScreenHandler extends ScreenHandler {
     }
 
     private static boolean isAllowedItem(ItemStack originalStack) {
-        return originalStack.getItem() instanceof TileBehaviorItem;
+        return originalStack.getItem() instanceof BoardSpaceBehaviorItem;
     }
 
     @Override

@@ -1,10 +1,10 @@
-package fr.lordfinn.steveparty.blocks.tiles;
+package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.math.BlockPos;
 
-public record TileDestination(BlockPos position, boolean isTile) {
+public record BoardSpaceDestination(BlockPos position, boolean isTile) {
 
     @Override
     public String toString() {
@@ -23,7 +23,7 @@ public record TileDestination(BlockPos position, boolean isTile) {
         return nbt;
     }
 
-    public static TileDestination fromNbt(NbtCompound nbt) {
-        return new TileDestination(new BlockPos(nbt.getInt("x"), nbt.getInt("y"), nbt.getInt("z")), nbt.getBoolean("isTile"));
+    public static BoardSpaceDestination fromNbt(NbtCompound nbt) {
+        return new BoardSpaceDestination(new BlockPos(nbt.getInt("x"), nbt.getInt("y"), nbt.getInt("z")), nbt.getBoolean("isTile"));
     }
 }

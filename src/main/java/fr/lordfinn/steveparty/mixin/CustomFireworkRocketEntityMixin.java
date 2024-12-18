@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.mixin;
 
-import fr.lordfinn.steveparty.items.CustomFireworkRocketEntity;
+import fr.lordfinn.steveparty.items.custom.CustomFireworkRocketEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import org.spongepowered.asm.mixin.Mixin;
 

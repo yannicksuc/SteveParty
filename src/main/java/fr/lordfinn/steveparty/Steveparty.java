@@ -2,12 +2,10 @@ package fr.lordfinn.steveparty;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.blocks.tiles.behaviors.TileBehaviorFactory;
 import fr.lordfinn.steveparty.commands.MoveTokenCommand;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.events.ModEvents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;

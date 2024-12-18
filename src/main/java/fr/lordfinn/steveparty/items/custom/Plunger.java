@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.items;
+package fr.lordfinn.steveparty.items.custom;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;

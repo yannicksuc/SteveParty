@@ -1,11 +1,11 @@
-package fr.lordfinn.steveparty.blocks;
+package fr.lordfinn.steveparty.blocks.custom;
 
-import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.tiles.Tile;
-import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
-import fr.lordfinn.steveparty.blocks.tiles.TileType;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
-import fr.lordfinn.steveparty.items.MiniGamesCatalogue;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogue;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentMap;
@@ -141,7 +141,7 @@ public class PartyControllerEntity extends BlockEntity {
 
         for (BlockPos tilePos : startTiles) {
             BlockEntity tileEntity = serverWorld.getBlockEntity(tilePos);
-            if (tileEntity instanceof TileEntity tile) {
+            if (tileEntity instanceof BoardSpaceEntity tile) {
                 String owner = tile.getComponents().get(TB_START_OWNER);
                 if (owner != null) {
                     players.add(UUID.fromString(owner));
@@ -158,7 +158,7 @@ public class PartyControllerEntity extends BlockEntity {
         for (BlockPos pos : BlockPos.iterate((int) searchBox.minX, (int) searchBox.minY, (int) searchBox.minZ,
                 (int) searchBox.maxX, (int) searchBox.maxY, (int) searchBox.maxZ)) {
             BlockState state = world.getBlockState(pos);
-            if (state.getBlock() instanceof Tile && state.get(Tile.TILE_TYPE) == TileType.START) {
+            if (state.getBlock() instanceof BoardSpace && state.get(BoardSpace.TILE_TYPE) == BoardSpaceType.TILE_START) {
                 startTiles.add(pos);
             }
         }

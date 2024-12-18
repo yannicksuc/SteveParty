@@ -1,7 +1,7 @@
-package fr.lordfinn.steveparty.items;
+package fr.lordfinn.steveparty.items.custom;
 
-import fr.lordfinn.steveparty.blocks.tiles.Tile;
-import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -13,10 +13,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import static fr.lordfinn.steveparty.components.ModComponents.BLOCK_POS;
 
@@ -36,7 +32,7 @@ public class Wrench extends Item implements TileOpener {
         if (player == null || world.isClient)
             return ActionResult.PASS;
 
-        if (blockEntity instanceof TileEntity tile) {
+        if (blockEntity instanceof BoardSpaceEntity tile) {
             boolean result = tile.toggleDestinations((ServerPlayerEntity) player);
             sendMessageToPlayer(result ? "Bound to tile at " + pos : "Unbound from tile at " + pos, player);
             return ActionResult.SUCCESS;
@@ -44,13 +40,13 @@ public class Wrench extends Item implements TileOpener {
         return ActionResult.PASS;
     }
 
-    private void unbindWrench(PlayerEntity player, ItemStack stack, TileEntity tile) {
+    private void unbindWrench(PlayerEntity player, ItemStack stack, BoardSpaceEntity tile) {
 
         tile.hideDestinations();
         sendMessageToPlayer("Wrench not bound anymore", player);
     }
 
-    private void bindWrench(BlockPos pos, PlayerEntity player, ItemStack stack, TileEntity tile) {
+    private void bindWrench(BlockPos pos, PlayerEntity player, ItemStack stack, BoardSpaceEntity tile) {
         tile.displayDestinations((ServerPlayerEntity) player);
         sendMessageToPlayer("Wrench bound to tile at " + pos, player);
     }
@@ -66,7 +62,7 @@ public class Wrench extends Item implements TileOpener {
             return;
         if (!selected || !(entity instanceof ServerPlayerEntity player) || !(stack.get(BLOCK_POS) instanceof BlockPos blockPos))
             return;
-        TileEntity boundTile = Tile.getTileEntity(world, blockPos);
+        BoardSpaceEntity boundTile = BoardSpace.getTileEntity(world, blockPos);
         if (boundTile == null)
             return;
         super.inventoryTick(stack, world, entity, slot, true);

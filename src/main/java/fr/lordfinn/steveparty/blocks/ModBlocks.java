@@ -1,7 +1,10 @@
 package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.tiles.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TriggerPoint;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.BigBook;
+import fr.lordfinn.steveparty.blocks.custom.PartyController;
 import net.minecraft.block.Block;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Blocks;
@@ -15,6 +18,7 @@ import java.util.function.Function;
 public class ModBlocks {
     // Create and register the TILE block
     public static final Block TILE = register(Tile::new, Block.Settings.create().strength(4.0f), "tile", true);
+    public static final Block TRIGGER_POINT = register(TriggerPoint::new, Block.Settings.create().strength(4.0f), "trigger_point", true);
     public static final Block PARTY_CONTROLLER = register(PartyController::new, Block.Settings.create().strength(4.0f), "party_controller", true);
     public static final Block BIG_BOOK = register(BigBook::new, Block.Settings.create().strength(10.0f), "big_book", true);
 

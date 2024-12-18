@@ -2,8 +2,8 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
-import fr.lordfinn.steveparty.blocks.tiles.TileType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -22,10 +22,10 @@ import org.joml.Vector3f;
 
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.blocks.tiles.Tile.TILE_TYPE;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
 import static fr.lordfinn.steveparty.components.ModComponents.TB_START_OWNER;
 
-public class TileEntityRenderer implements BlockEntityRenderer<TileEntity> {
+public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity> {
 
     private final SkullEntityModel model;
 
@@ -36,11 +36,11 @@ public class TileEntityRenderer implements BlockEntityRenderer<TileEntity> {
 
 
     @Override
-    public void render(TileEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
-        TileType tileType = entity.getCachedState().get(TILE_TYPE);
+    public void render(BoardSpaceEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+        BoardSpaceType tileType = entity.getCachedState().get(TILE_TYPE);
         ItemStack stack = entity.getActiveTileBehaviorItemStack();
         String owner = stack.get(TB_START_OWNER);
-        if (tileType != TileType.START || owner == null) return;
+        if (tileType != BoardSpaceType.TILE_START || owner == null) return;
 
         // Validate UUID
         UUID ownerUUID;
