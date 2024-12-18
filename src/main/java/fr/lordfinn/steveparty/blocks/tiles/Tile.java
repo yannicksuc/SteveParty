@@ -43,8 +43,6 @@ public class Tile extends HorizontalFacingBlock implements BlockEntityProvider {
 
     private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0.0, 0, 16.0, 2.0, 16.0);
 
-
-
     public Tile(Settings settings) {
         super(settings.nonOpaque());
         setDefaultState(getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH));

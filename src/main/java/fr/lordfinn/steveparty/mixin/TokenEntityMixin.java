@@ -8,12 +8,15 @@ import fr.lordfinn.steveparty.events.TileReachedEvent;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.MovementType;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.joml.Vector3d;
@@ -129,6 +132,7 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     public void steveparty$setTargetPosition(Vector3d target, double speed) {
         this.targetPosition = new Vec3d(target.x(), target.y(), target.z());
         this.targetPositionSpeed = speed;
+        this.setVelocity(Vec3d.ZERO);
     }
 
     public void steveparty$setNbSteps(int step) {
@@ -138,13 +142,19 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     public int steveparty$getNbSteps() {
         return this.dataTracker.get(NB_STEPS);
     }
-
+    @Unique
+    double deceleration = 0.1;  // Horizontal deceleration
+    @Unique
+    double gravity = 0.05;      // Gravity force (default value for Minecraft is around 0.08)
+    @Unique
+    double threshold = 0.05;    // Threshold for stopping horizontal movement
     /**
      * Called every tick to handle manual movement toward the target.
      */
     @Inject(method = "tick", at = @At("TAIL"))
     private void onTick(CallbackInfo ci) {
-        if (this.targetPosition != null && !this.getWorld().isClient) {
+        if (this.getWorld().isClient)  return;
+        if (this.targetPosition != null) {
             Vec3d currentPosition = this.getPos();
             Vec3d direction = targetPosition.subtract(currentPosition).normalize();
 
@@ -157,9 +167,49 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
                 this.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
                 BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos().down());
                 this.targetPosition = null;
+                this.setVelocity(Vec3d.ZERO);
                 TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this,
                         (blockEntity instanceof TileEntity) ? (TileEntity) blockEntity : null);
             }
+        } else if (this.steveparty$isTokenized()) {
+            // Retrieve current velocity
+            Vec3d velocity = this.getVelocity();
+
+            // Horizontal deceleration (friction)
+            Vec3d horizontalVelocity = new Vec3d(velocity.x, 0, velocity.z); // Only consider horizontal components
+            if (horizontalVelocity.length() > threshold) {
+                Vec3d decelerationVec = horizontalVelocity.normalize().multiply(deceleration);
+                horizontalVelocity = horizontalVelocity.subtract(decelerationVec);
+            } else {
+                horizontalVelocity = Vec3d.ZERO; // Stop horizontal movement if below the threshold
+            }
+
+            // Apply gravity (constant downward force)
+            Vec3d verticalVelocity = new Vec3d(0, velocity.y - gravity, 0); // Gravity reduces vertical velocity
+
+            // Combine the horizontal and vertical velocities
+            Vec3d newVelocity = new Vec3d(horizontalVelocity.x, verticalVelocity.y, horizontalVelocity.z);
+
+            // If the vertical velocity is small enough, stop falling (you can adjust the threshold if needed)
+            if (Math.abs(newVelocity.y) < threshold && isOnGround()) {
+                // When on the ground and almost stopped vertically, set the vertical velocity to 0
+                this.setVelocity(new Vec3d(newVelocity.x, 0, newVelocity.z)); // Stop vertical movement
+            } else {
+                // Otherwise, continue with the new velocity
+                this.setVelocity(newVelocity);
+            }
+
+            // Apply the movement with the new velocity
+            this.move(MovementType.SELF, newVelocity);
         }
+    }
+
+    @Override
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        if (this.steveparty$isTokenized()) {
+            //setVelocity(Vec3d.ZERO);
+            return false;
+        }
+        return true;
     }
 }

@@ -34,7 +34,7 @@ public abstract class ATileBehavior {
         if (entity instanceof PlayerEntity)
             onPlayerStep(world, pos, state, entity);
         if (entity instanceof MobEntity && ((TokenizedEntityInterface)entity).steveparty$isTokenized()) {
-            onPieceStep(world, pos, state, entity);
+            onPieceStep(world, pos, state, (MobEntity) entity);
         }
     }
 
@@ -59,7 +59,7 @@ public abstract class ATileBehavior {
         return tileEntity.getActiveTileBehaviorItemStack();
     }
 
-    public void onPieceStep(World world, BlockPos pos, BlockState state, Entity entity) {};
+    public void onPieceStep(World world, BlockPos pos, BlockState state, MobEntity entity) {};
 
     public void tick(ServerWorld world, TileEntity state, ItemStack type, int ticks) {}
 

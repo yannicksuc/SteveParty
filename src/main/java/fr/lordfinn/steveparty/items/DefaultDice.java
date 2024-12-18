@@ -10,6 +10,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -42,6 +44,23 @@ public class DefaultDice extends Item {
                 diceEntity.setVelocity(velocity);
                 diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
                 diceEntity.setRolling(true);
+                world.playSound(
+                        null,
+                        diceEntity.getBlockPos(),
+                        SoundEvents.ENTITY_BREEZE_SHOOT,
+                        SoundCategory.AMBIENT,
+                        0.2F,
+                        1.5F
+                );
+
+                world.playSound(
+                        null,
+                        diceEntity.getBlockPos(),
+                        SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE,
+                        SoundCategory.AMBIENT,
+                        0.4F,
+                        1F
+                );
             }
         }
 

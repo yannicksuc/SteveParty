@@ -1,10 +1,15 @@
 package fr.lordfinn.steveparty.events;
 
+import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
+import fr.lordfinn.steveparty.blocks.tiles.behaviors.StartTileBehavior;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.ColorHelper;
@@ -49,6 +54,20 @@ public class ModEvents {
 
         // Set the entity's custom name
         livingEntity.setCustomName(newName);
+
+        BlockEntity blockEntity = livingEntity.getWorld().getBlockEntity(livingEntity.getBlockPos());
+        if (blockEntity instanceof TileEntity tileEntity && tileEntity.getTileBehavior() instanceof StartTileBehavior startTileBehavior) {
+            startTileBehavior.setColor(tileEntity, colorRgb);
+        }
+
+        livingEntity.getWorld().playSound(
+                null,
+                livingEntity.getBlockPos(),
+                SoundEvents.ITEM_DYE_USE,
+                SoundCategory.BLOCKS,
+                1F,
+                1F
+        );
 
         // Consume one dye item if not in creative mode
         if (!isCreative) {
