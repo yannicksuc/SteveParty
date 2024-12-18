@@ -1,9 +1,8 @@
 package fr.lordfinn.steveparty.mixin;
 
-import com.sun.jna.platform.win32.WinNT;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
@@ -165,11 +164,11 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
             // Check if the entity has reached the target (with a small tolerance).
             if (currentPosition.squaredDistanceTo(targetPosition) < targetPositionSpeed) {
                 this.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
-                BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos().down());
-                this.targetPosition = null;
                 this.setVelocity(Vec3d.ZERO);
-                TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this,
-                        (blockEntity instanceof TileEntity) ? (TileEntity) blockEntity : null);
+                this.targetPosition = null;
+                BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos());
+                if ((blockEntity instanceof BoardSpaceEntity))
+                    TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this, (BoardSpaceEntity) blockEntity);
             }
         } else if (this.steveparty$isTokenized()) {
             // Retrieve current velocity

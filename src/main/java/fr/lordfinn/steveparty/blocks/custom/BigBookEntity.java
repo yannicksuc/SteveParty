@@ -1,11 +1,9 @@
-package fr.lordfinn.steveparty.blocks;
+package fr.lordfinn.steveparty.blocks.custom;
 
-import com.mojang.serialization.Codec;
-import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentMap;
-import net.minecraft.component.ComponentType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -24,7 +22,6 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.Optional;
 
 import static fr.lordfinn.steveparty.components.ModComponents.SOCKETED_STORY;
-import static fr.lordfinn.steveparty.components.ModComponents.registerComponent;
 
 public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
     protected static final RawAnimation NO_STORY_ANIM = RawAnimation.begin().thenLoop("no-story");

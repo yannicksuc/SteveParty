@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.events;
 
-import fr.lordfinn.steveparty.blocks.tiles.TileEntity;
-import fr.lordfinn.steveparty.blocks.tiles.behaviors.StartTileBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
@@ -56,7 +56,7 @@ public class ModEvents {
         livingEntity.setCustomName(newName);
 
         BlockEntity blockEntity = livingEntity.getWorld().getBlockEntity(livingEntity.getBlockPos());
-        if (blockEntity instanceof TileEntity tileEntity && tileEntity.getTileBehavior() instanceof StartTileBehavior startTileBehavior) {
+        if (blockEntity instanceof BoardSpaceEntity tileEntity && tileEntity.getTileBehavior() instanceof StartTileBehavior startTileBehavior) {
             startTileBehavior.setColor(tileEntity, colorRgb);
         }
 

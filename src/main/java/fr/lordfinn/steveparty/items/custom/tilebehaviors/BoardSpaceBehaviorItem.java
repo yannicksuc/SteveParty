@@ -1,10 +1,9 @@
-package fr.lordfinn.steveparty.items.tilebehaviors;
+package fr.lordfinn.steveparty.items.custom.tilebehaviors;
 
-import fr.lordfinn.steveparty.blocks.tiles.TileDestination;
-import fr.lordfinn.steveparty.blocks.tiles.TileService;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
-import fr.lordfinn.steveparty.items.TileOpener;
+import fr.lordfinn.steveparty.items.custom.TileOpener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -27,13 +26,13 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 import java.util.List;
 
-import static fr.lordfinn.steveparty.blocks.tiles.TileEntity.getDestinationsStatus;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR;
 import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
 
-public class TileBehaviorItem extends Item implements TileOpener {
+public class BoardSpaceBehaviorItem extends Item implements TileOpener {
     private long lastTimeItemHoldParticleUpdate = 0;
-    public TileBehaviorItem(Settings settings) {
+    public BoardSpaceBehaviorItem(Settings settings) {
         super(settings);
     }
 
@@ -84,7 +83,7 @@ public class TileBehaviorItem extends Item implements TileOpener {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, DEFAULT_TILE_BEHAVIOR);
         Entity holder = stack.getHolder();
-        List<TileDestination> tileDestinations = getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
+        List<BoardSpaceDestination> tileDestinations = getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
 
         if (!tileDestinations.isEmpty()) {
             // Add a heading for the destinations with a different color
@@ -93,7 +92,7 @@ public class TileBehaviorItem extends Item implements TileOpener {
             tooltip.add(Text.literal("Destinations:")
                     .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
 
-            for (TileDestination destination : tileDestinations) {
+            for (BoardSpaceDestination destination : tileDestinations) {
                 // Format each BlockPos with its coordinates in a distinct color
                 BlockPos pos = destination.position();
                 tooltip.add(Text.literal(String.format("  - (%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ()))
@@ -112,7 +111,7 @@ public class TileBehaviorItem extends Item implements TileOpener {
             return;
         if (!(entity instanceof LivingEntity))
             return;
-        if (lastTimeItemHoldParticleUpdate + 150 > System.currentTimeMillis())
+        if (lastTimeItemHoldParticleUpdate + 40 > System.currentTimeMillis())
             return;
         lastTimeItemHoldParticleUpdate = System.currentTimeMillis();
         TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, DEFAULT_TILE_BEHAVIOR);

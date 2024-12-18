@@ -1,15 +1,15 @@
-package fr.lordfinn.steveparty.blocks.tiles;
+package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
-import fr.lordfinn.steveparty.blocks.tiles.behaviors.ATileBehavior;
-import fr.lordfinn.steveparty.blocks.tiles.behaviors.TileBehaviorFactory;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TileBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.items.tilebehaviors.TileBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
@@ -42,16 +42,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static fr.lordfinn.steveparty.blocks.tiles.Tile.TILE_TYPE;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
 
-public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory, TickableBlockEntity {
+public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerFactory, TickableBlockEntity {
     //private final DefaultedList<ItemStack> items = DefaultedList.ofSize(16, ItemStack.EMPTY);
     private int ticks = 0;
 
 
 
-    public TileEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.TILE_ENTITY, pos, state);
+    public BoardSpaceEntity(BlockPos pos, BlockState state) {
+        super(state.getBlock() instanceof Tile ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.TRIGGER_POINT_ENTITY, pos, state);
     }
 
     private final SimpleInventory inventory = new SimpleInventory(16) {
@@ -63,13 +63,13 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
 
         @Override
         public void setStack(int slot, ItemStack stack) {
-            if (!stack.isEmpty() && stack.getItem() instanceof TileBehaviorItem) {
+            if (!stack.isEmpty() && stack.getItem() instanceof BoardSpaceBehaviorItem) {
                 getItems().set(slot, stack);
                 if (stack.getCount() > stack.getMaxCount()) {
                     stack.setCount(stack.getMaxCount());
                 }
             }
-            if ( TileEntity.this.world != null) {
+            if ( BoardSpaceEntity.this.world != null) {
                 updateTileSkin();
             }
         }
@@ -112,12 +112,16 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         return inventory.getHeldStacks();
     }
 
-    private TileType determineTileType(ItemStack stack) {
+    private BoardSpaceType determineTileType(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return null;
         }
         if (stack.getItem() == ModItems.TILE_BEHAVIOR_START) {
-            return TileType.START;
+            return BoardSpaceType.TILE_START;
+        } else if (stack.getItem() == ModItems.BOARD_SPACE_BEHAVIOR_STOP) {
+            return BoardSpaceType.BOARD_SPACE_STOP;
+        } else if (stack.getItem() == ModItems.BOARD_SPACE_BEHAVIOR) {
+            return BoardSpaceType.DEFAULT;
         }
         return null;
     }
@@ -126,11 +130,13 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         if (this.world != null) {
             ItemStack stack = getActiveTileBehaviorItemStack();
             // Determine the tile type based on the stack
-            TileType tileType = determineTileType(stack);
+            BoardSpaceType tileType = determineTileType(stack);
 
             // Update the block state if necessary
             BlockState state = this.getCachedState();
-            if (state.getBlock() instanceof Tile && tileType != null && state.get(TILE_TYPE) != tileType) {
+            if (state.getBlock() instanceof BoardSpace && tileType == null) {
+                this.world.setBlockState(this.pos, state.with(TILE_TYPE, BoardSpaceType.DEFAULT));
+            } else if (state.getBlock() instanceof BoardSpace && tileType != null && !state.get(TILE_TYPE).equals(tileType)) {
                 this.world.setBlockState(this.pos, state.with(TILE_TYPE, tileType));
             }
         }
@@ -148,15 +154,15 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
     }
 
 
-    public void displayDestinations(ServerPlayerEntity holder, List<TileDestination> destinations) {
+    public void displayDestinations(ServerPlayerEntity holder, List<BoardSpaceDestination> destinations) {
         if (destinations.isEmpty()) return;
-        for (TileDestination destination : destinations) {
+        for (BoardSpaceDestination destination : destinations) {
             new DirectionDisplayEntity(world, destination, this.getPos(), holder);
         }
     }
 
     public void displayDestinations(ServerPlayerEntity holder) {
-        List<TileDestination> destinations = getCurrentDestinations(this);
+        List<BoardSpaceDestination> destinations = getCurrentDestinations(this);
         displayDestinations(holder, destinations);
     }
 
@@ -184,13 +190,13 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         return inventory.getStack(slot);
     }
 
-    public ATileBehavior getTileBehavior() {
+    public ABoardSpaceBehavior getTileBehavior() {
         ItemStack stack = getActiveTileBehaviorItemStack();
-        TileType tileType = determineTileType(stack);
+        BoardSpaceType tileType = determineTileType(stack);
         if (tileType == null)
             return null;
 
-        return TileBehaviorFactory.get(tileType);
+        return BoardSpaceBehaviorFactory.get(tileType);
     }
 
     @Override
@@ -208,6 +214,7 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
     @Override
     public void markDirty() {
         super.markDirty();
+        assert this.world != null;
         if (this.world.isClient) {
             world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), 3);
         }
@@ -218,7 +225,7 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
 
     @Override
     public Text getDisplayName() {
-        return Text.of("Tile");//Text.translatable(getCachedState().getBlock().getTranslationKey());
+        return Text.of("Board Space");//Text.translatable(getCachedState().getBlock().getTranslationKey());
     }
 
     @Override
@@ -235,9 +242,9 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         if (this.world == null || this.world.isClient) return;
         ticks++;
         ItemStack stack = getActiveTileBehaviorItemStack();
-        TileType tileType = determineTileType(stack);
+        BoardSpaceType tileType = determineTileType(stack);
         if (tileType != null)
-            TileBehaviorFactory.get(tileType).tick((ServerWorld) this.world, this, stack, ticks);
+            BoardSpaceBehaviorFactory.get(tileType).tick((ServerWorld) this.world, this, stack, ticks);
     }
     @Override
     public @Nullable Object getRenderData() {
@@ -250,11 +257,11 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
 
     }
 
-    public static List<TileDestination> getCurrentDestinations(TileEntity tileEntity) {
-        List<TileDestination> tileDestinations = new ArrayList<>();
+    public static List<BoardSpaceDestination> getCurrentDestinations(BoardSpaceEntity tileEntity) {
+        List<BoardSpaceDestination> tileDestinations = new ArrayList<>();
 
         ItemStack stack = tileEntity.getActiveTileBehaviorItemStack();
-        if (stack != null && stack.getItem() instanceof TileBehaviorItem) {
+        if (stack != null && stack.getItem() instanceof BoardSpaceBehaviorItem) {
             TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR);
             List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
             tileDestinations = getDestinationsStatus(destinations, tileEntity.getWorld());
@@ -262,11 +269,11 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
         return tileDestinations;
     }
 
-    public static List<TileDestination> getDestinationsStatus(List<BlockPos> blockPosList, World world) {
-        List<TileDestination> tileDestinations = new ArrayList<>();
+    public static List<BoardSpaceDestination> getDestinationsStatus(List<BlockPos> blockPosList, World world) {
+        List<BoardSpaceDestination> tileDestinations = new ArrayList<>();
         for (BlockPos pos : blockPosList) {
-            boolean isTile = isTileBlock(pos, world);
-            tileDestinations.add(new TileDestination(pos, isTile));
+            boolean isTile = isBoardSpaceBlock(pos, world);
+            tileDestinations.add(new BoardSpaceDestination(pos, isTile));
         }
         return tileDestinations;
     }
@@ -278,17 +285,17 @@ public class TileEntity extends BlockEntity implements NamedScreenHandlerFactory
      * @param world The world instance to check the block in.
      * @return true if the position is a valid tile block, false otherwise.
      */
-    private static boolean isTileBlock(BlockPos pos, World world) {
+    private static boolean isBoardSpaceBlock(BlockPos pos, World world) {
         if (world == null) return false;
         BlockState blockState = world.getBlockState(pos);
         if (blockState == null) return false;
-        return blockState.getBlock() instanceof Tile;
+        return blockState.getBlock() instanceof BoardSpace;
     }
 
     public List<MobEntity> getTokensOnMe() {
         List<MobEntity> tokens = new ArrayList<>();
         if (this.world != null) {
-            for (MobEntity entity : ((ServerWorld) this.world).getEntitiesByClass(MobEntity.class, Box.of(this.getPos().toCenterPos(), 1, 1, 1), entity -> entity instanceof MobEntity)) {
+            for (MobEntity entity : this.world.getEntitiesByClass(MobEntity.class, Box.of(this.getPos().toCenterPos(), 1, 1, 1), entity -> entity instanceof MobEntity)) {
                 if (entity instanceof TokenizedEntityInterface && ((TokenizedEntityInterface) entity).steveparty$isTokenized()) {
                     tokens.add(entity);
                 }

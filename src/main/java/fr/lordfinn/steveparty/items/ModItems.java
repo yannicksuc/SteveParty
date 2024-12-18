@@ -1,10 +1,11 @@
 package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.items.tilebehaviors.StartTileBehaviorItem;
-import fr.lordfinn.steveparty.items.tilebehaviors.TileBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.*;
+import fr.lordfinn.steveparty.items.custom.tilebehaviors.StartTileBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.tilebehaviors.StopBoardSpaceBehaviorItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroupEntries;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
@@ -21,8 +22,9 @@ import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
     public static final Item WRENCH = register(Wrench.class, "wrench");
-    public static final Item TILE_BEHAVIOR = register(TileBehaviorItem.class, "tile_behavior");
+    public static final Item BOARD_SPACE_BEHAVIOR = register(BoardSpaceBehaviorItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartTileBehaviorItem.class, "tile_behavior_start");
+    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopBoardSpaceBehaviorItem.class, "board_space_behavior_stop");
     public static final Item TOKENIZER_WAND = register(TokenizerWand.class, "tokenizer_wand");
     public static final Item PLUNGER = register(Plunger.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDice.class,"default_dice");
@@ -31,7 +33,7 @@ public class ModItems {
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
-            .icon(() -> new ItemStack(TILE))
+            .icon(() -> new ItemStack(PARTY_CONTROLLER))
             .displayName(Text.translatable("itemgroup.steveparty"))
             .build();
 
@@ -70,8 +72,10 @@ public class ModItems {
         // Register items to the custom item group.
         ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
             itemGroup.add(TILE);
+            itemGroup.add(TRIGGER_POINT);
             itemGroup.add(WRENCH);
-            itemGroup.add(TILE_BEHAVIOR);
+            itemGroup.add(BOARD_SPACE_BEHAVIOR);
+            itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);
             itemGroup.add(TILE_BEHAVIOR_START);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(PLUNGER);

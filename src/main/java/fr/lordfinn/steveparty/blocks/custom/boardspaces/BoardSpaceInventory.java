@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.blocks.tiles;
+package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventories;
@@ -6,9 +6,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.collection.DefaultedList;
 
-import java.awt.*;
-
-public interface  TileInventory extends Inventory {
+public interface BoardSpaceInventory extends Inventory {
     /**
      * Retrieves the item list of this inventory.
      * Must return the same instance every time it's called.
@@ -18,7 +16,7 @@ public interface  TileInventory extends Inventory {
     /**
      * Creates an inventory from the item list.
      */
-    static TileInventory of(DefaultedList<ItemStack> items) {
+    static BoardSpaceInventory of(DefaultedList<ItemStack> items) {
         return () -> items;
     }
 

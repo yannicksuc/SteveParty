@@ -1,15 +1,13 @@
 package fr.lordfinn.steveparty.entities.custom;
 
-import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.tiles.Tile;
-import fr.lordfinn.steveparty.blocks.tiles.TileDestination;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import fr.lordfinn.steveparty.payloads.ArrowParticlesPayload;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -19,7 +17,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
@@ -39,7 +36,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
     private Vec3d start;
     private ServerPlayerEntity owner;
     private BlockPos tileOrigin;
-    private TileDestination tileDestination;
+    private BoardSpaceDestination tileDestination;
     private static final long DISPLAY_INTERVAL = 15;
 
 
@@ -48,7 +45,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         super(directionDisplayEntityEntityType, world);
     }
 
-    public DirectionDisplayEntity(World world, TileDestination destination, BlockPos origin, ServerPlayerEntity owner) {
+    public DirectionDisplayEntity(World world, BoardSpaceDestination destination, BlockPos origin, ServerPlayerEntity owner) {
         super(DIRECTION_DISPLAY_ENTITY, world);
         this.owner = owner;
         this.tileOrigin = origin;
@@ -143,7 +140,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
             owner = server.getPlayerManager().getPlayer(nbt.getUuid("Owner"));
         }
         if (nbt.contains("TileDestination")) {
-            tileDestination = TileDestination.fromNbt(nbt.getCompound("TileDestination"));
+            tileDestination = BoardSpaceDestination.fromNbt(nbt.getCompound("TileDestination"));
         }
         if (nbt.contains("EncodedVelocity")) {
             encodedVelocity = Vec3dFromNbt(nbt.getCompound("EncodedVelocity"));
@@ -200,11 +197,11 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         writeCustomDataToNbt(new NbtCompound());
     }
 
-    public TileDestination getTileDestination() {
+    public BoardSpaceDestination getTileDestination() {
         return tileDestination;
     }
 
-    public void setTileDestination(TileDestination tileDestination) {
+    public void setTileDestination(BoardSpaceDestination tileDestination) {
         this.tileDestination = tileDestination;
         writeCustomDataToNbt(new NbtCompound());
     }
