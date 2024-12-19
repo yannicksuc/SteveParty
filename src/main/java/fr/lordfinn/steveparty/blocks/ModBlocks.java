@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.VillagerBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TriggerPoint;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.blocks.custom.BigBook;
@@ -21,6 +22,7 @@ public class ModBlocks {
     public static final Block TRIGGER_POINT = register(TriggerPoint::new, Block.Settings.create().strength(4.0f), "trigger_point", true);
     public static final Block PARTY_CONTROLLER = register(PartyController::new, Block.Settings.create().strength(4.0f), "party_controller", true);
     public static final Block BIG_BOOK = register(BigBook::new, Block.Settings.create().strength(10.0f), "big_book", true);
+    public static final Block VILLAGER_BLOCK = register(VillagerBlock::new, Block.Settings.create().strength(0.5f).nonOpaque(), "villager_block", true);
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {
