@@ -86,6 +86,7 @@ public class ModItems {
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(MINI_GAMES_CATALOGUE);
+            itemGroup.add(VILLAGER_BLOCK);
         });
     }
 }

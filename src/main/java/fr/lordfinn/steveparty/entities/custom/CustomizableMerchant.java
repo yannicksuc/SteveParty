@@ -7,11 +7,15 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.TrappedChestBlockEntity;
 import net.minecraft.entity.*;
+import net.minecraft.entity.ai.goal.LookAtEntityGoal;
+import net.minecraft.entity.ai.goal.StopAndLookAtEntityGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.passive.WanderingTraderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.AirBlockItem;
@@ -61,6 +65,11 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
                 .add(EntityAttributes.KNOCKBACK_RESISTANCE, 0.3D)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.3D)
                 .add(EntityAttributes.FOLLOW_RANGE, 16.0D);
+    }
+
+    @Override
+    protected void initGoals() {
+        this.goalSelector.add(0, new LookAtEntityGoal(this, PlayerEntity.class, 3.0F, 1.0F));
     }
 
     @Override
@@ -307,11 +316,6 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     @Override
     public @Nullable PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
         return null;
-    }
-
-    @Override
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
-        return false; // Disable damage
     }
 
     @Override

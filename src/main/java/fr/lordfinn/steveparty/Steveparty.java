@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.screens.ModScreens;
 import fr.lordfinn.steveparty.service.TokenMovementService;
+import fr.lordfinn.steveparty.service.VillagerBlockSpawnListener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
@@ -48,6 +49,8 @@ public class Steveparty implements ModInitializer {
         MoveTokenCommand.init();
 
         new TokenMovementService();
+
+        VillagerBlockSpawnListener.registerChatListener();
         System.out.println("StevePartyMod initialized and blocks registered!");
     }
 
