@@ -1,13 +1,20 @@
 package fr.lordfinn.steveparty.utils;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.math.Vec3d;
 
+import java.awt.*;
 import java.util.Collection;
+import java.util.Objects;
+
+import static com.mojang.text2speech.Narrator.LOGGER;
 
 public class MessageUtils {
 
@@ -103,6 +110,29 @@ public class MessageUtils {
                 player.networkHandler.sendPacket(new TitleFadeS2CPacket(10, 50, 20));
             }
         }
+    }
+
+
+    public static int getColorFromText(Text text) {
+        // If the text is null, return white
+        if (text == null) {
+            return Color.WHITE.getRGB();
+        }
+
+        // Iterate over all parts of the text and check for a color
+        for (Text component : text.getSiblings()) {
+            // Check the color of the current component's style
+            Style style = component.getStyle();
+            if (style.getColor() != null && style.getColor().getRgb() != -1) {
+                return style.getColor().getRgb();
+            }
+        }
+
+        // If no color found, return white
+        if (text.getStyle().getColor() != null && text.getStyle().getColor().getRgb() != -1) {
+            return text.getStyle().getColor().getRgb();
+        }
+        return Color.WHITE.getRGB();
     }
 
     /**

@@ -25,6 +25,8 @@ public class ModComponents {
             registerComponent("tile-behavior-component", TileBehaviorComponent.CODEC);
     public static final ComponentType<MobEntityComponent> MOB_ENTITY_COMPONENT =
             registerComponent("mob-entity-component", MobEntityComponent.CODEC);
+    public static final ComponentType<EntityDataComponent> ENTITY_DATA_COMPONENT =
+            registerComponent("entity-data-component", EntityDataComponent.CODEC);
     public static final ComponentType<BlockPos> BLOCK_POS =
             registerComponent("block-pos", BlockPos.CODEC);
     public static final ComponentType<Integer> ROLLING_VALUE =

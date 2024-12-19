@@ -28,9 +28,9 @@ import static fr.lordfinn.steveparty.components.ModComponents.MOB_ENTITY_COMPONE
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 import static net.minecraft.entity.effect.StatusEffects.LEVITATION;
 
-public class TokenizerWand extends Item {
+public class TokenizerWandItem extends Item {
 
-    public TokenizerWand(Settings settings) {
+    public TokenizerWandItem(Settings settings) {
         super(settings);
     }
 
@@ -54,8 +54,29 @@ public class TokenizerWand extends Item {
             ((TokenizedEntityInterface) mob).steveparty$setTokenized(true);
             ((TokenizedEntityInterface) mob).steveparty$setTokenOwner(user);
             // Add effects
-            mob.addStatusEffect(new StatusEffectInstance(SQUISHED, 130, 13)); //10 will be a height of 1 block
+            // Define the target width limit (1.3 blocks)
+            double targetWidth = 1;
+            // Calculate the current width and height
+            double width = mob.getWidth();
+            double height = mob.getHeight();
+            // Check if the width is larger than the height
+            if (width > height) {
+                // Calculate the scale factor to fit the width within 1.3 blocks
+                double scaleFactor = targetWidth / width;
+
+                // Adjust the height to maintain the same width-to-height ratio
+                double adjustedHeight = height * scaleFactor;
+
+                // Add the status effect with the adjusted height as the new value
+                mob.addStatusEffect(new StatusEffectInstance(SQUISHED, 130, (int)(adjustedHeight * 10))); // Assuming 10 is a unit of scaling
+            } else {
+                // Use the default height scaling if width is not larger than height
+                mob.addStatusEffect(new StatusEffectInstance(SQUISHED, 130, 10)); // Default height scaling
+            }
             mob.addStatusEffect(new StatusEffectInstance(LEVITATION, 130, 1));
+            if (mob.getCustomName() == null) {
+                mob.setCustomName(user.getDisplayName());
+            }
             // Play sounds
             playSounds(mob);
         }

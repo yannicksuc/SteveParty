@@ -12,8 +12,8 @@ import net.minecraft.util.Hand;
 import static fr.lordfinn.steveparty.sounds.ModSounds.PLUNGER_SUCK_IN;
 import static fr.lordfinn.steveparty.sounds.ModSounds.PLUNGER_SUCK_OUT;
 
-public class Plunger extends Item {
-    public Plunger(Settings plunger) {
+public class PlungerItem extends Item {
+    public PlungerItem(Settings plunger) {
         super(plunger);
     }
     @Override
