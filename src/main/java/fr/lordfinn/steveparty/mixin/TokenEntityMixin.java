@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.events.TileReachedEvent;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -30,7 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(MobEntity.class)
-public abstract class TokenEntityMixin extends Entity implements TokenizedEntityInterface {
+public abstract class TokenEntityMixin extends LivingEntity implements TokenizedEntityInterface {
 
     @Unique
     private static final TrackedData<Boolean> TOKENIZED = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -43,7 +44,7 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     @Unique
     private double targetPositionSpeed;
 
-    public TokenEntityMixin(EntityType<?> type, World world) {
+    public TokenEntityMixin(EntityType<LivingEntity> type, World world) {
         super(type, world);
     }
 
@@ -206,9 +207,8 @@ public abstract class TokenEntityMixin extends Entity implements TokenizedEntity
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (this.steveparty$isTokenized()) {
-            //setVelocity(Vec3d.ZERO);
             return false;
         }
-        return true;
+        return super.damage(world, source, amount);
     }
 }

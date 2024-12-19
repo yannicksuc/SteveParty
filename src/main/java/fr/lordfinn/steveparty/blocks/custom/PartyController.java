@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogue;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.utils.VoxelShapeutils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -95,7 +95,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
-        if (stack.getItem() instanceof MiniGamesCatalogue) {
+        if (stack.getItem() instanceof MiniGamesCatalogueItem) {
             ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state);
             if (success != null) return success;
         }

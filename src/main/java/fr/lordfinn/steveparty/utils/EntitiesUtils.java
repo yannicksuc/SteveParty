@@ -1,14 +1,17 @@
 package fr.lordfinn.steveparty.utils;
 
 import com.mojang.authlib.GameProfile;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.UserCache;
 
+import java.awt.*;
 import java.util.Optional;
 import java.util.UUID;
 
-public class PlayerUtils {
+public class EntitiesUtils {
 
     /**
      * Retrieves a player's name by their UUID, even if they are offline.

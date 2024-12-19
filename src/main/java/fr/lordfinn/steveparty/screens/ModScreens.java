@@ -12,6 +12,11 @@ public class ModScreens {
                     Registries.SCREEN_HANDLER,
                     Identifier.of("steveparty", "tile_screen_handler"),
                     new ScreenHandlerType<>(TileScreenHandler::new, FeatureSet.empty()));
+    public static final ScreenHandlerType<CustomizableMerchantScreenHandler> CUSTOMIZABLE_MERCHANT_SCREEN_HANDLER =
+            Registry.register(
+                    Registries.SCREEN_HANDLER,
+                    Identifier.of("steveparty", "customizable_merchant_screen_handler"),
+                    new ScreenHandlerType<>(CustomizableMerchantScreenHandler::new, FeatureSet.empty()));
     public static void initialize() {
     }
 }

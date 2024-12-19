@@ -16,9 +16,9 @@ import net.minecraft.world.World;
 
 import static fr.lordfinn.steveparty.components.ModComponents.BLOCK_POS;
 
-public class Wrench extends Item implements TileOpener {
+public class WrenchItem extends Item implements TileOpener {
 
-    public Wrench(Settings settings) {
+    public WrenchItem(Settings settings) {
         super(settings);
     }
 

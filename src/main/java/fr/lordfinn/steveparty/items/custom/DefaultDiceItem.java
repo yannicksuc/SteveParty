@@ -15,8 +15,8 @@ import net.minecraft.world.World;
 
 import static fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY;
 
-public class DefaultDice extends Item {
-    public DefaultDice(Settings settings) {
+public class DefaultDiceItem extends Item {
+    public DefaultDiceItem(Settings settings) {
         super(settings);
     }
 

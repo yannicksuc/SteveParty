@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
-import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogue;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentMap;
@@ -127,7 +127,7 @@ public class PartyControllerEntity extends BlockEntity {
                 ItemScatterer.spawn(world, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, catalogue);
             }
         }
-        if (itemStack.isEmpty() || itemStack.getItem() instanceof MiniGamesCatalogue)
+        if (itemStack.isEmpty() || itemStack.getItem() instanceof MiniGamesCatalogueItem)
             catalogue = itemStack.copy();
         this.markDirty();
         return !catalogue.isEmpty();
