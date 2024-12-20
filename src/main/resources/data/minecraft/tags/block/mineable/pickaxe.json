@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "steveparty:tile"
+    "steveparty:tile",
+    "steveparty:trigger_point",
+    "steveparty:cash_register",
+    "steveparty:party_controller"
   ]
 }

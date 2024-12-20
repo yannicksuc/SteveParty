@@ -1,13 +1,10 @@
 package fr.lordfinn.steveparty.utils;
 
 import com.mojang.authlib.GameProfile;
-import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
 import net.minecraft.util.UserCache;
 
-import java.awt.*;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,7 +26,7 @@ public class EntitiesUtils {
 
         // Query the user cache for offline players
         UserCache userCache = server.getUserCache();
-        Optional<GameProfile> cachedProfile = null;
+        Optional<GameProfile> cachedProfile;
         if (userCache != null) {
             cachedProfile = userCache.getByUuid(uuid);
             return cachedProfile.map(GameProfile::getName).orElse(null);

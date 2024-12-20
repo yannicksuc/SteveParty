@@ -1,21 +1,18 @@
 package fr.lordfinn.steveparty.entities.custom;
 
-import fr.lordfinn.steveparty.Steveparty;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
-import net.minecraft.util.math.Vec3d;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.Vec3d;
 
 public class AttractionSimulation {
     private LivingEntity target; // The entity that does not move
-    private LivingEntity dice;   // The entity that moves
+    private final LivingEntity dice;   // The entity that moves
     private Vec3d velocity;      // Current velocity of the moving entity
 
-    private double springConstant = 0.2; // Strength of the attraction
-    private double dampingFactor = 0.2; // Damping to reduce oscillation
-    private double deltaTime = 0.2;     // Time step (ticks, adjust as needed)
+    private final double springConstant = 0.2; // Strength of the attraction
+    private final double dampingFactor = 0.2; // Damping to reduce oscillation
+    private final double deltaTime = 0.2;     // Time step (ticks, adjust as needed)
 
     public AttractionSimulation(LivingEntity target, LivingEntity dice) {
         this.target = target;

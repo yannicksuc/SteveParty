@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "steveparty:block/cash_register", "y":  -180, "uvlock": false },
+    "facing=east":  { "model": "steveparty:block/cash_register", "y":  -90, "uvlock": false },
+    "facing=south": { "model": "steveparty:block/cash_register", "y": 0, "uvlock": false },
+    "facing=west":  { "model": "steveparty:block/cash_register", "y": 90, "uvlock": false }
+  }
+}

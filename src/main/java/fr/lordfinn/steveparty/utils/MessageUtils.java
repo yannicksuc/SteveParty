@@ -1,20 +1,15 @@
 package fr.lordfinn.steveparty.utils;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
 import java.util.Collection;
-import java.util.Objects;
-
-import static com.mojang.text2speech.Narrator.LOGGER;
 
 public class MessageUtils {
 

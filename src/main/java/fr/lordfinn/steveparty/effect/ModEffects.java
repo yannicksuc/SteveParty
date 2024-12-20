@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.effect;
 
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Potions;
 import net.minecraft.recipe.BrewingRecipeRegistry;

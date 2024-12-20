@@ -6,7 +6,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
@@ -57,9 +56,9 @@ public class MoveTokenCommand {
      */
     private static List<String> getNearbyTokenNames(ServerCommandSource source) {
         return source.getWorld()
-                .getEntitiesByClass(MobEntity.class, getNearbyBox(source), mob -> mob.hasCustomName())
+                .getEntitiesByClass(MobEntity.class, getNearbyBox(source), null)
                 .stream()
-                .map(mob -> mob.getCustomName().getString())
+                .map(mob -> mob.getCustomName() != null ? mob.getCustomName().getString() : mob.getName().getString())
                 .collect(Collectors.toList());
     }
 
@@ -68,7 +67,9 @@ public class MoveTokenCommand {
      */
     private static MobEntity getNearestMobWithCustomName(ServerCommandSource source, String customName) {
         return source.getWorld()
-                .getEntitiesByClass(MobEntity.class, getNearbyBox(source), mob -> mob.hasCustomName() && mob.getCustomName().getString().equals(customName))
+                .getEntitiesByClass(MobEntity.class, getNearbyBox(source),
+                        mob -> mob.hasCustomName() &&
+                        (mob.getCustomName() != null ? mob.getCustomName() : mob.getName()).getString().equals(customName))
                 .stream()
                 .findFirst()
                 .orElse(null);

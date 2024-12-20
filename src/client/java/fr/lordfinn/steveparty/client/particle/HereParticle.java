@@ -37,9 +37,9 @@ public class HereParticle extends SpriteBillboardParticle {
         return Rotator.Y_AND_W_ONLY;
     }
 
-    double originalY = 0;
-    double amplitude = 0.3; // Change this to control how high/low the movement is
-    double frequency = 0.002;  // Change this to control the speed of oscillation
+    final double originalY;
+    final double amplitude = 0.3; // Change this to control how high/low the movement is
+    final double frequency = 0.002;  // Change this to control the speed of oscillation
 
     private void updatePosition() {
         this.y = originalY + amplitude * Math.cos(frequency * System.currentTimeMillis()); // `originalY` is the starting y position

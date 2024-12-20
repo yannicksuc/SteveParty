@@ -1,13 +1,11 @@
 package fr.lordfinn.steveparty.client.particle;
 
-import fr.lordfinn.steveparty.Steveparty;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.util.math.random.Random;
-import org.joml.Vector2d;
 import org.joml.Vector3f;
 
 public class EnchantedCircularParticle extends SpriteBillboardParticle {

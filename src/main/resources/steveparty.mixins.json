@@ -7,7 +7,7 @@
     "CustomFireworkRocketEntityMixin",
     "FireworkRocketEntityAccessor",
     "LivingEntityMixin",
-    "MerchantScreenHandlerMixin",
+    "MerchantEntityMixin",
     "StatusEffectMixin",
     "TokenEntityMixin"
   ],

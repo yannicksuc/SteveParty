@@ -71,7 +71,7 @@ public class VoxelShapeutils {
         shape.forEachBox((x1, y1, z1, x2, y2, z2)->{
             result.add(new Box(x1,y1,z1,x2,y2,z2));
         });
-        return result.toArray(new Box[result.size()]);
+        return result.toArray(new Box[0]);
     }
 
     public static VoxelShape[] rotationsOf(VoxelShape shape) {

@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -21,7 +20,6 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -39,16 +37,18 @@ public class PartyControllerEntity extends BlockEntity {
     public ItemStack catalogue = ItemStack.EMPTY;
     public long lastTime = 0;
     private final List<UUID> players = new ArrayList<>();
+    private final int START_TILES_SEARCH_RADIUS = 100;
 
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
 
-        DiceRollEvent.EVENT.register((diceEntity, owner, rollValue) -> {
+        //TODO Integrate custom party management
+        /*DiceRollEvent.EVENT.register((diceEntity, owner, rollValue) -> {
             if (diceEntity.getWorld().isClient) return ActionResult.PASS;
             if (players.contains(owner)) {
             }
             return ActionResult.SUCCESS;
-        });
+        });*/
     }
 
     @Override
@@ -137,7 +137,7 @@ public class PartyControllerEntity extends BlockEntity {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
 
         BlockPos pos = this.getPos();
-        List<BlockPos> startTiles = findStartTiles(serverWorld, pos, 100);
+        List<BlockPos> startTiles = findStartTiles(serverWorld, pos);
 
         for (BlockPos tilePos : startTiles) {
             BlockEntity tileEntity = serverWorld.getBlockEntity(tilePos);
@@ -151,9 +151,10 @@ public class PartyControllerEntity extends BlockEntity {
         markDirty();
     }
 
-    private List<BlockPos> findStartTiles(ServerWorld world, BlockPos center, int radius) {
+    private List<BlockPos> findStartTiles(ServerWorld world, BlockPos center) {
         List<BlockPos> startTiles = new ArrayList<>();
-        Box searchBox = new Box(center.add(-radius, -radius, -radius).toCenterPos(), center.add(radius, radius, radius).toCenterPos());
+        Box searchBox = new Box(center.add(-START_TILES_SEARCH_RADIUS, -START_TILES_SEARCH_RADIUS, -START_TILES_SEARCH_RADIUS).toCenterPos(),
+                center.add(START_TILES_SEARCH_RADIUS, START_TILES_SEARCH_RADIUS, START_TILES_SEARCH_RADIUS).toCenterPos());
 
         for (BlockPos pos : BlockPos.iterate((int) searchBox.minX, (int) searchBox.minY, (int) searchBox.minZ,
                 (int) searchBox.maxX, (int) searchBox.maxY, (int) searchBox.maxZ)) {

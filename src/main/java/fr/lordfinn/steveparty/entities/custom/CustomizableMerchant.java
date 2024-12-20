@@ -1,26 +1,20 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screens.CustomizableMerchantScreenHandler;
-import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.TrappedChestBlockEntity;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.StopAndLookAtEntityGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.entity.passive.WanderingTraderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.AirBlockItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -41,7 +35,6 @@ import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 //WanderingTraderEntity
 
@@ -50,12 +43,13 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     private final List<Inventory> nearbyInventories = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
-    private OptionalInt optionalScreenHandlerId = OptionalInt.empty();
+    private Integer optionalScreenHandlerId = null;
     private boolean canBuy = false;
 
     public CustomizableMerchant(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
         updateTradeOffers();
+        initGoals();
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -74,19 +68,17 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
 
     @Override
     public void sendOffers(PlayerEntity player, Text name, int levelProgress) {
-        optionalScreenHandlerId = player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, playerx)
-                -> new CustomizableMerchantScreenHandler(syncId, playerInventory, this), name));
+        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, playerx)
+                -> new CustomizableMerchantScreenHandler(syncId, playerInventory, this), name)).ifPresent(id -> optionalScreenHandlerId = id);
         updateTradesToClient(player, levelProgress);
     }
 
     private void updateTradesToClient(PlayerEntity player, int levelProgress) {
-        if (optionalScreenHandlerId.isPresent()) {
+        if (optionalScreenHandlerId != null) {
             TradeOfferList tradeOfferList = this.getOffers();
-            Steveparty.LOGGER.info("updateTradesToClient tradeOfferList: {}", tradeOfferList);
             if (!tradeOfferList.isEmpty()) {
                 this.setCustomer(player);
-                player.sendTradeOffers(optionalScreenHandlerId.getAsInt(), tradeOfferList, levelProgress, this.getExperience(), this.isLeveledMerchant(), this.canRefreshTrades());
-                Steveparty.LOGGER.info("updateTradesToClient sendTradeOffers {}", getCustomer());
+                player.sendTradeOffers(optionalScreenHandlerId, tradeOfferList, levelProgress, this.getExperience(), this.isLeveledMerchant(), this.canRefreshTrades());
             }
         }
     }
@@ -94,11 +86,6 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     @Override
     public boolean isLeveledMerchant() {
         return false;
-    }
-
-    public void callNearbyCashRegisters(World world) {
-        // Placeholder for interacting with nearby cash registers after a trade
-        // TODO: Implement logic for connecting with other entities like cash registers
     }
 
     public boolean isBottomBlockPowered() {
@@ -243,6 +230,12 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     }
 
     @Override
+    public void readNbt(NbtCompound nbt) {
+        super.readNbt(nbt);
+        initGoals();
+    }
+
+    @Override
     public void tick() {
         super.tick();
         if (!this.getWorld().isClient && !canBuy && isBottomBlockPowered()) {
@@ -269,7 +262,6 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
                     BlockPos currentPos = villagerPos.add(x, y, z);
-                    BlockState blockState = world.getBlockState(currentPos);
                     BlockEntity blockEntity = world.getBlockEntity(currentPos);
                     if (blockEntity instanceof Inventory) {
                         nearbyInventories.add((Inventory) blockEntity);
@@ -336,13 +328,5 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     protected void fillRecipes() {
         addNearbyInventories();
         updateTradeOffers();
-    }
-
-    public OptionalInt getOptionalScreenHandlerId() {
-        return optionalScreenHandlerId;
-    }
-
-    public void setOptionalScreenHandlerId(OptionalInt optionalScreenHandlerId) {
-        this.optionalScreenHandlerId = optionalScreenHandlerId;
     }
 }

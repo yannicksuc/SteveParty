@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.items.custom.TileOpener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -85,16 +84,13 @@ public abstract class BoardSpace extends HorizontalFacingBlock implements BlockE
     // This method will drop all items onto the ground when the block is broken
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        Steveparty.LOGGER.info("onStateReplaced");
         BoardSpaceEntity tileEntity = getTileEntity(world, pos);
         if (tileEntity == null) return;
         if (state.getBlock() != newState.getBlock()) {
-            Steveparty.LOGGER.info("onStateReplaced2");
             ItemScatterer.spawn(world, pos, tileEntity.getInventory());
             world.updateComparators(pos,this);
             tileEntity.hideDestinations();
         } else {
-            Steveparty.LOGGER.info("onStateReplaced3");
             tileEntity.getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, tileEntity));
         }
         super.onStateReplaced(state, world, pos, newState, moved);
