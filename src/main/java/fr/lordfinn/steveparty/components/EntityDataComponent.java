@@ -30,9 +30,4 @@ public record EntityDataComponent(NbtList attributesData, NbtCompound entityData
             NBT_LIST_CODEC.fieldOf("attributesData").forGetter(EntityDataComponent::attributesData),
             NbtCompound.CODEC.fieldOf("entityData").forGetter(EntityDataComponent::entityData)
     ).apply(builder, EntityDataComponent::new));
-
-    public static final EntityDataComponent DEFAULT_ENTITY_DATA = new EntityDataComponent(
-            new NbtList(), // Empty attributes data
-            new NbtCompound() // Empty entity data
-    );
 }

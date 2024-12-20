@@ -18,7 +18,7 @@ import org.joml.Vector2d;
 import java.util.Map;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.getTileEntity;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.getBoardSpaceEntity;
 import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
 import static fr.lordfinn.steveparty.particles.ModParticles.ENCHANTED_CIRCULAR_PARTICLE;
 
@@ -44,7 +44,7 @@ public class PayloadReceivers {
         ClientPlayNetworking.registerGlobalReceiver(UpdateColoredTilePayload.ID, (payload, context)  -> context.client().execute(() -> {
             BlockPos pos = payload.position();
             World world = context.player().getWorld();
-            BoardSpaceEntity tileEntity = getTileEntity(world, pos);
+            BoardSpaceEntity tileEntity = getBoardSpaceEntity(world, pos);
             if (tileEntity == null) return;
             ItemStack behaviorItemstack = tileEntity.getActiveTileBehaviorItemStack();
             behaviorItemstack.set(ModComponents.TB_START_COLOR, payload.color());

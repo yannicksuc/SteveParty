@@ -14,8 +14,6 @@ import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -77,10 +75,6 @@ public class TokenMovementService {
         return ActionResult.PASS;
     }
 
-    private static Box getNearbyBox(ServerCommandSource source) {
-        return Box.of(source.getPosition(), 100, 100, 100);
-    }
-
     public static void moveEntityOnBoard(MobEntity mob, int rollNumber) {
         ((TokenizedEntityInterface) mob).steveparty$setNbSteps(rollNumber);
         if (rollNumber == 0) {
@@ -89,7 +83,7 @@ public class TokenMovementService {
                     MessageUtils.MessageType.ACTION_BAR);
             return;
         }
-        BoardSpaceEntity tileEntity = BoardSpace.getTileEntity(mob.getWorld(), mob.getBlockPos());
+        BoardSpaceEntity tileEntity = BoardSpace.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
         if (tileEntity == null) return;
         //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
 
@@ -97,7 +91,7 @@ public class TokenMovementService {
                 Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName() != null ? mob.getCustomName() : mob.getName())
                 , MessageUtils.MessageType.ACTION_BAR);
 
-        List<BoardSpaceDestination> destinations = BoardSpaceEntity.getCurrentDestinations(tileEntity).stream().filter(BoardSpaceDestination::isTile).toList();
+        List<BoardSpaceDestination> destinations = tileEntity.getStockedDestinations().stream().filter(BoardSpaceDestination::isTile).toList();
         if (destinations.size() > 1) {
             tileEntity.displayDestinations((ServerPlayerEntity) mob.getWorld().getPlayers().getFirst(), destinations);
         } else if (destinations.size() == 1) {
@@ -107,14 +101,9 @@ public class TokenMovementService {
         }
     }
 
-    private void sendMessageToPlayer(String message, PlayerEntity player) {
-        if (player.getWorld().isClient)
-            player.sendMessage(Text.of(message), false);
-    }
-
     public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, BoardSpaceDestination tileDestination) {
         if (tileDestination == null || tileOrigin == null) return;
-        BoardSpaceEntity tileEntity = BoardSpace.getTileEntity(world, tileOrigin);
+        BoardSpaceEntity tileEntity = BoardSpace.getBoardSpaceEntity(world, tileOrigin);
         if (tileEntity == null) return;
         tileEntity.hideDestinations();
         List<MobEntity> tokens = tileEntity.getTokensOnMe();

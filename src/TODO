@@ -1,0 +1,69 @@
+
+______________________________________________________________________________
+TILE BEHAVIOR => NEUTRABLE, BAD, POSITIVE => Pouvoir changer ça avec une cammande pour le moment /behavior level
+_____________________________________________________________________________
+
+____________________________________
+PARTY CONTROLLEUR DOIT :
+
+Accepter un bouquin en input
+Stocker un item de victoire => click avec item sur le bloc
+Stocker un item de victoire secondaire => shift click avec item sur le bloc
+
+
+Lister les tuiles starts proches
+
+Stocker sous forme de persistante data les données de la game :
+-> Pions UUID
+
+Generer les étapes de jeu (10 tours) avec un mini jeu entre chaque tour
+
+Stocker sous forme de persistante data les données de la game :
+-> Liste Etapes
+-> Etape Courante
+-> Status Etape Courante (STARTING, RUNNING, WAITING, ENDING)
+
+Types détapes :
+
+    Etape Tour joueur :
+    Tour d'un pion (autoriser un lancé de dé, puis attendre un trigger de fin de tour)
+    Le joueur actif est dans le groupe 1
+    Les joueurs en attente sont dans le groupe 2
+
+    Etape Mini Jeu :
+    En fonction des TILEs BEHAVIORs => NEUTRABLE, BAD, POSITIVE
+    Répartir les joueurs dans les groupes 1 et 2
+    Les pions sur les cases avec behaviors positif => groupe 1
+    Les pions sur les cases avec behvaiors negatif => groupe 2
+    Les pions sur les cases avec behvaiors neutre => groupe 2 ou 1
+    Pour savoir comment répartir les joueur dans les groupes, regarder le bouquin de catalogue de jeu et les jeu possiblements tirables
+    Ensuite répartir les équipe en fonction des possibilités
+    Si aucun jeu possiblement tirable, annuler la répartition préalable et tirer un jeu au pif => répartir aléatoirement accordément les joueurs dans des équipes 1 et 2
+    Attendre un trigger de fin de tour
+
+    Etape Annonce des scores :
+    Lire les items dans les inventaires des joueurs et conditions de victoires
+    Annoncer les victoires dans le chat
+
+    Finnir le jeu et vider les stats de partie courante
+
+____________________________________
+
+MINI GAME CATALOGUE : CONTIENT DES MINI GAME PAGES
+MINI GAME PAGE :
+nom de l'item : minigame_page
+Contient :
+Nom du mini jeu (nom de la page)
+Liste de BlockPos pour les TP
+Click droit sur les teleporters avec la page pour ajouter ou suprimer les tps
+
+____________________________________
+TELEPORTERS : (nom du bloc : big_book)
+TP BOOK : (nom de l'item : tp_book)
+TYPES :
+ALLER VERS UN MINIJEU (nom de l'item : tp_book_to_minigame) INPUT ONLY
+ALLER VERS LE DERNIER TP EMPREINTé (nom de l'item : tp_book_back) INPUT ONLY
+RECEVOIR UN JOUEUR VERS MINI JEU DU GROUPE 1 (nom de l'item : tp_book_group_1) OUTPUT ONLY
+RECEVOIR UN JOUEUR VERS MINI JEU DU GROUPE 2 (nom de l'item : tp_book_group_2) OUTPUT ONLY
+RECEVOIR UN JOUEUR VERS MINI JEU DES JOUEURS SANS GROUPES (nom de l'item : tp_book_no_group) OUTPUT ONLY
+______________________________________

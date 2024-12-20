@@ -10,10 +10,6 @@ public class AttractionSimulation {
     private final LivingEntity dice;   // The entity that moves
     private Vec3d velocity;      // Current velocity of the moving entity
 
-    private final double springConstant = 0.2; // Strength of the attraction
-    private final double dampingFactor = 0.2; // Damping to reduce oscillation
-    private final double deltaTime = 0.2;     // Time step (ticks, adjust as needed)
-
     public AttractionSimulation(LivingEntity target, LivingEntity dice) {
         this.target = target;
         this.dice = dice;
@@ -28,8 +24,6 @@ public class AttractionSimulation {
             return;
         }
 
-
-        //Steveparty.LOGGER.info("client ? " + target.getWorld().isClient);
         // Get positions of entities
         Vec3d targetPosition = target.getPos().add(0, target.getHeight() + dice.getHeight() / 2 + 0.5, 0);
         Vec3d dicePosition = dice.getPos();
@@ -38,9 +32,15 @@ public class AttractionSimulation {
         Vec3d displacement = targetPosition.subtract(dicePosition);
 
         // Calculate force (spring force - damping)
+        // Strength of the attraction
+        double springConstant = 0.2;
+        // Damping to reduce oscillation
+        double dampingFactor = 0.2;
         Vec3d force = displacement.multiply(springConstant).subtract(velocity.multiply(dampingFactor));
 
         // Update velocity
+        // Time step (ticks, adjust as needed)
+        double deltaTime = 0.2;
         velocity = velocity.add(force.multiply(deltaTime));
 
         // Update dice entity position using move() method
@@ -50,13 +50,5 @@ public class AttractionSimulation {
 
     public void setTarget(LivingEntity target) {
         this.target = target;
-    }
-
-    public Vec3d getVelocity() {
-        return velocity;
-    }
-
-    public LivingEntity getTarget() {
-        return target;
     }
 }

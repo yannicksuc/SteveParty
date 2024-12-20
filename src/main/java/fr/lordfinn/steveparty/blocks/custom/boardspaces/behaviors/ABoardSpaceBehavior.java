@@ -35,7 +35,7 @@ public abstract class ABoardSpaceBehavior {
     private void onPlayerStep(World world, BlockPos pos, BlockState state, Entity entity) {}
 
     protected static BoardSpaceEntity getTileEntity(World world, BlockPos pos) {
-        return BoardSpace.getTileEntity(world, pos);
+        return BoardSpace.getBoardSpaceEntity(world, pos);
     }
 
     protected static ItemStack getBehaviorItemstack(World world, BlockPos pos) {
@@ -48,7 +48,7 @@ public abstract class ABoardSpaceBehavior {
         return tileEntity.getActiveTileBehaviorItemStack();
     }
 
-    public void onPieceStep(World world, BlockPos pos, BlockState state, MobEntity entity) {};
+    public void onPieceStep(World world, BlockPos pos, BlockState state, MobEntity entity) {}
 
     public void tick(ServerWorld world, BoardSpaceEntity state, ItemStack type, int ticks) {}
 

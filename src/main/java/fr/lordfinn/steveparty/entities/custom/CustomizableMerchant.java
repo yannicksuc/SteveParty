@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.screens.CustomizableMerchantScreenHandler;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.TrappedChestBlockEntity;
@@ -8,8 +9,11 @@ import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.passive.WanderingTraderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.AirBlockItem;
@@ -18,10 +22,13 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
@@ -36,7 +43,6 @@ import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
 
-//WanderingTraderEntity
 
 public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     private final TradeOfferList tradeOffers = new TradeOfferList();
@@ -218,6 +224,9 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
+        if (player.getMainHandStack().getItem() instanceof TokenItem) {
+            return ActionResult.PASS;
+        }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity) {
             this.fillRecipes();
             if (!canBuy)
@@ -230,9 +239,48 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     }
 
     @Override
+    protected void updatePassengerPosition(Entity passenger, PositionUpdater positionUpdater) {
+        if (this.hasPassenger(passenger)) {
+            passenger.setPos(this.getX(), this.getY(), this.getZ());
+            passenger.rotate(this.getYaw(), this.getPitch());
+            passenger.setHeadYaw(this.getYaw());
+            passenger.updateTrackedHeadRotation(this.getYaw(), 0);
+        }
+    }
+
+    @Override
+    public Box getBoundingBox(EntityPose pose) {
+        if (this.hasPassengers()) {
+            Entity passenger = this.getFirstPassenger();
+            if (passenger ==null) return super.getHitbox();
+            return passenger.getBoundingBox().expand(0.2);
+        }
+        return super.getBoundingBox();
+    }
+
+    @Override
+    protected Box getHitbox() {
+        return super.getBoundingBox();
+    }
+
+    @Override
+    protected Box getAttackBox() {
+        return super.getBoundingBox();
+    }
+
+    @Override
     public void readNbt(NbtCompound nbt) {
         super.readNbt(nbt);
+        nbt.putBoolean("isInvisible", this.isInvisible());
         initGoals();
+    }
+
+    @Override
+    public NbtCompound writeNbt(NbtCompound nbt) {
+        if (nbt.contains("isInvisible")) {
+            this.setInvisible(nbt.getBoolean("isInvisible"));
+        }
+        return super.writeNbt(nbt);
     }
 
     @Override
@@ -298,6 +346,13 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
         }
         validateTradeStock();
         updateTradesToClient(getCustomer(), 0);
+        if (hasPassengers() && getFirstPassenger() instanceof MobEntity passenger) {
+            boolean silentStatus = passenger.isSilent();
+            passenger.setSilent(false);
+            passenger.playAmbientSound();
+            passenger.setSilent(silentStatus);
+        } else
+            this.playSound(SoundEvents.ENTITY_VILLAGER_TRADE, 1.0F, this.getSoundPitch());
     }
 
     @Override
@@ -329,4 +384,21 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
         addNearbyInventories();
         updateTradeOffers();
     }
+
+    @Override
+    public void playAmbientSound() {
+        this.playSoundIfNotSilent(SoundEvents.ENTITY_VILLAGER_AMBIENT);
+    }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource source) {
+        return SoundEvents.ENTITY_VILLAGER_HURT;
+    }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        // Return villager death sound
+        return SoundEvents.ENTITY_VILLAGER_DEATH;
+    }
+
 }

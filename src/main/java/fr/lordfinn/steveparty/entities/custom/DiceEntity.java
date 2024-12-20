@@ -46,11 +46,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.dice.idle");
     protected static final RawAnimation ROLL_ANIM = RawAnimation.begin().thenLoop("animation.dice.rolling");
     private String skin;
-    private static final int ROLLING_STATE = -1;
     final AttractionSimulation simulation = new AttractionSimulation(null, this);
     public static final int MIN = 1;
     public static final int MAX = 10;
-    public int fakeValue = -999999;
 
     public int getRandomDiceValue() {
         return (int) (Math.random() * MAX) + MIN;
@@ -128,7 +126,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     public boolean isRolling() {
-        return (Boolean) this.dataTracker.get(ROLLING); // Retrieve the current value of ROLLING
+        return this.dataTracker.get(ROLLING); // Retrieve the current value of ROLLING
     }
 
     private void setRollValue(int rollValue) {
@@ -136,7 +134,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     public int getRollValue() {
-        return (Integer) this.dataTracker.get(ROLL_VALUE);
+        return this.dataTracker.get(ROLL_VALUE);
     }
 
     protected void pickRollValue() {
@@ -174,7 +172,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 });
             }
             if (getTick(this) % 20 == 0 && this.isRolling()) {
-                ((ServerWorld)this.getWorld()).playSound(
+                (this.getWorld()).playSound(
                         null,
                         this.getBlockPos(),
                         SoundEvents.ENTITY_BREEZE_WHIRL,
@@ -247,10 +245,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.setInvulnerable(true);
         this.setNoGravity(true);
         if (this.getWorld() instanceof ServerWorld) {
-            this.getTarget().ifPresent(uuid -> {
-                simulation.setTarget((LivingEntity) ((ServerWorld) this.getWorld())
-                    .getEntity(uuid));
-            });
+            this.getTarget().ifPresent(uuid -> simulation.setTarget((LivingEntity) ((ServerWorld) this.getWorld())
+                .getEntity(uuid)));
         }
     }
 

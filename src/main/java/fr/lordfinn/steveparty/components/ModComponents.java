@@ -21,8 +21,8 @@ public class ModComponents {
     }
 
     // Component definitions using the registerComponent method
-    public static final ComponentType<TileBehaviorComponent> TILE_BEHAVIOR_COMPONENT =
-            registerComponent("tile-behavior-component", TileBehaviorComponent.CODEC);
+    public static final ComponentType<BoardSpaceBehaviorComponent> BOARD_SPACE_BEHAVIOR_COMPONENT =
+            registerComponent("tile-behavior-component", BoardSpaceBehaviorComponent.CODEC);
     public static final ComponentType<MobEntityComponent> MOB_ENTITY_COMPONENT =
             registerComponent("mob-entity-component", MobEntityComponent.CODEC);
     public static final ComponentType<EntityDataComponent> ENTITY_DATA_COMPONENT =
