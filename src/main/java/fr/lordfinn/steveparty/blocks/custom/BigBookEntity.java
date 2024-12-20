@@ -102,15 +102,17 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
 
 
     private PlayState storyClosedAnimController(AnimationState<BigBookEntity> event) {
-        if (world != null && !catalogue.isEmpty() && world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) == null)
+        if (world != null && !catalogue.isEmpty() && world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) == null) {
             return event.setAndContinue(STORY_CLOSED_ANIM);
+        }
         event.setAnimation(STORY_ANIM);
         return PlayState.STOP;
     }
 
     protected <T extends BigBookEntity> PlayState storyAnimController(final AnimationState<T> event) {
-        if (!catalogue.isEmpty() && (world == null || world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) != null))
-         return event.setAndContinue(STORY_ANIM);
+        if (!catalogue.isEmpty() && (world == null || world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) != null)) {
+            return event.setAndContinue(STORY_ANIM);
+        }
         event.setAnimation(STORY_CLOSED_ANIM);
         return PlayState.STOP;
     }

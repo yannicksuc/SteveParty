@@ -24,10 +24,6 @@ public abstract class ABoardSpaceBehavior {
         this.tileType = tileType;
     }
 
-    public BoardSpaceType getTileType() {
-        return tileType;
-    }
-
     public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
         if (entity instanceof PlayerEntity)
             onPlayerStep(world, pos, state, entity);
@@ -36,12 +32,7 @@ public abstract class ABoardSpaceBehavior {
         }
     }
 
-    private void onPlayerStep(World world, BlockPos pos, BlockState state, Entity entity) {
-    }
-
-    protected BoardSpace getTile(BlockState state) {
-        return (BoardSpace) state.getBlock();
-    }
+    private void onPlayerStep(World world, BlockPos pos, BlockState state, Entity entity) {}
 
     protected static BoardSpaceEntity getTileEntity(World world, BlockPos pos) {
         return BoardSpace.getTileEntity(world, pos);

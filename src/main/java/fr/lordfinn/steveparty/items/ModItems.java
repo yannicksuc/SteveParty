@@ -51,14 +51,6 @@ public class ModItems {
         }
     }
 
-    /*public static Item register(Item item, String id) {
-        Identifier itemID = Identifier.of(Steveparty.MOD_ID, id);
-        RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
-
-        return Registry.register(Registries.ITEM, key, item);
-
-    }*/
-
     public static Item.Settings getSettings(Item.Settings itemSettings, String id) {
         Identifier itemID = Identifier.of(Steveparty.MOD_ID, id);
         RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
@@ -87,6 +79,7 @@ public class ModItems {
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(MINI_GAMES_CATALOGUE);
             itemGroup.add(VILLAGER_BLOCK);
+            itemGroup.add(CASH_REGISTER);
         });
     }
 }

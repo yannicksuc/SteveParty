@@ -1,11 +1,9 @@
 package fr.lordfinn.steveparty.mixin;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
@@ -143,10 +141,13 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         return this.dataTracker.get(NB_STEPS);
     }
     @Unique
+    final
     double deceleration = 0.1;  // Horizontal deceleration
     @Unique
+    final
     double gravity = 0.05;      // Gravity force (default value for Minecraft is around 0.08)
     @Unique
+    final
     double threshold = 0.05;    // Threshold for stopping horizontal movement
     /**
      * Called every tick to handle manual movement toward the target.

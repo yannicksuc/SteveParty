@@ -47,7 +47,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     protected static final RawAnimation ROLL_ANIM = RawAnimation.begin().thenLoop("animation.dice.rolling");
     private String skin;
     private static final int ROLLING_STATE = -1;
-    AttractionSimulation simulation = new AttractionSimulation(null, this);
+    final AttractionSimulation simulation = new AttractionSimulation(null, this);
     public static final int MIN = 1;
     public static final int MAX = 10;
     public int fakeValue = -999999;

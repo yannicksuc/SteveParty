@@ -7,14 +7,13 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 
 import java.util.List;
-import java.util.Map;
 
 public record EntityDataComponent(NbtList attributesData, NbtCompound entityData) {
     public static final Codec<NbtList> NBT_LIST_CODEC = Codec.list(NbtCompound.CODEC)
             .xmap(list -> {
                 // Convert List<NbtCompound> to NbtList
                 NbtList nbtList = new NbtList();
-                list.forEach(nbt -> nbtList.add(nbt)); // Add each NbtCompound to NbtList
+                nbtList.addAll(list); // Add each NbtCompound to NbtList
                 return nbtList;
             }, nbtList -> {
                 // Convert NbtList to List<NbtCompound>

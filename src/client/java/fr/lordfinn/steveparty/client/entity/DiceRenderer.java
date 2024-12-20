@@ -16,7 +16,10 @@ public class DiceRenderer extends GeoEntityRenderer<DiceEntity> {
     @Override
     public Identifier getTextureLocation(DiceEntity animatable) {
         MinecraftClient client = MinecraftClient.getInstance();
-        long worldTicks = client.world.getTime();
+        long worldTicks = 0;
+        if (client.world != null) {
+            worldTicks = client.world.getTime();
+        }
         if (animatable.isRolling()) {
             if (worldTicks % 4 == 0 || fakeValue == -999999)
                 fakeValue = animatable.getRandomDiceValue();

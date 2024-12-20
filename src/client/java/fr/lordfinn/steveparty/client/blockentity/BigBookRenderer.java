@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.BigBookEntity;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
@@ -11,6 +12,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
@@ -30,9 +32,9 @@ public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
         return RenderLayer.getEntityTranslucent(getTextureLocation(animatable));
     }
 
-
     @Override
-    public void render(BigBookEntity animatable, float partialTick, MatrixStack poseStack, VertexConsumerProvider bufferSource, int packedLight, int packedOverlay) {
+    public void preRender(MatrixStack poseStack, BigBookEntity animatable, BakedGeoModel model, @Nullable VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+        super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, renderColor);
         World world = animatable.getWorld();
         PlayerEntity player = null;
         if (world != null)
@@ -74,44 +76,12 @@ public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
                 animatable.lastTime = System.currentTimeMillis();
             }
         }
-        super.render(animatable, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
-    }
-
-    private static int getInterpolatedColor(double distance) {
-        float factor = (float) Math.max(0, Math.min(1, (6 - distance) / 6));
-
-        // Define your colors
-        //int[] colors = {0x4CBAE7, 0xC080FB, 0xFF82E6, 0xFF1087};
-        int[] colors = {0xede553, 0xd9c230, 0xe8b600};
-
-        // Determine the current color range
-        int colorIndex = (int) (factor * (colors.length - 1));
-        float subFactor = factor * (colors.length - 1) - colorIndex;
-
-        // Interpolate between the two closest colors
-        return interpolateColor(colors[colorIndex], colors[Math.min(colorIndex + 1, colors.length - 1)], subFactor);
     }
 
     private void summonParticle(Vec3d position, World world, double distance, double color, double angularVelocity) {
 
         world.addParticle(ENCHANTED_CIRCULAR_PARTICLE, position.x, position.y, position.z,
                 distance, color, angularVelocity);
-    }
-
-    public static int interpolateColor(int color1, int color2, float factor) {
-        int r1 = (color1 >> 16) & 0xFF;
-        int g1 = (color1 >> 8) & 0xFF;
-        int b1 = color1 & 0xFF;
-
-        int r2 = (color2 >> 16) & 0xFF;
-        int g2 = (color2 >> 8) & 0xFF;
-        int b2 = color2 & 0xFF;
-
-        int r = (int) (r1 + (r2 - r1) * factor);
-        int g = (int) (g1 + (g2 - g1) * factor);
-        int b = (int) (b1 + (b2 - b1) * factor);
-
-        return (r << 16) | (g << 8) | b;
     }
 
     private static float getFinalNewYaw(BigBookEntity animatable, PlayerEntity player) {

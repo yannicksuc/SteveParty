@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.payloads;
 
 
-import com.mojang.serialization.Codec;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;

@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "steveparty:tile"
+    "steveparty:tile",
+    "steveparty:cash_register"
   ]
 }

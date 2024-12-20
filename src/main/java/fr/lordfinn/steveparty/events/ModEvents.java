@@ -28,8 +28,6 @@ public class ModEvents {
             }
             return ActionResult.PASS;
         });
-
-        System.out.println("Mod initialized: Dye changes mob name color!");
     }
 
     /**
