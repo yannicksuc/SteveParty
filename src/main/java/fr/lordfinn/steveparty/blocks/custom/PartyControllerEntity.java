@@ -35,9 +35,7 @@ import static fr.lordfinn.steveparty.components.ModComponents.TB_START_OWNER;
 
 public class PartyControllerEntity extends BlockEntity {
     public ItemStack catalogue = ItemStack.EMPTY;
-    public long lastTime = 0;
     private final List<UUID> players = new ArrayList<>();
-    private final int START_TILES_SEARCH_RADIUS = 100;
 
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
@@ -153,6 +151,7 @@ public class PartyControllerEntity extends BlockEntity {
 
     private List<BlockPos> findStartTiles(ServerWorld world, BlockPos center) {
         List<BlockPos> startTiles = new ArrayList<>();
+        int START_TILES_SEARCH_RADIUS = 100;
         Box searchBox = new Box(center.add(-START_TILES_SEARCH_RADIUS, -START_TILES_SEARCH_RADIUS, -START_TILES_SEARCH_RADIUS).toCenterPos(),
                 center.add(START_TILES_SEARCH_RADIUS, START_TILES_SEARCH_RADIUS, START_TILES_SEARCH_RADIUS).toCenterPos());
 

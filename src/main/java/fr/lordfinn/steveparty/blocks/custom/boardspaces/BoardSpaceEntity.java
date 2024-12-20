@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.TileBehaviorComponent;
+import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
@@ -142,44 +142,66 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
         }
     }
 
-    public Boolean toggleDestinations(ServerPlayerEntity holder) {
+    public static Boolean toggleDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
         if (world == null) return null;
-        List<DirectionDisplayEntity> e = getCurrentDestinations();
+        List<DirectionDisplayEntity> e = getSpawnedDestinations(world, pos);
         if (e.isEmpty()) {
-            displayDestinations(holder);
+            searchAndDisplayDestinations(world, pos, holder);
             return true;
         }
-        hideDestinations(e);
+        hideDestinations(world, pos);
         return false;
     }
 
 
-    public void displayDestinations(ServerPlayerEntity holder, List<BoardSpaceDestination> destinations) {
+    public static void displayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder, List<BoardSpaceDestination> destinations) {
         if (destinations.isEmpty()) return;
         for (BoardSpaceDestination destination : destinations) {
-            new DirectionDisplayEntity(world, destination, this.getPos(), holder);
+            new DirectionDisplayEntity(world, destination, pos, holder);
         }
     }
 
-    public void displayDestinations(ServerPlayerEntity holder) {
-        List<BoardSpaceDestination> destinations = getCurrentDestinations(this);
-        displayDestinations(holder, destinations);
+    public static void searchAndDisplayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
+        BoardSpaceEntity boardSpaceEntity = Tile.getBoardSpaceEntity(world, pos);
+        if (boardSpaceEntity == null) return;
+        List<BoardSpaceDestination> destinations = boardSpaceEntity.getStockedDestinations();
+        displayDestinations(world, pos, holder, destinations);
+    }
+
+    public void displayDestinations(ServerPlayerEntity player, List<BoardSpaceDestination> destinations) {
+        displayDestinations((ServerWorld) this.getWorld(), this.getPos(), player, destinations);
+    }
+
+    public static void hideDestinations(ServerWorld world, BlockPos pos) {
+        if (world == null) return;
+        List<DirectionDisplayEntity> spawnedDestinations = getSpawnedDestinations(world, pos);
+        if (spawnedDestinations.isEmpty()) return;
+        hideDestinations(spawnedDestinations, pos);
+    }
+
+    private static void hideDestinations(List<DirectionDisplayEntity> e, BlockPos pos) {
+        e.forEach(entity -> {if (entity.getTileOrigin().equals(pos)) entity.remove(Entity.RemovalReason.DISCARDED);});
     }
 
     public void hideDestinations() {
-        if (world == null) return;
-        List<DirectionDisplayEntity> e = getCurrentDestinations();
-        if (e.isEmpty()) return;
-        hideDestinations(e);
+        BoardSpaceEntity.hideDestinations((ServerWorld) this.world, this.getPos());
     }
 
-    private void hideDestinations(List<DirectionDisplayEntity> e) {
-        e.forEach(entity -> {if (entity.getTileOrigin().equals(this.getPos())) entity.remove(Entity.RemovalReason.DISCARDED);});
-    }
-
-    private List<DirectionDisplayEntity> getCurrentDestinations() {
+    private static List<DirectionDisplayEntity> getSpawnedDestinations(ServerWorld world, BlockPos pos) {
         if (world == null) return new ArrayList<>();
-        return world.getEntitiesByClass(DirectionDisplayEntity.class, Box.of(this.getPos().toCenterPos(), 4, 4, 4), entity -> entity instanceof DirectionDisplayEntity);
+        return world.getEntitiesByClass(DirectionDisplayEntity.class, Box.of(pos.toCenterPos(), 4, 4, 4), entity -> entity instanceof DirectionDisplayEntity);
+    }
+
+    public List<BoardSpaceDestination> getStockedDestinations(){
+        List<BoardSpaceDestination> tileDestinations = new ArrayList<>();
+
+        ItemStack stack = this.getActiveTileBehaviorItemStack();
+        if (stack != null && stack.getItem() instanceof BoardSpaceBehaviorItem) {
+            BoardSpaceBehaviorComponent component = stack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
+            List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
+            tileDestinations = getDestinationsStatus(destinations, this.getWorld());
+        }
+        return tileDestinations;
     }
 
     public ItemStack getActiveTileBehaviorItemStack() {
@@ -188,6 +210,13 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
         }
         int slot = this.world.getReceivedRedstonePower(this.pos);
         return inventory.getStack(slot);
+    }
+
+    public void setActiveTileBehaviorItemStack(ItemStack stack) {
+        if (this.world == null) return;
+        int slot = this.world.getReceivedRedstonePower(this.pos);
+        inventory.setStack(slot, stack);
+        inventory.markDirty();
     }
 
     public ABoardSpaceBehavior getTileBehavior() {
@@ -250,23 +279,6 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
     public @Nullable Object getRenderData() {
         // this is the method from `RenderDataBlockEntity` class.
         return this;
-    }
-
-    public void getNextTiles() {
-       ItemStack stack = this.getActiveTileBehaviorItemStack();
-
-    }
-
-    public static List<BoardSpaceDestination> getCurrentDestinations(BoardSpaceEntity tileEntity) {
-        List<BoardSpaceDestination> tileDestinations = new ArrayList<>();
-
-        ItemStack stack = tileEntity.getActiveTileBehaviorItemStack();
-        if (stack != null && stack.getItem() instanceof BoardSpaceBehaviorItem) {
-            TileBehaviorComponent component = stack.getOrDefault(ModComponents.TILE_BEHAVIOR_COMPONENT, TileBehaviorComponent.DEFAULT_TILE_BEHAVIOR);
-            List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
-            tileDestinations = getDestinationsStatus(destinations, tileEntity.getWorld());
-        }
-        return tileDestinations;
     }
 
     public static List<BoardSpaceDestination> getDestinationsStatus(List<BlockPos> blockPosList, World world) {

@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.utils.CashRegisterState;
-import fr.lordfinn.steveparty.utils.VoxelShapeutils;
+import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.HorizontalFacingBlock;
@@ -117,11 +117,11 @@ public class CashRegister extends HorizontalFacingBlock {
     }
 
     private void setupShapes() {
-        Box[] boxes = VoxelShapeutils.shapeToBoxes(makeShape());
+        Box[] boxes = VoxelShapeUtils.shapeToBoxes(makeShape());
         SHAPES.put(Direction.SOUTH, makeShape());
-        SHAPES.put(Direction.EAST, VoxelShapeutils.shape(VoxelShapeutils.rotate(90, boxes)));
-        SHAPES.put(Direction.NORTH, VoxelShapeutils.shape(VoxelShapeutils.rotate(180, boxes)));
-        SHAPES.put(Direction.WEST, VoxelShapeutils.shape(VoxelShapeutils.rotate(270, boxes)));
+        SHAPES.put(Direction.EAST, VoxelShapeUtils.shape(VoxelShapeUtils.rotate(90, boxes)));
+        SHAPES.put(Direction.NORTH, VoxelShapeUtils.shape(VoxelShapeUtils.rotate(180, boxes)));
+        SHAPES.put(Direction.WEST, VoxelShapeUtils.shape(VoxelShapeUtils.rotate(270, boxes)));
     }
 
     @Override

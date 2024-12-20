@@ -84,7 +84,7 @@ public abstract class BoardSpace extends HorizontalFacingBlock implements BlockE
     // This method will drop all items onto the ground when the block is broken
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        BoardSpaceEntity tileEntity = getTileEntity(world, pos);
+        BoardSpaceEntity tileEntity = getBoardSpaceEntity(world, pos);
         if (tileEntity == null) return;
         if (state.getBlock() != newState.getBlock()) {
             ItemScatterer.spawn(world, pos, tileEntity.getInventory());
@@ -119,7 +119,7 @@ public abstract class BoardSpace extends HorizontalFacingBlock implements BlockE
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
     }
 
-    public static BoardSpaceEntity getTileEntity(World world, BlockPos pos) {
+    public static BoardSpaceEntity getBoardSpaceEntity(World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (blockEntity instanceof BoardSpaceEntity tileEntity)
             return tileEntity;

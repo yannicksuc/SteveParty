@@ -188,24 +188,6 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         return true;
     }
 
-    public ServerPlayerEntity getOwner() {
-        return owner;
-    }
-
-    public void setOwner(ServerPlayerEntity owner) {
-        this.owner = owner;
-        writeCustomDataToNbt(new NbtCompound());
-    }
-
-    public BoardSpaceDestination getTileDestination() {
-        return tileDestination;
-    }
-
-    public void setTileDestination(BoardSpaceDestination tileDestination) {
-        this.tileDestination = tileDestination;
-        writeCustomDataToNbt(new NbtCompound());
-    }
-
     private static boolean isWithinDistance(BlockPos origin, PlayerEntity player) {
         return player.getBlockPos().isWithinDistance(origin.toCenterPos(), 15);
     }

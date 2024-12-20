@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
-import fr.lordfinn.steveparty.utils.VoxelShapeutils;
+import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -56,11 +56,11 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     }
 
     private void setupShapes() {
-        Box[] boxes = VoxelShapeutils.shapeToBoxes(SHAPE);
+        Box[] boxes = VoxelShapeUtils.shapeToBoxes(SHAPE);
         SHAPES.put(Direction.SOUTH, SHAPE);
-        SHAPES.put(Direction.EAST, VoxelShapeutils.shape(VoxelShapeutils.rotate(90, boxes)));
-        SHAPES.put(Direction.NORTH, VoxelShapeutils.shape(VoxelShapeutils.rotate(180, boxes)));
-        SHAPES.put(Direction.WEST, VoxelShapeutils.shape(VoxelShapeutils.rotate(270, boxes)));
+        SHAPES.put(Direction.EAST, VoxelShapeUtils.shape(VoxelShapeUtils.rotate(90, boxes)));
+        SHAPES.put(Direction.NORTH, VoxelShapeUtils.shape(VoxelShapeUtils.rotate(180, boxes)));
+        SHAPES.put(Direction.WEST, VoxelShapeUtils.shape(VoxelShapeUtils.rotate(270, boxes)));
     }
 
     @Override

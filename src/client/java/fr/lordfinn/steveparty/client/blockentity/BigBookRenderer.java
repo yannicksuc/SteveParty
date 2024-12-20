@@ -21,7 +21,7 @@ import static org.joml.Math.lerp;
 
 public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
 
-    public BigBookRenderer(BlockEntityRendererFactory.Context ctx) {
+    public BigBookRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
         super(new DefaultedBlockGeoModel<>(Identifier.of(Steveparty.MOD_ID, "big_book")));
     }
 

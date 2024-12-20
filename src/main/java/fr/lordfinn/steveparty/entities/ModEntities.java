@@ -17,7 +17,7 @@ public class ModEntities {
     public static final EntityType<DiceEntity> DICE_ENTITY = Registry.register(Registries.ENTITY_TYPE,
             Identifier.of(Steveparty.MOD_ID, "dice"),
             EntityType.Builder
-                    .<DiceEntity>create(DiceEntity::new, SpawnGroup.MISC)
+                    .create(DiceEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1f)
                     .build(DICE_ENTITY_KEY)
     );
@@ -26,7 +26,7 @@ public class ModEntities {
     public static final EntityType<CustomizableMerchant> CUSTOM_MERCHANT_ENTITY = Registry.register(Registries.ENTITY_TYPE,
             Identifier.of(Steveparty.MOD_ID, "customizable_merchant"),
             EntityType.Builder
-                    .<CustomizableMerchant>create(CustomizableMerchant::new, SpawnGroup.MISC)
+                    .create(CustomizableMerchant::new, SpawnGroup.MISC)
                     .dimensions(1f, 2f)
                     .build(CUSTOM_MERCHANT_ENTITY_KEY)
     );
