@@ -41,7 +41,7 @@ import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
 
 @SuppressWarnings("unused")
 public class StevepartyClient implements ClientModInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger("steveparty");
+    public static final Logger LOGGER = LoggerFactory.getLogger("steveparty");
 
     private static final BlockColorProvider getTileColor = (state, world, pos, tintIndex) -> {
         if (world == null) return 0xFFEB68;
