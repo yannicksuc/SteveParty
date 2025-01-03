@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.entities.custom;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.screens.CustomizableMerchantScreenHandler;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.TrappedChestBlockEntity;
 import net.minecraft.entity.*;
@@ -51,6 +53,7 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     private Integer optionalScreenHandlerId = null;
     private boolean canBuy = false;
+    BlockState blockState = Blocks.GRASS_BLOCK.getDefaultState();
 
     public CustomizableMerchant(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
@@ -401,4 +404,11 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
         return SoundEvents.ENTITY_VILLAGER_DEATH;
     }
 
+    public BlockState getBlockState() {
+        return blockState;
+    }
+
+    public void setBlockState(BlockState blockState) {
+        this.blockState = blockState;
+    }
 }

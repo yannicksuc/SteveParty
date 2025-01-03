@@ -7,9 +7,12 @@ import net.minecraft.util.Identifier;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
+
+
 public class CustomizableMerchantRenderer extends GeoEntityRenderer<CustomizableMerchant> {
 
     public CustomizableMerchantRenderer(EntityRendererFactory.Context ctx) {
         super(ctx, new DefaultedEntityGeoModel<>(Identifier.of(Steveparty.MOD_ID, "customizable_merchant")));
+        addRenderLayer(new CustomizableMerchantRenderLayer(this));
     }
 }
