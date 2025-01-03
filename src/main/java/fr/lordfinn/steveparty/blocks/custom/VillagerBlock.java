@@ -19,7 +19,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
-import static fr.lordfinn.steveparty.entities.ModEntities.CUSTOM_MERCHANT_ENTITY;
+import static fr.lordfinn.steveparty.entities.ModEntities.HIDING_TRADER_ENTITY;
 
 public class VillagerBlock extends FallingBlock {
     public static final MapCodec<VillagerBlock> CODEC = Block.createCodec(VillagerBlock::new);
@@ -98,7 +98,7 @@ public class VillagerBlock extends FallingBlock {
             world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
             world.setBlockState(pos.up(), Blocks.AIR.getDefaultState(), 3);
 
-            MerchantEntity entity = CUSTOM_MERCHANT_ENTITY.create(world, SpawnReason.TRIGGERED);
+            MerchantEntity entity = HIDING_TRADER_ENTITY.create(world, SpawnReason.TRIGGERED);
             if (entity == null) return;
             entity.setPosition(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5);
 
