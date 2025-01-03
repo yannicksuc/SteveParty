@@ -15,7 +15,7 @@ import software.bernie.geckolib.renderer.GeoRenderer;
 public class DiceModel extends GeoModel<DiceEntity> {
     @Override
     public Identifier getModelResource(DiceEntity diceEntity, @Nullable GeoRenderer<DiceEntity> geoRenderer) {
-        return Identifier.of(Steveparty.MOD_ID, "geo/dice.geo.json");
+        return Identifier.of(Steveparty.MOD_ID, "geo/entity/dice.geo.json");
     }
 
     @Override
@@ -25,7 +25,7 @@ public class DiceModel extends GeoModel<DiceEntity> {
 
     @Override
     public Identifier getAnimationResource(DiceEntity diceEntity) {
-        return Identifier.of(Steveparty.MOD_ID, "animations/dice.animation.json");
+        return Identifier.of(Steveparty.MOD_ID, "animations/entity/dice.animation.json");
     }
 
     @Override

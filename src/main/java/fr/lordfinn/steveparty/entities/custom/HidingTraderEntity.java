@@ -15,7 +15,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.entity.passive.WanderingTraderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.AirBlockItem;
@@ -46,7 +45,7 @@ import software.bernie.geckolib.animation.AnimationState;
 import java.util.*;
 
 
-public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
+public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private final TradeOfferList tradeOffers = new TradeOfferList();
     private final List<Inventory> nearbyInventories = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
@@ -55,7 +54,7 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
     private boolean canBuy = false;
     BlockState blockState = Blocks.GRASS_BLOCK.getDefaultState();
 
-    public CustomizableMerchant(EntityType<? extends MerchantEntity> type, World world) {
+    public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
         updateTradeOffers();
         initGoals();
@@ -373,7 +372,7 @@ public class CustomizableMerchant extends MerchantEntity implements GeoEntity {
         controllers.add(new AnimationController<>(this, "Idle", 5, this::idleAnimController));
     }
 
-    private PlayState idleAnimController(AnimationState<CustomizableMerchant> event) {
+    private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {
         return event.setAndContinue(IDLE_ANIM);
     }
 

@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.client.entity;
 
-import fr.lordfinn.steveparty.entities.custom.CustomizableMerchant;
+import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -25,19 +25,19 @@ import software.bernie.geckolib.util.RenderUtil;
 
 import java.util.List;
 
-public class CustomizableMerchantRenderLayer extends GeoRenderLayer<CustomizableMerchant> {
+public class HidingTraderEntityRenderLayer extends GeoRenderLayer<HidingTraderEntity> {
     public static final String CUBE_BONE_ID = "cube";
     Identifier textureId;
     Random random = Random.create();
 
-    public CustomizableMerchantRenderLayer(CustomizableMerchantRenderer customizableMerchantRenderer) {
-        super(customizableMerchantRenderer);
+    public HidingTraderEntityRenderLayer(HidingTraderEntityRenderer renderer) {
+        super(renderer);
         textureId = MinecraftClient.getInstance().getBlockRenderManager().getModel(Blocks.GRASS_BLOCK.getDefaultState()).getParticleSprite().getAtlasId();
     }
 
 
     @Override
-    public void renderForBone(MatrixStack poseStack, CustomizableMerchant animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+    public void renderForBone(MatrixStack poseStack, HidingTraderEntity animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay, int renderColor) {
         RenderLayer type = getRenderer().getRenderType(animatable, textureId, bufferSource, partialTick);
         if (type == null || !bone.getName().equals(CUBE_BONE_ID)) return;
         renderRecursively(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(), animatable.getBlockState());

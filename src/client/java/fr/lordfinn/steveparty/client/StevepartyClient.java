@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.client.blockentity.BigBookRenderer;
 import fr.lordfinn.steveparty.client.blockentity.TileEntityRenderer;
-import fr.lordfinn.steveparty.client.entity.CustomizableMerchantRenderer;
+import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
@@ -73,7 +73,7 @@ public class StevepartyClient implements ClientModInitializer {
 
         EntityRendererRegistry.register(ModEntities.DICE_ENTITY, DiceRenderer::new);
         EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
-        EntityRendererRegistry.register(ModEntities.CUSTOM_MERCHANT_ENTITY, CustomizableMerchantRenderer::new);
+        EntityRendererRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntityRenderer::new);
 
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, BigBookRenderer::new);
