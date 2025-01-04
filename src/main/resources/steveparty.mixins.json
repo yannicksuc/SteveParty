@@ -8,6 +8,7 @@
     "FireworkRocketEntityAccessor",
     "LivingEntityMixin",
     "MerchantEntityMixin",
+    "PlayerFallMixin",
     "StatusEffectMixin",
     "TokenEntityMixin"
   ],

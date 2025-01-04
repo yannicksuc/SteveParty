@@ -1,8 +1,14 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.JsonOps;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.screens.CustomizableMerchantScreenHandler;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -12,6 +18,9 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
@@ -19,7 +28,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.AirBlockItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -52,12 +65,31 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     private Integer optionalScreenHandlerId = null;
     private boolean canBuy = false;
-    BlockState blockState = Blocks.GRASS_BLOCK.getDefaultState();
+    private BlockState blockState = Blocks.GOLD_BLOCK.getDefaultState();
+    private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.STRING);
+
 
     public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
         updateTradeOffers();
         initGoals();
+    }
+
+    @Override
+    protected void initDataTracker(DataTracker.Builder builder) {
+        super.initDataTracker(builder);
+        builder.add(BLOCK_STATE, "");
+    }
+
+    @Override
+    public void onTrackedDataSet(TrackedData<?> data) {
+        super.onTrackedDataSet(data);
+        if (BLOCK_STATE.equals(data)) {
+            String blockStateJson = this.dataTracker.get(BLOCK_STATE);
+            JsonElement jsonElement = JsonParser.parseString(blockStateJson);
+            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to decode block state: {}", error))
+                    .ifPresent(decodedBlockState -> this.blockState = decodedBlockState);
+        }
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -72,6 +104,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new LookAtEntityGoal(this, PlayerEntity.class, 3.0F, 1.0F));
+    }
+
+    @Override
+    public boolean isPersistent() {
+        return true;
     }
 
     @Override
@@ -223,14 +260,20 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
     }
 
+    @Override
+    public boolean canBeLeashed() {
+        return true;
+    }
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (player.getMainHandStack().getItem() instanceof TokenItem) {
+        if (player.getMainHandStack().getItem() instanceof TokenItem || player.getStackInHand(hand).isOf(Items.LEAD)) {
             return ActionResult.PASS;
         }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity) {
             this.fillRecipes();
+            if(nearbyInventories.isEmpty() || tradeOffers.isEmpty())
+                return ActionResult.PASS;
             if (!canBuy)
                 disableAllTrades();
             this.setCustomer(player);
@@ -274,6 +317,12 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     public void readNbt(NbtCompound nbt) {
         super.readNbt(nbt);
         nbt.putBoolean("isInvisible", this.isInvisible());
+        if (nbt.contains("blockState")) {
+            String blockStateJson = nbt.getString("blockState");
+            JsonElement jsonElement = JsonParser.parseString(blockStateJson);
+            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to decode block state: {}", error))
+                    .ifPresent(this::setBlockState);
+        }
         initGoals();
     }
 
@@ -281,6 +330,13 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     public NbtCompound writeNbt(NbtCompound nbt) {
         if (nbt.contains("isInvisible")) {
             this.setInvisible(nbt.getBoolean("isInvisible"));
+        }
+        // Serialize the BlockState to a JsonElement
+        if (blockState != null) {
+            DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
+            result.resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to encode block state: {}", error)).ifPresent(jsonElement -> {
+                nbt.putString("blockState", jsonElement.toString());
+            });
         }
         return super.writeNbt(nbt);
     }
@@ -409,5 +465,16 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     public void setBlockState(BlockState blockState) {
         this.blockState = blockState;
+        syncBlockData(blockState);
+    }
+
+    private void syncBlockData(BlockState blockState) {
+        if (!this.getWorld().isClient) { // Ensure this runs only on the server
+            // Serialize the BlockState and update the DataTracker
+            DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
+            result.resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to encode block state: {}", error)).ifPresent(jsonElement -> {
+                this.dataTracker.set(BLOCK_STATE, jsonElement.toString());
+            });
+        }
     }
 }
