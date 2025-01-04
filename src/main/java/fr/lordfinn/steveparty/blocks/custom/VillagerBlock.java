@@ -91,38 +91,6 @@ public class VillagerBlock extends FallingBlock {
                 world.getBlockState(pos.west()).isOf(Blocks.STONE)) {
             sendMessageToPlayer(world, pos, "villagerblock.stone");
         }
-        // Check if a Jack o' Lantern is placed on top of the VillagerBlock
-        BlockState blockAbove = world.getBlockState(pos.up());
-        if (blockAbove.getBlock() instanceof CarvedPumpkinBlock) {
-
-            world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
-            world.setBlockState(pos.up(), Blocks.AIR.getDefaultState(), 3);
-
-            MerchantEntity entity = HIDING_TRADER_ENTITY.create(world, SpawnReason.TRIGGERED);
-            if (entity == null) return;
-            entity.setPosition(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5);
-
-            PlayerEntity closestPlayer = world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 10, false);
-            if (closestPlayer != null) {
-                double dx = closestPlayer.getX() - entity.getX();
-                double dz = closestPlayer.getZ() - entity.getZ();
-                float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
-                entity.setYaw(yaw);
-            }
-
-            // Play Illusioner spell sound
-            world.playSound(null, pos, SoundEvents.ENTITY_ILLUSIONER_PREPARE_MIRROR, SoundCategory.BLOCKS, 1.0F, 1.0F);
-
-            // Spawn particles around the block
-            ((ServerWorld)world).spawnParticles(ParticleTypes.ENCHANTED_HIT,
-                    pos.getX() + 0.5,
-                    pos.getY() + 1.5,
-                    pos.getZ() + 0.5,
-                    20,0.1d, 0.0d, 0.1d, 0.5);
-
-            world.spawnEntity(entity);
-            world.playSound(null, pos, SoundEvents.ENTITY_VILLAGER_CELEBRATE, SoundCategory.BLOCKS, 1.0F, 1.0F);
-        }
     }
 
     @Override
