@@ -12,7 +12,7 @@ import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
-import fr.lordfinn.steveparty.client.screens.CustomizableMerchantScreen;
+import fr.lordfinn.steveparty.client.screens.HidingTraderScreen;
 import fr.lordfinn.steveparty.client.screens.TileScreen;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.TILE;
-import static fr.lordfinn.steveparty.screens.ModScreens.CUSTOMIZABLE_MERCHANT_SCREEN_HANDLER;
+import static fr.lordfinn.steveparty.screens.ModScreens.HIDING_TRADER_SCREEN_HANDLER;
 import static fr.lordfinn.steveparty.screens.ModScreens.TILE_SCREEN_HANDLER;
 import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
 
@@ -82,6 +82,6 @@ public class StevepartyClient implements ClientModInitializer {
 
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
-        HandledScreens.register(CUSTOMIZABLE_MERCHANT_SCREEN_HANDLER, CustomizableMerchantScreen::new);
+        HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
     }
 }

@@ -22,12 +22,12 @@ public class ModEntities {
                     .build(DICE_ENTITY_KEY)
     );
 
-    public static final RegistryKey<EntityType<?>> HIDING_TRADER_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(Steveparty.MOD_ID, "customizable_merchant"));
+    public static final RegistryKey<EntityType<?>> HIDING_TRADER_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(Steveparty.MOD_ID, "hiding_trader"));
     public static final EntityType<HidingTraderEntity> HIDING_TRADER_ENTITY = Registry.register(Registries.ENTITY_TYPE,
             Identifier.of(Steveparty.MOD_ID, "hiding_trader"),
             EntityType.Builder
                     .create(HidingTraderEntity::new, SpawnGroup.MISC)
-                    .dimensions(1f, 2f)
+                    .dimensions(1f, 1.5f)
                     .build(HIDING_TRADER_ENTITY_KEY)
     );
 

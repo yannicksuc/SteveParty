@@ -7,8 +7,6 @@ import com.mojang.serialization.JsonOps;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.screens.CustomizableMerchantScreenHandler;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -30,9 +28,6 @@ import net.minecraft.item.AirBlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.Registries;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -63,6 +58,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private final List<Inventory> nearbyInventories = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
+    protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold ("closed");
     private Integer optionalScreenHandlerId = null;
     private boolean canBuy = false;
     private BlockState blockState = Blocks.GOLD_BLOCK.getDefaultState();
@@ -103,7 +99,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(0, new LookAtEntityGoal(this, PlayerEntity.class, 3.0F, 1.0F));
+        this.goalSelector.add(0, new LookAtEntityGoal(this, PlayerEntity.class, 15.0F, 1.0F));
     }
 
     @Override
@@ -426,10 +422,23 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "Idle", 5, this::idleAnimController));
+        controllers.add(new AnimationController<>(this, "Stare", 2, this::closedAnimController));
     }
 
     private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {
-        return event.setAndContinue(IDLE_ANIM);
+        if (getWorld() != null && getWorld().getClosestPlayer(getPos().getX(), getPos().getY(), getPos().getZ(), 15d, false) != null) {
+            return event.setAndContinue(IDLE_ANIM);
+        }
+        event.setAnimation(CLOSED_ANIM);
+        return PlayState.STOP;
+    }
+
+    private PlayState closedAnimController(AnimationState<HidingTraderEntity> event) {
+        if (getWorld() != null && getWorld().getClosestPlayer(getPos().getX(), getPos().getY(), getPos().getZ(), 15d, false) == null) {
+            return event.setAndContinue(CLOSED_ANIM);
+        }
+        event.setAnimation(IDLE_ANIM);
+        return PlayState.STOP;
     }
 
     @Override

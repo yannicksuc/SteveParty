@@ -1,0 +1,68 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.big-book-of-teleportation",
+				"texture_width": 128,
+				"texture_height": 128,
+				"visible_bounds_width": 3,
+				"visible_bounds_height": 2.5,
+				"visible_bounds_offset": [0, 0.75, 0]
+			},
+			"bones": [
+				{
+					"name": "bb_main",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-8, 0, -8], "size": [16, 4, 16], "uv": [0, 50]}
+					]
+				},
+				{
+					"name": "bone6",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "bone",
+					"parent": "bone6",
+					"pivot": [0, 7, 0],
+					"cubes": [
+						{"origin": [-12, 6, -1], "size": [24, 1, 2], "uv": [64, 50]}
+					]
+				},
+				{
+					"name": "bone3",
+					"parent": "bone",
+					"pivot": [0, 6.5, 0],
+					"cubes": [
+						{"origin": [-12, 6.5, -12], "size": [24, 1, 12], "uv": [0, 13]}
+					]
+				},
+				{
+					"name": "bone4",
+					"parent": "bone3",
+					"pivot": [0, 7.575, 0],
+					"cubes": [
+						{"origin": [-12, 7.575, -12], "size": [24, 0, 12], "uv": [0, 26]}
+					]
+				},
+				{
+					"name": "bone2",
+					"parent": "bone",
+					"pivot": [0, 6.5, 0],
+					"cubes": [
+						{"origin": [-12, 6.5, 0], "size": [24, 1, 12], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "bone5",
+					"parent": "bone2",
+					"pivot": [0, 7.575, 0],
+					"cubes": [
+						{"origin": [-12, 7.575, 0], "size": [24, 0, 12], "uv": [0, 38]}
+					]
+				}
+			]
+		}
+	]
+}

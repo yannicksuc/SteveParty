@@ -13,7 +13,7 @@ public class ModScreens {
                     Registries.SCREEN_HANDLER,
                     Identifier.of(Steveparty.MOD_ID, "tile_screen_handler"),
                     new ScreenHandlerType<>(TileScreenHandler::new, FeatureSet.empty()));
-    public static final ScreenHandlerType<CustomizableMerchantScreenHandler> CUSTOMIZABLE_MERCHANT_SCREEN_HANDLER =
+    public static final ScreenHandlerType<CustomizableMerchantScreenHandler> HIDING_TRADER_SCREEN_HANDLER =
             Registry.register(
                     Registries.SCREEN_HANDLER,
                     Identifier.of(Steveparty.MOD_ID, "hiding_trader_screen_handler"),

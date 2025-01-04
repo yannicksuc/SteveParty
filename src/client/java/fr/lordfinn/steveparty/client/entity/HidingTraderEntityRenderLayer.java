@@ -42,7 +42,7 @@ public class HidingTraderEntityRenderLayer extends GeoRenderLayer<HidingTraderEn
     @Override
     public void renderForBone(MatrixStack poseStack, HidingTraderEntity animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay, int renderColor) {
         RenderLayer type = getRenderer().getRenderType(animatable, textureId, bufferSource, partialTick);
-        if (type == null || !bone.getName().equals(CUBE_BONE_ID)) return;
+        if (type == null || !bone.getName().startsWith(CUBE_BONE_ID)) return;
         renderRecursively(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(), animatable.getBlockState());
     }
 

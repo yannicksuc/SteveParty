@@ -32,7 +32,7 @@ public abstract class PlayerFallMixin extends PlayerEntity {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
 
         // Vérifie si le joueur est en chute libre
-        if (!player.isOnGround() && player.fallDistance >= 2) {
+        if (!player.isOnGround() && player.fallDistance >= 10) {
             BlockPos blockPos = player.getBlockPos().down();
             BlockState blockState = player.getWorld().getBlockState(blockPos);
 
@@ -41,6 +41,9 @@ public abstract class PlayerFallMixin extends PlayerEntity {
                 World world = player.getWorld();
                 BlockPos belowPos = blockPos.down();
                 BlockState belowState = world.getBlockState(belowPos);
+
+                if (!belowState.isFullCube(world, belowPos))
+                    return;
 
                 // Supprime le bloc actuel et celui en dessous
                 world.breakBlock(blockPos, false);
