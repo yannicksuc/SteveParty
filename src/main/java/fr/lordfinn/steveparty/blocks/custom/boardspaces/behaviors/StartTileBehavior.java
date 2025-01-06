@@ -81,7 +81,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
                 1F,
                 1F
         );
-        SCHEDULER.schedule(new UUID(1000,1), 60, () -> recentlyUnboundEntities.remove(entity.getUuid()));
+        SCHEDULER.schedule(UUID.randomUUID(), 60, () -> recentlyUnboundEntities.remove(entity.getUuid()));
     }
 
     @Override

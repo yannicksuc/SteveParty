@@ -50,33 +50,26 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         this.owner = owner;
         this.tileOrigin = origin;
         this.tileDestination = destination;
-        BlockPos distance = destination.position().subtract(origin);
-        Vec3d startOffset = new Vec3d(distance.getX(), distance.getY(), distance.getZ()).normalize().multiply(1.5f);
+        BlockPos distanceAsBlockPos = destination.position().subtract(origin);
+        Vec3d distance = new Vec3d(distanceAsBlockPos.getX(), distanceAsBlockPos.getY(), distanceAsBlockPos.getZ());
         Color color = destination.isTile() ? Color.WHITE : Color.RED;
         encodedVelocity = ParticleUtils.encodeVelocity(
                 color,
-                (float) (distance.getX() - (startOffset.x * 2)),
-                (float) (distance.getY() - (startOffset.y * 2)),
-                (float) (distance.getZ() - (startOffset.z * 2)));
-        start = new Vec3d(origin.getX() + 0.5 + startOffset.x,
-                origin.getY() + 0.6 + startOffset.y,
-                origin.getZ() + 0.5 + startOffset.z);
+                (float) distance.x,
+                (float) distance.y,
+                (float) distance.z);
+        start = origin.toCenterPos().add(0,0.1,0);
         float size = 0.3F;
-        Vec3d newPos = start.add(0,-0.4,0);
-        List<DirectionDisplayEntity> e = world.getEntitiesByClass(DirectionDisplayEntity.class,
-                Box.of(newPos, 0.05, 0.05, 0.05), entity -> entity instanceof DirectionDisplayEntity);
-        if (!e.isEmpty()) return ;
-
-        this.setPosition(newPos);
+        Vec3d startGap = distance.normalize().multiply(Math.min(1.5, distance.length())).add(0,-0.4,0);
+        this.setPosition(start.add(startGap));
         BlockState blockState = world.getBlockState(destination.position());
         if (blockState != null && blockState.getBlock() instanceof Tile) {
             blockState = blockState.with(Properties.HORIZONTAL_FACING, Direction.SOUTH);
         }
         this.setBlockState(blockState);
         Quaternionf rot = new Quaternionf();
-        rot//.rotateLocalX(dirToXAngle(distance.getY()))
-                .rotateLocalZ((float) Math.toRadians(90f))
-                .rotateLocalY((float) (dirToYAngle(-distance.getX(), -distance.getZ()) + Math.PI / 2));
+        rot.rotateLocalZ((float) Math.toRadians(90f))
+           .rotateLocalY((float) (dirToYAngle(-distance.getX(), -distance.getZ()) + Math.PI / 2));
         AffineTransformation scaleTransformation = new AffineTransformation(new Vector3f(-0.15f, 0, -0.65f), null,
                 new Vector3f(size), null);
         this.setTransformation(scaleTransformation);
@@ -98,6 +91,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
     }
 
     private boolean isPlayerLookingAt(ServerPlayerEntity player, DirectionDisplayEntity entity) {
+        if (!player.getActiveItem().isEmpty()) return false;
         double maxDistance = player.getAttributeValue(ENTITY_INTERACTION_RANGE); // Distance maximale pour le raycast
         Vec3d start = player.getEyePos(); // Position des yeux du joueur
         Vec3d direction = player.getRotationVec(1.0F); // Direction du regard du joueur
@@ -176,8 +170,9 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
 
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
-        if (!getWorld().isClient) {
+        if (!getWorld().isClient && hand.equals(Hand.MAIN_HAND) && player.getMainHandStack().isEmpty()) {
             TokenMovementService.moveEntityOnTileToDestination((ServerWorld) this.getWorld(), tileOrigin, tileDestination);
+            this.discard();
             return ActionResult.SUCCESS; // Indicate the interaction was successful
         }
         return super.interact(player, hand); // Default interaction handling

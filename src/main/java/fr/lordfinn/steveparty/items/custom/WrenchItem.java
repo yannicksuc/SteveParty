@@ -12,6 +12,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -56,6 +59,7 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements TileOp
         boardSpaceStoredBehavior.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, updatedComponent);
         MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal("The wrench is now bound to a new board space behavior stored at position X: "+ clickedPos.getX()+", Y: "+ clickedPos.getY()+", Z: "+ clickedPos.getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
         displayLinks(serverWorld, updatedComponent);
+        serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
         return updatedComponent;
     }
 
@@ -63,6 +67,7 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements TileOp
         removeBinding(clickedPos, stack, serverWorld);
         stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, false);
         MessageUtils.sendToPlayer(player, Text.literal("The wrench is no longer bound to the board space behavior stored at position X: "+ clickedPos.getX()+", Y: "+ clickedPos.getY()+", Z: "+ clickedPos.getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
+        serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
     }
 
     private static void displayLinks(ServerWorld serverWorld, BoardSpaceBehaviorComponent updatedComponent) {

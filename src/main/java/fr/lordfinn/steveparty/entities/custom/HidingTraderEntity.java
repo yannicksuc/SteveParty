@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.entities.custom;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.mojang.authlib.minecraft.client.MinecraftClient;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import fr.lordfinn.steveparty.Steveparty;
@@ -11,7 +12,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.TrappedChestBlockEntity;
-import net.minecraft.entity.*;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -28,9 +32,12 @@ import net.minecraft.item.AirBlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -48,9 +55,13 @@ import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
-import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.keyframe.event.builtin.AutoPlayingSoundKeyframeHandler;
+import software.bernie.geckolib.util.ClientUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 
 public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
@@ -58,7 +69,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private final List<Inventory> nearbyInventories = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
-    protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold ("closed");
+    protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
     private Integer optionalScreenHandlerId = null;
     private boolean canBuy = false;
     private BlockState blockState = Blocks.GOLD_BLOCK.getDefaultState();
@@ -268,7 +279,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity) {
             this.fillRecipes();
-            if(nearbyInventories.isEmpty() || tradeOffers.isEmpty())
+            if (nearbyInventories.isEmpty() || tradeOffers.isEmpty())
                 return ActionResult.PASS;
             if (!canBuy)
                 disableAllTrades();
@@ -293,7 +304,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     public Box getBoundingBox(EntityPose pose) {
         if (this.hasPassengers()) {
             Entity passenger = this.getFirstPassenger();
-            if (passenger ==null) return super.getHitbox();
+            if (passenger == null) return super.getHitbox();
             return passenger.getBoundingBox().expand(0.2);
         }
         return super.getBoundingBox();
@@ -419,14 +430,30 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         return null;
     }
 
+    private boolean lastHidingState = false;
+
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "Idle", 5, this::idleAnimController));
-        controllers.add(new AnimationController<>(this, "Stare", 2, this::closedAnimController));
+        controllers.add(new AnimationController<>(this, "Idle", 5, this::idleAnimController)
+                .setSoundKeyframeHandler(context -> {
+                    if (this.getWorld() == null) return;
+                    if (!lastHidingState)
+                        ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), SoundEvents.ENTITY_PUFFER_FISH_BLOW_UP, SoundCategory.NEUTRAL, 0.5F, 1.5F);
+                    lastHidingState = true;
+                }));
+        controllers.add(new AnimationController<>(this, "Stare", 2, this::closedAnimController)
+                .setSoundKeyframeHandler(context -> {
+                    if (this.getWorld() == null) return;
+                    lastHidingState = false;
+                    ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), SoundEvents.ENTITY_PUFFER_FISH_BLOW_OUT, SoundCategory.NEUTRAL, 0.5F, 1.5F);
+                    Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 10, () ->{
+                        ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), this.blockState.getSoundGroup().getPlaceSound(), SoundCategory.NEUTRAL, 1F, 1.0F);
+                    });
+                }));
     }
 
     private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {
-        if (getWorld() != null && getWorld().getClosestPlayer(getPos().getX(), getPos().getY(), getPos().getZ(), 15d, false) != null) {
+        if (!isHiding()) {
             return event.setAndContinue(IDLE_ANIM);
         }
         event.setAnimation(CLOSED_ANIM);
@@ -434,7 +461,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     private PlayState closedAnimController(AnimationState<HidingTraderEntity> event) {
-        if (getWorld() != null && getWorld().getClosestPlayer(getPos().getX(), getPos().getY(), getPos().getZ(), 15d, false) == null) {
+        if (isHiding()) {
             return event.setAndContinue(CLOSED_ANIM);
         }
         event.setAnimation(IDLE_ANIM);
@@ -453,19 +480,14 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     @Override
-    public void playAmbientSound() {
-        this.playSoundIfNotSilent(SoundEvents.ENTITY_VILLAGER_AMBIENT);
-    }
-
-    @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return SoundEvents.ENTITY_VILLAGER_HURT;
+        return isHiding() ? blockState.getSoundGroup().getHitSound() : SoundEvents.ENTITY_VILLAGER_HURT;
     }
 
     @Override
     protected SoundEvent getDeathSound() {
         // Return villager death sound
-        return SoundEvents.ENTITY_VILLAGER_DEATH;
+        return isHiding() ? blockState.getSoundGroup().getBreakSound() :SoundEvents.ENTITY_VILLAGER_DEATH;
     }
 
     public BlockState getBlockState() {
@@ -477,6 +499,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         syncBlockData(blockState);
     }
 
+    private boolean isHiding() {
+        return getWorld() != null && getWorld().getClosestPlayer(getPos().getX(), getPos().getY(), getPos().getZ(), 15d, player -> !player.isSneaking()) == null;
+    }
+
     private void syncBlockData(BlockState blockState) {
         if (!this.getWorld().isClient) { // Ensure this runs only on the server
             // Serialize the BlockState and update the DataTracker
@@ -485,5 +511,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 this.dataTracker.set(BLOCK_STATE, jsonElement.toString());
             });
         }
+    }
+
+    @Override
+    protected @Nullable SoundEvent getAmbientSound() {
+        if (isSilent()) return null;
+        return isHiding() ? null : SoundEvents.ENTITY_VILLAGER_AMBIENT;
     }
 }

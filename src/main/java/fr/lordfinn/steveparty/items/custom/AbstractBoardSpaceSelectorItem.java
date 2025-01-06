@@ -27,8 +27,6 @@ import java.util.List;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
-import static fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent.DEFAULT_ORIGIN;
-import static fr.lordfinn.steveparty.particles.ModParticles.HERE_PARTICLE;
 
 public abstract class AbstractBoardSpaceSelectorItem extends Item {
     public AbstractBoardSpaceSelectorItem(Settings settings) {
@@ -133,22 +131,5 @@ public abstract class AbstractBoardSpaceSelectorItem extends Item {
     private void addNoDestinationsMessage(List<Text> tooltip) {
         tooltip.add(Text.literal("No destinations set.")
                 .setStyle(Style.EMPTY.withColor(Formatting.RED).withItalic(true)));
-    }
-
-    private long lastTimeItemHoldParticleUpdate = 0;
-    @Override
-    public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
-        if (!selected || !(entity instanceof PlayerEntity) || lastTimeItemHoldParticleUpdate + 40 > System.currentTimeMillis())
-            return;
-        lastTimeItemHoldParticleUpdate = System.currentTimeMillis();
-        BoardSpaceBehaviorComponent component = stack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
-        List<BlockPos> destinations = component.destinations();
-        if (!destinations.isEmpty()) {
-            for (BlockPos pos : destinations) {
-                world.addParticle(HERE_PARTICLE,
-                        pos.getX() + 0.5, pos.getY() + 2, pos.getZ() + 0.5,
-                        0.0, 0.0, 0.0);
-            }
-        }
     }
 }

@@ -272,6 +272,11 @@
 						"vector": [1, 1, 1]
 					}
 				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "minecraft:entity.puffer_fish.blow_out"
+				}
 			}
 		},
 		"closed": {
@@ -738,6 +743,11 @@
 							"vector": [1, 1, 1]
 						}
 					}
+				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "minecraft:entity.puffer_fish.blow_up"
 				}
 			}
 		}
