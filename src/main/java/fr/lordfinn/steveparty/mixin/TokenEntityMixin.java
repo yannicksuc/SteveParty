@@ -1,8 +1,10 @@
 package fr.lordfinn.steveparty.mixin;
 
-import fr.lordfinn.steveparty.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
+import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -14,7 +16,9 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.joml.Vector3d;
@@ -28,6 +32,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Optional;
 import java.util.UUID;
 
+import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
+
 @Mixin(MobEntity.class)
 public abstract class TokenEntityMixin extends LivingEntity implements TokenizedEntityInterface {
 
@@ -37,6 +43,8 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     private static final TrackedData<Optional<UUID>> TOKEN_OWNER = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     @Unique
     private static final TrackedData<Integer> NB_STEPS = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.INTEGER);
+    @Unique
+    private static final TrackedData<Integer> TOKEN_STATUS = DataTracker.registerData(TokenEntityMixin.class, TrackedDataHandlerRegistry.INTEGER);
     @Unique
     private Vec3d targetPosition;
     @Unique
@@ -54,6 +62,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         builder.add(TOKENIZED, false);
         builder.add(TOKEN_OWNER, Optional.empty());
         builder.add(NB_STEPS, 0);
+        builder.add(TOKEN_STATUS, 0);
     }
 
     public boolean steveparty$isTokenized() {
@@ -89,6 +98,14 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         this.dataTracker.set(TOKENIZED, tokenized);
     }
 
+    public int steveparty$getStatus() {
+        return this.dataTracker.get(TOKEN_STATUS);
+    }
+
+    public void steveparty$setStatus(int status) {
+        this.dataTracker.set(TOKEN_STATUS, status);
+    }
+
     public UUID steveparty$getTokenOwner() {
         return this.dataTracker.get(TOKEN_OWNER).orElse(null);
     }
@@ -108,6 +125,10 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         } else {
             this.steveparty$setTokenOwner((UUID) null); // Clear TOKEN_OWNER if missing
         }
+
+        if (nbt.contains("TokenStatus", 99)) {
+            this.steveparty$setStatus(nbt.getInt("TokenStatus"));
+        }
     }
 
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
@@ -120,6 +141,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         } else {
             nbt.remove("TokenOwner"); // Remove the key if the value is null
         }
+        nbt.putInt("TokenStatus", this.steveparty$getStatus());
     }
 
     /**
@@ -169,8 +191,10 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
                 this.setVelocity(Vec3d.ZERO);
                 this.targetPosition = null;
                 BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos());
-                if ((blockEntity instanceof BoardSpaceEntity))
+                if ((blockEntity instanceof BoardSpaceEntity)) {
+                    this.steveparty$setNbSteps(this.steveparty$getNbSteps() - (this.getWorld().getBlockState(this.getBlockPos()).getBlock() instanceof Tile  ? 1 : 0));
                     TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this, (BoardSpaceEntity) blockEntity);
+                }
             }
         } else if (this.steveparty$isTokenized()) {
             // Retrieve current velocity
@@ -208,6 +232,12 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (this.steveparty$isTokenized()) {
+            if (source.getAttacker() instanceof PlayerEntity) {
+                MessageUtils.sendToPlayer((ServerPlayerEntity) source.getAttacker(), Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
+                BlockEntity blockEntity = world.getBlockEntity(this.getBlockPos());
+                if (blockEntity instanceof BoardSpaceEntity)
+                    EVENT.invoker().onTileUpdated((MobEntity) (Object) this, (BoardSpaceEntity) blockEntity);
+            }
             return false;
         }
         return super.damage(world, source, amount);

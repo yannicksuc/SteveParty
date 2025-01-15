@@ -1,16 +1,20 @@
-package fr.lordfinn.steveparty.blocks.custom;
+package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.utils.MessageUtils;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
@@ -24,6 +28,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.object.Color;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -87,9 +92,25 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
 
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (world.isClient) return ActionResult.PASS;
-        ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
-        if (success != null) return success;
+        if (player.isSneaking()) {
+            if (world.isReceivingRedstonePower(pos)) {
+                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("block.steveparty.big_book.catalogue_cannot_be_taken_when_powered").withColor(Color.RED.getColor()), MessageUtils.MessageType.CHAT);
+                return ActionResult.PASS;
+            }
+            ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
+            if (success != null) return success;
+        } else {
+            printPartyInfo(world, pos, player);
+        }
+
         return ActionResult.SUCCESS;
+    }
+
+    private void printPartyInfo(World world, BlockPos pos, PlayerEntity player) {
+        PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
+        if (entity != null) {
+            entity.printPartyInfo(player);
+        }
     }
 
     @Override
@@ -116,13 +137,13 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
         if (!world.isClient) {
-            updatePoweredState(state, world, pos);
-            if (state.get(POWERED)) {
+            if (world.isReceivingRedstonePower(pos) && !state.get(POWERED)) {
                 PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
                 if (entity != null) {
-                    entity.generateGameSteps();
+                    entity.boot();
                 }
             }
+            updatePoweredState(state, world, pos);
         }
     }
 
@@ -163,5 +184,13 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PartyControllerEntity(pos, state);
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        if (!world.isClient) {
+            updatePoweredState(state, world, pos);
+        }
     }
 }

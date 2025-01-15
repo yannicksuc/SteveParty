@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty;
+package fr.lordfinn.steveparty.entities;
 
 import net.minecraft.entity.player.PlayerEntity;
 import org.joml.Vector3d;
@@ -13,6 +13,10 @@ public interface TokenizedEntityInterface {
     int steveparty$getNbSteps();
 
     void steveparty$setNbSteps(int nbSteps);
+
+    int steveparty$getStatus();
+
+    void steveparty$setStatus(int status);
 
     void steveparty$setTokenized(boolean tokenized);
 

@@ -1,15 +1,19 @@
 package fr.lordfinn.steveparty.utils;
 
+import fr.lordfinn.steveparty.Steveparty;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
 import java.util.Collection;
+import java.util.List;
 
 public class MessageUtils {
 
@@ -66,7 +70,7 @@ public class MessageUtils {
      * @param message The message to send. Can be a String or a Text.
      * @param messageType The type of message (CHAT, ACTION_BAR, or TITLE).
      */
-    public static void sendToPlayers(Collection<ServerPlayerEntity> players, Object message, MessageType messageType) {
+    public static void sendToPlayers(Iterable<ServerPlayerEntity> players, Object message, MessageType messageType) {
         Text text = convertToText(message);
         for (ServerPlayerEntity player : players) {
             sendMessage(player, text, messageType);
@@ -128,6 +132,14 @@ public class MessageUtils {
             return text.getStyle().getColor().getRgb();
         }
         return Color.WHITE.getRGB();
+    }
+
+    public static void sendToPlayers(List<PlayerEntity> owners, MutableText translatable, MessageType messageType) {
+        try {
+            sendToPlayers(owners.stream().map(e -> (ServerPlayerEntity) e).toList(), translatable, messageType);
+        } catch (Exception e) {
+            Steveparty.LOGGER.error(e.getMessage(), e);
+        }
     }
 
     /**

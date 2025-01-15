@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.events;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
@@ -28,6 +29,7 @@ public class ModEvents {
             }
             return ActionResult.PASS;
         });
+        DiceRollEvent.EVENT.register(PartyControllerEntity::handleDiceRoll);
     }
 
     /**

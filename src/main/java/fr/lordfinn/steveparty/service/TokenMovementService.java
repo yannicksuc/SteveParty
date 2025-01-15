@@ -1,18 +1,18 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.entities.TokenStatus;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
+import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.events.TileUpdatedEvent;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -26,7 +26,10 @@ import net.minecraft.util.shape.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 
@@ -36,30 +39,61 @@ public class TokenMovementService {
         TileReachedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
         TileUpdatedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
 
-        DiceRollEvent.EVENT.register((dice, ownerUUID, rollValue) -> {
-            double distance = -1d;
-            MobEntity chosenToken = null;
-            ServerWorld world = (ServerWorld) dice.getWorld();
-            if (world == null) return ActionResult.PASS;
-            for (Entity entity :  world.iterateEntities()) {
-                if (entity instanceof MobEntity token) {
-                    if (((TokenizedEntityInterface)entity).steveparty$getTokenOwner() != null && ((TokenizedEntityInterface)entity).steveparty$getNbSteps() == 0) {
-                        if (((TokenizedEntityInterface)entity).steveparty$getTokenOwner().equals(ownerUUID)) { //TODO Check for the current player when party as started
-                            double newDistance = dice.getPos().distanceTo(entity.getPos());
-                            if (distance == -1d || (newDistance < distance)) {
-                                chosenToken = token;
-                                distance = newDistance;
-                            }
-                        }
-                    }
-                }
+        DiceRollEvent.EVENT.register(this::handleDiceRoll);
+    }
+
+    private ActionResult handleDiceRoll(DiceEntity dice, UUID ownerUUID, int rollValue) {
+        ServerWorld world = (ServerWorld) dice.getWorld();
+        if (world == null) return ActionResult.PASS;
+
+        MobEntity chosenToken = getTargetedToken(world, dice, ownerUUID);
+        if (chosenToken == null) return ActionResult.PASS;
+
+        SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(chosenToken, rollValue));
+        return ActionResult.SUCCESS;
+    }
+
+    private MobEntity getTargetedToken(ServerWorld world, DiceEntity dice, UUID ownerUUID) {
+        List<MobEntity> chosenTokens = getEligibleTokens(world, dice, ownerUUID);
+        if (chosenTokens.isEmpty()) return null;
+
+        sortTokens(chosenTokens, dice);
+
+        // Add small delay so players can appreciate the dice roll value
+        return chosenTokens.getFirst();
+    }
+
+    private List<MobEntity> getEligibleTokens(ServerWorld world, DiceEntity dice, UUID ownerUUID) {
+        List<MobEntity> eligibleTokens = new ArrayList<>();
+        for (MobEntity token : world.getEntitiesByClass(MobEntity.class,
+                Box.of(dice.getPos(), 50, 50, 50),
+                entity -> ((TokenizedEntityInterface) entity).steveparty$isTokenized())) {
+
+            TokenizedEntityInterface tokenInterface = (TokenizedEntityInterface) token;
+            UUID tokenOwnerUUID = tokenInterface.steveparty$getTokenOwner();
+            if (tokenOwnerUUID != null
+                    && tokenInterface.steveparty$getNbSteps() == 0
+                    && isTokenEligible(tokenInterface, ownerUUID)) {
+                eligibleTokens.add(token);
             }
-            if (chosenToken == null) return ActionResult.PASS;
-            //Add small delay so the players can appreciate the value of the dice
-            MobEntity finalChosenToken = chosenToken;
-            SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(finalChosenToken, rollValue));
-            return ActionResult.SUCCESS;
-        });
+        }
+        return eligibleTokens;
+    }
+
+    private boolean isTokenEligible(TokenizedEntityInterface token, UUID ownerUUID) {
+        int status = token.steveparty$getStatus();
+        boolean isOwnedByOwner = token.steveparty$getTokenOwner().equals(ownerUUID);
+
+        return (isOwnedByOwner && TokenStatus.canMoveInGame(status)) || !TokenStatus.isInGame(status);
+    }
+
+    private void sortTokens(List<MobEntity> tokens, DiceEntity dice) {
+        // Sort tokens by distance to dice and then by status (IN_GAME_CAN_MOVE are first and OUT_OF_GAME_xxx are last)
+        tokens.sort(
+                Comparator
+                        .<MobEntity>comparingInt(token -> TokenStatus.canMoveInGame(((TokenizedEntityInterface) token).steveparty$getStatus())  ? 1 : -1)
+                        .thenComparingDouble(token -> token.getPos().distanceTo(dice.getPos()))
+        );
     }
 
     private static @NotNull ActionResult tryToMoveEntityOnBoard(MobEntity entity, BoardSpaceEntity tile) {
@@ -69,7 +103,7 @@ public class TokenMovementService {
 
         ABoardSpaceBehavior behavior = tile.getTileBehavior();
         if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos())) {
-            moveEntityOnBoard(entity, nbSteps - (entity.getWorld().getBlockState(tile.getPos()).getBlock() instanceof Tile ? 1 : 0));
+            moveEntityOnBoard(entity, nbSteps);
             return ActionResult.SUCCESS;
         }
         return ActionResult.PASS;

@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.VillagerBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TriggerPoint;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.blocks.custom.BigBook;
-import fr.lordfinn.steveparty.blocks.custom.PartyController;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import net.minecraft.block.Block;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Blocks;
