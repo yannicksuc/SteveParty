@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.BigBookEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.registry.Registries;

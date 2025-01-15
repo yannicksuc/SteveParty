@@ -10,7 +10,8 @@
     "MerchantEntityMixin",
     "PlayerFallMixin",
     "StatusEffectMixin",
-    "TokenEntityMixin"
+    "TokenEntityMixin",
+    "TrackedDataHandlerRegistryMixin"
   ],
   "injectors": {
     "defaultRequire": 1

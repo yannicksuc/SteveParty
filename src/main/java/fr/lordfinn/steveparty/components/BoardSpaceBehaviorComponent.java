@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public record BoardSpaceBehaviorComponent(List<BlockPos> destinations, BlockPos origin, String tileType, String world) {
@@ -16,7 +18,7 @@ public record BoardSpaceBehaviorComponent(List<BlockPos> destinations, BlockPos 
     ).apply(builder, BoardSpaceBehaviorComponent::new));
 
     public static final BoardSpaceBehaviorComponent DEFAULT_BOARD_SPACE_BEHAVIOR = new BoardSpaceBehaviorComponent(
-            List.of(), // Empty destinations list
+            new ArrayList<>(), // Empty destinations list
             DEFAULT_ORIGIN,
             "default", // Default tile type
             "" // No initial world set

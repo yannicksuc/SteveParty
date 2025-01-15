@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
-import fr.lordfinn.steveparty.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;

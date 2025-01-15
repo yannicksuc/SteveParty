@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
-import fr.lordfinn.steveparty.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;

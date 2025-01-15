@@ -36,7 +36,7 @@ public class StevePartyRecipeProvider extends FabricRecipeProvider {
             }
 
 /*            public static AdvancementCriterion<InventoryChangedCriterion.Conditions> conditionsFromItemWithPotion(ItemConvertible item, String potion) {
-                new ComponentPredicate(List.of());
+                new ComponentPredicate(new ArrayList<>());
                 POTION_CONTENTS
                 POTION_COMPONENT
                         new SplashPotionItem()
