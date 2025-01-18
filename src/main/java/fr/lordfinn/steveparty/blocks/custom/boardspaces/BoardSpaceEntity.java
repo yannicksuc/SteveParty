@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
@@ -10,6 +11,7 @@ import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
+import fr.lordfinn.steveparty.mixin.TokenEntityMixin;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
@@ -32,11 +34,15 @@ import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -47,7 +53,8 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_T
 public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerFactory, TickableBlockEntity {
     //private final DefaultedList<ItemStack> items = DefaultedList.ofSize(16, ItemStack.EMPTY);
     private int ticks = 0;
-
+    private SoundEvent activateSound = SoundEvents.BLOCK_NOTE_BLOCK_HARP.value();
+    private SoundEvent walkedOnSound = null;
 
 
     public BoardSpaceEntity(BlockPos pos, BlockState state) {
@@ -314,5 +321,28 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
             }
         }
         return tokens;
+    }
+
+    public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
+        this.playActivateSound();
+        partyController.nextStep();
+    }
+
+    protected void setActivateSound(SoundEvent activateSound) {
+        this.activateSound = activateSound;
+    }
+
+    protected void setWalkedOnSound(SoundEvent walkedOnSound) {
+        this.walkedOnSound = walkedOnSound;
+    }
+
+    private void playActivateSound() {
+        if (this.world == null || this.activateSound == null) return;
+        this.world.playSound(null, this.pos, this.activateSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+    }
+
+    public void onTileReached(@NotNull MobEntity token, PartyControllerEntity partyControllerEntity) {
+        if (this.world == null || this.walkedOnSound == null) return;
+        this.world.playSound(null, this.pos, this.walkedOnSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 }

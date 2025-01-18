@@ -13,6 +13,7 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,9 +21,18 @@ import java.util.stream.Collectors;
 public class PartyData {
     private PartyStepType type = PartyStepType.DEFAULT;
     private List<PartyStep> steps = new ArrayList<>();
-    private ArrayList<UUID> tokens = new ArrayList<>();
+    private List<UUID> tokens = new ArrayList<>();
     private int stepIndex = -1;
     private int nbTurn = 10;
+
+    /*public static final Codec<PartyData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            PartyStepType.CODEC.fieldOf("Type").forGetter(PartyData::getType),
+            PartyStep.CODEC.listOf().fieldOf("Steps").forGetter(PartyData::getSteps),
+            Codec.list(UUIDCodec.CODEC).fieldOf("Tokens").forGetter(PartyData::getTokens),
+            Codec.INT.fieldOf("StepIndex").orElse(-1).forGetter(PartyData::getStepIndex),
+            Codec.INT.fieldOf("NbTurn").orElse(10).forGetter(PartyData::getNbTurn)
+    ).apply(instance, PartyData::new));*/
+
     // Constructor
     public PartyData() {
     }
@@ -30,6 +40,15 @@ public class PartyData {
     public PartyData(NbtCompound compound) {
         fromNbt(compound);
     }
+
+    public PartyData(PartyStepType type, List<PartyStep> partySteps, List<UUID> tokens, Integer integer, Integer integer1) {
+        this.type = type;
+        this.steps = partySteps;
+        this.tokens = tokens;
+        this.stepIndex = integer;
+        this.nbTurn = integer1;
+    }
+
     /**
      * Populates the TokenData instance from an NBT tag.
      *
@@ -129,7 +148,7 @@ public class PartyData {
         this.steps = steps;
     }
 
-    public ArrayList<UUID> getTokens() {
+    public List<UUID> getTokens() {
         return tokens;
     }
 
@@ -220,18 +239,37 @@ public class PartyData {
         });
         return tokensWithOwners;
     }
+
+    public Map<TokenizedEntityInterface, PlayerEntity> getAllTokensWithOwners(ServerWorld world) {
+        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = new HashMap<>();
+        getTokens().forEach(tokenUUID -> {
+            if (world.getEntity(tokenUUID) instanceof TokenizedEntityInterface token) {
+                UUID ownerUUID = token.steveparty$getTokenOwner();
+                if (world.getEntity(ownerUUID) instanceof PlayerEntity player) {
+                    tokensWithOwners.put(token, player);
+                } else {
+                    tokensWithOwners.put(token, null);
+                }
+            }
+        });
+        return tokensWithOwners;
+    }
+
     public Text getParticipantsAsString(ServerWorld world) {
-        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = getTokensWithOwners(world);
+        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = getAllTokensWithOwners(world);
 
         MutableText result = Text.empty();
         Iterator<Map.Entry<TokenizedEntityInterface, PlayerEntity>> iterator = tokensWithOwners.entrySet().iterator();
 
         while (iterator.hasNext()) {
             Map.Entry<TokenizedEntityInterface, PlayerEntity> entry = iterator.next();
+            Text name = entry.getValue() != null
+                    ? entry.getValue().getName()
+                    : Text.literal("Disconnected User").styled(style -> style.withColor(Formatting.GRAY));
             MutableText participantText = Text.translatable(
                     "message.steveparty.played_by",
                     ((Entity) entry.getKey()).getCustomName(),
-                    entry.getValue().getName()
+                    name
             );
 
             result.append(participantText);

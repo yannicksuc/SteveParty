@@ -192,7 +192,11 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
                 this.targetPosition = null;
                 BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos());
                 if ((blockEntity instanceof BoardSpaceEntity)) {
-                    this.steveparty$setNbSteps(this.steveparty$getNbSteps() - (this.getWorld().getBlockState(this.getBlockPos()).getBlock() instanceof Tile  ? 1 : 0));
+                    if (this.steveparty$getNbSteps() > 0) {//TODO Manage negative Steps (Not urgent)
+                        if (this.getWorld().getBlockState(this.getBlockPos()).getBlock() instanceof Tile tile) {
+                            this.steveparty$setNbSteps(this.steveparty$getNbSteps() - 1);
+                        }
+                    }
                     TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this, (BoardSpaceEntity) blockEntity);
                 }
             }

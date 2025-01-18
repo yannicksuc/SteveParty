@@ -43,6 +43,8 @@ public class ModComponents {
             registerComponent("socketed-story", ItemStack.CODEC);
     public static final ComponentType<ItemStack> CATALOGUE =
             registerComponent("catalogue", ItemStack.CODEC);
+    public static final ComponentType<Integer> MODE =
+            registerComponent("mode", Codec.INT);
 
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);

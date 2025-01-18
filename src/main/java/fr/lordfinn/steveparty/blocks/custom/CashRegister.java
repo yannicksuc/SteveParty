@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.utils.CashRegisterState;
+import fr.lordfinn.steveparty.utils.CashRegisterPersistentState;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -64,7 +64,7 @@ public class CashRegister extends HorizontalFacingBlock {
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
         if (!world.isClient) {
-            CashRegisterState cashRegisterState = CashRegisterState.get(world.getServer());
+            CashRegisterPersistentState cashRegisterState = CashRegisterPersistentState.get(world.getServer());
             if (cashRegisterState != null) cashRegisterState.addPosition(pos);
         }
     }
@@ -72,7 +72,7 @@ public class CashRegister extends HorizontalFacingBlock {
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
         if (!world.isClient) {
-            CashRegisterState cashRegisterState = CashRegisterState.get(world.getServer());
+            CashRegisterPersistentState cashRegisterState = CashRegisterPersistentState.get(world.getServer());
             if (cashRegisterState != null) cashRegisterState.removePosition(pos);
         }
         return super.onBreak(world, pos, state, player);

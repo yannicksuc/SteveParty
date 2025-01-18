@@ -77,6 +77,7 @@ public class ModItems {
             itemGroup.add(DEFAULT_DICE);
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
+            itemGroup.add(STEP_CONTROLLER);
             itemGroup.add(MINI_GAMES_CATALOGUE);
             itemGroup.add(VILLAGER_BLOCK);
             itemGroup.add(CASH_REGISTER);

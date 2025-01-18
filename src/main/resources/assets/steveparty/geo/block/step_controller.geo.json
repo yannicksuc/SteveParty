@@ -1,0 +1,139 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.unknown",
+				"texture_width": 64,
+				"texture_height": 64,
+				"visible_bounds_width": 2,
+				"visible_bounds_height": 2.5,
+				"visible_bounds_offset": [0, 0.75, 0]
+			},
+			"bones": [
+				{
+					"name": "bb_main",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-8, 0, -8], "size": [16, 2, 16], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "mechanism",
+					"pivot": [0, 10, 0]
+				},
+				{
+					"name": "big_ring",
+					"parent": "mechanism",
+					"pivot": [0, 10, 0],
+					"cubes": [
+						{"origin": [-8, 9, -8], "size": [16, 2, 2], "uv": [0, 36]},
+						{"origin": [6, 9, -6], "size": [2, 2, 12], "uv": [28, 18]},
+						{"origin": [-8, 9, 6], "size": [16, 2, 2], "uv": [0, 32]},
+						{"origin": [-8, 9, -6], "size": [2, 2, 12], "uv": [0, 18]}
+					]
+				},
+				{
+					"name": "small_ring",
+					"parent": "big_ring",
+					"pivot": [0, 10, 0],
+					"cubes": [
+						{"origin": [-3, 9, -5], "size": [6, 2, 2], "uv": [24, 44]},
+						{"origin": [3, 9, -5], "size": [2, 2, 10], "uv": [36, 32]},
+						{"origin": [-3, 9, 3], "size": [6, 2, 2], "uv": [40, 44]},
+						{"origin": [-5, 9, -5], "size": [2, 2, 10], "uv": [0, 40]}
+					]
+				},
+				{
+					"name": "hourglass",
+					"parent": "small_ring",
+					"pivot": [0, 10, 0],
+					"cubes": [
+						{
+							"origin": [-1, 8, -1],
+							"size": [2, 4, 2],
+							"uv": {
+								"north": {"uv": [48, 54], "uv_size": [2, 4]},
+								"east": {"uv": [54, 48], "uv_size": [2, 4]},
+								"south": {"uv": [50, 54], "uv_size": [2, 4]},
+								"west": {"uv": [52, 54], "uv_size": [2, 4]}
+							}
+						},
+						{
+							"origin": [-3, 3, -3],
+							"size": [6, 3, 6],
+							"uv": {
+								"north": {"uv": [24, 40], "uv_size": [6, 3]},
+								"east": {"uv": [30, 40], "uv_size": [6, 3]},
+								"south": {"uv": [48, 48], "uv_size": [6, 3]},
+								"west": {"uv": [48, 51], "uv_size": [6, 3]},
+								"up": {"uv": [24, 48], "uv_size": [6, 6]},
+								"down": {"uv": [30, 54], "uv_size": [6, -6]}
+							}
+						},
+						{
+							"origin": [-2, 6, -2],
+							"size": [4, 2, 4],
+							"uv": {
+								"north": {"uv": [32, 54], "uv_size": [4, 2]},
+								"east": {"uv": [36, 54], "uv_size": [4, 2]},
+								"south": {"uv": [40, 54], "uv_size": [4, 2]},
+								"west": {"uv": [44, 54], "uv_size": [4, 2]},
+								"up": {"uv": [24, 54], "uv_size": [4, 4]}
+							}
+						},
+						{
+							"origin": [-2, 12, -2],
+							"size": [4, 2, 4],
+							"uv": {
+								"north": {"uv": [54, 52], "uv_size": [4, 2]},
+								"east": {"uv": [54, 54], "uv_size": [4, 2]},
+								"south": {"uv": [0, 55], "uv_size": [4, 2]},
+								"west": {"uv": [4, 55], "uv_size": [4, 2]},
+								"down": {"uv": [28, 58], "uv_size": [4, -4]}
+							}
+						},
+						{
+							"origin": [-3, 14, -3],
+							"size": [6, 3, 6],
+							"uv": {
+								"north": {"uv": [0, 52], "uv_size": [6, 3]},
+								"east": {"uv": [6, 52], "uv_size": [6, 3]},
+								"south": {"uv": [12, 52], "uv_size": [6, 3]},
+								"west": {"uv": [18, 52], "uv_size": [6, 3]},
+								"up": {"uv": [36, 48], "uv_size": [6, 6]},
+								"down": {"uv": [42, 54], "uv_size": [6, -6]}
+							}
+						}
+					]
+				},
+				{
+					"name": "bone",
+					"parent": "hourglass",
+					"pivot": [0, 10, 0],
+					"rotation": [0, 45, 0],
+					"cubes": [
+						{
+							"origin": [-7, 10, -3.75],
+							"size": [14, 0, 7.5],
+							"pivot": [0, 10, 0],
+							"rotation": [90, 0, 90],
+							"uv": {
+								"down": {"uv": [16, 26], "uv_size": [14, -8]}
+							}
+						},
+						{
+							"origin": [0, 17, -3.75],
+							"size": [14, 0, 7.5],
+							"pivot": [0, 17, -7],
+							"rotation": [0, 0, 90],
+							"uv": {
+								"down": {"uv": [16, 26], "uv_size": [14, -8]}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
