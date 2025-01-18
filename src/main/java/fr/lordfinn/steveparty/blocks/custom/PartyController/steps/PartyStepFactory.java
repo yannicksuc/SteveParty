@@ -1,13 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.DefaultBoardSpaceBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;

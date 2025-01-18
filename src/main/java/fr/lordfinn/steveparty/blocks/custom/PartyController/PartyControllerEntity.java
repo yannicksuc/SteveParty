@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -9,11 +10,15 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.payloads.PartyDataPayload;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -22,6 +27,8 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -29,6 +36,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -39,6 +47,7 @@ public class PartyControllerEntity extends BlockEntity {
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     private static final Set<PartyControllerEntity> ACTIVE_PARTY_CONTROLLERS = new HashSet<>();
+    private final Set<UUID> interestedPlayers = new HashSet<>(); // New field
 
 
     public PartyControllerEntity(BlockPos pos, BlockState state) {
@@ -60,7 +69,18 @@ public class PartyControllerEntity extends BlockEntity {
 
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
-        if (catalogue != null && !catalogue.isEmpty()) {
+        super.writeNbt(nbt, wrapper);
+
+        // Serialize interestedPlayers list
+        NbtCompound playersNbt = new NbtCompound();
+        int i = 0;
+        for (UUID playerUUID : interestedPlayers) {
+            playersNbt.putString("player_" + i, playerUUID.toString());
+            i++;
+        }
+        nbt.put("interestedPlayers", playersNbt);
+
+        if (!catalogue.isEmpty()) {
             NbtElement item = catalogue.toNbt(wrapper, new NbtCompound());
             nbt.put("catalogue", item);
             nbt.putBoolean("isCatalogued", true);
@@ -68,19 +88,25 @@ public class PartyControllerEntity extends BlockEntity {
             nbt.putBoolean("isCatalogued", false);
         }
         partyData.toNbt(nbt);
-        super.writeNbt(nbt, wrapper);
     }
 
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
+
+        // Deserialize interestedPlayers list
+        interestedPlayers.clear();
+        NbtCompound playersNbt = nbt.getCompound("interestedPlayers");
+        for (String key : playersNbt.getKeys()) {
+            interestedPlayers.add(UUID.fromString(playersNbt.getString(key)));
+        }
+
         NbtElement catalogueElem = nbt.get("catalogue");
         if (catalogueElem != null) {
             Optional<ItemStack> socketedStoryNbt = ItemStack.fromNbt(wrapper, nbt.get("catalogue"));
             socketedStoryNbt.ifPresentOrElse(stack -> catalogue = stack, () -> catalogue = ItemStack.EMPTY);
         }
-        boolean isCatalogued = nbt.getBoolean("isCatalogued");
-        if (!isCatalogued)
+        if (!nbt.getBoolean("isCatalogued"))
             catalogue = ItemStack.EMPTY;
         partyData = new PartyData(nbt);
     }
@@ -107,8 +133,11 @@ public class PartyControllerEntity extends BlockEntity {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
         if (partyData.isStarted()) return;
 
+        clearInterestedPlayers();
         getTokenFromStartTiles(serverWorld);
         setTokensStatus(serverWorld);
+
+        addInterestedPlayersFromTokens(serverWorld);
 
         partyData.addStep(new StartRollsStep());
         partyData.addStep(new BasicGameGeneratorStep());
@@ -196,6 +225,23 @@ public class PartyControllerEntity extends BlockEntity {
         return startTiles;
     }
 
+
+    public static void handlePlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
+        for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS) {
+            if (!entity.isRemoved()) {
+                entity.onPlayerJoin(handler, sender, server);
+            }
+        }
+    }
+
+    private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
+        ServerPlayerEntity player = handler.player;
+        boolean isInterested = interestedPlayers.contains(player.getUuid());
+        if (isInterested) {
+            this.sendPacketToInterestedPlayer(player);
+        }
+    }
+
     public static ActionResult handleDiceRoll(DiceEntity dice, UUID ownerUUID, int rollValue) {
         ActionResult actionResult = ActionResult.PASS;
         for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS) {
@@ -217,6 +263,30 @@ public class PartyControllerEntity extends BlockEntity {
         return currentStep.onDiceRoll(dice,ownerUUID, rollValue, this);
     }
 
+
+    public static ActionResult handleTileReached(@NotNull MobEntity token,@NotNull BoardSpaceEntity boardSpaceEntity) {
+        ActionResult actionResult = ActionResult.PASS;
+        for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS) {
+            if (!entity.isRemoved()) {
+                ActionResult result = entity.onTileReached(token, boardSpaceEntity);
+                if (result != ActionResult.SUCCESS)
+                    actionResult = result;
+            }
+        }
+        return actionResult;
+    }
+
+    private ActionResult onTileReached(@NotNull MobEntity token,@NotNull BoardSpaceEntity boardSpaceEntity) {
+        if (this.isRemoved() || this.world == null) {
+            return ActionResult.PASS;
+        }
+        PartyStep currentStep = partyData.getCurrentStep();
+        if (currentStep == null) return ActionResult.PASS;
+        if (getPartyData().getTokens().contains(token.getUuid()))
+            return currentStep.onTileReached(token, boardSpaceEntity, this);
+        return ActionResult.PASS;
+    }
+
     @Override
     public void markRemoved() {
         super.markRemoved();
@@ -232,27 +302,102 @@ public class PartyControllerEntity extends BlockEntity {
     }
 
     public void nextStep() {
+        endCurrentStep();
+        startStep(partyData.getStepIndex() + 1);
+        Steveparty.LOGGER.info("Next step : " + partyData.getStepIndex());
+    }
+
+    public void restartStep() {
+        endCurrentStep();
+        startStep(partyData.getStepIndex());
+    }
+
+    public void previousStep() {
+        endCurrentStep();
+        startStep(partyData.getStepIndex() - 1);
+    }
+
+    private void endCurrentStep() {
         PartyStep currentStep = partyData.getCurrentStep();
         if (currentStep != null) {
             currentStep.setStatus(PartyStep.Status.FINISHED);
             currentStep.end(this);
         }
-        partyData.setStepIndex(partyData.getStepIndex() + 1);
-        currentStep = partyData.getCurrentStep();
+    }
+
+    private void startStep(int stepIndex) {
+        partyData.setStepIndex(stepIndex);
+        PartyStep currentStep = partyData.getCurrentStep();
         if (currentStep != null)
             currentStep.start(this);
+        sendPacketToInterestedPlayers();
+    }
+
+    public void addInterestedPlayer(ServerPlayerEntity player) {
+        interestedPlayers.add(player.getUuid());
+        this.sendPacketToInterestedPlayer(player);
+    }
+
+    public void removeInterestedPlayer(ServerPlayerEntity player) {
+        interestedPlayers.remove(player.getUuid());
+        this.sendClearPacketToPlayer(player);
+    }
+
+    // Clear the interestedPlayers list
+    public void clearInterestedPlayers() {
+        if (this.world == null) return;
+        for (UUID playerUUID : interestedPlayers) {
+            this.sendClearPacketToPlayer((ServerPlayerEntity) this.world.getPlayerByUuid(playerUUID));
+        }
+        interestedPlayers.clear();
+    }
+
+    private void addInterestedPlayersFromTokens(ServerWorld serverWorld) {
+        // Add playing players to the interestedPlayers list
+        for (UUID tokenUUID : partyData.getTokens()) {
+            if (serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token) {
+                UUID ownerUUID = token.steveparty$getTokenOwner();
+                if (serverWorld.getEntity(ownerUUID) instanceof ServerPlayerEntity player) {
+                    addInterestedPlayer(player);
+                }
+            }
+        }
+    }
+
+    void sendPacketToInterestedPlayers() {
+        if (this.world instanceof ServerWorld serverWorld) {
+            for (UUID playerUUID : interestedPlayers) {
+                PlayerEntity player = serverWorld.getPlayerByUuid(playerUUID);
+                if (player instanceof ServerPlayerEntity serverPlayer) {
+                    sendPacketToInterestedPlayer(serverPlayer);
+                }
+            }
+        }
+    }
+
+    void sendPacketToInterestedPlayer(ServerPlayerEntity player) {
+        sendPacketToInterestedPlayer(player, partyData);
+    }
+
+    public void sendClearPacketToPlayer(ServerPlayerEntity player) {
+        sendPacketToInterestedPlayer(player, new PartyData());
+    }
+
+    public void sendPacketToInterestedPlayer(ServerPlayerEntity player, PartyData partyData) {
+        PartyDataPayload payload = PartyDataPayload.fromPartyData(partyData);
+        ServerPlayNetworking.send(player, payload);
     }
 
     public void printPartyInfo(PlayerEntity player) {
         PartyStep currentStep = partyData.getCurrentStep();
         ServerWorld world = (ServerWorld) this.world;
-        printGameStatus(world, (ServerPlayerEntity) player);
+        printGameStatus((ServerPlayerEntity) player);
         if (!getPartyData().isStarted())
             return;
         //Print list of player with their tokens :
         printListOfParticipants(world, (ServerPlayerEntity) player);
         //Print game info
-        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.game_info", partyData.getTokens().size(), partyData.getStepIndex(), partyData.getSteps().size()), MessageUtils.MessageType.CHAT);
+        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.game_info", partyData.getStepIndex(), partyData.getSteps().size()), MessageUtils.MessageType.CHAT);
 
 
         //Print current step info
@@ -262,12 +407,17 @@ public class PartyControllerEntity extends BlockEntity {
         }
     }
 
-    private void printGameStatus(ServerWorld world, ServerPlayerEntity player) {
-        MessageUtils.sendToPlayer(player, Text.translatable(this.partyData.isStarted() ? "message.steveparty.game_status_on" : "message.steveparty.game_status_off"), MessageUtils.MessageType.CHAT);
+    private void printGameStatus(ServerPlayerEntity player) {
+        if (!this.partyData.isStarted())
+            MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.game_status_off"), MessageUtils.MessageType.CHAT);
     }
 
     public void printListOfParticipants(ServerWorld world, ServerPlayerEntity player) {
         Text participants = partyData.getParticipantsAsString(world);
-        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.participants").append(participants), MessageUtils.MessageType.CHAT);
+        MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.participants", partyData.getTokens().size()).append(participants), MessageUtils.MessageType.CHAT);
+    }
+
+    public Set<UUID> getInterestedPlayers() {
+        return interestedPlayers;
     }
 }

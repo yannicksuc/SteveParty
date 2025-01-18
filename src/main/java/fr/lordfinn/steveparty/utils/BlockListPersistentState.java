@@ -13,44 +13,32 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class CashRegisterState extends PersistentState {
-    private final Set<BlockPos> cashRegisterPositions = new HashSet<>();
-    private static final Type<CashRegisterState> type = new Type<>(
-            CashRegisterState::new,
-            CashRegisterState::createFromNbt,
-            null
-    );
+public abstract class BlockListPersistentState extends PersistentState {
+    protected final Set<BlockPos> positions = new HashSet<>();
 
     public void addPosition(BlockPos pos) {
-        cashRegisterPositions.add(pos);
+        positions.add(pos);
         markDirty();
     }
 
     public void removePosition(BlockPos pos) {
-        cashRegisterPositions.remove(pos);
+        positions.remove(pos);
         markDirty();
     }
 
     public Set<BlockPos> getPositions() {
-        return cashRegisterPositions;
+        return positions;
     }
 
-    private static CashRegisterState createFromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
-        CashRegisterState state = new CashRegisterState();
-        NbtList list = nbt.getList("CashRegisters", 10); // 10 = NbtCompound type
-        for (int i = 0; i < list.size(); i++) {
-            NbtCompound posNbt = list.getCompound(i);
-            BlockPos pos = new BlockPos(posNbt.getInt("x"), posNbt.getInt("y"), posNbt.getInt("z"));
-            state.addPosition(pos);
-        }
-        return state;
-    }
-
-    public static CashRegisterState get(MinecraftServer server) {
+    protected static <T extends BlockListPersistentState> T getOrCreate(
+            MinecraftServer server,
+            Type<T> type,
+            String name
+    ) {
         if (server == null || server.getWorld(World.OVERWORLD) == null) return null;
         PersistentStateManager manager = Objects.requireNonNull(server.getWorld(World.OVERWORLD)).getPersistentStateManager();
         if (manager == null) return null;
-        CashRegisterState state = manager.getOrCreate(type, "cash_registers");
+        T state = manager.getOrCreate(type, name);
         state.markDirty();
         return state;
     }
@@ -58,14 +46,23 @@ public class CashRegisterState extends PersistentState {
     @Override
     public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         NbtList list = new NbtList();
-        for (BlockPos pos : cashRegisterPositions) {
+        for (BlockPos pos : positions) {
             NbtCompound posNbt = new NbtCompound();
             posNbt.putInt("x", pos.getX());
             posNbt.putInt("y", pos.getY());
             posNbt.putInt("z", pos.getZ());
             list.add(posNbt);
         }
-        nbt.put("CashRegisters", list);
+        nbt.put("Positions", list);
         return nbt;
+    }
+
+    protected void readFromNbt(NbtCompound nbt) {
+        NbtList list = nbt.getList("Positions", 10); // 10 = NbtCompound type
+        for (int i = 0; i < list.size(); i++) {
+            NbtCompound posNbt = list.getCompound(i);
+            BlockPos pos = new BlockPos(posNbt.getInt("x"), posNbt.getInt("y"), posNbt.getInt("z"));
+            positions.add(pos);
+        }
     }
 }

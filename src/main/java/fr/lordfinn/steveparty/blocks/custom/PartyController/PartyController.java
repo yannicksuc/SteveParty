@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import fr.lordfinn.steveparty.utils.PartyControllerPersistentState;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -11,6 +12,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
@@ -100,6 +104,16 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
             ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
             if (success != null) return success;
         } else {
+            PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
+            if (entity != null) {
+                if (!entity.getInterestedPlayers().contains(player.getUuid())) {
+                    ((ServerWorld)world).playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
+                    entity.addInterestedPlayer((ServerPlayerEntity) player);
+                } else {
+                    entity.removeInterestedPlayer((ServerPlayerEntity) player);
+                    ((ServerWorld)world).playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
+                }
+            }
             printPartyInfo(world, pos, player);
         }
 
@@ -191,6 +205,8 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
         super.onPlaced(world, pos, state, placer, itemStack);
         if (!world.isClient) {
             updatePoweredState(state, world, pos);
+            PartyControllerPersistentState partyControllerPersistentState = PartyControllerPersistentState.get(world.getServer());
+            if (partyControllerPersistentState != null) partyControllerPersistentState.addPosition(pos);
         }
     }
 }

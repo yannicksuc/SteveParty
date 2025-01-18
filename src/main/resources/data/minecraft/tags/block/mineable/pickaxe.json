@@ -4,6 +4,7 @@
     "steveparty:tile",
     "steveparty:trigger_point",
     "steveparty:cash_register",
-    "steveparty:party_controller"
+    "steveparty:party_controller",
+    "steveparty:step_controller"
   ]
 }

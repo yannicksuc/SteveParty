@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.text.Text;
 
 public enum PartyStepType {
@@ -11,6 +12,8 @@ public enum PartyStepType {
     END("party_step_type.end");
 
     private final String translationKey;
+
+    public static final Codec<PartyStepType> CODEC = Codec.STRING.xmap(PartyStepType::valueOf, PartyStepType::name);
 
     PartyStepType(String translationKey) {
         this.translationKey = translationKey;

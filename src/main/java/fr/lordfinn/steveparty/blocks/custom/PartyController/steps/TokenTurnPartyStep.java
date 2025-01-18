@@ -15,17 +15,19 @@ import java.util.List;
 import java.util.UUID;
 
 public class TokenTurnPartyStep extends PartyStep {
-    UUID tokenUUID = null;
-
-    public TokenTurnPartyStep(UUID token) {
-        super();
-        this.tokenUUID = token;
-        setType(PartyStepType.TOKEN_TURN);
-    }
+    private UUID tokenUUID;
+    private UUID owner;
 
     public TokenTurnPartyStep(NbtCompound nbt) {
-
         super(nbt);
+        fromNbt(nbt);
+    }
+
+    public TokenTurnPartyStep(UUID token, UUID owner) {
+        super();
+        this.tokenUUID = token;
+        this.owner = owner;
+        setType(PartyStepType.TOKEN_TURN);
     }
 
     @Override
@@ -74,6 +76,9 @@ public class TokenTurnPartyStep extends PartyStep {
         if (nbt.contains("Token")) {
             this.tokenUUID = UUID.fromString(nbt.getString("Token"));
         }
+        if (nbt.contains("Owner")) {
+            this.owner = UUID.fromString(nbt.getString("Owner"));
+        }
     }
 
     @Override
@@ -81,6 +86,16 @@ public class TokenTurnPartyStep extends PartyStep {
         NbtCompound nbtCompound = super.toNbt();
         if (tokenUUID != null)
             nbtCompound.putString("Token", tokenUUID.toString());
+        if (owner != null)
+            nbtCompound.putString("Owner", owner.toString());
         return nbtCompound;
+    }
+
+    public UUID getTokenUUID() {
+        return tokenUUID;
+    }
+
+    public UUID getOwnerUUID() {
+        return owner;
     }
 }

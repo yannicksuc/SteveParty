@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.utils.CashRegisterState;
+import fr.lordfinn.steveparty.utils.CashRegisterPersistentState;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.TradeOffer;
@@ -24,7 +24,7 @@ public class MerchantEntityMixin {
 
         if (!world.isClient) {
             BlockPos merchantPos = merchant.getBlockPos();
-            CashRegisterState cashRegisterState = CashRegisterState.get(world.getServer());
+            CashRegisterPersistentState cashRegisterState = CashRegisterPersistentState.get(world.getServer());
 
             Steveparty.LOGGER.info("Merchant pos: {}", merchantPos);
             Steveparty.LOGGER.info("CashRegisterState: {}", cashRegisterState);

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.CashRegister;
+import fr.lordfinn.steveparty.blocks.custom.StepControllerBlock;
 import fr.lordfinn.steveparty.blocks.custom.VillagerBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TriggerPoint;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
@@ -68,6 +69,14 @@ public class ModBlocks {
                     .luminance(state -> 3)  // Low glow to suggest activity or power
                     .requiresTool(),  // Needs a pickaxe or equivalent tool to break
             "cash_register", true);
+    public static final Block STEP_CONTROLLER = register(StepControllerBlock::new,
+            Block.Settings.create()
+                    .strength(3.0f, 9.0f)  // Stronger than the cash register due to its mechanical components
+                    .sounds(BlockSoundGroup.STONE)  // Stone-like sound for a mechanical device
+                    .luminance(state -> 5)  // Slightly brighter to signify active operation
+                    .nonOpaque()  // Non-opaque to allow transparency for hourglass visualization
+                    .requiresTool(),  // Requires a pickaxe or equivalent tool to break
+            "step_controller", true);
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {
