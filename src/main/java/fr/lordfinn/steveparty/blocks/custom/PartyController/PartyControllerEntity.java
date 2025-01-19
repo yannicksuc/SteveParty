@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -228,6 +229,7 @@ public class PartyControllerEntity extends BlockEntity {
     public static void handlePlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS) {
             if (!entity.isRemoved()) {
+                Steveparty.LOGGER.info("Handle player join");
                 entity.onPlayerJoin(handler, sender, server);
             }
         }
@@ -236,6 +238,9 @@ public class PartyControllerEntity extends BlockEntity {
     private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         ServerPlayerEntity player = handler.player;
         boolean isInterested = interestedPlayers.contains(player.getUuid());
+        Steveparty.LOGGER.info("Handle player join");
+        Steveparty.LOGGER.info("isInterested: " + isInterested);
+        Steveparty.LOGGER.info("interestedPlayers: " + interestedPlayers);
         if (isInterested) {
             this.sendPacketToInterestedPlayer(player);
         }
@@ -334,11 +339,13 @@ public class PartyControllerEntity extends BlockEntity {
     public void addInterestedPlayer(ServerPlayerEntity player) {
         interestedPlayers.add(player.getUuid());
         this.sendPacketToInterestedPlayer(player);
+        markDirty();
     }
 
     public void removeInterestedPlayer(ServerPlayerEntity player) {
         interestedPlayers.remove(player.getUuid());
         this.sendClearPacketToPlayer(player);
+        markDirty();
     }
 
     // Clear the interestedPlayers list
@@ -348,6 +355,7 @@ public class PartyControllerEntity extends BlockEntity {
             this.sendClearPacketToPlayer((ServerPlayerEntity) this.world.getPlayerByUuid(playerUUID));
         }
         interestedPlayers.clear();
+        markDirty();
     }
 
     private void addInterestedPlayersFromTokens(ServerWorld serverWorld) {
