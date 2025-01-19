@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.client.screens.PartyStepsScreen;
+import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -45,6 +46,15 @@ public class PartyStepsHud implements HudRenderCallback {
         STEP_ICON_MAP.put(PartyStepType.TOKEN_TURN, Identifier.of("steveparty", "textures/gui/steps/token_turn.png"));
         STEP_ICON_MAP.put(PartyStepType.BASIC_GAME_GENERATOR, Identifier.of("steveparty", "textures/gui/steps/game_generator.png"));
         STEP_ICON_MAP.put(PartyStepType.START_ROLLS, Identifier.of("steveparty", "textures/gui/steps/start_rolls.png"));
+    }
+
+    public PartyStepsHud() {
+        initialize();
+    }
+
+    public void initialize() {
+        hudX = ConfigurationManager.getPartyStepsHudX();
+        hudY = ConfigurationManager.getPartyStepsHudY();
     }
 
     public static void registerKeyHandlers() {
@@ -164,5 +174,10 @@ public class PartyStepsHud implements HudRenderCallback {
     private int calculateStepWidth(MinecraftClient client, PartyStep step) {
         Text stepName = Text.translatable(step.getName());
         return client.textRenderer.getWidth(stepName); // 20px for icon width
+    }
+
+    public static void saveConfigOnExit() {
+        ConfigurationManager.setPartyStepsHudX(hudX);
+        ConfigurationManager.setPartyStepsHudY(hudY);
     }
 }
