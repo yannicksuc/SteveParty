@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -51,11 +52,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity>
             return;
         }
 
-        // Fetch the GameProfile and texture
-        GameProfile profile = new GameProfile(ownerUUID, "");
-        MinecraftClient client = MinecraftClient.getInstance();
-        PlayerSkinProvider skinProvider = client.getSkinProvider();
-        Identifier texture = skinProvider.getSkinTextures(profile).texture();
+        Identifier texture = SkinUtils.getPlayerSkin(ownerUUID);
 
         if (texture == null) {
             Steveparty.LOGGER.error("Failed to fetch texture for UUID: {}", ownerUUID);

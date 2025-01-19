@@ -61,5 +61,7 @@
   "party_step_type.end": "End",
   "status.waiting": "Waiting",
   "status.in_progress": "In Progress",
-  "status.finished": "Finished"
+  "status.finished": "Finished",
+  "key.steveparty.toggle_hud_movable_mode": "Toggle Party Hud Movable Mode",
+  "category.steveparty": "Steve Party"
 }
