@@ -43,6 +43,7 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(StepControllerBlockEntity::new, ModBlocks.STEP_CONTROLLER).build(null)
     );
 
+    @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }
 }

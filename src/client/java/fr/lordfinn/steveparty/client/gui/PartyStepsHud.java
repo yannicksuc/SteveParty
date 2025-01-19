@@ -77,12 +77,12 @@ public class PartyStepsHud implements HudRenderCallback {
         initShader();
         int startX = calculateStepWidth(client, data.getSteps().get(data.getStepIndex())) + hudX + 57;
         for (int i = data.getStepIndex() + 1; i < data.getSteps().size(); i++) {
-            startX = drawStep(drawContext, i, client, startX, true);
+            startX = drawStep(drawContext, i, client, startX);
             RenderSystem.setShaderColor(1, 1, 1, 0.3f); // Reduced opacity for other steps
         }
-        drawStep(drawContext, data.getStepIndex(), client, hudX + 12, true);
+        drawStep(drawContext, data.getStepIndex(), client, hudX + 12);
         RenderSystem.setShaderColor(1, 1, 1, 1f);
-        drawStep(drawContext, data.getStepIndex(), client, hudX + 12, true);
+        drawStep(drawContext, data.getStepIndex(), client, hudX + 12);
         resetShader();
     }
 
@@ -102,11 +102,11 @@ public class PartyStepsHud implements HudRenderCallback {
         RenderSystem.setShaderColor(1, 1, 1, 1f);
     }
 
-    private int drawStep(DrawContext drawContext, int i, MinecraftClient client, int startX, boolean draw) {
+    private int drawStep(DrawContext drawContext, int i, MinecraftClient client, int startX) {
         PartyStep step = data.getSteps().get(i);
-        if (draw) {
+        if (true) {
             drawStepBackground(drawContext, client, step, startX, hudY + 8);
-            drawStepIcon(drawContext, client, step, startX, hudY + 8, 20);
+            drawStepIcon(drawContext, client, step, startX, hudY + 8);
             drawStepText(drawContext, client, step, startX + 25);
         }
         startX += calculateStepWidth(client, step) + 45;
@@ -117,13 +117,13 @@ public class PartyStepsHud implements HudRenderCallback {
         return data.getSteps() != null && !data.getSteps().isEmpty();
     }
 
-    private void drawStepIcon(DrawContext drawContext, MinecraftClient client, PartyStep step, int x, int y, int side) {
+    private void drawStepIcon(DrawContext drawContext, MinecraftClient client, PartyStep step, int x, int y) {
         Identifier icon = getStepIcon(step);
         if (icon != null) {
             drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, icon, x+3, y, 0, 0, 16, 16, 16,16);
         }
         if (step.getType() == PartyStepType.TOKEN_TURN) {
-            drawPlayerSkinHead(drawContext, (TokenTurnPartyStep) step, x, y, side);
+            drawPlayerSkinHead(drawContext, (TokenTurnPartyStep) step, x, y, 20);
         }
     }
 

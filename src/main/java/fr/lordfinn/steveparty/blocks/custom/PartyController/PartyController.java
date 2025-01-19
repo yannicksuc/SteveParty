@@ -107,11 +107,11 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
             PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
             if (entity != null) {
                 if (!entity.getInterestedPlayers().contains(player.getUuid())) {
-                    ((ServerWorld)world).playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
+                    world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
                     entity.addInterestedPlayer((ServerPlayerEntity) player);
                 } else {
                     entity.removeInterestedPlayer((ServerPlayerEntity) player);
-                    ((ServerWorld)world).playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
+                    world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
             }
             printPartyInfo(world, pos, player);

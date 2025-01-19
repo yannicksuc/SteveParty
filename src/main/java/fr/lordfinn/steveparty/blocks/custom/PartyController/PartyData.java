@@ -62,9 +62,7 @@ public class PartyData {
             });
         }
         if (nbt.contains("Tokens")) {
-            nbt.getList("Tokens", 8).forEach(token -> {
-                this.tokens.add(UUID.fromString(token.asString()));
-            });
+            nbt.getList("Tokens", 8).forEach(token -> this.tokens.add(UUID.fromString(token.asString())));
         }
         if (nbt.contains("StepIndex")) {
             this.stepIndex = nbt.getInt("StepIndex");

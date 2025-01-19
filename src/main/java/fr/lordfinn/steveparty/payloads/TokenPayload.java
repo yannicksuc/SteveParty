@@ -29,7 +29,7 @@ public record TokenPayload(Map<UUID, TokenData> tokens) implements CustomPayload
                         buf.writeUuid(id);
                         token.writeToPacket(buf);
                     });
-                };
+                }
     };
 
     @Override

@@ -10,9 +10,7 @@ public class VoxelShapeUtils {
 
     public static Box[] shapeToBoxes(VoxelShape shape) {
         ArrayList<Box> result = new ArrayList<>();
-        shape.forEachBox((x1, y1, z1, x2, y2, z2)->{
-            result.add(new Box(x1,y1,z1,x2,y2,z2));
-        });
+        shape.forEachBox((x1, y1, z1, x2, y2, z2)-> result.add(new Box(x1,y1,z1,x2,y2,z2)));
         return result.toArray(new Box[0]);
     }
 

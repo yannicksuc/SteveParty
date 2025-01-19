@@ -1,8 +1,5 @@
 package fr.lordfinn.steveparty.entities;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-
 public final class TokenStatus {
     // Define the bitmask values
     public static final int IN_GAME = 1;   // 0b0001

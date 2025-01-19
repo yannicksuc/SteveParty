@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -304,7 +303,6 @@ public class PartyControllerEntity extends BlockEntity {
     public void nextStep() {
         endCurrentStep();
         startStep(partyData.getStepIndex() + 1);
-        Steveparty.LOGGER.info("Next step : " + partyData.getStepIndex());
     }
 
     public void restartStep() {

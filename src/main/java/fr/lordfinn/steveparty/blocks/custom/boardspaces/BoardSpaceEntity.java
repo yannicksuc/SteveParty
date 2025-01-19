@@ -11,7 +11,6 @@ import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
-import fr.lordfinn.steveparty.mixin.TokenEntityMixin;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;

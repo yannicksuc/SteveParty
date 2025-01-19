@@ -12,7 +12,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
-import java.util.Collection;
 import java.util.List;
 
 public class MessageUtils {

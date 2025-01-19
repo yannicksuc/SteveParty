@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.entities.custom;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.mojang.authlib.minecraft.client.MinecraftClient;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import fr.lordfinn.steveparty.Steveparty;
@@ -32,8 +31,6 @@ import net.minecraft.item.AirBlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -55,7 +52,6 @@ import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
-import software.bernie.geckolib.animation.keyframe.event.builtin.AutoPlayingSoundKeyframeHandler;
 import software.bernie.geckolib.util.ClientUtil;
 
 import java.util.ArrayList;
@@ -94,7 +90,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (BLOCK_STATE.equals(data)) {
             String blockStateJson = this.dataTracker.get(BLOCK_STATE);
             JsonElement jsonElement = JsonParser.parseString(blockStateJson);
-            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to decode block state: {}", error))
+            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
                     .ifPresent(decodedBlockState -> this.blockState = decodedBlockState);
         }
     }
@@ -327,10 +323,14 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (nbt.contains("blockState")) {
             String blockStateJson = nbt.getString("blockState");
             JsonElement jsonElement = JsonParser.parseString(blockStateJson);
-            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to decode block state: {}", error))
+            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
                     .ifPresent(this::setBlockState);
         }
         initGoals();
+    }
+
+    private static void printWarnForFailDecodeBlockState(String error) {
+        Steveparty.LOGGER.warn("Failed to decode block state: {}", error);
     }
 
     @Override
@@ -341,9 +341,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         // Serialize the BlockState to a JsonElement
         if (blockState != null) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
-            result.resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to encode block state: {}", error)).ifPresent(jsonElement -> {
-                nbt.putString("blockState", jsonElement.toString());
-            });
+            result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> nbt.putString("blockState", jsonElement.toString()));
         }
         return super.writeNbt(nbt);
     }
@@ -446,9 +444,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                     if (this.getWorld() == null) return;
                     lastHidingState = false;
                     ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), SoundEvents.ENTITY_PUFFER_FISH_BLOW_OUT, SoundCategory.NEUTRAL, 0.5F, 1.5F);
-                    Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 10, () ->{
-                        ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), this.blockState.getSoundGroup().getPlaceSound(), SoundCategory.NEUTRAL, 1F, 1.0F);
-                    });
+                    Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 10, () -> ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), this.blockState.getSoundGroup().getPlaceSound(), SoundCategory.NEUTRAL, 1F, 1.0F));
                 }));
     }
 
@@ -507,9 +503,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (!this.getWorld().isClient) { // Ensure this runs only on the server
             // Serialize the BlockState and update the DataTracker
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
-            result.resultOrPartial(error -> Steveparty.LOGGER.warn("Failed to encode block state: {}", error)).ifPresent(jsonElement -> {
-                this.dataTracker.set(BLOCK_STATE, jsonElement.toString());
-            });
+            result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> this.dataTracker.set(BLOCK_STATE, jsonElement.toString()));
         }
     }
 
