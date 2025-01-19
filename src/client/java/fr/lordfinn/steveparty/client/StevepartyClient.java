@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client;
 import com.mojang.authlib.minecraft.client.MinecraftClient;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.client.blockentity.BigBookRenderer;
@@ -60,6 +61,7 @@ import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
 @SuppressWarnings("unused")
 public class StevepartyClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("steveparty");
+    public static final PartyStepsHud PARTY_STEPS_HUD = new PartyStepsHud();
 
     private static final BlockColorProvider getTileColor = (state, world, pos, tintIndex) -> {
         if (world == null) return 0xFFEB68;
@@ -83,6 +85,7 @@ public class StevepartyClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         HandledScreens.register(TILE_SCREEN_HANDLER, TileScreen::new);
+        HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
 
         ParticleFactoryRegistry.getInstance().register(ModParticles.HERE_PARTICLE, HereParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);
@@ -101,9 +104,9 @@ public class StevepartyClient implements ClientModInitializer {
 
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
-        HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
 
-        HudRenderCallback.EVENT.register(new PartyStepsHud());
+        HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
+        PartyStepsHud.registerKeyHandlers();
 
         AbstractBoardSpaceSelectorItemDestinationsRenderer.initialize();
     }
