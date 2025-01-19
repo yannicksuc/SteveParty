@@ -17,6 +17,7 @@ import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.renderer.AbstractBoardSpaceSelectorItemDestinationsRenderer;
 import fr.lordfinn.steveparty.client.screens.HidingTraderScreen;
 import fr.lordfinn.steveparty.client.screens.TileScreen;
+import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -67,6 +68,9 @@ public class StevepartyClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ConfigurationManager.loadConfig();
+        PARTY_STEPS_HUD.initialize();
+
         HandledScreens.register(TILE_SCREEN_HANDLER, TileScreen::new);
         HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
 
@@ -90,6 +94,8 @@ public class StevepartyClient implements ClientModInitializer {
 
         HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
         PartyStepsHud.registerKeyHandlers();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
 
         AbstractBoardSpaceSelectorItemDestinationsRenderer.initialize();
     }
