@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.components;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -12,29 +13,31 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtList;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class PersistentInventoryComponent implements Inventory {
     private final List<ItemStack> items;
-    private ItemStack holder;
+    private static ItemStack holder = ItemStack.EMPTY;
 
     public PersistentInventoryComponent(int size) {
         this.items = DefaultedList.ofSize(size, ItemStack.EMPTY);
-        this.holder = ItemStack.EMPTY;
     }
     public PersistentInventoryComponent(int size, ItemStack holder) {
         this.items = DefaultedList.ofSize(size, ItemStack.EMPTY);
-        this.holder = holder;
+        PersistentInventoryComponent.holder = holder;
     }
 
     public PersistentInventoryComponent(List<ItemStack> itemStacks) {
-        this.items = itemStacks;
-        this.holder = ItemStack.EMPTY;
+        this.items = new ArrayList<>(itemStacks);
+        while (this.items.size() < 6) {
+            this.items.add(ItemStack.EMPTY);
+        }
     }
 
     public void setHolder(ItemStack holder) {
-        this.holder = holder;
+        PersistentInventoryComponent.holder = holder;
     }
 
     @Override
@@ -87,7 +90,7 @@ public class PersistentInventoryComponent implements Inventory {
 
     @Override
     public void markDirty() {
-        if (this.holder.getItem() instanceof InventoryCartridgeItem) {
+        if (PersistentInventoryComponent.holder.getItem() instanceof InventoryCartridgeItem) {
             InventoryCartridgeItem.saveInventory(this);
         }
     }
@@ -129,10 +132,10 @@ public class PersistentInventoryComponent implements Inventory {
 
     public static final Codec<PersistentInventoryComponent> CODEC = RecordCodecBuilder.create(builder -> // Return a new PersistentInventoryComponent with the items added
             builder.group(
-            Codec.list(ItemStack.CODEC).fieldOf("items").forGetter(component -> component.items)
+            Codec.list(ItemStack.CODEC).fieldOf("items").forGetter(component -> component.items.stream().filter(stack -> !stack.isEmpty()).toList())
     ).apply(builder, PersistentInventoryComponent::new));
 
     public ItemStack getHolder() {
-        return this.holder;
+        return PersistentInventoryComponent.holder;
     }
 }

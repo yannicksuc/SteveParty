@@ -25,7 +25,6 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
 
     public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory, PersistentInventoryComponent inventory) {
         super(ModScreens.CARTRIDGE_SCREEN_HANDLER, syncId);
-        checkSize(inventory, 6);
         this.inventory = inventory;
         inventory.onOpen(playerInventory.player);
 
@@ -93,12 +92,7 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
             if (newCount > 0 && newCount <= getMaxItemCount(stack)) {
                 stack.setCount(newCount);
             }
-        }
-
-        @Override
-        public void markDirty() {
-            super.markDirty();
-            this.inventory.markDirty();
+            markDirty();
         }
     }
 
