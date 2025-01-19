@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(TrackedDataHandlerRegistry.class)
 public class TrackedDataHandlerRegistryMixin {
+    @SuppressWarnings("EmptyMethod")
     @Inject(method = "<clinit>", at = @At("RETURN"))
     private static void registerCustomHandlers(CallbackInfo ci) {
         // Call the registration method to register your handlers

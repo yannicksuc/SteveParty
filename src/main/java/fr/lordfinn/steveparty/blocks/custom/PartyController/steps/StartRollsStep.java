@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;

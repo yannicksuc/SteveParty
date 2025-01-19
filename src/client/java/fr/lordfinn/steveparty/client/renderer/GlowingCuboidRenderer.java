@@ -1,26 +1,15 @@
 package fr.lordfinn.steveparty.client.renderer;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
-import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
-import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
-import fr.lordfinn.steveparty.items.custom.AbstractBoardSpaceSelectorItem;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import static fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
 import static org.joml.Math.lerp;
 
 

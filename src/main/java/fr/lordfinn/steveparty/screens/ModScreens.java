@@ -18,6 +18,7 @@ public class ModScreens {
                     Registries.SCREEN_HANDLER,
                     Identifier.of(Steveparty.MOD_ID, "hiding_trader_screen_handler"),
                     new ScreenHandlerType<>(CustomizableMerchantScreenHandler::new, FeatureSet.empty()));
+    @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }
 }

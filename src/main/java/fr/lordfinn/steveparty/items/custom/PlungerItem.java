@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.items.custom;
 
-import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -23,12 +22,10 @@ public class PlungerItem extends Item {
             entity.setSilent(false);
             user.sendMessage(Text.literal("Mob unsilenced!"), true);
             user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_OUT, SoundCategory.PLAYERS, 1.0F, 1.0F);
-            Steveparty.LOGGER.info("Silent status OFF: " + entity.isSilent());
         } else {
             entity.setSilent(true);
             user.sendMessage(Text.literal("Mob silenced!"), true);
             user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_IN, SoundCategory.PLAYERS, 1.0F, 1.0F);
-            Steveparty.LOGGER.info("Silent status ON: " + entity.isSilent());
         }
         return ActionResult.SUCCESS;
     }

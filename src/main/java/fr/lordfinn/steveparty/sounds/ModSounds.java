@@ -13,6 +13,7 @@ public class ModSounds {
     public static final SoundEvent CANCEL_SOUND_EVENT = register("cancel");
     public static final SoundEvent PLUNGER_SUCK_IN = register("plunger_suck_in");
     public static final SoundEvent PLUNGER_SUCK_OUT = register("plunger_suck_out");
+    @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }
 

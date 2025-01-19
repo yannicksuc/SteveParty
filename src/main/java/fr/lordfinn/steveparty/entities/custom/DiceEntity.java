@@ -71,6 +71,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         }
     }
 
+    @SuppressWarnings("EmptyMethod")
     @Override
     protected void tickNewAi() {
         super.tickNewAi();

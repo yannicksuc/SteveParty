@@ -9,14 +9,10 @@ import fr.lordfinn.steveparty.service.TokenData;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.joml.Vector2d;
 
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -53,11 +49,7 @@ public class PayloadReceivers {
             MinecraftClient.getInstance().worldRenderer.updateBlock(world, pos, world.getBlockState(pos), world.getBlockState(pos), 3);
         }));
 
-        ClientPlayNetworking.registerGlobalReceiver(PartyDataPayload.ID, (payload, context) -> {
-            context.client().execute(() -> {
-                PartyStepsHud.updateSteps(payload.partyData());
-            });
-        });
+        ClientPlayNetworking.registerGlobalReceiver(PartyDataPayload.ID, (payload, context) -> context.client().execute(() -> PartyStepsHud.updateSteps(payload.partyData())));
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {

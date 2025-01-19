@@ -29,7 +29,6 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
 import java.util.*;
-import java.util.List;
 
 import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 import static fr.lordfinn.steveparty.events.ModEvents.handleDyeInteraction;
@@ -73,7 +72,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         if (stack == null || stack.isEmpty()) return;
         stack.remove(ModComponents.TB_START_BOUND_ENTITY);
         recentlyUnboundEntities.add(entity.getUuid());
-        ((ServerWorld)entity.getWorld()).playSound(
+        entity.getWorld().playSound(
                 null,
                 entity.getBlockPos(),
                 SoundEvents.BLOCK_BEACON_DEACTIVATE,
@@ -242,7 +241,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         behaviorItemstack.set(ModComponents.TB_START_COLOR, color);
         tileEntity.getInventory().markDirty();
         tileEntity.markDirty();
-        World world = (ServerWorld) tileEntity.getWorld();
+        World world = tileEntity.getWorld();
         if (world == null) return;
         for (PlayerEntity player : world.getPlayers()) {
             ServerPlayNetworking.send((ServerPlayerEntity) player, new UpdateColoredTilePayload(tileEntity.getPos(), color));

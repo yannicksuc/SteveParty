@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.utils.PartyControllerPersistentState;
@@ -110,7 +109,7 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
             PartyControllerPersistentState partyControllerPersistentState = PartyControllerPersistentState.get(this.world.getServer());
             if (partyControllerPersistentState != null) {
                 //Find clostest party controller and trigger it
-                Optional<BlockPos> pos = partyControllerPersistentState.getPositions().stream().sorted((pos1, pos2) -> (int) (pos1.getSquaredDistance(this.pos) - pos2.getSquaredDistance(this.pos) * 100)).findFirst();
+                Optional<BlockPos> pos = partyControllerPersistentState.getPositions().stream().min((pos1, pos2) -> (int) (pos1.getSquaredDistance(this.pos) - pos2.getSquaredDistance(this.pos) * 100));
                 if (pos.isPresent()) {
                     if (this.world.getBlockEntity(pos.get()) instanceof PartyControllerEntity entity) {
                         if (this.mode == 0) {

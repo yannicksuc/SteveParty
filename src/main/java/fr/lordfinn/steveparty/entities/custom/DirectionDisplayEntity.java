@@ -25,7 +25,6 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.awt.*;
-import java.util.List;
 
 import static fr.lordfinn.steveparty.entities.ModEntities.DIRECTION_DISPLAY_ENTITY;
 import static fr.lordfinn.steveparty.utils.QuaternionsUtils.dirToYAngle;
