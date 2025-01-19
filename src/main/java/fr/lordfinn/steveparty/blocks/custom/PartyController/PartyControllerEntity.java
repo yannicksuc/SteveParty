@@ -70,7 +70,6 @@ public class PartyControllerEntity extends BlockEntity {
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
-
         // Serialize interestedPlayers list
         NbtCompound playersNbt = new NbtCompound();
         int i = 0;
@@ -88,6 +87,7 @@ public class PartyControllerEntity extends BlockEntity {
             nbt.putBoolean("isCatalogued", false);
         }
         partyData.toNbt(nbt);
+        sendPacketToInterestedPlayers();
     }
 
     @Override
@@ -229,7 +229,6 @@ public class PartyControllerEntity extends BlockEntity {
     public static void handlePlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS) {
             if (!entity.isRemoved()) {
-                Steveparty.LOGGER.info("Handle player join");
                 entity.onPlayerJoin(handler, sender, server);
             }
         }
@@ -238,9 +237,6 @@ public class PartyControllerEntity extends BlockEntity {
     private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         ServerPlayerEntity player = handler.player;
         boolean isInterested = interestedPlayers.contains(player.getUuid());
-        Steveparty.LOGGER.info("Handle player join");
-        Steveparty.LOGGER.info("isInterested: " + isInterested);
-        Steveparty.LOGGER.info("interestedPlayers: " + interestedPlayers);
         if (isInterested) {
             this.sendPacketToInterestedPlayer(player);
         }
@@ -338,7 +334,6 @@ public class PartyControllerEntity extends BlockEntity {
 
     public void addInterestedPlayer(ServerPlayerEntity player) {
         interestedPlayers.add(player.getUuid());
-        this.sendPacketToInterestedPlayer(player);
         markDirty();
     }
 
