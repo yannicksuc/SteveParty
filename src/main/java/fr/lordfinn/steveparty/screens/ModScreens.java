@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.resource.featuretoggle.FeatureSet;
@@ -18,6 +19,11 @@ public class ModScreens {
                     Registries.SCREEN_HANDLER,
                     Identifier.of(Steveparty.MOD_ID, "hiding_trader_screen_handler"),
                     new ScreenHandlerType<>(CustomizableMerchantScreenHandler::new, FeatureSet.empty()));
+    public static final ScreenHandlerType<CartridgeInventoryScreenHandler> CARTRIDGE_SCREEN_HANDLER = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of(Steveparty.MOD_ID, "cartridge_screen_handler"),
+            new ScreenHandlerType<>(CartridgeInventoryScreenHandler::new, FeatureSet.empty()));
+
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

@@ -10,7 +10,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
@@ -69,7 +69,7 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
 
         @Override
         public void setStack(int slot, ItemStack stack) {
-            if (!stack.isEmpty() && stack.getItem() instanceof BoardSpaceBehaviorItem) {
+            if (!stack.isEmpty() && stack.getItem() instanceof CartridgeItem) {
                 getItems().set(slot, stack);
                 if (stack.getCount() > stack.getMaxCount()) {
                     stack.setCount(stack.getMaxCount());
@@ -202,7 +202,7 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
         List<BoardSpaceDestination> tileDestinations = new ArrayList<>();
 
         ItemStack stack = this.getActiveTileBehaviorItemStack();
-        if (stack != null && stack.getItem() instanceof BoardSpaceBehaviorItem) {
+        if (stack != null && stack.getItem() instanceof CartridgeItem) {
             BoardSpaceBehaviorComponent component = stack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
             List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
             tileDestinations = getDestinationsStatus(destinations, this.getWorld());

@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.screens;
 
+import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -11,36 +13,38 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 
-public class TileScreenHandler extends ScreenHandler {
+import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
+
+public class CartridgeInventoryScreenHandler extends ScreenHandler {
     private final Inventory inventory;
 
     // Constructor for the screen handler
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new SimpleInventory(16));
+    public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory) {
+        this(syncId, playerInventory, new PersistentInventoryComponent(6));
     }
 
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
-        super(ModScreens.TILE_SCREEN_HANDLER, syncId);
-        checkSize(inventory, 16);
+    public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory, PersistentInventoryComponent inventory) {
+        super(ModScreens.CARTRIDGE_SCREEN_HANDLER, syncId);
+        checkSize(inventory, 6);
         this.inventory = inventory;
         inventory.onOpen(playerInventory.player);
 
         // Adding slots to the inventory with item type validation
         int m, l;
-        for (m = 0; m < 4; ++m) {
-            for (l = 0; l < 4; ++l) {
-                this.addSlot(new CustomSlot(inventory, l + m * 4, 53 + l * 18, 17 + m * 18));
+        for (m = 0; m < 2; ++m) {
+            for (l = 0; l < 3; ++l) {
+                this.addSlot(new CartridgeInventoryScreenHandler.CustomSlot(inventory, l + m * 4, 62 + l * 18, 6 + m * 18));
             }
         }
 
-        // Adding player inventory slots (no restrictions)
+        // Adding player inventory slots
         for (m = 0; m < 3; ++m) {
             for (l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + m * 9 + 9, 8 + l * 18, 108 + m * 18));
+                this.addSlot(new Slot(playerInventory, l + m * 9 + 9, 8 + l * 18, 105 + m * 18));
             }
         }
         for (m = 0; m < 9; ++m) {
-            this.addSlot(new Slot(playerInventory, m, 8 + m * 18, 166));
+            this.addSlot(new Slot(playerInventory, m, 8 + m * 18, 163));
         }
     }
 
@@ -50,38 +54,53 @@ public class TileScreenHandler extends ScreenHandler {
     }
 
     // Custom slot class that only allows certain items
-    private static class CustomSlot extends Slot {
+    public static class CustomSlot extends Slot {
         public CustomSlot(Inventory inventory, int index, int x, int y) {
             super(inventory, index, x, y);
         }
 
         @Override
         public boolean canInsert(ItemStack stack) {
-            if (this.hasStack())
-                return false;
-            if (stack.isEmpty()) {
-                return true;
-            }
-            return isAllowedItem(stack) && stack.getCount() == 1;
+            return true;
         }
 
         @Override
         public int getMaxItemCount(ItemStack stack) {
-            return 1;
+            return 1028;
         }
 
         @Override
         public void setStack(ItemStack stack) {
-            if (this.hasStack())
-                return;
-            // Ensure that only one item can be in the slot.
-            if (!stack.isEmpty() && stack.getCount() > 1) {
-                stack.setCount(1);
-            }
             super.setStack(stack);
         }
-    }
 
+        public boolean isPositive(ItemStack stack) {
+            return (!stack.contains(IS_NEGATIVE) || Boolean.FALSE.equals(stack.get(IS_NEGATIVE)));
+        }
+
+        // Method to handle scroll interactions
+        public void onScroll(double amount) {
+            ItemStack stack = this.getStack();
+            if (stack.isEmpty()) return;
+
+            boolean isPositive = (!stack.contains(IS_NEGATIVE) || Boolean.FALSE.equals(stack.get(IS_NEGATIVE)));
+            int change = amount > 0 ? 1 : -1;
+            if (!isPositive)
+                change *= -1;
+            int newCount = stack.getCount() + change;
+            if (newCount <= 0)
+                stack.set(IS_NEGATIVE, isPositive);
+            if (newCount > 0 && newCount <= getMaxItemCount(stack)) {
+                stack.setCount(newCount);
+            }
+        }
+
+        @Override
+        public void markDirty() {
+            super.markDirty();
+            this.inventory.markDirty();
+        }
+    }
 
     // Shift + Player Inv Slot
     @Override
@@ -92,25 +111,15 @@ public class TileScreenHandler extends ScreenHandler {
             ItemStack originalStack = slot.getStack();
             newStack = originalStack.copy();
             if (invSlot < this.inventory.size()) {
-                if (!this.insertItem(originalStack, this.inventory.size(), this.slots.size(), true)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (!this.insertItem(originalStack, 0, this.inventory.size(), false)) {
                 return ItemStack.EMPTY;
             }
-
             if (originalStack.isEmpty()) {
                 slot.setStack(ItemStack.EMPTY);
-            } else {
-                slot.markDirty();
             }
+            slot.markDirty();
         }
 
         return newStack;
-    }
-
-    private static boolean isAllowedItem(ItemStack originalStack) {
-        return originalStack.getItem() instanceof CartridgeItem;
     }
 
     @Override
