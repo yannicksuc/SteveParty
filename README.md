@@ -250,5 +250,3 @@ For any inquiries or support, please reach out to the project maintainers via th
 
 Thank you for checking out the SteveParty mod! We hope you enjoy the new features and enhancements it brings to your Minecraft experience! 🎮
 ```
-
-Feel free to modify any sections or add additional details as needed! This README.md is designed to be informative, engaging, and easy to navigate.
