@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.renderer.AbstractBoardSpaceSelectorItemDestinationsRenderer;
+import fr.lordfinn.steveparty.client.screens.CartridgeInventoryScreen;
 import fr.lordfinn.steveparty.client.screens.HidingTraderScreen;
 import fr.lordfinn.steveparty.client.screens.TileScreen;
 import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
@@ -34,12 +35,12 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.TILE;
-import static fr.lordfinn.steveparty.screens.ModScreens.HIDING_TRADER_SCREEN_HANDLER;
-import static fr.lordfinn.steveparty.screens.ModScreens.TILE_SCREEN_HANDLER;
+import static fr.lordfinn.steveparty.screens.ModScreens.*;
 import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
 
 @SuppressWarnings("unused")
@@ -73,6 +74,7 @@ public class StevepartyClient implements ClientModInitializer {
 
         HandledScreens.register(TILE_SCREEN_HANDLER, TileScreen::new);
         HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
+        HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, CartridgeInventoryScreen::new);
 
         ParticleFactoryRegistry.getInstance().register(ModParticles.HERE_PARTICLE, HereParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);

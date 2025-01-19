@@ -2,9 +2,10 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.*;
-import fr.lordfinn.steveparty.items.custom.tilebehaviors.StartTileBehaviorItem;
-import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
-import fr.lordfinn.steveparty.items.custom.tilebehaviors.StopBoardSpaceBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
@@ -22,15 +23,16 @@ import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
     public static final Item WRENCH = register(WrenchItem.class, "wrench");
-    public static final Item BOARD_SPACE_BEHAVIOR = register(BoardSpaceBehaviorItem.class, "board_space_behavior");
-    public static final Item TILE_BEHAVIOR_START = register(StartTileBehaviorItem.class, "tile_behavior_start");
-    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopBoardSpaceBehaviorItem.class, "board_space_behavior_stop");
+    public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
+    public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
+    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop");
     public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand");
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
     public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
     public static final Item MINI_GAMES_CATALOGUE = register(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
+    public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
@@ -70,6 +72,7 @@ public class ModItems {
             itemGroup.add(BOARD_SPACE_BEHAVIOR);
             itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);
             itemGroup.add(TILE_BEHAVIOR_START);
+            itemGroup.add(INVENTORY_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

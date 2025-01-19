@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.items.custom.tilebehaviors.BoardSpaceBehaviorItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
@@ -93,7 +93,7 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements TileOp
 
             //Item Stack doesn't exist in the tile create one by taking it from the offHand
             ItemStack offHandStack = player.getOffHandStack();
-            if (!offHandStack.isEmpty() && offHandStack.getItem() instanceof BoardSpaceBehaviorItem) {
+            if (!offHandStack.isEmpty() && offHandStack.getItem() instanceof CartridgeItem) {
                 ItemStack newBehaviorItem = offHandStack.copyWithCount(1);
                 if (!player.isCreative())
                     offHandStack.decrement(1);
