@@ -3,7 +3,9 @@ package fr.lordfinn.steveparty.events;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
@@ -30,10 +32,12 @@ public class ModEvents {
             }
             return ActionResult.PASS;
         });
+
         DiceRollEvent.EVENT.register(PartyControllerEntity::handleDiceRoll);
         TileReachedEvent.EVENT.register(PartyControllerEntity::handleTileReached);
         //Event to detect player connection
         ServerPlayConnectionEvents.JOIN.register(PartyControllerEntity::handlePlayerJoin);
+
     }
 
     /**
