@@ -14,7 +14,7 @@ import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
-import fr.lordfinn.steveparty.client.renderer.AbstractBoardSpaceSelectorItemDestinationsRenderer;
+import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.screens.CartridgeInventoryScreen;
 import fr.lordfinn.steveparty.client.screens.HidingTraderScreen;
 import fr.lordfinn.steveparty.client.screens.TileScreen;
@@ -35,7 +35,6 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +98,6 @@ public class StevepartyClient implements ClientModInitializer {
 
         Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
 
-        AbstractBoardSpaceSelectorItemDestinationsRenderer.initialize();
+        DestinationsRenderer.initialize();
     }
 }

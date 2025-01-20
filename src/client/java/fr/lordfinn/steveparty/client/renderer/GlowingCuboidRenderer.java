@@ -12,35 +12,46 @@ import java.util.List;
 
 import static org.joml.Math.lerp;
 
-
 public class GlowingCuboidRenderer {
 
     private static final List<Color> RAINBOW_COLORS = List.of(Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA);
 
-    // Method to render the cuboids
-    public static void renderCuboids(MatrixStack matrices, VertexConsumerProvider vertexConsumerProvider, BlockPos pos) {
+    public enum GradientType {
+        RAINBOW,
+        SOLID_COLOR
+    }
+
+    public static void renderCuboids(MatrixStack matrices, VertexConsumerProvider vertexConsumerProvider, BlockPos pos, GradientType gradientType) {
         if (MinecraftClient.getInstance().world == null)
             return;
+
         float time = MinecraftClient.getInstance().world.getTime() / 20f; // Adjust speed of color change
-        int stepCount = RAINBOW_COLORS.size();
+        float r = 0, g = 0, b = 0;
 
-        // Determine the current and next color indices
-        int currentIndex = (int) (time % stepCount);
-        int nextIndex = (currentIndex + 1) % stepCount;
+        switch (gradientType) {
+            case RAINBOW -> {
+                int stepCount = RAINBOW_COLORS.size();
+                int currentIndex = (int) (time % stepCount);
+                int nextIndex = (currentIndex + 1) % stepCount;
+                Color currentColor = RAINBOW_COLORS.get(currentIndex);
+                Color nextColor = RAINBOW_COLORS.get(nextIndex);
+                float lerpFactor = (time % 1);
+                r = lerp(currentColor.getRed(), nextColor.getRed(), lerpFactor) / 255.0f;
+                g = lerp(currentColor.getGreen(), nextColor.getGreen(), lerpFactor) / 255.0f;
+                b = lerp(currentColor.getBlue(), nextColor.getBlue(), lerpFactor) / 255.0f;
+            }
+            case SOLID_COLOR -> {
+                r = 0.2f;
+                g = 0.2f;
+                b = 1.0f; // Solid red color
+            }
+        }
 
-        // Get the current and next color from the list
-        Color currentColor = RAINBOW_COLORS.get(currentIndex);
-        Color nextColor = RAINBOW_COLORS.get(nextIndex);
+        drawBlockBox(matrices, vertexConsumerProvider, pos, r, g, b, 0.5f);
+    }
 
-        // Calculate the interpolation factor (0.0 to 1.0)
-        float lerpFactor = (time % 1);
-
-        // Perform linear interpolation between the two colors
-        float r = lerp(currentColor.getRed(), nextColor.getRed(), lerpFactor) / 255.0f;
-        float g = lerp(currentColor.getGreen(), nextColor.getGreen(), lerpFactor) / 255.0f;
-        float b = lerp(currentColor.getBlue(), nextColor.getBlue(), lerpFactor) / 255.0f;
-
-        drawBlockBox(matrices, vertexConsumerProvider, pos, r,g,b, 0.5f);
+    public static void renderCuboids(MatrixStack matrices, VertexConsumerProvider vertexConsumerProvider, BlockPos pos) {
+        renderCuboids(matrices, vertexConsumerProvider, pos, GradientType.RAINBOW);
     }
 
     public static void drawBlockBox(MatrixStack matrices, VertexConsumerProvider vertexConsumers, BlockPos pos, float red, float green, float blue, float alpha) {
@@ -52,7 +63,7 @@ public class GlowingCuboidRenderer {
         if (camera.isReady()) {
             Vec3d vec3d = camera.getPos().negate();
             Box box = Box.enclosing(pos1, pos2).offset(vec3d);
-            drawBox(matrices, vertexConsumers, box.contract(0.5f).offset(-0.5,-0.5,-0.5), red, green, blue, alpha);
+            drawBox(matrices, vertexConsumers, box.contract(0.5f).offset(-0.5, -0.5, -0.5), red, green, blue, alpha);
         }
     }
 
@@ -65,6 +76,3 @@ public class GlowingCuboidRenderer {
         VertexRendering.drawFilledBox(matrices, vertexConsumer, minX, minY, minZ, maxX, maxY, maxZ, red, green, blue, alpha);
     }
 }
-
-
-

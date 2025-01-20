@@ -2,10 +2,15 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 
 import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
 import fr.lordfinn.steveparty.screens.CartridgeInventoryScreenHandler;
+import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -45,12 +50,23 @@ public class InventoryCartridgeItem extends CartridgeItem {
         PlayerEntity player = context.getPlayer();
         World world = context.getWorld();
         Hand hand = context.getHand();
-        if (!world.isClient && player != null && player.isSneaking()) {
+        if (!world.isClient && player != null && hand == Hand.OFF_HAND) {
             ItemStack stack = player.getStackInHand(hand);
             if (stack.getItem() instanceof InventoryCartridgeItem) {
                 BlockPos blockPos = context.getBlockPos();
-                saveBlockPos(stack, blockPos);
-                return ActionResult.SUCCESS;
+                if (world.getBlockEntity(blockPos) instanceof Inventory) {
+                    if (blockPos.equals(getSavedInventoryPos(stack))) {
+                        playCancelSound(blockPos, player);
+                        saveBlockPos(stack, null);
+                    } else {
+                        playSelectSound(blockPos, player);
+                        saveBlockPos(stack, blockPos);
+                    }
+                    return ActionResult.SUCCESS;
+                } else {
+                    MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.block_not_inventory"), MessageUtils.MessageType.ACTION_BAR);
+                    return ActionResult.FAIL;
+                }
             }
         }
         return super.useOnBlock(context);

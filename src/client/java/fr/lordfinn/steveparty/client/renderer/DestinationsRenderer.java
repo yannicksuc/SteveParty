@@ -3,93 +3,103 @@ package fr.lordfinn.steveparty.client.renderer;
 import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.AbstractBoardSpaceSelectorItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
 
+public class DestinationsRenderer {
 
-public class AbstractBoardSpaceSelectorItemDestinationsRenderer {
-
-    private static final List<BlockPos> DESTINATIONS = new ArrayList<>();
-    private static ItemStack LAST_HELD_ITEM_STACK = ItemStack.EMPTY;
+    private static final Map<BlockPos, GlowingCuboidRenderer.GradientType> DESTINATIONS = new HashMap<>();
+    private static final ItemStack[] LAST_HELD_ITEM_STACKS = {ItemStack.EMPTY, ItemStack.EMPTY}; // Index 0: main hand, Index 1: offhand
+    private static final List<Hand> HANDS = List.of(Hand.MAIN_HAND, Hand.OFF_HAND);
 
     public static void initialize() {
         WorldRenderEvents.LAST.register(context -> {
-            if (MinecraftClient.getInstance().player == null)
+            if (MinecraftClient.getInstance().player == null) {
                 return;
+            }
 
-            ItemStack heldStack = MinecraftClient.getInstance().player.getMainHandStack();
-            boolean hasHeldStackChanged = !heldStack.equals(getLastHeldItemStack());
+            boolean cleared = false;
 
-            if (hasHeldStackChanged) {
-
-                // Set the last held stack to the current held stack
-                setLastHeldItemStack(heldStack);
-
-                // Clear the destinations if the held stack has changed
-                clearDestinations();
-
-                // Return if the held stack is not an AbstractBoardSpaceSelectorItem
-                if (!(heldStack.getItem() instanceof AbstractBoardSpaceSelectorItem))
-                    return;
-
-                // Get the destinations from the held stack if it is an AbstractBoardSpaceSelectorItem
-                BoardSpaceBehaviorComponent component = heldStack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
-                List<BlockPos> destinations = component.destinations();
-                if (!destinations.isEmpty() && getDestinations().isEmpty()) {
-                    for (BlockPos pos : destinations) {
-                        addDestination(pos);
+            for (Hand hand : HANDS) {
+                ItemStack heldStack = MinecraftClient.getInstance().player.getStackInHand(hand);
+                if (isHeldStackChanged(heldStack, hand)) {
+                    if (!cleared) {
+                        clearDestinations();
+                        cleared = true;
                     }
+                    handleHeldStackChange(heldStack, hand);
                 }
             }
 
-            if (getDestinations().isEmpty())
+            if (getDestinations().isEmpty()) {
                 return;
-
-            // Get the matrix stack for rendering
-            MatrixStack matrixStack = context.matrixStack();
-            VertexConsumerProvider vertexConsumers = context.consumers();
-
-            if (vertexConsumers == null)
-                return;
-
-            // Render the cuboids for each destination
-            for (BlockPos pos : getDestinations()) {
-                GlowingCuboidRenderer.renderCuboids(matrixStack, vertexConsumers, pos);
             }
+
+            renderDestinations(context);
         });
     }
 
-    public static void addDestination(BlockPos pos) {
-        if (!DESTINATIONS.contains(pos)) {
-            DESTINATIONS.add(pos);
+    private static boolean isHeldStackChanged(ItemStack heldStack, Hand hand) {
+        return !heldStack.equals(getLastHeldItemStack(hand));
+    }
+
+    private static void handleHeldStackChange(ItemStack heldStack, Hand hand) {
+        setLastHeldItemStack(heldStack, hand);
+        if (hand == Hand.MAIN_HAND && heldStack.getItem() instanceof AbstractBoardSpaceSelectorItem) {
+            BoardSpaceBehaviorComponent component = heldStack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
+            List<BlockPos> destinations = component.destinations();
+
+            if (!destinations.isEmpty()) {
+                destinations.forEach(pos -> addDestination(pos, GlowingCuboidRenderer.GradientType.RAINBOW));
+            }
         }
+
+        if (hand == Hand.OFF_HAND && heldStack.getItem() instanceof InventoryCartridgeItem) {
+            BlockPos savedPos = ((InventoryCartridgeItem) heldStack.getItem()).getSavedInventoryPos(heldStack);
+
+            if (savedPos != null) {
+                addDestination(savedPos, GlowingCuboidRenderer.GradientType.SOLID_COLOR);
+            }
+        }
+    }
+
+    private static void renderDestinations(WorldRenderContext context) {
+        MatrixStack matrixStack = context.matrixStack();
+        VertexConsumerProvider vertexConsumers = context.consumers();
+
+        if (vertexConsumers != null) {
+            getDestinations().forEach((pos, gradientType) -> GlowingCuboidRenderer.renderCuboids(matrixStack, vertexConsumers, pos, gradientType));
+        }
+    }
+
+    public static void addDestination(BlockPos pos, GlowingCuboidRenderer.GradientType gradientType) {
+        DESTINATIONS.putIfAbsent(pos, gradientType);
     }
 
     public static void clearDestinations() {
         DESTINATIONS.clear();
     }
 
-    public static List<BlockPos> getDestinations() {
+    public static Map<BlockPos, GlowingCuboidRenderer.GradientType> getDestinations() {
         return DESTINATIONS;
     }
 
-    public static ItemStack getLastHeldItemStack() {
-        return LAST_HELD_ITEM_STACK;
+    public static ItemStack getLastHeldItemStack(Hand hand) {
+        return LAST_HELD_ITEM_STACKS[hand.ordinal()];
     }
 
-    public static void setLastHeldItemStack(ItemStack stack) {
-        LAST_HELD_ITEM_STACK = stack;
+    public static void setLastHeldItemStack(ItemStack stack, Hand hand) {
+        LAST_HELD_ITEM_STACKS[hand.ordinal()] = stack;
     }
 }
-
-
-
