@@ -33,7 +33,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
             inventory.setHolder(stack);
             return inventory;
         } else {
-            PersistentInventoryComponent inventory = new PersistentInventoryComponent(6, stack);
+            PersistentInventoryComponent inventory = new PersistentInventoryComponent(9, stack);
             stack.set(INVENTORY_CARTRIDGE_COMPONENT, inventory);
             return inventory;
         }

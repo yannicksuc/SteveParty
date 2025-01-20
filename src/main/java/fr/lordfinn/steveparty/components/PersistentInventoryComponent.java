@@ -31,7 +31,7 @@ public class PersistentInventoryComponent implements Inventory {
 
     public PersistentInventoryComponent(List<ItemStack> itemStacks) {
         this.items = new ArrayList<>(itemStacks);
-        while (this.items.size() < 6) {
+        while (this.items.size() < 9) {
             this.items.add(ItemStack.EMPTY);
         }
     }

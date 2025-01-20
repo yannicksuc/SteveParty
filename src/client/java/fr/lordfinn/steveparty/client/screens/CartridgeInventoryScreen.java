@@ -80,7 +80,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
     private void drawSlotOverlay(DrawContext context, int x, int y, boolean isPositive) {
         int overlayX, overlayY;
         overlayX = 128;
-        overlayY = isPositive ? 34 : 52;
+        overlayY = isPositive ? 18 : 36;
 
         // Adjust for screen position
         int screenX = x + this.x;
@@ -92,8 +92,8 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
 
     private void drawInventoryOverlay(DrawContext context, int mouseX, int mouseY) {
         ItemStack stack = client != null ? client.player != null ? client.player.getMainHandStack() : null : null;
-        int overlayX = 80;
-        int overlayY = 53;
+        int overlayX = 61;
+        int overlayY = 71;
         int overlayWidth = 16;
         int overlayHeight = 16;
         BlockPos pos = stack != null ? stack.getOrDefault(INVENTORY_POS, null) : null;
@@ -108,7 +108,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
             }
             return;
         }
-        DrawContextUtils.drawTextureWithGlint(context, TEXTURE_OVERLAY, overlayX + this.x, overlayY + this.y, 128, 17, 16, 16, 256, 256);
+        DrawContextUtils.drawTextureWithGlint(context, TEXTURE_OVERLAY, overlayX + this.x, overlayY + this.y, 128, 0, 16, 16, 256, 256);
         if (isPointWithinBounds(overlayX, overlayY, overlayWidth, overlayHeight, mouseX, mouseY)) {
             context.drawTooltip(client.textRenderer, Text.translatable("message.steveparty.inventory_connected_at_pos", pos.getX(), pos.getY(), pos.getZ()), mouseX, mouseY);
         }
