@@ -1,48 +1,32 @@
 package fr.lordfinn.steveparty.client.screens;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.utils.DrawContextUtils;
-import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.payloads.SelectionStatePayload;
 import fr.lordfinn.steveparty.screens.CartridgeInventoryScreenHandler;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.ShaderProgramKeys;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 
 import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_POS;
 
 public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventoryScreenHandler> {
     private static final Identifier TEXTURE = Identifier.of("steveparty", "textures/gui/cartridge.png");
     private static final Identifier TEXTURE_OVERLAY = Identifier.of("steveparty", "textures/gui/cartridge-overlay-inventory-interactor.png");
-    private PersistentInventoryComponent inventory;
 
     public CartridgeInventoryScreen(CartridgeInventoryScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         backgroundHeight = 187;
-        this.inventory = handler.getPersistentInventory();
     }
 
     @Override
@@ -64,6 +48,8 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
             }
         }
         drawInventoryOverlay(context, mouseX, mouseY);
+
+        drawButtonOverlay(context, mouseX, mouseY);
 
         // Render tooltips
         drawMouseoverTooltip(context, mouseX, mouseY);
@@ -114,6 +100,52 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
         }
     }
 
+    private void drawButtonOverlay(DrawContext context, int mouseX, int mouseY) {
+        ItemStack stack = client != null ? client.player != null ? client.player.getMainHandStack() : null : null;
+        int overlayX = 79;
+        int overlayY = 71;
+        int overlayWidth = 36;
+        int overlayHeight = 16;
+        int buttonState = stack != null ? InventoryCartridgeItem.getSelectionState(stack) : 0;
+
+        // Sélectionne la texture à afficher selon l'état
+        int overlayXTexture = 146;
+        int overlayYTexture = switch (buttonState) {
+            case 0 -> 0;  // Random
+            case 1 -> 18; // All
+            case 2 -> 36; // Cycle
+            default -> 0; // Par défaut, Random
+        };
+
+        // Dessine l'overlay du bouton
+        context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground, TEXTURE_OVERLAY, overlayX + this.x, overlayY + this.y, overlayXTexture, overlayYTexture, 36, 16, 256, 256);
+
+        // Affiche le tooltip basé sur l'état
+        if (isPointWithinBounds(overlayX, overlayY, overlayWidth, overlayHeight, mouseX, mouseY)) {
+            List<Text> lines = new ArrayList<>();
+            switch (buttonState) {
+                case 0 -> lines.add(Text.translatable("message.steveparty.button_state.random"));
+                case 1 -> lines.add(Text.translatable("message.steveparty.button_state.all"));
+                case 2 -> lines.add(Text.translatable("message.steveparty.button_state.cycle"));
+            }
+            context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE_OVERLAY, overlayX + this.x, overlayY + this.y, 183, 0, 36, 16, 256, 256);
+            context.drawTooltip(client.textRenderer, lines, mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        if (client != null && client.player != null) {
+            sendSelectionStateToServer(InventoryCartridgeItem.getSelectionState(client.player.getMainHandStack()));
+        }
+    }
+
+    public void sendSelectionStateToServer(int state) {
+        SelectionStatePayload payload = new SelectionStatePayload(state);
+        ClientPlayNetworking.send(payload);
+    }
+
 
 
     @Override
@@ -132,7 +164,23 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
         }
 
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
 
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) { // Left click
+            if (isPointWithinBounds(79, 71, 36, 16, mouseX, mouseY)) {
+                ItemStack stack = client != null ? client.player != null ? client.player.getMainHandStack() : null : null;
+                if (stack != null) {
+                    // Cycle through button states
+                    int currentState =  InventoryCartridgeItem.getSelectionState(stack);
+                    int nextState = (currentState + 1) % 3; // Cycle through 0, 1, 2
+                    InventoryCartridgeItem.setSelectionState(stack, nextState);
+                }
+            }
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private Slot getSlotAt(double mouseX, double mouseY) {
@@ -143,5 +191,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
         }
         return null;
     }
+
+
 
 }
