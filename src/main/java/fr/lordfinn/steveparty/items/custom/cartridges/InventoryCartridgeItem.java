@@ -3,8 +3,6 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
 import fr.lordfinn.steveparty.screens.CartridgeInventoryScreenHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.minecraft.block.Block;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -18,8 +16,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_CARTRIDGE_COMPONENT;
-import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_POS;
+import static fr.lordfinn.steveparty.components.ModComponents.*;
 
 public class InventoryCartridgeItem extends CartridgeItem {
 
@@ -78,6 +75,14 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     public BlockPos getSavedInventoryPos(ItemStack stack) {
         return stack.getOrDefault(INVENTORY_POS, null);
+    }
+
+    public static void setSelectionState(ItemStack stack, int state) {
+        stack.set(SELECTION_STATE, state);
+    }
+
+    public static int getSelectionState(ItemStack stack) {
+        return stack.getOrDefault(SELECTION_STATE, 0);
     }
 
     @Override

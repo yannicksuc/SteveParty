@@ -44,15 +44,14 @@ public class ModComponents {
             registerComponent("socketed-story", ItemStack.CODEC);
     public static final ComponentType<ItemStack> CATALOGUE =
             registerComponent("catalogue", ItemStack.CODEC);
-    public static final ComponentType<Integer> MODE =
-            registerComponent("mode", Codec.INT);
     public static final ComponentType<Boolean> IS_NEGATIVE =
             registerComponent("is-negative", Codec.BOOL);
     public static final ComponentType<PersistentInventoryComponent> INVENTORY_CARTRIDGE_COMPONENT =
             registerComponent("inventory-cartridge", PersistentInventoryComponent.CODEC);
     public static final ComponentType<BlockPos> INVENTORY_POS =
             registerComponent("inventory-pos", BlockPos.CODEC);
-
+    public static final ComponentType<Integer> SELECTION_STATE =
+            registerComponent("selection-state", Codec.INT);
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }
