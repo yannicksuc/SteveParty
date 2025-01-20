@@ -20,7 +20,7 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
 
     // Constructor for the screen handler
     public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new PersistentInventoryComponent(6));
+        this(syncId, playerInventory, new PersistentInventoryComponent(9));
     }
 
     public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory, PersistentInventoryComponent inventory) {
@@ -30,9 +30,9 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
 
         // Adding slots to the inventory with item type validation
         int m, l;
-        for (m = 0; m < 2; ++m) {
+        for (m = 0; m < 3; ++m) {
             for (l = 0; l < 3; ++l) {
-                this.addSlot(new CartridgeInventoryScreenHandler.CustomSlot(inventory, l + m * 4, 62 + l * 18, 6 + m * 18));
+                this.addSlot(new CartridgeInventoryScreenHandler.CustomSlot(inventory, l + m * 3, 62 + l * 18, 6 + m * 18));
             }
         }
 
