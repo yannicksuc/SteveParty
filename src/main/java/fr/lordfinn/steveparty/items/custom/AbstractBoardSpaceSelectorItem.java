@@ -14,6 +14,8 @@ import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -90,12 +92,24 @@ public abstract class AbstractBoardSpaceSelectorItem extends Item {
             destinations.remove(clickedPos);
             destinations.remove(blockAbove);
             player.sendMessage(Text.translatable("message.steveparty.removed_position", clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()), true);
-            player.getWorld().playSound(null, clickedPos, ModSounds.CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            playCancelSound(clickedPos, player);
         } else {
             destinations.add(clickedPos);
             player.sendMessage(Text.translatable("message.steveparty.added_position", clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()), true);
-            player.getWorld().playSound(null, clickedPos, ModSounds.SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            playSelectSound(clickedPos, player);
         }
+    }
+
+    protected static void playSelectSound(BlockPos clickedPos, PlayerEntity player) {
+        playSound(clickedPos, player, ModSounds.SELECT_SOUND_EVENT);
+    }
+
+    protected static void playCancelSound(BlockPos clickedPos, PlayerEntity player) {
+        playSound(clickedPos, player, ModSounds.CANCEL_SOUND_EVENT);
+    }
+
+    protected static void playSound(BlockPos clickedPos, PlayerEntity player, SoundEvent category) {
+        player.getWorld().playSound(null, clickedPos, category, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
     @Environment(EnvType.CLIENT)

@@ -52,6 +52,7 @@
   "message.steveparty.game_status_off": "No party currently in progress.",
   "message.steveparty.game_info": "Step %d out of %d\n",
   "message.steveparty.cancel_turn_no_token": "Error, the token with UUID %s was not found. The turn has been canceled.",
+  "message.steveparty.block_not_inventory": "This block is not an inventory.",
   "party_step_type.default": "Default",
   "party_step_type.token_turn": "Player Turn",
   "party_step_type.mini_game": "Mini Game",
