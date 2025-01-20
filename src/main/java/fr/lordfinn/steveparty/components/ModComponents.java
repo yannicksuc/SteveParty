@@ -50,6 +50,8 @@ public class ModComponents {
             registerComponent("is-negative", Codec.BOOL);
     public static final ComponentType<PersistentInventoryComponent> INVENTORY_CARTRIDGE_COMPONENT =
             registerComponent("inventory-cartridge", PersistentInventoryComponent.CODEC);
+    public static final ComponentType<BlockPos> INVENTORY_POS =
+            registerComponent("inventory-pos", BlockPos.CODEC);
 
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
