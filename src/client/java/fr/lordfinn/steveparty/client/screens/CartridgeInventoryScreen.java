@@ -1,22 +1,42 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.utils.DrawContextUtils;
+import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.screens.CartridgeInventoryScreenHandler;
-import fr.lordfinn.steveparty.screens.TileScreenHandler;
+import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
+
+import java.util.function.Function;
+
+import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_POS;
 
 public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventoryScreenHandler> {
     private static final Identifier TEXTURE = Identifier.of("steveparty", "textures/gui/cartridge.png");
     private static final Identifier TEXTURE_OVERLAY = Identifier.of("steveparty", "textures/gui/cartridge-overlay-inventory-interactor.png");
+    private PersistentInventoryComponent inventory;
 
     public CartridgeInventoryScreen(CartridgeInventoryScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         backgroundHeight = 187;
+        this.inventory = handler.getPersistentInventory();
     }
 
     @Override
@@ -37,6 +57,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
                 drawSlotOverlay(context, slot.x, slot.y, customSlot.isPositive(slot.getStack()));
             }
         }
+        drawInventoryOverlay(context);
 
         // Render tooltips
         drawMouseoverTooltip(context, mouseX, mouseY);
@@ -62,6 +83,15 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
         // Draw the texture
         context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground, TEXTURE_OVERLAY, screenX, screenY, overlayX, overlayY, 16, 16, 256, 256);
     }
+
+    private void drawInventoryOverlay(DrawContext context) {
+        ItemStack stack = client != null ? client.player != null ? client.player.getMainHandStack() : null : null;
+        if (stack == null || stack.getOrDefault(INVENTORY_POS, null) == null) return;
+        int screenX = 80 + this.x;
+        int screenY = 53 + this.y;
+        DrawContextUtils.drawTextureWithGlint(context, TEXTURE_OVERLAY, screenX, screenY, 128, 17, 16, 16, 256, 256);
+    }
+
 
     @Override
     protected void init() {

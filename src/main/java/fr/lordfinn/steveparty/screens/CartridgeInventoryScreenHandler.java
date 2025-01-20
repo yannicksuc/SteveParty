@@ -16,7 +16,7 @@ import net.minecraft.sound.SoundCategory;
 import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
 
 public class CartridgeInventoryScreenHandler extends ScreenHandler {
-    private final Inventory inventory;
+    private final PersistentInventoryComponent inventory;
 
     // Constructor for the screen handler
     public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory) {
@@ -50,6 +50,10 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
     @Override
     public boolean canUse(PlayerEntity player) {
         return this.inventory.canPlayerUse(player);
+    }
+
+    public PersistentInventoryComponent getPersistentInventory() {
+        return this.inventory;
     }
 
     // Custom slot class that only allows certain items

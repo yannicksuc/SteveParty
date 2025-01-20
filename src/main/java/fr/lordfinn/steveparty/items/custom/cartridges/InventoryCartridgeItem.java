@@ -4,14 +4,17 @@ import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
 import fr.lordfinn.steveparty.screens.CartridgeInventoryScreenHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_CARTRIDGE_COMPONENT;
+import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_POS;
 
 public class InventoryCartridgeItem extends CartridgeItem {
 
@@ -35,6 +38,30 @@ public class InventoryCartridgeItem extends CartridgeItem {
         ItemStack stack = inventory.getHolder();
         if (stack == null || stack.isEmpty()) return;
         stack.set(INVENTORY_CARTRIDGE_COMPONENT, inventory);
+    }
+
+    @Override
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        PlayerEntity player = context.getPlayer();
+        World world = context.getWorld();
+        Hand hand = context.getHand();
+        if (!world.isClient && player != null && player.isSneaking()) {
+            ItemStack stack = player.getStackInHand(hand);
+            if (stack.getItem() instanceof InventoryCartridgeItem) {
+                BlockPos blockPos = context.getBlockPos();
+                saveBlockPos(stack, blockPos);
+                return ActionResult.SUCCESS;
+            }
+        }
+        return super.useOnBlock(context);
+    }
+
+    private void saveBlockPos(ItemStack stack, BlockPos pos) {
+        stack.set(INVENTORY_POS, pos);
+    }
+
+    public BlockPos getSavedInventoryPos(ItemStack stack) {
+        return stack.getOrDefault(INVENTORY_POS, null);
     }
 
     @Override
