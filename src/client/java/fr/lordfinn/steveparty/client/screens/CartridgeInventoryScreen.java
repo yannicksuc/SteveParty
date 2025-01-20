@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.client.utils.DrawContextUtils;
 import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.screens.CartridgeInventoryScreenHandler;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -18,12 +19,17 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_POS;
@@ -57,7 +63,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
                 drawSlotOverlay(context, slot.x, slot.y, customSlot.isPositive(slot.getStack()));
             }
         }
-        drawInventoryOverlay(context);
+        drawInventoryOverlay(context, mouseX, mouseY);
 
         // Render tooltips
         drawMouseoverTooltip(context, mouseX, mouseY);
@@ -84,13 +90,30 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
         context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground, TEXTURE_OVERLAY, screenX, screenY, overlayX, overlayY, 16, 16, 256, 256);
     }
 
-    private void drawInventoryOverlay(DrawContext context) {
+    private void drawInventoryOverlay(DrawContext context, int mouseX, int mouseY) {
         ItemStack stack = client != null ? client.player != null ? client.player.getMainHandStack() : null : null;
-        if (stack == null || stack.getOrDefault(INVENTORY_POS, null) == null) return;
-        int screenX = 80 + this.x;
-        int screenY = 53 + this.y;
-        DrawContextUtils.drawTextureWithGlint(context, TEXTURE_OVERLAY, screenX, screenY, 128, 17, 16, 16, 256, 256);
+        int overlayX = 80;
+        int overlayY = 53;
+        int overlayWidth = 16;
+        int overlayHeight = 16;
+        BlockPos pos = stack != null ? stack.getOrDefault(INVENTORY_POS, null) : null;
+
+        if (pos == null) {
+            if (isPointWithinBounds(overlayX, overlayY, overlayWidth, overlayHeight, mouseX, mouseY)) {
+                List<Text> lines = new ArrayList<>();
+                lines.add(Text.translatable("message.steveparty.no_inventory_connected.1"));
+                lines.add(Text.translatable("message.steveparty.no_inventory_connected.2"));
+                lines.add(Text.translatable("message.steveparty.no_inventory_connected.3"));
+                context.drawTooltip(client.textRenderer, lines, mouseX, mouseY);
+            }
+            return;
+        }
+        DrawContextUtils.drawTextureWithGlint(context, TEXTURE_OVERLAY, overlayX + this.x, overlayY + this.y, 128, 17, 16, 16, 256, 256);
+        if (isPointWithinBounds(overlayX, overlayY, overlayWidth, overlayHeight, mouseX, mouseY)) {
+            context.drawTooltip(client.textRenderer, Text.translatable("message.steveparty.inventory_connected_at_pos", pos.getX(), pos.getY(), pos.getZ()), mouseX, mouseY);
+        }
     }
+
 
 
     @Override
