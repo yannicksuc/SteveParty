@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
+import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -19,6 +20,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -26,7 +28,7 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
-import static fr.lordfinn.steveparty.components.ModComponents.TB_START_OWNER;
+import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static java.lang.Math.PI;
 
 public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity> {
@@ -35,6 +37,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity>
     private final Identifier textureBad = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_angry");
     private final Identifier textureNeutral = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_neutral");
     private final Identifier textureExcited = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_excited");
+    private final Identifier textureBlow = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_blow");
 
 
     public TileEntityRenderer(BlockEntityRendererFactory.Context ctx) {
@@ -54,7 +57,16 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity>
     }
 
     private void renderInventoryInteractor(BoardSpaceEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, ItemStack stack, Direction direction) {
-        renderPicture(matrices, vertexConsumers, light, overlay, textureExcited, direction);
+        Identifier texture = textureBlow;
+        PersistentInventoryComponent inventory = stack.get(INVENTORY_CARTRIDGE_COMPONENT);
+        if (inventory != null) {
+            ItemStack item = inventory.getStack(0);
+            if (item != null) {
+                boolean isNegative = item.getOrDefault(IS_NEGATIVE, false);
+                texture = isNegative ? textureBad : textureExcited;
+            }
+        }
+        renderPicture(matrices, vertexConsumers, light, overlay, texture, direction);
     }
 
     private void renderTileStart(BoardSpaceEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
