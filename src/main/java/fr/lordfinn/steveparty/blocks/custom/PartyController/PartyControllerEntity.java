@@ -304,6 +304,7 @@ public class PartyControllerEntity extends BlockEntity {
     public void nextStep() {
         endCurrentStep();
         startStep(partyData.getStepIndex() + 1);
+        Steveparty.LOGGER.info("NEXT");
     }
 
     public void restartStep() {
@@ -329,6 +330,7 @@ public class PartyControllerEntity extends BlockEntity {
         PartyStep currentStep = partyData.getCurrentStep();
         if (currentStep != null)
             currentStep.start(this);
+        Steveparty.LOGGER.info("SEND PACKET");
         sendPacketToInterestedPlayers();
     }
 
