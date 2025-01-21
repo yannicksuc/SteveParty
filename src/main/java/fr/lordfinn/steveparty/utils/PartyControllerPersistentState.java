@@ -17,7 +17,22 @@ public class PartyControllerPersistentState extends BlockListPersistentState {
         return state;
     }
 
+
+    @Override
+    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        NbtCompound elem = new NbtCompound();
+        elem.put("PartyController", nbt);
+        return super.writeNbt(elem, registries);
+    }
+
+    @Override
+    protected void readFromNbt(NbtCompound nbt) {
+        if (nbt.contains("PartyController")) {
+            super.readFromNbt(nbt.getCompound("PartyController"));
+        }
+    }
+
     public static PartyControllerPersistentState get(MinecraftServer server) {
-        return BlockListPersistentState.getOrCreate(server, type, "party_controllers");
+        return PartyControllerPersistentState.getOrCreate(server, type, "party_controllers");
     }
 }

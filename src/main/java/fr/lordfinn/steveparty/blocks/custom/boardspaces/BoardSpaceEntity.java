@@ -126,6 +126,8 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
             return BoardSpaceType.TILE_START;
         } else if (stack.getItem() == ModItems.BOARD_SPACE_BEHAVIOR_STOP) {
             return BoardSpaceType.BOARD_SPACE_STOP;
+        } else if (stack.getItem() == ModItems.INVENTORY_CARTRIDGE) {
+            return BoardSpaceType.TILE_INVENTORY_INTERACTOR;
         } else if (stack.getItem() == ModItems.BOARD_SPACE_BEHAVIOR) {
             return BoardSpaceType.DEFAULT;
         }

@@ -17,7 +17,21 @@ public class CashRegisterPersistentState extends BlockListPersistentState {
         return state;
     }
 
+    @Override
+    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        NbtCompound elem = new NbtCompound();
+        elem.put("CashRegister", nbt);
+        return super.writeNbt(elem, registries);
+    }
+
+    @Override
+    protected void readFromNbt(NbtCompound nbt) {
+        if (nbt.contains("CashRegister")) {
+            super.readFromNbt(nbt.getCompound("CashRegister"));
+        }
+    }
+
     public static CashRegisterPersistentState get(MinecraftServer server) {
-        return BlockListPersistentState.getOrCreate(server, type, "cash_registers");
+        return CashRegisterPersistentState.getOrCreate(server, type, "cash_registers");
     }
 }

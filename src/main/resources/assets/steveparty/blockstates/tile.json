@@ -1,13 +1,6 @@
 {
   "variants": {
-    "tile_type=default,facing=north": { "model": "steveparty:block/tile", "y":  -180, "uvlock": false },
-    "tile_type=default,facing=east":  { "model": "steveparty:block/tile", "y":  -90, "uvlock": false },
-    "tile_type=default,facing=south": { "model": "steveparty:block/tile", "y": 0, "uvlock": false },
-    "tile_type=default,facing=west":  { "model": "steveparty:block/tile", "y": 90, "uvlock": false },
-    "tile_type=board_space_stop,facing=north": { "model": "steveparty:block/tile", "y":  -180, "uvlock": false },
-    "tile_type=board_space_stop,facing=east":  { "model": "steveparty:block/tile", "y":  -90, "uvlock": false },
-    "tile_type=board_space_stop,facing=south": { "model": "steveparty:block/tile", "y": 0, "uvlock": false },
-    "tile_type=board_space_stop,facing=west":  { "model": "steveparty:block/tile", "y": 90, "uvlock": false },
+    "": { "model": "steveparty:block/tile", "uvlock": false },
     "tile_type=tile_start,facing=north": { "model": "steveparty:block/tile_start", "y":  -180, "uvlock": false },
     "tile_type=tile_start,facing=east":  { "model": "steveparty:block/tile_start", "y":  -90, "uvlock": false },
     "tile_type=tile_start,facing=south": { "model": "steveparty:block/tile_start", "y": 0, "uvlock": false },

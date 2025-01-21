@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.utils.PartyControllerPersistentState;
@@ -23,6 +24,7 @@ import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Optional;
+import java.util.logging.Logger;
 
 public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEntity, TickableBlockEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -110,6 +112,8 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
             if (partyControllerPersistentState != null) {
                 //Find clostest party controller and trigger it
                 Optional<BlockPos> pos = partyControllerPersistentState.getPositions().stream().min((pos1, pos2) -> (int) (pos1.getSquaredDistance(this.pos) - pos2.getSquaredDistance(this.pos) * 100));
+                Steveparty.LOGGER.info(pos.toString());
+                Steveparty.LOGGER.info("CONCTROLLER");
                 if (pos.isPresent()) {
                     if (this.world.getBlockEntity(pos.get()) instanceof PartyControllerEntity entity) {
                         if (this.mode == 0) {
