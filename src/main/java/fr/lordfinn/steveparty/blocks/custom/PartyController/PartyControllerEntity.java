@@ -52,7 +52,13 @@ public class PartyControllerEntity extends BlockEntity {
 
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
+        if (ACTIVE_PARTY_CONTROLLERS.stream().anyMatch(entity -> entity.getPos().equals(pos))) return;
         ACTIVE_PARTY_CONTROLLERS.add(this);
+    }
+
+    public static Set<PartyControllerEntity> getActivePartyControllers() { return ACTIVE_PARTY_CONTROLLERS; }
+    public static PartyControllerEntity getPartyControllerEntity(BlockPos pos) {
+        return ACTIVE_PARTY_CONTROLLERS.stream().filter(entity -> entity.getPos().equals(pos)).findFirst().orElse(null);
     }
 
     @Override
@@ -302,7 +308,7 @@ public class PartyControllerEntity extends BlockEntity {
     }
 
     public void nextStep() {
-        endCurrentStep();
+           endCurrentStep();
         startStep(partyData.getStepIndex() + 1);
         Steveparty.LOGGER.info("NEXT");
     }

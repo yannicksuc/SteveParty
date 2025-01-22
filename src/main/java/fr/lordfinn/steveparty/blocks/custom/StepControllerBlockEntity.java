@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.utils.PartyControllerPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -23,8 +22,10 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.Comparator;
 import java.util.Optional;
-import java.util.logging.Logger;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEntity, TickableBlockEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -107,25 +108,27 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
 
     private void trigger() {
         if (this.world != null) {
-            world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
-            PartyControllerPersistentState partyControllerPersistentState = PartyControllerPersistentState.get(this.world.getServer());
-            if (partyControllerPersistentState != null) {
-                //Find clostest party controller and trigger it
-                Optional<BlockPos> pos = partyControllerPersistentState.getPositions().stream().min((pos1, pos2) -> (int) (pos1.getSquaredDistance(this.pos) - pos2.getSquaredDistance(this.pos) * 100));
-                Steveparty.LOGGER.info(pos.toString());
-                Steveparty.LOGGER.info("CONCTROLLER");
-                if (pos.isPresent()) {
-                    if (this.world.getBlockEntity(pos.get()) instanceof PartyControllerEntity entity) {
-                        if (this.mode == 0) {
-                            entity.nextStep();
-                        } else if (this.mode == 1) {
-                            entity.restartStep();
-                        } else if (this.mode == 2) {
-                            entity.previousStep();
+            PartyControllerEntity.getActivePartyControllers().stream()
+                    .filter(entity -> entity.getPartyData().isStarted())
+                    .filter(entity -> entity.getPos().getSquaredDistance(this.pos) < 64)
+                    .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(this.pos)))
+                    .ifPresentOrElse(partyControllerEntity ->  {
+                        world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        switch (this.mode) {
+                            case 0:
+                                partyControllerEntity.nextStep();
+                            case 1:
+                                partyControllerEntity.restartStep();
+                            case 2:
+                                partyControllerEntity.previousStep();
+                            default:
+                                break;
                         }
-                    }
-                }
-            }
+                        world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                        world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_OPEN_SHUTTER, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                    }, () -> {
+                        world.playSound(null, this.pos, SoundEvents.EVENT_MOB_EFFECT_TRIAL_OMEN, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                    });
         }
     }
 

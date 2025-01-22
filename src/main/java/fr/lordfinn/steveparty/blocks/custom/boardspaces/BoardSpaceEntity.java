@@ -45,15 +45,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
 
 public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerFactory, TickableBlockEntity {
     //private final DefaultedList<ItemStack> items = DefaultedList.ofSize(16, ItemStack.EMPTY);
     private int ticks = 0;
-    private SoundEvent activateSound = SoundEvents.BLOCK_NOTE_BLOCK_HARP.value();
     private SoundEvent walkedOnSound = null;
+    private Map<Integer, Integer> cycleIndexes = new HashMap<>();
 
 
     public BoardSpaceEntity(BlockPos pos, BlockState state) {
@@ -325,25 +327,29 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
     }
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
-        this.playActivateSound();
+        this.getTileBehavior().onDestinationReached(this.world, this.pos, token, this, partyController);
         partyController.nextStep();
-    }
-
-    protected void setActivateSound(SoundEvent activateSound) {
-        this.activateSound = activateSound;
     }
 
     protected void setWalkedOnSound(SoundEvent walkedOnSound) {
         this.walkedOnSound = walkedOnSound;
     }
 
-    private void playActivateSound() {
-        if (this.world == null || this.activateSound == null) return;
-        this.world.playSound(null, this.pos, this.activateSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
-    }
-
     public void onTileReached(@NotNull MobEntity token, PartyControllerEntity partyControllerEntity) {
         if (this.world == null || this.walkedOnSound == null) return;
         this.world.playSound(null, this.pos, this.walkedOnSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+    }
+
+    public void setCycleIndex(int i) {
+        if (this.world != null) {
+            cycleIndexes.put(this.world.getReceivedRedstonePower(this.pos), i);
+        }
+    }
+
+    public int getCycleIndex() {
+        if (this.world != null) {
+            return cycleIndexes.getOrDefault(this.world.getReceivedRedstonePower(this.pos), 0);
+        }
+        return 0;
     }
 }
