@@ -144,4 +144,8 @@ public class PersistentInventoryComponent implements Inventory {
         if (PersistentInventoryComponent.holder.isEmpty()) return null;
         return (InventoryCartridgeItem) PersistentInventoryComponent.holder.getItem();
     }
+
+    public List<ItemStack> getItems() {
+        return items;
+    }
 }

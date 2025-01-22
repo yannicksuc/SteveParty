@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import fr.lordfinn.steveparty.utils.PartyControllerPersistentState;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -12,7 +11,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
@@ -205,8 +203,6 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
         super.onPlaced(world, pos, state, placer, itemStack);
         if (!world.isClient) {
             updatePoweredState(state, world, pos);
-            PartyControllerPersistentState partyControllerPersistentState = PartyControllerPersistentState.get(world.getServer());
-            if (partyControllerPersistentState != null) partyControllerPersistentState.addPosition(pos);
         }
     }
 }

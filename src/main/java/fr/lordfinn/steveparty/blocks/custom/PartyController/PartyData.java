@@ -95,16 +95,18 @@ public class PartyData {
     public void writeToPacket(PacketByteBuf buf) {
         // Write steps to the buffer
         buf.writeInt(steps.size()); // Write the size of the steps list
-        for (PartyStep step : steps) {
-            NbtCompound stepNbt = step.toNbt();
-            buf.writeNbt(stepNbt); // Write each step as NBT
-        }
+        if (!steps.isEmpty())
+            for (PartyStep step : steps) {
+                NbtCompound stepNbt = step.toNbt();
+                buf.writeNbt(stepNbt); // Write each step as NBT
+            }
 
         // Write tokens to the buffer
         buf.writeInt(tokens.size()); // Write the size of the tokens list
-        for (UUID uuid : tokens) {
-            buf.writeUuid(uuid); // Write each UUID directly
-        }
+        if (!tokens.isEmpty())
+            for (UUID uuid : tokens) {
+                buf.writeUuid(uuid); // Write each UUID directly
+            }
 
         buf.writeInt(stepIndex);
         buf.writeInt(nbTurn);

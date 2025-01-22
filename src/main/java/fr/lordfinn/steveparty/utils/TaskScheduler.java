@@ -32,7 +32,9 @@ public class TaskScheduler {
             Boolean condition = task.condition();
             if (Boolean.FALSE.equals(condition)) {
                 task.executeLastCallback();
-                iterator.remove();
+                try {
+                    iterator.remove();
+                } catch (Exception ignored) {}
                 continue;
             }
             if (ticksRemaining <= 0) {
@@ -41,7 +43,9 @@ public class TaskScheduler {
                     task.setTicksRemaining(task.getInitialTicks());
                 } else {
                     task.executeLastCallback();
-                    iterator.remove();
+                    try {
+                        iterator.remove();
+                    } catch (Exception ignored) {}
                 }
             } else {
                 task.setTicksRemaining(ticksRemaining);
