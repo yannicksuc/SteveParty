@@ -25,6 +25,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -46,7 +47,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
 
     public BoardSpaceBlockEntity(BlockPos pos, BlockState state) {
-        super(state.getBlock() instanceof Tile ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.TRIGGER_POINT_ENTITY, pos, state, 16);
+        super(state.getBlock() instanceof Tile ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.CHECK_POINT_ENTITY, pos, state, 16);
     }
 
 /*    private final SimpleInventory inventory = new SimpleInventory(16) {
@@ -85,6 +86,11 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         markDirty();
         if(world != null)
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
+    }
+
+    @Override
+    public Text getDisplayName() {
+        return Text.translatable("block.steveparty.board_space");
     }
 
     public DefaultedList<ItemStack> getItems() {

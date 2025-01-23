@@ -15,7 +15,7 @@
   "item.steveparty.tile_behavior_start": "Cartouche de départ",
   "block.steveparty.big_book": "Plateforme de téléportation",
   "block.steveparty.step_controller": "Contrôleur de pas",
-  "block.steveparty.trigger_point": "Point de déclenchement",
+  "block.steveparty.check_point": "Point de déclenchement",
   "block.steveparty.villager_block": "Bloc de villageois",
   "block.steveparty.cash_register": "Caisse enregistreuse",
   "block.steveparty.big_book.catalogue_cannot_be_taken_when_powered": "Le catalogue ne peut pas être pris lorsque le contrôleur de fête est alimenté",

@@ -50,7 +50,7 @@ Welcome to the **SteveParty Mod**! This mod enhances your Minecraft experience b
     - [HidingTraderEntity](#hidingtraderentity)
     - [HidingTraderScreen](#hidingtraderscreen)
     - [Tile](#tile)
-    - [TriggerPoint](#triggerpoint)
+    - [CheckPoint](#checkpoint)
     - [PartyController](#partycontroller)
     - [PartyControllerEntity](#partycontrollerentity)
     - [PartyData](#partydata)
@@ -207,8 +207,8 @@ To install the SteveParty mod, follow these steps:
 ### Tile
 - **Purpose**: Represents a custom tile block in the game.
 
-### TriggerPoint
-- **Purpose**: Represents a trigger point block in the game.
+### CheckPoint
+- **Purpose**: Represents a check point block in the game.
 
 ### PartyController
 - **Purpose**: Manages the overall party mechanics and interactions.
