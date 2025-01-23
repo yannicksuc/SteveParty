@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.*;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TriggerPoint;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPoint;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import net.minecraft.block.Block;
@@ -25,14 +25,14 @@ public class ModBlocks {
                     .requiresTool(),  // Requires a pickaxe to break
             "tile", true);
 
-    public static final Block TRIGGER_POINT = register(TriggerPoint::new,
+    public static final Block CHECK_POINT = register(CheckPoint::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.AMETHYST_BLOCK)  // Metallic sound, assuming redstone-like behavior
                     .nonOpaque()  // Likely a visual indicator block
                     .luminance(state -> 5)  // Emits light to signify importance or activity
                     .ticksRandomly(),  // Useful for any passive behavior like redstone activation
-            "trigger_point", true);
+            "check_point", true);
 
     public static final Block PARTY_CONTROLLER = register(PartyController::new,
             Block.Settings.create()

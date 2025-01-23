@@ -88,7 +88,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, BigBookRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerRenderer::new);
 
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.TRIGGER_POINT, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
 
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);

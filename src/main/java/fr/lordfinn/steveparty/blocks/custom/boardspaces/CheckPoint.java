@@ -11,9 +11,9 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 
-public class TriggerPoint extends BoardSpace {
-    public static final MapCodec<TriggerPoint> CODEC = Block.createCodec(TriggerPoint::new);
-    public TriggerPoint(Settings settings) {
+public class CheckPoint extends BoardSpace {
+    public static final MapCodec<CheckPoint> CODEC = Block.createCodec(CheckPoint::new);
+    public CheckPoint(Settings settings) {
         super(settings.sounds(BlockSoundGroup.GLASS).nonOpaque().luminance(state -> 7));
     }
 
