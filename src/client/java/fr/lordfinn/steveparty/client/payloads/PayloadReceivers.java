@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.client.payloads;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.PartyService;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -42,7 +42,7 @@ public class PayloadReceivers {
         ClientPlayNetworking.registerGlobalReceiver(UpdateColoredTilePayload.ID, (payload, context)  -> context.client().execute(() -> {
             BlockPos pos = payload.position();
             World world = context.player().getWorld();
-            BoardSpaceEntity tileEntity = getBoardSpaceEntity(world, pos);
+            BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
             if (tileEntity == null) return;
             ItemStack behaviorItemstack = tileEntity.getActiveTileBehaviorItemStack();
             behaviorItemstack.set(ModComponents.TB_START_COLOR, payload.color());

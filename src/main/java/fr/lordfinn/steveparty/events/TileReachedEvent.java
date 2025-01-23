@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.events;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.mob.MobEntity;
@@ -17,5 +17,5 @@ public interface TileReachedEvent {
         }
         return ActionResult.PASS;
     });
-    ActionResult onTileReached(@NotNull MobEntity token, BoardSpaceEntity tileEntity);
+    ActionResult onTileReached(@NotNull MobEntity token, BoardSpaceBlockEntity tileEntity);
 }

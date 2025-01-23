@@ -1,11 +1,9 @@
 package fr.lordfinn.steveparty.events;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
@@ -64,7 +62,7 @@ public class ModEvents {
         livingEntity.setCustomName(newName);
 
         BlockEntity blockEntity = livingEntity.getWorld().getBlockEntity(livingEntity.getBlockPos());
-        if (blockEntity instanceof BoardSpaceEntity tileEntity && tileEntity.getTileBehavior() instanceof StartTileBehavior startTileBehavior) {
+        if (blockEntity instanceof BoardSpaceBlockEntity tileEntity && tileEntity.getTileBehavior() instanceof StartTileBehavior startTileBehavior) {
             startTileBehavior.setColor(tileEntity, colorRgb);
         }
 

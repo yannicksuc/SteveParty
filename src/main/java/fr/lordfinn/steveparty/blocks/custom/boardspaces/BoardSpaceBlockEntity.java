@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -11,32 +10,21 @@ import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -51,18 +39,17 @@ import java.util.Map;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
 
-public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerFactory, TickableBlockEntity {
-    //private final DefaultedList<ItemStack> items = DefaultedList.ofSize(16, ItemStack.EMPTY);
+public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity {
     private int ticks = 0;
     private SoundEvent walkedOnSound = null;
-    private Map<Integer, Integer> cycleIndexes = new HashMap<>();
+    private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
 
 
-    public BoardSpaceEntity(BlockPos pos, BlockState state) {
-        super(state.getBlock() instanceof Tile ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.TRIGGER_POINT_ENTITY, pos, state);
+    public BoardSpaceBlockEntity(BlockPos pos, BlockState state) {
+        super(state.getBlock() instanceof Tile ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.TRIGGER_POINT_ENTITY, pos, state, 16);
     }
 
-    private final SimpleInventory inventory = new SimpleInventory(16) {
+/*    private final SimpleInventory inventory = new SimpleInventory(16) {
         @Override
         public void markDirty() {
             super.markDirty();
@@ -92,7 +79,7 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
             }
             return true;
         }
-    };
+    };*/
 
     private void update() {
         markDirty();
@@ -100,27 +87,11 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
     }
 
-    @Override
-    public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
-        Inventories.writeNbt(nbt, inventory.getHeldStacks(), wrapper);
-        super.writeNbt(nbt, wrapper);
-    }
-
-    @Override
-    public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
-        super.readNbt(nbt, wrapper);
-        try {
-            Inventories.readNbt(nbt, inventory.getHeldStacks(), wrapper);
-        } catch (Exception e) {
-            Steveparty.LOGGER.error("Failed to read NBT", e);
-        }
-    }
-
     public DefaultedList<ItemStack> getItems() {
-        return inventory.getHeldStacks();
+        return this.getHeldStacks();
     }
 
-    private BoardSpaceType determineTileType(ItemStack stack) {
+    private BoardSpaceType determineBoardSpaceType(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return null;
         }
@@ -139,10 +110,8 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
     public void updateTileSkin() {
         if (this.world != null) {
             ItemStack stack = getActiveTileBehaviorItemStack();
-            // Determine the tile type based on the stack
-            BoardSpaceType tileType = determineTileType(stack);
+            BoardSpaceType tileType = determineBoardSpaceType(stack);
 
-            // Update the block state if necessary
             BlockState state = this.getCachedState();
             if (state.getBlock() instanceof BoardSpace && tileType == null) {
                 this.world.setBlockState(this.pos, state.with(TILE_TYPE, BoardSpaceType.DEFAULT));
@@ -172,7 +141,7 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
     }
 
     public static void searchAndDisplayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
-        BoardSpaceEntity boardSpaceEntity = Tile.getBoardSpaceEntity(world, pos);
+        BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(world, pos);
         if (boardSpaceEntity == null) return;
         List<BoardSpaceDestination> destinations = boardSpaceEntity.getStockedDestinations();
         displayDestinations(world, pos, holder, destinations);
@@ -194,7 +163,7 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
     }
 
     public void hideDestinations() {
-        BoardSpaceEntity.hideDestinations((ServerWorld) this.world, this.getPos());
+        BoardSpaceBlockEntity.hideDestinations((ServerWorld) this.world, this.getPos());
     }
 
     private static List<DirectionDisplayEntity> getSpawnedDestinations(ServerWorld world, BlockPos pos) {
@@ -219,19 +188,19 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
             return ItemStack.EMPTY;
         }
         int slot = this.world.getReceivedRedstonePower(this.pos);
-        return inventory.getStack(slot);
+        return this.getStack(slot);
     }
 
     public void setActiveTileBehaviorItemStack(ItemStack stack) {
         if (this.world == null) return;
         int slot = this.world.getReceivedRedstonePower(this.pos);
-        inventory.setStack(slot, stack);
-        inventory.markDirty();
+        this.setStack(slot, stack);
+        this.markDirty();
     }
 
     public ABoardSpaceBehavior getTileBehavior() {
         ItemStack stack = getActiveTileBehaviorItemStack();
-        BoardSpaceType tileType = determineTileType(stack);
+        BoardSpaceType tileType = determineBoardSpaceType(stack);
         if (tileType == null)
             return null;
 
@@ -253,27 +222,10 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
     @Override
     public void markDirty() {
         super.markDirty();
-        assert this.world != null;
-        if (this.world.isClient) {
-            world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), 3);
+        if (this.world == null) return;
+        if (this.world instanceof ServerWorld serverWorld) {
+            serverWorld.getServer().submit(this::updateTileSkin);
         }
-        if (this.world != null && !this.world.isClient && this.world instanceof ServerWorld) {
-            ((ServerWorld) this.world).getServer().submit(this::updateTileSkin);
-        }
-    }
-
-    @Override
-    public Text getDisplayName() {
-        return Text.of("Board Space");//Text.translatable(getCachedState().getBlock().getTranslationKey());
-    }
-
-    @Override
-    public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-        return new TileScreenHandler(syncId, playerInventory, this.getInventory());
-    }
-
-    public Inventory getInventory() {
-        return inventory;
     }
 
     @Override
@@ -281,14 +233,9 @@ public class BoardSpaceEntity extends BlockEntity implements NamedScreenHandlerF
         if (this.world == null || this.world.isClient) return;
         ticks++;
         ItemStack stack = getActiveTileBehaviorItemStack();
-        BoardSpaceType tileType = determineTileType(stack);
+        BoardSpaceType tileType = determineBoardSpaceType(stack);
         if (tileType != null)
             BoardSpaceBehaviorFactory.get(tileType).tick((ServerWorld) this.world, this, stack, ticks);
-    }
-    @Override
-    public @Nullable Object getRenderData() {
-        // this is the method from `RenderDataBlockEntity` class.
-        return this;
     }
 
     public static List<BoardSpaceDestination> getDestinationsStatus(List<BlockPos> blockPosList, World world) {

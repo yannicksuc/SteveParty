@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -66,7 +66,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         if (state == null || !(state.getBlock() instanceof Tile)) {
             return;
         }
-        BoardSpaceEntity tileEntity = getTileEntity(world, entity.getBlockPos());
+        BoardSpaceBlockEntity tileEntity = getTileEntity(world, entity.getBlockPos());
         if (tileEntity == null) return;
         ItemStack stack = getBehaviorItemstack(tileEntity);
         if (stack == null || stack.isEmpty()) return;
@@ -87,7 +87,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     public  ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit)
     {
         if (world.isClient) return SUCCESS;
-        BoardSpaceEntity tileEntity = getTileEntity(world, pos);
+        BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
         ItemStack stack = getBehaviorItemstack(tileEntity);
         if (stack == null || stack.isEmpty()) return PASS;
         String owner = stack.get(ModComponents.TB_START_OWNER);
@@ -117,7 +117,6 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
             ((TokenizedEntityInterface)entity).steveparty$setTokenOwner(owner == null ? null : world.getPlayerByUuid(UUID.fromString(owner)));
         }
         stack.set(ModComponents.TB_START_OWNER, owner);
-        tileEntity.getInventory().markDirty();
         tileEntity.markDirty();
         return SUCCESS;
     }
@@ -208,7 +207,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     }
 
     @Override
-    public void tick(ServerWorld world, BoardSpaceEntity state, ItemStack type, int ticks) {
+    public void tick(ServerWorld world, BoardSpaceBlockEntity state, ItemStack type, int ticks) {
         Entity entity = getBoundedEntity(world, type, state.getPos());
         if (entity == null) {
             return;
@@ -221,7 +220,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     public ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (stack == null || !(stack.getItem() instanceof DyeItem dye)) return PASS;
         final int newColor = dye.getColor().getEntityColor();
-        BoardSpaceEntity tileEntity = getTileEntity(world, pos);
+        BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
         ItemStack behaviorItemstack = getBehaviorItemstack(tileEntity);
         LivingEntity entity = (LivingEntity) getBoundedEntity((ServerWorld) world, behaviorItemstack, pos);
         if (entity != null)
@@ -235,11 +234,10 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         return SUCCESS;
     }
 
-    public void setColor(BoardSpaceEntity tileEntity, int color) {
+    public void setColor(BoardSpaceBlockEntity tileEntity, int color) {
         ItemStack behaviorItemstack = getBehaviorItemstack(tileEntity);
         if (behaviorItemstack == null) return;
         behaviorItemstack.set(ModComponents.TB_START_COLOR, color);
-        tileEntity.getInventory().markDirty();
         tileEntity.markDirty();
         World world = tileEntity.getWorld();
         if (world == null) return;

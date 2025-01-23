@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CRC",
+    "CTC",
+    "CCC"
+  ],
+  "key": {
+    "C":"minecraft:yellow_concrete",
+    "R":"minecraft:redstone_torch",
+    "T": "steveparty:tile"
+  },
+  "result": {
+    "id": "steveparty:board_space_redstone_router"
+  }
+}

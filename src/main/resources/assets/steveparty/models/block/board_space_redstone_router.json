@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "steveparty:block/board_space_redstone_router"
+  }
+}

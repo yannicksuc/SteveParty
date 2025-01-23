@@ -5,6 +5,7 @@
     "steveparty:trigger_point",
     "steveparty:cash_register",
     "steveparty:party_controller",
-    "steveparty:step_controller"
+    "steveparty:step_controller",
+    "steveparty:boardspace_redstone_router"
   ]
 }

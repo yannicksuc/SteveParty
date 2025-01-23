@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
@@ -20,7 +20,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -31,7 +30,7 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_T
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static java.lang.Math.PI;
 
-public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity> {
+public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEntity> {
 
     private final SkullEntityModel model;
     private final Identifier textureBad = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_angry");
@@ -45,7 +44,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity>
     }
 
     @Override
-    public void render(BoardSpaceEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+    public void render(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
         BoardSpaceType tileType = entity.getCachedState().get(TILE_TYPE);
         Direction direction = entity.getCachedState().get(Properties.HORIZONTAL_FACING);
         ItemStack stack = entity.getActiveTileBehaviorItemStack();
@@ -56,7 +55,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity>
         }
     }
 
-    private void renderInventoryInteractor(BoardSpaceEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, ItemStack stack, Direction direction) {
+    private void renderInventoryInteractor(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, ItemStack stack, Direction direction) {
         Identifier texture = textureBlow;
         PersistentInventoryComponent inventory = stack.get(INVENTORY_CARTRIDGE_COMPONENT);
         if (inventory != null) {
@@ -69,7 +68,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceEntity>
         renderPicture(matrices, vertexConsumers, light, overlay, texture, direction);
     }
 
-    private void renderTileStart(BoardSpaceEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
+    private void renderTileStart(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
         // Validate UUID
         String owner = stack.get(TB_START_OWNER);
         if (owner == null || owner.isEmpty()) return;
