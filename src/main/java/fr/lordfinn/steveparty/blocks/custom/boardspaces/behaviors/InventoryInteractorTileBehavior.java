@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
@@ -26,8 +26,8 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
     }
 
     @Override
-    public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceEntity boardSpaceEntity, PartyControllerEntity partyController) {
-        if (Tile.getBoardSpaceEntity(world, pos) instanceof BoardSpaceEntity tileEntity &&
+    public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
+        if (Tile.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
                 tileEntity.getActiveTileBehaviorItemStack() instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_CARTRIDGE_COMPONENT, null) instanceof PersistentInventoryComponent cartridgeInventory &&
                 itemStack.get(INVENTORY_POS) instanceof BlockPos connectedInventoryPos  && world.getBlockEntity(connectedInventoryPos) instanceof Inventory connectedInventory) {
@@ -65,7 +65,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         }
     }
 
-    private void actionateCycleSlot(PersistentInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token, BoardSpaceEntity boardSpaceEntity) {
+    private void actionateCycleSlot(PersistentInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity) {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 

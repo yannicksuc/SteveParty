@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.screens.TileScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -9,7 +10,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class TileScreen extends HandledScreen<TileScreenHandler> {
-    private static final Identifier TEXTURE = Identifier.of("steveparty", "textures/gui/tile.png");
+    private static final Identifier TEXTURE = Identifier.of(Steveparty.MOD_ID, "textures/gui/tile.png");
 
     public TileScreen(TileScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);

@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.*;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
@@ -169,7 +169,7 @@ public class PartyControllerEntity extends BlockEntity {
 
         for (BlockPos tilePos : startTiles) {
             BlockEntity tileEntity = serverWorld.getBlockEntity(tilePos);
-            if (tileEntity instanceof BoardSpaceEntity tile) {
+            if (tileEntity instanceof BoardSpaceBlockEntity tile) {
                 String potentialUuid = tile.getActiveTileBehaviorItemStack().get(TB_START_BOUND_ENTITY);
                 if (potentialUuid == null) continue;
                 partyData.addToken(UUID.fromString(potentialUuid));
@@ -270,7 +270,7 @@ public class PartyControllerEntity extends BlockEntity {
     }
 
 
-    public static ActionResult handleTileReached(@NotNull MobEntity token,@NotNull BoardSpaceEntity boardSpaceEntity) {
+    public static ActionResult handleTileReached(@NotNull MobEntity token,@NotNull BoardSpaceBlockEntity boardSpaceEntity) {
         ActionResult actionResult = ActionResult.PASS;
         for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS) {
             if (!entity.isRemoved()) {
@@ -282,7 +282,7 @@ public class PartyControllerEntity extends BlockEntity {
         return actionResult;
     }
 
-    private ActionResult onTileReached(@NotNull MobEntity token,@NotNull BoardSpaceEntity boardSpaceEntity) {
+    private ActionResult onTileReached(@NotNull MobEntity token,@NotNull BoardSpaceBlockEntity boardSpaceEntity) {
         if (this.isRemoved() || this.world == null) {
             return ActionResult.PASS;
         }

@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -39,23 +39,23 @@ public abstract class ABoardSpaceBehavior {
 
     private void onPlayerStep(World world, BlockPos pos, BlockState state, Entity entity) {}
 
-    protected static BoardSpaceEntity getTileEntity(World world, BlockPos pos) {
+    protected static BoardSpaceBlockEntity getTileEntity(World world, BlockPos pos) {
         return BoardSpace.getBoardSpaceEntity(world, pos);
     }
 
     protected static ItemStack getBehaviorItemstack(World world, BlockPos pos) {
-        BoardSpaceEntity tileEntity = getTileEntity(world, pos);
+        BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
         return getBehaviorItemstack(tileEntity);
     }
 
-    protected static ItemStack getBehaviorItemstack(BoardSpaceEntity tileEntity) {
+    protected static ItemStack getBehaviorItemstack(BoardSpaceBlockEntity tileEntity) {
         if (tileEntity == null) return null;
         return tileEntity.getActiveTileBehaviorItemStack();
     }
 
     public void onPieceStep(World world, BlockPos pos, BlockState state, MobEntity entity) {}
 
-    public void tick(ServerWorld world, BoardSpaceEntity state, ItemStack type, int ticks) {}
+    public void tick(ServerWorld world, BoardSpaceBlockEntity state, ItemStack type, int ticks) {}
 
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         return SUCCESS;
@@ -69,7 +69,7 @@ public abstract class ABoardSpaceBehavior {
         return false;
     }
 
-    public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceEntity boardSpaceEntity, PartyControllerEntity partyController) {
+    public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
         this.playActivateSound(world, pos);
     }
 

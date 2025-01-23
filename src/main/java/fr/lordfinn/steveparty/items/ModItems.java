@@ -68,6 +68,7 @@ public class ModItems {
         ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
             itemGroup.add(TILE);
             itemGroup.add(TRIGGER_POINT);
+            itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
             itemGroup.add(WRENCH);
             itemGroup.add(BOARD_SPACE_BEHAVIOR);
             itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);

@@ -1,19 +1,11 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
-import fr.lordfinn.steveparty.items.custom.TileOpener;
-import fr.lordfinn.steveparty.sounds.ModSounds;
-import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.ActionResult;
@@ -26,10 +18,8 @@ import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
-import static net.minecraft.util.ActionResult.PASS;
-import static net.minecraft.util.ActionResult.SUCCESS;
 
-public abstract class BoardSpace extends HorizontalFacingBlock implements BlockEntityProvider {
+public abstract class BoardSpace extends CartridgeContainer {
     public static final EnumProperty<BoardSpaceType> TILE_TYPE = EnumProperty.of("tile_type", BoardSpaceType.class);
 
     public BoardSpace(Settings settings) {
@@ -48,32 +38,8 @@ public abstract class BoardSpace extends HorizontalFacingBlock implements BlockE
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (world.isClient) return SUCCESS;
-        ItemStack mainHandStack = player.getMainHandStack();
-        ItemStack offHandStack = player.getOffHandStack();
-        if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return onUse(state, world, pos, player, hit);
-        if (!(mainHandStack.getItem() instanceof TileOpener) && !(offHandStack.getItem() instanceof TileOpener)) {
-            return BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit);
-        }
-        NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
-        if (screenHandlerFactory != null) {
-            // With this call the server will request the client to open the appropriate Screenhandler
-            world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
-            player.openHandledScreen(screenHandlerFactory);
-            return SUCCESS;
-        }
-        return PASS;
-    }
-
-    @Override
-    public boolean hasComparatorOutput(BlockState state) {
-        return true;
-    }
-
-    @Override
-    public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-        return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
+    protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        return BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit);
     }
 
     @Override
@@ -84,10 +50,10 @@ public abstract class BoardSpace extends HorizontalFacingBlock implements BlockE
     // This method will drop all items onto the ground when the block is broken
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        BoardSpaceEntity tileEntity = getBoardSpaceEntity(world, pos);
+        BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
         if (tileEntity == null) return;
         if (state.getBlock() != newState.getBlock()) {
-            ItemScatterer.spawn(world, pos, tileEntity.getInventory());
+            ItemScatterer.spawn(world, pos, tileEntity);
             world.updateComparators(pos,this);
             tileEntity.hideDestinations();
         } else {
@@ -99,29 +65,20 @@ public abstract class BoardSpace extends HorizontalFacingBlock implements BlockE
     // Override to create a new TileEntity instance for this block
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new BoardSpaceEntity(pos, state);
-    }
-
-    @Override
-    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-        if (blockEntity instanceof NamedScreenHandlerFactory) {
-            return (NamedScreenHandlerFactory) blockEntity;
-        }
-        return null;
+        return new BoardSpaceBlockEntity(pos, state);
     }
 
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        if (world.getBlockEntity(pos) instanceof BoardSpaceEntity tileEntity) {
+        if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
             tileEntity.updateTileSkin();
         }
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
     }
 
-    public static BoardSpaceEntity getBoardSpaceEntity(World world, BlockPos pos) {
+    public static BoardSpaceBlockEntity getBoardSpaceEntity(World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
-        if (blockEntity instanceof BoardSpaceEntity tileEntity)
+        if (blockEntity instanceof BoardSpaceBlockEntity tileEntity)
             return tileEntity;
         return null;
     }
@@ -136,11 +93,5 @@ public abstract class BoardSpace extends HorizontalFacingBlock implements BlockE
         if (!world.isClient) {
             BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onSteppedOn(world, pos, state, entity);
         }
-    }
-
-    @Nullable
-    @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return TickableBlockEntity.getTicker(world);
     }
 }

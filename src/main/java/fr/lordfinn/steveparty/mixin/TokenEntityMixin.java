@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.entity.BlockEntity;
@@ -191,13 +191,13 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
                 this.setVelocity(Vec3d.ZERO);
                 this.targetPosition = null;
                 BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos());
-                if ((blockEntity instanceof BoardSpaceEntity)) {
+                if ((blockEntity instanceof BoardSpaceBlockEntity)) {
                     if (this.steveparty$getNbSteps() > 0) {//TODO Manage negative Steps (Not urgent)
                         if (this.getWorld().getBlockState(this.getBlockPos()).getBlock() instanceof Tile tile) {
                             this.steveparty$setNbSteps(this.steveparty$getNbSteps() - 1);
                         }
                     }
-                    TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this, (BoardSpaceEntity) blockEntity);
+                    TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this, (BoardSpaceBlockEntity) blockEntity);
                 }
             }
         } else if (this.steveparty$isTokenized()) {
@@ -239,8 +239,8 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             if (source.getAttacker() instanceof PlayerEntity) {
                 MessageUtils.sendToPlayer((ServerPlayerEntity) source.getAttacker(), Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
                 BlockEntity blockEntity = world.getBlockEntity(this.getBlockPos());
-                if (blockEntity instanceof BoardSpaceEntity)
-                    EVENT.invoker().onTileUpdated((MobEntity) (Object) this, (BoardSpaceEntity) blockEntity);
+                if (blockEntity instanceof BoardSpaceBlockEntity)
+                    EVENT.invoker().onTileUpdated((MobEntity) (Object) this, (BoardSpaceBlockEntity) blockEntity);
             }
             return false;
         }

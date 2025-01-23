@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.blockentity.BigBookRenderer;
 import fr.lordfinn.steveparty.client.blockentity.StepControllerRenderer;
 import fr.lordfinn.steveparty.client.blockentity.TileEntityRenderer;
@@ -49,7 +49,7 @@ public class StevepartyClient implements ClientModInitializer {
 
     private static final BlockColorProvider getTileColor = (state, world, pos, tintIndex) -> {
         if (world == null) return 0xFFEB68;
-        BoardSpaceEntity tileEntity = (BoardSpaceEntity) world.getBlockEntityRenderData(pos);
+        BoardSpaceBlockEntity tileEntity = (BoardSpaceBlockEntity) world.getBlockEntityRenderData(pos);
         if (tileEntity == null) return 0xFFEB68;
         ItemStack behaviorItemstack = tileEntity.getActiveTileBehaviorItemStack();
         Integer color = behaviorItemstack.get(ModComponents.TB_START_COLOR);

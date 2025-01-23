@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -97,7 +97,7 @@ public class PartyStep {
         return color == null ? 0xFFFFFF : color;
     }
 
-    public ActionResult onTileReached(@NotNull MobEntity token, @NotNull BoardSpaceEntity boardSpaceEntity, PartyControllerEntity partyControllerEntity) {
+    public ActionResult onTileReached(@NotNull MobEntity token, @NotNull BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyControllerEntity) {
         boardSpaceEntity.onTileReached(token, partyControllerEntity);
         if (boardSpaceEntity.getWorld() instanceof ServerWorld world && partyControllerEntity.getWorld() instanceof ServerWorld) {
             if (world.getBlockState(boardSpaceEntity.getPos()).getBlock() instanceof Tile

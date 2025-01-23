@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
@@ -96,7 +96,7 @@ public class TokenMovementService {
         );
     }
 
-    private static @NotNull ActionResult tryToMoveEntityOnBoard(MobEntity entity, BoardSpaceEntity tile) {
+    private static @NotNull ActionResult tryToMoveEntityOnBoard(MobEntity entity, BoardSpaceBlockEntity tile) {
         if (entity.getWorld().isClient) return ActionResult.PASS;
         int nbSteps = ((TokenizedEntityInterface) entity).steveparty$getNbSteps();
         if (nbSteps == 0) return ActionResult.PASS;
@@ -117,7 +117,7 @@ public class TokenMovementService {
                     MessageUtils.MessageType.ACTION_BAR);
             return;
         }
-        BoardSpaceEntity tileEntity = BoardSpace.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
+        BoardSpaceBlockEntity tileEntity = BoardSpace.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
         if (tileEntity == null) return;
         //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
 
@@ -137,7 +137,7 @@ public class TokenMovementService {
 
     public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, BoardSpaceDestination tileDestination) {
         if (tileDestination == null || tileOrigin == null) return;
-        BoardSpaceEntity tileEntity = BoardSpace.getBoardSpaceEntity(world, tileOrigin);
+        BoardSpaceBlockEntity tileEntity = BoardSpace.getBoardSpaceEntity(world, tileOrigin);
         if (tileEntity == null) return;
         tileEntity.hideDestinations();
         List<MobEntity> tokens = tileEntity.getTokensOnMe();

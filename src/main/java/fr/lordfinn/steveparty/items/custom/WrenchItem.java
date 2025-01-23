@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -18,7 +18,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
-public class WrenchItem extends AbstractBoardSpaceSelectorItem implements TileOpener {
+public class WrenchItem extends AbstractBoardSpaceSelectorItem implements CartridgeContainerOpener {
 
     public WrenchItem(Settings settings) {
         super(settings);
@@ -44,7 +44,7 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements TileOp
     }
 
     private @Nullable BoardSpaceBehaviorComponent tryToBindTileAtPosFromWrench(BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
-        BoardSpaceEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
+        BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
         if (boardSpaceEntity == null) return null;
         ItemStack boardSpaceStoredBehavior = getOrCreateFromPlayerTileBehaviorStack(boardSpaceEntity, player);
         if (boardSpaceStoredBehavior == null) return null;
@@ -69,17 +69,17 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements TileOp
     }
 
     private static void displayLinks(ServerWorld serverWorld, BoardSpaceBehaviorComponent updatedComponent) {
-        BoardSpaceEntity.hideDestinations(serverWorld, updatedComponent.origin());
-        BoardSpaceEntity.searchAndDisplayDestinations(serverWorld, updatedComponent.origin(), null);
+        BoardSpaceBlockEntity.hideDestinations(serverWorld, updatedComponent.origin());
+        BoardSpaceBlockEntity.searchAndDisplayDestinations(serverWorld, updatedComponent.origin(), null);
     }
 
     private static void removeBinding(BlockPos pos, ItemStack stack, ServerWorld serverWorld) {
-        BoardSpaceEntity.hideDestinations(serverWorld, pos);
+        BoardSpaceBlockEntity.hideDestinations(serverWorld, pos);
         stack.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
     }
 
     private boolean updateStackAtPos(BoardSpaceBehaviorComponent component, BlockPos clickedPos, ServerWorld serverWorld) {
-        BoardSpaceEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
+        BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
         if (boardSpaceEntity == null) return false;
         ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveTileBehaviorItemStack();
         if (boardSpaceStoredBehavior == null) return false;
@@ -87,7 +87,7 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements TileOp
         return true;
     }
 
-    ItemStack getOrCreateFromPlayerTileBehaviorStack(BoardSpaceEntity boardSpaceEntity, PlayerEntity player) {
+    ItemStack getOrCreateFromPlayerTileBehaviorStack(BoardSpaceBlockEntity boardSpaceEntity, PlayerEntity player) {
         ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveTileBehaviorItemStack();
         if (boardSpaceStoredBehavior == null || boardSpaceStoredBehavior.isEmpty()) {
 
