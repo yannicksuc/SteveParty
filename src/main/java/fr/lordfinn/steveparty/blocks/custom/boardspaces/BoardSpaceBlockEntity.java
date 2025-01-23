@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -189,17 +190,30 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return tileDestinations;
     }
 
+    public int getActiveSlot() {
+        if (!(this.world instanceof ServerWorld serverWorld)) {
+            if (this.world != null) {
+                BlockPos routerPos = BoardSpaceRoutersPersistentState.get(this.pos);
+                return this.world.getReceivedRedstonePower(routerPos == null ? this.pos : routerPos);
+            }
+            return 0;
+        }
+        BoardSpaceRoutersPersistentState.get(serverWorld.getServer());
+        BlockPos routerPos = BoardSpaceRoutersPersistentState.get(this.pos);
+        return this.world.getReceivedRedstonePower(routerPos == null ? this.pos : routerPos);
+    }
+
     public ItemStack getActiveTileBehaviorItemStack() {
         if (this.world == null) {
             return ItemStack.EMPTY;
         }
-        int slot = this.world.getReceivedRedstonePower(this.pos);
+        int slot = getActiveSlot();
         return this.getStack(slot);
     }
 
     public void setActiveTileBehaviorItemStack(ItemStack stack) {
         if (this.world == null) return;
-        int slot = this.world.getReceivedRedstonePower(this.pos);
+        int slot = getActiveSlot();
         this.setStack(slot, stack);
         this.markDirty();
     }
@@ -295,13 +309,13 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void setCycleIndex(int i) {
         if (this.world != null) {
-            cycleIndexes.put(this.world.getReceivedRedstonePower(this.pos), i);
+            cycleIndexes.put(getActiveSlot(), i);
         }
     }
 
     public int getCycleIndex() {
         if (this.world != null) {
-            return cycleIndexes.getOrDefault(this.world.getReceivedRedstonePower(this.pos), 0);
+            return cycleIndexes.getOrDefault(getActiveSlot(), 0);
         }
         return 0;
     }

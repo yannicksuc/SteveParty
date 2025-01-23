@@ -3,13 +3,19 @@ package fr.lordfinn.steveparty.events;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
+import fr.lordfinn.steveparty.payloads.BlockPosesMapPayload;
+import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -34,7 +40,12 @@ public class ModEvents {
         DiceRollEvent.EVENT.register(PartyControllerEntity::handleDiceRoll);
         TileReachedEvent.EVENT.register(PartyControllerEntity::handleTileReached);
         //Event to detect player connection
-        ServerPlayConnectionEvents.JOIN.register(PartyControllerEntity::handlePlayerJoin);
+        ServerPlayConnectionEvents.JOIN.register(
+                (ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) -> {
+                    PartyControllerEntity.handlePlayerJoin(handler, sender, server);
+                    BoardSpaceRoutersPersistentState.sendToPlayer(handler.player, server);
+                }
+        );
 
     }
 

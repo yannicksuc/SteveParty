@@ -11,6 +11,7 @@ public class ModPayloads {
     public static final Identifier UPDATE_COLORED_TILE_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "update-colored-tile-payload");
     public static final Identifier PARTY_DATA_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "party-data");
     public static final Identifier SELECTION_STATE_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "selection-state-payload");
+    public static final Identifier BLOCK_POSES_MAP_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "block-poses-map-payload");
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
@@ -20,5 +21,6 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(PartyDataPayload.ID, PartyDataPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(BlockPosesMapPayload.ID, BlockPosesMapPayload.CODEC);
     }
 }
