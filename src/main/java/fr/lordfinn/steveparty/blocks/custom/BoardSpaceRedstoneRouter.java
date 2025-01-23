@@ -14,6 +14,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 public class BoardSpaceRedstoneRouter extends CartridgeContainer {
@@ -35,5 +36,14 @@ public class BoardSpaceRedstoneRouter extends CartridgeContainer {
     @Override
     protected MapCodec<BoardSpaceRedstoneRouter> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+        if (world.isClient) return;
+        if (world.getBlockEntity(pos) instanceof BoardSpaceRedstoneRouterBlockEntity entity) {
+            entity.updateRoutedDestinations();
+        }
     }
 }
