@@ -30,7 +30,7 @@ public record BlockPosesMapPayload(Map<BlockPos, BlockPos> blockPoses) implement
 
                 @Override
                 public void encode(PacketByteBuf buf, BlockPosesMapPayload payload) {
-                    buf.writeInt(payload.blockPoses.size()); // Write the size of the map
+                    buf.writeInt(payload.blockPoses.size());
 
                     payload.blockPoses.forEach((key, value) -> {
                         buf.writeBlockPos(key); // Write the key (BlockPos)

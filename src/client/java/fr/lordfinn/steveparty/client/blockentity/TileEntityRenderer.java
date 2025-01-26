@@ -4,7 +4,8 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
-import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
+import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -24,6 +25,7 @@ import net.minecraft.util.math.Direction;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+import java.awt.*;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
@@ -57,11 +59,12 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEn
 
     private void renderInventoryInteractor(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, ItemStack stack, Direction direction) {
         Identifier texture = textureBlow;
-        PersistentInventoryComponent inventory = stack.get(INVENTORY_CARTRIDGE_COMPONENT);
+        CartridgeInventoryComponent inventory = stack.get(INVENTORY_CARTRIDGE_COMPONENT);
         if (inventory != null) {
             ItemStack item = inventory.getStack(0);
-            if (item != null) {
+            if (item != null && !item.isEmpty()) {
                 boolean isNegative = item.getOrDefault(IS_NEGATIVE, false);
+                item.set(ModComponents.TB_START_COLOR, isNegative ? Color.RED.getRGB() : Color.BLUE.getRGB());
                 texture = isNegative ? textureBad : textureExcited;
             }
         }

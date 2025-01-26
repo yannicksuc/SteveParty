@@ -103,7 +103,6 @@ public class BoardSpaceRoutersPersistentState extends PersistentState {
                     boardSpaceBlockEntity.markDirty();
             }
         }
-        sendToOnlinePlayers(serverWorld.getServer());
     }
 
     public void putAll(List<BlockPos> boardSpaces, BlockPos router, ServerWorld serverWorld) {
@@ -112,8 +111,9 @@ public class BoardSpaceRoutersPersistentState extends PersistentState {
             if (serverWorld.getBlockEntity(boardSpacePos) instanceof BoardSpaceBlockEntity boardSpaceBlockEntity)
                 boardSpaceBlockEntity.markDirty();
         }
-        sendToOnlinePlayers(serverWorld.getServer());
     }
+
+
 
     public static BlockPos get(BlockPos boardSpacePos) {
         return boardSpaces.getOrDefault(boardSpacePos, null);

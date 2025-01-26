@@ -234,19 +234,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         return SUCCESS;
     }
 
-    public void setColor(BoardSpaceBlockEntity tileEntity, int color) {
-        ItemStack behaviorItemstack = getBehaviorItemstack(tileEntity);
-        if (behaviorItemstack == null) return;
-        behaviorItemstack.set(ModComponents.TB_START_COLOR, color);
-        tileEntity.markDirty();
-        World world = tileEntity.getWorld();
-        if (world == null) return;
-        for (PlayerEntity player : world.getPlayers()) {
-            ServerPlayNetworking.send((ServerPlayerEntity) player, new UpdateColoredTilePayload(tileEntity.getPos(), color));
-        }
-    }
-
-    @SuppressWarnings("SameParameterValue")
+       @SuppressWarnings("SameParameterValue")
     private List<Entity> getAroundEntities(Entity entity, int radius) {
         return entity.getWorld().getOtherEntities(entity, entity.getBoundingBox().expand(radius));
     }

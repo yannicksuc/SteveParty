@@ -10,7 +10,7 @@ import fr.lordfinn.steveparty.events.ModEvents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.payloads.ModPayloads;
-import fr.lordfinn.steveparty.screens.ModScreens;
+import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.service.VillagerBlockSpawnListener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -41,7 +41,7 @@ public class Steveparty implements ModInitializer {
         ModItems.initialize();
         ModBlockEntities.initialize();
         ModComponents.initialize();
-        ModScreens.initialize();
+        ModScreensHandlers.initialize();
         ModEffects.initialize();
         ModPayloads.initialize();
         ModEntities.initialize();
@@ -54,7 +54,6 @@ public class Steveparty implements ModInitializer {
         new TokenMovementService();
 
         VillagerBlockSpawnListener.registerChatListener();
-        System.out.println("StevePartyMod initialized and blocks registered!");
     }
 
     private void onServerStopped(MinecraftServer minecraftServer) {

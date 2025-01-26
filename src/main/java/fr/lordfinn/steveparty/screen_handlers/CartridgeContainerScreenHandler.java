@@ -1,47 +1,31 @@
-package fr.lordfinn.steveparty.screens;
+package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 
-public class TileScreenHandler extends ScreenHandler {
-    private final Inventory inventory;
+public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
+    protected final Inventory inventory;
 
-    // Constructor for the screen handler
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new SimpleInventory(16));
+    protected void setupScreen() {
     }
 
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
-        super(ModScreens.TILE_SCREEN_HANDLER, syncId);
-        checkSize(inventory, 16);
+    public CartridgeContainerScreenHandler(ScreenHandlerType<?> type, int syncId, Inventory inventory) {
+        super(type, syncId);
         this.inventory = inventory;
+    }
+
+    void init(PlayerInventory playerInventory, int playerInventoryTitleY) {
         inventory.onOpen(playerInventory.player);
-
-        // Adding slots to the inventory with item type validation
-        int m, l;
-        for (m = 0; m < 4; ++m) {
-            for (l = 0; l < 4; ++l) {
-                this.addSlot(new CustomSlot(inventory, l + m * 4, 53 + l * 18, 17 + m * 18));
-            }
-        }
-
-        // Adding player inventory slots (no restrictions)
-        for (m = 0; m < 3; ++m) {
-            for (l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + m * 9 + 9, 8 + l * 18, 108 + m * 18));
-            }
-        }
-        for (m = 0; m < 9; ++m) {
-            this.addSlot(new Slot(playerInventory, m, 8 + m * 18, 166));
-        }
+        setupScreen();
+        addPlayerSlots(playerInventory, 8, playerInventoryTitleY);
     }
 
     @Override
@@ -50,7 +34,7 @@ public class TileScreenHandler extends ScreenHandler {
     }
 
     // Custom slot class that only allows certain items
-    private static class CustomSlot extends Slot {
+    protected static class CustomSlot extends Slot {
         public CustomSlot(Inventory inventory, int index, int x, int y) {
             super(inventory, index, x, y);
         }

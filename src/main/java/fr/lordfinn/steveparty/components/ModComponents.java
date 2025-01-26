@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.components;
 
 import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.component.ComponentType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -46,8 +45,8 @@ public class ModComponents {
             registerComponent("catalogue", ItemStack.CODEC);
     public static final ComponentType<Boolean> IS_NEGATIVE =
             registerComponent("is-negative", Codec.BOOL);
-    public static final ComponentType<PersistentInventoryComponent> INVENTORY_CARTRIDGE_COMPONENT =
-            registerComponent("inventory-cartridge", PersistentInventoryComponent.CODEC);
+    public static final ComponentType<CartridgeInventoryComponent> INVENTORY_CARTRIDGE_COMPONENT =
+            registerComponent("inventory-cartridge", CartridgeInventoryComponent.CODEC);
     public static final ComponentType<BlockPos> INVENTORY_POS =
             registerComponent("inventory-pos", BlockPos.CODEC);
     public static final ComponentType<Integer> SELECTION_STATE =

@@ -1,30 +1,29 @@
-package fr.lordfinn.steveparty.screens;
+package fr.lordfinn.steveparty.screen_handlers;
 
-import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
-import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 
+import java.util.Optional;
+
 import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
 
 public class CartridgeInventoryScreenHandler extends ScreenHandler {
-    private final PersistentInventoryComponent inventory;
+    private final CartridgeInventoryComponent inventory;
 
     // Constructor for the screen handler
     public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new PersistentInventoryComponent(9));
+        this(syncId, playerInventory, new CartridgeInventoryComponent(9));
     }
 
-    public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory, PersistentInventoryComponent inventory) {
-        super(ModScreens.CARTRIDGE_SCREEN_HANDLER, syncId);
+    public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory, CartridgeInventoryComponent inventory) {
+        super(ModScreensHandlers.CARTRIDGE_SCREEN_HANDLER, syncId);
         this.inventory = inventory;
         inventory.onOpen(playerInventory.player);
 
@@ -52,7 +51,7 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
         return this.inventory.canPlayerUse(player);
     }
 
-    public PersistentInventoryComponent getPersistentInventory() {
+    public CartridgeInventoryComponent getPersistentInventory() {
         return this.inventory;
     }
 
@@ -60,6 +59,26 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
     public static class CustomSlot extends Slot {
         public CustomSlot(Inventory inventory, int index, int x, int y) {
             super(inventory, index, x, y);
+        }
+
+        @Override
+        public Optional<ItemStack> tryTakeStackRange(int min, int max, PlayerEntity player) {
+            this.setStack(ItemStack.EMPTY);
+            return Optional.empty();
+        }
+        @Override
+        public ItemStack takeStackRange(int min, int max, PlayerEntity player) {
+            this.setStack(ItemStack.EMPTY);
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack insertStack(ItemStack stack, int count) {
+            if (stack.isEmpty()) {
+                return stack;
+            }
+            this.setStack(stack.copyWithCount(1));
+            return stack;
         }
 
         @Override
@@ -98,26 +117,16 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
             }
             markDirty();
         }
+        @Override
+        public boolean canTakePartial(PlayerEntity player) {
+            return false;
+        }
     }
 
-    // Shift + Player Inv Slot
+        // Shift + Player Inv Slot
     @Override
     public ItemStack quickMove(PlayerEntity player, int invSlot) {
-        ItemStack newStack = ItemStack.EMPTY;
-        Slot slot = this.slots.get(invSlot);
-        if (slot.hasStack()) {
-            ItemStack originalStack = slot.getStack();
-            newStack = originalStack.copy();
-            if (invSlot < this.inventory.size()) {
-                return ItemStack.EMPTY;
-            }
-            if (originalStack.isEmpty()) {
-                slot.setStack(ItemStack.EMPTY);
-            }
-            slot.markDirty();
-        }
-
-        return newStack;
+        return ItemStack.EMPTY;
     }
 
     @Override

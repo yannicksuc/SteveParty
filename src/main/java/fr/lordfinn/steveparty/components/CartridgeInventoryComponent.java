@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.components;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -17,19 +17,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class PersistentInventoryComponent implements Inventory {
+public class CartridgeInventoryComponent implements Inventory {
     private final List<ItemStack> items;
     private static ItemStack holder = ItemStack.EMPTY;
 
-    public PersistentInventoryComponent(int size) {
+    public CartridgeInventoryComponent(int size) {
         this.items = DefaultedList.ofSize(size, ItemStack.EMPTY);
     }
-    public PersistentInventoryComponent(int size, ItemStack holder) {
+    public CartridgeInventoryComponent(int size, ItemStack holder) {
         this.items = DefaultedList.ofSize(size, ItemStack.EMPTY);
-        PersistentInventoryComponent.holder = holder;
+        CartridgeInventoryComponent.holder = holder;
     }
 
-    public PersistentInventoryComponent(List<ItemStack> itemStacks) {
+    public CartridgeInventoryComponent(List<ItemStack> itemStacks) {
         this.items = new ArrayList<>(itemStacks);
         while (this.items.size() < 9) {
             this.items.add(ItemStack.EMPTY);
@@ -37,7 +37,7 @@ public class PersistentInventoryComponent implements Inventory {
     }
 
     public void setHolder(ItemStack holder) {
-        PersistentInventoryComponent.holder = holder;
+        CartridgeInventoryComponent.holder = holder;
     }
 
     @Override
@@ -82,15 +82,16 @@ public class PersistentInventoryComponent implements Inventory {
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        if (slot >= items.size())
+        if (slot >= items.size()) {
             return;
+            }
         items.set(slot, stack);
         markDirty();
     }
 
     @Override
     public void markDirty() {
-        if (PersistentInventoryComponent.holder.getItem() instanceof InventoryCartridgeItem) {
+        if (CartridgeInventoryComponent.holder.getItem() instanceof InventoryCartridgeItem) {
             InventoryCartridgeItem.saveInventory(this);
         }
     }
@@ -113,9 +114,9 @@ public class PersistentInventoryComponent implements Inventory {
     }
 
     // Deserialize inventory from NBT
-    public static PersistentInventoryComponent fromNbt(RegistryWrapper.WrapperLookup registries, NbtCompound nbt) {
-        PersistentInventoryComponent inventory = new PersistentInventoryComponent(6); // 6 slots as an example
+    public static CartridgeInventoryComponent fromNbt(RegistryWrapper.WrapperLookup registries, NbtCompound nbt) {
         NbtList list = nbt.getList("Items", 10);  // List of NBT tags for items
+        CartridgeInventoryComponent inventory = new CartridgeInventoryComponent(list.size());
         for (int i = 0; i < list.size(); i++) {
             NbtCompound itemTag = list.getCompound(i);
             Optional<ItemStack> stack = ItemStack.fromNbt(registries, itemTag);
@@ -130,19 +131,29 @@ public class PersistentInventoryComponent implements Inventory {
         items.clear();
     }
 
-    public static final Codec<PersistentInventoryComponent> CODEC = RecordCodecBuilder.create(builder -> // Return a new PersistentInventoryComponent with the items added
+    public static final Codec<ItemStack> CUSTOM_ITEMSTACK_CODEC = Codec.either(
+            ItemStack.CODEC,
+            Codec.unit(ItemStack.EMPTY)
+    ).xmap(
+            either -> either.map(stack -> stack, stack -> stack),
+            stack -> stack.isEmpty() ? Either.right(stack) : Either.left(stack)
+    );
+
+    public static final Codec<CartridgeInventoryComponent> CODEC = RecordCodecBuilder.create(builder ->
             builder.group(
-            Codec.list(ItemStack.CODEC).fieldOf("items").forGetter(component -> component.items.stream().filter(stack -> !stack.isEmpty()).toList())
-    ).apply(builder, PersistentInventoryComponent::new));
+                    Codec.list(CUSTOM_ITEMSTACK_CODEC).fieldOf("items")
+                            .forGetter(component -> component.items)
+            ).apply(builder, CartridgeInventoryComponent::new)
+    );
 
     public ItemStack getHolder() {
-        return PersistentInventoryComponent.holder;
+        return CartridgeInventoryComponent.holder;
     }
 
     public static InventoryCartridgeItem getHolderItem() {
-        if (PersistentInventoryComponent.holder == null) return null;
-        if (PersistentInventoryComponent.holder.isEmpty()) return null;
-        return (InventoryCartridgeItem) PersistentInventoryComponent.holder.getItem();
+        if (CartridgeInventoryComponent.holder == null) return null;
+        if (CartridgeInventoryComponent.holder.isEmpty()) return null;
+        return (InventoryCartridgeItem) CartridgeInventoryComponent.holder.getItem();
     }
 
     public List<ItemStack> getItems() {
