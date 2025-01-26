@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
-import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
-import fr.lordfinn.steveparty.screens.CartridgeInventoryScreenHandler;
+import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
+import fr.lordfinn.steveparty.screen_handlers.CartridgeInventoryScreenHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
@@ -24,19 +24,19 @@ public class InventoryCartridgeItem extends CartridgeItem {
         super(settings);
     }
 
-    private PersistentInventoryComponent getInventory(ItemStack stack) {
+    private CartridgeInventoryComponent getInventory(ItemStack stack) {
         // Check if the item already has the inventory component saved in NBT
-        if (stack.contains(INVENTORY_CARTRIDGE_COMPONENT) && stack.get(INVENTORY_CARTRIDGE_COMPONENT) instanceof PersistentInventoryComponent inventory) {
+        if (stack.contains(INVENTORY_CARTRIDGE_COMPONENT) && stack.get(INVENTORY_CARTRIDGE_COMPONENT) instanceof CartridgeInventoryComponent inventory) {
             inventory.setHolder(stack);
             return inventory;
         } else {
-            PersistentInventoryComponent inventory = new PersistentInventoryComponent(9, stack);
+            CartridgeInventoryComponent inventory = new CartridgeInventoryComponent(9, stack);
             stack.set(INVENTORY_CARTRIDGE_COMPONENT, inventory);
             return inventory;
         }
     }
 
-    public static void saveInventory(PersistentInventoryComponent inventory) {
+    public static void saveInventory(CartridgeInventoryComponent inventory) {
         ItemStack stack = inventory.getHolder();
         if (stack == null || stack.isEmpty()) return;
         stack.set(INVENTORY_CARTRIDGE_COMPONENT, inventory);
@@ -112,7 +112,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     private void openInventoryScreen(PlayerEntity player) {
         ItemStack stackMainHand = player.getMainHandStack();
-        PersistentInventoryComponent inventory = getInventory(stackMainHand);
+        CartridgeInventoryComponent inventory = getInventory(stackMainHand);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                 (syncId, inventory1, playerEntity) -> new CartridgeInventoryScreenHandler(syncId, inventory1, inventory),

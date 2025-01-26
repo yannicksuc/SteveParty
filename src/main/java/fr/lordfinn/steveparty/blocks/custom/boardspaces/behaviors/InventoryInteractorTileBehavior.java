@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
-import fr.lordfinn.steveparty.components.PersistentInventoryComponent;
+import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.entity.mob.MobEntity;
@@ -29,7 +29,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
         if (Tile.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
                 tileEntity.getActiveTileBehaviorItemStack() instanceof ItemStack itemStack &&
-                itemStack.getOrDefault(INVENTORY_CARTRIDGE_COMPONENT, null) instanceof PersistentInventoryComponent cartridgeInventory &&
+                itemStack.getOrDefault(INVENTORY_CARTRIDGE_COMPONENT, null) instanceof CartridgeInventoryComponent cartridgeInventory &&
                 itemStack.get(INVENTORY_POS) instanceof BlockPos connectedInventoryPos  && world.getBlockEntity(connectedInventoryPos) instanceof Inventory connectedInventory) {
 
             int selectionState = InventoryCartridgeItem.getSelectionState(itemStack);
@@ -45,7 +45,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         partyController.nextStep();
     }
 
-    private void actionateAllSlots(PersistentInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token) {
+    private void actionateAllSlots(CartridgeInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token) {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 
@@ -54,7 +54,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         }
     }
 
-    private void actionateRandomSlot(PersistentInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token) {
+    private void actionateRandomSlot(CartridgeInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token) {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 
@@ -65,7 +65,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         }
     }
 
-    private void actionateCycleSlot(PersistentInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity) {
+    private void actionateCycleSlot(CartridgeInventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity) {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 

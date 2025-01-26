@@ -10,18 +10,22 @@ import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
 import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -318,5 +322,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             return cycleIndexes.getOrDefault(getActiveSlot(), 0);
         }
         return 0;
+    }
+
+    @Override
+    public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+        return new TileScreenHandler(syncId, playerInventory, this);
     }
 }

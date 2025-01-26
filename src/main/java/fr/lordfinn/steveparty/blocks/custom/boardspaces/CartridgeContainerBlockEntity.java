@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import com.google.common.collect.Lists;
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.screens.TileScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.CartridgeContainerScreenHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CartridgeContainerBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
+public abstract class CartridgeContainerBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
     private final int size;
     public final DefaultedList<ItemStack> heldStacks;
     @Nullable
@@ -240,10 +240,5 @@ public class CartridgeContainerBlockEntity extends BlockEntity implements Invent
     @Override
     public Text getDisplayName() {
         return Text.translatable("block.steveparty.cartridge_container");
-    }
-
-    @Override
-    public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-        return new TileScreenHandler(syncId, playerInventory, this);
     }
 }

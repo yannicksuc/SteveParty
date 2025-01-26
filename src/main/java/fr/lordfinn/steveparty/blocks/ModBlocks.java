@@ -92,6 +92,5 @@ public class ModBlocks {
     }
 
     public static void registerBlocks() {
-        System.out.println("Registering blocks...");
     }
 }

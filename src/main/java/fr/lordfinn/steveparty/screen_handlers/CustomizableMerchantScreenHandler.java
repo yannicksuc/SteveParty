@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.screens;
+package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.entity.player.PlayerInventory;
