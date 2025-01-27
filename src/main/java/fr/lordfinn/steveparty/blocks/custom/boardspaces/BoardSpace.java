@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
@@ -25,7 +24,6 @@ import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
-import static net.minecraft.util.ActionResult.PASS;
 import static net.minecraft.util.ActionResult.SUCCESS;
 
 public abstract class BoardSpace extends CartridgeContainer {
@@ -80,7 +78,7 @@ public abstract class BoardSpace extends CartridgeContainer {
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
         if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
-            tileEntity.updateTileSkin();
+            tileEntity.updateBoardSpaceType();
         }
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
     }

@@ -37,7 +37,7 @@ public class ModComponents {
             registerComponent("bound-entity", Codec.STRING);
     public static final ComponentType<String> TB_START_OWNER =
             registerComponent("owner", Codec.STRING);
-    public static final ComponentType<Integer> TB_START_COLOR =
+    public static final ComponentType<Integer> COLOR =
             registerComponent("color", Codec.INT);
     public static final ComponentType<ItemStack> SOCKETED_STORY =
             registerComponent("socketed-story", ItemStack.CODEC);

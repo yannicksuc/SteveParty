@@ -2,13 +2,12 @@ package fr.lordfinn.steveparty.events;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
-import fr.lordfinn.steveparty.payloads.BlockPosesMapPayload;
 import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -73,8 +72,8 @@ public class ModEvents {
         livingEntity.setCustomName(newName);
 
         BlockEntity blockEntity = livingEntity.getWorld().getBlockEntity(livingEntity.getBlockPos());
-        if (blockEntity instanceof BoardSpaceBlockEntity tileEntity && tileEntity.getTileBehavior() instanceof StartTileBehavior startTileBehavior) {
-            startTileBehavior.setColor(tileEntity, colorRgb);
+        if (blockEntity instanceof BoardSpaceBlockEntity tileEntity && tileEntity.getBoardSpaceBehavior() instanceof StartTileBehavior) {
+            ABoardSpaceBehavior.setColor(tileEntity, colorRgb);
         }
 
         livingEntity.getWorld().playSound(

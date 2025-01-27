@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.TILE;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.*;
 import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
 
@@ -49,10 +50,12 @@ public class StevepartyClient implements ClientModInitializer {
     public static final PartyStepsHud PARTY_STEPS_HUD = new PartyStepsHud();
 
     private static final BlockColorProvider getTileColor = (state, world, pos, tintIndex) -> {
-        if (world == null) return 0xFFFFFF;
-        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity  tileEntity)) return 0xFFFFFF;
-        ItemStack behaviorItemstack = tileEntity.getActiveTileBehaviorItemStack();
-        return behaviorItemstack.getOrDefault(ModComponents.TB_START_COLOR, 0xFFFFFF);
+        if (world == null) return 0xFFFFFFFF;
+        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity  tileEntity)) return 0xFFFFFFFF;
+        ItemStack behaviorItemstack = tileEntity.getActiveCartridgeItemStack();
+        if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return 0xFFFFFFFF;
+        tileEntity.getBoardSpaceBehavior(behaviorItemstack).updateBoardSpaceColor(tileEntity, behaviorItemstack);
+        return behaviorItemstack.getOrDefault(ModComponents.COLOR, 0xFFFFFFFF);
     };
 
     private static final ItemColorProvider getTokenIemColor = (stack, tintIndex) -> {

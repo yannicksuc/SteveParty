@@ -81,14 +81,14 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements Cartri
     private boolean updateStackAtPos(BoardSpaceBehaviorComponent component, BlockPos clickedPos, ServerWorld serverWorld) {
         BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
         if (boardSpaceEntity == null) return false;
-        ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveTileBehaviorItemStack();
+        ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveCartridgeItemStack();
         if (boardSpaceStoredBehavior == null) return false;
         boardSpaceStoredBehavior.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, component);
         return true;
     }
 
     ItemStack getOrCreateFromPlayerTileBehaviorStack(BoardSpaceBlockEntity boardSpaceEntity, PlayerEntity player) {
-        ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveTileBehaviorItemStack();
+        ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveCartridgeItemStack();
         if (boardSpaceStoredBehavior == null || boardSpaceStoredBehavior.isEmpty()) {
 
             //Item Stack doesn't exist in the tile create one by taking it from the offHand
@@ -98,7 +98,7 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements Cartri
                 if (!player.isCreative())
                     offHandStack.decrement(1);
                 player.setStackInHand(Hand.OFF_HAND, offHandStack);
-                boardSpaceEntity.setActiveTileBehaviorItemStack(newBehaviorItem);
+                boardSpaceEntity.setActiveCartridgeItemStack(newBehaviorItem);
                 boardSpaceEntity.markDirty();
                 boardSpaceStoredBehavior = newBehaviorItem;
                 MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal("New space behavior stored at position X: "+boardSpaceEntity.getPos().getX()+", Y: "+boardSpaceEntity.getPos().getY()+", Z: "+boardSpaceEntity.getPos().getZ()+"."), MessageUtils.MessageType.ACTION_BAR);

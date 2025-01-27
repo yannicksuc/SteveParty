@@ -101,7 +101,7 @@ public class TokenMovementService {
         int nbSteps = ((TokenizedEntityInterface) entity).steveparty$getNbSteps();
         if (nbSteps == 0) return ActionResult.PASS;
 
-        ABoardSpaceBehavior behavior = tile.getTileBehavior();
+        ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
         if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos())) {
             moveEntityOnBoard(entity, nbSteps);
             return ActionResult.SUCCESS;

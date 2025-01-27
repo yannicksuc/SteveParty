@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -49,7 +50,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEn
     public void render(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
         BoardSpaceType tileType = entity.getCachedState().get(TILE_TYPE);
         Direction direction = entity.getCachedState().get(Properties.HORIZONTAL_FACING);
-        ItemStack stack = entity.getActiveTileBehaviorItemStack();
+        ItemStack stack = entity.getActiveCartridgeItemStack();
         switch (tileType) {
             case TILE_START -> renderTileStart(entity, matrices, vertexConsumers, light, stack);
             case TILE_INVENTORY_INTERACTOR -> renderInventoryInteractor(entity, matrices, vertexConsumers, light, overlay, stack, direction);
@@ -59,15 +60,11 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEn
 
     private void renderInventoryInteractor(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, ItemStack stack, Direction direction) {
         Identifier texture = textureBlow;
-        CartridgeInventoryComponent inventory = stack.get(INVENTORY_CARTRIDGE_COMPONENT);
-        if (inventory != null) {
-            ItemStack item = inventory.getStack(0);
-            if (item != null && !item.isEmpty()) {
-                boolean isNegative = item.getOrDefault(IS_NEGATIVE, false);
-                item.set(ModComponents.TB_START_COLOR, isNegative ? Color.RED.getRGB() : Color.BLUE.getRGB());
-                texture = isNegative ? textureBad : textureExcited;
-            }
-        }
+        int color = stack.getOrDefault(COLOR, 0);
+        if (color == InventoryInteractorTileBehavior.GOOD_COLOR)
+            texture = textureExcited;
+        else if (color == InventoryInteractorTileBehavior.BAD_COLOR)
+            texture = textureBad;
         renderPicture(matrices, vertexConsumers, light, overlay, texture, direction);
     }
 
@@ -79,7 +76,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEn
         try {
             ownerUUID = UUID.fromString(owner);
         } catch (IllegalArgumentException e) {
-            //Steveparty.LOGGER.error("Invalid UUID: {}", owner);
+            Steveparty.LOGGER.error("Invalid UUID: {}", owner);
             return;
         }
 

@@ -5,9 +5,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.payloads.UpdateColoredTilePayload;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.Entity;
@@ -17,7 +15,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -68,7 +65,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         }
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, entity.getBlockPos());
         if (tileEntity == null) return;
-        ItemStack stack = getBehaviorItemstack(tileEntity);
+        ItemStack stack = getActiveCartdridgeItemstack(tileEntity);
         if (stack == null || stack.isEmpty()) return;
         stack.remove(ModComponents.TB_START_BOUND_ENTITY);
         recentlyUnboundEntities.add(entity.getUuid());
@@ -88,7 +85,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     {
         if (world.isClient) return SUCCESS;
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
-        ItemStack stack = getBehaviorItemstack(tileEntity);
+        ItemStack stack = getActiveCartdridgeItemstack(tileEntity);
         if (stack == null || stack.isEmpty()) return PASS;
         String owner = stack.get(ModComponents.TB_START_OWNER);
         if (owner == null || !owner.equals(player.getUuidAsString()))  {
@@ -124,7 +121,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     @Override
     public void onPieceStep(World world, BlockPos pos, BlockState state, MobEntity entity) {
         if (world.isClient) return;
-        ItemStack stack = getBehaviorItemstack(world, pos);
+        ItemStack stack = getActiveCartdridgeItemstack(world, pos);
         if (stack == null || stack.isEmpty()) return;
         Entity boundEntity = getBoundedEntity((ServerWorld) world, stack, pos);
         if (boundEntity == null && !recentlyUnboundEntities.contains(entity.getUuid())) {
@@ -153,7 +150,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
 
     private static boolean isBoundedEntity(Entity entity) {
         if (!(entity instanceof MobEntity token) || !((TokenizedEntityInterface) token).steveparty$isTokenized()) return false;
-        ItemStack stack = getBehaviorItemstack(entity.getWorld(), entity.getBlockPos());
+        ItemStack stack = getActiveCartdridgeItemstack(entity.getWorld(), entity.getBlockPos());
         if (stack == null || stack.isEmpty()) return false;
         String bound_entity = stack.get(ModComponents.TB_START_OWNER);
         return bound_entity != null && bound_entity.equals(entity.getUuidAsString());
@@ -221,7 +218,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         if (stack == null || !(stack.getItem() instanceof DyeItem dye)) return PASS;
         final int newColor = dye.getColor().getEntityColor();
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
-        ItemStack behaviorItemstack = getBehaviorItemstack(tileEntity);
+        ItemStack behaviorItemstack = getActiveCartdridgeItemstack(tileEntity);
         LivingEntity entity = (LivingEntity) getBoundedEntity((ServerWorld) world, behaviorItemstack, pos);
         if (entity != null)
             handleDyeInteraction(player.getAbilities().creativeMode, dye, entity, stack);

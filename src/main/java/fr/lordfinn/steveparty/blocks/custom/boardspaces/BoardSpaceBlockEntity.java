@@ -27,13 +27,11 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -52,43 +50,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private int ticks = 0;
     private SoundEvent walkedOnSound = null;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
+    private ItemStack currentlyActiveCartridge = null;
 
 
     public BoardSpaceBlockEntity(BlockPos pos, BlockState state) {
         super(state.getBlock() instanceof Tile ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.CHECK_POINT_ENTITY, pos, state, 16);
     }
-
-/*    private final SimpleInventory inventory = new SimpleInventory(16) {
-        @Override
-        public void markDirty() {
-            super.markDirty();
-            update();
-        }
-
-        @Override
-        public void setStack(int slot, ItemStack stack) {
-            if (!stack.isEmpty() && stack.getItem() instanceof CartridgeItem) {
-                getItems().set(slot, stack);
-                if (stack.getCount() > stack.getMaxCount()) {
-                    stack.setCount(stack.getMaxCount());
-                }
-            }
-            if ( BoardSpaceEntity.this.world != null) {
-                updateTileSkin();
-            }
-        }
-
-        @Override
-        public boolean isEmpty() {
-            for (int i = 0; i < size(); i++) {
-                ItemStack stack = getStack(i);
-                if (!stack.isEmpty()) {
-                    return false;
-                }
-            }
-            return true;
-        }
-    };*/
 
     private void update() {
         markDirty();
@@ -116,18 +83,33 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return null;
     }
 
-    public void updateTileSkin() {
+    public void updateBoardSpaceType() {
         if (this.world != null) {
-            ItemStack stack = getActiveTileBehaviorItemStack();
+            ItemStack stack = getActiveCartridgeItemStack();
             BoardSpaceType tileType = determineBoardSpaceType(stack);
-
             BlockState state = this.getCachedState();
-            if (state.getBlock() instanceof BoardSpace && tileType == null) {
-                this.world.setBlockState(this.pos, state.with(TILE_TYPE, BoardSpaceType.DEFAULT));
-            } else if (state.getBlock() instanceof BoardSpace && tileType != null && !state.get(TILE_TYPE).equals(tileType)) {
-                this.world.setBlockState(this.pos, state.with(TILE_TYPE, tileType));
+            if (state.getBlock() instanceof BoardSpace) {
+                if (tileType == null)
+                    tileType = BoardSpaceType.DEFAULT;
+                if (!state.get(TILE_TYPE).equals(tileType)) {
+                    this.world.setBlockState(this.pos, state.with(TILE_TYPE, tileType));
+                }
             }
         }
+    }
+
+    private void updateBoardSpaceColor() {
+        ItemStack stack = currentlyActiveCartridge;
+        if (stack == null || stack.isEmpty()) {
+            ABoardSpaceBehavior.setColor(this, 0);
+            return;
+        }
+        ABoardSpaceBehavior behavior = getBoardSpaceBehavior(stack);
+        if (behavior == null) {
+            ABoardSpaceBehavior.setColor(this, 0);
+            return;
+        }
+        behavior.updateBoardSpaceColor(this, stack);
     }
 
     public static Boolean toggleDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
@@ -183,7 +165,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public List<BoardSpaceDestination> getStockedDestinations(){
         List<BoardSpaceDestination> tileDestinations = new ArrayList<>();
 
-        ItemStack stack = this.getActiveTileBehaviorItemStack();
+        ItemStack stack = this.getActiveCartridgeItemStack();
         if (stack != null && stack.getItem() instanceof CartridgeItem) {
             BoardSpaceBehaviorComponent component = stack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
             List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
@@ -205,23 +187,32 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return this.world.getReceivedRedstonePower(routerPos == null ? this.pos : routerPos);
     }
 
-    public ItemStack getActiveTileBehaviorItemStack() {
+    public ItemStack getActiveCartridgeItemStack() {
         if (this.world == null) {
             return ItemStack.EMPTY;
         }
         int slot = getActiveSlot();
+        ItemStack newActiveCartridgeItemStack = this.getStack(slot);
+        if (!newActiveCartridgeItemStack.equals(this.currentlyActiveCartridge)) {
+            this.currentlyActiveCartridge = newActiveCartridgeItemStack;
+            markDirty();
+        }
         return this.getStack(slot);
     }
 
-    public void setActiveTileBehaviorItemStack(ItemStack stack) {
+    public void setActiveCartridgeItemStack(ItemStack stack) {
         if (this.world == null) return;
         int slot = getActiveSlot();
         this.setStack(slot, stack);
         this.markDirty();
     }
 
-    public ABoardSpaceBehavior getTileBehavior() {
-        ItemStack stack = getActiveTileBehaviorItemStack();
+    public ABoardSpaceBehavior getBoardSpaceBehavior() {
+        ItemStack stack = getActiveCartridgeItemStack();
+        return getBoardSpaceBehavior(stack);
+    }
+
+    public ABoardSpaceBehavior getBoardSpaceBehavior(ItemStack stack) {
         BoardSpaceType tileType = determineBoardSpaceType(stack);
         if (tileType == null)
             return null;
@@ -246,7 +237,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         super.markDirty();
         if (this.world == null) return;
         if (this.world instanceof ServerWorld serverWorld) {
-            serverWorld.getServer().submit(this::updateTileSkin);
+            updateBoardSpaceColor();
+            serverWorld.getServer().submit(this::updateBoardSpaceType);
         }
     }
 
@@ -254,7 +246,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void tick() {
         if (this.world == null || this.world.isClient) return;
         ticks++;
-        ItemStack stack = getActiveTileBehaviorItemStack();
+        ItemStack stack = getActiveCartridgeItemStack();
         BoardSpaceType tileType = determineBoardSpaceType(stack);
         if (tileType != null)
             BoardSpaceBehaviorFactory.get(tileType).tick((ServerWorld) this.world, this, stack, ticks);
@@ -296,7 +288,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
-        this.getTileBehavior().onDestinationReached(this.world, this.pos, token, this, partyController);
+        this.getBoardSpaceBehavior().onDestinationReached(this.world, this.pos, token, this, partyController);
         partyController.nextStep();
     }
 
