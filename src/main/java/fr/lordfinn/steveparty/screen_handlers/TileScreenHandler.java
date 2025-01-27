@@ -1,17 +1,26 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.payloads.BlockPosPayload;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
 
 public class TileScreenHandler extends CartridgeContainerScreenHandler {
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory , Inventory inventory) {
-        super(ModScreensHandlers.TILE_SCREEN_HANDLER, syncId, inventory);
-        init(playerInventory, 108);
+
+    //Main constructor (Called on the server and the client)
+    public TileScreenHandler(int syncId, PlayerInventory playerInventory, BoardSpaceBlockEntity blockEntity) {
+        super(ModScreensHandlers.TILE_SCREEN_HANDLER, syncId);
+        this.inventory = blockEntity;
+        init(playerInventory, 101);
     }
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new SimpleInventory(16));
+
+    //Client constructor
+    public TileScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload blockPosPayload) {
+        this(syncId, playerInventory, (BoardSpaceBlockEntity) playerInventory.player.getWorld().getBlockEntity(blockPosPayload.pos()));
     }
+
+    /*public TileScreenHandler(int i, PlayerInventory playerInventory) {
+        this(i, playerInventory, new SimpleInventory(16));
+    }*/
 
     @Override
     public void setupScreen() {
@@ -19,9 +28,14 @@ public class TileScreenHandler extends CartridgeContainerScreenHandler {
         if (this.inventory.size() == 16) {
             for (m = 0; m < 4; ++m) {
                 for (l = 0; l < 4; ++l) {
-                    this.addSlot(new CustomSlot(this.inventory, l + m * 4, 53 + l * 18, 17 + m * 18));
+                    this.addSlot(new CustomSlot(this.inventory, l + m * 4, 53 + l * 18, 12 + m * 18));
                 }
             }
         }
+    }
+
+    public int getActiveSlot() {
+        if (inventory == null) return -1;
+        return ((BoardSpaceBlockEntity)inventory).getActiveSlot(); // Access the method from the block entity
     }
 }

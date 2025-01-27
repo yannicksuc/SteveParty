@@ -1,13 +1,20 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
+import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
@@ -18,6 +25,8 @@ import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
+import static net.minecraft.util.ActionResult.PASS;
+import static net.minecraft.util.ActionResult.SUCCESS;
 
 public abstract class BoardSpace extends CartridgeContainer {
     public static final EnumProperty<BoardSpaceType> TILE_TYPE = EnumProperty.of("tile_type", BoardSpaceType.class);
@@ -93,5 +102,21 @@ public abstract class BoardSpace extends CartridgeContainer {
         if (!world.isClient) {
             BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onSteppedOn(world, pos, state, entity);
         }
+    }
+
+    @Override
+    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+        return new SimpleNamedScreenHandlerFactory((syncId, inventory, player) ->
+                new TileScreenHandler(syncId, inventory, (BoardSpaceBlockEntity) blockEntity), Text.empty());
+    }
+
+    @Override
+    protected ActionResult.@Nullable Success openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        if (world.isClient) return null;
+        BoardSpaceBlockEntity blockEntity = (BoardSpaceBlockEntity) world.getBlockEntity(pos);
+        world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+        player.openHandledScreen(blockEntity);
+        return SUCCESS;
     }
 }

@@ -10,9 +10,11 @@ import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.payloads.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
 import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -25,6 +27,7 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -45,7 +48,7 @@ import java.util.Map;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
 
-public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity {
+public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity, ExtendedScreenHandlerFactory<BlockPosPayload> {
     private int ticks = 0;
     private SoundEvent walkedOnSound = null;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
@@ -91,11 +94,6 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         markDirty();
         if(world != null)
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
-    }
-
-    @Override
-    public Text getDisplayName() {
-        return Text.translatable("block.steveparty.board_space");
     }
 
     public DefaultedList<ItemStack> getItems() {
@@ -327,5 +325,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     @Override
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
         return new TileScreenHandler(syncId, playerInventory, this);
+    }
+
+    @Override
+    public BlockPosPayload getScreenOpeningData(ServerPlayerEntity serverPlayerEntity) {
+        return new BlockPosPayload(this.pos);
     }
 }

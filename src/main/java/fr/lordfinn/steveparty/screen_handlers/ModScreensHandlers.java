@@ -1,18 +1,29 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.payloads.BlockPosPayload;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.resource.featuretoggle.FeatureSet;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 
 public class ModScreensHandlers {
-    public static final ScreenHandlerType<TileScreenHandler> TILE_SCREEN_HANDLER =
-            Registry.register(
-                    Registries.SCREEN_HANDLER,
-                    Identifier.of(Steveparty.MOD_ID, "tile_screen_handler"),
-                    new ScreenHandlerType<>(TileScreenHandler::new, FeatureSet.empty()));
+    public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T,D>
+    register(String name,
+             ExtendedScreenHandlerType.ExtendedFactory<T, D> factory,
+             PacketCodec<? super RegistryByteBuf, D> codec) {
+        return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ExtendedScreenHandlerType<>(factory, codec));
+    }
+    public static final ScreenHandlerType<TileScreenHandler> TILE_SCREEN_HANDLER = register("tile_screen_handler", TileScreenHandler::new, BlockPosPayload.PACKET_CODEC);
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
             Registry.register(
                     Registries.SCREEN_HANDLER,
