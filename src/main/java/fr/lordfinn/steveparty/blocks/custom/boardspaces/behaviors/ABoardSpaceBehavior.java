@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.payloads.UpdateColoredTilePayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
@@ -25,7 +24,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import static fr.lordfinn.steveparty.events.ModEvents.handleDyeInteraction;
 import static net.minecraft.util.ActionResult.PASS;
 import static net.minecraft.util.ActionResult.SUCCESS;
 
@@ -51,14 +49,14 @@ public abstract class ABoardSpaceBehavior {
         return BoardSpace.getBoardSpaceEntity(world, pos);
     }
 
-    protected static ItemStack getBehaviorItemstack(World world, BlockPos pos) {
+    protected static ItemStack getActiveCartdridgeItemstack(World world, BlockPos pos) {
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
-        return getBehaviorItemstack(tileEntity);
+        return getActiveCartdridgeItemstack(tileEntity);
     }
 
-    protected static ItemStack getBehaviorItemstack(BoardSpaceBlockEntity tileEntity) {
+    protected static ItemStack getActiveCartdridgeItemstack(BoardSpaceBlockEntity tileEntity) {
         if (tileEntity == null) return null;
-        return tileEntity.getActiveTileBehaviorItemStack();
+        return tileEntity.getActiveCartridgeItemStack();
     }
 
     public void onPieceStep(World world, BlockPos pos, BlockState state, MobEntity entity) {}
@@ -98,14 +96,17 @@ public abstract class ABoardSpaceBehavior {
     }
 
     public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {
-        ItemStack behaviorItemstack = getBehaviorItemstack(tileEntity);
+        ItemStack behaviorItemstack = getActiveCartdridgeItemstack(tileEntity);
         if (behaviorItemstack == null) return;
-        behaviorItemstack.set(ModComponents.TB_START_COLOR, color);
-        tileEntity.markDirty();
+        behaviorItemstack.set(ModComponents.COLOR, color);
+        //tileEntity.markDirty();
         World world = tileEntity.getWorld();
-        if (world == null) return;
+        if (world == null || world.isClient) return;
         for (PlayerEntity player : world.getPlayers()) {
             ServerPlayNetworking.send((ServerPlayerEntity) player, new UpdateColoredTilePayload(tileEntity.getPos(), color));
         }
+    }
+
+    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
     }
 }

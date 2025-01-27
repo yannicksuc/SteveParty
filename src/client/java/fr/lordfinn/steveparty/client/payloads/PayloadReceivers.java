@@ -49,8 +49,8 @@ public class PayloadReceivers {
             World world = context.player().getWorld();
             BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
             if (tileEntity == null) return;
-            ItemStack behaviorItemstack = tileEntity.getActiveTileBehaviorItemStack();
-            behaviorItemstack.set(ModComponents.TB_START_COLOR, payload.color());
+            ItemStack behaviorItemstack = tileEntity.getActiveCartridgeItemStack();
+            behaviorItemstack.set(ModComponents.COLOR, payload.color());
             MinecraftClient.getInstance().worldRenderer.updateBlock(world, pos, world.getBlockState(pos), world.getBlockState(pos), 3);
         }));
 

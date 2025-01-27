@@ -170,7 +170,7 @@ public class PartyControllerEntity extends BlockEntity {
         for (BlockPos tilePos : startTiles) {
             BlockEntity tileEntity = serverWorld.getBlockEntity(tilePos);
             if (tileEntity instanceof BoardSpaceBlockEntity tile) {
-                String potentialUuid = tile.getActiveTileBehaviorItemStack().get(TB_START_BOUND_ENTITY);
+                String potentialUuid = tile.getActiveCartridgeItemStack().get(TB_START_BOUND_ENTITY);
                 if (potentialUuid == null) continue;
                 partyData.addToken(UUID.fromString(potentialUuid));
             }

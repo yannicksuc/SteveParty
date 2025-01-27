@@ -5,21 +5,28 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
 import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+import java.awt.*;
 import java.util.List;
 import java.util.Random;
 
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
 public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
+
+    public final static int NEUTRAL_COLOR = 0x951CAE;
+    public final static int GOOD_COLOR = 0x0083DF;
+    public final static int BAD_COLOR = 0xC41C24;
 
     public InventoryInteractorTileBehavior() {
         super(BoardSpaceType.TILE_INVENTORY_INTERACTOR);
@@ -28,7 +35,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
     @Override
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
         if (Tile.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
-                tileEntity.getActiveTileBehaviorItemStack() instanceof ItemStack itemStack &&
+                tileEntity.getActiveCartridgeItemStack() instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_CARTRIDGE_COMPONENT, null) instanceof CartridgeInventoryComponent cartridgeInventory &&
                 itemStack.get(INVENTORY_POS) instanceof BlockPos connectedInventoryPos  && world.getBlockEntity(connectedInventoryPos) instanceof Inventory connectedInventory) {
 
@@ -143,4 +150,18 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
                 ItemStack.areItemsEqual(stack1, stack2);
     }
 
+    @Override
+    public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
+        int color = NEUTRAL_COLOR;
+        CartridgeInventoryComponent inventory = stack.get(INVENTORY_CARTRIDGE_COMPONENT);
+        if (inventory != null) {
+            ItemStack item = inventory.getStack(0);
+            if (item != null && !item.isEmpty()) {
+                boolean isNegative = item.getOrDefault(IS_NEGATIVE, false);
+                item.set(ModComponents.COLOR, isNegative ? Color.RED.getRGB() : Color.BLUE.getRGB());
+                color = isNegative ? BAD_COLOR : GOOD_COLOR;
+            }
+        }
+        setColor(boardSpaceBlockEntity, color);
+    }
 }
