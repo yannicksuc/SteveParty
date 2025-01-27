@@ -30,6 +30,7 @@
   "item.steveparty.mini_games_catalogue": "Mini Games Catalogue",
   "item.steveparty.token": "Token",
   "item.steveparty.inventory_cartridge": "Inventory Cartridge",
+  "item.steveparty.mini_game_page": "Mini-Game Page",
   "itemgroup.steveparty": "Steve Party",
   "message.steveparty.removed_position": "Removed position: (%d, %d, %d)",
   "message.steveparty.added_position": "Added position: (%d, %d, %d)",
