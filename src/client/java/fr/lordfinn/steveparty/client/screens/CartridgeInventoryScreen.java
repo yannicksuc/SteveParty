@@ -151,7 +151,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
     @Override
     protected void init() {
         super.init();
-        this.playerInventoryTitleY = this.backgroundHeight - 94;
+        this.playerInventoryTitleY = this.backgroundHeight - 93;
     }
 
     @Override

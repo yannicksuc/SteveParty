@@ -57,13 +57,19 @@ public abstract class CartridgeContainer extends HorizontalFacingBlock implement
         if (!(mainHandStack.getItem() instanceof CartridgeContainerOpener) && !(offHandStack.getItem() instanceof CartridgeContainerOpener)) {
             return onUseWithoutCartridgeContainerOpener(stack, state, world, pos, player, hand, hit);
         }
+        ActionResult.Success success = openScreen(state, world, pos, player);
+        if (success != null) return success;
+        return PASS;
+    }
+
+    protected ActionResult.@Nullable Success openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
         if (screenHandlerFactory != null) {
             world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
             player.openHandledScreen(screenHandlerFactory);
             return SUCCESS;
         }
-        return PASS;
+        return null;
     }
 
     protected abstract ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit);

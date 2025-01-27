@@ -26,7 +26,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
 
     @Override
     public Text getDisplayName() {
-        return Text.translatable("block.steveparty.board_space_redstone_router");
+        return Text.empty(); //"block.steveparty.board_space_redstone_router"
     }
 
     @Override

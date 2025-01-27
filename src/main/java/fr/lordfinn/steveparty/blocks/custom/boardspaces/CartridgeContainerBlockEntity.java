@@ -239,6 +239,6 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
 
     @Override
     public Text getDisplayName() {
-        return Text.translatable("block.steveparty.cartridge_container");
+        return Text.empty();
     }
 }

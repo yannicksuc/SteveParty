@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,4 +65,7 @@ public class Steveparty implements ModInitializer {
         SERVER = null;
     }
 
+    public static Identifier id(String path) {
+        return Identifier.of(MOD_ID, path);
+    }
 }

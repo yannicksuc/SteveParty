@@ -12,7 +12,11 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 
 public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
-    protected final Inventory inventory;
+    protected Inventory inventory = null;
+
+    public CartridgeContainerScreenHandler(ScreenHandlerType<TileScreenHandler> tileScreenHandler, int syncId) {
+        super(tileScreenHandler, syncId);
+    }
 
     protected void setupScreen() {
     }
