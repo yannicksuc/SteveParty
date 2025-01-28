@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -27,10 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity.getDestinationsStatus;
-import static fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
+import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
 
-public abstract class AbstractBoardSpaceSelectorItem extends Item {
-    public AbstractBoardSpaceSelectorItem(Settings settings) {
+public abstract class AbstractDestinationsSelectorItem extends Item {
+    public AbstractDestinationsSelectorItem(Settings settings) {
         super(settings);
     }
 
@@ -48,19 +48,19 @@ public abstract class AbstractBoardSpaceSelectorItem extends Item {
         ItemStack stack = context.getStack();
         ServerWorld serverWorld = (ServerWorld) world;
 
-        BoardSpaceBehaviorComponent component = getBoardSpaceBehaviorComponent(stack);
+        DestinationsComponent component = getBoardSpaceBehaviorComponent(stack);
 
         if (isInvalidWorld(component, serverWorld, player)) return ActionResult.PASS;
 
         return addOrRemoveDestination(component, clickedPos, player, stack, serverWorld) == null ? ActionResult.PASS : ActionResult.SUCCESS;
     }
 
-    public BoardSpaceBehaviorComponent addOrRemoveDestination(BoardSpaceBehaviorComponent component, BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
+    public DestinationsComponent addOrRemoveDestination(DestinationsComponent component, BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
         List<BlockPos> destinations = new ArrayList<>(component.destinations());
         updateDestinations(destinations, clickedPos, player);
 
-        BoardSpaceBehaviorComponent updatedComponent = new BoardSpaceBehaviorComponent(destinations, getWorldName(serverWorld));
-        stack.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, updatedComponent);
+        DestinationsComponent updatedComponent = new DestinationsComponent(destinations, getWorldName(serverWorld));
+        stack.set(ModComponents.DESTINATIONS_COMPONENT, updatedComponent);
 
         return updatedComponent;
     }
@@ -73,11 +73,11 @@ public abstract class AbstractBoardSpaceSelectorItem extends Item {
         return serverWorld.getRegistryKey().getValue().toString();
     }
 
-    private BoardSpaceBehaviorComponent getBoardSpaceBehaviorComponent(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
+    private DestinationsComponent getBoardSpaceBehaviorComponent(ItemStack stack) {
+        return stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
     }
 
-    private boolean isInvalidWorld(BoardSpaceBehaviorComponent component, ServerWorld serverWorld, PlayerEntity player) {
+    private boolean isInvalidWorld(DestinationsComponent component, ServerWorld serverWorld, PlayerEntity player) {
         if (!component.world().isEmpty() && !getWorldName(serverWorld).equals(component.world())) {
             player.sendMessage(Text.translatable("message.steveparty.invalid_world"), true);
             return true;
@@ -114,7 +114,7 @@ public abstract class AbstractBoardSpaceSelectorItem extends Item {
     @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        BoardSpaceBehaviorComponent component = getBoardSpaceBehaviorComponent(stack);
+        DestinationsComponent component = getBoardSpaceBehaviorComponent(stack);
         Entity holder = stack.getHolder();
         List<BoardSpaceDestination> tileDestinations = getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
 
@@ -126,7 +126,7 @@ public abstract class AbstractBoardSpaceSelectorItem extends Item {
         }
     }
 
-    private void addTooltipHeading(List<Text> tooltip, BoardSpaceBehaviorComponent component) {
+    private void addTooltipHeading(List<Text> tooltip, DestinationsComponent component) {
         tooltip.add(Text.literal("Bound to: ").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true))
                 .append(Text.literal(component.world()).setStyle(Style.EMPTY.withColor(Formatting.WHITE).withBold(false))));
         tooltip.add(Text.literal("Destinations:")

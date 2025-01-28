@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
-import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.screen_handlers.RouterScreenHandler;
 import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
@@ -37,7 +37,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
         persistentState.clear(this.pos, serverWorld);
         ItemStack stack = this.getStack(0);
         if (stack.isEmpty()) return;
-        BoardSpaceBehaviorComponent component = stack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, null);
+        DestinationsComponent component = stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, null);
         if (component == null) return;
         List<BlockPos> destinations = component.destinations();
         persistentState.putAll(destinations, this.pos, serverWorld);
