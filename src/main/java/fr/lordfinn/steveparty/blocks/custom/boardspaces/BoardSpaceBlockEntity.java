@@ -101,12 +101,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private void updateBoardSpaceColor() {
         ItemStack stack = currentlyActiveCartridge;
         if (stack == null || stack.isEmpty()) {
-            ABoardSpaceBehavior.setColor(this, 0);
+            ABoardSpaceBehavior.setColor(this, 0xFFFFFF);
             return;
         }
         ABoardSpaceBehavior behavior = getBoardSpaceBehavior(stack);
         if (behavior == null) {
-            ABoardSpaceBehavior.setColor(this, 0);
+            ABoardSpaceBehavior.setColor(this, 0xFFFFFF);
             return;
         }
         behavior.updateBoardSpaceColor(this, stack);
