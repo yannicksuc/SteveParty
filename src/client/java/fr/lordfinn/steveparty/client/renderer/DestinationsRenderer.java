@@ -1,8 +1,8 @@
 package fr.lordfinn.steveparty.client.renderer;
 
-import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.items.custom.AbstractBoardSpaceSelectorItem;
+import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -15,7 +15,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
 
-import static fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
+import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
 
 public class DestinationsRenderer {
 
@@ -56,8 +56,8 @@ public class DestinationsRenderer {
 
     private static void handleHeldStackChange(ItemStack heldStack, Hand hand) {
         setLastHeldItemStack(heldStack, hand);
-        if (hand == Hand.MAIN_HAND && heldStack.getItem() instanceof AbstractBoardSpaceSelectorItem) {
-            BoardSpaceBehaviorComponent component = heldStack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
+        if (hand == Hand.MAIN_HAND && heldStack.getItem() instanceof AbstractDestinationsSelectorItem) {
+            DestinationsComponent component = heldStack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
             List<BlockPos> destinations = component.destinations();
 
             if (!destinations.isEmpty()) {

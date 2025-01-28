@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -167,7 +167,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
         ItemStack stack = this.getActiveCartridgeItemStack();
         if (stack != null && stack.getItem() instanceof CartridgeItem) {
-            BoardSpaceBehaviorComponent component = stack.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
+            DestinationsComponent component = stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
             List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
             tileDestinations = getDestinationsStatus(destinations, this.getWorld());
         }
