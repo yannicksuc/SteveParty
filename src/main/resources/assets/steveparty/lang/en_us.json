@@ -75,6 +75,7 @@
   "status.waiting": "Waiting",
   "status.in_progress": "In Progress",
   "status.finished": "Finished",
+  "screen.steveparty.mini_game_page" : "Mini Game Page",
   "key.steveparty.toggle_hud_movable_mode": "Toggle Party Hud Movable Mode",
   "category.steveparty": "Steve Party"
 }

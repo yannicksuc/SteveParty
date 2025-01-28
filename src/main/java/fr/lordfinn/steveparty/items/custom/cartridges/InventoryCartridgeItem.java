@@ -17,6 +17,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import static fr.lordfinn.steveparty.components.ModComponents.*;
+import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 
 public class InventoryCartridgeItem extends CartridgeItem {
 
@@ -102,12 +103,6 @@ public class InventoryCartridgeItem extends CartridgeItem {
     private boolean isHoldingInventoryCartridge(PlayerEntity player) {
         ItemStack mainHandStack = player.getMainHandStack();
         return !mainHandStack.isEmpty() && mainHandStack.getItem() instanceof InventoryCartridgeItem;
-    }
-
-    private boolean isTargetingBlock(PlayerEntity player) {
-        double reachDistance = player.isCreative() ? 5.0 : 4.5; // Creative players have a slightly longer reach
-        HitResult hitResult = player.raycast(reachDistance, 0.0F, false);
-        return hitResult.getType() == HitResult.Type.BLOCK;
     }
 
     private void openInventoryScreen(PlayerEntity player) {
