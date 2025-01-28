@@ -17,27 +17,34 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 public class ModScreensHandlers {
-    public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T,D>
-    register(String name,
-             ExtendedScreenHandlerType.ExtendedFactory<T, D> factory,
-             PacketCodec<? super RegistryByteBuf, D> codec) {
+    // Register method for screen handlers with a codec
+    public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T, D>
+    register(String name, ExtendedScreenHandlerType.ExtendedFactory<T, D> factory, PacketCodec<? super RegistryByteBuf, D> codec) {
         return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ExtendedScreenHandlerType<>(factory, codec));
     }
-    public static final ScreenHandlerType<TileScreenHandler> TILE_SCREEN_HANDLER = register("tile_screen_handler", TileScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+
+    // Overloaded register method for screen handlers with a FeatureSet
+    public static <T extends ScreenHandler> ScreenHandlerType<T>
+    register(String name, ScreenHandlerType.Factory<T> factory, FeatureSet featureSet) {
+        return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ScreenHandlerType<>(factory, featureSet));
+    }
+
+    // Screen handler registrations
+    public static final ScreenHandlerType<TileScreenHandler> TILE_SCREEN_HANDLER =
+            register("tile_screen_handler", TileScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
-            Registry.register(
-                    Registries.SCREEN_HANDLER,
-                    Identifier.of(Steveparty.MOD_ID, "router_screen_handler"),
-                    new ScreenHandlerType<>(RouterScreenHandler::new, FeatureSet.empty()));
+            register("router_screen_handler", RouterScreenHandler::new, FeatureSet.empty());
+
     public static final ScreenHandlerType<CustomizableMerchantScreenHandler> HIDING_TRADER_SCREEN_HANDLER =
-            Registry.register(
-                    Registries.SCREEN_HANDLER,
-                    Identifier.of(Steveparty.MOD_ID, "hiding_trader_screen_handler"),
-                    new ScreenHandlerType<>(CustomizableMerchantScreenHandler::new, FeatureSet.empty()));
-    public static final ScreenHandlerType<CartridgeInventoryScreenHandler> CARTRIDGE_SCREEN_HANDLER = Registry.register(
-            Registries.SCREEN_HANDLER,
-            Identifier.of(Steveparty.MOD_ID, "cartridge_screen_handler"),
-            new ScreenHandlerType<>(CartridgeInventoryScreenHandler::new, FeatureSet.empty()));
+            register("hiding_trader_screen_handler", CustomizableMerchantScreenHandler::new, FeatureSet.empty());
+
+    public static final ScreenHandlerType<CartridgeInventoryScreenHandler> CARTRIDGE_SCREEN_HANDLER =
+            register("cartridge_screen_handler", CartridgeInventoryScreenHandler::new, FeatureSet.empty());
+
+    public static final ScreenHandlerType<MiniGameScreenHandler> MINI_GAME_SCREEN_HANDLER =
+            register("mini_game_screen_handler", MiniGameScreenHandler::new, FeatureSet.empty());
+
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
