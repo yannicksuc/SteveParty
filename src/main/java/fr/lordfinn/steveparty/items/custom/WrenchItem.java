@@ -50,7 +50,7 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements Cartri
         if (boardSpaceStoredBehavior == null) return null;
         //Get BOARD_SPACE_BEHAVIOR_COMPONENT and add origin
         BoardSpaceBehaviorComponent updatedComponent = boardSpaceStoredBehavior.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
-        updatedComponent = new BoardSpaceBehaviorComponent(updatedComponent.destinations(), clickedPos, updatedComponent.tileType(), updatedComponent.world());
+        updatedComponent = new BoardSpaceBehaviorComponent(updatedComponent.destinations(), clickedPos, updatedComponent.world());
         //Save the new component to wrench and behavior Stack
         stack.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, updatedComponent);
         stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);

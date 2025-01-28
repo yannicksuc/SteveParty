@@ -99,7 +99,6 @@ public abstract class ABoardSpaceBehavior {
         ItemStack behaviorItemstack = getActiveCartdridgeItemstack(tileEntity);
         if (behaviorItemstack == null) return;
         behaviorItemstack.set(ModComponents.COLOR, color);
-        //tileEntity.markDirty();
         World world = tileEntity.getWorld();
         if (world == null || world.isClient) return;
         for (PlayerEntity player : world.getPlayers()) {
