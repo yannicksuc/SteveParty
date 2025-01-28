@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.BoardSpaceBehaviorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -26,40 +27,58 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements Cartri
 
     @Override
     public BoardSpaceBehaviorComponent addOrRemoveDestination(BoardSpaceBehaviorComponent component, BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
-        if (!component.isOriginSet()) { //Clicked on a new tile not yet bounded
+        BlockOriginComponent originComponent = stack.getOrDefault(ModComponents.BLOCK_ORIGIN_COMPONENT, BlockOriginComponent.DEFAULT_ORIGIN_COMPONENT);
+        if (originComponent.origin().equals(BlockOriginComponent.DEFAULT_ORIGIN)) { //Clicked on a new tile not yet bounded
             return tryToBindTileAtPosFromWrench(clickedPos, player, stack, serverWorld);
-        } else if (component.origin().equals(clickedPos)) { //User clicked on the same tile already saved unbind it
+        } else if (originComponent.origin().equals(clickedPos)) { //User clicked on the same tile already saved unbind it
             unbindTileAtPosFromWrench(clickedPos, (ServerPlayerEntity) player, stack, serverWorld);
             return null;
         }
         //Player want to add or remove a destination to the tile
         BoardSpaceBehaviorComponent newComponent = super.addOrRemoveDestination(component, clickedPos, player, stack, serverWorld);
-        if (!updateStackAtPos(newComponent, component.origin(), serverWorld)) { //Try to update the tileBehavior at the registered Pos If no destination remove the bind from the wrench
-            removeBinding(component.origin(), stack, serverWorld);
+        if (!updateStackAtPos(newComponent, originComponent.origin(), serverWorld)) { //Try to update the tileBehavior at the registered Pos If no destination remove the bind from the wrench
+            removeBinding(originComponent.origin(), stack, serverWorld);
             MessageUtils.sendToPlayer((ServerPlayerEntity) player, "The board space has changed and no longer matches the stored configuration in the wrench. It has been automatically unbound.", MessageUtils.MessageType.CHAT);
             return null;
         }
-        displayLinks(serverWorld, newComponent);
+        displayLinks(serverWorld, originComponent);
         return newComponent;
     }
 
     private @Nullable BoardSpaceBehaviorComponent tryToBindTileAtPosFromWrench(BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
         BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
         if (boardSpaceEntity == null) return null;
+
         ItemStack boardSpaceStoredBehavior = getOrCreateFromPlayerTileBehaviorStack(boardSpaceEntity, player);
         if (boardSpaceStoredBehavior == null) return null;
-        //Get BOARD_SPACE_BEHAVIOR_COMPONENT and add origin
-        BoardSpaceBehaviorComponent updatedComponent = boardSpaceStoredBehavior.getOrDefault(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
-        updatedComponent = new BoardSpaceBehaviorComponent(updatedComponent.destinations(), clickedPos, updatedComponent.world());
-        //Save the new component to wrench and behavior Stack
+
+        // Composant comportement
+        BoardSpaceBehaviorComponent updatedComponent = boardSpaceStoredBehavior.getOrDefault(
+                ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT,
+                BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR
+        );
+        updatedComponent = new BoardSpaceBehaviorComponent(updatedComponent.destinations(), updatedComponent.world());
+
+        // Composant origine
+        BlockOriginComponent originComponent = new BlockOriginComponent(clickedPos, getWorldName(serverWorld));
+
+        // Mise à jour des composants
         stack.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, updatedComponent);
-        stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        stack.set(ModComponents.BLOCK_ORIGIN_COMPONENT, originComponent);
+
         boardSpaceStoredBehavior.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, updatedComponent);
-        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal("The wrench is now bound to a new board space behavior stored at position X: "+ clickedPos.getX()+", Y: "+ clickedPos.getY()+", Z: "+ clickedPos.getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
-        displayLinks(serverWorld, updatedComponent);
+
+        // Message utilisateur
+        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal(
+                "The wrench is now bound to a new board space at position X: " + clickedPos.getX() +
+                        ", Y: " + clickedPos.getY() + ", Z: " + clickedPos.getZ() + "."
+        ), MessageUtils.MessageType.ACTION_BAR);
+
+        displayLinks(serverWorld, originComponent);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
         return updatedComponent;
     }
+
 
     private static void unbindTileAtPosFromWrench(BlockPos clickedPos, ServerPlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
         removeBinding(clickedPos, stack, serverWorld);
@@ -68,14 +87,15 @@ public class WrenchItem extends AbstractBoardSpaceSelectorItem implements Cartri
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
     }
 
-    private static void displayLinks(ServerWorld serverWorld, BoardSpaceBehaviorComponent updatedComponent) {
-        BoardSpaceBlockEntity.hideDestinations(serverWorld, updatedComponent.origin());
-        BoardSpaceBlockEntity.searchAndDisplayDestinations(serverWorld, updatedComponent.origin(), null);
+    private static void displayLinks(ServerWorld serverWorld, BlockOriginComponent originComponent) {
+        BoardSpaceBlockEntity.hideDestinations(serverWorld, originComponent.origin());
+        BoardSpaceBlockEntity.searchAndDisplayDestinations(serverWorld, originComponent.origin(), null);
     }
 
     private static void removeBinding(BlockPos pos, ItemStack stack, ServerWorld serverWorld) {
         BoardSpaceBlockEntity.hideDestinations(serverWorld, pos);
         stack.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, BoardSpaceBehaviorComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
+        stack.set(ModComponents.BLOCK_ORIGIN_COMPONENT, BlockOriginComponent.DEFAULT_ORIGIN_COMPONENT);
     }
 
     private boolean updateStackAtPos(BoardSpaceBehaviorComponent component, BlockPos clickedPos, ServerWorld serverWorld) {

@@ -59,7 +59,7 @@ public abstract class AbstractBoardSpaceSelectorItem extends Item {
         List<BlockPos> destinations = new ArrayList<>(component.destinations());
         updateDestinations(destinations, clickedPos, player);
 
-        BoardSpaceBehaviorComponent updatedComponent = new BoardSpaceBehaviorComponent(destinations, component.origin(), getWorldName(serverWorld));
+        BoardSpaceBehaviorComponent updatedComponent = new BoardSpaceBehaviorComponent(destinations, getWorldName(serverWorld));
         stack.set(ModComponents.BOARD_SPACE_BEHAVIOR_COMPONENT, updatedComponent);
 
         return updatedComponent;
