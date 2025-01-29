@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
-import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
+import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.screen_handlers.CartridgeInventoryScreenHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.player.PlayerEntity;
@@ -12,7 +12,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -23,24 +22,6 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     public InventoryCartridgeItem(Settings settings) {
         super(settings);
-    }
-
-    private CartridgeInventoryComponent getInventory(ItemStack stack) {
-        // Check if the item already has the inventory component saved in NBT
-        if (stack.contains(INVENTORY_CARTRIDGE_COMPONENT) && stack.get(INVENTORY_CARTRIDGE_COMPONENT) instanceof CartridgeInventoryComponent inventory) {
-            inventory.setHolder(stack);
-            return inventory;
-        } else {
-            CartridgeInventoryComponent inventory = new CartridgeInventoryComponent(9, stack);
-            stack.set(INVENTORY_CARTRIDGE_COMPONENT, inventory);
-            return inventory;
-        }
-    }
-
-    public static void saveInventory(CartridgeInventoryComponent inventory) {
-        ItemStack stack = inventory.getHolder();
-        if (stack == null || stack.isEmpty()) return;
-        stack.set(INVENTORY_CARTRIDGE_COMPONENT, inventory);
     }
 
     @Override
@@ -100,18 +81,19 @@ public class InventoryCartridgeItem extends CartridgeItem {
         return ActionResult.SUCCESS;
     }
 
-    private boolean isHoldingInventoryCartridge(PlayerEntity player) {
-        ItemStack mainHandStack = player.getMainHandStack();
-        return !mainHandStack.isEmpty() && mainHandStack.getItem() instanceof InventoryCartridgeItem;
-    }
 
-    private void openInventoryScreen(PlayerEntity player) {
+    public static void openInventoryScreen(PlayerEntity player) {
         ItemStack stackMainHand = player.getMainHandStack();
-        CartridgeInventoryComponent inventory = getInventory(stackMainHand);
+        InventoryComponent inventory = InventoryComponent.getInventoryFromStack(stackMainHand, 9);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                 (syncId, inventory1, playerEntity) -> new CartridgeInventoryScreenHandler(syncId, inventory1, inventory),
                 Text.empty()
         ));
+    }
+
+    private boolean isHoldingInventoryCartridge(PlayerEntity player) {
+        ItemStack mainHandStack = player.getMainHandStack();
+        return !mainHandStack.isEmpty() && mainHandStack.getItem() instanceof InventoryCartridgeItem;
     }
 }

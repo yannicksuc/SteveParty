@@ -77,5 +77,6 @@
   "status.finished": "Finished",
   "screen.steveparty.mini_game_page" : "Mini Game Page",
   "key.steveparty.toggle_hud_movable_mode": "Toggle Party Hud Movable Mode",
-  "category.steveparty": "Steve Party"
+  "category.steveparty": "Steve Party",
+  "title.steveparty.mini_game_catalogue": "Mini-Games Catalogue"
 }

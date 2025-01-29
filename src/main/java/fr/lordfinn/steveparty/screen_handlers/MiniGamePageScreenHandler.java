@@ -5,9 +5,9 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 
-public class MiniGameScreenHandler extends ScreenHandler {
-    public MiniGameScreenHandler(int syncId, PlayerInventory playerInventory) {
-        super(ModScreensHandlers.MINI_GAME_SCREEN_HANDLER, syncId);
+public class MiniGamePageScreenHandler extends ScreenHandler {
+    public MiniGamePageScreenHandler(int syncId, PlayerInventory playerInventory) {
+        super(ModScreensHandlers.MINI_GAME_PAGE_SCREEN_HANDLER, syncId);
     }
 
     @Override

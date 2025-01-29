@@ -11,8 +11,8 @@ import net.minecraft.world.World;
 
 import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 
-public class MiniGamePage extends AbstractDestinationsSelectorItem {
-    public MiniGamePage(Settings settings) {
+public class MiniGamePageItem extends AbstractDestinationsSelectorItem {
+    public MiniGamePageItem(Settings settings) {
         super(settings);
     }
 
@@ -30,7 +30,7 @@ public class MiniGamePage extends AbstractDestinationsSelectorItem {
         // Open the mini-game screen
         if (player instanceof ServerPlayerEntity serverPlayer) {
             serverPlayer.openHandledScreen(new SimpleNamedScreenHandlerFactory(
-                    (syncId, inventory, playerEntity) -> ModScreensHandlers.MINI_GAME_SCREEN_HANDLER.create(syncId, inventory),
+                    (syncId, inventory, playerEntity) -> ModScreensHandlers.MINI_GAME_PAGE_SCREEN_HANDLER.create(syncId, inventory),
                     Text.empty())
             );
         }
