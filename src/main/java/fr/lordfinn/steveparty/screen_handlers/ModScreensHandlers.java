@@ -1,9 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.payloads.BlockPosPayload;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -13,8 +11,6 @@ import net.minecraft.registry.Registry;
 import net.minecraft.resource.featuretoggle.FeatureSet;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 
 public class ModScreensHandlers {
     // Register method for screen handlers with a codec
@@ -42,8 +38,11 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<CartridgeInventoryScreenHandler> CARTRIDGE_SCREEN_HANDLER =
             register("cartridge_screen_handler", CartridgeInventoryScreenHandler::new, FeatureSet.empty());
 
-    public static final ScreenHandlerType<MiniGameScreenHandler> MINI_GAME_SCREEN_HANDLER =
-            register("mini_game_screen_handler", MiniGameScreenHandler::new, FeatureSet.empty());
+    public static final ScreenHandlerType<MiniGamePageScreenHandler> MINI_GAME_PAGE_SCREEN_HANDLER =
+            register("mini_game_page_screen_handler", MiniGamePageScreenHandler::new, FeatureSet.empty());
+
+    public static final ScreenHandlerType<MiniGamesCatalogueScreenHandler> MINI_GAMES_CATALOGUE_SCREEN_HANDLER =
+            register("mini_games_catalogue_screen_handler", MiniGamesCatalogueScreenHandler::new, FeatureSet.empty());
 
 
     @SuppressWarnings("EmptyMethod")

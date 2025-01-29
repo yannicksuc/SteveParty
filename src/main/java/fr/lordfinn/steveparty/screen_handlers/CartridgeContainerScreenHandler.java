@@ -11,6 +11,8 @@ import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 
+import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_COMPONENT;
+
 public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
     protected Inventory inventory = null;
 
@@ -78,6 +80,7 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
         Slot slot = this.slots.get(invSlot);
         if (slot.hasStack()) {
             ItemStack originalStack = slot.getStack();
+            originalStack.getOrDefault(INVENTORY_COMPONENT,ItemStack.EMPTY);
             newStack = originalStack.copy();
             if (invSlot < this.inventory.size()) {
                 if (!this.insertItem(originalStack, this.inventory.size(), this.slots.size(), true)) {

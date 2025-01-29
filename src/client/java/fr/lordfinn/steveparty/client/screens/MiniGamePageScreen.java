@@ -5,12 +5,12 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
-import fr.lordfinn.steveparty.screen_handlers.MiniGameScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.MiniGamePageScreenHandler;
 import net.minecraft.util.Identifier;
 
-public class MiniGameScreen extends HandledScreen<MiniGameScreenHandler> {
+public class MiniGamePageScreen extends HandledScreen<MiniGamePageScreenHandler> {
     private static final Identifier TEXTURE = Identifier.of("steveparty", "textures/gui/mini-game-page.png");
-    public MiniGameScreen(MiniGameScreenHandler handler, PlayerInventory inventory, Text title) {
+    public MiniGamePageScreen(MiniGamePageScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         backgroundWidth = 180;
     }

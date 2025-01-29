@@ -47,8 +47,8 @@ public class ModComponents {
             registerComponent("catalogue", ItemStack.CODEC);
     public static final ComponentType<Boolean> IS_NEGATIVE =
             registerComponent("is-negative", Codec.BOOL);
-    public static final ComponentType<CartridgeInventoryComponent> INVENTORY_CARTRIDGE_COMPONENT =
-            registerComponent("inventory-cartridge", CartridgeInventoryComponent.CODEC);
+    public static final ComponentType<InventoryComponent> INVENTORY_COMPONENT =
+            registerComponent("inventory-cartridge", InventoryComponent.CODEC);
     public static final ComponentType<BlockPos> INVENTORY_POS =
             registerComponent("inventory-pos", BlockPos.CODEC);
     public static final ComponentType<Integer> SELECTION_STATE =

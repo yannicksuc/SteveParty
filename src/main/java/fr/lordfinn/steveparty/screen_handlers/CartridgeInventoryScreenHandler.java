@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
-import fr.lordfinn.steveparty.components.CartridgeInventoryComponent;
+import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -15,17 +15,16 @@ import java.util.Optional;
 import static fr.lordfinn.steveparty.components.ModComponents.IS_NEGATIVE;
 
 public class CartridgeInventoryScreenHandler extends ScreenHandler {
-    private final CartridgeInventoryComponent inventory;
+    private final InventoryComponent inventory;
 
     // Constructor for the screen handler
     public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new CartridgeInventoryComponent(9));
+        this(syncId, playerInventory, new InventoryComponent(9));
     }
 
-    public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory, CartridgeInventoryComponent inventory) {
+    public CartridgeInventoryScreenHandler(int syncId, PlayerInventory playerInventory, InventoryComponent inventory) {
         super(ModScreensHandlers.CARTRIDGE_SCREEN_HANDLER, syncId);
         this.inventory = inventory;
-        inventory.onOpen(playerInventory.player);
 
         // Adding slots to the inventory with item type validation
         int m, l;
@@ -49,10 +48,6 @@ public class CartridgeInventoryScreenHandler extends ScreenHandler {
     @Override
     public boolean canUse(PlayerEntity player) {
         return this.inventory.canPlayerUse(player);
-    }
-
-    public CartridgeInventoryComponent getPersistentInventory() {
-        return this.inventory;
     }
 
     // Custom slot class that only allows certain items
