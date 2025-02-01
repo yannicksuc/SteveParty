@@ -1,19 +1,26 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.AbstractTeleportationBookItem;
+import fr.lordfinn.steveparty.payloads.HereWeGoBookPayload;
 import fr.lordfinn.steveparty.screen_handlers.TeleportationBookScreenHandler;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static fr.lordfinn.steveparty.components.ModComponents.STATE;
 
 public class TeleportationBookScreen extends HandledScreen<TeleportationBookScreenHandler> {
     private static final Identifier TEXTURE = Identifier.of(Steveparty.MOD_ID, "textures/gui/teleportation_book_gui.png");
@@ -35,6 +42,7 @@ public class TeleportationBookScreen extends HandledScreen<TeleportationBookScre
         this.backgroundHeight = 180;
         this.backgroundWidth = 146;
         this.titleY = 12;
+        this.selectedOption = inventory.player.getMainHandStack().getOrDefault(STATE, 0);
     }
 
     @Override
@@ -103,6 +111,12 @@ public class TeleportationBookScreen extends HandledScreen<TeleportationBookScre
             if (clickedOption != -1) {
                 selectedOption = clickedOption;
                 MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0F, 0.5F));
+                if (this.client != null && this.client.player instanceof ClientPlayerEntity player
+                        && this.client.player.getMainHandStack() instanceof ItemStack bookStack
+                        && bookStack.getItem() instanceof AbstractTeleportationBookItem) {
+                    bookStack.set(STATE, selectedOption);
+                    ClientPlayNetworking.send(new HereWeGoBookPayload(selectedOption));
+                }
                 return true;
             }
         }
