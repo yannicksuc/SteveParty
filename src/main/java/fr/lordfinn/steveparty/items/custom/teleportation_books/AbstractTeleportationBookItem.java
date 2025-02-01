@@ -60,11 +60,15 @@ public abstract class AbstractTeleportationBookItem extends AbstractDestinations
 
                 @Override
                 public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity player) {
-                    return new TeleportationBookScreenHandler(syncId, inv);
+                    return createScreenHandler(syncId, inv, player);
                 }
             });
         }
         return ActionResult.SUCCESS;
+    }
+
+    public ScreenHandler createScreenHandler(int syncId, PlayerInventory inv, PlayerEntity player) {
+        return null;
     }
 
     public static void handleHereWeGoBookPayload(ServerPlayerEntity player, int newState) {
@@ -73,7 +77,7 @@ public abstract class AbstractTeleportationBookItem extends AbstractDestinations
         // Vérifie que le joueur tient bien le bon livre
         if (bookStack.getItem() instanceof AbstractTeleportationBookItem) {
             bookStack.set(STATE, newState);
-            player.getInventory().markDirty(); // Mettre à jour l'inventaire
+            player.getInventory().markDirty();
         }
     }
 }
