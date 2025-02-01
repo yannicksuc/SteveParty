@@ -1,21 +1,15 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
+import org.jetbrains.annotations.Nullable;
 
-import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.TELEPORTATION_BOOK_SCREEN_HANDLER;
+public abstract class TeleportationBookScreenHandler extends ScreenHandler {
 
-public class TeleportationBookScreenHandler extends ScreenHandler {
-
-    protected TeleportationBookScreenHandler(ScreenHandlerType<TeleportationBookScreenHandler> type, int syncId) {
+    protected TeleportationBookScreenHandler(@Nullable ScreenHandlerType<?> type, int syncId) {
         super(type, syncId);
-    }
-
-    public TeleportationBookScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(TELEPORTATION_BOOK_SCREEN_HANDLER, syncId);
     }
 
     @Override

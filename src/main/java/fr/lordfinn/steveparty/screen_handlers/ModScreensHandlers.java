@@ -44,8 +44,11 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<MiniGamesCatalogueScreenHandler> MINI_GAMES_CATALOGUE_SCREEN_HANDLER =
             register("mini_games_catalogue_screen_handler", MiniGamesCatalogueScreenHandler::new, FeatureSet.empty());
 
-    public static final ScreenHandlerType<TeleportationBookScreenHandler> TELEPORTATION_BOOK_SCREEN_HANDLER =
-            register("teleportation_book_screen_handler", TeleportationBookScreenHandler::new, FeatureSet.empty());
+    public static final ScreenHandlerType<HereWeGoBookScreenHandler> HERE_WE_GO_BOOK_SCREEN_HANDLER =
+            register("here_we_go_book_screen_handler", HereWeGoBookScreenHandler::new, FeatureSet.empty());
+
+    public static final ScreenHandlerType<HereWeComeBookScreenHandler> HERE_WE_COME_BOOK_SCREEN_HANDLER =
+            register("here_we_come_screen_handler", HereWeComeBookScreenHandler::new, FeatureSet.empty());
 
 
     @SuppressWarnings("EmptyMethod")
