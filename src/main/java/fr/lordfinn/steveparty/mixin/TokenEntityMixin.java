@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -193,7 +193,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
                 BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos());
                 if ((blockEntity instanceof BoardSpaceBlockEntity)) {
                     if (this.steveparty$getNbSteps() > 0) {//TODO Manage negative Steps (Not urgent)
-                        if (this.getWorld().getBlockState(this.getBlockPos()).getBlock() instanceof Tile tile) {
+                        if (this.getWorld().getBlockState(this.getBlockPos()).getBlock() instanceof TileBlock tile) {
                             this.steveparty$setNbSteps(this.steveparty$getNbSteps() - 1);
                         }
                     }

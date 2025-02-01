@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.*;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -224,7 +224,7 @@ public class PartyControllerEntity extends BlockEntity {
         for (BlockPos pos : BlockPos.iterate((int) searchBox.minX, (int) searchBox.minY, (int) searchBox.minZ,
                 (int) searchBox.maxX, (int) searchBox.maxY, (int) searchBox.maxZ)) {
             BlockState state = world.getBlockState(pos);
-            if (state.getBlock() instanceof BoardSpace && state.get(BoardSpace.TILE_TYPE) == BoardSpaceType.TILE_START) {
+            if (state.getBlock() instanceof ABoardSpaceBlock && state.get(ABoardSpaceBlock.TILE_TYPE) == BoardSpaceType.TILE_START) {
                 startTiles.add(pos.toImmutable());
             }
         }

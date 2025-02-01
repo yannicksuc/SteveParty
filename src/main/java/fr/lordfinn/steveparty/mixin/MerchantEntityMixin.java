@@ -6,7 +6,7 @@ import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.world.World;
-import fr.lordfinn.steveparty.blocks.custom.CashRegister;
+import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlock;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -32,10 +32,10 @@ public class MerchantEntityMixin {
             if (cashRegisterState != null) {
                 cashRegisterState.getPositions().stream()
                         .filter(pos -> pos.isWithinDistance(merchantPos, 8))
-                        .filter(pos -> world.getBlockState(pos).getBlock() instanceof CashRegister)
+                        .filter(pos -> world.getBlockState(pos).getBlock() instanceof CashRegisterBlock)
                         .forEach(pos -> {
                             Steveparty.LOGGER.info("CashRegister pos: {}", pos);
-                            CashRegister block = (CashRegister) world.getBlockState(pos).getBlock();
+                            CashRegisterBlock block = (CashRegisterBlock) world.getBlockState(pos).getBlock();
                             block.setPowered(world, pos, true);
                         });
             }

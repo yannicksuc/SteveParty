@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -57,10 +57,10 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         if (recentlyUnboundEntities.contains(entity.getUuid())) return;
 
         BlockState state = world.getBlockState(entity.getBlockPos());
-        if (state == null || !(state.getBlock() instanceof Tile)) {
+        if (state == null || !(state.getBlock() instanceof TileBlock)) {
             state = world.getBlockState(entity.getBlockPos().subtract(new Vec3i(0, 1, 0)));
         }
-        if (state == null || !(state.getBlock() instanceof Tile)) {
+        if (state == null || !(state.getBlock() instanceof TileBlock)) {
             return;
         }
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, entity.getBlockPos());

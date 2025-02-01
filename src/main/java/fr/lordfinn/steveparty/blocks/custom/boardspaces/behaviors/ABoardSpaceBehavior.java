@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.payloads.UpdateColoredTilePayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -46,7 +46,7 @@ public abstract class ABoardSpaceBehavior {
     private void onPlayerStep(World world, BlockPos pos, BlockState state, Entity entity) {}
 
     protected static BoardSpaceBlockEntity getTileEntity(World world, BlockPos pos) {
-        return BoardSpace.getBoardSpaceEntity(world, pos);
+        return ABoardSpaceBlock.getBoardSpaceEntity(world, pos);
     }
 
     protected static ItemStack getActiveCartdridgeItemstack(World world, BlockPos pos) {

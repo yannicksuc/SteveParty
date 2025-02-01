@@ -3,9 +3,9 @@ package fr.lordfinn.steveparty.client;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.client.blockentity.BigBookRenderer;
-import fr.lordfinn.steveparty.client.blockentity.StepControllerRenderer;
-import fr.lordfinn.steveparty.client.blockentity.TileEntityRenderer;
+import fr.lordfinn.steveparty.client.blockentity.TeleportationPadBlockEntityRenderer;
+import fr.lordfinn.steveparty.client.blockentity.StepControllerBlockEntityRenderer;
+import fr.lordfinn.steveparty.client.blockentity.TileBlockEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
@@ -83,9 +83,9 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
         EntityRendererRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntityRenderer::new);
 
-        BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileEntityRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, BigBookRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
 
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
 

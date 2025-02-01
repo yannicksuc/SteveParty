@@ -1,0 +1,6 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "steveparty:item/here_we_go_book"
+  }
+}

@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.custom.BigBookEntity;
+import fr.lordfinn.steveparty.blocks.custom.TeleportationPadBlockEntity;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -19,21 +19,21 @@ import software.bernie.geckolib.renderer.GeoBlockRenderer;
 import static fr.lordfinn.steveparty.particles.ModParticles.ENCHANTED_CIRCULAR_PARTICLE;
 import static org.joml.Math.lerp;
 
-public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
+public class TeleportationPadBlockEntityRenderer extends GeoBlockRenderer<TeleportationPadBlockEntity> {
 
-    public BigBookRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
+    public TeleportationPadBlockEntityRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
         super(new DefaultedBlockGeoModel<>(Identifier.of(Steveparty.MOD_ID, "big_book")));
     }
 
     @Override
-    public @Nullable RenderLayer getRenderType(BigBookEntity animatable, Identifier texture,
+    public @Nullable RenderLayer getRenderType(TeleportationPadBlockEntity animatable, Identifier texture,
                                                @Nullable VertexConsumerProvider bufferSource,
                                                float partialTick) {
         return RenderLayer.getEntityTranslucent(getTextureLocation(animatable));
     }
 
     @Override
-    public void preRender(MatrixStack poseStack, BigBookEntity animatable, BakedGeoModel model, @Nullable VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+    public void preRender(MatrixStack poseStack, TeleportationPadBlockEntity animatable, BakedGeoModel model, @Nullable VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
         super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, renderColor);
         World world = animatable.getWorld();
         PlayerEntity player = null;
@@ -84,7 +84,7 @@ public class BigBookRenderer extends GeoBlockRenderer<BigBookEntity> {
                 distance, color, angularVelocity);
     }
 
-    private static float getFinalNewYaw(BigBookEntity animatable, PlayerEntity player) {
+    private static float getFinalNewYaw(TeleportationPadBlockEntity animatable, PlayerEntity player) {
         Vec3d playerPos = player.getPos();
         Vec3d blockCenter = animatable.getPos().toCenterPos(); // Ensure center position is used
         double xDiff = playerPos.getX() - blockCenter.getX();

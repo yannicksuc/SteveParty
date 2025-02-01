@@ -11,9 +11,9 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 
-public class CheckPoint extends BoardSpace {
-    public static final MapCodec<CheckPoint> CODEC = Block.createCodec(CheckPoint::new);
-    public CheckPoint(Settings settings) {
+public class CheckPointBlock extends ABoardSpaceBlock {
+    public static final MapCodec<CheckPointBlock> CODEC = Block.createCodec(CheckPointBlock::new);
+    public CheckPointBlock(Settings settings) {
         super(settings.sounds(BlockSoundGroup.GLASS).nonOpaque().luminance(state -> 7));
     }
 

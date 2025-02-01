@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportationBookItemInterface;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
@@ -16,15 +16,15 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-public class BigBook extends BlockWithEntity {
-    public static final MapCodec<BigBook> CODEC = Block.createCodec(BigBook::new);
+public class TeleportationPadBlock extends BlockWithEntity {
+    public static final MapCodec<TeleportationPadBlock> CODEC = Block.createCodec(TeleportationPadBlock::new);
     private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0, 0, 16.0, 4.0, 16.0);
 
-    public BigBook(Settings settings) {
+    public TeleportationPadBlock(Settings settings) {
         super(settings);
     }
     @Override
-    protected MapCodec<? extends BigBook> getCodec() {
+    protected MapCodec<? extends TeleportationPadBlock> getCodec() {
         return CODEC;
     }
 
@@ -40,13 +40,13 @@ public class BigBook extends BlockWithEntity {
 
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new BigBookEntity(pos, state);
+        return new TeleportationPadBlockEntity(pos, state);
     }
 
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
-            BigBookEntity entity = (BigBookEntity) world.getBlockEntity(pos);
+            TeleportationPadBlockEntity entity = (TeleportationPadBlockEntity) world.getBlockEntity(pos);
             if (entity != null) {
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.catalogue);
             }
@@ -57,8 +57,8 @@ public class BigBook extends BlockWithEntity {
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
-        if (stack.isEmpty() || stack.getItem() == Items.ENCHANTED_BOOK) {
-            BigBookEntity entity = (BigBookEntity) world.getBlockEntity(pos);
+        if (stack.isEmpty() || stack.getItem() instanceof TeleportationBookItemInterface) {
+            TeleportationPadBlockEntity entity = (TeleportationPadBlockEntity) world.getBlockEntity(pos);
             if (entity != null) {
                 entity.setBook(stack.copyAndEmpty());
                 return ActionResult.SUCCESS;

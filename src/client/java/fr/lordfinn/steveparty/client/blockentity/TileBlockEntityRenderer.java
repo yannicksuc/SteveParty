@@ -26,11 +26,11 @@ import org.joml.Vector3f;
 
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static java.lang.Math.PI;
 
-public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEntity> {
+public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEntity> {
 
     private final SkullEntityModel model;
     private final Identifier textureBad = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_angry");
@@ -39,7 +39,7 @@ public class TileEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEn
     private final Identifier textureBlow = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_blow");
 
 
-    public TileEntityRenderer(BlockEntityRendererFactory.Context ctx) {
+    public TileBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
         this.model = new SkullEntityModel(ctx.getLayerRenderDispatcher().getModelPart(EntityModelLayers.PLAYER_HEAD));
     }
 

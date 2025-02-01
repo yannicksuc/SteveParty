@@ -10,8 +10,8 @@ import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
-public class StepControllerRenderer extends GeoBlockRenderer<StepControllerBlockEntity> {
-    public StepControllerRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
+public class StepControllerBlockEntityRenderer extends GeoBlockRenderer<StepControllerBlockEntity> {
+    public StepControllerBlockEntityRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
         super(new DefaultedBlockGeoModel<>(Identifier.of(Steveparty.MOD_ID, "step_controller")));
     }
 

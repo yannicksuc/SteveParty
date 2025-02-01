@@ -28,12 +28,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class CashRegister extends HorizontalFacingBlock {
+public class CashRegisterBlock extends HorizontalFacingBlock {
     private static final BooleanProperty POWERED = BooleanProperty.of("powered");
-    private static final MapCodec<CashRegister> CODEC = Block.createCodec(CashRegister::new);
+    private static final MapCodec<CashRegisterBlock> CODEC = Block.createCodec(CashRegisterBlock::new);
     private static final Map<Direction, VoxelShape> SHAPES = new HashMap<>();
 
-    public CashRegister(Settings settings) {
+    public CashRegisterBlock(Settings settings) {
         super(settings.nonOpaque().strength(1.0f));
         this.setDefaultState(this.stateManager.getDefaultState()
                 .with(POWERED, false)

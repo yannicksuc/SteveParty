@@ -15,9 +15,9 @@ import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
-public class BoardSpaceRedstoneRouter extends CartridgeContainer {
-    public static final MapCodec<BoardSpaceRedstoneRouter> CODEC = Block.createCodec(BoardSpaceRedstoneRouter::new);
-    public BoardSpaceRedstoneRouter(Settings settings) {
+public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
+    public static final MapCodec<BoardSpaceRedstoneRouterBlock> CODEC = Block.createCodec(BoardSpaceRedstoneRouterBlock::new);
+    public BoardSpaceRedstoneRouterBlock(Settings settings) {
         super(settings);
     }
 
@@ -32,7 +32,7 @@ public class BoardSpaceRedstoneRouter extends CartridgeContainer {
     }
 
     @Override
-    protected MapCodec<BoardSpaceRedstoneRouter> getCodec() {
+    protected MapCodec<BoardSpaceRedstoneRouterBlock> getCodec() {
         return CODEC;
     }
 

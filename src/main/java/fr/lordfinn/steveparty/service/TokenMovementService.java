@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
@@ -117,7 +117,7 @@ public class TokenMovementService {
                     MessageUtils.MessageType.ACTION_BAR);
             return;
         }
-        BoardSpaceBlockEntity tileEntity = BoardSpace.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
+        BoardSpaceBlockEntity tileEntity = ABoardSpaceBlock.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
         if (tileEntity == null) return;
         //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
 
@@ -137,7 +137,7 @@ public class TokenMovementService {
 
     public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, BoardSpaceDestination tileDestination) {
         if (tileDestination == null || tileOrigin == null) return;
-        BoardSpaceBlockEntity tileEntity = BoardSpace.getBoardSpaceEntity(world, tileOrigin);
+        BoardSpaceBlockEntity tileEntity = ABoardSpaceBlock.getBoardSpaceEntity(world, tileOrigin);
         if (tileEntity == null) return;
         tileEntity.hideDestinations();
         List<MobEntity> tokens = tileEntity.getTokensOnMe();

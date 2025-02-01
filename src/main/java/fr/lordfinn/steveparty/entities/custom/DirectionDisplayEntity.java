@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import fr.lordfinn.steveparty.payloads.ArrowParticlesPayload;
@@ -62,7 +62,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         Vec3d startGap = distance.normalize().multiply(Math.min(1.5, distance.length())).add(0,-0.4,0);
         this.setPosition(start.add(startGap));
         BlockState blockState = world.getBlockState(destination.position());
-        if (blockState != null && blockState.getBlock() instanceof Tile) {
+        if (blockState != null && blockState.getBlock() instanceof TileBlock) {
             blockState = blockState.with(Properties.HORIZONTAL_FACING, Direction.SOUTH);
         }
         this.setBlockState(blockState);
