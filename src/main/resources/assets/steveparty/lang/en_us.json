@@ -31,6 +31,8 @@
   "item.steveparty.token": "Token",
   "item.steveparty.inventory_cartridge": "Inventory Cartridge",
   "item.steveparty.mini_game_page": "Mini-Game Page",
+  "item.steveparty.here_we_go_book": "Here we go book",
+  "item.steveparty.here_we_come_book": "Here we come book",
   "itemgroup.steveparty": "Steve Party",
   "message.steveparty.removed_position": "Removed position: (%d, %d, %d)",
   "message.steveparty.added_position": "Added position: (%d, %d, %d)",

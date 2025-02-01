@@ -26,10 +26,10 @@ import org.jetbrains.annotations.Nullable;
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 import static net.minecraft.util.ActionResult.SUCCESS;
 
-public abstract class BoardSpace extends CartridgeContainer {
+public abstract class ABoardSpaceBlock extends CartridgeContainer {
     public static final EnumProperty<BoardSpaceType> TILE_TYPE = EnumProperty.of("tile_type", BoardSpaceType.class);
 
-    public BoardSpace(Settings settings) {
+    public ABoardSpaceBlock(Settings settings) {
         super(settings.nonOpaque());
     }
 

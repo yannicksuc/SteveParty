@@ -17,7 +17,7 @@ import org.joml.Vector2d;
 import java.util.Map;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.getBoardSpaceEntity;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.getBoardSpaceEntity;
 import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
 import static fr.lordfinn.steveparty.particles.ModParticles.ENCHANTED_CIRCULAR_PARTICLE;
 

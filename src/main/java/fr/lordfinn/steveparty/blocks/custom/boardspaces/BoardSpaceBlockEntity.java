@@ -44,7 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpace.TILE_TYPE;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 
 public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity, ExtendedScreenHandlerFactory<BlockPosPayload> {
     private int ticks = 0;
@@ -54,7 +54,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
 
     public BoardSpaceBlockEntity(BlockPos pos, BlockState state) {
-        super(state.getBlock() instanceof Tile ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.CHECK_POINT_ENTITY, pos, state, 16);
+        super(state.getBlock() instanceof TileBlock ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.CHECK_POINT_ENTITY, pos, state, 16);
     }
 
     private void update() {
@@ -88,7 +88,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             ItemStack stack = getActiveCartridgeItemStack();
             BoardSpaceType tileType = determineBoardSpaceType(stack);
             BlockState state = this.getCachedState();
-            if (state.getBlock() instanceof BoardSpace) {
+            if (state.getBlock() instanceof ABoardSpaceBlock) {
                 if (tileType == null)
                     tileType = BoardSpaceType.DEFAULT;
                 if (!state.get(TILE_TYPE).equals(tileType)) {
@@ -132,7 +132,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public static void searchAndDisplayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
-        BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(world, pos);
+        BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(world, pos);
         if (boardSpaceEntity == null) return;
         List<BoardSpaceDestination> destinations = boardSpaceEntity.getStockedDestinations();
         displayDestinations(world, pos, holder, destinations);
@@ -272,7 +272,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         if (world == null) return false;
         BlockState blockState = world.getBlockState(pos);
         if (blockState == null) return false;
-        return blockState.getBlock() instanceof BoardSpace;
+        return blockState.getBlock() instanceof ABoardSpaceBlock;
     }
 
     public List<MobEntity> getTokensOnMe() {

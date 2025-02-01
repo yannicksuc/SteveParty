@@ -12,18 +12,18 @@ import net.minecraft.world.BlockView;
 
 import java.util.Objects;
 
-public class Tile extends BoardSpace {
-    public static final MapCodec<Tile> CODEC = Block.createCodec(Tile::new);
+public class TileBlock extends ABoardSpaceBlock {
+    public static final MapCodec<TileBlock> CODEC = Block.createCodec(TileBlock::new);
 
     private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0.0, 0, 16.0, 2.0, 16.0);
 
-    public Tile(Settings settings) {
+    public TileBlock(Settings settings) {
         super(settings.nonOpaque());
         setDefaultState(getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH));
     }
 
     @Override
-    protected MapCodec<? extends Tile> getCodec() {
+    protected MapCodec<? extends TileBlock> getCodec() {
         return CODEC;
     }
 

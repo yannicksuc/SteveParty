@@ -2,8 +2,8 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.*;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPoint;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import net.minecraft.block.Block;
 import net.minecraft.block.AbstractBlock;
@@ -18,14 +18,14 @@ import java.util.function.Function;
 
 public class ModBlocks {
     // Create and register the TILE block
-    public static final Block TILE = register(Tile::new,
+    public static final Block TILE = register(TileBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.METAL)  // Stone-like sound
                     .requiresTool(),  // Requires a pickaxe to break
             "tile", true);
 
-    public static final Block CHECK_POINT = register(CheckPoint::new,
+    public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.AMETHYST_BLOCK)  // Metallic sound, assuming redstone-like behavior
@@ -41,7 +41,7 @@ public class ModBlocks {
                     .requiresTool(),  // Prevent accidental breaking
             "party_controller", true);
 
-    public static final Block BIG_BOOK = register(BigBook::new,
+    public static final Block TELEPORTATION_PAD = register(TeleportationPadBlock::new,
             Block.Settings.create()
                     .strength(4.0f, 30.0f)  // Very durable, like obsidian
                     .sounds(BlockSoundGroup.WOOD)  // Wood sound for a bookshelf-like aesthetic
@@ -58,7 +58,7 @@ public class ModBlocks {
                     .breakInstantly(),  // Breaks instantly, emphasizing its decorative nature
             "villager_block", true);
 
-    public static final Block CASH_REGISTER = register(CashRegister::new,
+    public static final Block CASH_REGISTER = register(CashRegisterBlock::new,
             Block.Settings.create()
                     .strength(2.0f, 6.0f)  // Reasonably durable
                     .sounds(BlockSoundGroup.METAL)  // Metallic sound for a register
@@ -74,7 +74,7 @@ public class ModBlocks {
                     .nonOpaque()  // Non-opaque to allow transparency for hourglass visualization
                     .requiresTool(),  // Requires a pickaxe or equivalent tool to break
             "step_controller", true);
-    public static final Block BOARD_SPACE_REDSTONE_ROUTER = register(BoardSpaceRedstoneRouter::new,
+    public static final Block BOARD_SPACE_REDSTONE_ROUTER = register(BoardSpaceRedstoneRouterBlock::new,
             Block.Settings.create()
                     .strength(3.0f, 9.0f)  // Stronger than the cash register due to its mechanical components
                     .sounds(BlockSoundGroup.METAL)  // Stone-like sound for a mechanical device

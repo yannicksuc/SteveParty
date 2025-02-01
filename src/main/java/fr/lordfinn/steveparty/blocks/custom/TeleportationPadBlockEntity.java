@@ -23,7 +23,7 @@ import java.util.Optional;
 
 import static fr.lordfinn.steveparty.components.ModComponents.SOCKETED_STORY;
 
-public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
+public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlockEntity {
     protected static final RawAnimation NO_STORY_ANIM = RawAnimation.begin().thenLoop("no-story");
     protected static final RawAnimation STORY_ANIM = RawAnimation.begin().thenLoop("story");
     protected static final RawAnimation STORY_CLOSED_ANIM = RawAnimation.begin().thenLoop("story-closed");
@@ -32,7 +32,7 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
     public long lastTime = 0;
     public Float currentYaw = null;
 
-    public BigBookEntity(BlockPos pos, BlockState state) {
+    public TeleportationPadBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.BIG_BOOK_ENTITY, pos, state);
     }
 
@@ -101,7 +101,7 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
 
 
 
-    private PlayState storyClosedAnimController(AnimationState<BigBookEntity> event) {
+    private PlayState storyClosedAnimController(AnimationState<TeleportationPadBlockEntity> event) {
         if (world != null && !catalogue.isEmpty() && world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) == null) {
             return event.setAndContinue(STORY_CLOSED_ANIM);
         }
@@ -109,7 +109,7 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
         return PlayState.STOP;
     }
 
-    protected <T extends BigBookEntity> PlayState storyAnimController(final AnimationState<T> event) {
+    protected <T extends TeleportationPadBlockEntity> PlayState storyAnimController(final AnimationState<T> event) {
         if (!catalogue.isEmpty() && (world == null || world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) != null)) {
             return event.setAndContinue(STORY_ANIM);
         }
@@ -117,7 +117,7 @@ public class BigBookEntity extends BlockEntity implements GeoBlockEntity {
         return PlayState.STOP;
     }
 
-    protected <T extends BigBookEntity> PlayState noStoryAnimController(final AnimationState<T> event) {
+    protected <T extends TeleportationPadBlockEntity> PlayState noStoryAnimController(final AnimationState<T> event) {
         if (catalogue.isEmpty())
             return event.setAndContinue(NO_STORY_ANIM);
         return PlayState.STOP;

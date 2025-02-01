@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookItem;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
@@ -34,6 +36,8 @@ public class ModItems {
     public static final Item TOKEN = register(TokenItem.class, "token");
     public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
+    public static final Item HERE_WE_GO_BOOK = register(HereWeGoBookItem.class, "here_we_go_book");
+    public static final Item HERE_WE_COME_BOOK = register(HereWeComeBookItem.class, "here_we_come_book");
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
@@ -78,7 +82,9 @@ public class ModItems {
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);
-            itemGroup.add(BIG_BOOK);
+            itemGroup.add(TELEPORTATION_PAD);
+            itemGroup.add(HERE_WE_GO_BOOK);
+            itemGroup.add(HERE_WE_COME_BOOK);
             itemGroup.add(DEFAULT_DICE);
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);

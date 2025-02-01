@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.Tile;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -46,7 +46,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
     }
 
     private @Nullable DestinationsComponent tryToBindTileAtPosFromWrench(BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
-        BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
+        BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(serverWorld, clickedPos);
         if (boardSpaceEntity == null) return null;
 
         ItemStack boardSpaceStoredBehavior = getOrCreateFromPlayerTileBehaviorStack(boardSpaceEntity, player);
@@ -99,7 +99,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
     }
 
     private boolean updateStackAtPos(DestinationsComponent component, BlockPos clickedPos, ServerWorld serverWorld) {
-        BoardSpaceBlockEntity boardSpaceEntity = Tile.getBoardSpaceEntity(serverWorld, clickedPos);
+        BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(serverWorld, clickedPos);
         if (boardSpaceEntity == null) return false;
         ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveCartridgeItemStack();
         if (boardSpaceStoredBehavior == null) return false;
