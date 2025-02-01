@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentMap;
@@ -12,8 +13,11 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -23,7 +27,7 @@ import java.util.Optional;
 
 import static fr.lordfinn.steveparty.components.ModComponents.SOCKETED_STORY;
 
-public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlockEntity {
+public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlockEntity, TickableBlockEntity {
     protected static final RawAnimation NO_STORY_ANIM = RawAnimation.begin().thenLoop("no-story");
     protected static final RawAnimation STORY_ANIM = RawAnimation.begin().thenLoop("story");
     protected static final RawAnimation STORY_CLOSED_ANIM = RawAnimation.begin().thenLoop("story-closed");
@@ -128,12 +132,28 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
         return cache;
     }
 
-    public void setBook(ItemStack itemStack) {
-        if (world == null || world.isClient) return;
+    public void setBook(@NotNull ItemStack itemStack) {
+        if (world == null || world.isClient || itemStack.isEmpty() && (catalogue == null || catalogue.isEmpty())) return;
         if (!catalogue.isEmpty()) {
             ItemScatterer.spawn(world, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, catalogue);
         }
         catalogue = itemStack.copy();
-        this.markDirty();
+        if (this.getWorld() != null)
+            this.getWorld().playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_SPAWN_ITEM_BEGIN, SoundCategory.BLOCKS, 1.0F, 1.0F); this.markDirty();
+    }
+
+    @Override
+    public void tick() {
+        if (this.world == null || this.world.isClient) return;
+        if (world.getTime() % 45 == 0  && !catalogue.isEmpty()) {
+            world.playSound(
+                    null,
+                    this.pos,
+                    SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME,
+                    SoundCategory.AMBIENT,
+                    0.1F,
+                    1.0F
+            );
+        }
     }
 }

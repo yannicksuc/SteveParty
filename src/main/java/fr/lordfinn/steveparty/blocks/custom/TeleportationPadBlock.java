@@ -2,8 +2,11 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.AbstractTeleportationBookItem;
+import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
@@ -65,5 +68,10 @@ public class TeleportationPadBlock extends BlockWithEntity {
             }
         }
         return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
+    }
+
+    @Override
+    public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        return TickableBlockEntity.getTicker(world);
     }
 }
