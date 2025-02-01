@@ -53,6 +53,8 @@ public class ModComponents {
             registerComponent("inventory-pos", BlockPos.CODEC);
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
+    public static final ComponentType<Integer> STATE =
+            registerComponent("state", Codec.INT);
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

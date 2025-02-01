@@ -8,7 +8,7 @@ import net.minecraft.screen.ScreenHandlerType;
 
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.TELEPORTATION_BOOK_SCREEN_HANDLER;
 
-public class TeleportationBookScreenHandler  extends ScreenHandler {
+public class TeleportationBookScreenHandler extends ScreenHandler {
 
     protected TeleportationBookScreenHandler(ScreenHandlerType<TeleportationBookScreenHandler> type, int syncId) {
         super(type, syncId);
@@ -16,6 +16,11 @@ public class TeleportationBookScreenHandler  extends ScreenHandler {
 
     public TeleportationBookScreenHandler(int syncId, PlayerInventory playerInventory) {
         this(TELEPORTATION_BOOK_SCREEN_HANDLER, syncId);
+    }
+
+    @Override
+    public void sendContentUpdates() {
+        super.sendContentUpdates();
     }
 
     @Override
