@@ -65,38 +65,52 @@ public class StevepartyClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ConfigurationManager.loadConfig();
-        PARTY_STEPS_HUD.initialize();
+        PayloadReceivers.initialize();
 
+        initScreens();
+        initParticles();
+        initEntitiesRenderers();
+        initBlockEntitiesRenderers();
+        DestinationsRenderer.initialize();
+
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
+        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
+        ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
+
+        HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
+        PartyStepsHud.registerKeyHandlers();
+        Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
+    }
+
+    private static void initBlockEntitiesRenderers() {
+        BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
+    }
+
+    private static void initEntitiesRenderers() {
+        EntityRendererRegistry.register(ModEntities.DICE_ENTITY, DiceRenderer::new);
+        EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
+        EntityRendererRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntityRenderer::new);
+    }
+
+    private static void initParticles() {
+        ParticleFactoryRegistry.getInstance().register(ModParticles.HERE_PARTICLE, HereParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.ENCHANTED_CIRCULAR_PARTICLE, EnchantedCircularParticle.Factory::new);
+    }
+
+    private static void initScreens() {
+        //Initialize HUDs
+        PARTY_STEPS_HUD.initialize();
+        
+        //Initialize Screens
         HandledScreens.register(TILE_SCREEN_HANDLER, TileScreen::new);
         HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
         HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, CartridgeInventoryScreen::new);
         HandledScreens.register(MINI_GAME_PAGE_SCREEN_HANDLER, MiniGamePageScreen::new);
         HandledScreens.register(MINI_GAMES_CATALOGUE_SCREEN_HANDLER, MiniGamesCatalogueScreen::new);
-
-        ParticleFactoryRegistry.getInstance().register(ModParticles.HERE_PARTICLE, HereParticle.Factory::new);
-        ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);
-        ParticleFactoryRegistry.getInstance().register(ModParticles.ENCHANTED_CIRCULAR_PARTICLE, EnchantedCircularParticle.Factory::new);
-        PayloadReceivers.initialize();
-
-        EntityRendererRegistry.register(ModEntities.DICE_ENTITY, DiceRenderer::new);
-        EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
-        EntityRendererRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntityRenderer::new);
-
-        BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
-
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
-
-        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
-        ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
-
-        HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
-        PartyStepsHud.registerKeyHandlers();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
-
-        DestinationsRenderer.initialize();
+        HandledScreens.register(TELEPORTATION_BOOK_SCREEN_HANDLER, TeleportationBookScreen::new);
     }
 }

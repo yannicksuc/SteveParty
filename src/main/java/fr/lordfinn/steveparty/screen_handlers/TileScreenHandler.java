@@ -18,10 +18,6 @@ public class TileScreenHandler extends CartridgeContainerScreenHandler {
         this(syncId, playerInventory, (BoardSpaceBlockEntity) playerInventory.player.getWorld().getBlockEntity(blockPosPayload.pos()));
     }
 
-    /*public TileScreenHandler(int i, PlayerInventory playerInventory) {
-        this(i, playerInventory, new SimpleInventory(16));
-    }*/
-
     @Override
     public void setupScreen() {
         int m, l;
