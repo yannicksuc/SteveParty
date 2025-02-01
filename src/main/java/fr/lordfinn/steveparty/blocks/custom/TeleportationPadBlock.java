@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportationBookItemInterface;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.AbstractTeleportationBookItem;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -57,7 +57,7 @@ public class TeleportationPadBlock extends BlockWithEntity {
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
-        if (stack.isEmpty() || stack.getItem() instanceof TeleportationBookItemInterface) {
+        if (stack.isEmpty() || stack.getItem() instanceof AbstractTeleportationBookItem) {
             TeleportationPadBlockEntity entity = (TeleportationPadBlockEntity) world.getBlockEntity(pos);
             if (entity != null) {
                 entity.setBook(stack.copyAndEmpty());
