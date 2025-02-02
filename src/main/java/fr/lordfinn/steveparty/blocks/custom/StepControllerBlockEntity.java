@@ -107,7 +107,7 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
     }
 
     private void trigger() {
-        if (this.world != null) {
+        if (this.world != null && this.world instanceof ServerWorld) {
             PartyControllerEntity.getActivePartyControllers().stream()
                     .filter(entity -> entity.getPartyData().isStarted())
                     .filter(entity -> entity.getPos().getSquaredDistance(this.pos) < 64)
@@ -117,10 +117,13 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
                         switch (this.mode) {
                             case 0:
                                 partyControllerEntity.nextStep();
+                                break;
                             case 1:
                                 partyControllerEntity.restartStep();
+                                break;
                             case 2:
                                 partyControllerEntity.previousStep();
+                                break;
                             default:
                                 break;
                         }

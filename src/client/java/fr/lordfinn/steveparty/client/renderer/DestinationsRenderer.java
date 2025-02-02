@@ -15,7 +15,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
 
-import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
+import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
 
 public class DestinationsRenderer {
 
@@ -57,7 +57,7 @@ public class DestinationsRenderer {
     private static void handleHeldStackChange(ItemStack heldStack, Hand hand) {
         setLastHeldItemStack(heldStack, hand);
         if (hand == Hand.MAIN_HAND && heldStack.getItem() instanceof AbstractDestinationsSelectorItem) {
-            DestinationsComponent component = heldStack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
+            DestinationsComponent component = heldStack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT);
             List<BlockPos> destinations = component.destinations();
 
             if (!destinations.isEmpty()) {

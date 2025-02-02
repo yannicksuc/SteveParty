@@ -108,4 +108,14 @@ public abstract class ABoardSpaceBehavior {
 
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
     }
+
+    public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
+        return Status.NEUTRAL;
+    }
+
+    public enum Status {
+        BAD,
+        GOOD,
+        NEUTRAL
+    }
 }
