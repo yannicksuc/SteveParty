@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.*;
 import fr.lordfinn.steveparty.service.TokenData;
-import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
+import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;

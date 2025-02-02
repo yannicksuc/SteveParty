@@ -12,7 +12,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.payloads.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
-import fr.lordfinn.steveparty.utils.BoardSpaceRoutersPersistentState;
+import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;

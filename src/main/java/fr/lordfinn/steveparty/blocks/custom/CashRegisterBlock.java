@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.utils.CashRegisterPersistentState;
+import fr.lordfinn.steveparty.persistent_state.CashRegisterPersistentState;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

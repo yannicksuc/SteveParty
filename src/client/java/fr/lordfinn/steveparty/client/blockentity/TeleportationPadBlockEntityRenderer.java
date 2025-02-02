@@ -51,7 +51,7 @@ public class TeleportationPadBlockEntityRenderer extends GeoBlockRenderer<Telepo
             }
 
             model.getBone("bone6").ifPresent(bone -> bone.setRotY((float) Math.toRadians(-animatable.currentYaw)));
-            if (!animatable.catalogue.isEmpty() && System.currentTimeMillis()> animatable.lastTime + 300) {
+            if (!animatable.book.isEmpty() && System.currentTimeMillis()> animatable.lastTime + 300) {
                 double distance = player.getPos().distanceTo(animatable.getPos().toCenterPos());
                 double particleSpeed1 = 0.01 + (Math.max(0, 6 - distance) / 6) * (0.4 - 0.01);
 

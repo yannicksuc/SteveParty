@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.utils.CashRegisterPersistentState;
+import fr.lordfinn.steveparty.persistent_state.CashRegisterPersistentState;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.TradeOffer;
