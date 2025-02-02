@@ -24,13 +24,10 @@ public class TeleportingTarget {
 
     public enum Group {
         EVERYONE,
-        SPECTATOR,
-        PLAYER_A,
-        PLAYER_B,
-        PLAYER_C,
-        PLAYER_D,
-        PLAYER_E,
-        PLAYER_F;
+        PLAYERS,
+        SPECTATORS,
+        PLAYER_TEAM_A,
+        PLAYER_TEAM_B;
 
         public static final Codec<Group> CODEC = Codec.STRING.xmap(Group::valueOf, Group::name);
     }
