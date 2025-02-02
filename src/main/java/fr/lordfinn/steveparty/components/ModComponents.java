@@ -2,12 +2,15 @@ package fr.lordfinn.steveparty.components;
 
 import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import net.minecraft.component.ComponentType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+
+import java.util.List;
 
 public class ModComponents {
 
@@ -55,6 +58,8 @@ public class ModComponents {
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =
             registerComponent("state", Codec.INT);
+    public static final ComponentType<List<TeleportingTarget>> TP_TARGETS =
+            registerComponent("teleporting-targets", Codec.list(TeleportingTarget.CODEC));
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

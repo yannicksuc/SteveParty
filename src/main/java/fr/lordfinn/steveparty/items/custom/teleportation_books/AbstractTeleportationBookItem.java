@@ -1,13 +1,9 @@
 package fr.lordfinn.steveparty.items.custom.teleportation_books;
 
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
-import fr.lordfinn.steveparty.payloads.HereWeGoBookPayload;
-import fr.lordfinn.steveparty.screen_handlers.TeleportationBookScreenHandler;
 import fr.lordfinn.steveparty.utils.RaycastUtils;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
@@ -69,15 +65,5 @@ public abstract class AbstractTeleportationBookItem extends AbstractDestinations
 
     public ScreenHandler createScreenHandler(int syncId, PlayerInventory inv, PlayerEntity player) {
         return null;
-    }
-
-    public static void handleHereWeGoBookPayload(ServerPlayerEntity player, int newState) {
-        ItemStack bookStack = player.getMainHandStack();
-
-        // Vérifie que le joueur tient bien le bon livre
-        if (bookStack.getItem() instanceof AbstractTeleportationBookItem) {
-            bookStack.set(STATE, newState);
-            player.getInventory().markDirty();
-        }
     }
 }
