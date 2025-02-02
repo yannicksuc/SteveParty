@@ -6,7 +6,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-import static fr.lordfinn.steveparty.items.custom.teleportation_books.AbstractTeleportationBookItem.handleHereWeGoBookPayload;
+import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookItem.handleHereWeComeBookPayload;
+import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem.handleHereWeGoBookPayload;
 
 public class ModPayloads {
     public static final Identifier ARROW_PARTICLES_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "arrow-particles");
@@ -17,6 +18,7 @@ public class ModPayloads {
     public static final Identifier SELECTION_STATE_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "selection-state-payload");
     public static final Identifier BLOCK_POSES_MAP_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "block-poses-map-payload");
     public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "here-we-go-book-payload");
+    public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "here-we-come-book-payload");
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
@@ -28,10 +30,17 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(BlockPosesMapPayload.ID, BlockPosesMapPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeGoBookPayload.ID, HereWeGoBookPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             player.server.execute(() -> handleHereWeGoBookPayload(player, payload.state()));
         });
+
+        ServerPlayNetworking.registerGlobalReceiver(HereWeComeBookPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            player.server.execute(() -> handleHereWeComeBookPayload(player, payload.teleportingTargets()));
+        });
     }
+
 }

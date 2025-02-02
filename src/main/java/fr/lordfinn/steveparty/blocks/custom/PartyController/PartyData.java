@@ -25,14 +25,6 @@ public class PartyData {
     private int stepIndex = -1;
     private int nbTurn = 10;
 
-    /*public static final Codec<PartyData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            PartyStepType.CODEC.fieldOf("Type").forGetter(PartyData::getType),
-            PartyStep.CODEC.listOf().fieldOf("Steps").forGetter(PartyData::getSteps),
-            Codec.list(UUIDCodec.CODEC).fieldOf("Tokens").forGetter(PartyData::getTokens),
-            Codec.INT.fieldOf("StepIndex").orElse(-1).forGetter(PartyData::getStepIndex),
-            Codec.INT.fieldOf("NbTurn").orElse(10).forGetter(PartyData::getNbTurn)
-    ).apply(instance, PartyData::new));*/
-
     // Constructor
     public PartyData() {
     }
