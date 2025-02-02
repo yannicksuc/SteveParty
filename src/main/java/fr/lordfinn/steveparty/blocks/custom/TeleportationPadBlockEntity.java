@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorage;
+import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -32,7 +34,7 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
     protected static final RawAnimation STORY_ANIM = RawAnimation.begin().thenLoop("story");
     protected static final RawAnimation STORY_CLOSED_ANIM = RawAnimation.begin().thenLoop("story-closed");
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
-    public ItemStack catalogue = ItemStack.EMPTY;
+    public ItemStack book = ItemStack.EMPTY;
     public long lastTime = 0;
     public Float currentYaw = null;
 
@@ -51,19 +53,19 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
     @Override
     protected void readComponents(ComponentsAccess components) {
         super.readComponents(components);
-        this.catalogue = components.getOrDefault(SOCKETED_STORY, ItemStack.EMPTY);
+        this.book = components.getOrDefault(SOCKETED_STORY, ItemStack.EMPTY);
     }
 
     @Override
     protected void addComponents(ComponentMap.Builder componentMapBuilder) {
         super.addComponents(componentMapBuilder);
-        componentMapBuilder.add(SOCKETED_STORY, this.catalogue);
+        componentMapBuilder.add(SOCKETED_STORY, this.book);
     }
 
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
-        if (catalogue != null && !catalogue.isEmpty()) {
-            NbtElement itemNbt = catalogue.toNbt(wrapper);
+        if (book != null && !book.isEmpty()) {
+            NbtElement itemNbt = book.toNbt(wrapper);
             nbt.put("catalogue", itemNbt);
             nbt.putBoolean("isSocketed", true);
         } else {
@@ -84,10 +86,10 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
         if (nbt.contains("catalogue", NbtElement.COMPOUND_TYPE)) { // Ensure "catalogue" exists and is a compound
             catalogueNbt = ItemStack.fromNbt(wrapper, nbt.get("catalogue"));
         }
-        catalogueNbt.ifPresentOrElse(stack -> catalogue = stack, () -> catalogue = ItemStack.EMPTY);
+        catalogueNbt.ifPresentOrElse(stack -> book = stack, () -> book = ItemStack.EMPTY);
         boolean isSocketed = nbt.getBoolean("isSocketed");
         if (!isSocketed)
-            catalogue = ItemStack.EMPTY;
+            book = ItemStack.EMPTY;
     }
 
     @Override
@@ -106,7 +108,7 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
 
 
     private PlayState storyClosedAnimController(AnimationState<TeleportationPadBlockEntity> event) {
-        if (world != null && !catalogue.isEmpty() && world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) == null) {
+        if (world != null && !book.isEmpty() && world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) == null) {
             return event.setAndContinue(STORY_CLOSED_ANIM);
         }
         event.setAnimation(STORY_ANIM);
@@ -114,7 +116,7 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
     }
 
     protected <T extends TeleportationPadBlockEntity> PlayState storyAnimController(final AnimationState<T> event) {
-        if (!catalogue.isEmpty() && (world == null || world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) != null)) {
+        if (!book.isEmpty() && (world == null || world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 5d, false) != null)) {
             return event.setAndContinue(STORY_ANIM);
         }
         event.setAnimation(STORY_CLOSED_ANIM);
@@ -122,7 +124,7 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
     }
 
     protected <T extends TeleportationPadBlockEntity> PlayState noStoryAnimController(final AnimationState<T> event) {
-        if (catalogue.isEmpty())
+        if (book.isEmpty())
             return event.setAndContinue(NO_STORY_ANIM);
         return PlayState.STOP;
     }
@@ -133,19 +135,27 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
     }
 
     public void setBook(@NotNull ItemStack itemStack) {
-        if (world == null || world.isClient || itemStack.isEmpty() && (catalogue == null || catalogue.isEmpty())) return;
-        if (!catalogue.isEmpty()) {
-            ItemScatterer.spawn(world, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, catalogue);
+        if (world == null || world.isClient || itemStack.isEmpty() && (book == null || book.isEmpty())) return;
+        if (!book.isEmpty()) {
+            ItemScatterer.spawn(world, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, book);
         }
-        catalogue = itemStack.copy();
-        if (this.getWorld() != null)
-            this.getWorld().playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_SPAWN_ITEM_BEGIN, SoundCategory.BLOCKS, 1.0F, 1.0F); this.markDirty();
+        book = itemStack.copy();
+        if (this.getWorld() != null) {
+            this.getWorld().playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_SPAWN_ITEM_BEGIN, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            this.markDirty();
+
+            TeleportationPadStorage storage = TeleportationPadStorageManager.getStorage((ServerWorld) world);
+            if (book.isEmpty())
+                storage.removeTeleportationPad(pos);
+            else
+                storage.addTeleportationPad(pos, book);
+        }
     }
 
     @Override
     public void tick() {
         if (this.world == null || this.world.isClient) return;
-        if (world.getTime() % 45 == 0  && !catalogue.isEmpty()) {
+        if (world.getTime() % 45 == 0  && !book.isEmpty()) {
             world.playSound(
                     null,
                     this.pos,
@@ -155,5 +165,9 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
                     1.0F
             );
         }
+    }
+
+    public ItemStack getBook() {
+        return book;
     }
 }

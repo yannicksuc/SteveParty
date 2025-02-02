@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.utils;
+package fr.lordfinn.steveparty.persistent_state;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
