@@ -55,7 +55,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         // Composant comportement
         DestinationsComponent updatedComponent = boardSpaceStoredBehavior.getOrDefault(
                 ModComponents.DESTINATIONS_COMPONENT,
-                DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR
+                DestinationsComponent.DEFAULT
         );
         updatedComponent = new DestinationsComponent(updatedComponent.destinations(), updatedComponent.world());
 
@@ -94,7 +94,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
 
     private static void removeBinding(BlockPos pos, ItemStack stack, ServerWorld serverWorld) {
         BoardSpaceBlockEntity.hideDestinations(serverWorld, pos);
-        stack.set(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
+        stack.set(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT);
         stack.set(ModComponents.BLOCK_ORIGIN_COMPONENT, BlockOriginComponent.DEFAULT_ORIGIN_COMPONENT);
     }
 

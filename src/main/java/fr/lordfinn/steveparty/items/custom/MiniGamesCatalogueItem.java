@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.screen_handlers.CartridgeInventoryScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.MiniGamesCatalogueScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
@@ -14,6 +15,8 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
+import java.util.List;
+
 import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 
 public class MiniGamesCatalogueItem extends Item {
@@ -21,14 +24,13 @@ public class MiniGamesCatalogueItem extends Item {
         super(settings);
     }
 
-
     @Override
     public ActionResult use(World world, PlayerEntity player, Hand hand) {
         if (world.isClient) {
             return ActionResult.PASS;
         }
 
-        // Prevent opening the screen if the player is targeting a block or an entity
+        // Prevent opening the screen if the player is targeting a block
         if (isTargetingBlock(player)) {
             return ActionResult.PASS;
         }
@@ -47,7 +49,16 @@ public class MiniGamesCatalogueItem extends Item {
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                 (syncId, inventory1, playerEntity) -> new MiniGamesCatalogueScreenHandler(syncId, inventory1, inventory),
-                Text.empty()
+                Text.translatable("title.steveparty.mini_game_catalogue")
         ));
+    }
+    public static List<ItemStack> getStoredPages(ItemStack catalogue) {
+        if (catalogue.contains(ModComponents.INVENTORY_COMPONENT)) {
+            InventoryComponent inventory = catalogue.get(ModComponents.INVENTORY_COMPONENT);
+            if (inventory != null) {
+                return inventory.getItems();
+            }
+        }
+        return List.of();
     }
 }

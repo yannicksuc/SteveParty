@@ -14,7 +14,7 @@ public record DestinationsComponent(List<BlockPos> destinations, String world) {
             Codec.STRING.optionalFieldOf("world", "").forGetter(DestinationsComponent::world)
     ).apply(builder, DestinationsComponent::new));
 
-    public static final DestinationsComponent DEFAULT_BOARD_SPACE_BEHAVIOR = new DestinationsComponent(
+    public static final DestinationsComponent DEFAULT = new DestinationsComponent(
             new ArrayList<>(),
             ""
     );

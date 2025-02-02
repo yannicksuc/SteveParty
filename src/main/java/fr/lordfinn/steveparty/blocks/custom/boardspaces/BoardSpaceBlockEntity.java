@@ -167,7 +167,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
         ItemStack stack = this.getActiveCartridgeItemStack();
         if (stack != null && stack.getItem() instanceof CartridgeItem) {
-            DestinationsComponent component = stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR);
+            DestinationsComponent component = stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT);
             List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
             tileDestinations = getDestinationsStatus(destinations, this.getWorld());
         }
@@ -288,7 +288,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
-        this.getBoardSpaceBehavior().onDestinationReached(this.world, this.pos, token, this, partyController);
+        ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
+        if (behavior == null) return;
+        behavior.onDestinationReached(this.world, this.pos, token, this, partyController);
         partyController.nextStep();
     }
 

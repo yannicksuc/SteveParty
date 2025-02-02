@@ -429,4 +429,8 @@ public class PartyControllerEntity extends BlockEntity {
     public Set<UUID> getInterestedPlayers() {
         return interestedPlayers;
     }
+
+    public List<ItemStack> getMiniGames() {
+       return MiniGamesCatalogueItem.getStoredPages(catalogue);
+    }
 }

@@ -151,16 +151,26 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
 
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
+        Status status = getStatus(boardSpaceBlockEntity, stack);
         int color = NEUTRAL_COLOR;
+        if (status == Status.BAD)
+            color = BAD_COLOR;
+        else if (status == Status.GOOD)
+            color = GOOD_COLOR;
+        setColor(boardSpaceBlockEntity, color);
+    }
+
+    @Override
+    public Status getStatus(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
+        Status status = Status.NEUTRAL;
         InventoryComponent inventory = stack.get(INVENTORY_COMPONENT);
         if (inventory != null) {
             ItemStack item = inventory.getStack(0);
             if (item != null && !item.isEmpty()) {
                 boolean isNegative = item.getOrDefault(IS_NEGATIVE, false);
-                item.set(ModComponents.COLOR, isNegative ? Color.RED.getRGB() : Color.BLUE.getRGB());
-                color = isNegative ? BAD_COLOR : GOOD_COLOR;
+                status = isNegative ? Status.BAD : Status.GOOD;
             }
         }
-        setColor(boardSpaceBlockEntity, color);
+        return status;
     }
 }

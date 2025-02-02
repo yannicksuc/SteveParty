@@ -84,6 +84,7 @@ public class TeleportationPadBlock extends BlockWithEntity {
     @Override
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
+        if (world.isClient) return;
         TeleportationPadBlockEntity entity = (TeleportationPadBlockEntity) world.getBlockEntity(pos);
         if (entity != null) {
             TeleportationPadStorage storage = TeleportationPadStorageManager.getStorage((ServerWorld) world);

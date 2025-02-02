@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity.getDestinationsStatus;
-import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT_BOARD_SPACE_BEHAVIOR;
+import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
 
 public abstract class AbstractDestinationsSelectorItem extends Item {
     public AbstractDestinationsSelectorItem(Settings settings) {
@@ -74,7 +74,7 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
     }
 
     private DestinationsComponent getBoardSpaceBehaviorComponent(ItemStack stack) {
-        return stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT_BOARD_SPACE_BEHAVIOR);
+        return stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT);
     }
 
     private boolean isInvalidWorld(DestinationsComponent component, ServerWorld serverWorld, PlayerEntity player) {
