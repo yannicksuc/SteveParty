@@ -10,18 +10,26 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
+import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 
 import java.util.*;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT;
-import static fr.lordfinn.steveparty.components.ModComponents.TP_TARGETS;
+import static fr.lordfinn.steveparty.components.ModComponents.*;
+import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
 
 public class MiniGamePartyStep extends PartyStep {
     private List<UUID> tokens = new ArrayList<>();
@@ -40,22 +48,127 @@ public class MiniGamePartyStep extends PartyStep {
     @Override
     public void start(PartyControllerEntity partyControllerEntity) {
         super.start(partyControllerEntity);
-        if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) return;
+
+        // Step 1: Ensure the world is a ServerWorld
+        if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) {
+            return;  // Exit early if not a ServerWorld
+        }
+
+        // Step 2: Send a message to interested players that the mini-game is starting
+        sendStartMessage(partyControllerEntity);
+
+        // Step 3: Check if there are mini-games to play, exit early if none
         List<ItemStack> miniGames = partyControllerEntity.getMiniGames();
         if (miniGames.isEmpty()) {
             partyControllerEntity.nextStep();
             return;
         }
-        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = partyControllerEntity.getPartyData().getTokensWithOwners(serverWorld);
+
+        // Step 4: Get the tokens with their owners and determine their statuses
+        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = getTokensWithOwners(partyControllerEntity, serverWorld);
         List<ABoardSpaceBehavior.Status> statuses = getTokenStatuses(serverWorld, tokensWithOwners);
+
+        // Step 5: Assign mini-games to team dispositions
         Map<PossibleTeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = assignMiniGamesToTeamDispositions(tokensWithOwners, statuses, miniGames, serverWorld);
+
+        // Step 6: Choose a random disposition for the mini-games
+        PossibleTeamDisposition chosenDisposition = chooseRandomDisposition(miniGamesToTeamDispositions);
+
+        // Step 7: Notify players about the chosen disposition
+        notifyPlayersAboutChosenDisposition(partyControllerEntity, chosenDisposition);
+
+        // Step 8: Shuffle and prepare mini-games for the chosen disposition
+        List<ItemStack> applicableMiniGames = miniGamesToTeamDispositions.get(chosenDisposition);
+        Collections.shuffle(applicableMiniGames);
+
+        // Step 9: Start the iteration effect through the mini-games
+        AtomicInteger iterations = new AtomicInteger(0);
+        List<ServerPlayerEntity> players = partyControllerEntity.getInterestedPlayersEntities();
+        playIterationEffect(iterations, applicableMiniGames, partyControllerEntity, players);
+    }
+
+    // Helper Methods
+    private void sendStartMessage(PartyControllerEntity partyControllerEntity) {
+        MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
+                Text.translatable("message.steveparty.minigame_start")
+                        .setStyle(Style.EMPTY.withColor(0xFFA500)),
+                MessageUtils.MessageType.CHAT);
+    }
+
+    private Map<TokenizedEntityInterface, PlayerEntity> getTokensWithOwners(PartyControllerEntity partyControllerEntity, ServerWorld serverWorld) {
+        return partyControllerEntity.getPartyData().getTokensWithOwners(serverWorld);
+    }
+
+    private PossibleTeamDisposition chooseRandomDisposition(Map<PossibleTeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
+        List<PossibleTeamDisposition> teamDispositions = new ArrayList<>(miniGamesToTeamDispositions.keySet());
+        Random random = new Random();
+        return teamDispositions.get(random.nextInt(teamDispositions.size()));
+    }
+
+    private void notifyPlayersAboutChosenDisposition(PartyControllerEntity partyControllerEntity, PossibleTeamDisposition chosenDisposition) {
+        MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
+                Text.translatable("message.steveparty.chosen_disposition", chosenDisposition.toText()),
+                MessageUtils.MessageType.CHAT);
+    }
+
+    private void playIterationEffect(AtomicInteger iterations, List<ItemStack> applicableMiniGames, PartyControllerEntity partyControllerEntity, List<ServerPlayerEntity> players) {
+        int currentIteration = iterations.incrementAndGet();
+
+        ItemStack chosenMiniGame = applicableMiniGames.get(currentIteration % applicableMiniGames.size());
+
+        MessageUtils.sendToPlayers(
+                players,
+                formatMiniGameMessage(chosenMiniGame, false),
+                MessageUtils.MessageType.ACTION_BAR
+        );
+        if (currentIteration >= 12 + (new Random()).nextInt(8)) {
+            finalizeMiniGameSelection(iterations, applicableMiniGames, partyControllerEntity, players);
+        } else {
+            playSoundToPlayers(players, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.4f, 1);
+            Steveparty.SCHEDULER.schedule(
+                    UUID.randomUUID(),
+                    currentIteration,
+                    () -> playIterationEffect(iterations, applicableMiniGames, partyControllerEntity, players)
+            );
+        }
+    }
+
+    private void finalizeMiniGameSelection(AtomicInteger iterations, List<ItemStack> applicableMiniGames, PartyControllerEntity partyControllerEntity, List<ServerPlayerEntity> players) {
+        int currentIteration = iterations.get();
+        ItemStack chosenMiniGame = applicableMiniGames.get(currentIteration % applicableMiniGames.size());
+
+        MessageUtils.sendToPlayers(
+                players,
+                formatMiniGameMessage(chosenMiniGame, true),
+                MessageUtils.MessageType.TITLE
+        );
+
+        // Store the final selection
+        partyControllerEntity.catalogue.set(CURRENT_MINIGAME, chosenMiniGame);
+
+        // Play a celebratory sound for selection
+        playSoundToPlayers(players, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1f, 1);
+    }
+
+        private Text formatMiniGameMessage(ItemStack chosenMiniGame, boolean isFinal) {
+        int whiteColor = isFinal ? 0xFFA500 : 0xFFFFFF; // Make the final text gold/orange
+
+        return Text.literal("🎲 ")
+                .styled(style -> style.withColor(0xFFA500)) // Orange start
+                .append(chosenMiniGame.getName().copy()
+                        .styled(style -> style.withColor(whiteColor).withBold(isFinal))) // White or Orange if final
+                .append(Text.literal(" 🎲")
+                        .styled(style -> style.withColor(0xFFA500))); // Orange end
+    }
+
+    private static void logMinigamesDispositions(Map<PossibleTeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
         for (Map.Entry<PossibleTeamDisposition, List<ItemStack>> entry : miniGamesToTeamDispositions.entrySet()) {
             PossibleTeamDisposition disposition = entry.getKey();
             List<ItemStack> applicableMiniGames = entry.getValue();
             Steveparty.LOGGER.info("Disposition: {}", disposition);
             Steveparty.LOGGER.info("Applicable mini-games: {}",
                     applicableMiniGames.stream()
-                            .map(item -> item.getName().toString())  // Convert ItemStacks to their names
+                            .map(item -> item.getName().toString())
                             .reduce("", (result, name) -> result + " | " + name));
         }
     }

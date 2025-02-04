@@ -384,6 +384,19 @@ public class PartyControllerEntity extends BlockEntity {
         }
     }
 
+    public List<ServerPlayerEntity> getInterestedPlayersEntities() {
+        List<ServerPlayerEntity> interestedPlayers = new ArrayList<>();
+        if (this.world instanceof ServerWorld serverWorld) {
+            for (UUID playerUUID : this.interestedPlayers) {
+                PlayerEntity player = serverWorld.getPlayerByUuid(playerUUID);
+                if (player instanceof ServerPlayerEntity serverPlayer) {
+                    interestedPlayers.add(serverPlayer);
+                }
+            }
+        }
+        return interestedPlayers;
+    }
+
     void sendPacketToInterestedPlayer(ServerPlayerEntity player) {
         sendPacketToInterestedPlayer(player, partyData);
     }
