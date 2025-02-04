@@ -60,6 +60,8 @@ public class ModComponents {
             registerComponent("state", Codec.INT);
     public static final ComponentType<List<TeleportingTarget>> TP_TARGETS =
             registerComponent("teleporting-targets", Codec.list(TeleportingTarget.CODEC));
+    public static final ComponentType<ItemStack> CURRENT_MINIGAME =
+            registerComponent("current-minigame", ItemStack.CODEC);
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

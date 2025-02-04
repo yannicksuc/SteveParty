@@ -2,10 +2,7 @@ package fr.lordfinn.steveparty.utils;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public class TaskScheduler {
@@ -22,34 +19,37 @@ public class TaskScheduler {
     public <T> void repeat(UUID taskId, int delayInTicks, Runnable callback, Callable<Boolean> condition, Runnable lastCallback) {
         tasks.put(taskId, new Task<>(delayInTicks, callback, condition, lastCallback));
     }
-
     private void tick() {
-        Iterator<Map.Entry<UUID, Task<?>>> iterator = tasks.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, Task<?>> entry = iterator.next();
+        // We will use a list to collect the entries to remove, so no modification happens directly during iteration.
+        List<UUID> toRemove = new ArrayList<>();
+
+        for (Map.Entry<UUID, Task<?>> entry : tasks.entrySet()) {
+            if (entry == null) continue;
             Task<?> task = entry.getValue();
+            if (task == null) continue;
             int ticksRemaining = task.getTicksRemaining() - 1;
             Boolean condition = task.condition();
+
             if (Boolean.FALSE.equals(condition)) {
                 task.executeLastCallback();
-                try {
-                    iterator.remove();
-                } catch (Exception ignored) {}
+                toRemove.add(entry.getKey());  // Collect the UUID for removal after iteration
                 continue;
             }
+
             if (ticksRemaining <= 0) {
                 task.execute();
                 if (Boolean.TRUE.equals(condition)) {
                     task.setTicksRemaining(task.getInitialTicks());
                 } else {
                     task.executeLastCallback();
-                    try {
-                        iterator.remove();
-                    } catch (Exception ignored) {}
+                    toRemove.add(entry.getKey());  // Collect the UUID for removal after iteration
                 }
             } else {
                 task.setTicksRemaining(ticksRemaining);
             }
         }
+
+        // After the iteration, remove the collected entries safely
+        toRemove.forEach(tasks::remove);
     }
 }
