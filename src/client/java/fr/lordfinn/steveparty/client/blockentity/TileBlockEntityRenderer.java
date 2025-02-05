@@ -33,10 +33,10 @@ import static java.lang.Math.PI;
 public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBlockEntity> {
 
     private final SkullEntityModel model;
-    private final Identifier textureBad = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_angry");
-    private final Identifier textureNeutral = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_neutral");
-    private final Identifier textureExcited = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_excited");
-    private final Identifier textureBlow = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_blow");
+    private static final Identifier textureBad = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_angry");
+    private static final Identifier textureNeutral = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_neutral");
+    private static final Identifier textureExcited = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_excited");
+    private static final Identifier textureBlow = Identifier.of(Steveparty.MOD_ID, "block/tile_overlay_blow");
 
 
     public TileBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {

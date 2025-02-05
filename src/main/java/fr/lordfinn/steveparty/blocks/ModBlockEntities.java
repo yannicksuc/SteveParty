@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.TeleportationPadBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.TrafficSignBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -49,7 +50,11 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "step_controller"),
             FabricBlockEntityTypeBuilder.create(StepControllerBlockEntity::new, ModBlocks.STEP_CONTROLLER).build(null)
     );
-
+    public static final BlockEntityType<TrafficSignBlockEntity> TRAFFIC_SIGN_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "traffic_sign"),
+            FabricBlockEntityTypeBuilder.create(TrafficSignBlockEntity::new, ModBlocks.SPRUCE_TRAFFIC_SIGN, ModBlocks.JUNGLE_TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.DARK_OAK_TRAFFIC_SIGN, ModBlocks.CRIMSON_TRAFFIC_SIGN, ModBlocks.WARPED_TRAFFIC_SIGN, ModBlocks.BIRCH_TRAFFIC_SIGN, ModBlocks.ACACIA_TRAFFIC_SIGN, ModBlocks.MANGROVE_TRAFFIC_SIGN, ModBlocks.CHERRY_TRAFFIC_SIGN).build(null)
+    );
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }
