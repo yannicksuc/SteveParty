@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.component.ComponentChanges;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -207,21 +208,23 @@ public class TrafficSignBlock extends BlockWithEntity {
     }
 
     @Override
-    public void onBroken(WorldAccess world, BlockPos pos, BlockState state) {
-        super.onBroken(world, pos, state);
-
-        // Get the BlockEntity
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
 
+        // Check if the block has a BlockEntity (like your TrafficSignBlockEntity)
         if (blockEntity instanceof TrafficSignBlockEntity signEntity) {
-            // Create an ItemStack of the block with its data
-            ItemStack itemStack = new ItemStack(this); // Create an ItemStack of the current block
-            // Drop the item with the NBT data
-            Block.dropStack((World) world, pos, itemStack);
+            // Prevent dropping the block in creative mode
+            if (!player.isCreative()) {
+                // Drop the block as an item
+                ItemStack itemStack = new ItemStack(this);
+                Block.dropStack(world, pos, itemStack);
+            }
         }
 
-        // Optionally, remove the block from the world if you want it destroyed
+        // Remove the block from the world
         world.removeBlock(pos, false);
+
+        return super.onBreak(world, pos, state, player);
     }
 
     static {
