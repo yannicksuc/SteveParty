@@ -7,8 +7,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
-import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorage;
+import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.mob.MobEntity;
@@ -17,6 +18,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -69,13 +71,14 @@ public class MiniGamePartyStep extends PartyStep {
         List<ABoardSpaceBehavior.Status> statuses = getTokenStatuses(serverWorld, tokensWithOwners);
 
         // Step 5: Assign mini-games to team dispositions
-        Map<PossibleTeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = assignMiniGamesToTeamDispositions(tokensWithOwners, statuses, miniGames, serverWorld);
+        Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = assignMiniGamesToTeamDispositions(tokensWithOwners, statuses, miniGames, serverWorld);
 
         // Step 6: Choose a random disposition for the mini-games
-        PossibleTeamDisposition chosenDisposition = chooseRandomDisposition(miniGamesToTeamDispositions);
+        TeamDisposition chosenDisposition = chooseRandomDisposition(miniGamesToTeamDispositions);
+        MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(partyControllerEntity.catalogue, chosenDisposition);
 
         // Step 7: Notify players about the chosen disposition
-        notifyPlayersAboutChosenDisposition(partyControllerEntity, chosenDisposition);
+        notifyPlayersAboutChosenDisposition(partyControllerEntity, chosenDisposition, serverWorld.getServer());
 
         // Step 8: Shuffle and prepare mini-games for the chosen disposition
         List<ItemStack> applicableMiniGames = miniGamesToTeamDispositions.get(chosenDisposition);
@@ -99,15 +102,15 @@ public class MiniGamePartyStep extends PartyStep {
         return partyControllerEntity.getPartyData().getTokensWithOwners(serverWorld);
     }
 
-    private PossibleTeamDisposition chooseRandomDisposition(Map<PossibleTeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
-        List<PossibleTeamDisposition> teamDispositions = new ArrayList<>(miniGamesToTeamDispositions.keySet());
+    private TeamDisposition chooseRandomDisposition(Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
+        List<TeamDisposition> teamDispositions = new ArrayList<>(miniGamesToTeamDispositions.keySet());
         Random random = new Random();
         return teamDispositions.get(random.nextInt(teamDispositions.size()));
     }
 
-    private void notifyPlayersAboutChosenDisposition(PartyControllerEntity partyControllerEntity, PossibleTeamDisposition chosenDisposition) {
+    private void notifyPlayersAboutChosenDisposition(PartyControllerEntity partyControllerEntity, TeamDisposition chosenDisposition, MinecraftServer server) {
         MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
-                Text.translatable("message.steveparty.chosen_disposition", chosenDisposition.toText()),
+                Text.translatable("message.steveparty.chosen_disposition", chosenDisposition.toText(server)),
                 MessageUtils.MessageType.CHAT);
     }
 
@@ -144,7 +147,7 @@ public class MiniGamePartyStep extends PartyStep {
         );
 
         // Store the final selection
-        partyControllerEntity.catalogue.set(CURRENT_MINIGAME, chosenMiniGame);
+        MiniGamesCatalogueItem.setCurrentMiniGamePage(partyControllerEntity.catalogue, chosenMiniGame);
 
         // Play a celebratory sound for selection
         playSoundToPlayers(players, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1f, 1);
@@ -161,9 +164,9 @@ public class MiniGamePartyStep extends PartyStep {
                         .styled(style -> style.withColor(0xFFA500))); // Orange end
     }
 
-    private static void logMinigamesDispositions(Map<PossibleTeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
-        for (Map.Entry<PossibleTeamDisposition, List<ItemStack>> entry : miniGamesToTeamDispositions.entrySet()) {
-            PossibleTeamDisposition disposition = entry.getKey();
+    private static void logMinigamesDispositions(Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
+        for (Map.Entry<TeamDisposition, List<ItemStack>> entry : miniGamesToTeamDispositions.entrySet()) {
+            TeamDisposition disposition = entry.getKey();
             List<ItemStack> applicableMiniGames = entry.getValue();
             Steveparty.LOGGER.info("Disposition: {}", disposition);
             Steveparty.LOGGER.info("Applicable mini-games: {}",
@@ -192,22 +195,22 @@ public class MiniGamePartyStep extends PartyStep {
         return statuses;
     }
 
-    public static Map<PossibleTeamDisposition, List<ItemStack>> assignMiniGamesToTeamDispositions(
+    public static Map<TeamDisposition, List<ItemStack>> assignMiniGamesToTeamDispositions(
             Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners,
             List<ABoardSpaceBehavior.Status> statuses,
             List<ItemStack> miniGames, ServerWorld world) {
 
-        Set<PossibleTeamDisposition> teamDispositions = TeamDispositionGenerator.generateTeamDispositions(tokensWithOwners, statuses);
-        Map<PossibleTeamDisposition, List<ItemStack>> teamDispositionsToMiniGames = new HashMap<>();
+        Set<TeamDisposition> teamDispositions = TeamDispositionGenerator.generateTeamDispositions(tokensWithOwners, statuses);
+        Map<TeamDisposition, List<ItemStack>> teamDispositionsToMiniGames = new HashMap<>();
 
-        for (PossibleTeamDisposition disposition : teamDispositions) {
+        for (TeamDisposition disposition : teamDispositions) {
             List<ItemStack> applicableMiniGames = new ArrayList<>();
 
-            for (ItemStack miniGameStack : miniGames) {
+            for (ItemStack miniGamePageStack : miniGames) {
                 // Extract teleporting targets from the mini-game stack
-                TeleportationPadStorage storage = TeleportationPadStorageManager.getStorage(world);
+                TeleportationPadBooksStorage storage = TeleportationPadStorageManager.getBooksStorage(world);
                 List<TeleportingTarget> teleportingTargets = new ArrayList<>();
-                miniGameStack.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations()
+                miniGamePageStack.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations()
                         .forEach(pos -> {
                             ItemStack book = storage.getTeleportationPadBook(pos);
                             if (!book.isEmpty()) {
@@ -217,7 +220,7 @@ public class MiniGamePartyStep extends PartyStep {
                         });
                 // Check if the mini-game fits the team disposition
                 if (doesMiniGameFitTeamDisposition(disposition, teleportingTargets)) {
-                    applicableMiniGames.add(miniGameStack);
+                    applicableMiniGames.add(miniGamePageStack);
                 }
             }
 
@@ -230,7 +233,7 @@ public class MiniGamePartyStep extends PartyStep {
     }
 
     // Check if the mini-game can accept the current team disposition based on teleporting targets
-    private static boolean doesMiniGameFitTeamDisposition(PossibleTeamDisposition disposition, List<TeleportingTarget> teleportingTargets) {
+    private static boolean doesMiniGameFitTeamDisposition(TeamDisposition disposition, List<TeleportingTarget> teleportingTargets) {
         // Track how many players from each group (A or B) are available to fill the teleportation targets
         int teamAPlayersCount = disposition.teamA.size();
         int teamBPlayersCount = disposition.teamB.size();
@@ -241,10 +244,8 @@ public class MiniGamePartyStep extends PartyStep {
 
         // Iterate through all teleporting targets
         for (TeleportingTarget target : teleportingTargets) {
-            TeleportingTarget.Group targetGroup = target.group;
-            int fillCapacity = target.fillCapacity; // Required number of players for this group
-            if (fillCapacity == 0)
-                fillCapacity = 999999999;
+            TeleportingTarget.Group targetGroup = target.getGroup();
+            int fillCapacity = target.getCheckedFillCapacity(); // Required number of players for this group
 
             // Check each type of group
             switch (targetGroup) {

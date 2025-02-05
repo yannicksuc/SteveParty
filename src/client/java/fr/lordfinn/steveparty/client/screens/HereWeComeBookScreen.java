@@ -16,7 +16,6 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,14 +70,14 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
         boolean hoverPriority = isMouseOver(mouseX, mouseY, startX + TEXT_PRIORITY_OFFSET_X, startY, TEXT_INPUT_WIDTH, TEXT_INPUT_HEIGHT);
         boolean hoverMinus = isMouseOver(mouseX, mouseY, startX + MINUS_OFFSET_X, startY, SQUARE_ICONS_SIZE, SQUARE_ICONS_SIZE);
 
-        int groupTextureX = GROUP_ICON_START_X + (target.group.ordinal() * (SQUARE_ICONS_SIZE + GROUP_ICON_INTERVAL_X));
+        int groupTextureX = GROUP_ICON_START_X + (target.getGroup().ordinal() * (SQUARE_ICONS_SIZE + GROUP_ICON_INTERVAL_X));
         context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE, startX + GROUP_OFFSET_X, startY, groupTextureX, GROUP_ICON_START_Y, SQUARE_ICONS_SIZE, SQUARE_ICONS_SIZE, 256, 256);
 
         context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE, startX + TEXT_CAPACITY_OFFSET_X, startY, TEXT_INPUT_X, hoverCapacity ? TEXT_INPUT_Y + LINE_SPACING : TEXT_INPUT_Y, TEXT_INPUT_WIDTH, TEXT_INPUT_HEIGHT, 256, 256);
-        context.drawText(textRenderer, target.fillCapacity == 0 ? "∞" : String.valueOf(target.fillCapacity), startX + TEXT_CAPACITY_OFFSET_X + 1, startY + 1, hoverCapacity ? TEXT_COLOR_HOVER : TEXT_COLOR_NORMAL, false);
+        context.drawText(textRenderer, target.getFillCapacity() == 0 ? "∞" : String.valueOf(target.getFillCapacity()), startX + TEXT_CAPACITY_OFFSET_X + 1, startY + 1, hoverCapacity ? TEXT_COLOR_HOVER : TEXT_COLOR_NORMAL, false);
 
         context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE, startX + TEXT_PRIORITY_OFFSET_X, startY, TEXT_INPUT_X, hoverPriority ? TEXT_INPUT_Y + LINE_SPACING : TEXT_INPUT_Y, TEXT_INPUT_WIDTH, TEXT_INPUT_HEIGHT, 256, 256);
-        context.drawText(textRenderer, String.valueOf(target.fillPriorityWeight), startX + TEXT_PRIORITY_OFFSET_X + 1, startY + 1, hoverPriority ? TEXT_COLOR_HOVER : TEXT_COLOR_NORMAL, false);
+        context.drawText(textRenderer, String.valueOf(target.getFillPriorityWeight()), startX + TEXT_PRIORITY_OFFSET_X + 1, startY + 1, hoverPriority ? TEXT_COLOR_HOVER : TEXT_COLOR_NORMAL, false);
 
         context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE, startX + MINUS_OFFSET_X, startY, MINUS_ICON_X, hoverMinus ? MINUS_ICON_Y + LINE_SPACING : MINUS_ICON_Y, SQUARE_ICONS_SIZE, SQUARE_ICONS_SIZE, 256, 256);
     }
@@ -94,7 +93,7 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
             lines.add(Text.translatable("gui.steveparty.group").setStyle(Style.EMPTY.withColor(0xFFD700).withBold(true)));
             lines.add(Text.translatable("gui.steveparty.group_description").setStyle(Style.EMPTY.withItalic(true)));
             TeleportingTarget.Group[] groups = TeleportingTarget.Group.values();
-            int selectedIndex = target.group.ordinal();
+            int selectedIndex = target.getGroup().ordinal();
             lines.add(MutableText.of(Text.of(groups[selectedIndex - 1 > 0 ? selectedIndex - 1 : groups.length - 1].name()).getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
             lines.add(MutableText.of(Text.of("-> "+ groups[selectedIndex].name()).getContent()).setStyle(Style.EMPTY.withBold(true)));
             lines.add(MutableText.of(Text.of(groups[selectedIndex + 1 < groups.length ? selectedIndex + 1 : 0].name()).getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
@@ -153,13 +152,13 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
 
             // 🎛️ Gestion du changement de groupe avec le scroll
             if (isMouseOver(mouseX, mouseY, x + GROUP_OFFSET_X, y + START_Y_OFFSET + i * LINE_SPACING, SQUARE_ICONS_SIZE, SQUARE_ICONS_SIZE)) {
-                int index = target.group.ordinal() + (verticalAmount > 0 ? 1 : -1);
+                int index = target.getGroup().ordinal() + (verticalAmount > 0 ? 1 : -1);
                 if (index >= TeleportingTarget.Group.values().length) {
                     index = 0;
                 } else if (index < 0) {
                     index = TeleportingTarget.Group.values().length - 1;
                 }
-                target.group = TeleportingTarget.Group.values()[index];
+                target.setGroup(TeleportingTarget.Group.values()[index]);
                 sendUpdateToServer();
                 playedSound = true;
             }
@@ -167,9 +166,9 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
             // 🔢 Gestion du scroll sur fillCapacity
             if (isMouseOver(mouseX, mouseY, x + TEXT_CAPACITY_OFFSET_X, y + START_Y_OFFSET + i * LINE_SPACING, TEXT_INPUT_WIDTH, TEXT_INPUT_HEIGHT)) {
                 if (verticalAmount > 0) {
-                    target.fillCapacity = (target.fillCapacity == 0) ? 1 : target.fillCapacity + 1;
+                    target.setFillCapacity((target.getFillCapacity() == 0) ? 1 : target.getFillCapacity() + 1);
                 } else {
-                    target.fillCapacity = (target.fillCapacity == 1) ? 0 : Math.max(0, target.fillCapacity - 1);
+                    target.setFillCapacity((target.getFillCapacity() == 1) ? 0 : Math.max(0, target.getFillCapacity() - 1));
                 }
                 sendUpdateToServer();
                 playedSound = true;
@@ -177,7 +176,7 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
 
             // 📶 Gestion du scroll sur fillPriorityWeight
             if (isMouseOver(mouseX, mouseY, x + TEXT_PRIORITY_OFFSET_X, y + START_Y_OFFSET + i * LINE_SPACING, TEXT_INPUT_WIDTH, TEXT_INPUT_HEIGHT)) {
-                target.fillPriorityWeight = Math.max(0, target.fillPriorityWeight + (verticalAmount > 0 ? 1 : -1));
+                target.setFillPriorityWeight(Math.max(0, target.getFillPriorityWeight() + (verticalAmount > 0 ? 1 : -1)));
                 sendUpdateToServer();
                 playedSound = true;
             }

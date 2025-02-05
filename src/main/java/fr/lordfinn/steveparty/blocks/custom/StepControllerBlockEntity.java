@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
@@ -22,11 +21,6 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEntity, TickableBlockEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
@@ -34,8 +28,10 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
     protected static final RawAnimation SIDE = RawAnimation.begin().thenLoop("side");
     protected static final RawAnimation DOWN = RawAnimation.begin().thenLoop("down");
     protected static final RawAnimation ACTIVATED = RawAnimation.begin().thenPlay ("powered");
+    private static final int RANGE = 64; //TODO Add config to manage range
     public int mode = 0;
     public boolean wasPowered = false;
+
 
     public StepControllerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEP_CONTROLLER_ENTITY, pos, state);
@@ -108,24 +104,13 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
 
     private void trigger() {
         if (this.world != null && this.world instanceof ServerWorld) {
-            PartyControllerEntity.getActivePartyControllers().stream()
-                    .filter(entity -> entity.getPartyData().isStarted())
-                    .filter(entity -> entity.getPos().getSquaredDistance(this.pos) < 64)
-                    .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(this.pos)))
+            PartyControllerEntity.getClosestActivePartyControllerEntity(this.pos, RANGE)
                     .ifPresentOrElse(partyControllerEntity ->  {
                         world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         switch (this.mode) {
-                            case 0:
-                                partyControllerEntity.nextStep();
-                                break;
-                            case 1:
-                                partyControllerEntity.restartStep();
-                                break;
-                            case 2:
-                                partyControllerEntity.previousStep();
-                                break;
-                            default:
-                                break;
+                            case 0 -> partyControllerEntity.nextStep();
+                            case 1 -> partyControllerEntity.restartStep();
+                            case 2 -> partyControllerEntity.previousStep();
                         }
                         world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_OPEN_SHUTTER, SoundCategory.BLOCKS, 1.0F, 1.0F);

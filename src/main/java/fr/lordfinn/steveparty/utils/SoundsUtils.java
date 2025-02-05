@@ -14,14 +14,18 @@ public class SoundsUtils {
         RegistryEntry<SoundEvent> soundEntry = Registries.SOUND_EVENT.getEntry(soundEvent);
 
         players.forEach(player -> {
-            player.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                    soundEntry,
-                    category,
-                    player.getX(), player.getY(), player.getZ(),
-                    volume, // Volume
-                    pitch, // Pitch
-                    1     // Seed
-            ));
+            playSound(category, volume, pitch, player, soundEntry);
         });
+    }
+
+    public static void playSound(SoundCategory category, float volume, float pitch, ServerPlayerEntity player, RegistryEntry<SoundEvent> soundEntry) {
+        player.networkHandler.sendPacket(new PlaySoundS2CPacket(
+                soundEntry,
+                category,
+                player.getX(), player.getY(), player.getZ(),
+                volume, // Volume
+                pitch, // Pitch
+                1     // Seed
+        ));
     }
 }
