@@ -1,0 +1,8 @@
+{
+	"parent": "steveparty:block/traffic_sign",
+	"textures": {
+	  "planks": "minecraft:block/birch_planks",
+	  "log": "minecraft:block/stripped_birch_log",
+	  "log_top": "minecraft:block/stripped_birch_log_top"
+	}
+  }

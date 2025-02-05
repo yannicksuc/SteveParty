@@ -19,6 +19,7 @@ public class ModPayloads {
     public static final Identifier BLOCK_POSES_MAP_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "block-poses-map-payload");
     public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "here-we-go-book-payload");
     public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "here-we-come-book-payload");
+    public static final Identifier TRAFFIC_SIGN_PAYLOAD = Identifier.of(Steveparty.MOD_ID, "traffic-sign-payload");
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);

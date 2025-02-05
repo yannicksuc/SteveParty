@@ -93,6 +93,16 @@ public class ModItems {
             itemGroup.add(MINI_GAME_PAGE);
             itemGroup.add(VILLAGER_BLOCK);
             itemGroup.add(CASH_REGISTER);
+            itemGroup.add(OAK_TRAFFIC_SIGN);
+            itemGroup.add(BIRCH_TRAFFIC_SIGN);
+            itemGroup.add(SPRUCE_TRAFFIC_SIGN);
+            itemGroup.add(JUNGLE_TRAFFIC_SIGN);
+            itemGroup.add(ACACIA_TRAFFIC_SIGN);
+            itemGroup.add(DARK_OAK_TRAFFIC_SIGN);
+            itemGroup.add(MANGROVE_TRAFFIC_SIGN);
+            itemGroup.add(CHERRY_TRAFFIC_SIGN);
+            itemGroup.add(CRIMSON_TRAFFIC_SIGN);
+            itemGroup.add(WARPED_TRAFFIC_SIGN);
         });
     }
 }
