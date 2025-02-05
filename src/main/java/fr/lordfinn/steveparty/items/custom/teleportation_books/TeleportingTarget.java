@@ -5,22 +5,50 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public class TeleportingTarget {
     public static final Codec<TeleportingTarget> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Group.CODEC.fieldOf("group").forGetter(t -> t.group),
-            Codec.INT.fieldOf("fillCapacity").forGetter(t -> t.fillCapacity),
-            Codec.INT.fieldOf("fillPriorityWeight").forGetter(t -> t.fillPriorityWeight)
+            Group.CODEC.fieldOf("group").forGetter(TeleportingTarget::getGroup),
+            Codec.INT.fieldOf("fillCapacity").forGetter(TeleportingTarget::getFillCapacity),
+            Codec.INT.fieldOf("fillPriorityWeight").forGetter(TeleportingTarget::getFillPriorityWeight)
     ).apply(instance, TeleportingTarget::new));
 
-    public Group group = Group.EVERYONE;
-    public int fillCapacity = 0; // 0 = no limit
-    public int fillPriorityWeight = 0;
+    private Group group = Group.EVERYONE;
+    private int fillCapacity = 0; // 0 = no limit
+    private int fillPriorityWeight = 0;
 
     public TeleportingTarget(Group group, int fillCapacity, int fillPriorityWeight) {
-        this.group = group;
-        this.fillCapacity = fillCapacity;
-        this.fillPriorityWeight = fillPriorityWeight;
+        this.setGroup(group);
+        this.setFillCapacity(fillCapacity);
+        this.setFillPriorityWeight(fillPriorityWeight);
     }
 
     public TeleportingTarget() {}
+
+    public Group getGroup() {
+        return group;
+    }
+
+    public void setGroup(Group group) {
+        this.group = group;
+    }
+
+    public int getFillCapacity() {
+        return fillCapacity;
+    }
+
+    public int getCheckedFillCapacity() {
+        return fillCapacity <= 0 ? Integer.MAX_VALUE : fillCapacity;
+    }
+
+    public void setFillCapacity(int fillCapacity) {
+        this.fillCapacity = fillCapacity;
+    }
+
+    public int getFillPriorityWeight() {
+        return fillPriorityWeight;
+    }
+
+    public void setFillPriorityWeight(int fillPriorityWeight) {
+        this.fillPriorityWeight = fillPriorityWeight;
+    }
 
     public enum Group {
         EVERYONE,

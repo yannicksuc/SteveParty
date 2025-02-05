@@ -61,6 +61,13 @@ public class PartyControllerEntity extends BlockEntity {
         return ACTIVE_PARTY_CONTROLLERS.stream().filter(entity -> entity.getPos().equals(pos)).findFirst().orElse(null);
     }
 
+    public static Optional<PartyControllerEntity> getClosestActivePartyControllerEntity(BlockPos pos, int radius) {
+        return PartyControllerEntity.getActivePartyControllers().stream()
+                .filter(entity -> entity.getPartyData().isStarted())
+                .filter(entity -> radius <= 0 || entity.getPos().getSquaredDistance(pos) < radius)
+                .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
+    }
+
     @Override
     protected void readComponents(ComponentsAccess components) {
         super.readComponents(components);
@@ -310,7 +317,6 @@ public class PartyControllerEntity extends BlockEntity {
     public void nextStep() {
            endCurrentStep();
         startStep(partyData.getStepIndex() + 1);
-        Steveparty.LOGGER.info("NEXT");
     }
 
     public void restartStep() {
@@ -336,7 +342,6 @@ public class PartyControllerEntity extends BlockEntity {
         PartyStep currentStep = partyData.getCurrentStep();
         if (currentStep != null)
             currentStep.start(this);
-        Steveparty.LOGGER.info("SEND PACKET");
         sendPacketToInterestedPlayers();
     }
 
@@ -445,5 +450,9 @@ public class PartyControllerEntity extends BlockEntity {
 
     public List<ItemStack> getMiniGames() {
        return MiniGamesCatalogueItem.getStoredPages(catalogue);
+    }
+
+    public ItemStack getCatalogue() {
+        return catalogue;
     }
 }

@@ -26,9 +26,9 @@ public class HereWeGoBookScreen extends TeleportationBookScreen {
     private static final int RADIO_BOX_SPACING = 12, X_OFFSET = 14, Y_OFFSET = 27, MAX_TEXT_WIDTH = 105;
 
     private final List<Text> options = List.of(
-            Text.translatable("steveparty.gui.here_we_go.tp_to_current_mini-game"),
-            Text.translatable("steveparty.gui.here_we_go.tp_to_last_used"),
-            Text.translatable("steveparty.gui.here_we_go.tp_to_pos")
+            Text.translatable("gui.steveparty.here_we_go.tp_to_current_mini-game"),
+            Text.translatable("gui.steveparty.here_we_go.tp_to_last_used"),
+            Text.translatable("gui.steveparty.here_we_go.tp_to_pos")
     );
     private int selectedOption = 0;
     private int hoveredOption = -1;

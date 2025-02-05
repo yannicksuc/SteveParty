@@ -7,14 +7,14 @@ import net.minecraft.entity.player.PlayerEntity;
 import java.util.*;
 
 public class TeamDispositionGenerator {
-    public static Set<PossibleTeamDisposition> generateTeamDispositions(
+    public static Set<TeamDisposition> generateTeamDispositions(
             Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners,
             List<ABoardSpaceBehavior.Status> statuses) {
 
         // Categorize players based on statuses
-        List<PlayerEntity> bad = new ArrayList<>();
-        List<PlayerEntity> good = new ArrayList<>();
-        List<PlayerEntity> neutral = new ArrayList<>();
+        List<UUID> bad = new ArrayList<>();
+        List<UUID> good = new ArrayList<>();
+        List<UUID> neutral = new ArrayList<>();
 
         int index = 0;
         for (Map.Entry<TokenizedEntityInterface, PlayerEntity> entry : tokensWithOwners.entrySet()) {
@@ -22,25 +22,25 @@ public class TeamDispositionGenerator {
             ABoardSpaceBehavior.Status status = statuses.get(index++);
 
             switch (status) {
-                case BAD -> bad.add(player);
-                case GOOD -> good.add(player);
-                case NEUTRAL -> neutral.add(player);
+                case BAD -> bad.add(player.getUuid());
+                case GOOD -> good.add(player.getUuid());
+                case NEUTRAL -> neutral.add(player.getUuid());
             }
         }
 
         return generateTeamDispositionsFromLists(bad, good, neutral);
     }
 
-    private static Set<PossibleTeamDisposition> generateTeamDispositionsFromLists(
-            List<PlayerEntity> bad, List<PlayerEntity> good, List<PlayerEntity> neutral) {
+    private static Set<TeamDisposition> generateTeamDispositionsFromLists(
+            List<UUID> bad, List<UUID> good, List<UUID> neutral) {
 
-        Set<PossibleTeamDisposition> teamDispositions = new HashSet<>();
+        Set<TeamDisposition> teamDispositions = new HashSet<>();
         int neutralCount = neutral.size();
         int maxStates = 1 << neutralCount; // 2^neutralCount possible distributions
 
         for (int mask = 0; mask < maxStates; mask++) {
-            Set<PlayerEntity> teamA = new HashSet<>(bad);
-            Set<PlayerEntity> teamB = new HashSet<>(good);
+            Set<UUID> teamA = new HashSet<>(bad);
+            Set<UUID> teamB = new HashSet<>(good);
 
             for (int i = 0; i < neutralCount; i++) {
                 if ((mask & (1 << i)) != 0) {
@@ -50,7 +50,7 @@ public class TeamDispositionGenerator {
                 }
             }
 
-            teamDispositions.add(new PossibleTeamDisposition(teamA, teamB));
+            teamDispositions.add(new TeamDisposition(teamA, teamB));
         }
 
         return teamDispositions;

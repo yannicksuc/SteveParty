@@ -13,6 +13,7 @@ public class TaskScheduler {
     }
 
     public <T> void schedule(UUID taskId, int delayInTicks, Runnable callback) {
+        if (tasks.containsKey(taskId)) return;
         tasks.put(taskId, new Task<>(delayInTicks, callback));
     }
 

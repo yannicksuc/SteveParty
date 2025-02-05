@@ -26,19 +26,18 @@ public abstract class AbstractTeleportationBookItem extends AbstractDestinations
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        int state = stack.getOrDefault(STATE, 0);
-        if (state == 2) {
-            super.appendTooltip(stack, context, tooltip, type);
-        }
     }
 
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
-        int state = context.getStack().getOrDefault(STATE, 0);
-        if (state == 2) {
-            return super.useOnBlock(context);
-        }
         return ActionResult.PASS;
+    }
+
+    public void appendDestinationsSelectorTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        super.appendTooltip(stack, context, tooltip, type);
+    }
+    public ActionResult useOnBlockDestinationsSelector(ItemUsageContext context) {
+        return super.useOnBlock(context);
     }
 
     @Override

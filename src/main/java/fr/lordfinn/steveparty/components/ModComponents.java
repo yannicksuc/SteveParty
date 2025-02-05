@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.components;
 
 import com.mojang.serialization.Codec;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import net.minecraft.component.ComponentType;
 import net.minecraft.item.ItemStack;
@@ -62,6 +63,8 @@ public class ModComponents {
             registerComponent("teleporting-targets", Codec.list(TeleportingTarget.CODEC));
     public static final ComponentType<ItemStack> CURRENT_MINIGAME =
             registerComponent("current-minigame", ItemStack.CODEC);
+    public static final ComponentType<TeamDisposition> TEAM_DISPOSITION =
+            registerComponent("team-disposition", TeamDisposition.CODEC);
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

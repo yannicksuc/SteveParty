@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
-import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorage;
+import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
@@ -144,7 +144,7 @@ public class TeleportationPadBlockEntity extends BlockEntity implements GeoBlock
             this.getWorld().playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_SPAWN_ITEM_BEGIN, SoundCategory.BLOCKS, 1.0F, 1.0F);
             this.markDirty();
 
-            TeleportationPadStorage storage = TeleportationPadStorageManager.getStorage((ServerWorld) world);
+            TeleportationPadBooksStorage storage = TeleportationPadStorageManager.getBooksStorage((ServerWorld) world);
             if (book.isEmpty())
                 storage.removeTeleportationPad(pos);
             else

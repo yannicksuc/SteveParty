@@ -13,11 +13,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class TeleportationPadStorage extends PersistentState {
-    public static final PersistentState.Type<TeleportationPadStorage> TYPE =
+public class TeleportationPadBooksStorage extends PersistentState {
+    public static final PersistentState.Type<TeleportationPadBooksStorage> TYPE =
             new PersistentState.Type<>(
-                    TeleportationPadStorage::new,
-                    TeleportationPadStorage::readNbt,
+                    TeleportationPadBooksStorage::new,
+                    TeleportationPadBooksStorage::readNbt,
                     DataFixTypes.LEVEL
             );
 
@@ -37,8 +37,8 @@ public class TeleportationPadStorage extends PersistentState {
         return teleportationPads.get(pos);
     }
 
-    public static TeleportationPadStorage readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        TeleportationPadStorage storage = new TeleportationPadStorage();
+    public static TeleportationPadBooksStorage readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        TeleportationPadBooksStorage storage = new TeleportationPadBooksStorage();
 
         NbtList padList = nbt.getList("teleportationPads", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < padList.size(); i++) {
