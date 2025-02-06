@@ -7,7 +7,7 @@
   "villagerblock.sky": "I'm so high up... is this normal?",
   "villagerblock.hit": "Ouch! What was that for?",
   "villagerblock.grass": "This is... green... I think I like it here.",
-  "villagerblock.stone": "It’s all... hard around me. Is this... safe?",
+  "villagerblock.stone": "It\u2019s all... hard around me. Is this... safe?",
   "block.steveparty.tile": "Tile",
   "block.steveparty.party_controller": "Party Controller",
   "item.steveparty.board_space_behavior": "Cartridge",
@@ -31,7 +31,7 @@
   "block.steveparty.cherry_traffic_sign": "Cherry Traffic Sign",
   "block.steveparty.crimson_traffic_sign": "Crimson Traffic Sign",
   "block.steveparty.warped_traffic_sign": "Warped Traffic Sign",
-  "block.steveparty.big_book.catalogue_cannot_be_taken_when_powered" : "Catalogue cannot be taken when party controller is powered",
+  "block.steveparty.big_book.catalogue_cannot_be_taken_when_powered": "Catalogue cannot be taken when party controller is powered",
   "item.steveparty.wrench": "Wrench",
   "item.steveparty.tokenizer_wand": "Tokenizer Wand",
   "item.steveparty.plunger": "Plunger",
@@ -99,8 +99,9 @@
   "status.waiting": "Waiting",
   "status.in_progress": "In Progress",
   "status.finished": "Finished",
-  "screen.steveparty.mini_game_page" : "Mini Game Page",
+  "screen.steveparty.mini_game_page": "Mini Game Page",
   "key.steveparty.toggle_hud_movable_mode": "Toggle Party Hud Movable Mode",
   "category.steveparty": "Steve Party",
-  "title.steveparty.mini_game_catalogue": "Mini-Games Catalogue"
+  "title.steveparty.mini_game_catalogue": "Mini-Games Catalogue",
+  "item.steveparty.stencil": "Stencil"
 }

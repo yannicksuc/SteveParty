@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import fr.lordfinn.steveparty.items.custom.StencilItem;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentChanges;
@@ -35,6 +36,8 @@ import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
+
+import static fr.lordfinn.steveparty.items.ModItems.STENCIL;
 
 public class TrafficSignBlock extends BlockWithEntity {
     public static final MapCodec<SignBlock> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance
@@ -150,12 +153,13 @@ public class TrafficSignBlock extends BlockWithEntity {
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack heldItem = player.getMainHandStack();
 
-        if (heldItem.getItem() == Items.NAME_TAG) {
+        if (heldItem.getItem() == STENCIL) {
             if (!world.isClient) {
                 BlockEntity entity = world.getBlockEntity(pos);
                 if (entity instanceof TrafficSignBlockEntity signEntity) {
                     String newName = heldItem.getName().getString();
-                    signEntity.setSignName(newName);
+                    byte[] shape = StencilItem.getShape();
+                    signEntity.setShape(shape);
                     world.emitGameEvent(GameEvent.BLOCK_CHANGE, signEntity.getPos(), GameEvent.Emitter.of(player, signEntity.getCachedState()));
                     world.updateListeners(pos, state, state, Block.NOTIFY_ALL);
                 }
