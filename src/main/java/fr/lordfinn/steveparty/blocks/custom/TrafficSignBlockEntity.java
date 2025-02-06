@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
@@ -15,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import static net.minecraft.block.Block.NOTIFY_ALL;
 
 public class TrafficSignBlockEntity extends BlockEntity {
-    private String signName = "";
     private DyeColor color = DyeColor.WHITE; // Default color
     private boolean isGlowing = false; // Default to not glowing
     private byte[] shape = null;
@@ -60,8 +60,10 @@ public class TrafficSignBlockEntity extends BlockEntity {
 
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        nbt.putByteArray("SymbolShape", this.shape);
-        nbt.putString("Color", this.color.getName());
+        if (this.shape != null)
+            nbt.putByteArray("SymbolShape", this.shape);
+        if (this.color != null)
+            nbt.putString("Color", this.color.getName());
         nbt.putBoolean("IsGlowing", this.isGlowing);
         super.writeNbt(nbt, registries);
     }
@@ -69,9 +71,12 @@ public class TrafficSignBlockEntity extends BlockEntity {
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
-        this.shape = nbt.getByteArray("SymbolShape");
-        this.color = DyeColor.byName(nbt.getString("Color"), DyeColor.WHITE);
-        this.isGlowing = nbt.getBoolean("IsGlowing");
+        if (nbt.contains("SymbolShape", NbtElement.BYTE_ARRAY_TYPE))
+            this.shape = nbt.getByteArray("SymbolShape");
+        if (nbt.contains("Color", NbtElement.STRING_TYPE))
+            this.color = DyeColor.byName(nbt.getString("Color"), DyeColor.WHITE);
+        if (nbt.contains("IsGlowing"))
+            this.isGlowing = nbt.getBoolean("IsGlowing");
     }
 
     @Override
