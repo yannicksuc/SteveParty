@@ -103,5 +103,6 @@
   "key.steveparty.toggle_hud_movable_mode": "Toggle Party Hud Movable Mode",
   "category.steveparty": "Steve Party",
   "title.steveparty.mini_game_catalogue": "Mini-Games Catalogue",
-  "item.steveparty.stencil": "Stencil"
+  "item.steveparty.stencil": "Stencil",
+  "block.steveparty.stencil_maker": "Stencil Maker"
 }

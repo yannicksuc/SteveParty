@@ -16,6 +16,13 @@ import net.minecraft.registry.RegistryKeys;
 import java.util.function.Function;
 
 public class ModBlocks {
+    public static final Block STENCIL_MAKER = register(StencilMakerBlock::new,
+            Block.Settings.create()
+                    .strength(3.0f, 9.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
+            "stencil_maker", true);
+
     // Create and register the TILE block
     public static final Block TILE = register(TileBlock::new,
             Block.Settings.create()

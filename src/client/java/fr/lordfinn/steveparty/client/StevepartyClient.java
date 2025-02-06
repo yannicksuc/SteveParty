@@ -72,6 +72,7 @@ public class StevepartyClient implements ClientModInitializer {
         initParticles();
         initEntitiesRenderers();
         initBlockEntitiesRenderers();
+        initItemRenderers();
         DestinationsRenderer.initialize();
 
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
@@ -81,6 +82,9 @@ public class StevepartyClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
         PartyStepsHud.registerKeyHandlers();
         Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
+    }
+
+    private void initItemRenderers() {
     }
 
     private static void initBlockEntitiesRenderers() {
