@@ -105,6 +105,7 @@ public class ModItems {
             itemGroup.add(CRIMSON_TRAFFIC_SIGN);
             itemGroup.add(WARPED_TRAFFIC_SIGN);
             itemGroup.add(STENCIL);
+            itemGroup.add(STENCIL_MAKER);
         });
     }
 }
