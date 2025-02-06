@@ -1,6 +1,16 @@
 {
   "replace": false,
   "values": [
-    "steveparty:big_book"
+    "steveparty:big_book",
+    "steveparty:spruce_traffic_sign",
+    "steveparty:oak_traffic_sign",
+    "steveparty:birch_traffic_sign",
+    "steveparty:jungle_traffic_sign",
+    "steveparty:acacia_traffic_sign",
+    "steveparty:dark_oak_traffic_sign",
+    "steveparty:mangrove_traffic_sign",
+    "steveparty:cherry_traffic_sign",
+    "steveparty:crimson_traffic_sign",
+    "steveparty:warped_traffic_sign"
   ]
 }
