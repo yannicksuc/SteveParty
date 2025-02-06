@@ -3,6 +3,7 @@
   "values": [
     "steveparty:tile",
     "steveparty:cash_register",
-    "steveparty:board_space_redstone_router"
+    "steveparty:board_space_redstone_router",
+    "steveparty:stencil_maker"
   ]
 }

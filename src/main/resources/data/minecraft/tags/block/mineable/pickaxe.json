@@ -6,6 +6,7 @@
     "steveparty:cash_register",
     "steveparty:party_controller",
     "steveparty:step_controller",
-    "steveparty:board_space_redstone_router"
+    "steveparty:board_space_redstone_router",
+    "steveparty:stencil_maker"
   ]
 }
