@@ -18,6 +18,7 @@ public class TrafficSignBlockEntity extends BlockEntity {
     private String signName = "";
     private DyeColor color = DyeColor.WHITE; // Default color
     private boolean isGlowing = false; // Default to not glowing
+    private byte[] shape = null;
 
     public TrafficSignBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TRAFFIC_SIGN_ENTITY, pos, state);
@@ -25,15 +26,6 @@ public class TrafficSignBlockEntity extends BlockEntity {
 
     public int getRotation() {
         return getCachedState().get(TrafficSignBlock.ROTATION);
-    }
-
-    public String getSignName() {
-        return signName;
-    }
-
-    public void setSignName(String name) {
-        this.signName = name;
-        updateListeners();
     }
 
     public DyeColor getColor() {
@@ -68,7 +60,7 @@ public class TrafficSignBlockEntity extends BlockEntity {
 
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        nbt.putString("SignName", this.signName);
+        nbt.putByteArray("SymbolShape", this.shape);
         nbt.putString("Color", this.color.getName());
         nbt.putBoolean("IsGlowing", this.isGlowing);
         super.writeNbt(nbt, registries);
@@ -77,7 +69,7 @@ public class TrafficSignBlockEntity extends BlockEntity {
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
-        this.signName = nbt.getString("SignName");
+        this.shape = nbt.getByteArray("SymbolShape");
         this.color = DyeColor.byName(nbt.getString("Color"), DyeColor.WHITE);
         this.isGlowing = nbt.getBoolean("IsGlowing");
     }
@@ -87,5 +79,14 @@ public class TrafficSignBlockEntity extends BlockEntity {
         NbtCompound nbt = new NbtCompound();
         this.writeNbt(nbt, registries);
         return nbt;
+    }
+
+    public void setShape(byte[] shape) {
+        this.shape = shape;
+        updateListeners();
+    }
+
+    public byte[] getShape() {
+        return shape;
     }
 }

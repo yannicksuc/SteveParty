@@ -24,6 +24,7 @@ import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
+    public static final Item STENCIL = register(StencilItem.class, "stencil");
     public static final Item WRENCH = register(WrenchItem.class, "wrench");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
@@ -103,6 +104,7 @@ public class ModItems {
             itemGroup.add(CHERRY_TRAFFIC_SIGN);
             itemGroup.add(CRIMSON_TRAFFIC_SIGN);
             itemGroup.add(WARPED_TRAFFIC_SIGN);
+            itemGroup.add(STENCIL);
         });
     }
 }
