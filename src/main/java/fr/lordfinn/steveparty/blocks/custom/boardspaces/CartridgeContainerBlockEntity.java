@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
 public abstract class CartridgeContainerBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
     private final int size;
     public final DefaultedList<ItemStack> heldStacks;
-    @Nullable
-    private List<InventoryChangedListener> listeners;
 
     public CartridgeContainerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, int size, DefaultedList<ItemStack> heldStacks) {
         super(type, pos, state);
@@ -42,21 +40,6 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         super(type, pos, state);
         this.size = size;
         this.heldStacks = DefaultedList.ofSize(size, ItemStack.EMPTY);
-    }
-
-    public void addListener(InventoryChangedListener listener) {
-        if (this.listeners == null) {
-            this.listeners = Lists.newArrayList();
-        }
-
-        this.listeners.add(listener);
-    }
-
-    public void removeListener(InventoryChangedListener listener) {
-        if (this.listeners != null) {
-            this.listeners.remove(listener);
-        }
-
     }
 
     @Override
@@ -77,43 +60,6 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         }
 
         return itemStack;
-    }
-
-    public ItemStack removeItem(Item item, int count) {
-        ItemStack itemStack = new ItemStack(item, 0);
-
-        for(int i = this.size - 1; i >= 0; --i) {
-            ItemStack itemStack2 = this.getStack(i);
-            if (itemStack2.getItem().equals(item)) {
-                int j = count - itemStack.getCount();
-                ItemStack itemStack3 = itemStack2.split(j);
-                itemStack.increment(itemStack3.getCount());
-                if (itemStack.getCount() == count) {
-                    break;
-                }
-            }
-        }
-
-        if (!itemStack.isEmpty()) {
-            this.markDirty();
-        }
-
-        return itemStack;
-    }
-
-    public ItemStack addStack(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return ItemStack.EMPTY;
-        } else {
-            ItemStack itemStack = stack.copy();
-            this.addToExistingSlot(itemStack);
-            if (itemStack.isEmpty()) {
-                return ItemStack.EMPTY;
-            } else {
-                this.addToNewSlot(itemStack);
-                return itemStack.isEmpty() ? ItemStack.EMPTY : itemStack;
-            }
-        }
     }
 
     private void addToNewSlot(ItemStack stack) {
@@ -200,12 +146,7 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     }
     @Override
     public void markDirty() {
-        if (this.listeners != null) {
-            for (InventoryChangedListener inventoryChangedListener : this.listeners) {
-                inventoryChangedListener.onInventoryChanged(this);
-            }
-        }
-
+        super.markDirty();
     }
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
@@ -235,7 +176,6 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     public DefaultedList<ItemStack> getHeldStacks() {
         return this.heldStacks;
     }
-
 
     @Override
     public Text getDisplayName() {
