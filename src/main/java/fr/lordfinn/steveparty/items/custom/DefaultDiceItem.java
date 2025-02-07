@@ -16,48 +16,60 @@ import net.minecraft.world.World;
 import static fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY;
 
 public class DefaultDiceItem extends Item {
+
+    protected static final float VELOCITY_MULTIPLIER = 0.6F;
+    private static final float SOUND_VOLUME_1 = 0.2F;
+    private static final float SOUND_PITCH_1 = 1.5F;
+    private static final float SOUND_VOLUME_2 = 0.4F;
+    private static final float SOUND_PITCH_2 = 1F;
+
     public DefaultDiceItem(Settings settings) {
         super(settings);
     }
 
     @Override
     public ActionResult use(World world, PlayerEntity player, Hand hand) {
-        if (!world.isClient && world instanceof ServerWorld) {
-            // Calculate position in front of the player
-            Vec3d playerPos = player.getPos();
-            Vec3d lookVec = player.getRotationVec(1.0F).multiply(2); // Multiplies by 2 for distance
-            Vec3d spawnPos = playerPos.add(lookVec);
-            DiceEntity diceEntity = DICE_ENTITY.create(world, SpawnReason.TRIGGERED);
+        if (isServerWorld(world)) {
+            Vec3d spawnPosition = calculateSpawnPosition(player);
+            DiceEntity diceEntity = spawnDiceEntity(world, spawnPosition);
             if (diceEntity != null) {
-                diceEntity.setPosition(spawnPos.x, spawnPos.y + 0.5, spawnPos.z);
-                diceEntity.setNoGravity(true);
-                diceEntity.setOwner(player.getUuid());
-                world.spawnEntity(diceEntity);
-                Vec3d velocity = lookVec.multiply(0.6);
-                diceEntity.setVelocity(velocity);
-                diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
-                diceEntity.setRolling(true);
-                world.playSound(
-                        null,
-                        diceEntity.getBlockPos(),
-                        SoundEvents.ENTITY_BREEZE_SHOOT,
-                        SoundCategory.AMBIENT,
-                        0.2F,
-                        1.5F
-                );
-
-                world.playSound(
-                        null,
-                        diceEntity.getBlockPos(),
-                        SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE,
-                        SoundCategory.AMBIENT,
-                        0.4F,
-                        1F
-                );
+                configureDiceEntity(diceEntity, player);
+                playSounds(world, diceEntity);
             }
         }
-
         return ActionResult.SUCCESS;
     }
-}
 
+    protected boolean isServerWorld(World world) {
+        return !world.isClient && world instanceof ServerWorld;
+    }
+
+    protected Vec3d calculateSpawnPosition(PlayerEntity player) {
+        Vec3d playerPos = player.getPos();
+        Vec3d lookVec = player.getRotationVec(1.0F).multiply(2);
+        return playerPos.add(lookVec);
+    }
+
+    protected DiceEntity spawnDiceEntity(World world, Vec3d spawnPosition) {
+        DiceEntity diceEntity = DICE_ENTITY.create(world, SpawnReason.TRIGGERED);
+        if (diceEntity != null) {
+            diceEntity.setPosition(spawnPosition.x, spawnPosition.y + 0.5, spawnPosition.z);
+            diceEntity.setNoGravity(true);
+            world.spawnEntity(diceEntity);
+        }
+        return diceEntity;
+    }
+
+    protected void configureDiceEntity(DiceEntity diceEntity, PlayerEntity player) {
+        Vec3d velocity = player.getRotationVec(1.0F).multiply(VELOCITY_MULTIPLIER);
+        diceEntity.setVelocity(velocity);
+        diceEntity.setOwner(player.getUuid());
+        diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
+        diceEntity.setRolling(true);
+    }
+
+    protected void playSounds(World world, DiceEntity diceEntity) {
+        world.playSound(null, diceEntity.getBlockPos(), SoundEvents.ENTITY_BREEZE_SHOOT, SoundCategory.AMBIENT, SOUND_VOLUME_1, SOUND_PITCH_1);
+        world.playSound(null, diceEntity.getBlockPos(), SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.AMBIENT, SOUND_VOLUME_2, SOUND_PITCH_2);
+    }
+}

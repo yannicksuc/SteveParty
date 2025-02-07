@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.commands.MoveTokenCommand;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.data.handler.ModHandler;
 import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.events.ModEvents;
@@ -47,6 +48,7 @@ public class Steveparty implements ModInitializer {
         ModPayloads.initialize();
         ModEntities.initialize();
         ModEvents.initialize();
+        ModHandler.init();
 
         ServerNetworking.init();
 
