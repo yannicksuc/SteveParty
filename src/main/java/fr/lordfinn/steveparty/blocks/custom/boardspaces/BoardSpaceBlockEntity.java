@@ -10,7 +10,7 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.payloads.BlockPosPayload;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;

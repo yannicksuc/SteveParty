@@ -3,10 +3,7 @@ package fr.lordfinn.steveparty.client;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.client.blockentity.TeleportationPadBlockEntityRenderer;
-import fr.lordfinn.steveparty.client.blockentity.StepControllerBlockEntityRenderer;
-import fr.lordfinn.steveparty.client.blockentity.TileBlockEntityRenderer;
-import fr.lordfinn.steveparty.client.blockentity.TrafficSignBlockEntityRenderer;
+import fr.lordfinn.steveparty.client.blockentity.*;
 import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
@@ -92,6 +89,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TRAFFIC_SIGN_ENTITY, TrafficSignBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_MAKER_ENTITY, StencilMakerBlockEntityRenderer::new);
     }
 
     private static void initEntitiesRenderers() {

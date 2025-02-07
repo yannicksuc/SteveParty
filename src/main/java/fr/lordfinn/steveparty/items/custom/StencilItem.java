@@ -41,13 +41,12 @@ public class StencilItem extends Item {
                 }
                 return byteArray;
             }
-            return shape;
+            return shape.clone();
         }
-        return shape;
+        return shape.clone();
     }
 
     public static void setShape(byte[] shape, ItemStack stack) {
-        StencilItem.shape = shape;
         List<Byte> byteList = new ArrayList<>(shape.length);
         for (byte b : shape) {
             byteList.add(b);

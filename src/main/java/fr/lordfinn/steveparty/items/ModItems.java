@@ -50,7 +50,7 @@ public class ModItems {
     public static <T extends Item> T register(Class<T> itemClass, String id) {
         try {
             T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(new T.Settings(), id));
-            Identifier itemID = Identifier.of(Steveparty.MOD_ID, id);
+            Identifier itemID = Steveparty.id(id);
             RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
             Registry.register(Registries.ITEM, key, item);
             return item;
@@ -60,7 +60,7 @@ public class ModItems {
     }
 
     public static Item.Settings getSettings(Item.Settings itemSettings, String id) {
-        Identifier itemID = Identifier.of(Steveparty.MOD_ID, id);
+        Identifier itemID = Steveparty.id(id);
         RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
         return itemSettings.registryKey(key);
 

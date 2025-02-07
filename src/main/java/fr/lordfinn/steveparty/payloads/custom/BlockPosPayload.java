@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.payloads;
+package fr.lordfinn.steveparty.payloads.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.network.RegistryByteBuf;

@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.persistent_state;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.payloads.BlockPosesMapPayload;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosesMapPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;

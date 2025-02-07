@@ -16,7 +16,7 @@ import static fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderLayer
 public class HidingTraderEntityRenderer extends GeoEntityRenderer<HidingTraderEntity> {
 
     public HidingTraderEntityRenderer(EntityRendererFactory.Context ctx) {
-        super(ctx, new DefaultedEntityGeoModel<>(Identifier.of(Steveparty.MOD_ID, "hiding_trader")));
+        super(ctx, new DefaultedEntityGeoModel<>(Steveparty.id("hiding_trader")));
         addRenderLayer(new HidingTraderEntityRenderLayer(this));
     }
 

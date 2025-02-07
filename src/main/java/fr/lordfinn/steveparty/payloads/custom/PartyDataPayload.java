@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.payloads;
+package fr.lordfinn.steveparty.payloads.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import net.minecraft.network.PacketByteBuf;

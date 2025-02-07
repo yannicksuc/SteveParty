@@ -10,7 +10,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class TeleportationBookScreen extends HandledScreen<TeleportationBookScreenHandler> {
-    protected static final Identifier TEXTURE = Identifier.of(Steveparty.MOD_ID, "textures/gui/teleportation_book_gui.png");
+    protected static final Identifier TEXTURE = Steveparty.id("textures/gui/teleportation_book_gui.png");
 
     public TeleportationBookScreen(TeleportationBookScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);

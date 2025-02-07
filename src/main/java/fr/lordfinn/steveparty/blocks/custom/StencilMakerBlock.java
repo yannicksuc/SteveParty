@@ -52,23 +52,21 @@ public class StencilMakerBlock extends BlockWithEntity {
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
+    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        if (world.isClient) return ActionResult.PASS;
 
         StencilMakerBlockEntity blockEntity = (StencilMakerBlockEntity) world.getBlockEntity(pos);
         if (blockEntity == null) return ActionResult.PASS;
 
-        // Check if the stencil is empty
-        if (blockEntity.getStencil().isEmpty()) {
+        if (player.isSneaking() && !blockEntity.getStencil().isEmpty()) {
             if (player instanceof ServerPlayerEntity serverPlayer) {
                 serverPlayer.openHandledScreen(blockEntity);
             }
             return ActionResult.SUCCESS;
         }
 
-        // If the player is holding a stencil item, set it
-        if (stack.isEmpty() || stack.getItem() instanceof StencilItem) {
-            blockEntity.swapStencil(stack.copyAndEmpty(), player);
+        if (player.getMainHandStack().isEmpty() || player.getMainHandStack().getItem() instanceof StencilItem) {
+            blockEntity.swapStencil(player);
             return ActionResult.SUCCESS;
         }
 

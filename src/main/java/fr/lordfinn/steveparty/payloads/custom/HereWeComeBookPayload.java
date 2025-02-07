@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.payloads;
+package fr.lordfinn.steveparty.payloads.custom;
 
 import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import io.netty.buffer.ByteBuf;

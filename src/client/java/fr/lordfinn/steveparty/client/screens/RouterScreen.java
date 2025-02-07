@@ -8,7 +8,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class RouterScreen extends CartridgeContainerScreen<RouterScreenHandler> {
-    private static final Identifier TEXTURE = Identifier.of(Steveparty.MOD_ID, "textures/gui/router.png");
+    private static final Identifier TEXTURE = Steveparty.id("textures/gui/router.png");
     public RouterScreen(RouterScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title, 136);
     }

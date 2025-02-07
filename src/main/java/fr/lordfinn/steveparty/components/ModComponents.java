@@ -20,7 +20,7 @@ public class ModComponents {
     public static <T> ComponentType<T> registerComponent(String name, Codec<T> codec) {
         return Registry.register(
                 Registries.DATA_COMPONENT_TYPE,
-                Identifier.of(Steveparty.MOD_ID, name),
+                Steveparty.id(name),
                 ComponentType.<T>builder().codec(codec).build()
         );
     }

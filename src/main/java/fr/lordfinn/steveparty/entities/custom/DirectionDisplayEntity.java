@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.entities.custom;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
-import fr.lordfinn.steveparty.payloads.ArrowParticlesPayload;
+import fr.lordfinn.steveparty.payloads.custom.ArrowParticlesPayload;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;

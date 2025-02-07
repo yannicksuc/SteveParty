@@ -12,7 +12,7 @@ import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
 public class StepControllerBlockEntityRenderer extends GeoBlockRenderer<StepControllerBlockEntity> {
     public StepControllerBlockEntityRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
-        super(new DefaultedBlockGeoModel<>(Identifier.of(Steveparty.MOD_ID, "step_controller")));
+        super(new DefaultedBlockGeoModel<>(Steveparty.id("step_controller")));
     }
 
     @Override

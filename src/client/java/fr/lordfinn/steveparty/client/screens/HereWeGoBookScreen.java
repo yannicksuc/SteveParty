@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.items.custom.teleportation_books.AbstractTeleportationBookItem;
-import fr.lordfinn.steveparty.payloads.HereWeGoBookPayload;
+import fr.lordfinn.steveparty.payloads.custom.HereWeGoBookPayload;
 import fr.lordfinn.steveparty.screen_handlers.TeleportationBookScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;

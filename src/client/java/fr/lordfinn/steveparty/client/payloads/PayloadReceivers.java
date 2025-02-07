@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.PartyService;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.payloads.*;
+import fr.lordfinn.steveparty.payloads.custom.*;
 import fr.lordfinn.steveparty.service.TokenData;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;

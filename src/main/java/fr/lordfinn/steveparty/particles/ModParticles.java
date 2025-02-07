@@ -13,11 +13,11 @@ public class ModParticles {
     public static final SimpleParticleType ENCHANTED_CIRCULAR_PARTICLE = FabricParticleTypes.simple();
 
     public static void initialize() {
-        Registry.register(Registries.PARTICLE_TYPE, Identifier.of(Steveparty.MOD_ID, "here"),
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("here"),
                 HERE_PARTICLE);
-        Registry.register(Registries.PARTICLE_TYPE, Identifier.of(Steveparty.MOD_ID, "arrow"),
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("arrow"),
                 ARROW_PARTICLE);
-        Registry.register(Registries.PARTICLE_TYPE, Identifier.of(Steveparty.MOD_ID, "enchanted_circular"),
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("enchanted_circular"),
                 ENCHANTED_CIRCULAR_PARTICLE);
     }
 }

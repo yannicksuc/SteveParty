@@ -10,7 +10,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class MiniGamesCatalogueScreen extends HandledScreen<MiniGamesCatalogueScreenHandler> {
-    private static final Identifier TEXTURE = Identifier.of(Steveparty.MOD_ID, "textures/gui/mini-games-catalogue.png");
+    private static final Identifier TEXTURE = Steveparty.id("textures/gui/mini-games-catalogue.png");
 
     public MiniGamesCatalogueScreen(MiniGamesCatalogueScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);

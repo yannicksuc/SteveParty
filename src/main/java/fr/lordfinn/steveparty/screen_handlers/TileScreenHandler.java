@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.payloads.BlockPosPayload;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import net.minecraft.entity.player.PlayerInventory;
 
 public class TileScreenHandler extends CartridgeContainerScreenHandler {
