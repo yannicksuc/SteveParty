@@ -24,6 +24,8 @@ import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
+    public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
+
     public static final Item STENCIL = register(StencilItem.class, "stencil");
     public static final Item WRENCH = register(WrenchItem.class, "wrench");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
@@ -88,6 +90,7 @@ public class ModItems {
             itemGroup.add(HERE_WE_GO_BOOK);
             itemGroup.add(HERE_WE_COME_BOOK);
             itemGroup.add(DEFAULT_DICE);
+            itemGroup.add(DOUBLE_DICE);
             itemGroup.add(TRIPLE_DICE);
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
