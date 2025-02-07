@@ -82,9 +82,9 @@ public class StencilResourceManager {
         }
 
         // Apply the stencil data to the base image
-        for (int y = 0; y < HEIGHT; y++) {
-            for (int x = 0; x < WIDTH; x++) {
-                int index = y * WIDTH + x;
+        for (int x = 0; x < WIDTH; x++) {
+            for (int y = 0; y < HEIGHT; y++) {
+                int index = x * WIDTH + y;
                 int stencilValue = stencilData[index]; // 1 for opaque, 0 for transparent
 
                 // Get the existing pixel from the base image
