@@ -13,6 +13,8 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 
 public class ModScreensHandlers {
+
+
     // Register method for screen handlers with a codec
     public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T, D>
     register(String name, ExtendedScreenHandlerType.ExtendedFactory<T, D> factory, PacketCodec<? super RegistryByteBuf, D> codec) {
@@ -49,7 +51,8 @@ public class ModScreensHandlers {
 
     public static final ScreenHandlerType<HereWeComeBookScreenHandler> HERE_WE_COME_BOOK_SCREEN_HANDLER =
             register("here_we_come_screen_handler", HereWeComeBookScreenHandler::new, FeatureSet.empty());
-
+    public static final ScreenHandlerType<StencilMakerScreenHandler> STENCIL_MAKER_SCREEN_HANDLER =
+            register("stencil_maker_screen_handler", StencilMakerScreenHandler::new, BlockPosPayload.PACKET_CODEC);
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
