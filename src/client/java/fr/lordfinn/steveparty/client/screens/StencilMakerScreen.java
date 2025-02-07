@@ -2,7 +2,9 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
+import fr.lordfinn.steveparty.payloads.custom.SaveStencilPayload;
 import fr.lordfinn.steveparty.screen_handlers.StencilMakerScreenHandler;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
@@ -82,7 +84,9 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isSaveButtonHovered(mouseX, mouseY)) {
-            handler.save(shape);
+            StencilItem.setShape(shape, handler.getBlockEntity().getStencil());
+            SaveStencilPayload payload = new SaveStencilPayload(shape, handler.getBlockEntity().getPos());
+            ClientPlayNetworking.send(payload);
             playClickSound();
             return true;
         }

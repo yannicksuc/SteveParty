@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import fr.lordfinn.steveparty.payloads.custom.SaveStencilPayload;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -39,10 +40,5 @@ public class StencilMakerScreenHandler extends ScreenHandler {
 
     public StencilMakerBlockEntity getBlockEntity() {
         return blockEntity;
-    }
-
-    public void save(byte[] shape) {
-        StencilItem.setShape(shape, blockEntity.getStencil());
-        //Implement save using CustomPayload
     }
 }

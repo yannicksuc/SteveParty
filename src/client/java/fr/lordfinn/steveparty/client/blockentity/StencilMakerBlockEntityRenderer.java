@@ -25,9 +25,7 @@ public class StencilMakerBlockEntityRenderer implements BlockEntityRenderer<Sten
     @Override
     public void render(StencilMakerBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
         ItemStack stencilData = entity.getStencil();
-        StevepartyClient.LOGGER.info("Rendering stencil: {}", stencilData);
         if (stencilData != null && !stencilData.isEmpty()) {
-            StevepartyClient.LOGGER.info("Rendering stencil: {}", stencilData);
             byte[] shape = StencilItem.getShape(stencilData);
             StencilResourceManager.StencilTextures textures = StencilResourceManager.getStencilShape(shape);
             if (textures != null) {
@@ -39,7 +37,6 @@ public class StencilMakerBlockEntityRenderer implements BlockEntityRenderer<Sten
 
     private void renderSymbol(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Identifier symbolTextureId) {
         matrices.push();
-        StevepartyClient.LOGGER.info("Rendering symbol: {}", symbolTextureId);
         AbstractTexture texture = MinecraftClient.getInstance().getTextureManager().getTexture(symbolTextureId);
         texture.bindTexture();
 
@@ -52,10 +49,10 @@ public class StencilMakerBlockEntityRenderer implements BlockEntityRenderer<Sten
         Matrix4f matrix = entry.getPositionMatrix();
 
         // Draw a quad on the front face with the applied color
-        symbolConsumer.vertex(matrix, -0.5f,  15/16f, 0.5f).color(255, 255, 255, 255).texture(1, 0).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        symbolConsumer.vertex(matrix,  0.5f,  15/16f, 0.5f).color(255, 255, 255, 255).texture(0, 0).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        symbolConsumer.vertex(matrix,  0.5f, 15/16f, -0.5f).color(255, 255, 255, 255).texture(0, 1).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        symbolConsumer.vertex(matrix, -0.5f, 15/16f, -0.5f).color(255, 255, 255, 255).texture(1, 1).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        symbolConsumer.vertex(matrix, -0.5f,  14.5f/16f, 0.5f).color(255, 255, 255, 255).texture(1, 0).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        symbolConsumer.vertex(matrix,  0.5f,  14.5f/16f, 0.5f).color(255, 255, 255, 255).texture(0, 0).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        symbolConsumer.vertex(matrix,  0.5f, 14.5f/16f, -0.5f).color(255, 255, 255, 255).texture(0, 1).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        symbolConsumer.vertex(matrix, -0.5f, 14.5f/16f, -0.5f).color(255, 255, 255, 255).texture(1, 1).light(light).overlay(overlay).normal(entry, 0, 1, 0);
         matrices.pop();
     }
 }

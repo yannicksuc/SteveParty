@@ -18,9 +18,12 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.block.Block.NOTIFY_ALL;
@@ -72,17 +75,41 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
 
     public void swapStencil(PlayerEntity player) {
         ItemStack itemStack = player.getStackInHand(Hand.MAIN_HAND);
-        if ((itemStack == null || itemStack.isEmpty()) && stencilIn) {
-            player.setStackInHand(Hand.MAIN_HAND, this.stencil.copy());
-            this.stencil = ItemStack.EMPTY;
-            stencilIn = false;
-            updateListeners();
-        } else if (itemStack != null && itemStack.getItem() instanceof StencilItem && !stencilIn) {
-            this.stencil = itemStack.copy();
-            player.getMainHandStack().setCount(0);
-            stencilIn = true;
-            updateListeners();
+        World world = player.getWorld();
+        BlockPos pos = this.getPos();
+
+        if (shouldSwapOutStencil(itemStack)) {
+            swapOutStencil(player);
+        } else if (shouldSwapInStencil(itemStack)) {
+            swapInStencil(player, itemStack);
         }
+
+        playMetalSound(world, pos);
+        updateListeners();
+    }
+
+    private boolean shouldSwapOutStencil(ItemStack itemStack) {
+        return (itemStack == null || itemStack.isEmpty()) && stencilIn;
+    }
+
+    private boolean shouldSwapInStencil(ItemStack itemStack) {
+        return itemStack != null && itemStack.getItem() instanceof StencilItem && !stencilIn;
+    }
+
+    private void swapOutStencil(PlayerEntity player) {
+        player.setStackInHand(Hand.MAIN_HAND, this.stencil.copy());
+        this.stencil = ItemStack.EMPTY;
+        stencilIn = false;
+    }
+
+    private void swapInStencil(PlayerEntity player, ItemStack itemStack) {
+        this.stencil = itemStack.copy();
+        player.getMainHandStack().setCount(0);
+        stencilIn = true;
+    }
+
+    private void playMetalSound(World world, BlockPos pos) {
+        world.playSound(null, pos, SoundEvents.BLOCK_METAL_PLACE, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
     public ItemStack getStencil() {
