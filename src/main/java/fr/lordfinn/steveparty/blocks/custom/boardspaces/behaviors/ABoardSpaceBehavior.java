@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.payloads.UpdateColoredTilePayload;
+import fr.lordfinn.steveparty.payloads.custom.UpdateColoredTilePayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;

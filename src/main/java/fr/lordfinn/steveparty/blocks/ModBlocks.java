@@ -130,7 +130,7 @@ public class ModBlocks {
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {
-        Identifier identifier = Identifier.of(Steveparty.MOD_ID, name);
+        Identifier identifier = Steveparty.id(name);
         RegistryKey<Block> registryKey = RegistryKey.of(RegistryKeys.BLOCK, identifier);
 
         Block block = Blocks.register(registryKey, factory, settings);

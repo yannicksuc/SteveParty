@@ -22,7 +22,7 @@ import static org.joml.Math.lerp;
 public class TeleportationPadBlockEntityRenderer extends GeoBlockRenderer<TeleportationPadBlockEntity> {
 
     public TeleportationPadBlockEntityRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
-        super(new DefaultedBlockGeoModel<>(Identifier.of(Steveparty.MOD_ID, "big_book")));
+        super(new DefaultedBlockGeoModel<>(Steveparty.id("big_book")));
     }
 
     @Override

@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.utils;
 
-import fr.lordfinn.steveparty.payloads.SelectionStatePayload;
+import fr.lordfinn.steveparty.payloads.custom.SelectionStatePayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;

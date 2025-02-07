@@ -13,27 +13,27 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
 
 public class ModEntities {
-    public static final RegistryKey<EntityType<?>> DICE_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(Steveparty.MOD_ID, "dice"));
+    public static final RegistryKey<EntityType<?>> DICE_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("dice"));
     public static final EntityType<DiceEntity> DICE_ENTITY = Registry.register(Registries.ENTITY_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "dice"),
+            Steveparty.id("dice"),
             EntityType.Builder
                     .create(DiceEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1f)
                     .build(DICE_ENTITY_KEY)
     );
 
-    public static final RegistryKey<EntityType<?>> HIDING_TRADER_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(Steveparty.MOD_ID, "hiding_trader"));
+    public static final RegistryKey<EntityType<?>> HIDING_TRADER_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("hiding_trader"));
     public static final EntityType<HidingTraderEntity> HIDING_TRADER_ENTITY = Registry.register(Registries.ENTITY_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "hiding_trader"),
+            Steveparty.id("hiding_trader"),
             EntityType.Builder
                     .create(HidingTraderEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1.5f)
                     .build(HIDING_TRADER_ENTITY_KEY)
     );
 
-    public static final RegistryKey<EntityType<?>> DIRECTION_DISPLAY_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(Steveparty.MOD_ID, "dice"));
+    public static final RegistryKey<EntityType<?>> DIRECTION_DISPLAY_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("dice"));
     public static final EntityType<DirectionDisplayEntity> DIRECTION_DISPLAY_ENTITY = Registry.register(Registries.ENTITY_TYPE,
-            Identifier.of(Steveparty.MOD_ID, "direction_display"),
+            Steveparty.id("direction_display"),
             EntityType.Builder
                     .<DirectionDisplayEntity>create(DirectionDisplayEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1f)

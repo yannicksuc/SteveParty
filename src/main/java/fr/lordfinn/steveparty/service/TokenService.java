@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.payloads.TokenPayload;
+import fr.lordfinn.steveparty.payloads.custom.TokenPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
@@ -22,7 +22,7 @@ import java.util.UUID;
 public class TokenService extends PersistentState {
     private static final String OWNER_LIST_KEY = "tokenOwnersList";
     private final Map<UUID, TokenData> tokenOwners = new HashMap<>();
-    public static final Identifier TOKEN_UPDATE_PACKET = Identifier.of(Steveparty.MOD_ID, "token_update");
+    public static final Identifier TOKEN_UPDATE_PACKET = Steveparty.id("token_update");
 
     public void setOwner(UUID entityId, UUID ownerUUID) {
         if (this.tokenOwners.containsKey(entityId)) {

@@ -24,9 +24,9 @@ public class DiceRenderer extends GeoEntityRenderer<DiceEntity> {
             if (worldTicks % 4 == 0 || fakeValue == -999999)
                 fakeValue = animatable.getRandomDiceValue();
             if (animatable.isRolling())
-                return Identifier.of(Steveparty.MOD_ID, "textures/entity/dice/default_dice" + fakeValue + ".png");
+                return Steveparty.id("textures/entity/dice/default_dice" + fakeValue + ".png");
         }
-        return Identifier.of(Steveparty.MOD_ID, "textures/entity/dice/default_dice"+animatable.getRollValue()+".png");
+        return Steveparty.id("textures/entity/dice/default_dice"+animatable.getRollValue()+".png");
     }
 
     @Override

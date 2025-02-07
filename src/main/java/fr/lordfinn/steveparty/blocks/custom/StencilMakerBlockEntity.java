@@ -2,12 +2,11 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
-import fr.lordfinn.steveparty.payloads.BlockPosPayload;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.StencilMakerScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -20,8 +19,11 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
+
+import static net.minecraft.block.Block.NOTIFY_ALL;
 
 public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     ItemStack stencil = ItemStack.EMPTY;
@@ -51,10 +53,16 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
             stencil = ItemStack.EMPTY;
     }
 
-    @Nullable
     @Override
-    public Packet<ClientPlayPacketListener> toUpdatePacket() {
+    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
+        NbtCompound nbt = new NbtCompound();
+        writeNbt(nbt, this.getWorld().getRegistryManager());
         return BlockEntityUpdateS2CPacket.create(this);
+    }
+
+    private void updateListeners() {
+        this.markDirty();
+        this.getWorld().updateListeners(this.getPos(), this.getCachedState(), this.getCachedState(), NOTIFY_ALL);
     }
 
     @Override
@@ -62,17 +70,18 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
         return createNbt(registryLookup);
     }
 
-    public void swapStencil(ItemStack itemStack, PlayerEntity player) {
-        if ((itemStack == null || itemStack.isEmpty()) && player.getMainHandStack().isEmpty()) {
-            player.getInventory().setStack(EquipmentSlot.MAINHAND.getIndex(), this.stencil.copy());
+    public void swapStencil(PlayerEntity player) {
+        ItemStack itemStack = player.getStackInHand(Hand.MAIN_HAND);
+        if ((itemStack == null || itemStack.isEmpty()) && stencilIn) {
+            player.setStackInHand(Hand.MAIN_HAND, this.stencil.copy());
             this.stencil = ItemStack.EMPTY;
             stencilIn = false;
-            this.markDirty();
-        } else if (itemStack != null && !itemStack.isEmpty() && itemStack.getItem() instanceof StencilItem) {
+            updateListeners();
+        } else if (itemStack != null && itemStack.getItem() instanceof StencilItem && !stencilIn) {
             this.stencil = itemStack.copy();
             player.getMainHandStack().setCount(0);
             stencilIn = true;
-            this.markDirty();
+            updateListeners();
         }
     }
 

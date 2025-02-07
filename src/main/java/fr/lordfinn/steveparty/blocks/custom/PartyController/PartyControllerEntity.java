@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -10,7 +9,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
-import fr.lordfinn.steveparty.payloads.PartyDataPayload;
+import fr.lordfinn.steveparty.payloads.custom.PartyDataPayload;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;

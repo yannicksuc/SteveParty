@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.utils.DrawContextUtils;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
-import fr.lordfinn.steveparty.payloads.SelectionStatePayload;
+import fr.lordfinn.steveparty.payloads.custom.SelectionStatePayload;
 import fr.lordfinn.steveparty.screen_handlers.CartridgeInventoryScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;

@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.payloads;
+package fr.lordfinn.steveparty.payloads.custom;
 
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;

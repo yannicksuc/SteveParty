@@ -82,7 +82,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isSaveButtonHovered(mouseX, mouseY)) {
-            StencilItem.setShape(shape, handler.getBlockEntity().getStencil());
+            handler.save(shape);
             playClickSound();
             return true;
         }

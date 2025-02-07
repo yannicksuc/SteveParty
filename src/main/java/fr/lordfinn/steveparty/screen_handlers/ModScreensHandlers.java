@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.payloads.BlockPosPayload;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
