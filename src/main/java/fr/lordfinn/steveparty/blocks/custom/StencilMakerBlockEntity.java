@@ -80,13 +80,14 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
 
         if (shouldSwapOutStencil(itemStack)) {
             swapOutStencil(player);
+            playMetalSound(world, pos);
+            updateListeners();
         } else if (shouldSwapInStencil(itemStack)) {
             swapInStencil(player, itemStack);
+            playMetalSound(world, pos);
+            updateListeners();
         }
-
-        playMetalSound(world, pos);
-        updateListeners();
-    }
+   }
 
     private boolean shouldSwapOutStencil(ItemStack itemStack) {
         return (itemStack == null || itemStack.isEmpty()) && stencilIn;
