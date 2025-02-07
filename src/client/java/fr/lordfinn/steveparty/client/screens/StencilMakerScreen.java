@@ -83,6 +83,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (tryDrawing(mouseX, mouseY, button)) return true;
         if (isSaveButtonHovered(mouseX, mouseY)) {
             StencilItem.setShape(shape, handler.getBlockEntity().getStencil());
             SaveStencilPayload payload = new SaveStencilPayload(shape, handler.getBlockEntity().getPos());
@@ -101,13 +102,18 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (tryDrawing(mouseX, mouseY, button)) return true;
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    private boolean tryDrawing(double mouseX, double mouseY, int button) {
         if (isInsideStencil(mouseX, mouseY)) {
             int pixelX = (int) ((mouseX - stencilX) * 16 / ((double) (pixelSize * widthUnit) / 2));
             int pixelY = (int) ((mouseY - stencilY) * 16 / ((double) (pixelSize * widthUnit) / 2));
             onStencilPixelClicked(pixelX, pixelY, button);
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        return false;
     }
 
     private boolean isInsideStencil(double mouseX, double mouseY) {
