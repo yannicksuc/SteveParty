@@ -32,6 +32,7 @@ public class ModItems {
     public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand");
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
+    public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
     public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
     public static final Item MINI_GAMES_CATALOGUE = register(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
@@ -87,6 +88,7 @@ public class ModItems {
             itemGroup.add(HERE_WE_GO_BOOK);
             itemGroup.add(HERE_WE_COME_BOOK);
             itemGroup.add(DEFAULT_DICE);
+            itemGroup.add(TRIPLE_DICE);
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
