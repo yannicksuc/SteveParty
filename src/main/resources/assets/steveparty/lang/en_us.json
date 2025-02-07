@@ -53,6 +53,7 @@
   "gui.steveparty.capacity_description": "Scroll to change the amount of players allowed",
   "gui.steveparty.priority": "Fill Priority",
   "gui.steveparty.priority_description": "Scroll to change how important this group is",
+  "gui.steveparty.stencil_save": "Save",
   "message.steveparty.removed_position": "Removed position: (%d, %d, %d)",
   "message.steveparty.added_position": "Added position: (%d, %d, %d)",
   "message.steveparty.invalid_world": "Can't add a destination to a different world",

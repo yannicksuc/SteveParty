@@ -11,6 +11,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 
 public class ModComponents {
@@ -65,6 +66,8 @@ public class ModComponents {
             registerComponent("current-minigame", ItemStack.CODEC);
     public static final ComponentType<TeamDisposition> TEAM_DISPOSITION =
             registerComponent("team-disposition", TeamDisposition.CODEC);
+    public static final ComponentType<List<Byte>> STENCIL_PIXELS =
+            registerComponent("stencil-pixels", Codec.list(Codec.BYTE));
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

@@ -157,8 +157,7 @@ public class TrafficSignBlock extends BlockWithEntity {
             if (!world.isClient) {
                 BlockEntity entity = world.getBlockEntity(pos);
                 if (entity instanceof TrafficSignBlockEntity signEntity) {
-                    String newName = heldItem.getName().getString();
-                    byte[] shape = StencilItem.getShape();
+                    byte[] shape = StencilItem.getShape(heldItem);
                     signEntity.setShape(shape);
                     world.emitGameEvent(GameEvent.BLOCK_CHANGE, signEntity.getPos(), GameEvent.Emitter.of(player, signEntity.getCachedState()));
                     world.updateListeners(pos, state, state, Block.NOTIFY_ALL);
