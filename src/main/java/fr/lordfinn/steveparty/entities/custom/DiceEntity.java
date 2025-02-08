@@ -21,6 +21,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -49,6 +50,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     private static final TrackedData<Optional<UUID>> OWNER = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     private static final TrackedData<List<UUID>> LINKED_DICE = DataTracker.registerData(DiceEntity.class, ListUuidTrackedDataHandler.INSTANCE);
 
+    private ItemStack itemReference = ItemStack.EMPTY;
+
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.dice.idle");
     protected static final RawAnimation ROLL_ANIM = RawAnimation.begin().thenLoop("animation.dice.rolling");
@@ -60,6 +63,14 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     public DiceEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
         skin = Skin.DEFAULT.toString();
+    }
+
+    public ItemStack getItemReference() {
+        return itemReference;
+    }
+
+    public void setItemReference(ItemStack itemReference) {
+        this.itemReference = itemReference;
     }
 
     @Override
@@ -236,11 +247,17 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             List<UUID> linkedDice = linkedDiceList.stream().map(NbtElement::asString).map(UUID::fromString).collect(Collectors.toList());
             this.setLinkedDice(linkedDice);
         }
+        if (nbt.contains("ItemReference", NbtElement.COMPOUND_TYPE)) {
+            NbtCompound itemReferenceNbt = nbt.getCompound("ItemReference");
+            Optional<ItemStack> itemReference = ItemStack.fromNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream()), itemReferenceNbt);
+            itemReference.ifPresent(this::setItemReference);
+        }
         this.setInvulnerable(true);
         this.setNoGravity(true);
         if (this.getWorld() instanceof ServerWorld) {
             this.getTarget().ifPresent(uuid -> simulation.setTarget((LivingEntity) ((ServerWorld) this.getWorld()).getEntity(uuid)));
         }
+
     }
 
     @Override
@@ -253,6 +270,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         NbtList linkedDiceList = new NbtList();
         this.getLinkedDice().forEach(uuid -> linkedDiceList.add(NbtString.of(uuid.toString())));
         nbt.put("LinkedDice", linkedDiceList);
+        nbt.put("ItemReference", this.getItemReference().toNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream())));
         return super.writeNbt(nbt);
     }
 
@@ -276,7 +294,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     private void giveBackDice(ServerPlayerEntity player) {
-        ItemStack diceItem = new ItemStack(DEFAULT_DICE);
+        ItemStack diceItem = getItemReference();
         player.getInventory().offerOrDrop(diceItem);
         this.remove(RemovalReason.DISCARDED);
     }

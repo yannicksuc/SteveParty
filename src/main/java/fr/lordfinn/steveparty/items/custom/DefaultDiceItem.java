@@ -1,10 +1,12 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -33,11 +35,16 @@ public class DefaultDiceItem extends Item {
             Vec3d spawnPosition = calculateSpawnPosition(player);
             DiceEntity diceEntity = spawnDiceEntity(world, spawnPosition);
             if (diceEntity != null) {
-                configureDiceEntity(diceEntity, player);
+                configureDiceEntity(diceEntity, player, hand);
                 playSounds(world, diceEntity);
+                decrementDiceInHand(player, hand);
             }
         }
         return ActionResult.SUCCESS;
+    }
+
+    protected void decrementDiceInHand(PlayerEntity player, Hand hand) {
+        player.getStackInHand(hand).decrement(1);
     }
 
     protected boolean isServerWorld(World world) {
@@ -60,12 +67,17 @@ public class DefaultDiceItem extends Item {
         return diceEntity;
     }
 
-    protected void configureDiceEntity(DiceEntity diceEntity, PlayerEntity player) {
+    protected void configureDiceEntity(DiceEntity diceEntity, PlayerEntity player, Hand hand) {
         Vec3d velocity = player.getRotationVec(1.0F).multiply(VELOCITY_MULTIPLIER);
         diceEntity.setVelocity(velocity);
         diceEntity.setOwner(player.getUuid());
         diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
         diceEntity.setRolling(true);
+        diceEntity.setItemReference(getDiceItem(diceEntity, player, hand));
+    }
+
+    private ItemStack getDiceItem(DiceEntity diceEntity, PlayerEntity player, Hand hand) {
+        return player.getStackInHand(hand).copyWithCount(1);
     }
 
     protected void playSounds(World world, DiceEntity diceEntity) {
