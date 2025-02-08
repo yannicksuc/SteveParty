@@ -63,8 +63,6 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
             ItemScatterer.spawn(world, pos, tileEntity);
             world.updateComparators(pos,this);
             tileEntity.hideDestinations();
-        } else {
-            tileEntity.getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, tileEntity));
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }
