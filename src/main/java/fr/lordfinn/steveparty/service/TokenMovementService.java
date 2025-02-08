@@ -155,7 +155,6 @@ public class TokenMovementService {
 
     public static void moveEntity(MobEntity mob, BlockPos target) {
         Vector3d preciseTargetPos = calculateTargetPosition(mob, target);
-        Steveparty.LOGGER.info("Moving entity to {}", preciseTargetPos);
         double distance = mob.squaredDistanceTo(preciseTargetPos.x(), preciseTargetPos.y(), preciseTargetPos.z());
 
         if (isTooFar(distance)) {

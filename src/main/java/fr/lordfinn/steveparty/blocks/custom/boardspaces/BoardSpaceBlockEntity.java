@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
+import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 
 public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity, ExtendedScreenHandlerFactory<BlockPosPayload> {
     private int ticks = 0;
@@ -94,6 +95,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
                 if (!state.get(TILE_TYPE).equals(tileType)) {
                     this.world.setBlockState(this.pos, state.with(TILE_TYPE, tileType));
                 }
+                this.getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
             }
         }
     }
