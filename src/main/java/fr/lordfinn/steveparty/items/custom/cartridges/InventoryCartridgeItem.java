@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.items.custom.cartridges;
 
 import fr.lordfinn.steveparty.components.InventoryComponent;
-import fr.lordfinn.steveparty.screen_handlers.CartridgeInventoryScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeInventoryScreenHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;

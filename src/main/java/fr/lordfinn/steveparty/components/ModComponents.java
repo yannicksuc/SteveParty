@@ -68,6 +68,8 @@ public class ModComponents {
             registerComponent("team-disposition", TeamDisposition.CODEC);
     public static final ComponentType<List<Byte>> STENCIL_PIXELS =
             registerComponent("stencil-pixels", Codec.list(Codec.BYTE));
+    public static final ComponentType<CarpetColorComponent> CARPET_COLORS =
+            registerComponent("carpet-colors", CarpetColorComponent.CODEC);
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

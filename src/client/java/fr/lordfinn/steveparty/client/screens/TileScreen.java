@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.TileScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;

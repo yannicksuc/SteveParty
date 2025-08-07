@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.screen_handlers.RouterScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.RouterScreenHandler;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;

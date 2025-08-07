@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.screen_handlers;
+package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;

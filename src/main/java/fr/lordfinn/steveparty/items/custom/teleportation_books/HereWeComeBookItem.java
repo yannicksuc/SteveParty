@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.items.custom.teleportation_books;
 
-import fr.lordfinn.steveparty.screen_handlers.HereWeComeBookScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.HereWeComeBookScreenHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;

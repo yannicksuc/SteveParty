@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.SaveStencilPayload;
-import fr.lordfinn.steveparty.screen_handlers.StencilMakerScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;

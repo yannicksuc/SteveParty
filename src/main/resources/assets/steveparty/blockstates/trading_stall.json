@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "steveparty:block/trading_stall", "y": -180, "uvlock": false },
+    "facing=east":  { "model": "steveparty:block/trading_stall", "y": -90, "uvlock": false },
+    "facing=south": { "model": "steveparty:block/trading_stall", "y": 0, "uvlock": false },
+    "facing=west":  { "model": "steveparty:block/trading_stall", "y": 90, "uvlock": false }
+  }
+}

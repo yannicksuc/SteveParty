@@ -7,7 +7,7 @@ import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.persistent_state.TeleportationHistoryStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
-import fr.lordfinn.steveparty.screen_handlers.HereWeGoBookScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.HereWeGoBookScreenHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;

@@ -57,6 +57,12 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "stencil_maker"),
             FabricBlockEntityTypeBuilder.create(StencilMakerBlockEntity::new, ModBlocks.STENCIL_MAKER).build(null)
     );
+    public static final BlockEntityType<TradingStallBlockEntity> TRADING_STALL = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "trading_stall"),
+            FabricBlockEntityTypeBuilder.create(TradingStallBlockEntity::new, ModBlocks.TRADING_STALL).build(null)
+    );
+
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

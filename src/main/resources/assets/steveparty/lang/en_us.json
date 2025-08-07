@@ -107,5 +107,6 @@
   "item.steveparty.stencil": "Stencil",
   "block.steveparty.stencil_maker": "Stencil Maker",
   "item.steveparty.triple_dice": "Triple Dice",
-  "item.steveparty.double_dice": "Double Dice"
+  "item.steveparty.double_dice": "Double Dice",
+  "block.steveparty.trading_stall": "Trading Stall"
 }

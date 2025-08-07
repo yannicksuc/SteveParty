@@ -1,6 +1,4 @@
 {
-  "parent": "item/handheld",
-  "textures": {
-    "layer0": "steveparty:item/stencil"
-  }
+  "parent": "builtin/entity",
+  "gui_light": "front"
 }

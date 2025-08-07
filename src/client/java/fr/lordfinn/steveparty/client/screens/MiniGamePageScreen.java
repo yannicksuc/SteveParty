@@ -5,7 +5,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
-import fr.lordfinn.steveparty.screen_handlers.MiniGamePageScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.MiniGamePageScreenHandler;
 import net.minecraft.util.Identifier;
 
 public class MiniGamePageScreen extends HandledScreen<MiniGamePageScreenHandler> {

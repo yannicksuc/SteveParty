@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.screen_handlers.RouterScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.RouterScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;

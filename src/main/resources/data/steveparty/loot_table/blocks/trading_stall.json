@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "steveparty:big_book"
+          "name": "steveparty:trading_stall"
         }
       ],
       "conditions": [

@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
-import fr.lordfinn.steveparty.screen_handlers.StencilMakerScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;

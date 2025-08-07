@@ -98,6 +98,7 @@ public class ModItems {
             itemGroup.add(MINI_GAMES_CATALOGUE);
             itemGroup.add(MINI_GAME_PAGE);
             itemGroup.add(VILLAGER_BLOCK);
+            itemGroup.add(TRADING_STALL);
             itemGroup.add(CASH_REGISTER);
             itemGroup.add(OAK_TRAFFIC_SIGN);
             itemGroup.add(BIRCH_TRAFFIC_SIGN);
