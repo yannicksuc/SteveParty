@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import fr.lordfinn.steveparty.screen_handlers.custom.*;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -14,8 +15,6 @@ import net.minecraft.screen.ScreenHandlerType;
 
 public class ModScreensHandlers {
 
-
-    // Register method for screen handlers with a codec
     public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T, D>
     register(String name, ExtendedScreenHandlerType.ExtendedFactory<T, D> factory, PacketCodec<? super RegistryByteBuf, D> codec) {
         return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ExtendedScreenHandlerType<>(factory, codec));
@@ -53,6 +52,12 @@ public class ModScreensHandlers {
             register("here_we_come_screen_handler", HereWeComeBookScreenHandler::new, FeatureSet.empty());
     public static final ScreenHandlerType<StencilMakerScreenHandler> STENCIL_MAKER_SCREEN_HANDLER =
             register("stencil_maker_screen_handler", StencilMakerScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+
+    public static final ExtendedScreenHandlerType<TradingStallScreenHandler, BlockPosPayload> TRADING_STALL_SCREEN_HANDLER =
+            register("trading_stall_screen_handler",
+                    (syncId, playerInventory, payload) -> new TradingStallScreenHandler(syncId, playerInventory, payload.pos()),
+                    BlockPosPayload.PACKET_CODEC);
+
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

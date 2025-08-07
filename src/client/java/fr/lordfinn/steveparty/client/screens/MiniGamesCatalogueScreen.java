@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.screen_handlers.MiniGamesCatalogueScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.MiniGamesCatalogueScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;

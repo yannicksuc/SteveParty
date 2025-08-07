@@ -1,7 +1,8 @@
-package fr.lordfinn.steveparty.screen_handlers;
+package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;

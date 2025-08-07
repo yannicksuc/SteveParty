@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.TrafficSignBlockEntity;
+import fr.lordfinn.steveparty.client.utils.StencilRenderUtils;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
@@ -55,7 +56,22 @@ public class TrafficSignBlockEntityRenderer implements BlockEntityRenderer<Traff
         int color = entity.getColor().getSignColor();
 
         if (textures != null && textures.plankShape() != null)
-            renderSymbol(matrices, vertexConsumers, light, overlay, textures.plankShape(), color, entity.isGlowing());
+            StencilRenderUtils.renderSymbol(
+                    matrices,
+                    vertexConsumers,
+                    light,
+                    overlay,
+                    textures.plankShape(),
+                    entity.getColor().getSignColor(),
+                    entity.isGlowing(),
+                    (stack) -> {
+                        MatrixStack.Entry entry = stack.peek();
+                        Matrix4f matrix = entry.getPositionMatrix();
+                        matrix.rotate((float) Math.toRadians(-67.5f), 1, 0, 0);
+                        matrix.translate(0, -0.082f, 0.365f);
+                    }
+            );
+//        renderSymbol(matrices, vertexConsumers, light, overlay, textures.plankShape(), color, entity.isGlowing());
         matrices.pop();
     }
 

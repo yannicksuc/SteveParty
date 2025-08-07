@@ -11,6 +11,9 @@ import fr.lordfinn.steveparty.events.ModEvents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.payloads.ModPayloads;
+import fr.lordfinn.steveparty.recipes.ModRecipeSerializers;
+import fr.lordfinn.steveparty.recipes.ModRecipeTypes;
+import fr.lordfinn.steveparty.recipes.ModRecipes;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.service.VillagerBlockSpawnListener;
@@ -49,6 +52,7 @@ public class Steveparty implements ModInitializer {
         ModEntities.initialize();
         ModEvents.initialize();
         ModHandler.init();
+        ModRecipes.register();
 
         ServerNetworking.init();
 

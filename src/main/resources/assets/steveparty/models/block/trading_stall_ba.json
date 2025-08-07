@@ -1,6 +1,6 @@
 {
-  "parent": "steveparty:block/trading_stall_base",
+  "parent": "steveparty:block/trading_stall",
   "textures": {
-    "0": "steveparty:block/trading_stall_AB"
+    "0": "steveparty:block/trading_stall_ba"
   }
 }

@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
-import fr.lordfinn.steveparty.screen_handlers.TileScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.TileScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -23,7 +23,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
-import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 import static net.minecraft.util.ActionResult.SUCCESS;
 
 public abstract class ABoardSpaceBlock extends CartridgeContainer {

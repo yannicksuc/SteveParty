@@ -1,4 +1,4 @@
-package fr.lordfinn.steveparty.screen_handlers;
+package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;

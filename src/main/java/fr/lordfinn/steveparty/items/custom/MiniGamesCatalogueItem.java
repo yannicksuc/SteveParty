@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.screen_handlers.MiniGamesCatalogueScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.MiniGamesCatalogueScreenHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;

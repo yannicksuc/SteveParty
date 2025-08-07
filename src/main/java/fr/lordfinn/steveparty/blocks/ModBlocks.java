@@ -16,6 +16,13 @@ import net.minecraft.registry.RegistryKeys;
 import java.util.function.Function;
 
 public class ModBlocks {
+    public static final Block TRADING_STALL = register(TradingStallBlock::new,
+            Block.Settings.create()
+                    .strength(2.5f, 2.5f)
+                    .sounds(BlockSoundGroup.WOOD)
+                    .nonOpaque(),
+            "trading_stall", true);
+
     public static final Block STENCIL_MAKER = register(StencilMakerBlock::new,
             Block.Settings.create()
                     .strength(3.0f, 9.0f)
@@ -27,38 +34,38 @@ public class ModBlocks {
     public static final Block TILE = register(TileBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
-                    .sounds(BlockSoundGroup.METAL)  // Stone-like sound
-                    .requiresTool(),  // Requires a pickaxe to break
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
             "tile", true);
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)  // Metallic sound, assuming redstone-like behavior
-                    .nonOpaque()  // Likely a visual indicator block
-                    .luminance(state -> 5)  // Emits light to signify importance or activity
-                    .ticksRandomly(),  // Useful for any passive behavior like redstone activation
+                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                    .nonOpaque()
+                    .luminance(state -> 5)
+                    .ticksRandomly(),
             "check_point", true);
 
     public static final Block PARTY_CONTROLLER = register(PartyController::new,
             Block.Settings.create()
-                    .strength(4.0f, 30.0f)  // More durable due to its central importance
-                    .sounds(BlockSoundGroup.METAL)  // Controller blocks often have a tech/metallic feel
-                    .requiresTool(),  // Prevent accidental breaking
+                    .strength(4.0f, 30.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
             "party_controller", true);
 
     public static final Block TELEPORTATION_PAD = register(TeleportationPadBlock::new,
             Block.Settings.create()
-                    .strength(4.0f, 30.0f)  // Very durable, like obsidian
-                    .sounds(BlockSoundGroup.WOOD)  // Wood sound for a bookshelf-like aesthetic
-                    .nonOpaque()  // For visual designs where the book might have transparency
-                    .requiresTool()  // Needs a tool to break due to its high durability
-                    .luminance(state -> 4),  // Slight glow to suggest magical properties
+                    .strength(4.0f, 30.0f)
+                    .sounds(BlockSoundGroup.WOOD)
+                    .nonOpaque()
+                    .requiresTool()
+                    .luminance(state -> 4),
             "big_book", true);
 
     public static final Block VILLAGER_BLOCK = register(VillagerBlock::new,
             Block.Settings.create()
-                    .strength(0.5f)  // Very fragile, can be broken by hand
+                    .strength(0.5f)
                     .nonOpaque()  // Fully transparent/visible (for entity-like behavior)
                     .sounds(BlockSoundGroup.WOOL)  // Soft sound to match its potential villager theme
                     .breakInstantly(),  // Breaks instantly, emphasizing its decorative nature

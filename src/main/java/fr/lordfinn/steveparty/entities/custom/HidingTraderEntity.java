@@ -6,7 +6,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
-import fr.lordfinn.steveparty.screen_handlers.CustomizableMerchantScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.CustomizableMerchantScreenHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;

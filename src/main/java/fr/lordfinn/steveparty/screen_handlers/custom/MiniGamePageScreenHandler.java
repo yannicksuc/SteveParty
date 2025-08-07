@@ -1,5 +1,6 @@
-package fr.lordfinn.steveparty.screen_handlers;
+package fr.lordfinn.steveparty.screen_handlers.custom;
 
+import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;

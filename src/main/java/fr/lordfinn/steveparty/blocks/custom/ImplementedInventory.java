@@ -1,5 +1,7 @@
-package fr.lordfinn.steveparty.client.utils;
+package fr.lordfinn.steveparty.blocks.custom;
 
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.collection.DefaultedList;
@@ -33,7 +35,7 @@ public interface ImplementedInventory extends Inventory {
 
     @Override
     default ItemStack removeStack(int slot, int amount) {
-        ItemStack result = ItemStackHelper.splitStack(getItems(), slot, amount);
+        ItemStack result = Inventories.splitStack(getItems(), slot, amount);
         if (!result.isEmpty()) {
             markDirty();
         }
@@ -42,7 +44,7 @@ public interface ImplementedInventory extends Inventory {
 
     @Override
     default ItemStack removeStack(int slot) {
-        return ItemStackHelper.removeStack(getItems(), slot);
+        return Inventories.removeStack(getItems(), slot);
     }
 
     @Override

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
 import fr.lordfinn.steveparty.client.StevepartyClient;
+import fr.lordfinn.steveparty.client.utils.StencilRenderUtils;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import net.minecraft.client.MinecraftClient;
@@ -29,7 +30,17 @@ public class StencilMakerBlockEntityRenderer implements BlockEntityRenderer<Sten
             byte[] shape = StencilItem.getShape(stencilData);
             StencilResourceManager.StencilTextures textures = StencilResourceManager.getStencilShape(shape);
             if (textures != null) {
-                renderSymbol(matrices, vertexConsumers, light, overlay, textures.metalStencil());
+                StencilRenderUtils.renderSymbol(
+                        matrices,
+                        vertexConsumers,
+                        light,
+                        overlay,
+                        textures.metalStencil(),
+                        0xFFFFFF, // blanc
+                        false,
+                        (stack) -> stack.translate(0, 6.5f / 16f, 0) // simple translation
+                );
+                //renderSymbol(matrices, vertexConsumers, light, overlay, textures.metalStencil());
             }
         }
     }

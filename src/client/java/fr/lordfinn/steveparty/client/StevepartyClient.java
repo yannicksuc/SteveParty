@@ -8,6 +8,8 @@ import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
+import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
+import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
@@ -21,6 +23,7 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.*;
 import net.minecraft.client.color.block.BlockColorProvider;
@@ -31,12 +34,17 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.DyeColor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.TILE;
+import static fr.lordfinn.steveparty.blocks.ModBlocks.TRADING_STALL;
+import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR1;
+import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR2;
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.*;
 import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
+import static fr.lordfinn.steveparty.utils.WoolColorsUtils.*;
 
 @SuppressWarnings("unused")
 public class StevepartyClient implements ClientModInitializer {
@@ -52,6 +60,17 @@ public class StevepartyClient implements ClientModInitializer {
         return behaviorItemstack.getOrDefault(ModComponents.COLOR, 0xFFFFFFFF);
     };
 
+    private static final BlockColorProvider getTradingStallColor = (state, world, pos, tintIndex) -> {
+        int colorValue = getARGBFromDyeColor(DyeColor.WHITE);
+        if (world == null || pos == null) return colorValue;
+        if (tintIndex == 1) {
+            return getARGBFromColorIndex(state.get(COLOR1));
+        } else if (tintIndex == 2) {
+            return getARGBFromColorIndex(state.get(COLOR2));
+        }
+        return colorValue;
+    };
+
     private static final ItemColorProvider getTokenIemColor = (stack, tintIndex) -> {
         if (stack == null) return 0xFFFFFFFF;
         Text customName = stack.get(DataComponentTypes.CUSTOM_NAME);
@@ -64,6 +83,7 @@ public class StevepartyClient implements ClientModInitializer {
     public void onInitializeClient() {
         ConfigurationManager.loadConfig();
         PayloadReceivers.initialize();
+        ModelLoadingPlugin.register(new TradingStallModelPlugin());
 
         initScreens();
         initParticles();
@@ -73,7 +93,9 @@ public class StevepartyClient implements ClientModInitializer {
         DestinationsRenderer.initialize();
 
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
+        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
 
         HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
@@ -82,6 +104,7 @@ public class StevepartyClient implements ClientModInitializer {
     }
 
     private void initItemRenderers() {
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.STENCIL, new StencilItemRenderer());
     }
 
     private static void initBlockEntitiesRenderers() {
@@ -90,6 +113,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TRAFFIC_SIGN_ENTITY, TrafficSignBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_MAKER_ENTITY, StencilMakerBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.TRADING_STALL, TradingStallBlockEntityRenderer::new);
     }
 
     private static void initEntitiesRenderers() {
@@ -118,5 +142,6 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(HERE_WE_GO_BOOK_SCREEN_HANDLER, HereWeGoBookScreen::new);
         HandledScreens.register(HERE_WE_COME_BOOK_SCREEN_HANDLER, HereWeComeBookScreen::new);
         HandledScreens.register(STENCIL_MAKER_SCREEN_HANDLER, StencilMakerScreen::new);
+        HandledScreens.register(TRADING_STALL_SCREEN_HANDLER, TradingStallScreen::new);
     }
 }

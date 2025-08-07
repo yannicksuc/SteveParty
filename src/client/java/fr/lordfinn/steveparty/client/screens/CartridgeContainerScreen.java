@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
-import fr.lordfinn.steveparty.screen_handlers.CartridgeContainerScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeContainerScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
