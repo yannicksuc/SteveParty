@@ -15,9 +15,10 @@ public class TradingStallScreen extends HandledScreen<TradingStallScreenHandler>
 
     public TradingStallScreen(TradingStallScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.backgroundWidth = 201;
-        this.backgroundHeight = 184;
-        this.playerInventoryTitleY = this.backgroundHeight - 94;
+        this.backgroundWidth = 204;
+        this.backgroundHeight = 187;
+        this.playerInventoryTitleY = this.backgroundHeight - 93;
+        this.playerInventoryTitleX += 4;
     }
 
     @Override
@@ -35,5 +36,11 @@ public class TradingStallScreen extends HandledScreen<TradingStallScreenHandler>
         this.renderBackground(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
         this.drawMouseoverTooltip(context, mouseX, mouseY);
+    }
+
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        //context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, 0xfff1f1f1, false);
+        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 4210752, false);
     }
 }
