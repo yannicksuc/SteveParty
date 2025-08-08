@@ -1,23 +1,4 @@
 {
   "type": "minecraft:block",
-  "pools": [
-    {
-      "rolls": 1,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "steveparty:trading_stall"
-        }
-      ],
-      "conditions": [
-        {
-          "condition": "minecraft:match_tool",
-          "predicate": {
-            "enchantments": [],
-            "tag": "minecraft:mineable/axe"
-          }
-        }
-      ]
-    }
-  ]
+  "pools": []
 }

@@ -8,6 +8,8 @@
     "LivingEntityMixin",
     "MerchantEntityMixin",
     "PlayerFallMixin",
+    "PreparedRecipesMixin",
+    "ShapedRecipeAccessor",
     "StatusEffectMixin",
     "TokenEntityMixin",
     "TrackedDataHandlerRegistryMixin"

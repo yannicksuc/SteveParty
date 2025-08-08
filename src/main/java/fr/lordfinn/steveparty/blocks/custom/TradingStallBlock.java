@@ -1,17 +1,23 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
+import fr.lordfinn.steveparty.utils.WoolColorsUtils;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.component.ComponentType;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
@@ -20,6 +26,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -30,9 +37,13 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static fr.lordfinn.steveparty.components.ModComponents.CARPET_COLORS;
+import static net.minecraft.component.DataComponentTypes.BLOCK_ENTITY_DATA;
 
 public class TradingStallBlock extends HorizontalFacingBlock implements BlockEntityProvider {
     public static final Map<Direction, VoxelShape> SHAPES = new HashMap<>();
@@ -124,8 +135,45 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext context) {
+        ItemStack stack = context.getPlayer() != null ? context.getPlayer().getStackInHand(context.getHand()) : context.getStack();
+
+        NbtComponent blockEntityData = stack.get(BLOCK_ENTITY_DATA);
+
+        if (blockEntityData != null && blockEntityData.copyNbt().contains("color1") && blockEntityData.copyNbt().contains("color2")) {
+            int color1 = blockEntityData.copyNbt().getInt("color1");
+            int color2 = blockEntityData.copyNbt().getInt("color2");
+            return this.getDefaultState()
+                    .with(FACING, context.getHorizontalPlayerFacing().getOpposite())
+                    .with(COLOR1, color1)
+                    .with(COLOR2, color2);
+        }
+
+        // Extract colors from CarpetColorComponent in the item
+        CarpetColorComponent carpetColors = stack.get(CARPET_COLORS);
+        if (carpetColors == null) {
+            return this.getDefaultState()
+                    .with(FACING, context.getHorizontalPlayerFacing().getOpposite());
+        }
+
+        int color1 = carpetColors.color1().ordinal();
+        int color2 = carpetColors.color2().ordinal();
+
         return this.getDefaultState()
-                .with(FACING, context.getHorizontalPlayerFacing().getOpposite());
+                .with(FACING, context.getHorizontalPlayerFacing().getOpposite())
+                .with(COLOR1, color1)
+                .with(COLOR2, color2);
+    }
+
+    @Override
+    public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
+        ItemStack stack = super.getPickStack(world, pos, state);
+        CarpetColorComponent carpetColors = new CarpetColorComponent(
+                WoolColorsUtils.getDyeColorFromIndex(state.get(COLOR1)),
+                WoolColorsUtils.getDyeColorFromIndex(state.get(COLOR2)));
+        Steveparty.LOGGER.info("Picked up Trading Stall carpetColors: {}", carpetColors);
+        stack.set(CARPET_COLORS, carpetColors);
+        Steveparty.LOGGER.info("CarpetColorComponent on stack: {}", stack.get(CARPET_COLORS));
+        return stack;
     }
 
     @Override
@@ -140,6 +188,12 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
                         ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), stack);
                     }
                 }
+                ItemStack tradingStallStack = new ItemStack(this);
+                CarpetColorComponent carpetColors = new CarpetColorComponent(
+                        WoolColorsUtils.getDyeColorFromIndex(state.get(COLOR1)),
+                        WoolColorsUtils.getDyeColorFromIndex(state.get(COLOR2)));
+                tradingStallStack.set(CARPET_COLORS, carpetColors);
+                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), tradingStallStack);
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
