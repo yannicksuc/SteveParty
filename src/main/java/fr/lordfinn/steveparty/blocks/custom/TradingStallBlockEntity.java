@@ -10,6 +10,9 @@ import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
@@ -34,6 +37,9 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         super.writeNbt(nbt, registryLookup);
         Inventories.writeNbt(nbt, items, registryLookup);
+        BlockState state = getCachedState();
+        nbt.putInt("color1", state.get(TradingStallBlock.COLOR1));
+        nbt.putInt("color2", state.get(TradingStallBlock.COLOR2));
     }
 
     @Override
@@ -41,6 +47,8 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
         super.readNbt(nbt, registryLookup);
         Inventories.readNbt(nbt, items, registryLookup);
     }
+
+
 
     @Override
     public Text getDisplayName() {
@@ -65,5 +73,19 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
             world.updateListeners(pos, getCachedState(), getCachedState(), 3);
         }
     }
+
+    @Nullable
+    @Override
+    public Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
+    }
+
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        NbtCompound nbt = new NbtCompound();
+        this.writeNbt(nbt, registries);
+        return nbt;
+    }
+
 }
 

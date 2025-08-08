@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CC",
+    "BB"
+  ],
+  "key": {
+    "C": "#minecraft:wool_carpets",
+    "B": "minecraft:barrel"
+  },
+  "result": {
+    "id": "steveparty:trading_stall",
+    "count": 1
+  }
+}
