@@ -13,6 +13,30 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.BlockPos;
 
 public class TradingStallScreenHandler extends ScreenHandler {
+
+    // ===== Constants for maintainability =====
+    private static final int INVENTORY_SIZE = 28;
+
+    // Block inventory slot layout
+    private static final int STALL_INV_ROWS_TOP = 2;
+    private static final int STALL_INV_COLS = 9;
+    private static final int STALL_INV_TOP_X = 12;
+    private static final int STALL_INV_TOP_Y = 53;
+    private static final int SLOT_SPACING = 18;
+
+    // Middle row (third row) offset
+    private static final int MIDDLE_ROW_INDEX = 2;
+    private static final int MIDDLE_ROW_Y_OFFSET = 0;
+
+    // Special slot (index 27)
+    private static final int SPECIAL_SLOT_INDEX = 27;
+    private static final int SPECIAL_SLOT_X = 182;
+    private static final int SPECIAL_SLOT_Y = 62;
+
+    // Player inventory position
+    private static final int PLAYER_INV_X = 12;
+    private static final int PLAYER_INV_Y = 105;
+
     private final Inventory inventory;
 
     public TradingStallScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos) {
@@ -24,30 +48,42 @@ public class TradingStallScreenHandler extends ScreenHandler {
         if (be instanceof TradingStallBlockEntity stall) {
             return stall;
         }
-        return new SimpleInventory(28); // Fallback
+        return new SimpleInventory(INVENTORY_SIZE); // Fallback
     }
-
 
     public TradingStallScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
         super(ModScreensHandlers.TRADING_STALL_SCREEN_HANDLER, syncId);
         this.inventory = inventory;
 
-        checkSize(inventory, 28);
+        checkSize(inventory, INVENTORY_SIZE);
 
-        // Block inventory slots
-        for (int i = 0; i < 2; ++i) {
-            for (int j = 0; j < 9; ++j) {
-                this.addSlot(new Slot(inventory, j + i * 9, 8 + j * 18, 18 + i * 18));
+        // Top 2 rows of block inventory
+        for (int i = 0; i < STALL_INV_ROWS_TOP; ++i) {
+            for (int j = 0; j < STALL_INV_COLS; ++j) {
+                this.addSlot(new Slot(
+                        inventory,
+                        j + i * STALL_INV_COLS,
+                        STALL_INV_TOP_X + j * SLOT_SPACING,
+                        STALL_INV_TOP_Y + i * SLOT_SPACING
+                ));
             }
         }
 
-        for (int j = 0; j < 9; ++j) {
-            this.addSlot(new Slot(inventory, j + 2 * 9, 8 + j * 18, 18 + 3 * 18));
+        // Middle row (3rd row)
+        for (int j = 0; j < STALL_INV_COLS; ++j) {
+            this.addSlot(new Slot(
+                    inventory,
+                    j + MIDDLE_ROW_INDEX * STALL_INV_COLS,
+                    STALL_INV_TOP_X + j * SLOT_SPACING,
+                    0
+            ));
         }
 
-        this.addSlot(new Slot(inventory, 27, 178, 36));
+        // Special slot
+        this.addSlot(new Slot(inventory, SPECIAL_SLOT_INDEX, SPECIAL_SLOT_X, SPECIAL_SLOT_Y));
 
-        addPlayerSlots(playerInventory, 8, 102);
+        // Player inventory
+        addPlayerSlots(playerInventory, PLAYER_INV_X, PLAYER_INV_Y);
     }
 
     @Override

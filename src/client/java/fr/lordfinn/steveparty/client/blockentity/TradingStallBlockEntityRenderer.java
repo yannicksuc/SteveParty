@@ -32,7 +32,7 @@ public class TradingStallBlockEntityRenderer implements BlockEntityRenderer<Trad
         if (world == null) return;
 
         List<ItemStack> displayItems = new ArrayList<>();
-        for (int i = 19; i <= 27; i++) {
+        for (int i = 18; i < 27; i++) {
             ItemStack stack = entity.getStack(i);
             if (!stack.isEmpty()) displayItems.add(stack);
         }
