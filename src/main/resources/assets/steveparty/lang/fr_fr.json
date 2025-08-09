@@ -26,6 +26,7 @@
   "item.steveparty.garnet_crystal_ball": "Boule de cristal en grenat",
   "item.steveparty.mini_games_catalogue": "Catalogue de mini-jeux",
   "item.steveparty.token": "Jeton",
+  "item.steveparty.shopkeeper_key": "Clé du Marchand",
   "itemgroup.steveparty": "Fête de Steve",
   "message.steveparty.removed_position": "Position supprimée : (%d, %d, %d)",
   "message.steveparty.added_position": "Position ajoutée : (%d, %d, %d)",

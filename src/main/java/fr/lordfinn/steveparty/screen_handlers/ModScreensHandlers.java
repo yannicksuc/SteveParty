@@ -57,7 +57,8 @@ public class ModScreensHandlers {
             register("trading_stall_screen_handler",
                     (syncId, playerInventory, payload) -> new TradingStallScreenHandler(syncId, playerInventory, payload.pos()),
                     BlockPosPayload.PACKET_CODEC);
-
+    public static final ScreenHandlerType<CashRegisterScreenHandler> CASH_REGISTER_SCREEN_HANDLER = register("cash_register_screen_handler",
+            CashRegisterScreenHandler::new, BlockPosPayload.PACKET_CODEC);
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

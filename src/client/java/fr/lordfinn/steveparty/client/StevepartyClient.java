@@ -163,5 +163,6 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(HERE_WE_COME_BOOK_SCREEN_HANDLER, HereWeComeBookScreen::new);
         HandledScreens.register(STENCIL_MAKER_SCREEN_HANDLER, StencilMakerScreen::new);
         HandledScreens.register(TRADING_STALL_SCREEN_HANDLER, TradingStallScreen::new);
+        HandledScreens.register(CASH_REGISTER_SCREEN_HANDLER, CashRegisterScreen::new);
     }
 }

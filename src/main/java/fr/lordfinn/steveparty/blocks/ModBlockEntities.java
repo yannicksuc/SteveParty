@@ -62,6 +62,11 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "trading_stall"),
             FabricBlockEntityTypeBuilder.create(TradingStallBlockEntity::new, ModBlocks.TRADING_STALL).build(null)
     );
+    public static final BlockEntityType<CashRegisterBlockEntity> CASH_REGISTER = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "cash_register"),
+            FabricBlockEntityTypeBuilder.create(CashRegisterBlockEntity::new, ModBlocks.CASH_REGISTER).build(null)
+    );
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

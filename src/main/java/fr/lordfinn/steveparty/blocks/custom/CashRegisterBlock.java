@@ -1,20 +1,28 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.persistent_state.CashRegisterPersistentState;
+import fr.lordfinn.steveparty.screen_handlers.custom.CashRegisterScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.HorizontalFacingBlock;
-import net.minecraft.block.ShapeContext;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.block.*;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -28,7 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class CashRegisterBlock extends HorizontalFacingBlock {
+public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEntityProvider {
     private static final BooleanProperty POWERED = BooleanProperty.of("powered");
     private static final MapCodec<CashRegisterBlock> CODEC = Block.createCodec(CashRegisterBlock::new);
     private static final Map<Direction, VoxelShape> SHAPES = new HashMap<>();
@@ -76,6 +84,19 @@ public class CashRegisterBlock extends HorizontalFacingBlock {
             if (cashRegisterState != null) cashRegisterState.removePosition(pos);
         }
         return super.onBreak(world, pos, state, player);
+    }
+
+    @Override
+    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        if (!world.isClient) {
+            BlockEntity blockEntity = world.getBlockEntity(pos);
+
+            if (player instanceof ServerPlayerEntity serverPlayer && blockEntity instanceof CashRegisterBlockEntity cashRegisterBlockEntity) {
+                serverPlayer.openHandledScreen(cashRegisterBlockEntity);
+                return ActionResult.SUCCESS;
+            }
+        }
+        return ActionResult.PASS;
     }
 
     public void setPowered(World world, BlockPos pos, boolean powered) {
@@ -127,5 +148,15 @@ public class CashRegisterBlock extends HorizontalFacingBlock {
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return SHAPES.get(state.get(FACING));
+    }
+
+    @Override
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        return new CashRegisterBlockEntity(pos, state);
+    }
+
+    @Override
+    public BlockRenderType getRenderType(BlockState state) {
+        return BlockRenderType.MODEL;
     }
 }
