@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.UUID;
 
 public class ModComponents {
 
@@ -70,6 +71,9 @@ public class ModComponents {
             registerComponent("stencil-pixels", Codec.list(Codec.BYTE));
     public static final ComponentType<CarpetColorComponent> CARPET_COLORS =
             registerComponent("carpet-colors", CarpetColorComponent.CODEC);
+    public static final ComponentType<UUID> SHOPKEEPER_UUID =
+            registerComponent("shopkeeper-uuid", Codec.STRING.xmap(UUID::fromString, UUID::toString));
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
     }

@@ -5,16 +5,17 @@ import com.google.gson.JsonParser;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
+import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
+import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.CustomizableMerchantScreenHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.TrappedChestBlockEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -27,7 +28,6 @@ import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.AirBlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -45,36 +45,42 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
-import net.minecraft.village.TradedItem;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
+import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.util.ClientUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-
 public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
+
     private final TradeOfferList tradeOffers = new TradeOfferList();
-    private final List<Inventory> nearbyInventories = new ArrayList<>();
+    private VendorLinkPersistentState vendorLinkPersistentState;
+    private final List<Inventory> storages = new ArrayList<>();
+    private final List<Inventory> tradingStalls = new ArrayList<>();
+    private final List<Inventory> cashRegisters = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
+
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
+
     private Integer optionalScreenHandlerId = null;
-    private boolean canBuy = false;
     private BlockState blockState = Blocks.GOLD_BLOCK.getDefaultState();
     private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.STRING);
 
-
     public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
-        updateTradeOffers();
+        if (!world.isClient) {
+            vendorLinkPersistentState = VendorLinkPersistentState.get(this.getWorld().getServer());
+            updateInventories();
+            updateTradeOffers();
+        }
         initGoals();
     }
 
@@ -96,7 +102,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
-        return LivingEntity.createLivingAttributes().add(EntityAttributes.MAX_HEALTH, 20.0D)
+        return LivingEntity.createLivingAttributes()
+                .add(EntityAttributes.MAX_HEALTH, 20.0D)
                 .add(EntityAttributes.ATTACK_DAMAGE, 0.0D)
                 .add(EntityAttributes.ATTACK_SPEED, 0.0D)
                 .add(EntityAttributes.KNOCKBACK_RESISTANCE, 0.3D)
@@ -116,8 +123,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     public void sendOffers(PlayerEntity player, Text name, int levelProgress) {
-        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, playerx)
-                -> new CustomizableMerchantScreenHandler(syncId, playerInventory, this), name)).ifPresent(id -> optionalScreenHandlerId = id);
+        player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
+                        (syncId, playerInventory, playerx) -> new CustomizableMerchantScreenHandler(syncId, playerInventory, this), name))
+                .ifPresent(id -> optionalScreenHandlerId = id);
         updateTradesToClient(player, levelProgress);
     }
 
@@ -132,48 +140,44 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     @Override
+    public void onRemoved() {
+        TraderStallRegistry.unlinkTraderFromAllStalls(this.getUuid());
+        super.onRemoved();
+    }
+
+    @Override
     public boolean isLeveledMerchant() {
         return false;
     }
 
-    public boolean isBottomBlockPowered() {
-        // Check if the block beneath the villager is powered by redstone
-        BlockPos villagerPos = this.getBlockPos();
-        BlockPos bottomBlockPos = villagerPos.down();
+    private void updateInventories() {
         World world = this.getWorld();
-        return world.isReceivingRedstonePower(bottomBlockPos) || world.isEmittingRedstonePower(bottomBlockPos, Direction.UP);
+        tradingStalls.clear();
+        cashRegisters.clear();
+        storages.clear();
+        vendorLinkPersistentState.getVendorLinks(uuid).forEach(pos -> {
+            BlockEntity blockEntity = world.getBlockEntity(pos);
+            if (blockEntity instanceof Inventory) {
+                if (blockEntity instanceof TradingStallBlockEntity)
+                    tradingStalls.add((Inventory) blockEntity);
+                else if (blockEntity instanceof CashRegisterBlockEntity)
+                    cashRegisters.add((Inventory) blockEntity);
+                else
+                    storages.add((Inventory) blockEntity);
+            }
+        });
     }
 
     public void updateTradeOffers() {
         tradeOffers.clear();
-
-        // Find the trapped chest and set trades based on its contents
-        for (Inventory inventory : nearbyInventories) {
-            if (inventory instanceof TrappedChestBlockEntity) {
-                for (int column = 0; column < 9; column++) {
-                    ItemStack firstBuyItem = inventory.getStack(column);
-                    ItemStack secondBuyItem = inventory.getStack(column + 9);
-                    ItemStack sellItem = inventory.getStack(column + 18);
-
-                    if (!firstBuyItem.isEmpty() && !sellItem.isEmpty() &&
-                            !(firstBuyItem.getItem() instanceof AirBlockItem) &&
-                            !(sellItem.getItem() instanceof AirBlockItem)) {
-                        TradeOffer offer = new TradeOffer(
-                                new TradedItem(firstBuyItem.getItem(), firstBuyItem.getCount()),
-                                secondBuyItem.isEmpty() ? Optional.empty() : Optional.of(new TradedItem(secondBuyItem.getItem(), secondBuyItem.getCount())),
-                                sellItem,
-                                1, 0, 0
-                        );
-                        tradeOffers.add(offer);
-                    }
-                }
-                break; // Only process the first trapped chest
+        for (Inventory inventory : tradingStalls) {
+            if (inventory instanceof TradingStallBlockEntity stall) {
+                tradeOffers.addAll(stall.getTradeOffers());
             }
         }
         validateTradeStock();
     }
 
-    // Check stock and adjust trade availability
     private void validateTradeStock() {
         for (TradeOffer offer : tradeOffers) {
             if (!isStockAvailable(offer.getSellItem())) {
@@ -182,12 +186,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
     }
 
-    // Check if sufficient stock is available for an item
     private boolean isStockAvailable(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) return true;
         int requiredAmount = itemStack.getCount();
         int stockAmount = 0;
-        for (Inventory inventory : nearbyInventories.stream().filter(inv -> !(inv instanceof TrappedChestBlockEntity)).toList()) {
+        for (Inventory inventory : storages) {
             for (int slot = 0; slot < inventory.size(); slot++) {
                 ItemStack stack = inventory.getStack(slot);
                 if (stack.getItem() == itemStack.getItem()) {
@@ -201,10 +204,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         return false;
     }
 
-    // Remove items from stock after a trade
     private void consumeStock(ItemStack itemStack) {
         int remainingAmount = itemStack.getCount();
-        for (Inventory inventory : nearbyInventories.stream().filter(inv -> !(inv instanceof TrappedChestBlockEntity)).toList()) {
+        for (Inventory inventory : storages) {
             for (int slot = 0; slot < inventory.size(); slot++) {
                 ItemStack stack = inventory.getStack(slot);
                 if (stack.getItem() == itemStack.getItem()) {
@@ -219,44 +221,30 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
     }
 
-    public void distributeItemStackAcrossInventories(ItemStack stack) {
+    public void distributeItemStackAcrossCashRegisters(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
-            return; // Nothing to distribute
+            return;
         }
-
-        Steveparty.LOGGER.info("distributeItemStackAcrossInventories stack: {}", stack);
-
-        for (Inventory inventory : nearbyInventories.stream().filter(inv -> !(inv instanceof TrappedChestBlockEntity)).toList()) {
+        for (Inventory inventory : cashRegisters) {
             if (stack.isEmpty()) {
-                break; // Stop if the stack is already empty
+                break;
             }
-            Steveparty.LOGGER.info("distributeItemStackAcrossInventories inventory: {}", inventory);
-
             for (int slot = 0; slot < inventory.size(); slot++) {
                 ItemStack targetStack = inventory.getStack(slot);
-
-                // Check if the slot is empty or compatible with the item
                 if (targetStack.isEmpty()) {
-                    // Add to empty slot
                     inventory.setStack(slot, stack.split(stack.getCount()));
                     break;
                 } else if (stack.getItem().equals(targetStack.getItem())) {
-                    // Add to existing stack if compatible
-                    int transferableAmount = Math.min(stack.getCount(),
-                            targetStack.getMaxCount() - targetStack.getCount());
+                    int transferableAmount = Math.min(stack.getCount(), targetStack.getMaxCount() - targetStack.getCount());
                     if (transferableAmount > 0) {
                         targetStack.increment(transferableAmount);
                         stack.decrement(transferableAmount);
                     }
                 }
-                Steveparty.LOGGER.info("distributeItemStackAcrossInventories targetStack: {}", targetStack);
-                // Stop if the stack is empty after this iteration
                 if (stack.isEmpty()) {
                     break;
                 }
             }
-
-            // Mark inventory as dirty if any changes are made
             if (stack.isEmpty()) {
                 inventory.markDirty();
             }
@@ -270,15 +258,13 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (player.getMainHandStack().getItem() instanceof TokenItem || player.getStackInHand(hand).isOf(Items.LEAD)) {
+        if (player.getMainHandStack().getItem() instanceof TokenItem || player.getStackInHand(hand).isOf(Items.LEAD) || player.getStackInHand(hand).isOf(ModItems.SHOPKEEPER_KEY)) {
             return ActionResult.PASS;
         }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity) {
             this.fillRecipes();
-            if (nearbyInventories.isEmpty() || tradeOffers.isEmpty())
+            if (storages.isEmpty() || tradeOffers.isEmpty())
                 return ActionResult.PASS;
-            if (!canBuy)
-                disableAllTrades();
             this.setCustomer(player);
             this.sendOffers(player, this.getDisplayName(), 0);
             return ActionResult.SUCCESS;
@@ -330,7 +316,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     private static void printWarnForFailDecodeBlockState(String error) {
-        Steveparty.LOGGER.warn("Failed to decode block state: {}", error);
+        // Removed logger statement
     }
 
     @Override
@@ -338,20 +324,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (nbt.contains("isInvisible")) {
             this.setInvisible(nbt.getBoolean("isInvisible"));
         }
-        // Serialize the BlockState to a JsonElement
         if (blockState != null) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
             result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> nbt.putString("blockState", jsonElement.toString()));
         }
         return super.writeNbt(nbt);
-    }
-
-    @Override
-    public void tick() {
-        super.tick();
-        if (!this.getWorld().isClient && !canBuy && isBottomBlockPowered()) {
-            canBuy = true;
-        }
     }
 
     private void disableAllTrades() {
@@ -360,26 +337,6 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     private void enableAllTrades() {
         tradeOffers.forEach(TradeOffer::resetUses);
-    }
-
-    // Add nearby inventories (for example, containers that are nearby)
-    public void addNearbyInventories() {
-        BlockPos villagerPos = this.getBlockPos();
-        World world = this.getWorld();
-        nearbyInventories.clear(); // Clear existing inventories
-
-        int radius = 5; // Search radius
-        for (int x = -radius; x <= radius; x++) {
-            for (int y = -radius; y <= radius; y++) {
-                for (int z = -radius; z <= radius; z++) {
-                    BlockPos currentPos = villagerPos.add(x, y, z);
-                    BlockEntity blockEntity = world.getBlockEntity(currentPos);
-                    if (blockEntity instanceof Inventory) {
-                        nearbyInventories.add((Inventory) blockEntity);
-                    }
-                }
-            }
-        }
     }
 
     @Override
@@ -396,17 +353,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     protected void afterUsing(TradeOffer offer) {
         consumeStock(offer.getSellItem());
-        distributeItemStackAcrossInventories(offer.getFirstBuyItem().itemStack().copy());
+        distributeItemStackAcrossCashRegisters(offer.getFirstBuyItem().itemStack().copy());
         if (offer.getSecondBuyItem().isPresent())
-            distributeItemStackAcrossInventories(offer.getSecondBuyItem().get().itemStack().copy());
-
-        if (isBottomBlockPowered()) {
-            canBuy = true;
-            enableAllTrades(); // Allow trades
-        } else {
-            canBuy = false;
-            disableAllTrades(); // Disable trades
-        }
+            distributeItemStackAcrossCashRegisters(offer.getSecondBuyItem().get().itemStack().copy());
         validateTradeStock();
         updateTradesToClient(getCustomer(), 0);
         if (hasPassengers() && getFirstPassenger() instanceof MobEntity passenger) {
@@ -420,7 +369,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     public int getExperience() {
-        return 0; // No experience for this merchant
+        return 0;
     }
 
     @Override
@@ -471,7 +420,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected void fillRecipes() {
-        addNearbyInventories();
+        updateInventories();
         updateTradeOffers();
     }
 
@@ -482,8 +431,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected SoundEvent getDeathSound() {
-        // Return villager death sound
-        return isHiding() ? blockState.getSoundGroup().getBreakSound() :SoundEvents.ENTITY_VILLAGER_DEATH;
+        return isHiding() ? blockState.getSoundGroup().getBreakSound() : SoundEvents.ENTITY_VILLAGER_DEATH;
     }
 
     public BlockState getBlockState() {
@@ -500,8 +448,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     private void syncBlockData(BlockState blockState) {
-        if (!this.getWorld().isClient) { // Ensure this runs only on the server
-            // Serialize the BlockState and update the DataTracker
+        if (!this.getWorld().isClient) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
             result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> this.dataTracker.set(BLOCK_STATE, jsonElement.toString()));
         }

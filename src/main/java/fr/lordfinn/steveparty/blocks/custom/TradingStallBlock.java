@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import fr.lordfinn.steveparty.utils.WoolColorsUtils;
@@ -39,8 +40,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static fr.lordfinn.steveparty.components.ModComponents.CARPET_COLORS;
 import static net.minecraft.component.DataComponentTypes.BLOCK_ENTITY_DATA;
@@ -170,9 +170,7 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
         CarpetColorComponent carpetColors = new CarpetColorComponent(
                 WoolColorsUtils.getDyeColorFromIndex(state.get(COLOR1)),
                 WoolColorsUtils.getDyeColorFromIndex(state.get(COLOR2)));
-        Steveparty.LOGGER.info("Picked up Trading Stall carpetColors: {}", carpetColors);
         stack.set(CARPET_COLORS, carpetColors);
-        Steveparty.LOGGER.info("CarpetColorComponent on stack: {}", stack.get(CARPET_COLORS));
         return stack;
     }
 
@@ -181,6 +179,7 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof TradingStallBlockEntity entity) {
+                TraderStallRegistry.unlinkStallFromAllTraders(pos);
                 Inventory inv = entity.getInventory();
                 for (int i = 0; i < inv.size(); i++) {
                     ItemStack stack = inv.getStack(i);

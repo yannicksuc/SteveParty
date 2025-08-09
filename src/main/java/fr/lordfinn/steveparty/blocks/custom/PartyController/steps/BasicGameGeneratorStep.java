@@ -23,6 +23,7 @@ public class BasicGameGeneratorStep extends PartyStep {
 
     @Override
     public void start(PartyControllerEntity partyControllerEntity) {
+        if (partyControllerEntity == null || partyControllerEntity.getWorld() == null || partyControllerEntity.getWorld().isClient) return;
         if (partyControllerEntity.getPartyData().getTokens().isEmpty()) {
             partyControllerEntity.nextStep();
             return;

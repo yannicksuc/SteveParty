@@ -42,6 +42,8 @@ public class ModItems {
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item HERE_WE_GO_BOOK = register(HereWeGoBookItem.class, "here_we_go_book");
     public static final Item HERE_WE_COME_BOOK = register(HereWeComeBookItem.class, "here_we_come_book");
+    public static final Item SHOPKEEPER_KEY = register(ShopkeeperKeyItem.class, "shopkeeper_key");
+
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
@@ -100,6 +102,7 @@ public class ModItems {
             itemGroup.add(VILLAGER_BLOCK);
             itemGroup.add(TRADING_STALL);
             itemGroup.add(CASH_REGISTER);
+            itemGroup.add(SHOPKEEPER_KEY);
             itemGroup.add(OAK_TRAFFIC_SIGN);
             itemGroup.add(BIRCH_TRAFFIC_SIGN);
             itemGroup.add(SPRUCE_TRAFFIC_SIGN);
