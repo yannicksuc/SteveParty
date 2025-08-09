@@ -16,7 +16,7 @@ public class CashRegisterScreenHandler extends ScreenHandler {
     private final Inventory inventory;
 
     public CashRegisterScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new SimpleInventory(28));
+        this(syncId, playerInventory, new SimpleInventory(27));
     }
 
     public CashRegisterScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
@@ -30,8 +30,6 @@ public class CashRegisterScreenHandler extends ScreenHandler {
                 this.addSlot(new Slot(inventory, j + i * 9, 8 + j * 18, 18 + i * 18));
             }
         }
-
-        addSlot(new Slot(inventory, 27, 178, 36));
 
         addPlayerSlots(playerInventory, 8, 86);
     }

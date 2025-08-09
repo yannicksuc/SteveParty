@@ -2,11 +2,13 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
+import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -44,4 +46,18 @@ public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
             entity.updateRoutedDestinations();
         }
     }
+
+    @Override
+    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.isOf(newState.getBlock())) { // Block is changed or removed
+            if (!world.isClient && world instanceof ServerWorld serverWorld) {
+                BoardSpaceRoutersPersistentState persistentState = BoardSpaceRoutersPersistentState.get(serverWorld.getServer());
+                if (persistentState != null) {
+                    persistentState.clear(pos, serverWorld);
+                }
+            }
+        }
+        super.onStateReplaced(state, world, pos, newState, moved);
+    }
+
 }

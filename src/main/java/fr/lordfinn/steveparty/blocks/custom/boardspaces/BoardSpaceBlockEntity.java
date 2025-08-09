@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import fr.lordfinn.steveparty.persistent_state.ClientBoardSpaceRouters;
 import fr.lordfinn.steveparty.screen_handlers.custom.TileScreenHandler;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
@@ -26,6 +27,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -48,11 +50,11 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 
 public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity, ExtendedScreenHandlerFactory<BlockPosPayload> {
+
     private int ticks = 0;
     private SoundEvent walkedOnSound = null;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
     private ItemStack currentlyActiveCartridge = null;
-
 
     public BoardSpaceBlockEntity(BlockPos pos, BlockState state) {
         super(state.getBlock() instanceof TileBlock ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.CHECK_POINT_ENTITY, pos, state, 16);
@@ -60,7 +62,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     private void update() {
         markDirty();
-        if(world != null)
+        if (world != null)
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
     }
 
@@ -125,7 +127,6 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return false;
     }
 
-
     public static void displayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder, List<BoardSpaceDestination> destinations) {
         if (destinations.isEmpty()) return;
         for (BoardSpaceDestination destination : destinations) {
@@ -152,7 +153,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private static void hideDestinations(List<DirectionDisplayEntity> e, BlockPos pos) {
-        e.forEach(entity -> {if (entity.getTileOrigin().equals(pos)) entity.remove(Entity.RemovalReason.DISCARDED);});
+        e.forEach(entity -> {
+            if (entity.getTileOrigin().equals(pos)) entity.remove(Entity.RemovalReason.DISCARDED);
+        });
     }
 
     public void hideDestinations() {
@@ -164,29 +167,25 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         return world.getEntitiesByClass(DirectionDisplayEntity.class, Box.of(pos.toCenterPos(), 4, 4, 4), entity -> entity instanceof DirectionDisplayEntity);
     }
 
-    public List<BoardSpaceDestination> getStockedDestinations(){
+    public List<BoardSpaceDestination> getStockedDestinations() {
         List<BoardSpaceDestination> tileDestinations = new ArrayList<>();
-
         ItemStack stack = this.getActiveCartridgeItemStack();
         if (stack != null && stack.getItem() instanceof CartridgeItem) {
             DestinationsComponent component = stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT);
-            List<BlockPos> destinations = new ArrayList<>(component.destinations()); // Copy destinations to a new list.
+            List<BlockPos> destinations = new ArrayList<>(component.destinations());
             tileDestinations = getDestinationsStatus(destinations, this.getWorld());
         }
         return tileDestinations;
     }
 
     public int getActiveSlot() {
-        if (!(this.world instanceof ServerWorld serverWorld)) {
-            if (this.world != null) {
-                BlockPos routerPos = BoardSpaceRoutersPersistentState.get(this.pos);
-                return this.world.getReceivedRedstonePower(routerPos == null ? this.pos : routerPos);
-            }
-            return 0;
-        }
-        BoardSpaceRoutersPersistentState.get(serverWorld.getServer());
-        BlockPos routerPos = BoardSpaceRoutersPersistentState.get(this.pos);
-        return this.world.getReceivedRedstonePower(routerPos == null ? this.pos : routerPos);
+        BlockPos routerPos = getRouterPos();
+        return world != null ? world.getReceivedRedstonePower(routerPos != null ? routerPos : pos) : 0;
+    }
+
+    private BlockPos getRouterPos() {
+        if (world instanceof ServerWorld sw) return BoardSpaceRoutersPersistentState.get(sw.getServer()).get(pos);
+        return ClientBoardSpaceRouters.getRouter(pos);
     }
 
     public ItemStack getActiveCartridgeItemStack() {
@@ -196,10 +195,21 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         int slot = getActiveSlot();
         ItemStack newActiveCartridgeItemStack = this.getStack(slot);
         if (!newActiveCartridgeItemStack.equals(this.currentlyActiveCartridge)) {
+            if (!this.world.isClient() && this.currentlyActiveCartridge != null)
+                spawnChangementParticles(this.currentlyActiveCartridge, newActiveCartridgeItemStack);
             this.currentlyActiveCartridge = newActiveCartridgeItemStack;
             markDirty();
         }
         return this.getStack(slot);
+    }
+
+    private void spawnChangementParticles(ItemStack currentlyActiveCartridge, ItemStack newActiveCartridgeItemStack) {
+        double x = pos.toCenterPos().getX();
+        double y = pos.toCenterPos().getY();
+        double z = pos.toCenterPos().getZ();
+        if (world != null) {
+            ((ServerWorld)world).spawnParticles(ParticleTypes.GLOW, x, y ,z, 10, 0.05, 0.05, 0.05, 0.2);
+        }
     }
 
     public void setActiveCartridgeItemStack(ItemStack stack) {
@@ -218,7 +228,6 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         BoardSpaceType tileType = determineBoardSpaceType(stack);
         if (tileType == null)
             return null;
-
         return BoardSpaceBehaviorFactory.get(tileType);
     }
 

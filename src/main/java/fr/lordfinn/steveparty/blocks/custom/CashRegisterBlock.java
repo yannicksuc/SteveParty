@@ -1,26 +1,16 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
-import fr.lordfinn.steveparty.persistent_state.CashRegisterPersistentState;
-import fr.lordfinn.steveparty.screen_handlers.custom.CashRegisterScreenHandler;
-import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -30,13 +20,13 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEntityProvider {
+
     private static final BooleanProperty POWERED = BooleanProperty.of("powered");
     private static final MapCodec<CashRegisterBlock> CODEC = Block.createCodec(CashRegisterBlock::new);
     private static final Map<Direction, VoxelShape> SHAPES = new HashMap<>();
@@ -54,7 +44,6 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
         return CODEC;
     }
 
-
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
@@ -69,28 +58,9 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
-        super.onPlaced(world, pos, state, placer, itemStack);
-        if (!world.isClient) {
-            CashRegisterPersistentState cashRegisterState = CashRegisterPersistentState.get(world.getServer());
-            if (cashRegisterState != null) cashRegisterState.addPosition(pos);
-        }
-    }
-
-    @Override
-    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        if (!world.isClient) {
-            CashRegisterPersistentState cashRegisterState = CashRegisterPersistentState.get(world.getServer());
-            if (cashRegisterState != null) cashRegisterState.removePosition(pos);
-        }
-        return super.onBreak(world, pos, state, player);
-    }
-
-    @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!world.isClient) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
-
             if (player instanceof ServerPlayerEntity serverPlayer && blockEntity instanceof CashRegisterBlockEntity cashRegisterBlockEntity) {
                 serverPlayer.openHandledScreen(cashRegisterBlockEntity);
                 return ActionResult.SUCCESS;
@@ -100,29 +70,32 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
     }
 
     public void setPowered(World world, BlockPos pos, boolean powered) {
-        world.setBlockState(pos, world.getBlockState(pos).with(POWERED, powered), Block.NOTIFY_ALL);
-        if (powered) {
-            world.scheduleBlockTick(pos, this, 4); // 20 ticks = 1 second
+        BlockState state = world.getBlockState(pos);
+        if (state.get(POWERED) != powered) {
+            world.setBlockState(pos, state.with(POWERED, powered), Block.NOTIFY_ALL);
+            if (powered) {
+                world.scheduleBlockTick(pos, this, 4); // 20 ticks = 1 second
+            }
         }
     }
 
     @Override
-    protected boolean emitsRedstonePower(BlockState state) {
+    public boolean emitsRedstonePower(BlockState state) {
         return true;
     }
 
     @Override
-    protected int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+    public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
         return state.get(POWERED) ? 15 : 0;
     }
 
     @Override
-    protected int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+    public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
         return state.get(POWERED) ? 15 : 0;
     }
 
     @Override
-    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, net.minecraft.util.math.random.Random random) {
+    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, net.minecraft.util.math.random.Random random) {
         super.scheduledTick(state, world, pos, random);
         if (state.get(POWERED)) {
             setPowered(world, pos, false);
