@@ -21,6 +21,7 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class CashRegisterBlockEntity extends BlockEntity  implements ExtendedScreenHandlerFactory<BlockPosPayload>, ImplementedInventory {
 
-    private final DefaultedList<ItemStack> items = DefaultedList.ofSize(28, ItemStack.EMPTY);
+    private final DefaultedList<ItemStack> items = DefaultedList.ofSize(27, ItemStack.EMPTY);
 
     public CashRegisterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.CASH_REGISTER, pos, state);
@@ -72,16 +73,6 @@ public class CashRegisterBlockEntity extends BlockEntity  implements ExtendedScr
         if (world != null && !world.isClient) {
         }
     }
-    public Block getAttachedHidingTraderBlock() {
-        ItemStack stack = this.getStack(27);
-        if (stack.isEmpty())
-            return null;
-        ItemStack lastSlotItem = this.getItems().get(27); // Assuming the last slot is index 27
-        if (!lastSlotItem.isEmpty() && lastSlotItem.getItem() instanceof BlockItem) {
-            return ((BlockItem) lastSlotItem.getItem()).getBlock();
-        }
-        return null;
-    }
 
     @Nullable
     @Override
@@ -99,5 +90,14 @@ public class CashRegisterBlockEntity extends BlockEntity  implements ExtendedScr
     @Override
     public BlockPosPayload getScreenOpeningData(ServerPlayerEntity serverPlayerEntity) {
         return new BlockPosPayload(this.pos);
+    }
+
+    public void trigger() {
+        if (this.world != null && this.world instanceof ServerWorld) {
+            Block block = this.world.getBlockState(this.pos).getBlock();
+            if (block instanceof CashRegisterBlock) {
+                ((CashRegisterBlock) block).setPowered(this.world, this.pos, true);
+            }
+        }
     }
 }

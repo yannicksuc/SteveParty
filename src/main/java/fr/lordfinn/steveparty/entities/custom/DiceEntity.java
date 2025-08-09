@@ -232,47 +232,111 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     @Override
     public void readNbt(NbtCompound nbt) {
-        super.readNbt(nbt);
-        this.setRolling(nbt.getBoolean("Rolling"));
-        this.setRollValue(nbt.getInt("RollValue"));
-        this.skin = nbt.getString("Skin");
-        if (nbt.containsUuid("Target")) {
-            this.setTarget(nbt.getUuid("Target"));
-        }
-        if (nbt.containsUuid("Owner")) {
-            this.setOwner(nbt.getUuid("Owner"));
-        }
-        if (nbt.contains("LinkedDice", NbtElement.LIST_TYPE)) {
-            NbtList linkedDiceList = nbt.getList("LinkedDice", NbtElement.STRING_TYPE);
-            List<UUID> linkedDice = linkedDiceList.stream().map(NbtElement::asString).map(UUID::fromString).collect(Collectors.toList());
-            this.setLinkedDice(linkedDice);
-        }
-        if (nbt.contains("ItemReference", NbtElement.COMPOUND_TYPE)) {
-            NbtCompound itemReferenceNbt = nbt.getCompound("ItemReference");
-            Optional<ItemStack> itemReference = ItemStack.fromNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream()), itemReferenceNbt);
-            itemReference.ifPresent(this::setItemReference);
-        }
-        this.setInvulnerable(true);
-        this.setNoGravity(true);
-        if (this.getWorld() instanceof ServerWorld) {
-            this.getTarget().ifPresent(uuid -> simulation.setTarget((LivingEntity) ((ServerWorld) this.getWorld()).getEntity(uuid)));
-        }
+        try {
+            super.readNbt(nbt);
 
+            this.setRolling(nbt.getBoolean("Rolling"));
+            this.setRollValue(nbt.getInt("RollValue"));
+            this.skin = nbt.getString("Skin");
+
+            if (nbt.containsUuid("Target")) {
+                this.setTarget(nbt.getUuid("Target"));
+            } else {
+                this.setTarget(null);
+            }
+
+            if (nbt.containsUuid("Owner")) {
+                this.setOwner(nbt.getUuid("Owner"));
+            } else {
+                this.setOwner(null);
+            }
+
+            if (nbt.contains("LinkedDice", NbtElement.LIST_TYPE)) {
+                NbtList linkedDiceList = nbt.getList("LinkedDice", NbtElement.STRING_TYPE);
+                try {
+                    List<UUID> linkedDice = linkedDiceList.stream()
+                            .map(NbtElement::asString)
+                            .map(UUID::fromString)
+                            .collect(Collectors.toList());
+                    this.setLinkedDice(linkedDice);
+                } catch (IllegalArgumentException ex) {
+                    // Log and clear on failure
+                    this.setLinkedDice(Collections.emptyList());
+                    System.err.println("Failed to parse LinkedDice UUIDs from NBT: " + ex.getMessage());
+                }
+            } else {
+                this.setLinkedDice(Collections.emptyList());
+            }
+
+            if (nbt.contains("ItemReference", NbtElement.COMPOUND_TYPE)) {
+                NbtCompound itemReferenceNbt = nbt.getCompound("ItemReference");
+                Optional<ItemStack> itemReference = Optional.empty();
+                try {
+                    itemReference = ItemStack.fromNbt(
+                            RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream()), itemReferenceNbt);
+                } catch (Exception ex) {
+                    System.err.println("Failed to parse ItemReference from NBT: " + ex.getMessage());
+                }
+                itemReference.ifPresentOrElse(
+                        this::setItemReference,
+                        () -> this.setItemReference(ItemStack.EMPTY) // fallback to empty ItemStack
+                );
+            } else {
+                this.setItemReference(ItemStack.EMPTY);
+            }
+
+            this.setInvulnerable(true);
+            this.setNoGravity(true);
+
+            if (this.getWorld() instanceof ServerWorld) {
+                this.getTarget().ifPresent(uuid -> {
+                    Entity targetEntity = ((ServerWorld) this.getWorld()).getEntity(uuid);
+                    if (targetEntity instanceof LivingEntity) {
+                        simulation.setTarget((LivingEntity) targetEntity);
+                    } else {
+                        System.err.println("Target entity UUID does not refer to a LivingEntity");
+                    }
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading NBT in DiceEntity: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
-        nbt.putString("Skin", this.skin);
-        nbt.putBoolean("Rolling", this.isRolling());
-        nbt.putInt("RollValue", this.getRollValue());
-        this.getTarget().ifPresent(uuid -> nbt.putUuid("Target", uuid));
-        this.getOwner().ifPresent(uuid -> nbt.putUuid("Owner", uuid));
-        NbtList linkedDiceList = new NbtList();
-        this.getLinkedDice().forEach(uuid -> linkedDiceList.add(NbtString.of(uuid.toString())));
-        nbt.put("LinkedDice", linkedDiceList);
-        nbt.put("ItemReference", this.getItemReference().toNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream())));
-        return super.writeNbt(nbt);
+        try {
+            nbt.putString("Skin", this.skin);
+            nbt.putBoolean("Rolling", this.isRolling());
+            nbt.putInt("RollValue", this.getRollValue());
+
+            this.getTarget().ifPresent(uuid -> nbt.putUuid("Target", uuid));
+            this.getOwner().ifPresent(uuid -> nbt.putUuid("Owner", uuid));
+
+            NbtList linkedDiceList = new NbtList();
+            this.getLinkedDice().forEach(uuid -> linkedDiceList.add(NbtString.of(uuid.toString())));
+            nbt.put("LinkedDice", linkedDiceList);
+
+            ItemStack itemRef = this.getItemReference();
+            if (itemRef != null && !itemRef.isEmpty()) {
+                try {
+                    nbt.put("ItemReference", itemRef.toNbt(
+                            RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream())
+                    ));
+                } catch (Exception e) {
+                    System.err.println("Failed to write ItemReference to NBT: " + e.getMessage());
+                }
+            }
+
+            return super.writeNbt(nbt);
+        } catch (Exception e) {
+            System.err.println("Error writing NBT in DiceEntity: " + e.getMessage());
+            e.printStackTrace();
+            return nbt; // fallback to partial data
+        }
     }
+
 
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {

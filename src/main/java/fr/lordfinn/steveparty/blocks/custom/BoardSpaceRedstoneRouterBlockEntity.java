@@ -54,17 +54,6 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     }
 
     @Override
-    public void markRemoved() {
-        if (!(this.world instanceof ServerWorld serverWorld)) {
-            super.markRemoved();
-            return;
-        }
-        BoardSpaceRoutersPersistentState persistentState = BoardSpaceRoutersPersistentState.get(serverWorld.getServer());
-        persistentState.clear(this.pos, serverWorld);
-        super.markRemoved();
-    }
-
-    @Override
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
         return new RouterScreenHandler(syncId, playerInventory, this);
     }

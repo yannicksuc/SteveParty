@@ -6,7 +6,6 @@
   "mixins": [
     "FireworkRocketEntityAccessor",
     "LivingEntityMixin",
-    "MerchantEntityMixin",
     "PlayerFallMixin",
     "PreparedRecipesMixin",
     "ShapedRecipeAccessor",

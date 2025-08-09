@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosesMapPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
@@ -17,50 +18,101 @@ import net.minecraft.world.World;
 import java.util.*;
 
 public class BoardSpaceRoutersPersistentState extends PersistentState {
-    protected static Map<BlockPos, BlockPos> boardSpaces = new HashMap<>();
-    private static final Type<BoardSpaceRoutersPersistentState> type = new Type<>(
+
+    private final Map<BlockPos, BlockPos> boardSpaces = Collections.synchronizedMap(new HashMap<>());
+
+    // Fabric's PersistentState loader
+    private static final Type<BoardSpaceRoutersPersistentState> TYPE = new Type<>(
             BoardSpaceRoutersPersistentState::new,
-            BoardSpaceRoutersPersistentState::createFromNbt,
+            BoardSpaceRoutersPersistentState::fromNbt,
             null
     );
 
-    private static BoardSpaceRoutersPersistentState createFromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
+    // Factory for reading from disk
+    private static BoardSpaceRoutersPersistentState fromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         BoardSpaceRoutersPersistentState state = new BoardSpaceRoutersPersistentState();
         state.readFromNbt(nbt);
         return state;
     }
 
+    // Get or create persistent state for OVERWORLD
     public static BoardSpaceRoutersPersistentState get(MinecraftServer server) {
-        return BoardSpaceRoutersPersistentState.getOrCreate(server, type, "board_space_routers");
+        if (server == null || server.getWorld(World.OVERWORLD) == null) return null;
+        PersistentStateManager manager = server.getWorld(World.OVERWORLD).getPersistentStateManager();
+        return manager.getOrCreate(TYPE, "board_space_routers");
     }
 
+    /** Add or update a mapping **/
     public void put(BlockPos boardSpacePos, BlockPos routerPos) {
         boardSpaces.put(boardSpacePos, routerPos);
         markDirty();
     }
 
+    /** Remove a mapping **/
     public void remove(BlockPos boardSpacePos) {
-        boardSpaces.remove(boardSpacePos);
+        if (boardSpaces.remove(boardSpacePos) != null) {
+            markDirty();
+        }
+    }
+
+    /** Get all mappings **/
+    public Map<BlockPos, BlockPos> getAll() {
+        synchronized (boardSpaces) {
+            return Collections.unmodifiableMap(new HashMap<>(boardSpaces));
+        }
+    }
+
+    /** Clear all board spaces that belong to a router **/
+    public void clear(BlockPos routerPos, ServerWorld serverWorld) {
+        Iterator<Map.Entry<BlockPos, BlockPos>> iterator = boardSpaces.entrySet().iterator();
+        boolean removed = false;
+
+        while (iterator.hasNext()) {
+            Map.Entry<BlockPos, BlockPos> entry = iterator.next();
+            if (entry.getValue().equals(routerPos)) {
+                iterator.remove();
+                removed = true;
+
+                if (serverWorld.getBlockEntity(entry.getKey()) instanceof BoardSpaceBlockEntity be) {
+                    be.markDirty();
+                }
+            }
+        }
+
+        if (removed) {
+            markDirty();
+        }
+    }
+
+    /** Add multiple board spaces to a router **/
+    public void putAll(List<BlockPos> boardSpacesList, BlockPos router, ServerWorld serverWorld) {
+        boolean changed = false;
+        for (BlockPos boardSpacePos : boardSpacesList) {
+            boardSpaces.put(boardSpacePos, router);
+            changed = true;
+
+            if (serverWorld.getBlockEntity(boardSpacePos) instanceof BoardSpaceBlockEntity be) {
+                be.markDirty();
+            }
+        }
+        if (changed) {
+            markDirty();
+        }
+    }
+
+    /** Get router linked to a board space **/
+    public BlockPos get(BlockPos boardSpacePos) {
+        return boardSpaces.get(boardSpacePos);
+    }
+
+    /** Replace the whole mapping **/
+    public void set(Map<BlockPos, BlockPos> newBoardSpaces) {
+        boardSpaces.clear();
+        boardSpaces.putAll(newBoardSpaces);
         markDirty();
     }
 
-    public Map<BlockPos, BlockPos> getAll() {
-        return boardSpaces;
-    }
-
-    protected static <T extends BoardSpaceRoutersPersistentState> T getOrCreate(
-            MinecraftServer server,
-            Type<T> type,
-            String name
-    ) {
-        if (server == null || server.getWorld(World.OVERWORLD) == null) return null;
-        PersistentStateManager manager = Objects.requireNonNull(server.getWorld(World.OVERWORLD)).getPersistentStateManager();
-        if (manager == null) return null;
-        T state = manager.getOrCreate(type, name);
-        state.markDirty();
-        return state;
-    }
-
+    /** Save to NBT **/
     @Override
     public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         NbtList list = new NbtList();
@@ -78,50 +130,43 @@ public class BoardSpaceRoutersPersistentState extends PersistentState {
         return nbt;
     }
 
+    /** Load from NBT **/
     protected void readFromNbt(NbtCompound nbt) {
-        NbtList list = nbt.getList("BoardSpacesRouters", 10); // 10 = NbtCompound type
+        boardSpaces.clear();
+        NbtList list = nbt.getList("BoardSpacesRouters", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < list.size(); i++) {
             NbtCompound spaceNbt = list.getCompound(i);
-            BlockPos boardSpacePos = new BlockPos(spaceNbt.getInt("boardSpaceX"), spaceNbt.getInt("boardSpaceY"), spaceNbt.getInt("boardSpaceZ"));
-            BlockPos routerPos = new BlockPos(spaceNbt.getInt("routerX"), spaceNbt.getInt("routerY"), spaceNbt.getInt("routerZ"));
+            BlockPos boardSpacePos = new BlockPos(
+                    spaceNbt.getInt("boardSpaceX"),
+                    spaceNbt.getInt("boardSpaceY"),
+                    spaceNbt.getInt("boardSpaceZ")
+            );
+            BlockPos routerPos = new BlockPos(
+                    spaceNbt.getInt("routerX"),
+                    spaceNbt.getInt("routerY"),
+                    spaceNbt.getInt("routerZ")
+            );
             boardSpaces.put(boardSpacePos, routerPos);
         }
     }
 
-    public void clear(BlockPos routerPos, ServerWorld serverWorld) {
-        Iterator<Map.Entry<BlockPos, BlockPos>> iterator = boardSpaces.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<BlockPos, BlockPos> entry = iterator.next();
-            if (entry.getValue().equals(routerPos)) {
-                iterator.remove(); // Safely removes the current entry from the map
-                if (serverWorld.getBlockEntity(entry.getKey()) instanceof BoardSpaceBlockEntity boardSpaceBlockEntity)
-                    boardSpaceBlockEntity.markDirty();
-            }
-        }
-    }
-
-    public void putAll(List<BlockPos> boardSpaces, BlockPos router, ServerWorld serverWorld) {
-        for (BlockPos boardSpacePos : boardSpaces) {
-            put(boardSpacePos, router);
-            if (serverWorld.getBlockEntity(boardSpacePos) instanceof BoardSpaceBlockEntity boardSpaceBlockEntity)
-                boardSpaceBlockEntity.markDirty();
-        }
-    }
-
-
-
-    public static BlockPos get(BlockPos boardSpacePos) {
-        return boardSpaces.getOrDefault(boardSpacePos, null);
-    }
-
-    public static void set(Map<BlockPos, BlockPos> boardSpaces) {
-        BoardSpaceRoutersPersistentState.boardSpaces = boardSpaces;
-    }
-
+    /** Send to one player **/
     public static void sendToPlayer(ServerPlayerEntity player, MinecraftServer server) {
-        ServerPlayNetworking.send(player, new BlockPosesMapPayload(BoardSpaceRoutersPersistentState.get(server).getAll()));
+        BoardSpaceRoutersPersistentState state = get(server);
+        if (state != null) {
+            Map<BlockPos, BlockPos> snapshot = state.getAll();
+            ServerPlayNetworking.send(player, new BlockPosesMapPayload(snapshot));
+        }
     }
+
+    /** Send to all players **/
     public static void sendToOnlinePlayers(MinecraftServer server) {
-        server.getPlayerManager().getPlayerList().forEach(player -> sendToPlayer(player, server));
+        BoardSpaceRoutersPersistentState state = get(server);
+        if (state != null) {
+            Map<BlockPos, BlockPos> snapshot = state.getAll();
+            server.getPlayerManager().getPlayerList().forEach(player ->
+                    ServerPlayNetworking.send(player, new BlockPosesMapPayload(snapshot))
+            );
+        }
     }
 }

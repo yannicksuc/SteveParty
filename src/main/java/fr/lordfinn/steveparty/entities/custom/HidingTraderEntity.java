@@ -63,8 +63,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private final TradeOfferList tradeOffers = new TradeOfferList();
     private VendorLinkPersistentState vendorLinkPersistentState;
     private final List<Inventory> storages = new ArrayList<>();
-    private final List<Inventory> tradingStalls = new ArrayList<>();
-    private final List<Inventory> cashRegisters = new ArrayList<>();
+    private final List<TradingStallBlockEntity> tradingStalls = new ArrayList<>();
+    private final List<CashRegisterBlockEntity> cashRegisters = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
 
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
@@ -159,9 +159,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof Inventory) {
                 if (blockEntity instanceof TradingStallBlockEntity)
-                    tradingStalls.add((Inventory) blockEntity);
+                    tradingStalls.add((TradingStallBlockEntity) blockEntity);
                 else if (blockEntity instanceof CashRegisterBlockEntity)
-                    cashRegisters.add((Inventory) blockEntity);
+                    cashRegisters.add((CashRegisterBlockEntity) blockEntity);
                 else
                     storages.add((Inventory) blockEntity);
             }
@@ -358,6 +358,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             distributeItemStackAcrossCashRegisters(offer.getSecondBuyItem().get().itemStack().copy());
         validateTradeStock();
         updateTradesToClient(getCustomer(), 0);
+        triggerCashRegisters();
         if (hasPassengers() && getFirstPassenger() instanceof MobEntity passenger) {
             boolean silentStatus = passenger.isSilent();
             passenger.setSilent(false);
@@ -365,6 +366,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             passenger.setSilent(silentStatus);
         } else
             this.playSound(SoundEvents.ENTITY_VILLAGER_TRADE, 1.0F, this.getSoundPitch());
+    }
+
+    private void triggerCashRegisters() {
+        cashRegisters.forEach(CashRegisterBlockEntity::trigger);
     }
 
     @Override
