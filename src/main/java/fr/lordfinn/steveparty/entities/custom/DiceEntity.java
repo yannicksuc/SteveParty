@@ -8,6 +8,10 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.component.type.FireworkExplosionComponent;
 import net.minecraft.component.type.FireworksComponent;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -21,13 +25,15 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.registry.*;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -41,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE;
 import static fr.lordfinn.steveparty.utils.EntitiesUtils.getPlayerNameByUuid;
+import static net.minecraft.component.DataComponentTypes.ENCHANTMENTS;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
 public class DiceEntity extends LivingEntity implements GeoEntity {
@@ -59,6 +66,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     final AttractionSimulation simulation = new AttractionSimulation(null, this);
     public static final int MIN = 1;
     public static final int MAX = 10;
+
+    private int secondsSinceRolled = 0;
 
     public DiceEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -119,6 +128,10 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     public void setRolling(boolean rolling, boolean propagate) {
         if (this.isRolling() == rolling) return;
+        if (secondsSinceRolled != 0 && rolling) {
+            explode(null);
+        }
+        secondsSinceRolled = 0;
         if (propagate)
             propagateStateChange(dice -> dice.setRolling(rolling, false));
         if (!rolling) this.pickRollValue();
@@ -178,8 +191,15 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                     }
                 });
             }
-            if (getTick(this) % 20 == 0 && this.isRolling()) {
-                this.getWorld().playSound(null, this.getBlockPos(), SoundEvents.ENTITY_BREEZE_WHIRL, SoundCategory.AMBIENT, 1F, 0.7F);
+            if (getTick(this) % 20 == 0) {
+                if (this.isRolling())
+                    this.getWorld().playSound(null, this.getBlockPos(), SoundEvents.ENTITY_BREEZE_WHIRL, SoundCategory.AMBIENT, 1F, 0.7F);
+                else {
+                    secondsSinceRolled++;
+                    if (secondsSinceRolled >= 2 && (!(itemReference == null || itemReference.isEmpty()) && !hasInfinity())) {
+                        explode(null);
+                    }
+                }
             }
             simulation.tick();
         }
@@ -342,14 +362,18 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (source.getAttacker() instanceof ServerPlayerEntity player) {
             if (player.isSneaking()) {
-                giveBackDice(player);
-                propagateStateChange(dice -> dice.giveBackDice(player));
+                explode(player);
                 return true;
             }
             setRolling(!isRolling());
             world.playSound(null, this.getPos().x, this.getPos().y, this.getPos().z, SoundEvents.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 1.0f, 1.0F);
         }
         return false;
+    }
+
+    private void explode(ServerPlayerEntity player) {
+        giveBackDice(player);
+        propagateStateChange(dice -> dice.giveBackDice(player));
     }
 
     @Override
@@ -359,7 +383,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     private void giveBackDice(ServerPlayerEntity player) {
         ItemStack diceItem = getItemReference();
-        player.getInventory().offerOrDrop(diceItem);
+        if (player != null && hasInfinity())
+            player.getInventory().offerOrDrop(diceItem);
         this.remove(RemovalReason.DISCARDED);
     }
 
@@ -421,6 +446,21 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         FireworksComponent fireworksComponent = new FireworksComponent(0, components);
         fireworkStack.set(FIREWORKS, fireworksComponent);
         return fireworkStack;
+    }
+
+    public boolean hasInfinity() {
+        if (this.itemReference == null || this.itemReference.isEmpty())
+            return false;
+
+        ItemEnchantmentsComponent itemEnchantmentsComponent = this.itemReference.get(ENCHANTMENTS);
+        if (itemEnchantmentsComponent == null)
+            return false;
+        for (RegistryEntry<Enchantment> enchantment : itemEnchantmentsComponent.getEnchantments()) {
+            if (enchantment.matchesKey(Enchantments.INFINITY)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public enum Skin {
