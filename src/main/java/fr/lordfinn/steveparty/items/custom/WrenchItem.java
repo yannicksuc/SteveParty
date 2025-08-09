@@ -67,6 +67,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         stack.set(ModComponents.BLOCK_ORIGIN_COMPONENT, originComponent);
 
         boardSpaceStoredBehavior.set(ModComponents.DESTINATIONS_COMPONENT, updatedComponent);
+        boardSpaceEntity.markDirty();
 
         // Message utilisateur
         MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal(
@@ -104,6 +105,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveCartridgeItemStack();
         if (boardSpaceStoredBehavior == null) return false;
         boardSpaceStoredBehavior.set(ModComponents.DESTINATIONS_COMPONENT, component);
+        boardSpaceEntity.markDirty();
         return true;
     }
 
