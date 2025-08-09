@@ -2,11 +2,17 @@ package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import net.fabricmc.fabric.api.item.v1.EnchantingContext;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -83,5 +89,13 @@ public class DefaultDiceItem extends Item {
     protected void playSounds(World world, DiceEntity diceEntity) {
         world.playSound(null, diceEntity.getBlockPos(), SoundEvents.ENTITY_BREEZE_SHOOT, SoundCategory.AMBIENT, SOUND_VOLUME_1, SOUND_PITCH_1);
         world.playSound(null, diceEntity.getBlockPos(), SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.AMBIENT, SOUND_VOLUME_2, SOUND_PITCH_2);
+    }
+
+    @Override
+    public boolean canBeEnchantedWith(ItemStack stack, RegistryEntry<Enchantment> enchantment, EnchantingContext context) {
+        if (enchantment.matchesKey(net.minecraft.enchantment.Enchantments.INFINITY)) {
+            return true;
+        }
+        return super.canBeEnchantedWith(stack, enchantment, context);
     }
 }
