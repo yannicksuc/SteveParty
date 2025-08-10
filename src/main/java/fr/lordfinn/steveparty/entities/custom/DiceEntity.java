@@ -128,7 +128,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     public void setRolling(boolean rolling, boolean propagate) {
         if (this.isRolling() == rolling) return;
-        if (secondsSinceRolled != 0 && rolling) {
+        if (secondsSinceRolled != 0 && (rolling && (!(itemReference == null || itemReference.isEmpty()) && !hasInfinity()))) {
             explode(null);
         }
         secondsSinceRolled = 0;

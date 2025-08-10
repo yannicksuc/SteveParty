@@ -5,12 +5,13 @@
   "pattern": [
     "CRC",
     "CTC",
-    "CCC"
+    "CSC"
   ],
   "key": {
-    "C":"minecraft:yellow_concrete",
+    "C":"minecraft:gold_ingot",
     "R":"minecraft:redstone_torch",
-    "T": "steveparty:tile"
+    "T": "minecraft:chest",
+    "S": "minecraft:calibrated_sculk_sensor"
   },
   "result": {
     "id": "steveparty:board_space_redstone_router"

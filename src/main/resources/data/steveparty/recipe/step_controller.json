@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BLD",
+    "SGS",
+    "IRI"
+  ],
+  "key": {
+    "I":"minecraft:iron_ingot",
+    "R":"minecraft:redstone",
+    "G":"minecraft:glass_bottle",
+    "B":"minecraft:blue_dye",
+    "D":"minecraft:red_dye",
+    "L":"minecraft:sand",
+    "S": "gold_ingot"
+  },
+  "result": {
+    "id": "steveparty:step_controller"
+  }
+}

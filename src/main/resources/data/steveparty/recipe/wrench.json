@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " RI",
+    " RR",
+    "R  "
+  ],
+  "key": {
+    "I":"minecraft:iron_ingot",
+    "R":"minecraft:redstone"
+  },
+  "result": {
+    "id": "steveparty:wrench"
+  }
+}
