@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EGT",
+    "SCS",
+    "IRI"
+  ],
+  "key": {
+    "I":"minecraft:iron_ingot",
+    "R":"minecraft:redstone",
+    "E":"minecraft:map",
+    "T":"minecraft:redstone_torch",
+    "S":"minecraft:mushroom_stem",
+    "C":"minecraft:crafter",
+    "G": "minecraft:tinted_glass"
+  },
+  "result": {
+    "id": "steveparty:party_controller"
+  }
+}

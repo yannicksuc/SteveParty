@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "PLP",
+    "LCL",
+    "PLP"
+  ],
+  "key": {
+    "P":"prismarine_shard",
+    "C":"minecraft:chest",
+    "L":"minecraft:light_blue_stained_glass_pane"
+  },
+  "result": {
+    "id": "steveparty:check_point",
+    "count": 4
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": ["steveparty:triple_dice"],
+  "result": {
+    "id": "steveparty:default_dice",
+    "count": 3
+  }
+}
