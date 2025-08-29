@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.items.custom.*;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
@@ -10,6 +11,7 @@ import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookIte
 import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -115,6 +117,9 @@ public class ModItems {
             itemGroup.add(WARPED_TRAFFIC_SIGN);
             itemGroup.add(STENCIL);
             itemGroup.add(STENCIL_MAKER);
+            for (Block switcherBlock : ModBlocks.SWITCHER_BLOCKS) {
+                itemGroup.add(switcherBlock);
+            }
         });
     }
 }

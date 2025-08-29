@@ -16,6 +16,33 @@ import net.minecraft.registry.RegistryKeys;
 import java.util.function.Function;
 
 public class ModBlocks {
+    private static final String[] COLORS = {
+            "white", "orange", "magenta", "light_blue",
+            "yellow", "lime", "pink", "gray",
+            "light_gray", "cyan", "purple", "blue",
+            "brown", "green", "red", "black"
+    };
+
+    public static final Block[] SWITCHER_BLOCKS = new Block[16];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            String color = COLORS[i];
+            String name = color + "_switcher_block";
+
+            SWITCHER_BLOCKS[i] = register(
+                    Block::new,
+                    Block.Settings.create()
+                            .strength(0.5f)
+                            .breakInstantly()
+                            .sounds(BlockSoundGroup.WOOL)
+                            .nonOpaque(),
+                    name,
+                    true
+            );
+        }
+    }
+
     public static final Block TRADING_STALL = register(TradingStallBlock::new,
             Block.Settings.create()
                     .strength(2.5f, 2.5f)

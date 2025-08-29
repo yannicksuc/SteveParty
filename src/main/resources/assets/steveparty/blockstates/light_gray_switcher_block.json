@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "": {
+            "model": "steveparty:block/light_gray_switcher_block"
+        }
+    }
+}
