@@ -42,7 +42,7 @@ public class StencilItemRenderer implements DynamicItemRenderer {
 
                     // Common base rotation
                     matrix.rotate((float) Math.toRadians(180f), 0, 1, 0);
-                    matrix.rotate((float) Math.toRadians(90f), 1, 0, 0);
+                    matrix.rotate((float) Math.toRadians(-90f), 1, 0, 0);
 
                     // Additional transformations per mode
                     switch (mode) {
@@ -50,8 +50,11 @@ public class StencilItemRenderer implements DynamicItemRenderer {
                             matrix.translate(0.5f, 0f, 0f);
                             matrix.scale(1.2f, 1.2f, 1.2f);
                         }
-                        case FIRST_PERSON_RIGHT_HAND, FIRST_PERSON_LEFT_HAND -> {
-                            //matrix.translate(0f, 0.5f, 0f);
+                        case FIRST_PERSON_LEFT_HAND -> {
+                            matrix.translate(1f, -1f, 0f);
+                        }
+                        case FIRST_PERSON_RIGHT_HAND -> {
+                            matrix.translate(0f, -1f, 0f);
                         }
                         case THIRD_PERSON_RIGHT_HAND, THIRD_PERSON_LEFT_HAND -> {
                             matrix.translate(0.5f, 0.25f, -0.45f);

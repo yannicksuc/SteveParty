@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "i_i",
+    " I "
+  ],
+  "key": {
+    "i": "minecraft:iron_ingot",
+    "_": "minecraft:smooth_stone_slab",
+    "I": "minecraft:iron_block"
+  },
+  "result": {
+    "id": "steveparty:stencil_maker",
+    "count": 1
+  }
+}
