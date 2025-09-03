@@ -3,7 +3,7 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [32, 32],
 	"textures": {
-		"2": "block/metallic_redstone_plate",
+		"2": "steveparty:block/metallic_redstone_plate",
 		"4": "steveparty:block/hop_switch"
 	},
 	"elements": [
@@ -43,32 +43,6 @@
 				"west": {"uv": [8, 4.5, 11, 5.5], "texture": "#4"},
 				"up": {"uv": [8, 7.5, 5, 4.5], "texture": "#4"},
 				"down": {"uv": [8, 7.5, 5, 10.5], "texture": "#4"}
-			}
-		},
-		{
-			"from": [5, 3.5, 5],
-			"to": [11, 9.5, 11],
-			"rotation": {"angle": 0, "axis": "y", "origin": [18, 3.5, 5]},
-			"faces": {
-				"north": {"uv": [5, 10, 8, 13], "texture": "#missing"},
-				"east": {"uv": [10, 5, 13, 8], "texture": "#missing"},
-				"south": {"uv": [8, 10, 11, 13], "texture": "#missing"},
-				"west": {"uv": [11, 8, 14, 11], "texture": "#missing"},
-				"up": {"uv": [14, 14, 11, 11], "texture": "#missing"},
-				"down": {"uv": [8, 13, 5, 16], "texture": "#missing"}
-			}
-		},
-		{
-			"from": [3, 2, 3],
-			"to": [13, 12, 13],
-			"rotation": {"angle": 0, "axis": "y", "origin": [2, 2, 3]},
-			"faces": {
-				"north": {"uv": [0, 0, 5, 5], "texture": "#missing"},
-				"east": {"uv": [0, 0, 5, 5], "texture": "#missing"},
-				"south": {"uv": [5, 0, 10, 5], "texture": "#missing"},
-				"west": {"uv": [5, 5, 10, 10], "texture": "#missing"},
-				"up": {"uv": [5, 15, 0, 10], "texture": "#missing"},
-				"down": {"uv": [15, 0, 10, 5], "texture": "#missing"}
 			}
 		}
 	]

@@ -67,6 +67,11 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "cash_register"),
             FabricBlockEntityTypeBuilder.create(CashRegisterBlockEntity::new, ModBlocks.CASH_REGISTER).build(null)
     );
+    public static final BlockEntityType<HopSwitchBlockEntity> HOP_SWITCH_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "hop_switch_entity"),
+            FabricBlockEntityTypeBuilder.create(HopSwitchBlockEntity::new, ModBlocks.HOP_SWITCH).build(null)
+    );
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

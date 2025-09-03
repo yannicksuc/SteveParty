@@ -6,7 +6,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import net.minecraft.block.*;
-import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.sound.BlockSoundGroup;
@@ -120,6 +119,12 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.METAL)  // Stone-like sound for a mechanical device
                     .requiresTool(),  // Requires a pickaxe or equivalent tool to break
             "board_space_redstone_router", true);
+    public static final Block HOP_SWITCH = register(HopSwitchBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .nonOpaque()
+                    .sounds(BlockSoundGroup.BONE),
+            "hop_switch", true);
 
     public static final Block OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.OAK, c),
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
