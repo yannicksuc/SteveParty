@@ -1,7 +1,6 @@
 {
     "variants": {
-        "": {
-            "model": "steveparty:block/brown_switcher_block"
-        }
+        "solid=true": { "model": "steveparty:block/brown_switcher_block" },
+        "solid=false": { "model": "steveparty:block/empty_block" }
     }
 }
