@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "pressed=true":  { "model": "steveparty:block/hop_switch_activated" },
+    "pressed=false": { "model": "steveparty:block/hop_switch" }
+  }
+}

@@ -117,6 +117,7 @@ public class ModItems {
             itemGroup.add(WARPED_TRAFFIC_SIGN);
             itemGroup.add(STENCIL);
             itemGroup.add(STENCIL_MAKER);
+            itemGroup.add(HOP_SWITCH);
             for (Block switcherBlock : ModBlocks.SWITCHER_BLOCKS) {
                 itemGroup.add(switcherBlock);
             }

@@ -33,6 +33,9 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
             register("router_screen_handler", RouterScreenHandler::new, FeatureSet.empty());
 
+    public static final ScreenHandlerType<HopSwitchScreenHandler> HOP_SWITCH_SCREEN_HANDLER =
+            register("hop_switch_screen_handler", HopSwitchScreenHandler::new, FeatureSet.empty());
+
     public static final ScreenHandlerType<CustomizableMerchantScreenHandler> HIDING_TRADER_SCREEN_HANDLER =
             register("hiding_trader_screen_handler", CustomizableMerchantScreenHandler::new, FeatureSet.empty());
 

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.events;
 
+import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
@@ -45,6 +46,8 @@ public class ModEvents {
                     BoardSpaceRoutersPersistentState.sendToPlayer(handler.player, server);
                 }
         );
+
+        HopSwitchBlock.registerUseBlockCallback();
 
     }
 
