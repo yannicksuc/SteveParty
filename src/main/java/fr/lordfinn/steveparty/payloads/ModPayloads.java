@@ -24,6 +24,7 @@ public class ModPayloads {
     public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Steveparty.id("here-we-go-book-payload");
     public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Steveparty.id("here-we-come-book-payload");
     public static final Identifier SAVE_STENCIL_PAYLOAD = Steveparty.id("save_stencil");
+    public static final Identifier HOP_SWITCH_PAYLOAD = Steveparty.id("hop-switch-payload");
 
 
     public static void initialize() {

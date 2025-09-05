@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
+import fr.lordfinn.steveparty.payloads.custom.HopSwitchPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.*;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
@@ -27,14 +28,18 @@ public class ModScreensHandlers {
     }
 
     // Screen handler registrations
-    public static final ScreenHandlerType<TileScreenHandler> TILE_SCREEN_HANDLER =
+    public static final ExtendedScreenHandlerType<TileScreenHandler, BlockPosPayload> TILE_SCREEN_HANDLER =
             register("tile_screen_handler", TileScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+
+    public static final ExtendedScreenHandlerType<HopSwitchScreenHandler, HopSwitchPayload> HOP_SWITCH_SCREEN_HANDLER =
+            register(
+                    "hop_switch_screen_handler",
+                    HopSwitchScreenHandler::new,
+                    HopSwitchPayload.PACKET_CODEC
+            );
 
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
             register("router_screen_handler", RouterScreenHandler::new, FeatureSet.empty());
-
-    public static final ScreenHandlerType<HopSwitchScreenHandler> HOP_SWITCH_SCREEN_HANDLER =
-            register("hop_switch_screen_handler", HopSwitchScreenHandler::new, FeatureSet.empty());
 
     public static final ScreenHandlerType<CustomizableMerchantScreenHandler> HIDING_TRADER_SCREEN_HANDLER =
             register("hiding_trader_screen_handler", CustomizableMerchantScreenHandler::new, FeatureSet.empty());

@@ -16,8 +16,8 @@ import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_COMPONEN
 public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
     protected Inventory inventory = null;
 
-    public CartridgeContainerScreenHandler(ScreenHandlerType<TileScreenHandler> tileScreenHandler, int syncId) {
-        super(tileScreenHandler, syncId);
+    public CartridgeContainerScreenHandler(ScreenHandlerType<?> type, int syncId) {
+        super(type, syncId);
     }
 
     protected void setupScreen() {
@@ -29,7 +29,8 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
     }
 
     void init(PlayerInventory playerInventory, int playerInventoryTitleY) {
-        inventory.onOpen(playerInventory.player);
+        if (inventory != null)
+            inventory.onOpen(playerInventory.player);
         setupScreen();
         addPlayerSlots(playerInventory, 8, playerInventoryTitleY);
     }
