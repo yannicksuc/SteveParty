@@ -24,7 +24,5 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
         addDrop(ModBlocks.HOP_SWITCH);
         for (Block switcher : SWITCHER_BLOCKS)
             addDrop(switcher);
-
-        // etc, for all your blocks
     }
 }

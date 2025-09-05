@@ -5,7 +5,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
@@ -16,15 +15,15 @@ import net.minecraft.world.World;
 
 import static fr.lordfinn.steveparty.sounds.ModSounds.POP_SOUND_EVENT;
 
-public class SwitcherBlock extends Block {
+public class SwitchyBlock extends Block {
     public static final BooleanProperty SOLID = BooleanProperty.of("solid");
-    public static final MapCodec<SwitcherBlock> CODEC = Block.createCodec(SwitcherBlock::new);
+    public static final MapCodec<SwitchyBlock> CODEC = Block.createCodec(SwitchyBlock::new);
 
     private static final VoxelShape FULL_SHAPE = Block.createCuboidShape(0, 0, 0, 16, 16, 16);
     private static final VoxelShape SMALL_CENTER_SHAPE = Block.createCuboidShape(7.0, 7.0, 7.0, 9.0, 9.0, 9.0);
 
 
-    public SwitcherBlock(Settings settings) {
+    public SwitchyBlock(Settings settings) {
         super(settings);
         // default state: solid = true
         this.setDefaultState(this.stateManager.getDefaultState().with(SOLID, true));

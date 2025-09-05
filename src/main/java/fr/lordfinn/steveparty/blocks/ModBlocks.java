@@ -30,10 +30,10 @@ public class ModBlocks {
             String name = color + "_switcher_block";
 
             SWITCHER_BLOCKS[i] = register(
-                    SwitcherBlock::new,
+                    SwitchyBlock::new,
                     Block.Settings.create()
-                            .strength(0.5f)
-                            .breakInstantly()
+                            .strength(0.4f, 0.4f)
+                            .burnable()
                             .sounds(BlockSoundGroup.WOOL)
                             .nonOpaque(),
                     name,

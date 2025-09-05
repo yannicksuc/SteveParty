@@ -9,6 +9,7 @@
     "PlayerFallMixin",
     "PreparedRecipesMixin",
     "ShapedRecipeAccessor",
+    "ShearsItemMixin",
     "StatusEffectMixin",
     "TokenEntityMixin",
     "TrackedDataHandlerRegistryMixin"

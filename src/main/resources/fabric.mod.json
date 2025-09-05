@@ -14,7 +14,7 @@
       "fr.lordfinn.steveparty.client.StevepartyClient"
     ],
     "fabric-datagen": [
-      "fr.lordfinn.steveparty.client.datagen.FabricDocsReferenceDataGenerator"
+      "fr.lordfinn.steveparty.client.datagen.StevepartyReferenceDataGenerator"
     ],
     "main": [
       "fr.lordfinn.steveparty.Steveparty"

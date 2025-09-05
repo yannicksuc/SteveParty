@@ -10,7 +10,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +46,7 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity {
         for (BlockPos destination : destinations) {
             BlockState state = Objects.requireNonNull(getWorld()).getBlockState(destination);
             Block block = state.getBlock();
-            if (block instanceof SwitcherBlock switcherBlock) {
+            if (block instanceof SwitchyBlock switcherBlock) {
                 switcherBlock.trigger(state, getWorld(), destination);
             }
         }
