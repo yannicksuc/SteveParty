@@ -8,7 +8,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class HopSwitchScreen extends CartridgeContainerScreen<HopSwitchScreenHandler> {
-    private static final Identifier TEXTURE = Steveparty.id("textures/gui/router.png");
+    private static final Identifier TEXTURE = Steveparty.id("textures/gui/hop_switch.png");
     public HopSwitchScreen(HopSwitchScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title, 136);
     }

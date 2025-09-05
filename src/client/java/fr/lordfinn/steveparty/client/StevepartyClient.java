@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.blockentity.*;
+import fr.lordfinn.steveparty.client.debug.RecipeExporter;
 import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
@@ -24,18 +25,24 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.*;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.color.item.ItemColorProvider;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,11 +114,12 @@ public class StevepartyClient implements ClientModInitializer {
         initBlockEntitiesRenderers();
         initItemRenderers();
         DestinationsRenderer.initialize();
+        initKeybinds();
 
         HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
         PartyStepsHud.registerKeyHandlers();
         Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
-    }
+       }
 
     private void initItemRenderers() {
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.STENCIL, new StencilItemRenderer());
@@ -165,5 +173,33 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(STENCIL_MAKER_SCREEN_HANDLER, StencilMakerScreen::new);
         HandledScreens.register(TRADING_STALL_SCREEN_HANDLER, TradingStallScreen::new);
         HandledScreens.register(CASH_REGISTER_SCREEN_HANDLER, CashRegisterScreen::new);
+    }
+
+    public static KeyBinding exportRecipeKey;
+    private static void initKeybinds() {
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            tick();
+        });
+
+    }
+
+    private static boolean lastPressed = false;
+
+    public static void tick() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null) return;
+
+        long window = client.getWindow().getHandle();
+        boolean isPressed = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_0) == GLFW.GLFW_PRESS;
+
+        // Détecte le “rising edge” pour ne pas répéter tous les ticks
+        if (isPressed && !lastPressed) {
+            // Touche pressée !
+            if (client.currentScreen != null) {
+                RecipeExporter.exportRecipe(client);
+            }
+        }
+        lastPressed = isPressed;
     }
 }

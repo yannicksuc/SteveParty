@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "WFW",
+    "FAF",
+    "WFW"
+  ],
+  "key": {
+    "W": "minecraft:light_blue_wool",
+    "F": "minecraft:feather",
+    "A": "minecraft:amethyst_shard"
+  },
+  "result": {
+    "id": "steveparty:light_blue_switcher_block"
+  }
+}

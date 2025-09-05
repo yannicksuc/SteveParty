@@ -12,8 +12,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.text.Text;
@@ -21,6 +23,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
@@ -29,6 +32,9 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
+
+import static net.minecraft.sound.SoundEvents.BLOCK_STONE_BUTTON_CLICK_OFF;
+import static net.minecraft.sound.SoundEvents.BLOCK_STONE_BUTTON_CLICK_ON;
 
 public class HopSwitchBlock extends CartridgeContainer {
 
@@ -149,7 +155,9 @@ public class HopSwitchBlock extends CartridgeContainer {
                                                                 World world, BlockPos pos,
                                                                 PlayerEntity player, Hand hand,
                                                                 BlockHitResult hit) {
-        if (world.isClient) return ActionResult.SUCCESS;
+        if (world.isClient) return ActionResult.PASS;
+
+        if (!stack.isOf(Items.CLOCK)) return ActionResult.PASS;
 
         HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
         if (be != null) increaseDuration(be, player);
@@ -165,17 +173,54 @@ public class HopSwitchBlock extends CartridgeContainer {
         super.onLandedUpon(world, state, pos, entity, fallDistance);
 
         if (!world.isClient && !state.get(PRESSED)) {
-            HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
-            int duration = (be != null) ? be.getDurationTicks() : DEFAULT_DURATION;
+            activate(state, world, pos);
+        }
+    }
 
-            world.setBlockState(pos, state.with(PRESSED, true), Block.NOTIFY_ALL);
-            world.scheduleBlockTick(pos, state.getBlock(), duration);
+    // -----------------------------
+    // Utility methods
+    // -----------------------------
+    private void deactivate(BlockState state, ServerWorld world, BlockPos pos) {
+        world.setBlockState(pos, state.with(PRESSED, false), Block.NOTIFY_ALL);
+        world.playSound(null, pos, getDefaultState().getSoundGroup().getHitSound(),
+                SoundCategory.BLOCKS, 1.0f, 1.0f);
+        HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
 
-            world.playSound(null, pos, getDefaultState().getSoundGroup().getHitSound(),
+        playTriggerSound(pos, world, BLOCK_STONE_BUTTON_CLICK_OFF);
+
+        if (be != null) be.switchDestinations();
+
+        // Launch entities above the block
+        Box box = new Box(pos).expand(0, 0.5, 0); // slightly bigger than block
+        for (Entity entity : world.getEntitiesByClass(Entity.class, box, e -> true)) {
+            // Only launch entities standing on the block
+            if (entity.getY() <= pos.getY() + 1.0) {
+                entity.setVelocity(entity.getVelocity().add(0, 0.5 + 0.2 * entity.getRandom().nextDouble(), 0));
+                entity.velocityModified = true; // ensure velocity is applied
+            }
+        }
+    }
+
+    private void activate(BlockState state, World world, BlockPos pos) {
+        HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
+        int duration = (be != null) ? be.getDurationTicks() : DEFAULT_DURATION;
+        if (be != null) be.switchDestinations();
+
+        world.setBlockState(pos, state.with(PRESSED, true), Block.NOTIFY_ALL);
+        world.scheduleBlockTick(pos, state.getBlock(), duration);
+
+        playTriggerSound(pos, world, BLOCK_STONE_BUTTON_CLICK_ON);
+
+        ((ServerWorld) world).spawnParticles(ParticleTypes.GLOW,
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                5, 0.1, 0.1, 0.1, 0);
+    }
+
+    private static void playTriggerSound(BlockPos pos, World world, SoundEvent blockStoneButtonClickOn) {
+        BlockPos belowPos = pos.down();
+        if (!world.getBlockState(belowPos).isIn(BlockTags.WOOL)) {
+            world.playSound(null, pos, blockStoneButtonClickOn,
                     SoundCategory.BLOCKS, 1.0f, 1.0f);
-            ((ServerWorld) world).spawnParticles(ParticleTypes.GLOW,
-                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                    5, 0.1, 0.1, 0.1, 0);
         }
     }
 
@@ -185,9 +230,7 @@ public class HopSwitchBlock extends CartridgeContainer {
     @Override
     protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
         if (state.get(PRESSED)) {
-            world.setBlockState(pos, state.with(PRESSED, false), Block.NOTIFY_ALL);
-            world.playSound(null, pos, getDefaultState().getSoundGroup().getHitSound(),
-                    SoundCategory.BLOCKS, 1.0f, 1.0f);
+            deactivate(state, world, pos);
         }
     }
 
@@ -206,11 +249,7 @@ public class HopSwitchBlock extends CartridgeContainer {
 
         boolean powered = world.isReceivingRedstonePower(pos);
         if (powered && !state.get(PRESSED)) {
-            HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
-            int duration = (be != null) ? be.getDurationTicks() : DEFAULT_DURATION;
-
-            world.setBlockState(pos, state.with(PRESSED, true), Block.NOTIFY_ALL);
-            world.scheduleBlockTick(pos, state.getBlock(), duration);
+            activate(state, world, pos);
         }
     }
 

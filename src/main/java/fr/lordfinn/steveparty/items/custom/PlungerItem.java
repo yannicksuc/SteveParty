@@ -9,8 +9,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 
-import static fr.lordfinn.steveparty.sounds.ModSounds.PLUNGER_SUCK_IN;
-import static fr.lordfinn.steveparty.sounds.ModSounds.PLUNGER_SUCK_OUT;
+import static fr.lordfinn.steveparty.sounds.ModSounds.PLUNGER_SUCK_IN_SOUND_EVENT;
+import static fr.lordfinn.steveparty.sounds.ModSounds.PLUNGER_SUCK_OUT_SOUND_EVENT;
 
 public class PlungerItem extends Item {
     public PlungerItem(Settings plunger) {
@@ -21,11 +21,11 @@ public class PlungerItem extends Item {
         if (entity.isSilent()) {
             entity.setSilent(false);
             user.sendMessage(Text.literal("Mob unsilenced!"), true);
-            user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_OUT, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_OUT_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
         } else {
             entity.setSilent(true);
             user.sendMessage(Text.literal("Mob silenced!"), true);
-            user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_IN, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_IN_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
         }
         return ActionResult.SUCCESS;
     }

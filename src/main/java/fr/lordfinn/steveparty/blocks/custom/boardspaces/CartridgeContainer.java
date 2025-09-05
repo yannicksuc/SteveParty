@@ -79,4 +79,22 @@ public abstract class CartridgeContainer extends HorizontalFacingBlock implement
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
         return TickableBlockEntity.getTicker(world);
     }
+
+    @Override
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+
+        if (blockEntity instanceof CartridgeContainerBlockEntity inventory) {
+            // Drop all items in the inventory
+            for (int i = 0; i < inventory.size(); i++) {
+                ItemStack stack = inventory.getStack(i);
+                if (!stack.isEmpty()) {
+                    dropStack(world, pos, stack);
+                }
+            }
+        }
+
+        super.onBreak(world, pos, state, player);
+        return state;
+    }
 }
