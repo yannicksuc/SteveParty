@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BSB",
+    "BCB",
+    "IRI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "C": "minecraft:clock",
+    "R": "minecraft:redstone",
+    "S": "minecraft:stone_pressure_plate",
+    "B": "minecraft:blue_concrete"
+  },
+  "result": {
+    "id": "steveparty:hop_switch"
+  }
+}

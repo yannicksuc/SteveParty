@@ -28,5 +28,10 @@
     "sounds": [
       "steveparty:cancel"
     ]
+  },
+  "pop": {
+    "sounds": [
+      "steveparty:pop"
+    ]
   }
 }

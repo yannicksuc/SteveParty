@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
@@ -168,6 +170,14 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     }
     public DefaultedList<ItemStack> getHeldStacks() {
         return this.heldStacks;
+    }
+
+    protected List<BlockPos> getDestinations(int slot) {
+        ItemStack stack = this.getStack(slot);
+        if (stack.isEmpty()) return List.of();
+        DestinationsComponent component = stack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, null);
+        if (component == null) return List.of();
+        return component.destinations();
     }
 
     @Override

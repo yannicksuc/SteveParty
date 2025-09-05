@@ -11,8 +11,9 @@ public class ModSounds {
     public static final SoundEvent OPEN_TILE_GUI_SOUND_EVENT = register("open_tile_gui");
     public static final SoundEvent SELECT_SOUND_EVENT = register("select");
     public static final SoundEvent CANCEL_SOUND_EVENT = register("cancel");
-    public static final SoundEvent PLUNGER_SUCK_IN = register("plunger_suck_in");
-    public static final SoundEvent PLUNGER_SUCK_OUT = register("plunger_suck_out");
+    public static final SoundEvent POP_SOUND_EVENT = register("pop");
+    public static final SoundEvent PLUNGER_SUCK_IN_SOUND_EVENT = register("plunger_suck_in");
+    public static final SoundEvent PLUNGER_SUCK_OUT_SOUND_EVENT = register("plunger_suck_out");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

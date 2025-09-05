@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "WFW",
+    "FAF",
+    "WFW"
+  ],
+  "key": {
+    "W": "minecraft:gray_wool",
+    "F": "minecraft:feather",
+    "A": "minecraft:amethyst_shard"
+  },
+  "result": {
+    "id": "steveparty:gray_switcher_block"
+  }
+}
