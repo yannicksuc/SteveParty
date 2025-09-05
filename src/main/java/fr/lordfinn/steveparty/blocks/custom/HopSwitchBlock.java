@@ -1,18 +1,28 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
+import fr.lordfinn.steveparty.screen_handlers.custom.HopSwitchScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.TileScreenHandler;
+import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -35,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.sound.SoundEvents.BLOCK_STONE_BUTTON_CLICK_OFF;
 import static net.minecraft.sound.SoundEvents.BLOCK_STONE_BUTTON_CLICK_ON;
+import static net.minecraft.util.ActionResult.SUCCESS;
 
 public class HopSwitchBlock extends CartridgeContainer {
 
@@ -164,6 +175,26 @@ public class HopSwitchBlock extends CartridgeContainer {
 
         return ActionResult.CONSUME;
     }
+    @Override
+    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+        return new SimpleNamedScreenHandlerFactory((syncId, inventory, player) ->
+                new HopSwitchScreenHandler(syncId, inventory, (HopSwitchBlockEntity) blockEntity), Text.empty());
+    }
+
+    @Override
+    protected ActionResult.@Nullable Success openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        if (world.isClient) return null;
+
+        HopSwitchBlockEntity blockEntity = (HopSwitchBlockEntity) world.getBlockEntity(pos);
+        world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+
+        if (player instanceof ServerPlayerEntity serverPlayer && blockEntity != null) {
+            serverPlayer.openHandledScreen(blockEntity);
+        }
+
+        return SUCCESS;
+    }
 
     // -----------------------------
     // Falling interaction
@@ -188,7 +219,7 @@ public class HopSwitchBlock extends CartridgeContainer {
 
         playTriggerSound(pos, world, BLOCK_STONE_BUTTON_CLICK_OFF);
 
-        if (be != null) be.switchDestinations();
+        triggerTargets(be, true);
 
         // Launch entities above the block
         Box box = new Box(pos).expand(0, 0.5, 0); // slightly bigger than block
@@ -201,10 +232,19 @@ public class HopSwitchBlock extends CartridgeContainer {
         }
     }
 
+    private static void triggerTargets(HopSwitchBlockEntity be, boolean invert) {
+        if (be == null) return;
+        switch (be.getMode()) {
+            case FORCE_APPEAR -> be.solidifyDestinations(!invert);
+            case FORCE_DISAPPEAR -> be.solidifyDestinations(invert);
+            default -> be.switchDestinations();
+        }
+    }
+
     private void activate(BlockState state, World world, BlockPos pos) {
         HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
         int duration = (be != null) ? be.getDurationTicks() : DEFAULT_DURATION;
-        if (be != null) be.switchDestinations();
+        triggerTargets(be, false);
 
         world.setBlockState(pos, state.with(PRESSED, true), Block.NOTIFY_ALL);
         world.scheduleBlockTick(pos, state.getBlock(), duration);

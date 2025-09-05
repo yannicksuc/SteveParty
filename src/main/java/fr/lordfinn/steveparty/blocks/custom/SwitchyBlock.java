@@ -52,7 +52,11 @@ public class SwitchyBlock extends Block {
     }
 
     public void trigger(BlockState state, World world, BlockPos pos) {
-        BlockState newState = state.cycle(SOLID);
+        setSolid(state, world, pos, !state.get(SOLID));
+    }
+
+    public void setSolid(BlockState state, World world, BlockPos pos, boolean solid) {
+        BlockState newState = state.with(SOLID, solid);
         world.setBlockState(pos, newState, Block.NOTIFY_ALL);
         world.playSound(null, pos, POP_SOUND_EVENT, SoundCategory.BLOCKS, 0.4f, 0.4f);
     }
