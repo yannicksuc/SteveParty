@@ -166,6 +166,13 @@ public class ModBlocks {
             AbstractBlock.Settings.create().mapColor(MapColor.DULL_PINK).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
             "cherry_traffic_sign", true);
 
+    public static final Block GOAL_POLE_BASE = register(GoalPoleBaseBlock::new,
+            Block.Settings.create()
+                    .strength(2.0f, 6.0f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .requiresTool(),
+            "goal_pole_base", true);
+
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {

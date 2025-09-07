@@ -73,6 +73,12 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(HopSwitchBlockEntity::new, ModBlocks.HOP_SWITCH).build(null)
     );
 
+    public static final BlockEntityType<GoalPoleBaseBlockEntity> GOAL_POLE_BASE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "goal_pole_base_entity"),
+            FabricBlockEntityTypeBuilder.create(GoalPoleBaseBlockEntity::new, ModBlocks.GOAL_POLE_BASE).build(null)
+    );
+
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

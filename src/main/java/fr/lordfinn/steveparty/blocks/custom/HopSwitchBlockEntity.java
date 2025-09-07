@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
-public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<HopSwitchPayload> {
+public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     private int durationTicks = 200; // par défaut 10s
     private int modeInt = 0; // persisted as int in NBT
     // Enum to represent the modes
@@ -138,8 +138,8 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implemen
     }
 
     @Override
-    public HopSwitchPayload getScreenOpeningData(ServerPlayerEntity serverPlayerEntity) {
-        return new HopSwitchPayload(pos, modeInt, durationTicks);
+    public BlockPosPayload getScreenOpeningData(ServerPlayerEntity serverPlayerEntity) {
+        return new BlockPosPayload(pos);
     }
 
     // -------------------------

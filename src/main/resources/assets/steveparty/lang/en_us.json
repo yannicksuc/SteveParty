@@ -49,6 +49,9 @@
   "block.steveparty.gray_switcher_block": "Gray Switchy Block",
   "block.steveparty.brown_switcher_block": "Brown Switchy Block",
   "block.steveparty.hop_switch": "Hop Switch",
+  "block.steveparty.trading_stall": "Trading Stall",
+  "block.steveparty.goal_pole_base": "Goal Pole Base",
+  "block.steveparty.goal_pole": "Goal Pole",
   "item.steveparty.wrench": "Wrench",
   "item.steveparty.tokenizer_wand": "Tokenizer Wand",
   "item.steveparty.plunger": "Plunger",
@@ -72,6 +75,10 @@
   "gui.steveparty.priority": "Fill Priority",
   "gui.steveparty.priority_description": "Scroll to change how important this group is",
   "gui.steveparty.stencil_save": "Save",
+  "gui.steveparty.goal_pole_base.selector": "Selector",
+  "gui.steveparty.goal_pole_base.goal": "Goal",
+  "gui.steveparty.cancel": "Cancel",
+  "gui.steveparty.validate": "Done",
   "message.steveparty.removed_position": "Removed position: (%d, %d, %d)",
   "message.steveparty.added_position": "Added position: (%d, %d, %d)",
   "message.steveparty.invalid_world": "Can't add a destination to a different world",
@@ -119,6 +126,7 @@
   "message.steveparty.hopswitch.mode.0": "When Pushed: targeted blocks will Switch",
   "message.steveparty.hopswitch.mode.1": "When Pushed: targeted blocks will Appear (Solid)",
   "message.steveparty.hopswitch.mode.2": "When Pushed: targeted blocks will Disappear (Transparent)",
+  "message.steveparty.wrench_required": "You need to use a wrench to edit the content of this block",
   "party_step_type.default": "Default",
   "party_step_type.token_turn": "Player Turn",
   "party_step_type.mini_game": "Mini Game",
@@ -136,6 +144,5 @@
   "item.steveparty.stencil": "Stencil",
   "block.steveparty.stencil_maker": "Stencil Maker",
   "item.steveparty.triple_dice": "Triple Dice",
-  "item.steveparty.double_dice": "Double Dice",
-  "block.steveparty.trading_stall": "Trading Stall"
+  "item.steveparty.double_dice": "Double Dice"
 }

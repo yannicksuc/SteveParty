@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlockEntity;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.HopSwitchPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import net.minecraft.entity.player.PlayerEntity;
@@ -20,7 +21,7 @@ public class HopSwitchScreenHandler extends CartridgeContainerScreenHandler {
     }
 
     // Client constructor (with payload)
-    public HopSwitchScreenHandler(int syncId, PlayerInventory playerInventory, HopSwitchPayload payload) {
+    public HopSwitchScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload payload) {
         this(syncId, playerInventory, (HopSwitchBlockEntity) playerInventory.player.getWorld().getBlockEntity(payload.pos()));
     }
 

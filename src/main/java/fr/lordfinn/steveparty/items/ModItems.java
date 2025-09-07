@@ -121,6 +121,7 @@ public class ModItems {
             for (Block switcherBlock : ModBlocks.SWITCHER_BLOCKS) {
                 itemGroup.add(switcherBlock);
             }
+            itemGroup.add(GOAL_POLE_BASE);
         });
     }
 }
