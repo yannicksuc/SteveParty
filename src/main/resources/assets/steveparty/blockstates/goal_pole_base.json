@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,powered=false": { "model": "steveparty:block/goal_pole_base" },
+    "facing=south,powered=false": { "model": "steveparty:block/goal_pole_base", "y": 180 },
+    "facing=west,powered=false":  { "model": "steveparty:block/goal_pole_base", "y": 270 },
+    "facing=east,powered=false":  { "model": "steveparty:block/goal_pole_base", "y": 90 },
+    "facing=north,powered=true": { "model": "steveparty:block/goal_pole_base_powered" },
+    "facing=south,powered=true": { "model": "steveparty:block/goal_pole_base_powered", "y": 180 },
+    "facing=west,powered=true":  { "model": "steveparty:block/goal_pole_base_powered", "y": 270 },
+    "facing=east,powered=true":  { "model": "steveparty:block/goal_pole_base_powered", "y": 90 }
+  }
+}

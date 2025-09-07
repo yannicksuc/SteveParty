@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.payloads;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.*;
@@ -25,6 +26,7 @@ public class ModPayloads {
     public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Steveparty.id("here-we-come-book-payload");
     public static final Identifier SAVE_STENCIL_PAYLOAD = Steveparty.id("save_stencil");
     public static final Identifier HOP_SWITCH_PAYLOAD = Steveparty.id("hop-switch-payload");
+    public static final Identifier GOAL_POLE_BASE_PAYLOAD = Steveparty.id("goal-pole-base-payload");
 
 
     public static void initialize() {
@@ -39,6 +41,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(HereWeGoBookPayload.ID, HereWeGoBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -57,6 +60,21 @@ public class ModPayloads {
                 byte[] shape = payload.shape();
                 if (player.getWorld().getBlockEntity(pos) instanceof StencilMakerBlockEntity blockEntity) {
                     StencilItem.setShape(shape, blockEntity.getStencil());
+                }
+            });
+        });
+        ServerPlayNetworking.registerGlobalReceiver(GoalPoleBasePayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+
+            // Schedule on server thread
+            player.server.execute(() -> {
+                BlockPos pos = payload.pos();
+
+                // Check the BlockEntity type
+                if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity blockEntity) {
+                    // Update the BlockEntity fields
+                    blockEntity.setSelector(payload.selector());
+                    blockEntity.setGoal(payload.goal());
                 }
             });
         });

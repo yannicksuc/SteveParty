@@ -1,6 +1,6 @@
 {
-  "replace": false,
   "values": [
+    "steveparty:goal_pole",
     "steveparty:tile",
     "steveparty:check_point",
     "steveparty:cash_register",

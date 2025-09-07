@@ -1,10 +1,10 @@
 {
-  "close-tile-gui": {
+  "close_tile_gui": {
     "sounds": [
       "steveparty:close_tile_gui"
     ]
   },
-  "open-tile-gui": {
+  "open_tile_gui": {
     "sounds": [
       "steveparty:open_tile_gui"
     ]

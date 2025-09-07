@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
-import fr.lordfinn.steveparty.payloads.custom.HopSwitchPayload;
+import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.*;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
@@ -31,11 +31,11 @@ public class ModScreensHandlers {
     public static final ExtendedScreenHandlerType<TileScreenHandler, BlockPosPayload> TILE_SCREEN_HANDLER =
             register("tile_screen_handler", TileScreenHandler::new, BlockPosPayload.PACKET_CODEC);
 
-    public static final ExtendedScreenHandlerType<HopSwitchScreenHandler, HopSwitchPayload> HOP_SWITCH_SCREEN_HANDLER =
+    public static final ExtendedScreenHandlerType<HopSwitchScreenHandler, BlockPosPayload> HOP_SWITCH_SCREEN_HANDLER =
             register(
                     "hop_switch_screen_handler",
                     HopSwitchScreenHandler::new,
-                    HopSwitchPayload.PACKET_CODEC
+                    BlockPosPayload.PACKET_CODEC
             );
 
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
@@ -67,6 +67,9 @@ public class ModScreensHandlers {
                     BlockPosPayload.PACKET_CODEC);
     public static final ScreenHandlerType<CashRegisterScreenHandler> CASH_REGISTER_SCREEN_HANDLER = register("cash_register_screen_handler",
             CashRegisterScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+
+    public static final ScreenHandlerType<GoalPoleBaseScreenHandler> GOAL_POLE_BASE_SCREEN_HANDLER =
+            register("goal_pole_base-screen_handler", GoalPoleBaseScreenHandler::new, GoalPoleBasePayload.CODEC);
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

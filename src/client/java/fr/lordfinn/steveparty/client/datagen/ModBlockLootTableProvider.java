@@ -5,9 +5,7 @@ import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootTableProvider;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import net.minecraft.block.Block;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.resource.featuretoggle.FeatureFlags;
 
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.SWITCHER_BLOCKS;
@@ -24,5 +22,6 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
         addDrop(ModBlocks.HOP_SWITCH);
         for (Block switcher : SWITCHER_BLOCKS)
             addDrop(switcher);
+        addDrop(ModBlocks.GOAL_POLE_BASE);
     }
 }
