@@ -27,6 +27,7 @@ public class ModPayloads {
     public static final Identifier SAVE_STENCIL_PAYLOAD = Steveparty.id("save_stencil");
     public static final Identifier HOP_SWITCH_PAYLOAD = Steveparty.id("hop-switch-payload");
     public static final Identifier GOAL_POLE_BASE_PAYLOAD = Steveparty.id("goal-pole-base-payload");
+    public static final Identifier FLOATING_TEXT_PAYLOAD = Steveparty.id("floating-text-payload");
 
 
     public static void initialize() {
@@ -42,6 +43,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
