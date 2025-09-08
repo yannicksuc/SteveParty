@@ -5,12 +5,13 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Vector3f;
 
 import static fr.lordfinn.steveparty.payloads.ModPayloads.FLOATING_TEXT_PAYLOAD;
 
 public record FloatingTextPayload(
-        Vec3d pos,
-        Vec3d velocity,
+        Vector3f pos,
+        Vector3f velocity,
         float duration,      // en ticks
         float scale,
         int color,           // 0xRRGGBB
@@ -22,27 +23,14 @@ public record FloatingTextPayload(
 
     public static final PacketCodec<RegistryByteBuf, FloatingTextPayload> CODEC =
             PacketCodec.tuple(
-                    PacketCodecs.DOUBLE, buf -> buf.readDouble(), FloatingTextPayload::posX,
-                    PacketCodecs.DOUBLE, buf -> buf.readDouble(), FloatingTextPayload::posY,
-                    PacketCodecs.DOUBLE, buf -> buf.readDouble(), FloatingTextPayload::posZ,
-                    PacketCodecs.DOUBLE, buf -> buf.readDouble(), FloatingTextPayload::velX,
-                    PacketCodecs.DOUBLE, buf -> buf.readDouble(), FloatingTextPayload::velY,
-                    PacketCodecs.DOUBLE, buf -> buf.readDouble(), FloatingTextPayload::velZ,
+                    PacketCodecs.VECTOR_3F,FloatingTextPayload::pos,
+                    PacketCodecs.VECTOR_3F,FloatingTextPayload::velocity,
                     PacketCodecs.FLOAT, FloatingTextPayload::duration,
                     PacketCodecs.FLOAT, FloatingTextPayload::scale,
-                    PacketCodecs.INT, FloatingTextPayload::color,
+                    PacketCodecs.INTEGER, FloatingTextPayload::color,
                     PacketCodecs.FLOAT, FloatingTextPayload::fadeStart,
                     PacketCodecs.STRING, FloatingTextPayload::text,
-                    (x, y, z, vx, vy, vz, duration, scale, color, fadeStart, text) ->
-                            new FloatingTextPayload(
-                                    new Vec3d(x, y, z),
-                                    new Vec3d(vx, vy, vz),
-                                    duration,
-                                    scale,
-                                    color,
-                                    fadeStart,
-                                    text
-                            )
+                    FloatingTextPayload::new
             );
 
     @Override

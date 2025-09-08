@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +41,8 @@ public class FloatingTextRenderer {
         });
     }
 
-    public static void spawn(String text, Vec3d pos, Vec3d velocity, float duration, float scale, int color, float fadeStart) {
-        new FloatingText(text, pos.x, pos.y, pos.z, velocity.x, velocity.y, velocity.z, duration, scale, color, fadeStart);
+    public static void spawn(String text, Vector3f pos, Vector3f velocity, float duration, float scale, int color, float fadeStart) {
+        ACTIVE.add(new FloatingText(text, pos.x, pos.y, pos.z, velocity.x, velocity.y, velocity.z, duration, scale, color, fadeStart));
     }
 }
 
