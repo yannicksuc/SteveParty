@@ -25,6 +25,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 import static fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock.POWERED;
+import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloatingText;
 
 public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPoleBasePayload>, BlockEntityTicker {
     private String selector = "";
@@ -211,6 +213,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         if (this.cachedObjective == null) setupScoreboard();
         if (this.cachedObjective == null) return;
         if (!this.world.getBlockState(pos).get(POWERED)) return;
+        if (this.world.isClient) return;
 
         List<ServerPlayerEntity> players = getTrackedPlayers();
         if (players.isEmpty()) return;
@@ -226,6 +229,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
             if (last != -1 && current > last) {
                 pulseRedstone();
+                spawnFloatingText((ServerWorld) this.world,  "+1", pos.toCenterPos().add(Math.random() - 1 ,  Math.random() / 2, Math.random() - 1).toVector3f(), TextColor.fromRgb(0xC90E0E), 50);
                 this.lastScores.put(player.getUuid(), current);
             }
         }

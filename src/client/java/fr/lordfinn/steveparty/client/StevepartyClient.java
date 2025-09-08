@@ -193,10 +193,19 @@ public class StevepartyClient implements ClientModInitializer {
     }
 
     private static boolean lastPressed = false;
+    private static int spawnCooldown = 0;
 
     public static void tick() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
+
+        if (spawnCooldown <= 0) {
+            FloatingTextRenderer.spawn("+1 Coin!", -21, 4, -11);
+            spawnCooldown = 20 * 5; // 20 ticks * 5 seconds
+        } else {
+            spawnCooldown--;
+        }
+
 
         long window = client.getWindow().getHandle();
         boolean isPressed = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_0) == GLFW.GLFW_PRESS;
