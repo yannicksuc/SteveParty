@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.client.renderer;
 
 import fr.lordfinn.steveparty.client.particle.FloatingText;
-import fr.lordfinn.steveparty.client.particle.FloatingTextParticle;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;

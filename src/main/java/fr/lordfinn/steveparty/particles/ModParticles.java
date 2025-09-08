@@ -13,7 +13,6 @@ public class ModParticles {
     public static final SimpleParticleType HERE_PARTICLE = FabricParticleTypes.simple();
     public static final SimpleParticleType ARROW_PARTICLE = FabricParticleTypes.simple();
     public static final SimpleParticleType ENCHANTED_CIRCULAR_PARTICLE = FabricParticleTypes.simple();
-    public static final SimpleParticleType FLOATING_TEXT_PARTICLE = FabricParticleTypes.simple();
 
     public static void initialize() {
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("here"),
@@ -22,7 +21,5 @@ public class ModParticles {
                 ARROW_PARTICLE);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("enchanted_circular"),
                 ENCHANTED_CIRCULAR_PARTICLE);
-        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("floating_text"),
-                FLOATING_TEXT_PARTICLE);
     }
 }
