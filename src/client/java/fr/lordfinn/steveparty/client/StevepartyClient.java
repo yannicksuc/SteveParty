@@ -13,9 +13,11 @@ import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
+import fr.lordfinn.steveparty.client.particle.FloatingTextParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
+import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.screens.*;
 import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
@@ -32,14 +34,18 @@ import net.fabricmc.fabric.api.client.rendering.v1.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.color.item.ItemColorProvider;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,6 +123,8 @@ public class StevepartyClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
         PartyStepsHud.registerKeyHandlers();
         Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
+
+        initParticleRenderers();
        }
 
     private void initItemRenderers() {
@@ -154,6 +162,7 @@ public class StevepartyClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.HERE_PARTICLE, HereParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ENCHANTED_CIRCULAR_PARTICLE, EnchantedCircularParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.FLOATING_TEXT_PARTICLE, FloatingTextParticle.Factory::new);
     }
 
     private static void initScreens() {
@@ -185,22 +194,34 @@ public class StevepartyClient implements ClientModInitializer {
 
     }
 
+    private static void initParticleRenderers() {
+        FloatingTextRenderer.registerRenderCallback();
+    }
+
     private static boolean lastPressed = false;
+
+    //private static int spawnCooldown = 0;
 
     public static void tick() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
+        /*if (spawnCooldown <= 0) {
+            FloatingTextRenderer.spawn("+1 Coin!", -21, 4, -11);
+            spawnCooldown = 20 * 5; // 20 ticks * 5 seconds
+        } else {
+            spawnCooldown--;
+        } */
+
         long window = client.getWindow().getHandle();
         boolean isPressed = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_0) == GLFW.GLFW_PRESS;
 
-        // Détecte le “rising edge” pour ne pas répéter tous les ticks
         if (isPressed && !lastPressed) {
-            // Touche pressée !
             if (client.currentScreen != null) {
                 RecipeExporter.exportRecipe(client);
             }
         }
         lastPressed = isPressed;
     }
+
 }
