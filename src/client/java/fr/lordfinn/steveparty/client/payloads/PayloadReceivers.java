@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.payloads;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.PartyService;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
+import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
 import fr.lordfinn.steveparty.persistent_state.ClientBoardSpaceRouters;
@@ -58,6 +59,11 @@ public class PayloadReceivers {
         }));
 
         ClientPlayNetworking.registerGlobalReceiver(PartyDataPayload.ID, (payload, context) -> context.client().execute(() -> PartyStepsHud.updateSteps(payload.partyData())));
+
+        ClientPlayNetworking.registerGlobalReceiver(FloatingTextPayload.ID, (payload, context) -> context.client().execute(() ->
+        {
+            FloatingTextRenderer.spawn(payload.text(), payload.pos(), payload.velocity(), payload.duration(), payload.scale(), payload.color(), payload.fadeStart());
+        }));
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {
