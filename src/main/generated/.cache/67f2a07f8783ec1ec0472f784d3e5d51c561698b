@@ -1,7 +1,8 @@
-// 1.21.3	2025-09-06T07:48:56.4785512	SteveParty/Tags for minecraft:block
-3bae4c20c7bc7d005098ff914e873ca3807575c2 data\minecraft\tags\block\mineable\pickaxe.json
+// 1.21.3	2025-09-09T05:17:57.2944439	SteveParty/Tags for minecraft:block
+3afe9507b63bf00427f273be0e70e01ff2c091e3 data\minecraft\tags\block\mineable\pickaxe.json
 0566c2b54cf47118369025bece69d3f6cb408887 data\minecraft\tags\block\needs_iron_tool.json
 0d1006e682622ca3113c4cb880f934de8dfc0c08 data\minecraft\tags\block\needs_stone_tool.json
 39f7e82ae97a3e1d4f11ca1a453517b70afda187 data\minecraft\tags\block\needs_diamond_tool.json
 38ab6c7aea9c3cf86e10f520dfa21b2a1487d2b8 data\steveparty\tags\block\switchable.json
-dc49a3602a4442985d306c0ad0c1e2f27d5b8e62 data\minecraft\tags\block\mineable\axe.json
+527b6dcdf8e22739dbf35c99d70479a457017991 data\minecraft\tags\block\mineable\axe.json
+302e9330f1642a9e8c37cf1bd5a41c532c12c5ad data\minecraft\tags\block\climbable.json
