@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "B B",
+    "BSB",
+    "IRI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone",
+    "S": "minecraft:sculk_sensor",
+    "B": "minecraft:brick"
+  },
+  "result": {
+    "id": "steveparty:goal_pole_base"
+  }
+}

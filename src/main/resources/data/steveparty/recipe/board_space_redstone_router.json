@@ -11,7 +11,7 @@
     "C":"minecraft:gold_ingot",
     "R":"minecraft:redstone_torch",
     "T": "minecraft:chest",
-    "S": "minecraft:calibrated_sculk_sensor"
+    "S": "minecraft:amethyst_shard"
   },
   "result": {
     "id": "steveparty:board_space_redstone_router"
