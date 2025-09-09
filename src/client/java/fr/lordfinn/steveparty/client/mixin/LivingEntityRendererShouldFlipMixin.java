@@ -17,7 +17,7 @@ public class LivingEntityRendererShouldFlipMixin {
         boolean original = cir.getReturnValue();
         if (entity instanceof PlayerEntity player) {
             boolean onGoalPole = player.getWorld().getBlockState(player.getBlockPos().down()).isOf(ModBlocks.GOAL_POLE);
-            if (onGoalPole) {
+            if (onGoalPole && !player.isClimbing()) {
                 cir.setReturnValue(true);
             } else {
                 cir.setReturnValue(original);
