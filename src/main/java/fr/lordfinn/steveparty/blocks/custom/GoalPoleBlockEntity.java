@@ -88,18 +88,6 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         }
     }
 
-    @Override
-    public void markRemoved() {
-        super.markRemoved();
-        World world = getWorld();
-        if (world == null || world.isClient) return;
-
-        var above = world.getBlockEntity(getPos().up());
-        if (above instanceof GoalPoleBlockEntity poleAbove) {
-            poleAbove.updateCachedBase();
-        }
-    }
-
     // --- Comparator + Value NBT ---
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {

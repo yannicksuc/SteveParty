@@ -22,10 +22,7 @@
   },
   "mixins": [
     "steveparty.mixins.json",
-    {
-      "config": "steveparty.client.mixins.json",
-      "environment": "client"
-    }
+    "steveparty.client.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",

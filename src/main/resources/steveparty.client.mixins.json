@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.lordfinn.steveparty.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityRendererSetupTransformsMixin",
+    "LivingEntityRendererShouldFlipMixin",
+    "LivingEntityRendererSmoothFlipMixin",
+    "LivingEntityRenderStateMixin",
+    "PlayerEntityModelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
