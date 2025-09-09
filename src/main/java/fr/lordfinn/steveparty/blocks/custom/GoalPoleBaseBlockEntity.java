@@ -320,4 +320,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         setSelector(selector);
         setGoal(goal);
     }
+
+    public ScoreboardObjective getCachedObjective() {
+        return cachedObjective;
+    }
 }
