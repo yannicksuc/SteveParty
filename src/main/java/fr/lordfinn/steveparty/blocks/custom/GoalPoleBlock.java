@@ -29,12 +29,10 @@ import org.jetbrains.annotations.Nullable;
 
 public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityProvider {
 
-    // ---- BlockState properties ----
     public static final BooleanProperty FLAG = BooleanProperty.of("flag");
     public static final BooleanProperty ON_BASE = BooleanProperty.of("on_base");
     public static final BooleanProperty TOP = BooleanProperty.of("top");
 
-    // ---- Shapes ----
     private static final VoxelShape POLE_SHAPE = Block.createCuboidShape(6.5, 0.0, 6.5, 9.5, 16.0, 9.5);
     private static final VoxelShape POLE_SHAPE_TOP = VoxelShapes.union(
             VoxelShapes.cuboid(0.40625, 0, 0.40625, 0.59375, 1, 0.59375),
@@ -51,7 +49,6 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         builder.add(FACING, FLAG, ON_BASE, TOP);
     }
 
-    // ---- Placement & State Updates ----
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
         return getDefaultState()
@@ -67,6 +64,15 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
         updateOnBaseProperty(state, world, pos);
         updateTopProperty(state, world, pos);
+
+        // Update cache if neighbor below changed
+        if (sourceBlock instanceof GoalPoleBlock || sourceBlock instanceof GoalPoleBaseBlock) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof GoalPoleBlockEntity poleEntity) {
+                poleEntity.updateCachedBase();
+                poleEntity.propagateCachedBaseUpwards();
+            }
+        }
     }
 
     private boolean isOnBase(World world, BlockPos pos) {
@@ -91,11 +97,9 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         }
     }
 
-    // ---- Interaction ----
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack stack = player.getStackInHand(Hand.MAIN_HAND);
-
         if (world.isClient) return ActionResult.PASS;
 
         if (stack.isOf(Items.SHEARS) && state.get(FLAG)) {
@@ -112,19 +116,14 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     private ActionResult handleShearsUse(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack shears) {
         world.setBlockState(pos, state.with(FLAG, false), 3);
         ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(ModItems.FLAG));
-        if (!player.isCreative()) {
-            shears.damage(1, player, EquipmentSlot.MAINHAND);
-        }
-        world.playSound(null, pos, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        if (!player.isCreative()) shears.damage(1, player, EquipmentSlot.MAINHAND);
+        world.playSound(null, pos, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.BLOCKS, 1f, 1f);
         return ActionResult.SUCCESS;
     }
 
     private ActionResult handleFlagUse(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack flag, BlockHitResult hit) {
-        if (!state.get(FLAG)) {
-            placeFlag(world, pos, state, player, flag, hit);
-        } else {
-            rotateFlag(world, pos, state, hit);
-        }
+        if (!state.get(FLAG)) placeFlag(world, pos, state, player, flag, hit);
+        else rotateFlag(world, pos, state, hit);
         return ActionResult.SUCCESS;
     }
 
@@ -135,20 +134,15 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
                 : state.with(FLAG, true);
 
         world.setBlockState(pos, newState, 3);
-
-        if (!player.isCreative()) {
-            flag.decrement(1);
-        }
-
-        world.playSound(null, pos, SoundEvents.BLOCK_WOOL_FALL, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        if (!player.isCreative()) flag.decrement(1);
+        world.playSound(null, pos, SoundEvents.BLOCK_WOOL_FALL, SoundCategory.BLOCKS, 1f, 1f);
     }
 
     private void rotateFlag(World world, BlockPos pos, BlockState state, BlockHitResult hit) {
         world.setBlockState(pos, state.with(FACING, hit.getSide().rotateYClockwise()), 3);
-        world.playSound(null, pos, SoundEvents.BLOCK_WOOL_STEP, SoundCategory.BLOCKS, 0.8f, 1.0f);
+        world.playSound(null, pos, SoundEvents.BLOCK_WOOL_STEP, SoundCategory.BLOCKS, 0.8f, 1f);
     }
 
-    // ---- Shape & Rendering ----
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return state.get(TOP) ? POLE_SHAPE_TOP : POLE_SHAPE;
@@ -161,7 +155,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
 
     @Override
     public float getAmbientOcclusionLightLevel(BlockState state, BlockView world, BlockPos pos) {
-        return 1.0f;
+        return 1f;
     }
 
     @Override
@@ -169,7 +163,6 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         return true;
     }
 
-    // ---- Lifecycle ----
     @Override
     protected MapCodec<GoalPoleBlock> getCodec() {
         return createCodec(GoalPoleBlock::new);
@@ -177,11 +170,13 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
 
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        if (state.getBlock() != newState.getBlock()) {
-            if (state.get(FLAG)) {
-                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(ModItems.FLAG));
+        if (state.getBlock() != newState.getBlock() && state.get(FLAG)) {
+            ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(ModItems.FLAG));
+            // notify pole above
+            BlockEntity beAbove = world.getBlockEntity(pos.up());
+            if (beAbove instanceof GoalPoleBlockEntity poleAbove) {
+                poleAbove.updateCachedBase();
             }
-            world.updateComparators(pos, this);
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }
