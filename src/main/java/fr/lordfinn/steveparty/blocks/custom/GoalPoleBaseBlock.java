@@ -82,6 +82,7 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             if (blockEntity instanceof GoalPoleBaseBlockEntity goalPoleBaseBlockEntity) {
                 if (mainHandStack.getItem() instanceof WrenchItem) {
                     goalPoleBaseBlockEntity.openScreen((ServerPlayerEntity) player);
+                    return ActionResult.SUCCESS;
                 } else {
                     // Show action bar message
                     player.sendMessage(
@@ -92,7 +93,7 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             }
         }
 
-        return ActionResult.SUCCESS;
+        return ActionResult.PASS;
     }
 
     @Override

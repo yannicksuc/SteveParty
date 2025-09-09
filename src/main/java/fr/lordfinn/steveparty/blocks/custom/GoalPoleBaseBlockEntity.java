@@ -315,4 +315,9 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public void setRedstoneOutput(int value) {
         redstoneOutput = value;
     }
+
+    public void update(String selector, String goal) {
+        setSelector(selector);
+        setGoal(goal);
+    }
 }

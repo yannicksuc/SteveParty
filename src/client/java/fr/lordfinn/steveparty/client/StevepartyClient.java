@@ -141,7 +141,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
         BlockEntityRendererFactories.register(ModBlockEntities.TRADING_STALL, TradingStallBlockEntityRenderer::new);
 
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.GOAL_POLE_BASE, RenderLayer.getCutout());
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.GOAL_POLE, RenderLayer.getCutout());
 
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);

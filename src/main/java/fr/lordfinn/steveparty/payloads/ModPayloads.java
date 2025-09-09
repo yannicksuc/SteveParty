@@ -75,8 +75,7 @@ public class ModPayloads {
                 // Check the BlockEntity type
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity blockEntity) {
                     // Update the BlockEntity fields
-                    blockEntity.setSelector(payload.selector());
-                    blockEntity.setGoal(payload.goal());
+                    blockEntity.update(payload.selector(), payload.goal());
                 }
             });
         });
