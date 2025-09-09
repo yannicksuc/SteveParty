@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "W  ",
+    "WW ",
+    "   "
+  ],
+  "key": {
+    "W": "#minecraft:wool"
+  },
+  "result": {
+    "id": "steveparty:flag"
+  }
+}

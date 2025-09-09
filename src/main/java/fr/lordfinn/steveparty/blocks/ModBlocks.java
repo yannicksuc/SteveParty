@@ -172,6 +172,12 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.STONE)
                     .requiresTool(),
             "goal_pole_base", true);
+    public static final Block GOAL_POLE = register(GoalPoleBlock::new,
+            Block.Settings.create()
+                    .strength(3.0f, 6.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
+            "goal_pole", true);
 
 
     @SuppressWarnings({"unused", "SameParameterValue"})

@@ -45,6 +45,7 @@ public class ModItems {
     public static final Item HERE_WE_GO_BOOK = register(HereWeGoBookItem.class, "here_we_go_book");
     public static final Item HERE_WE_COME_BOOK = register(HereWeComeBookItem.class, "here_we_come_book");
     public static final Item SHOPKEEPER_KEY = register(ShopkeeperKeyItem.class, "shopkeeper_key");
+    public static final Item FLAG = register(FlagItem.class, "flag");
 
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
@@ -122,6 +123,8 @@ public class ModItems {
                 itemGroup.add(switcherBlock);
             }
             itemGroup.add(GOAL_POLE_BASE);
+            itemGroup.add(GOAL_POLE);
+            itemGroup.add(FLAG);
         });
     }
 }

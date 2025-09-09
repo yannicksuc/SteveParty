@@ -12,6 +12,7 @@ import net.minecraft.registry.tag.TagKey;
 
 import java.util.concurrent.CompletableFuture;
 
+import static fr.lordfinn.steveparty.blocks.ModBlocks.GOAL_POLE;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.SWITCHER_BLOCKS;
 
 public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block> {
@@ -28,6 +29,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,
+                        ModBlocks.GOAL_POLE,
                         ModBlocks.TILE,
                         ModBlocks.CHECK_POINT,
                         ModBlocks.CASH_REGISTER,
@@ -39,6 +41,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 );
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
+                        ModBlocks.GOAL_POLE_BASE,
                         ModBlocks.TELEPORTATION_PAD,
                         ModBlocks.SPRUCE_TRAFFIC_SIGN,
                         ModBlocks.OAK_TRAFFIC_SIGN,
@@ -58,7 +61,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_IRON_TOOL)
                 .add(
-                        ModBlocks.GOAL_POLE_BASE,
+                        ModBlocks.GOAL_POLE,
                         ModBlocks.CASH_REGISTER,
                         ModBlocks.PARTY_CONTROLLER,
                         ModBlocks.STEP_CONTROLLER,
@@ -67,5 +70,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_DIAMOND_TOOL)
                 .add(ModBlocks.TELEPORTATION_PAD);
+        getOrCreateTagBuilder(BlockTags.CLIMBABLE)
+                .add(GOAL_POLE);
     }
 }
