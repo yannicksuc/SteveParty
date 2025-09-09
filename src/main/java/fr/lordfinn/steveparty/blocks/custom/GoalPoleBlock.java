@@ -1,20 +1,27 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -110,7 +117,44 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
             return handleFlagUse(world, pos, state, player, stack, hit);
         }
 
+        if (stack.getItem() instanceof WrenchItem) {
+            if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity goalPoleBlockEntity) {
+                if (stack.getItem() instanceof WrenchItem) {
+                    // Open the screen
+                    goalPoleBlockEntity.openScreen((ServerPlayerEntity) player);
+                    return ActionResult.SUCCESS;
+                } else {
+                    // Send action bar message if not using wrench
+                    player.sendMessage(
+                            Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD),
+                            true
+                    );
+                }
+            }
+        }
+
         return ActionResult.PASS;
+    }
+
+    @Override
+    public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        if (type == ModBlockEntities.GOAL_POLE_ENTITY) {
+            return (world1, pos, state1, blockEntity) -> ((GoalPoleBlockEntity) blockEntity).tick(world1, pos, state1, blockEntity);
+        }
+        return null;
+    }
+    @Override
+    public boolean hasComparatorOutput(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof GoalPoleBlockEntity entity) {
+            return entity.getRedstoneOutput();
+        }
+        return 0;
     }
 
     private ActionResult handleShearsUse(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack shears) {

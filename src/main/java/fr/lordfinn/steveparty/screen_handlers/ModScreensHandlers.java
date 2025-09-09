@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
+import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.*;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.network.RegistryByteBuf;
@@ -15,7 +16,6 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 
 public class ModScreensHandlers {
-
     public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T, D>
     register(String name, ExtendedScreenHandlerType.ExtendedFactory<T, D> factory, PacketCodec<? super RegistryByteBuf, D> codec) {
         return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ExtendedScreenHandlerType<>(factory, codec));
@@ -70,6 +70,9 @@ public class ModScreensHandlers {
 
     public static final ScreenHandlerType<GoalPoleBaseScreenHandler> GOAL_POLE_BASE_SCREEN_HANDLER =
             register("goal_pole_base-screen_handler", GoalPoleBaseScreenHandler::new, GoalPoleBasePayload.CODEC);
+
+    public static final ScreenHandlerType<GoalPoleScreenHandler> GOAL_POLE_SCREEN_HANDLER =
+            register("goal_pole_screen_handler", GoalPoleScreenHandler::new, GoalPolePayload.CODEC);
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

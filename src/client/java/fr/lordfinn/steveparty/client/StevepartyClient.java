@@ -177,6 +177,7 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(TRADING_STALL_SCREEN_HANDLER, TradingStallScreen::new);
         HandledScreens.register(CASH_REGISTER_SCREEN_HANDLER, CashRegisterScreen::new);
         HandledScreens.register(GOAL_POLE_BASE_SCREEN_HANDLER, GoalPoleBaseScreen::new);
+        HandledScreens.register(GOAL_POLE_SCREEN_HANDLER, GoalPoleScreen::new);
     }
 
     public static KeyBinding exportRecipeKey;
