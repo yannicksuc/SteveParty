@@ -3,10 +3,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.HorizontalFacingBlock;
-import net.minecraft.block.ShapeContext;
+import net.minecraft.block.*;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
@@ -29,7 +27,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
-public class GoalPoleBlock extends HorizontalFacingBlock {
+public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityProvider {
 
     // ---- BlockState properties ----
     public static final BooleanProperty FLAG = BooleanProperty.of("flag");
@@ -173,7 +171,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock {
 
     // ---- Lifecycle ----
     @Override
-    protected MapCodec<? extends HorizontalFacingBlock> getCodec() {
+    protected MapCodec<GoalPoleBlock> getCodec() {
         return createCodec(GoalPoleBlock::new);
     }
 
@@ -186,5 +184,10 @@ public class GoalPoleBlock extends HorizontalFacingBlock {
             world.updateComparators(pos, this);
         }
         super.onStateReplaced(state, world, pos, newState, moved);
+    }
+
+    @Override
+    public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        return new GoalPoleBlockEntity(pos, state);
     }
 }
