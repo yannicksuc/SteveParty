@@ -39,11 +39,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         // Création des champs de texte
         selectorField = new TextFieldWidget(textRenderer, x + 15, y + 30, backgroundWidth - 31, 20,
                 Text.translatable("gui.steveparty.goal_pole_base.selector"));
+        selectorField.setMaxLength(256);
         selectorField.setText(handler.getSelector());
         addDrawableChild(selectorField);
 
         goalField = new TextFieldWidget(textRenderer, x + 15, y + 70, backgroundWidth - 31, 20,
                 Text.translatable("gui.steveparty.goal_pole_base.goal"));
+        goalField.setMaxLength(256);
         goalField.setText(handler.getGoal());
         addDrawableChild(goalField);
         // Création des boutons
@@ -85,8 +87,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
-        
-        // Rendu des labels
+
         context.drawText(textRenderer, Text.translatable("gui.steveparty.goal_pole_base.selector").getString() + ":", x + 15, y + 20, 0x404040, false);
         context.drawText(textRenderer, Text.translatable("gui.steveparty.goal_pole_base.goal").getString() + ":", x + 15, y + 60, 0x404040, false);
     }
@@ -101,12 +102,34 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     }
 
     @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (selectorField.keyPressed(keyCode, scanCode, modifiers) || selectorField.isActive()) {
+            return true;
+        }
+        if (goalField.keyPressed(keyCode, scanCode, modifiers) || goalField.isActive()) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (selectorField.charTyped(chr, modifiers)) {
+            return true;
+        }
+        if (goalField.charTyped(chr, modifiers)) {
+            return true;
+        }
+        return super.charTyped(chr, modifiers);
+    }
+
+    @Override
     public void close() {
         if (client != null && client.player != null) {
             client.player.playSound(
-                    CLOSE_TILE_GUI_SOUND_EVENT, // example sound
-                    1.0F, // volume
-                    1.0F  // pitch
+                    CLOSE_TILE_GUI_SOUND_EVENT,
+                    1.0F,
+                    1.0F
             );
         }
         super.close();
