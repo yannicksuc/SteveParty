@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
