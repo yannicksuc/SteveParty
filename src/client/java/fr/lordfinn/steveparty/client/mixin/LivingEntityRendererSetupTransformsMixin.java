@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.client.access.SmoothFlipState;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.RotationAxis;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,8 +19,10 @@ public class LivingEntityRendererSetupTransformsMixin<S extends LivingEntityRend
         float progress = state.getFlipProgress();
         if (progress > 0.001F) {
             // Interpolate vertical translation
-            float heightOffset = (state.height * 1.2f) * progress;
+            float heightOffset = (state.height * 1.275f) * progress;
             matrices.translate(0.0F, heightOffset, 0.0F);
+            if (state.sneaking)
+                matrices.translate(0.0F, +0.25F, 0.0F);
 
             // Compute player's facing yaw (bodyYaw is in degrees)
             float yawRad = (float) Math.toRadians(state.bodyYaw);
