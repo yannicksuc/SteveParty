@@ -4,7 +4,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 
 public class ModHandler {
 
-    public static void init() {
+    public static void initialize() {
         TrackedDataHandlerRegistry.register(ListUuidTrackedDataHandler.INSTANCE);
     }
 }

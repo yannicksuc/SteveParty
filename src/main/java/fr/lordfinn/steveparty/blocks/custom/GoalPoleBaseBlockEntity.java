@@ -2,8 +2,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
-import fr.lordfinn.steveparty.particles.ModParticles;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
@@ -33,17 +33,17 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 import static fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock.POWERED;
+import static fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_POLE_ID;
 import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloatingText;
 
 public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPoleBasePayload>, BlockEntityTicker {
-    private String selector = "";
-    private String goal = "";
+    private String selector = "@p";
+    private String goal = LANDED_ON_POLE_ID;
     private final Map<UUID, Integer> lastScores = new HashMap<>();
 
     // cache
     private ScoreboardObjective cachedObjective = null;
     private List<ServerPlayerEntity> cacheSelectedPlayers = List.of();
-    private String lastSelector = "";
     private final Map<UUID, Integer> lastValues = new HashMap<>();
     private int redstoneOutput = 0;
 
@@ -62,7 +62,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public void setSelector(String selector) {
         if (Objects.equals(selector, this.selector)) return;
         this.selector = selector;
-        this.lastSelector = ""; // force re-resolve
         markDirty();
     }
 
@@ -92,7 +91,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         BlockPos pos = this.getPos();
         return "steveparty_" + pos.getX() + "_" + pos.getY() + "_" + pos.getZ();
     }
-
 
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
@@ -196,13 +194,12 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         }
     }
 
-    public List<ServerPlayerEntity> getTrackedPlayers() {
+    public List<ServerPlayerEntity> getTrackedPlayers(boolean forceRefresh) {
         MinecraftServer server = this.world != null ? this.world.getServer() : null;
         if (server == null) return List.of();
 
-        if (!Objects.equals(this.selector, this.lastSelector) || this.cacheSelectedPlayers == null || this.cacheSelectedPlayers.isEmpty()) {
+        if (forceRefresh || this.cacheSelectedPlayers == null || this.cacheSelectedPlayers.isEmpty()) {
             this.cacheSelectedPlayers = new ArrayList<>(resolveSelector(server, this.selector));
-            this.lastSelector = this.selector;
         }
         return this.cacheSelectedPlayers;
     }
@@ -215,21 +212,25 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         if (!this.world.getBlockState(pos).get(POWERED)) return;
         if (this.world.isClient) return;
 
-        List<ServerPlayerEntity> players = getTrackedPlayers();
+        List<ServerPlayerEntity> players = getTrackedPlayers(true);
         if (players.isEmpty()) return;
 
         for (ServerPlayerEntity player : players) {
-
-            // Fetch the current score for this player
             var scoreboard = player.getServer().getScoreboard();
             var score = scoreboard.getOrCreateScore(player, this.cachedObjective);
 
             int current = score.getScore();
             int last = this.lastScores.getOrDefault(player.getUuid(), -1);
 
-            if (last != -1 && current > last) {
+            // If we’ve never tracked this player before, initialize baseline
+            if (last == -1) {
+                this.lastScores.put(player.getUuid(), current);
+                continue; // don’t pulse yet, wait for actual change
+            }
+
+            if (current > last) {
                 pulseRedstone();
-                spawnFloatingText((ServerWorld) this.world,  "+1", pos.toCenterPos().add(Math.random() - 1 ,  Math.random() / 2, Math.random() - 1).toVector3f(), TextColor.fromRgb(0xC90E0E), 50);
+                spawnFloatingText((ServerWorld) this.world,  "+1", pos.toCenterPos().add(0.5).add(Math.random() - 1 ,  Math.random() / 2, Math.random() - 1).toVector3f(), TextColor.fromRgb(0xC90E0E), 50);
                 this.lastScores.put(player.getUuid(), current);
             }
         }
@@ -241,13 +242,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         MinecraftServer server = this.world.getServer();
         if (server == null) return;
         Scoreboard scoreboard = server.getScoreboard();
-
-        // Save scores of tracked players
-        for (ServerPlayerEntity player : getTrackedPlayers()) {
-            int score = scoreboard.getOrCreateScore(player, this.cachedObjective).getScore();
-        }
-
-        // Remove the objective so it stops updating
         scoreboard.removeObjective(this.cachedObjective);
         this.cachedObjective = null;
         markDirty();
@@ -293,7 +287,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         if (this.cachedObjective == null) setupScoreboard();
         if (this.cachedObjective == null) return;
 
-        List<ServerPlayerEntity> players = getTrackedPlayers();
+        List<ServerPlayerEntity> players = getTrackedPlayers(true);
         if (players.isEmpty()) return;
 
         for (ServerPlayerEntity player : players) {

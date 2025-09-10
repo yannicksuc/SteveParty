@@ -33,5 +33,10 @@
     "sounds": [
       "steveparty:pop"
     ]
+  },
+  "goal_pole_reach": {
+    "sounds": [
+      "steveparty:goal_pole_reach"
+    ]
   }
 }

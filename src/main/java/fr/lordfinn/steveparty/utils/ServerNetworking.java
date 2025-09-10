@@ -8,7 +8,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import static fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem.setSelectionState;
 
 public class ServerNetworking {
-    public static void init() {
+    public static void initialize() {
         ServerPlayNetworking.registerGlobalReceiver(SelectionStatePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             ItemStack stack = player.getMainHandStack();

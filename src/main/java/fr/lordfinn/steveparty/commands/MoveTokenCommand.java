@@ -85,7 +85,7 @@ public class MoveTokenCommand {
     /**
      * Inscription de la commande.
      */
-    public static void init() {
+    public static void initialize() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> register(dispatcher, registryAccess));
     }
 }

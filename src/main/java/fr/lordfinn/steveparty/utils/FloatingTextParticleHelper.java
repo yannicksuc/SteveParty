@@ -35,14 +35,21 @@ public class FloatingTextParticleHelper {
         }
     }
 
+    public static void spawnFloatingText(ServerWorld world, String t, Vector3f pos, int textColor, int r, float scale) {
+        Vector3f defaultVelocity = new Vector3f(0, 0.02f, 0);
+        float defaultDuration = 70;
+        float defaultFadeStart = 0.5f;
+        spawnFloatingText(world, pos, defaultVelocity,  defaultDuration, scale, textColor, defaultFadeStart,t, r);
+    }
+
     // Nouvelle méthode simplifiée avec valeurs par défaut
     public static void spawnFloatingText(ServerPlayerEntity player,
                                          String text,
                                          Vector3f pos,
                                          TextColor color) {
         Vector3f defaultVelocity = new Vector3f(0, 0.02f, 0);
-        float defaultDuration = 60;   // 2 secondes
-        float defaultScale = 0.02f;
+        float defaultDuration = 70;   // 2 secondes
+        float defaultScale = 0.03f;
         float defaultFadeStart = 0.5f;
 
         spawnFloatingText(player, pos, defaultVelocity, defaultDuration, defaultScale, color.getRgb(), defaultFadeStart, text);
@@ -55,8 +62,8 @@ public class FloatingTextParticleHelper {
                                          TextColor color,
                                          double radius) {
         Vector3f defaultVelocity = new Vector3f(0, 0.02f, 0);
-        float defaultDuration = 60;   // 2 secondes
-        float defaultScale = 0.02f;
+        float defaultDuration = 70;   // 2 secondes
+        float defaultScale = 0.03f;
         float defaultFadeStart = 0.5f;
 
         for (ServerPlayerEntity player : world.getPlayers(playerEntity -> playerEntity.squaredDistanceTo(pos.x, pos.y, pos.z) < radius * radius)) {
