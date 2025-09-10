@@ -2,12 +2,13 @@
   "type": "minecraft:crafting_shaped",
   "fabric:type": "minecraft:crafting_shaped",
   "pattern": [
+    "G  ",
     "I  ",
-    "I  ",
-    "   "
+    "I  "
   ],
   "key": {
-    "I": "minecraft:iron_nugget"
+    "G": "minecraft:gold_ingot",
+    "I": "minecraft:iron_bars"
   },
   "result": {
     "id": "steveparty:goal_pole"

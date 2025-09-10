@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.commands.MoveTokenCommand;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
 import fr.lordfinn.steveparty.data.handler.ModHandler;
 import fr.lordfinn.steveparty.effect.ModEffects;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -40,7 +41,7 @@ public class Steveparty implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(this::onServerStopped);
         ModSounds.initialize();
         ModParticles.initialize();
-        ModBlocks.registerBlocks();
+        ModBlocks.initialize();
         ModItems.initialize();
         ModBlockEntities.initialize();
         ModComponents.initialize();
@@ -49,13 +50,12 @@ public class Steveparty implements ModInitializer {
         ModPayloads.initialize();
         ModEntities.initialize();
         ModEvents.initialize();
-        ModHandler.init();
-        ModRecipes.register();
+        ModHandler.initialize();
+        ModRecipes.initialize();
+        ModScoreboardCriteria.initialize();
+        ServerNetworking.initialize();
 
-        ServerNetworking.init();
-
-        MoveTokenCommand.init();
-
+        MoveTokenCommand.initialize();
         new TokenMovementService();
 
         VillagerBlockSpawnListener.registerChatListener();

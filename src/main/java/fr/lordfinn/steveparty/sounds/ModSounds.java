@@ -14,6 +14,7 @@ public class ModSounds {
     public static final SoundEvent POP_SOUND_EVENT = register("pop");
     public static final SoundEvent PLUNGER_SUCK_IN_SOUND_EVENT = register("plunger_suck_in");
     public static final SoundEvent PLUNGER_SUCK_OUT_SOUND_EVENT = register("plunger_suck_out");
+    public static final SoundEvent GOAL_POLE_REACH = register("goal_pole_reach");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

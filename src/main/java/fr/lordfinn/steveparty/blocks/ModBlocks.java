@@ -190,6 +190,6 @@ public class ModBlocks {
         return block;
     }
 
-    public static void registerBlocks() {
+    public static void initialize() {
     }
 }

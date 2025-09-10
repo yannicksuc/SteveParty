@@ -9,7 +9,10 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
@@ -33,6 +36,8 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
+
+import static fr.lordfinn.steveparty.sounds.ModSounds.GOAL_POLE_REACH;
 
 public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityProvider {
 
@@ -155,6 +160,22 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
             return entity.getRedstoneOutput();
         }
         return 0;
+    }
+    @Override
+    public void onEntityLand(BlockView view, net.minecraft.entity.Entity entity) {
+        super.onEntityLand(view, entity);
+
+        if (!entity.getWorld().isClient && entity instanceof ServerPlayerEntity player) {
+            BlockPos pos = entity.getBlockPos().down();
+            if (view.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole) {
+                pole.onPlayerArrive(player, view, pos);
+            }
+        }
+    }
+
+    @Override
+    public void onLandedUpon(World world, BlockState state, BlockPos pos, Entity entity, float fallDistance) {
+        entity.handleFallDamage(fallDistance, 0.0F, world.getDamageSources().fall()); // 0.0F = aucun dégât
     }
 
     private ActionResult handleShearsUse(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack shears) {

@@ -140,8 +140,6 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
         }
     }
 
-
-
     private boolean isReceivingPowerFromSouth(World world, BlockPos pos, BlockState state) {
         Direction facing = state.get(FACING);
         Direction southRelative = facing.rotateYClockwise().rotateYClockwise();

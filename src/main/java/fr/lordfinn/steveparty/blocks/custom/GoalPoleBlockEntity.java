@@ -8,25 +8,62 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.scoreboard.ScoreHolder;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.UUID;
+
 import static fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock.POWERED;
+import static fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_POLE;
+import static fr.lordfinn.steveparty.sounds.ModSounds.GOAL_POLE_REACH;
+import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloatingText;
 
 public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPolePayload>, BlockEntityTicker {
     // --- Cached base ---
     private GoalPoleBaseBlockEntity cachedBase;
     private int redstoneOutput = 0;
+    private final Set<UUID> playersOnBlock = new HashSet<>();
 
     public void update(Comparator comparator, int value) {
         this.setValue(value);
         this.setComparator(comparator);
+    }
+
+    public void onPlayerArrive(ServerPlayerEntity player, BlockView view, BlockPos pos) {
+        UUID uuid = player.getUuid();
+        if (playersOnBlock.contains(uuid)) return;
+
+        player.getScoreboard().forEachScore(
+                LANDED_ON_POLE,
+                ScoreHolder.fromProfile(player.getGameProfile()),
+                scoreAccess -> scoreAccess.incrementScore(1)  // increment by 1
+        );
+
+        playersOnBlock.add(uuid);
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 0, false, true));
+        player.setAbsorptionAmount(player.getAbsorptionAmount() - 2.0F);
+        world.playSound(null, pos, GOAL_POLE_REACH, SoundCategory.BLOCKS, 1f, 1.2f);
+        spawnFloatingText((ServerWorld) this.world,
+                "1up", player.getPos().add(0,2,0).toVector3f(),
+                0x43FA44, 50, 0.04f);
     }
 
     // --- Comparator + Value fields ---
@@ -119,10 +156,10 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
         int totalScore = 0;
 
-        var scoreboard = world.getServer().getScoreboard();
+        ServerScoreboard scoreboard = world.getServer().getScoreboard();
         // Sum scores of all tracked players
-        for (ServerPlayerEntity player : base.getTrackedPlayers()) {
-            var score = scoreboard.getOrCreateScore(player, base.getCachedObjective()).getScore();
+        for (ServerPlayerEntity player : base.getTrackedPlayers(true)) {
+            int score = scoreboard.getOrCreateScore(player, base.getCachedObjective()).getScore();
             totalScore += score;
         }
 
@@ -177,5 +214,15 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     @Override
     public void tick(World world, BlockPos pos, BlockState state, BlockEntity blockEntity) {
         updateComparatorOutput();
+        if (world.isClient) return;
+
+        Iterator<UUID> iterator = playersOnBlock.iterator();
+        while (iterator.hasNext()) {
+            UUID uuid = iterator.next();
+            PlayerEntity player = world.getPlayerByUuid(uuid);
+            if (player == null || (!player.getBlockPos().down().equals(pos) && !player.getBlockPos().down().down().equals(pos))) {
+                iterator.remove();
+            }
+        }
     }
 }
