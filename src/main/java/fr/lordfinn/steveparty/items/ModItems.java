@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.items.custom.*;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
@@ -46,6 +47,7 @@ public class ModItems {
     public static final Item HERE_WE_COME_BOOK = register(HereWeComeBookItem.class, "here_we_come_book");
     public static final Item SHOPKEEPER_KEY = register(ShopkeeperKeyItem.class, "shopkeeper_key");
     public static final Item FLAG = register(FlagItem.class, "flag");
+    public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
 
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
@@ -125,6 +127,8 @@ public class ModItems {
             itemGroup.add(GOAL_POLE_BASE);
             itemGroup.add(GOAL_POLE);
             itemGroup.add(FLAG);
+            itemGroup.add(TRIPLE_JUMP_SHOES);
+            itemGroup.add(LOOTING_BOX);
         });
     }
 }

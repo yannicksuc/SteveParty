@@ -1,5 +1,5 @@
-// 1.21.3	2025-09-09T05:17:57.2944439	SteveParty/Tags for minecraft:block
-3afe9507b63bf00427f273be0e70e01ff2c091e3 data\minecraft\tags\block\mineable\pickaxe.json
+// 1.21.3	2025-09-13T16:02:56.6264303	SteveParty/Tags for minecraft:block
+2f08c22cc843ae0fe9e2612bfbbd47cac053aba6 data\minecraft\tags\block\mineable\pickaxe.json
 0566c2b54cf47118369025bece69d3f6cb408887 data\minecraft\tags\block\needs_iron_tool.json
 0d1006e682622ca3113c4cb880f934de8dfc0c08 data\minecraft\tags\block\needs_stone_tool.json
 39f7e82ae97a3e1d4f11ca1a453517b70afda187 data\minecraft\tags\block\needs_diamond_tool.json

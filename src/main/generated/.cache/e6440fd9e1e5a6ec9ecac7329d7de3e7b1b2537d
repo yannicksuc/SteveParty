@@ -1,4 +1,4 @@
-// 1.21.3	2025-09-09T05:17:57.2929374	SteveParty/Block Loot Tables
+// 1.21.3	2025-09-13T16:02:56.6254209	SteveParty/Block Loot Tables
 c5502479a48c1329be4b25c3bff073900ee2f3d7 data\steveparty\loot_table\blocks\goal_pole_base.json
 17352c80e4c148e988c81965412f666273f120e9 data\steveparty\loot_table\blocks\red_switcher_block.json
 938cdd321316be69a6978f6363d163aa50329358 data\steveparty\loot_table\blocks\blue_switcher_block.json
@@ -16,5 +16,6 @@ f0d82fc88279f6038277f8c25461cec9041d15b4 data\steveparty\loot_table\blocks\black
 b0c6d51067c14afddbbc8b379a2da63ef8262f0e data\steveparty\loot_table\blocks\yellow_switcher_block.json
 216c1245e21015ba1aee4b6a344ec585232ba12e data\steveparty\loot_table\blocks\cyan_switcher_block.json
 96ab3cc6a4b423d8379b11a3dc77e8b6a347c51d data\steveparty\loot_table\blocks\goal_pole.json
+026d81eec1534f8de28c46ce446cff5eeb96d4b1 data\steveparty\loot_table\blocks\looting_box.json
 7ee3c4dd2ba09a3ddb32eecc4579509d2971aac9 data\steveparty\loot_table\blocks\purple_switcher_block.json
 4149868bc07c32d73c7f0e91302eb0d5f4f458b7 data\steveparty\loot_table\blocks\gray_switcher_block.json

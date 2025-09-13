@@ -4,16 +4,20 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
+import fr.lordfinn.steveparty.components.TripleJumpComponent;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.*;
+import fr.lordfinn.steveparty.utils.TripleJumpHandler;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookItem.handleHereWeComeBookPayload;
 import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem.handleHereWeGoBookPayload;
+import static fr.lordfinn.steveparty.utils.TripleJumpHandler.getTripleJumpComponent;
 
 public class ModPayloads {
     public static final Identifier ARROW_PARTICLES_PAYLOAD = Steveparty.id("arrow-particles");
@@ -30,7 +34,7 @@ public class ModPayloads {
     public static final Identifier GOAL_POLE_BASE_PAYLOAD = Steveparty.id("goal-pole-base-payload");
     public static final Identifier GOAL_POLE_PAYLOAD = Steveparty.id("goal-pole-payload");
     public static final Identifier FLOATING_TEXT_PAYLOAD = Steveparty.id("floating-text-payload");
-
+    public static final Identifier TRIPLE_JUMP_PAYLOAD = Steveparty.id("triple-jump-payload");
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
@@ -47,6 +51,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPolePayload.ID, GoalPolePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(TripleJumpPayload.ID, TripleJumpPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -92,6 +97,8 @@ public class ModPayloads {
                 }
             });
         });
+
+        TripleJumpHandler.register();
     }
 
 }
