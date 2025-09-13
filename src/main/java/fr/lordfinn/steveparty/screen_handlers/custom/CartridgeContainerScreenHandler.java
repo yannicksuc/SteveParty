@@ -40,40 +40,6 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
         return this.inventory.canPlayerUse(player);
     }
 
-    // Custom slot class that only allows certain items
-    protected static class CustomSlot extends Slot {
-        public CustomSlot(Inventory inventory, int index, int x, int y) {
-            super(inventory, index, x, y);
-        }
-
-        @Override
-        public boolean canInsert(ItemStack stack) {
-            if (this.hasStack())
-                return false;
-            if (stack.isEmpty()) {
-                return true;
-            }
-            return isAllowedItem(stack) && stack.getCount() == 1;
-        }
-
-        @Override
-        public int getMaxItemCount(ItemStack stack) {
-            return 1;
-        }
-
-        @Override
-        public void setStack(ItemStack stack) {
-            if (this.hasStack())
-                return;
-            // Ensure that only one item can be in the slot.
-            if (!stack.isEmpty() && stack.getCount() > 1) {
-                stack.setCount(1);
-            }
-            super.setStack(stack);
-        }
-    }
-
-
     // Shift + Player Inv Slot
     @Override
     public ItemStack quickMove(PlayerEntity player, int invSlot) {
@@ -99,10 +65,6 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
         }
 
         return newStack;
-    }
-
-    private static boolean isAllowedItem(ItemStack originalStack) {
-        return originalStack.getItem() instanceof CartridgeItem;
     }
 
     @Override
