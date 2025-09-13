@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "steveparty:block/looting_box" }
+    "activated=true": { "model": "steveparty:block/looting_box" },
+    "activated=false": { "model": "steveparty:block/deactivated_box" }
   }
 }
