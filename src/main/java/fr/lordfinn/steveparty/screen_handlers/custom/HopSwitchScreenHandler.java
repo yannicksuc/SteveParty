@@ -36,7 +36,7 @@ public class HopSwitchScreenHandler extends CartridgeContainerScreenHandler {
 
     @Override
     public void setupScreen() {
-        this.addSlot(new CustomSlot(this.inventory, 0, 52, 14));
+        this.addSlot(new CartridgeCustomSlot(this.inventory, 0, 52, 14));
     }
 
     public int getModeInt() {

@@ -25,7 +25,7 @@ public class TileScreenHandler extends CartridgeContainerScreenHandler {
         if (this.inventory.size() == 16) {
             for (m = 0; m < 4; ++m) {
                 for (l = 0; l < 4; ++l) {
-                    this.addSlot(new CustomSlot(this.inventory, l + m * 4, 53 + l * 18, 12 + m * 18));
+                    this.addSlot(new CartridgeCustomSlot(this.inventory, l + m * 4, 53 + l * 18, 12 + m * 18));
                 }
             }
         }

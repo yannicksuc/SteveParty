@@ -16,6 +16,6 @@ public class RouterScreenHandler extends CartridgeContainerScreenHandler {
 
     @Override
     public void setupScreen() {
-        this.addSlot(new CustomSlot(inventory, 0, 62, 16));
+        this.addSlot(new CartridgeCustomSlot(inventory, 0, 62, 16));
     }
 }
