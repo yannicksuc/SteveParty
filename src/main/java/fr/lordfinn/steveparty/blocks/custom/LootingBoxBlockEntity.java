@@ -15,9 +15,15 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static net.minecraft.text.Text.literal;
+
 public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     private int repeatTime = 1; // Number of time you can hit the block for cooldown
     private int cooldownTime = 60; // (3sec by default)
+    private static final Map<PlayerEntity, Boolean> playerJumpState = new HashMap<>();
 
     public LootingBoxBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LOOTING_BOX_ENTITY, pos, state, 1);
@@ -70,4 +76,16 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     public void setRepeatTime(int repeatTime) {
         this.repeatTime = repeatTime;
     }
+
+    public void trigger(ServerPlayerEntity player) {
+        boolean state = playerJumpState.getOrDefault(player, false);
+        if (!state) {
+            player.sendMessage(literal("Bravo t'as touché"), false);
+            playerJumpState.put(player, true);
+        }
+    }
+
+    public static void enableTriggering(ServerPlayerEntity player) {
+        playerJumpState.put(player, false);
+     }
 }
