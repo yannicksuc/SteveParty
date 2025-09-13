@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock;
 import fr.lordfinn.steveparty.commands.MoveTokenCommand;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
@@ -17,11 +18,14 @@ import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.service.VillagerBlockSpawnListener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.JumpTracker;
 import fr.lordfinn.steveparty.utils.ServerNetworking;
 import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +63,12 @@ public class Steveparty implements ModInitializer {
         new TokenMovementService();
 
         VillagerBlockSpawnListener.registerChatListener();
+
+        ServerTickEvents.END_WORLD_TICK.register(world -> {
+            for (ServerPlayerEntity player : world.getPlayers()) {
+                LootingBoxBlock.testForCollision(player);
+            }
+        });
     }
 
     private void onServerStopped(MinecraftServer minecraftServer) {

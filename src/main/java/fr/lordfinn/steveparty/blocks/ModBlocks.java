@@ -179,6 +179,13 @@ public class ModBlocks {
                     .requiresTool(),
             "goal_pole", true);
 
+    public static final Block LOOTING_BOX  = register(LootingBoxBlock::new,
+            Block.Settings.create()
+                    .strength(2.0f, 4.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
+            "looting_box", true);
+
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {

@@ -24,5 +24,6 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
             addDrop(switcher);
         addDrop(ModBlocks.GOAL_POLE_BASE);
         addDrop(ModBlocks.GOAL_POLE);
+        addDrop(ModBlocks.LOOTING_BOX);
     }
 }

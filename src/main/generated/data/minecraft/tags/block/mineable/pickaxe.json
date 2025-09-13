@@ -9,6 +9,7 @@
     "steveparty:step_controller",
     "steveparty:board_space_redstone_router",
     "steveparty:stencil_maker",
-    "steveparty:hop_switch"
+    "steveparty:hop_switch",
+    "steveparty:looting_box"
   ]
 }

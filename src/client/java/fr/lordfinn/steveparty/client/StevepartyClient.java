@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client;
 
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -17,17 +18,22 @@ import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
+import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
 import fr.lordfinn.steveparty.client.screens.*;
 import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.TripleJumpShoesItem;
 import fr.lordfinn.steveparty.particles.ModParticles;
+import fr.lordfinn.steveparty.payloads.ModPayloads;
+import fr.lordfinn.steveparty.payloads.custom.TripleJumpPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.*;
 import net.minecraft.client.MinecraftClient;
@@ -38,22 +44,31 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
+import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.entity.state.BipedEntityRenderState;
+import net.minecraft.client.render.item.BuiltinModelItemRenderer;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.equipment.EquipmentModel;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.TILE;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.TRADING_STALL;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR1;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR2;
+import static fr.lordfinn.steveparty.items.ModItems.TRIPLE_JUMP_SHOES;
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.*;
 import static fr.lordfinn.steveparty.utils.MessageUtils.getColorFromText;
 import static fr.lordfinn.steveparty.utils.WoolColorsUtils.*;
@@ -133,6 +148,23 @@ public class StevepartyClient implements ClientModInitializer {
 
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
+        TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
+            private TripleJumpShoesRenderer renderer;
+
+            @Override
+            public <E extends LivingEntity, S extends BipedEntityRenderState>
+            BipedEntityModel<?> getGeoArmorRenderer(@Nullable E entity,
+                                                    ItemStack stack,
+                                                    EquipmentSlot slot,
+                                                    EquipmentModel.LayerType type,
+                                                    BipedEntityModel<S> original) {
+                if (this.renderer == null) {
+                    this.renderer = new TripleJumpShoesRenderer();
+                }
+                return this.renderer;
+            }
+        });
+
     }
 
     private static void initBlockEntitiesRenderers() {
@@ -195,11 +227,13 @@ public class StevepartyClient implements ClientModInitializer {
 
     }
 
+
     private static void initParticleRenderers() {
         FloatingTextRenderer.registerRenderCallback();
     }
 
     private static boolean lastPressed = false;
+    private static boolean lastJumpPressed = false;
 
     public static void tick() {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -214,6 +248,12 @@ public class StevepartyClient implements ClientModInitializer {
             }
         }
         lastPressed = isPressed;
+
+        boolean jumpPressed = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_SPACE) == GLFW.GLFW_PRESS;
+        if (jumpPressed && !lastJumpPressed) {
+            ClientPlayNetworking.send(new TripleJumpPayload());
+        }
+        lastJumpPressed = jumpPressed;
     }
 
 }
