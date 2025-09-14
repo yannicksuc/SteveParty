@@ -116,7 +116,8 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         DestinationsComponent component = getBoardSpaceBehaviorComponent(stack);
         Entity holder = stack.getHolder();
-        List<BoardSpaceDestination> tileDestinations = getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
+        List<BoardSpaceDestination> tileDestinations =
+                getDestinationsStatus(component.destinations(), holder == null ? null : holder.getWorld());
 
         if (!tileDestinations.isEmpty()) {
             addTooltipHeading(tooltip, component);
@@ -126,23 +127,26 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
         }
     }
 
-    private void addTooltipHeading(List<Text> tooltip, DestinationsComponent component) {
-        tooltip.add(Text.literal("Bound to: ").setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true))
-                .append(Text.literal(component.world()).setStyle(Style.EMPTY.withColor(Formatting.WHITE).withBold(false))));
-        tooltip.add(Text.literal("Destinations:")
-                .setStyle(Style.EMPTY.withColor(Formatting.AQUA).withBold(true)));
+    protected void addTooltipHeading(List<Text> tooltip, DestinationsComponent component) {
+        tooltip.add(Text.translatable("tooltip.steveparty.bound_to")
+                .setStyle(Style.EMPTY.withColor(0xb91e8c).withBold(true))
+                .append(Text.literal(component.world())
+                        .setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
+        tooltip.add(Text.translatable("tooltip.steveparty.destinations")
+                .setStyle(Style.EMPTY.withColor(0xEA528E).withBold(true)));
     }
 
-    private void addDestinationsToTooltip(List<Text> tooltip, List<BoardSpaceDestination> tileDestinations) {
+    protected void addDestinationsToTooltip(List<Text> tooltip, List<BoardSpaceDestination> tileDestinations) {
         for (BoardSpaceDestination destination : tileDestinations) {
             BlockPos pos = destination.position();
-            tooltip.add(Text.literal(String.format("  - (%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ()))
+            tooltip.add(Text.translatable("tooltip.steveparty.destination_entry",
+                            pos.getX(), pos.getY(), pos.getZ())
                     .setStyle(Style.EMPTY.withColor(Formatting.WHITE)));
         }
     }
 
-    private void addNoDestinationsMessage(List<Text> tooltip) {
-        tooltip.add(Text.literal("No destinations set.")
+    protected void addNoDestinationsMessage(List<Text> tooltip) {
+        tooltip.add(Text.translatable("tooltip.steveparty.no_destinations")
                 .setStyle(Style.EMPTY.withColor(Formatting.RED).withItalic(true)));
     }
 }

@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.LootingBoxScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -15,6 +16,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -33,10 +35,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.ACTIVATED;
 import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.TRIGGERED;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
-public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload>, GeoBlockEntity {
+public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload>, GeoBlockEntity, TickableBlockEntity {
 
     // -------------------------
     // Constants
@@ -49,9 +52,13 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     // -------------------------
     // Fields
     // -------------------------
-    private int repeatTime = 1;      // Number of times block can be hit during cooldown
+    private int repeatTime = 2;      // Number of times block can be hit during cooldown
     private int cooldownTime = 60;   // Default 3 seconds
     private int cycleIndex = 0;
+
+    private int cooldownTicks = 0;
+
+    private int hitsRemaining;    // Tracks punches left before cooldown
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     // -------------------------
@@ -59,6 +66,7 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     // -------------------------
     public LootingBoxBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LOOTING_BOX_ENTITY, pos, state, 1);
+        resetHitsRemaining();
     }
 
     // -------------------------
@@ -83,6 +91,25 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     public void triggerAnim(@Nullable String controllerName, String animName) {
         if (world.isClient) {
             world.setBlockState(pos, this.getCachedState().with(TRIGGERED, true));
+
+            int particleCount = 8;
+            double speed = 20; // adjust for how fast particles fly out
+
+            for (int i = 0; i < particleCount; i++) {
+                double angle = 2 * Math.PI * i / particleCount; // evenly spaced around circle
+                double dx = Math.cos(angle) * speed;
+                double dz = Math.sin(angle) * speed;
+
+                world.addParticle(
+                        ParticleTypes.WAX_OFF,
+                        pos.getX() + 0.5 + dx * 0.05,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5 + dz * 0.05,
+                        dx,
+                        0,   // no vertical motion
+                        dz
+                );
+            }
         }
         GeoBlockEntity.super.triggerAnim(controllerName, animName);
     }
@@ -148,15 +175,33 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     // Player Interaction
     // -------------------------
     public void onPlayerInteract(ServerPlayerEntity player) {
+        if (world.isClient) return;
+        if (!getCachedState().get(ACTIVATED)) return;
+
         boolean playerJumpState = playerJumpStates.getOrDefault(player, false);
         if (!playerJumpState && processInventoryAction()) {
+
+            // Trigger animation & particles
             triggerAnim("main", "punched");
-            world.scheduleBlockTick(pos, this.getCachedState().getBlock(), 18);
-            world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_ADD_ITEM, SoundCategory.BLOCKS, 1.0f, 1.0f);
+
+            // Play sounds
             world.playSound(null, pos, ModSounds.POP_SOUND_EVENT, SoundCategory.BLOCKS, 0.8f, 1.3f);
+            world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_STEP, SoundCategory.BLOCKS, 1f, 0.5f);
+
+            // Register player's jump state
             playerJumpStates.put(player, true);
+
+            // Reduce remaining punches
+            hitsRemaining--;
+
+            if (hitsRemaining <= 0) {
+                world.setBlockState(pos, this.getCachedState().with(ACTIVATED, false).with(TRIGGERED, true));
+                cooldownTicks = cooldownTime;
+            }
+            world.scheduleBlockTick(pos, this.getCachedState().getBlock(), 14);
         }
     }
+
 
     public static void resetPlayerInteractionState(ServerPlayerEntity player) {
         playerJumpStates.put(player, false);
@@ -226,5 +271,20 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
             }
         }
         return false;
+    }
+
+    public void resetHitsRemaining() {
+        hitsRemaining = getRepeatTime();
+    }
+
+    @Override
+    public void tick() {
+        if (cooldownTicks > 0) {
+            cooldownTicks--;
+            if (cooldownTicks <= 0) {
+                world.setBlockState(pos, this.getCachedState().with(ACTIVATED, true).with(TRIGGERED, false));
+                resetHitsRemaining();
+            }
+        }
     }
 }

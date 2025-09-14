@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock;
 import fr.lordfinn.steveparty.blocks.custom.LootingBoxBlockEntity;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
@@ -16,6 +18,10 @@ public class LootingBoxBlockEntityRenderer extends GeoBlockRenderer<LootingBoxBl
     @Override
     public void render(LootingBoxBlockEntity animatable, float partialTick, MatrixStack poseStack, VertexConsumerProvider bufferSource, int packedLight, int packedOverlay) {
         //int light = 0xF000F0;
+        BlockState state = animatable.getCachedState();
+        if (!state.get(LootingBoxBlock.ACTIVATED) && !state.get(LootingBoxBlock.TRIGGERED)) {
+            return;
+        }
         super.render(animatable, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
     }
 }
