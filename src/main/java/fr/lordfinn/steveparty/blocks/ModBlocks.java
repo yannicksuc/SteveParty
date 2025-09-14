@@ -183,6 +183,8 @@ public class ModBlocks {
             Block.Settings.create()
                     .strength(2.0f, 4.0f)
                     .sounds(BlockSoundGroup.METAL)
+                    .nonOpaque()
+                    .notSolid()
                     .requiresTool(),
             "looting_box", true);
 

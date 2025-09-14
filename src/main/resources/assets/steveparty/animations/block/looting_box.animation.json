@@ -1,0 +1,50 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"punched": {
+			"animation_length": 0.4167,
+			"bones": {
+				"cube": {
+					"position": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"0.125": {
+							"vector": [0, 4, 0]
+						},
+						"0.2083": {
+							"vector": [0, 4.5, 0]
+						},
+						"0.3333": {
+							"vector": [0, -3, 0]
+						},
+						"0.4167": {
+							"vector": [0, 0, 0]
+						}
+					},
+					"scale": {
+						"0.0": {
+							"vector": [1, 1, 1]
+						},
+						"0.125": {
+							"vector": [1.3, 0.7, 1.3]
+						},
+						"0.2083": {
+							"vector": [1.4, 0.6, 1.4]
+						},
+						"0.3333": {
+							"vector": [1, 1.3, 1]
+						},
+						"0.4167": {
+							"vector": [1, 1, 1]
+						}
+					}
+				}
+			}
+		},
+		"idle": {
+			"loop": true
+		}
+	},
+	"geckolib_format_version": 2
+}
