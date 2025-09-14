@@ -31,7 +31,7 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
 
     public LootingBoxBlock(Settings settings) {
         super(settings);
-        this.setDefaultState(this.stateManager.getDefaultState().with(ACTIVATED, true).with(TRIGGERED, false));
+        this.setDefaultState(this.stateManager.getDefaultState().with(ACTIVATED, false).with(TRIGGERED, false));
     }
 
     @Override
@@ -53,15 +53,25 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         builder.add(ACTIVATED, TRIGGERED);
     }
-
     @Override
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-         if (world != null && world.isClient) {
+        if (state.getBlock() != newState.getBlock()) {
+            // Clean up the block entity when the block is destroyed/replaced
+            if (!world.isClient) {
+                world.removeBlockEntity(pos);
+            }
+            super.onStateReplaced(state, world, pos, newState, moved);
+            return;
+        }
+
+        // Client-side animation trigger
+        if (world.isClient) {
             if (newState.get(TRIGGERED) && !state.get(TRIGGERED) && world.getBlockEntity(pos) instanceof LootingBoxBlockEntity lootingBox) {
                 lootingBox.triggerAnim("main", "punched");
             }
         }
     }
+
 
     @Override
     protected MapCodec<? extends HorizontalFacingBlock> getCodec() {
@@ -84,7 +94,7 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
     }
     @Override
     protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        return ActionResult.PASS;
+        return ActionResult.FAIL;
     }
 
     @Override

@@ -188,6 +188,13 @@ public class ModBlocks {
                     .requiresTool(),
             "looting_box", true);
 
+    public static final Block POLISHED_TERRACOTTA = register(Block::new,
+            Block.Settings.create()
+                    .strength(1.25f, 4.2f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .requiresTool(),
+            "polished_terracotta", true);
+
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {

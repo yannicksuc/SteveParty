@@ -87,16 +87,23 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
 
     public void steveparty$setTokenized(boolean tokenized) {
         MobEntity mob = (MobEntity) (Object) this;
-        mob.setAiDisabled(tokenized);
-        mob.clearGoalsAndTasks();
-        mob.setInvulnerable(tokenized);
         if (tokenized) {
+            mob.setAiDisabled(true);
             mob.clearGoalsAndTasks();
             mob.setTarget(null);
+            mob.setInvulnerable(true);
+        } else {
+            mob.setAiDisabled(false);
+            mob.setInvulnerable(false);
+            // Restaure les AI goals vanilla
+            this.initGoals();
         }
         mob.setCustomNameVisible(tokenized);
         this.dataTracker.set(TOKENIZED, tokenized);
     }
+
+    @Shadow
+    protected abstract void initGoals();
 
     public int steveparty$getStatus() {
         return this.dataTracker.get(TOKEN_STATUS);

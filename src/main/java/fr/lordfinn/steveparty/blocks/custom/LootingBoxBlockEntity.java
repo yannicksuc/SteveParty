@@ -286,5 +286,21 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
                 resetHitsRemaining();
             }
         }
+
+        ItemStack stack = getStack(0);
+        boolean hasItems = false;
+        if (stack instanceof ItemStack itemStack &&
+                itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory) {
+            hasItems = cartridgeInventory.getItems().stream().anyMatch(s -> !s.isEmpty());
+        }
+
+        if (!hasItems && getCachedState().get(ACTIVATED)) {
+            world.setBlockState(pos, this.getCachedState().with(ACTIVATED, false));
+        }
+
+        if (hasItems && !getCachedState().get(ACTIVATED) && cooldownTicks <= 0) {
+            world.setBlockState(pos, this.getCachedState().with(ACTIVATED, true));
+            resetHitsRemaining();
+        }
     }
 }
