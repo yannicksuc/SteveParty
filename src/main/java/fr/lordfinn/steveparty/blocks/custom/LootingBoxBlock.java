@@ -17,6 +17,8 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,9 +26,22 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
     public static final Property<Boolean> ACTIVATED = BooleanProperty.of("activated");
     public static final Property<Boolean> TRIGGERED = BooleanProperty.of("triggered");
 
+    public static final VoxelShape COLLISION_SHAPE = Block.createCuboidShape(0, 2, 0, 16, 16, 16);
+    public static final VoxelShape RENDER_SHAPE = Block.createCuboidShape(0, 0, 0, 16, 16, 16);
+
     public LootingBoxBlock(Settings settings) {
         super(settings);
         this.setDefaultState(this.stateManager.getDefaultState().with(ACTIVATED, true).with(TRIGGERED, false));
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return COLLISION_SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return RENDER_SHAPE;
     }
 
     @Override
@@ -74,13 +89,15 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
 
     @Override
     protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        if (state.get(TRIGGERED) && !world.isClient)
+        if (world.isClient) return;
+
+        if (state.get(TRIGGERED)) {
             world.setBlockState(pos, state.with(TRIGGERED, false), Block.NOTIFY_ALL);
+        }
     }
 
     @Override
     public @Nullable LootingBoxBlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new LootingBoxBlockEntity(pos, state);
     }
-
 }
