@@ -21,8 +21,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-import static net.minecraft.util.ActionResult.PASS;
-import static net.minecraft.util.ActionResult.SUCCESS;
+import static net.minecraft.util.ActionResult.*;
 
 public abstract class CartridgeContainer extends HorizontalFacingBlock implements BlockEntityProvider {
     protected CartridgeContainer(Settings settings) {
@@ -59,7 +58,7 @@ public abstract class CartridgeContainer extends HorizontalFacingBlock implement
         }
         ActionResult.Success success = openScreen(state, world, pos, player);
         if (success != null) return success;
-        return PASS;
+        return FAIL;
     }
 
     protected ActionResult.@Nullable Success openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {

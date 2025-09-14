@@ -38,7 +38,8 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.BOARD_SPACE_REDSTONE_ROUTER,
                         ModBlocks.STENCIL_MAKER,
                         ModBlocks.HOP_SWITCH,
-                        ModBlocks.LOOTING_BOX
+                        ModBlocks.LOOTING_BOX,
+                        ModBlocks.POLISHED_TERRACOTTA
                 );
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(

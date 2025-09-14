@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "fabric:type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GPG",
+    "GCG",
+    "GAG"
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "C": "minecraft:chest",
+    "A": "minecraft:amethyst_shard",
+    "P": "steveparty:polished_terracotta"
+  },
+  "result": {
+    "id": "steveparty:looting_box"
+  }
+}

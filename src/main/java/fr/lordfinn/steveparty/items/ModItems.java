@@ -128,6 +128,7 @@ public class ModItems {
             itemGroup.add(GOAL_POLE);
             itemGroup.add(FLAG);
             itemGroup.add(TRIPLE_JUMP_SHOES);
+            itemGroup.add(POLISHED_TERRACOTTA);
             itemGroup.add(LOOTING_BOX);
         });
     }
