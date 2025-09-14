@@ -2,10 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.HorizontalFacingBlock;
+import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -23,19 +20,32 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-import static net.minecraft.text.Text.literal;
-
 public class LootingBoxBlock extends CartridgeContainer implements BlockEntityProvider {
     public static final Property<Boolean> ACTIVATED = BooleanProperty.of("activated");
+    public static final Property<Boolean> TRIGGERED = BooleanProperty.of("triggered");
 
     public LootingBoxBlock(Settings settings) {
         super(settings);
-        this.setDefaultState(this.stateManager.getDefaultState().with(ACTIVATED, true));
+        this.setDefaultState(this.stateManager.getDefaultState().with(ACTIVATED, true).with(TRIGGERED, false));
+    }
+
+    @Override
+    public BlockRenderType getRenderType(BlockState state) {
+        return BlockRenderType.MODEL;
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(ACTIVATED);
+        builder.add(ACTIVATED, TRIGGERED);
+    }
+
+    @Override
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+         if (world != null && world.isClient) {
+            if (newState.get(TRIGGERED) && !state.get(TRIGGERED) && world.getBlockEntity(pos) instanceof LootingBoxBlockEntity lootingBox) {
+                lootingBox.triggerAnim("main", "punched");
+            }
+        }
     }
 
     @Override
@@ -45,7 +55,7 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
 
     public static void testForCollision(ServerPlayerEntity player) {
         if (player.isOnGround()) {
-            LootingBoxBlockEntity.enableTriggering(player);
+            LootingBoxBlockEntity.resetPlayerInteractionState(player);
             return;
         }
         double playerHeight =  player.getBoundingBox().maxY + 0.2f;
@@ -54,14 +64,8 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
             BlockEntity blockentity = player.getWorld()
                     .getBlockEntity(headPosBlock);
         if (blockentity instanceof LootingBoxBlockEntity lootBox) {
-            lootBox.trigger(player);
+            lootBox.onPlayerInteract(player);
         }
-    }
-
-    @Override
-    protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
-        super.onBlockAdded(state, world, pos, oldState, notify);
-        world.scheduleBlockTick(pos, this, 1);
     }
     @Override
     protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
@@ -70,12 +74,13 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
 
     @Override
     protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-
-        world.scheduleBlockTick(pos, this, 1);
+        if (state.get(TRIGGERED) && !world.isClient)
+            world.setBlockState(pos, state.with(TRIGGERED, false), Block.NOTIFY_ALL);
     }
 
     @Override
     public @Nullable LootingBoxBlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new LootingBoxBlockEntity(pos, state);
     }
+
 }

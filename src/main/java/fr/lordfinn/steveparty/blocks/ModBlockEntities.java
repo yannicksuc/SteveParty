@@ -83,7 +83,7 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "goal_pole_entity"),
             FabricBlockEntityTypeBuilder.create(GoalPoleBlockEntity::new, ModBlocks.GOAL_POLE).build(null)
     );
-    public static final BlockEntityType<?> LOOTING_BOX_ENTITY = Registry.register(
+    public static final BlockEntityType<LootingBoxBlockEntity> LOOTING_BOX_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "looting_box_entity"),
             FabricBlockEntityTypeBuilder.create(LootingBoxBlockEntity::new, ModBlocks.LOOTING_BOX).build(null)
