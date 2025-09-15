@@ -12,7 +12,7 @@ import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.model.data.EntityModelData;
 import software.bernie.geckolib.renderer.GeoRenderer;
 
-public class DiceModel extends GeoModel<DiceEntity> {
+public class DiceEntityModel extends GeoModel<DiceEntity> {
     @Override
     public Identifier getModelResource(DiceEntity diceEntity, @Nullable GeoRenderer<DiceEntity> geoRenderer) {
         return Steveparty.id("geo/entity/dice.geo.json");

@@ -7,10 +7,10 @@ import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.util.Identifier;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
-public class DiceRenderer extends GeoEntityRenderer<DiceEntity> {
+public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
     private int fakeValue = -999999;
-    public DiceRenderer(EntityRendererFactory.Context renderManager) {
-        super(renderManager, new DiceModel());
+    public DiceEntityRenderer(EntityRendererFactory.Context renderManager) {
+        super(renderManager, new DiceEntityModel());
     }
 
     @Override

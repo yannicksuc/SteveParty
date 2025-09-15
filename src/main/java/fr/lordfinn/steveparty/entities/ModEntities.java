@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -40,9 +41,20 @@ public class ModEntities {
                     .build(DIRECTION_DISPLAY_ENTITY_KEY)
     );
 
+    public static final RegistryKey<EntityType<?>> MULA_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mula"));
+    public static final EntityType<? extends MulaEntity> MULA_ENTITY = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("mula"),
+            EntityType.Builder
+                    .create(MulaEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.5f, 0.5f)
+                    .makeFireImmune()
+                    .build(MULA_ENTITY_KEY)
+    );
+
     public static void initialize() {
         //FabricDefaultAttributeRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
     }
 }
