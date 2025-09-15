@@ -179,7 +179,7 @@ public class ModBlocks {
                     .requiresTool(),
             "goal_pole", true);
 
-    public static final Block LOOTING_BOX  = register(LootingBoxBlock::new,
+    public static final Block LOOTING_BOX = register(LootingBoxBlock::new,
             Block.Settings.create()
                     .strength(2.0f, 4.0f)
                     .sounds(BlockSoundGroup.METAL)
@@ -194,6 +194,14 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.STONE)
                     .requiresTool(),
             "polished_terracotta", true);
+
+    public static final Block BLUE_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                    .luminance(state -> 10)
+                    .nonOpaque(),
+            "blue_star_fragments_block", true);
 
 
     @SuppressWarnings({"unused", "SameParameterValue"})

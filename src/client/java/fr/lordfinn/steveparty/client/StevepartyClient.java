@@ -1,14 +1,14 @@
 package fr.lordfinn.steveparty.client;
 
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.blockentity.*;
 import fr.lordfinn.steveparty.client.debug.RecipeExporter;
 import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
-import fr.lordfinn.steveparty.client.entity.DiceRenderer;
+import fr.lordfinn.steveparty.client.entity.DiceEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
+import fr.lordfinn.steveparty.client.entity.MulaEntityRenderer;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
@@ -25,9 +25,7 @@ import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.items.custom.TripleJumpShoesItem;
 import fr.lordfinn.steveparty.particles.ModParticles;
-import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.payloads.custom.TripleJumpPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
@@ -41,31 +39,24 @@ import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.color.item.ItemColorProvider;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.client.render.entity.state.BipedEntityRenderState;
-import net.minecraft.client.render.item.BuiltinModelItemRenderer;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.equipment.EquipmentModel;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 
-import static fr.lordfinn.steveparty.blocks.ModBlocks.TILE;
-import static fr.lordfinn.steveparty.blocks.ModBlocks.TRADING_STALL;
+import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR1;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR2;
 import static fr.lordfinn.steveparty.items.ModItems.TRIPLE_JUMP_SHOES;
@@ -177,6 +168,8 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_MAKER_ENTITY, StencilMakerBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.LOOTING_BOX_ENTITY, LootingBoxBlockEntityRenderer::new);
 
+        BlockRenderLayerMap.INSTANCE.putBlock(BLUE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
+
         BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
         BlockEntityRendererFactories.register(ModBlockEntities.TRADING_STALL, TradingStallBlockEntityRenderer::new);
 
@@ -187,9 +180,12 @@ public class StevepartyClient implements ClientModInitializer {
     }
 
     private static void initEntitiesRenderers() {
-        EntityRendererRegistry.register(ModEntities.DICE_ENTITY, DiceRenderer::new);
+        EntityRendererRegistry.register(ModEntities.DICE_ENTITY, DiceEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
         EntityRendererRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
+        BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
+
     }
 
     private static void initParticles() {
