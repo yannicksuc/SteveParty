@@ -5,13 +5,17 @@ import fr.lordfinn.steveparty.blocks.custom.*;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
+import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
 import net.minecraft.block.*;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.RegistryKeys;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ModBlocks {
@@ -202,16 +206,32 @@ public class ModBlocks {
                     .luminance(state -> 10)
                     .nonOpaque(),
             "blue_star_fragments_block", true);
-
+    public static final Block GRAVITY_CORE = register(GravityCoreBlock::new,
+            Block.Settings.create()
+                    .strength(50.0f, 80000)
+                    .sounds(BlockSoundGroup.AMETHYST_CLUSTER)
+                    .nonOpaque()
+                    .luminance(state -> 15)
+                    .emissiveLighting((state, world, pos) -> true)
+                    .requiresTool(),
+            "gravity_core", true, EpicWithGlintBlockItem::new);
 
     @SuppressWarnings({"unused", "SameParameterValue"})
-    private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {
+    private static Block register(
+            Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem,
+            BiFunction<Block, Item.Settings, Item> blockItemFactory
+    ) {
         Identifier identifier = Steveparty.id(name);
         RegistryKey<Block> registryKey = RegistryKey.of(RegistryKeys.BLOCK, identifier);
 
         Block block = Blocks.register(registryKey, factory, settings);
-        Items.register(block);
+        Items.register(block, blockItemFactory);
         return block;
+    }
+
+    @SuppressWarnings({"unused", "SameParameterValue"})
+    private static Block register(Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem) {
+        return register(factory, settings, name, shouldRegisterItem, BlockItem::new);
     }
 
     public static void initialize() {

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_premium_dice_face_1": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:premium_dice_face_1"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:blank_dice_face_from_premium_dice_face_1_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_premium_dice_face_1"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:blank_dice_face_from_premium_dice_face_1_stonecutting"
+    ]
+  }
+}

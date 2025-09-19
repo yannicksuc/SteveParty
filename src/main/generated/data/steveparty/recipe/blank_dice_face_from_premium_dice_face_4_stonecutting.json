@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:premium_dice_face_4",
+  "result": {
+    "count": 1,
+    "id": "steveparty:blank_dice_face"
+  }
+}

@@ -22,6 +22,9 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
@@ -37,6 +40,7 @@ public class ModItems {
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
     public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
+    public static final List<Item> DICE_FACES = new ArrayList<>();
     public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
     public static final Item MINI_GAMES_CATALOGUE = register(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
@@ -47,8 +51,9 @@ public class ModItems {
     public static final Item SHOPKEEPER_KEY = register(ShopkeeperKeyItem.class, "shopkeeper_key");
     public static final Item FLAG = register(FlagItem.class, "flag");
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
-    public static final Item MULA_SPAWN_EGG = register(MulaItem.class, "mula_spawn_egg");
+    public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
     public static final Item BLUE_STAR_FRAGMENT = register(Item.class, "blue_star_fragment");
+    public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
 
 
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
@@ -81,6 +86,23 @@ public class ModItems {
         // Register the group.
         Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
 
+        //generates dices items face from 1 to 10
+        DICE_FACES.add(register(Item.class, "blank_dice_face"));
+
+        for (int i = 1; i <= 10; i++) {
+            DICE_FACES.add(register(Item.class, "dice_face_" + i));
+            DICE_FACES.add(register(Item.class, "premium_dice_face_" + i));
+            if (i <= 3)
+                DICE_FACES.add(register(Item.class, "cursed_dice_face_" + i));
+        }
+        DICE_FACES.sort(
+                (item1, item2) -> {
+                    String name1 = item1.getName().getString();
+                    String name2 = item2.getName().getString();
+                    return name1.compareTo(name2);
+                }
+        );
+
         // Register items to the custom item group.
         ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
             itemGroup.add(TILE);
@@ -100,6 +122,9 @@ public class ModItems {
             itemGroup.add(DEFAULT_DICE);
             itemGroup.add(DOUBLE_DICE);
             itemGroup.add(TRIPLE_DICE);
+            for (Item item : DICE_FACES) {
+                itemGroup.add(item);
+            }
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
@@ -134,6 +159,8 @@ public class ModItems {
             itemGroup.add(BLUE_STAR_FRAGMENTS_BLOCK);
             itemGroup.add(MULA_SPAWN_EGG);
             itemGroup.add(BLUE_STAR_FRAGMENT);
+            itemGroup.add(POWER_STAR);
+            itemGroup.add(GRAVITY_CORE);
         });
     }
 }

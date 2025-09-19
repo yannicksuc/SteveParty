@@ -39,7 +39,8 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.STENCIL_MAKER,
                         ModBlocks.HOP_SWITCH,
                         ModBlocks.LOOTING_BOX,
-                        ModBlocks.POLISHED_TERRACOTTA
+                        ModBlocks.POLISHED_TERRACOTTA,
+                        ModBlocks.GRAVITY_CORE
                 );
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
@@ -71,7 +72,8 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.STENCIL_MAKER
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_DIAMOND_TOOL)
-                .add(ModBlocks.TELEPORTATION_PAD);
+                .add(ModBlocks.TELEPORTATION_PAD)
+                .add(ModBlocks.GRAVITY_CORE);
         getOrCreateTagBuilder(BlockTags.CLIMBABLE)
                 .add(GOAL_POLE);
     }
