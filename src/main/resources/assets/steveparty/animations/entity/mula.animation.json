@@ -6,6 +6,9 @@
 			"animation_length": 8,
 			"bones": {
 				"body": {
+					"rotation": {
+						"vector": [0, 0, 0]
+					},
 					"position": {
 						"0.0": {
 							"post": {

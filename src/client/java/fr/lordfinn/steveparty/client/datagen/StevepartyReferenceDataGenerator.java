@@ -9,5 +9,7 @@ public class StevepartyReferenceDataGenerator implements DataGeneratorEntrypoint
         FabricDataGenerator.Pack pack = fabricDataGenerator.createPack();
         pack.addProvider(ModBlockLootTableProvider::new);
         pack.addProvider(StevepartyReferenceBlockTagProvider::new);
+        pack.addProvider(StevepartyReferenceItemTagProvider::new);
+        pack.addProvider(StevepartyRecipeProvider::new);
     }
 }

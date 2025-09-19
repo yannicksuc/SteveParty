@@ -1,0 +1,6 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "steveparty:item/dice_faces/premium_dice_face_5"
+  }
+}

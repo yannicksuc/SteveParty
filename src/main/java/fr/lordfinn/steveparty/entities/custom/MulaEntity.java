@@ -1,8 +1,9 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
+import fr.lordfinn.steveparty.entities.custom.goals.LumaHoverGoal;
+import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
 import net.minecraft.entity.*;
-import net.minecraft.entity.ai.goal.FlyGoal;
-import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.pathing.BirdNavigation;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -11,6 +12,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
@@ -30,6 +32,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
     public MulaEntity(EntityType<MulaEntity> entityType, World world) {
         super(entityType, world);
+        this.moveControl = new SimpleFlyingMoveControl(this, 10f);
+        this.setNoGravity(true);
     }
 
     @Override
@@ -39,15 +43,14 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(0, new FlyGoal(this, 1.0));
-        this.goalSelector.add(1, new FollowOwnerGoal(this, 0.3, 2, 20));
+        this.goalSelector.add(0, new LumaHoverGoal(this, 0.2, 1.5, 6.0));
+        this.goalSelector.add(1, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
         super.initGoals();
     }
 
     @Override
     protected EntityNavigation createNavigation(World world) {
-        this.navigation = new BirdNavigation(this, world);
-        return navigation;
+        return new BirdNavigation(this, world);
     }
 
     @Override
@@ -72,6 +75,29 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "fly", 10, this::flyAnimController));
         controllers.add(new AnimationController<>(this, "idle", 10, this::idleAnimController));
+    }
+
+    int tick = 0;
+    @Override
+    public void tick() {
+        super.tick();
+
+        if (this.getWorld().isClient) {
+            tick++;
+            if (tick % 5 == 0) {
+                double offsetX = (this.random.nextDouble() - 0.5) * 0.6;
+                double offsetY = this.random.nextDouble() * 0.8 + 0.2;
+                double offsetZ = (this.random.nextDouble() - 0.5) * 0.6;
+
+                this.getWorld().addParticle(
+                        ParticleTypes.WAX_OFF,
+                        this.getX() + offsetX,
+                        this.getY() + offsetY,
+                        this.getZ() + offsetZ,
+                        0, 0, 0
+                );
+            }
+        }
     }
 
     private PlayState idleAnimController(AnimationState<MulaEntity> event) {
@@ -108,4 +134,3 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
         return false;
     }
 }
-
