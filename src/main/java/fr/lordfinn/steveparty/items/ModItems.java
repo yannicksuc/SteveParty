@@ -161,6 +161,7 @@ public class ModItems {
             itemGroup.add(BLUE_STAR_FRAGMENT);
             itemGroup.add(POWER_STAR);
             itemGroup.add(GRAVITY_CORE);
+            itemGroup.add(DICE_FORGE);
         });
     }
 }

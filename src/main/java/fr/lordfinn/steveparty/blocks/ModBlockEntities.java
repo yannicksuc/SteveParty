@@ -88,6 +88,11 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "looting_box_entity"),
             FabricBlockEntityTypeBuilder.create(LootingBoxBlockEntity::new, ModBlocks.LOOTING_BOX).build(null)
     );
+    public static final BlockEntityType<DiceForgeBlockEntity> DICE_FORGE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "dice_forge_entity"),
+            FabricBlockEntityTypeBuilder.create(DiceForgeBlockEntity::new, ModBlocks.DICE_FORGE).build(null)
+    );
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

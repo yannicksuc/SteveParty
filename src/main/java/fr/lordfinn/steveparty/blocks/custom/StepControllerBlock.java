@@ -58,7 +58,7 @@ public class StepControllerBlock extends BlockWithEntity {
 
     @Override
     public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL; // vanilla JSON
+        return BlockRenderType.INVISIBLE;
     }
 
     @Override
