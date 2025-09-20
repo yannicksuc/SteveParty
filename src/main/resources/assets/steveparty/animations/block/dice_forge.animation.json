@@ -4,7 +4,6 @@
 		"idle": {
 			"loop": true,
 			"animation_length": 12,
-			"override_previous_animation": true,
 			"bones": {
 				"root": {
 					"rotation": {

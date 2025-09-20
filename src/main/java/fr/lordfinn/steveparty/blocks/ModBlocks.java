@@ -216,6 +216,13 @@ public class ModBlocks {
                     .requiresTool(),
             "gravity_core", true, EpicWithGlintBlockItem::new);
 
+    public static final Block DICE_FORGE = register(DiceForgeBlock::new,
+            Block.Settings.create()
+                    .strength(2.0f, 4.0f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .requiresTool(),
+            "dice_forge", true);
+
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(
             Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings, String name, boolean shouldRegisterItem,
