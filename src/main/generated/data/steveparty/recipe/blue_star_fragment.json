@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "steveparty:blue_star_fragments_block"
+  ],
+  "result": {
+    "count": 9,
+    "id": "steveparty:blue_star_fragment"
+  }
+}

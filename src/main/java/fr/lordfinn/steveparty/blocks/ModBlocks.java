@@ -203,9 +203,45 @@ public class ModBlocks {
             Block.Settings.create()
                     .strength(0.5f)
                     .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 10)
+                    .luminance(state -> 15)
                     .nonOpaque(),
             "blue_star_fragments_block", true);
+    public static final Block GREEN_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                    .luminance(state -> 15)
+                    .nonOpaque(),
+            "green_star_fragments_block", true);
+    public static final Block RED_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                    .luminance(state -> 15)
+                    .nonOpaque(),
+            "red_star_fragments_block", true);
+    public static final Block YELLOW_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                    .luminance(state -> 15)
+                    .nonOpaque(),
+            "yellow_star_fragments_block", true);
+    public static final Block PURPLE_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                    .luminance(state -> 15)
+                    .nonOpaque(),
+            "purple_star_fragments_block", true);
+    public static final Block BLACK_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
+            Block.Settings.create()
+                    .strength(0.5f)
+                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                    .luminance(state -> 15)
+                    .nonOpaque(),
+            "black_star_fragments_block", true);
+
     public static final Block GRAVITY_CORE = register(GravityCoreBlock::new,
             Block.Settings.create()
                     .strength(50.0f, 80000)

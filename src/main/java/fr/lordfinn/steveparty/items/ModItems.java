@@ -53,9 +53,12 @@ public class ModItems {
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
     public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
     public static final Item BLUE_STAR_FRAGMENT = register(Item.class, "blue_star_fragment");
+    public static final Item PURPLE_STAR_FRAGMENT = register(Item.class, "purple_star_fragment");
+    public static final Item RED_STAR_FRAGMENT = register(Item.class, "red_star_fragment");
+    public static final Item YELLOW_STAR_FRAGMENT = register(Item.class, "yellow_star_fragment");
+    public static final Item GREEN_STAR_FRAGMENT = register(Item.class, "green_star_fragment");
+    public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
-
-
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(PARTY_CONTROLLER))
@@ -119,12 +122,6 @@ public class ModItems {
             itemGroup.add(TELEPORTATION_PAD);
             itemGroup.add(HERE_WE_GO_BOOK);
             itemGroup.add(HERE_WE_COME_BOOK);
-            itemGroup.add(DEFAULT_DICE);
-            itemGroup.add(DOUBLE_DICE);
-            itemGroup.add(TRIPLE_DICE);
-            for (Item item : DICE_FACES) {
-                itemGroup.add(item);
-            }
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
@@ -156,12 +153,28 @@ public class ModItems {
             itemGroup.add(TRIPLE_JUMP_SHOES);
             itemGroup.add(POLISHED_TERRACOTTA);
             itemGroup.add(LOOTING_BOX);
-            itemGroup.add(BLUE_STAR_FRAGMENTS_BLOCK);
             itemGroup.add(MULA_SPAWN_EGG);
+            itemGroup.add(BLUE_STAR_FRAGMENTS_BLOCK);
+            itemGroup.add(PURPLE_STAR_FRAGMENTS_BLOCK);
+            itemGroup.add(RED_STAR_FRAGMENTS_BLOCK);
+            itemGroup.add(YELLOW_STAR_FRAGMENTS_BLOCK);
+            itemGroup.add(GREEN_STAR_FRAGMENTS_BLOCK);
+            itemGroup.add(BLACK_STAR_FRAGMENTS_BLOCK);
             itemGroup.add(BLUE_STAR_FRAGMENT);
+            itemGroup.add(PURPLE_STAR_FRAGMENT);
+            itemGroup.add(RED_STAR_FRAGMENT);
+            itemGroup.add(YELLOW_STAR_FRAGMENT);
+            itemGroup.add(GREEN_STAR_FRAGMENT);
+            itemGroup.add(BLACK_STAR_FRAGMENT);
             itemGroup.add(POWER_STAR);
             itemGroup.add(GRAVITY_CORE);
             itemGroup.add(DICE_FORGE);
+            for (Item item : DICE_FACES) {
+                itemGroup.add(item);
+            }
+            itemGroup.add(DEFAULT_DICE);
+            itemGroup.add(DOUBLE_DICE);
+            itemGroup.add(TRIPLE_DICE);
         });
     }
 }
