@@ -1,0 +1,76 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_blue_star_fragment": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:blue_star_fragment"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_green_star_fragment": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:green_star_fragment"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_purple_star_fragment": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:purple_star_fragment"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_red_star_fragment": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:red_star_fragment"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:power_star_from_fragments"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_yellow_star_fragment": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:yellow_star_fragment"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_blue_star_fragment",
+      "has_green_star_fragment",
+      "has_yellow_star_fragment",
+      "has_red_star_fragment",
+      "has_purple_star_fragment"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:power_star_from_fragments"
+    ]
+  }
+}
