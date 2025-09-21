@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
@@ -28,6 +29,9 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
     private DefaultedList<ItemStack> inventory;
     private float rotationTicks  = 0f;
+    private long craftStartTime = -1L; // -1 = not crafting
+    private int craftTimeTotal = 100;  // ticks required to complete a craft
+    private boolean isCrafting = false;
 
     public DiceForgeBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DICE_FORGE_ENTITY, pos, state);
@@ -39,7 +43,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         if (!this.writeLootTable(nbt)) {
             Inventories.writeNbt(nbt, this.inventory, registries);
         }
-
+        nbt.putBoolean("IsCrafting", isCrafting);
+        nbt.putLong("CraftStartTime", craftStartTime);
     }
 
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
@@ -48,7 +53,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         if (!this.readLootTable(nbt)) {
             Inventories.readNbt(nbt, this.inventory, registries);
         }
-
+        this.isCrafting = nbt.getBoolean("IsCrafting");
+        this.craftStartTime = nbt.getLong("CraftStartTime");
     }
 
     public void activate() {
@@ -58,9 +64,27 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     @Override
     public void tick() {
         if (world.isClient) {
-            rotationTicks++; // must tick client-side for rendering
+            rotationTicks++; // client-side rotation for rendering
+            return;
+        }
+
+        // --- Server-side crafting logic ---
+        if (isCrafting) {
+            if (craftStartTime + craftTimeTotal < world.getTime() ) finishCraft();
+        } else {
+            startCrafting();
         }
     }
+
+    private void startCrafting() {
+        if (!isCrafting && hasRequiredPowerStar()) {
+            isCrafting = true;
+            craftStartTime = world.getTime();
+            consumePowerStar();
+            markDirty(); // sends update to client
+        }
+    }
+
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
@@ -97,8 +121,10 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     @Override
     public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        NbtCompound nbt = new NbtCompound();
+        NbtCompound nbt = super.toInitialChunkDataNbt(registries);
         Inventories.writeNbt(nbt, this.inventory, registries);
+        nbt.putBoolean("IsCrafting", isCrafting);
+        nbt.putLong("CraftStartTime", craftStartTime);
         return nbt;
     }
 
@@ -119,6 +145,71 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         sync();
     }
 
+    private boolean hasRequiredPowerStar() {
+        for (ItemStack stack : inventory) {
+            if (!stack.isEmpty() && stack.isOf(ModItems.POWER_STAR)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void consumePowerStar() {
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.get(i);
+            if (!stack.isEmpty() && stack.isOf(ModItems.POWER_STAR)) {
+                stack.decrement(1);
+                if (stack.isEmpty()) inventory.set(i, ItemStack.EMPTY);
+                markDirty();
+                return;
+            }
+        }
+    }
+
+    private void finishCraft() {
+        // Gather dice faces
+        DefaultedList<ItemStack> faces = DefaultedList.ofSize(27, ItemStack.EMPTY);
+        int count = 0;
+        for (ItemStack stack : inventory) {
+            if (!stack.isEmpty() && stack.getItem() != ModItems.POWER_STAR) {
+                faces.set(count++, stack);
+                if (count >= 6) break;
+            }
+        }
+
+        // Ensure 6 faces (duplicate if less)
+        while (count < 6) {
+            faces.set(count, faces.get(count % count).copy());
+            count++;
+        }
+
+        craftStartTime = -1;
+        isCrafting = false;
+
+        /*
+        // Remove used faces from inventory
+        int removed = 0;
+        for (int i = 0; i < inventory.size() && removed < 6; i++) {
+            ItemStack stack = inventory.get(i);
+            if (!stack.isEmpty() && stack != ModBlocks.POWER_STAR) {
+                inventory.set(i, ItemStack.EMPTY);
+                removed++;
+            }
+        }
+
+        // TODO: create the new dice item and place in output slot or drop
+        ItemStack newDice = new ItemStack(ModBlocks.CRAFTED_DICE); // replace with your item
+        // Try to insert in first empty slot
+        for (int i = 0; i < inventory.size(); i++) {
+            if (inventory.get(i).isEmpty()) {
+                inventory.set(i, newDice);
+                break;
+            }
+        }*/
+
+        markDirty();
+    }
+
     @Override
     protected ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
         return GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, this);
@@ -131,5 +222,17 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     public float getRotationTicks() {
         return rotationTicks;
+    }
+
+    public float getCraftProgress(float partialTick) {
+        if (!isCrafting || craftStartTime < 0) return 0f;
+
+        double currentTime = (world != null) ? world.getTime() + partialTick : 0;
+        float progress = (float) ((currentTime - craftStartTime) / craftTimeTotal);
+        return Math.min(1f, Math.max(0f, progress));
+    }
+
+    public boolean isCrafting() {
+        return isCrafting;
     }
 }

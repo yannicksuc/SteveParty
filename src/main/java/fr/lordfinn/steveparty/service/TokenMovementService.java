@@ -125,12 +125,17 @@ public class TokenMovementService {
                 Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName() != null ? mob.getCustomName() : mob.getName())
                 , MessageUtils.MessageType.ACTION_BAR);
 
-        List<BoardSpaceDestination> destinations = tileEntity.getStockedDestinations().stream().filter(BoardSpaceDestination::isTile).toList();
+        List<BoardSpaceDestination> destinations = tileEntity.getStockedDestinations()
+                .stream()
+                .filter(BoardSpaceDestination::isTile)
+                .toList();
+
         if (destinations.size() > 1) {
-            tileEntity.displayDestinations((ServerPlayerEntity) mob.getWorld().getPlayers().getFirst(), destinations);
+            if (!mob.getWorld().getPlayers().isEmpty()) {
+                tileEntity.displayDestinations((ServerPlayerEntity) mob.getWorld().getPlayers().get(0), destinations);
+            }
         } else if (destinations.size() == 1) {
-            BoardSpaceDestination destination = destinations.getFirst();
-            if (destination == null) return;
+            BoardSpaceDestination destination = destinations.get(0); // <-- FIXED
             moveEntity(mob, destination.position());
         }
     }

@@ -74,9 +74,16 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<GoalPoleScreenHandler> GOAL_POLE_SCREEN_HANDLER =
             register("goal_pole_screen_handler", GoalPoleScreenHandler::new, GoalPolePayload.CODEC);
 
-    public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
+    /*public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
             register("looting_box_screen_handler",
-            LootingBoxScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+            LootingBoxScreenHandler::new, BlockPosPayload.PACKET_CODEC);*/
+
+    public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
+            Registry.register(
+                    Registries.SCREEN_HANDLER,
+                    Steveparty.id("looting_box_screen_handler"),
+                    new ScreenHandlerType<>(LootingBoxScreenHandler::new, FeatureSet.empty())
+            );
 
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
