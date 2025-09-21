@@ -282,27 +282,30 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
 
     @Override
     public void tick() {
+        if (world.isClient) return; // <--- skip client
+
+        BlockState currentState = world.getBlockState(pos);
+
         if (cooldownTicks > 0) {
             cooldownTicks--;
             if (cooldownTicks <= 0) {
-                world.setBlockState(pos, this.getCachedState().with(ACTIVATED, true).with(TRIGGERED, false));
+                world.setBlockState(pos, currentState.with(ACTIVATED, true).with(TRIGGERED, false), Block.NOTIFY_ALL);
                 resetHitsRemaining();
             }
         }
 
         ItemStack stack = getStack(0);
         boolean hasItems = false;
-        if (stack instanceof ItemStack itemStack &&
-                itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory) {
+        if (stack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory) {
             hasItems = cartridgeInventory.getItems().stream().anyMatch(s -> !s.isEmpty());
         }
 
-        if (!hasItems && getCachedState().get(ACTIVATED)) {
-            world.setBlockState(pos, this.getCachedState().with(ACTIVATED, false));
+        if (!hasItems && currentState.get(ACTIVATED)) {
+            world.setBlockState(pos, currentState.with(ACTIVATED, false), Block.NOTIFY_ALL);
         }
 
-        if (hasItems && !getCachedState().get(ACTIVATED) && cooldownTicks <= 0) {
-            world.setBlockState(pos, this.getCachedState().with(ACTIVATED, true));
+        if (hasItems && !currentState.get(ACTIVATED) && cooldownTicks <= 0) {
+            world.setBlockState(pos, currentState.with(ACTIVATED, true), Block.NOTIFY_ALL);
             resetHitsRemaining();
         }
     }
