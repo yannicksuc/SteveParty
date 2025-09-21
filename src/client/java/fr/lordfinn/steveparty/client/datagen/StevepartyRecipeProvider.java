@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import net.minecraft.data.server.recipe.RecipeExporter;
 import net.minecraft.data.server.recipe.RecipeGenerator;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.book.RecipeCategory;
 import java.util.List;
@@ -84,7 +85,14 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         RecipeCategory.BUILDING_BLOCKS,
                         ModBlocks.BLUE_STAR_FRAGMENTS_BLOCK
                 );
-
+                createShapeless(RecipeCategory.MISC, ModItems.POWER_STAR, 1)
+                        .input(ModItems.BLUE_STAR_FRAGMENT)
+                        .input(ModItems.GREEN_STAR_FRAGMENT)
+                        .input(ModItems.YELLOW_STAR_FRAGMENT)
+                        .input(ModItems.RED_STAR_FRAGMENT)
+                        .input(ModItems.PURPLE_STAR_FRAGMENT);
+                createShapeless(RecipeCategory.MISC, ModItems.POWER_STAR, 1)
+                        .input(ModItems.BLACK_STAR_FRAGMENT, 5);
             }
         };
     }
