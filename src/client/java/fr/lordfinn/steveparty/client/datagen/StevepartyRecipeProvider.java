@@ -90,9 +90,17 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .input(ModItems.GREEN_STAR_FRAGMENT)
                         .input(ModItems.YELLOW_STAR_FRAGMENT)
                         .input(ModItems.RED_STAR_FRAGMENT)
-                        .input(ModItems.PURPLE_STAR_FRAGMENT);
+                        .input(ModItems.PURPLE_STAR_FRAGMENT)
+                        .criterion(hasItem(ModItems.BLUE_STAR_FRAGMENT), conditionsFromItem(ModItems.BLUE_STAR_FRAGMENT))
+                        .criterion(hasItem(ModItems.GREEN_STAR_FRAGMENT), conditionsFromItem(ModItems.GREEN_STAR_FRAGMENT))
+                        .criterion(hasItem(ModItems.YELLOW_STAR_FRAGMENT), conditionsFromItem(ModItems.YELLOW_STAR_FRAGMENT))
+                        .criterion(hasItem(ModItems.RED_STAR_FRAGMENT), conditionsFromItem(ModItems.RED_STAR_FRAGMENT))
+                        .criterion(hasItem(ModItems.PURPLE_STAR_FRAGMENT), conditionsFromItem(ModItems.PURPLE_STAR_FRAGMENT))
+                        .offerTo(recipeExporter, "power_star_from_fragments");
                 createShapeless(RecipeCategory.MISC, ModItems.POWER_STAR, 1)
-                        .input(ModItems.BLACK_STAR_FRAGMENT, 5);
+                        .input(ModItems.BLACK_STAR_FRAGMENT, 5)
+                        .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
+                        .offerTo(recipeExporter, "power_star_from_black_fragments");
             }
         };
     }
