@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "steveparty:block/yellow_star_fragments_block"
+  }
+}

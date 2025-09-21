@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.datagen;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
@@ -46,6 +47,44 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .criterion(hasItem(Items.IRON_INGOT), conditionsFromItem(Items.IRON_INGOT))
                         .criterion(hasItem(Items.QUARTZ), conditionsFromItem(Items.QUARTZ))
                         .offerTo(recipeExporter, "blank_dice_face_from_crafting");
+
+                offerReversibleCompactingRecipes(
+                        RecipeCategory.MISC,
+                        ModItems.BLACK_STAR_FRAGMENT,
+                        RecipeCategory.BUILDING_BLOCKS,
+                        ModBlocks.BLACK_STAR_FRAGMENTS_BLOCK
+                );
+                offerReversibleCompactingRecipes(
+                        RecipeCategory.MISC,
+                        ModItems.PURPLE_STAR_FRAGMENT,
+                        RecipeCategory.BUILDING_BLOCKS,
+                        ModBlocks.PURPLE_STAR_FRAGMENTS_BLOCK
+                );
+                offerReversibleCompactingRecipes(
+                        RecipeCategory.MISC,
+                        ModItems.RED_STAR_FRAGMENT,
+                        RecipeCategory.BUILDING_BLOCKS,
+                        ModBlocks.RED_STAR_FRAGMENTS_BLOCK
+                );
+                offerReversibleCompactingRecipes(
+                        RecipeCategory.MISC,
+                        ModItems.YELLOW_STAR_FRAGMENT,
+                        RecipeCategory.BUILDING_BLOCKS,
+                        ModBlocks.YELLOW_STAR_FRAGMENTS_BLOCK
+                );
+                offerReversibleCompactingRecipes(
+                        RecipeCategory.MISC,
+                        ModItems.GREEN_STAR_FRAGMENT,
+                        RecipeCategory.BUILDING_BLOCKS,
+                        ModBlocks.GREEN_STAR_FRAGMENTS_BLOCK
+                );
+                offerReversibleCompactingRecipes(
+                        RecipeCategory.MISC,
+                        ModItems.BLUE_STAR_FRAGMENT,
+                        RecipeCategory.BUILDING_BLOCKS,
+                        ModBlocks.BLUE_STAR_FRAGMENTS_BLOCK
+                );
+
             }
         };
     }

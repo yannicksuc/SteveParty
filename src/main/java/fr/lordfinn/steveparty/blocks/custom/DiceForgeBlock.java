@@ -82,20 +82,6 @@ public class DiceForgeBlock extends BlockWithEntity {
         return BlockRenderType.INVISIBLE;
     }
 
-    @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (world.isClient) return ActionResult.PASS;
-        DiceForgeBlockEntity blockEntity = (DiceForgeBlockEntity) world.getBlockEntity(pos);
-        if (blockEntity != null && stack.getItem() instanceof BlockItem bi && bi.getBlock() instanceof GravityCoreBlock) {
-            if (blockEntity.isActivated())
-                return ActionResult.PASS;
-            blockEntity.activate();
-            return ActionResult.SUCCESS;
-        }
-        return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
-    }
-
-
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack itemStack = player.getStackInHand(Hand.MAIN_HAND);
 

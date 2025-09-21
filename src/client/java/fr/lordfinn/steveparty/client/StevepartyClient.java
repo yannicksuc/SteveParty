@@ -170,6 +170,11 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.DICE_FORGE_ENTITY, DiceForgeBlockEntityRenderer::new);
 
         BlockRenderLayerMap.INSTANCE.putBlock(BLUE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(PURPLE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(RED_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(YELLOW_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(GREEN_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
+        BlockRenderLayerMap.INSTANCE.putBlock(BLACK_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
         BlockRenderLayerMap.INSTANCE.putBlock(GRAVITY_CORE, RenderLayer.getTranslucent());
 
         BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
@@ -216,6 +221,7 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(GOAL_POLE_BASE_SCREEN_HANDLER, GoalPoleBaseScreen::new);
         HandledScreens.register(GOAL_POLE_SCREEN_HANDLER, GoalPoleScreen::new);
         HandledScreens.register(LOOTING_BOX_SCREEN_HANDLER, LootingBoxScreen::new);
+        HandledScreens.register(DICE_FORGE_SCREEN_HANDLER, DiceForgeScreen::new);
     }
 
     public static KeyBinding exportRecipeKey;

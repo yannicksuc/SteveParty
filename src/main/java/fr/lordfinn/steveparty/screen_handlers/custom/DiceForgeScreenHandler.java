@@ -1,17 +1,20 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 
-//import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FORGE_SCREEN_HANDLER;
+import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FORGE_SCREEN_HANDLER;
 
-public class DiceForgeScreenHandler  { //extends ScreenHandler
-  /*  private final Inventory inventory;
+public class DiceForgeScreenHandler extends ScreenHandler {
+    private final Inventory inventory;
+    private static int INVENTORY_SIZE = 13;
 
     public DiceForgeScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
         super(DICE_FORGE_SCREEN_HANDLER, syncId);
@@ -44,6 +47,11 @@ public class DiceForgeScreenHandler  { //extends ScreenHandler
         // --- Player inventory ---
         addPlayerSlots(playerInventory, 8, 140); // adjust Y offset to fit under your GUI
     }
+
+    public DiceForgeScreenHandler(int syncId, PlayerInventory playerInventory) {
+        this(syncId, playerInventory, new SimpleInventory(INVENTORY_SIZE));
+    }
+
 
     private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
         // Player inventory (3 rows)
@@ -111,5 +119,5 @@ public class DiceForgeScreenHandler  { //extends ScreenHandler
 
     public Inventory getInventory() {
         return this.inventory;
-    }*/
+    }
 }

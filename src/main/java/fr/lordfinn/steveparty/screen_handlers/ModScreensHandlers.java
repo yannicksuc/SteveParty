@@ -11,22 +11,13 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.resource.featuretoggle.FeatureFlag;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
 import net.minecraft.resource.featuretoggle.FeatureSet;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 
 public class ModScreensHandlers {
-    public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T, D>
-    register(String name, ExtendedScreenHandlerType.ExtendedFactory<T, D> factory, PacketCodec<? super RegistryByteBuf, D> codec) {
-        return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ExtendedScreenHandlerType<>(factory, codec));
-    }
-
-    // Overloaded register method for screen handlers with a FeatureSet
-    public static <T extends ScreenHandler> ScreenHandlerType<T>
-    register(String name, ScreenHandlerType.Factory<T> factory, FeatureSet featureSet) {
-        return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ScreenHandlerType<>(factory, featureSet));
-    }
-
     // Screen handler registrations
     public static final ExtendedScreenHandlerType<TileScreenHandler, BlockPosPayload> TILE_SCREEN_HANDLER =
             register("tile_screen_handler", TileScreenHandler::new, BlockPosPayload.PACKET_CODEC);
@@ -74,18 +65,28 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<GoalPoleScreenHandler> GOAL_POLE_SCREEN_HANDLER =
             register("goal_pole_screen_handler", GoalPoleScreenHandler::new, GoalPolePayload.CODEC);
 
-    /*public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
-            register("looting_box_screen_handler",
-            LootingBoxScreenHandler::new, BlockPosPayload.PACKET_CODEC);*/
-
     public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
-            Registry.register(
-                    Registries.SCREEN_HANDLER,
-                    Steveparty.id("looting_box_screen_handler"),
-                    new ScreenHandlerType<>(LootingBoxScreenHandler::new, FeatureSet.empty())
-            );
+            register("looting_box_screen_handler", LootingBoxScreenHandler::new);
+    public static final ScreenHandlerType<DiceForgeScreenHandler> DICE_FORGE_SCREEN_HANDLER = register("dice_forge_screen_handler", DiceForgeScreenHandler::new);
 
-    @SuppressWarnings("EmptyMethod")
+    private static <T extends ScreenHandler> ScreenHandlerType<T> register(String id, ScreenHandlerType.Factory<T> factory) {
+        return (ScreenHandlerType)Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(id), new ScreenHandlerType(factory, FeatureFlags.VANILLA_FEATURES));
+    }
+
+    private static <T extends ScreenHandler> ScreenHandlerType<T> register(String id, ScreenHandlerType.Factory<T> factory, FeatureFlag... requiredFeatures) {
+        return (ScreenHandlerType)Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(id), new ScreenHandlerType(factory, FeatureFlags.FEATURE_MANAGER.featureSetOf(requiredFeatures)));
+    }
+
+    public static <T extends ScreenHandler, D extends CustomPayload> ExtendedScreenHandlerType<T, D>
+    register(String name, ExtendedScreenHandlerType.ExtendedFactory<T, D> factory, PacketCodec<? super RegistryByteBuf, D> codec) {
+        return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ExtendedScreenHandlerType<>(factory, codec));
+    }
+
+    // Overloaded register method for screen handlers with a FeatureSet
+    public static <T extends ScreenHandler> ScreenHandlerType<T>
+    register(String name, ScreenHandlerType.Factory<T> factory, FeatureSet featureSet) {
+        return Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(name), new ScreenHandlerType<>(factory, featureSet));
+    }
     public static void initialize() {
     }
 }

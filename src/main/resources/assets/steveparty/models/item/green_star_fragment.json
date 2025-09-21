@@ -1,0 +1,6 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "steveparty:item/green_star_fragment"
+	}
+}

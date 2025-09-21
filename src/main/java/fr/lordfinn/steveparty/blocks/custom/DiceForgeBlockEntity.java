@@ -2,11 +2,14 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -105,7 +108,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     }
 
     public int size() {
-        return 27;
+        return 13;
     }
     protected DefaultedList<ItemStack> getHeldStacks() {
         return this.inventory;
@@ -212,7 +215,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     @Override
     protected ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
-        return GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, this);
+        return new DiceForgeScreenHandler(syncId, playerInventory, this);
     }
 
     public DefaultedList<ItemStack> getInventory() {
