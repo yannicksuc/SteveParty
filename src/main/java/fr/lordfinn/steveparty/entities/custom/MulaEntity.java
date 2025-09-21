@@ -9,13 +9,18 @@ import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -24,11 +29,17 @@ import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceC
 import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.animation.AnimationState;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
 public class MulaEntity extends TameableEntity implements GeoEntity {
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation FLY_ANIM = RawAnimation.begin().thenLoop("fly");
+    private static final TrackedData<Integer> VARIANT =
+            DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     public MulaEntity(EntityType<MulaEntity> entityType, World world) {
         super(entityType, world);
@@ -56,6 +67,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
+        builder.add(VARIANT, 0);
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -133,4 +145,66 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
     public boolean isBreedingItem(ItemStack stack) {
         return false;
     }
+
+    public void setVariant(MulaVariant variant) {
+        this.dataTracker.set(VARIANT, variant.getId());
+    }
+
+    public MulaVariant getVariant() {
+        return MulaVariant.byId(this.dataTracker.get(VARIANT));
+    }
+
+    @Override
+    public void writeCustomDataToNbt(NbtCompound nbt) {
+        super.writeCustomDataToNbt(nbt);
+        nbt.putInt("Variant", this.getVariant().getId());
+    }
+
+    @Override
+    public void readCustomDataFromNbt(NbtCompound nbt) {
+        super.readCustomDataFromNbt(nbt);
+        this.setVariant(MulaVariant.byId(nbt.getInt("Variant")));
+    }
+
+    @Override
+    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
+        this.setVariant(MulaVariant.getRandomVariant());
+        return super.initialize(world, difficulty, spawnReason, entityData);
+    }
+
+    public enum MulaVariant {
+        BLUE(0),
+        RED(1),
+        GREEN(2),
+        YELLOW(3),
+        PURPLE(4),
+        BLACK(5); // special rare one
+
+        private static final List<MulaVariant> COMMON_VARIANTS = Arrays.asList(BLUE, RED, GREEN, YELLOW, PURPLE);
+        private static final Random RANDOM = new Random();
+        private final int id;
+
+        MulaVariant(int id) {
+            this.id = id;
+        }
+
+        public int getId() {
+            return this.id;
+        }
+
+        public static MulaVariant byId(int id) {
+            for (MulaVariant v : values()) {
+                if (v.id == id) return v;
+            }
+            return BLUE;
+        }
+
+        public static MulaVariant getRandomVariant() {
+            if (RANDOM.nextInt(100) == 0) {
+                return BLACK;
+            }
+            return COMMON_VARIANTS.get(RANDOM.nextInt(COMMON_VARIANTS.size()));
+        }
+    }
+
 }
