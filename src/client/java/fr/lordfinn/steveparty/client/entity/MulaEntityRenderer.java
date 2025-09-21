@@ -18,14 +18,29 @@ import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
+import java.util.Map;
+
 public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     // Your billboard texture
-    private static final Identifier BILLBOARD_TEXTURE = Steveparty.id("textures/entity/mula_hallo.png");
+    private static final Identifier HALLO_TEXTURE = Steveparty.id("textures/entity/mula_hallo.png");
+    private static final Map<MulaEntity.MulaVariant, Identifier> TEXTURES = Map.of(
+            MulaEntity.MulaVariant.BLUE, Steveparty.id("textures/entity/mula.png"),
+            MulaEntity.MulaVariant.RED, Steveparty.id("textures/entity/mula_red.png"),
+            MulaEntity.MulaVariant.GREEN, Steveparty.id("textures/entity/mula_green.png"),
+            MulaEntity.MulaVariant.YELLOW, Steveparty.id("textures/entity/mula_yellow.png"),
+            MulaEntity.MulaVariant.PURPLE, Steveparty.id("textures/entity/mula_purple.png"),
+            MulaEntity.MulaVariant.BLACK, Steveparty.id("textures/entity/mula_black.png")
+    );
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new DefaultedEntityGeoModel<>(Steveparty.id("mula")));
         addRenderLayer(new AutoGlowingGeoLayer<>(this));
-        addRenderLayer(new HalloLayer<>(this, BILLBOARD_TEXTURE)); // add the custom billboard
+        addRenderLayer(new HalloLayer<>(this, HALLO_TEXTURE)); // add the custom billboard
+    }
+
+    @Override
+    public Identifier getTextureLocation(MulaEntity entity) {
+        return TEXTURES.getOrDefault(entity.getVariant(), Steveparty.id("textures/entity/mula.png"));
     }
 
     @Override
