@@ -34,7 +34,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new DefaultedEntityGeoModel<>(Steveparty.id("mula")));
-        addRenderLayer(new AutoGlowingGeoLayer<>(this));
+        //addRenderLayer(new AutoGlowingGeoLayer<>(this));
         addRenderLayer(new HalloLayer<>(this, HALLO_TEXTURE)); // add the custom billboard
     }
 
