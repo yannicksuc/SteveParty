@@ -18,10 +18,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +41,7 @@ import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.ACTIVATED;
 import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.TRIGGERED;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
-public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload>, GeoBlockEntity, TickableBlockEntity {
+public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity implements NamedScreenHandlerFactory, GeoBlockEntity, TickableBlockEntity {
 
     // -------------------------
     // Constants
@@ -136,12 +138,13 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     // -------------------------
     @Override
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+
         return new LootingBoxScreenHandler(syncId, playerInventory, this);
     }
 
     @Override
-    public BlockPosPayload getScreenOpeningData(ServerPlayerEntity serverPlayerEntity) {
-        return new BlockPosPayload(pos);
+    public net.minecraft.text.Text getDisplayName() {
+        return Text.empty();
     }
 
     // -------------------------

@@ -2,21 +2,25 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.LootingBoxBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
-import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 
 public class LootingBoxScreenHandler extends CartridgeContainerScreenHandler {
-    public LootingBoxScreenHandler(int syncId, PlayerInventory playerInventory, LootingBoxBlockEntity blockEntity) {
+
+    private static final int INVENTORY_SIZE = 1;
+
+    public LootingBoxScreenHandler(int syncId, PlayerInventory playerInventory, Inventory blockInventory) {
         super(ModScreensHandlers.LOOTING_BOX_SCREEN_HANDLER, syncId);
-        this.inventory = blockEntity;
+        this.inventory = blockInventory;
+        checkSize(blockInventory, INVENTORY_SIZE);
         init(playerInventory, 54);
     }
 
-    public LootingBoxScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload payload) {
-        this(syncId, playerInventory, (LootingBoxBlockEntity) playerInventory.player.getWorld().getBlockEntity(payload.pos()));
+    public LootingBoxScreenHandler(int syncId, PlayerInventory playerInventory) {
+        this(syncId, playerInventory, new SimpleInventory(INVENTORY_SIZE));
     }
 
     @Override
@@ -25,7 +29,6 @@ public class LootingBoxScreenHandler extends CartridgeContainerScreenHandler {
     }
 
     private static class InventoryCartridgeCustomSlot extends CartridgeCustomSlot {
-
         public InventoryCartridgeCustomSlot(Inventory inventory, int index, int x, int y) {
             super(inventory, index, x, y);
         }
@@ -36,3 +39,4 @@ public class LootingBoxScreenHandler extends CartridgeContainerScreenHandler {
         }
     }
 }
+
