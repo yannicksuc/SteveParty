@@ -152,6 +152,9 @@ public class ModItems {
             itemGroup.add(FLAG);
             itemGroup.add(TRIPLE_JUMP_SHOES);
             itemGroup.add(POLISHED_TERRACOTTA);
+            for (Block polishedTerracottaBlock : POLISHED_TERRACOTTA_BLOCKS) {
+                itemGroup.add(polishedTerracottaBlock);
+            }
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);
             itemGroup.add(BLUE_STAR_FRAGMENTS_BLOCK);

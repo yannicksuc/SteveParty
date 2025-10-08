@@ -1,0 +1,6 @@
+{
+    "parent": "block/cube_all",
+    "textures": {
+        "all": "steveparty:block/polished_terracotta/polished_cyan_terracotta"
+    }
+}

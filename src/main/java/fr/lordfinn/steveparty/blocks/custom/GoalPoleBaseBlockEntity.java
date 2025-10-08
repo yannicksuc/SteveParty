@@ -25,6 +25,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
+import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -165,17 +166,21 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
         ScoreboardObjective objective = scoreboard.getNullableObjective(objectiveName);
         if (objective == null) {
-            Optional<ScoreboardCriterion> criterion = ScoreboardCriterion.getOrCreateStatCriterion(goal);
-            if (criterion.isEmpty()) return;
+            try {
+                Optional<ScoreboardCriterion> criterion = ScoreboardCriterion.getOrCreateStatCriterion(goal);
+                if (criterion.isEmpty()) return;
 
-            objective = scoreboard.addObjective(
-                    objectiveName,
-                    criterion.get(),
-                    Text.literal("Goal: " + goal),
-                    ScoreboardCriterion.RenderType.INTEGER,
-                    true,
-                    null
-            );
+                objective = scoreboard.addObjective(
+                        objectiveName,
+                        criterion.get(),
+                        Text.literal("Goal: " + goal),
+                        ScoreboardCriterion.RenderType.INTEGER,
+                        true,
+                        null
+                );
+            } catch (InvalidIdentifierException ignored) {
+                return;
+            }
         }
         this.cachedObjective = objective;
     }
