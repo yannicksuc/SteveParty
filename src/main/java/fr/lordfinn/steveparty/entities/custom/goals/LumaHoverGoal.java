@@ -23,6 +23,7 @@ public class LumaHoverGoal extends Goal {
         this.minHeight = minHeight;
         this.maxHeight = maxHeight;
         this.setControls(EnumSet.of(Control.MOVE));
+        changeCooldown = 40 + random.nextInt(150);
     }
 
     @Override
@@ -38,38 +39,21 @@ public class LumaHoverGoal extends Goal {
 
     @Override
     public void tick() {
-        // Only pick a new target occasionally
-        if (target == null || changeCooldown-- <= 0) {
+        if (target == null) {
+            this.target = entity.getPos();
+        }
+        if (entity.getMoveControl().isMoving()) return;
+        double distance = entity.getPos().distanceTo(target);
+        if (distance > 0.5) {
+            entity.getMoveControl().moveTo(target.x, target.y, target.z, speed);
+        } else if (changeCooldown-- <= 0) {
             pickNewTarget();
-            changeCooldown = 40 + random.nextInt(40); // change every 2–4 seconds (20 ticks = 1 sec)
-        }
-
-        // Smooth movement toward target
-        Vec3d direction = target.subtract(entity.getPos());
-        if (direction.length() > 0.01) {
-            Vec3d velocity = direction.normalize().multiply(speed * 0.15); // small incremental motion
-            entity.setVelocity(entity.getVelocity().multiply(0.95).add(velocity)); // slight damping
-        }
-
-        Vec3d motion = entity.getVelocity();
-        if (motion.lengthSquared() > 0.001) {
-            float targetYaw = (float)(Math.atan2(motion.z, motion.x) * 180.0 / Math.PI) - 90.0f;
-            entity.setYaw(smoothYaw(entity.getYaw(), targetYaw, 5.0f)); // max 5° per tick rotation
+            changeCooldown = 40 + random.nextInt(150);
         }
     }
-
-    private float smoothYaw(float current, float target, float maxTurn) {
-        float delta = target - current;
-        while (delta < -180.0F) delta += 360.0F;
-        while (delta >= 180.0F) delta -= 360.0F;
-        if (delta > maxTurn) delta = maxTurn;
-        if (delta < -maxTurn) delta = -maxTurn;
-        return current + delta;
-    }
-
     private void pickNewTarget() {
-        double targetX = entity.getX() + (random.nextDouble() - 0.5) * 6; // drift left/right
-        double targetZ = entity.getZ() + (random.nextDouble() - 0.5) * 6;
+        double targetX = entity.getX() + (random.nextDouble() - 0.5) * 10;
+        double targetZ = entity.getZ() + (random.nextDouble() - 0.5) * 10;
 
         // Clamp height above ground
         BlockPos pos = entity.getBlockPos().down();

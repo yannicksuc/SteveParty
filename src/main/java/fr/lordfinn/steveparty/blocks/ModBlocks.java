@@ -46,6 +46,22 @@ public class ModBlocks {
         }
     }
 
+    public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            String color = COLORS[i];
+            String name = "polished_" + color + "_terracotta";
+
+            POLISHED_TERRACOTTA_BLOCKS[i] = register(Block::new,
+                    Block.Settings.create()
+                            .strength(1.25f, 4.2f)
+                            .sounds(BlockSoundGroup.STONE)
+                            .requiresTool(),
+                    name, true);
+        }
+    }
+
     public static final Block TRADING_STALL = register(TradingStallBlock::new,
             Block.Settings.create()
                     .strength(2.5f, 2.5f)

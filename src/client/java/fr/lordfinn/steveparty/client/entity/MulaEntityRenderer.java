@@ -11,11 +11,9 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
-import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
-import software.bernie.geckolib.renderer.layer.AutoGlowingGeoLayer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 import java.util.Map;
@@ -34,13 +32,18 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new DefaultedEntityGeoModel<>(Steveparty.id("mula")));
-        //addRenderLayer(new AutoGlowingGeoLayer<>(this));
         addRenderLayer(new HalloLayer<>(this, HALLO_TEXTURE)); // add the custom billboard
     }
 
     @Override
     public Identifier getTextureLocation(MulaEntity entity) {
         return TEXTURES.getOrDefault(entity.getVariant(), Steveparty.id("textures/entity/mula.png"));
+    }
+
+    @Override
+    public void actuallyRender(MatrixStack poseStack, MulaEntity animatable, BakedGeoModel model, @Nullable RenderLayer renderType, VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+
+        super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, 0xF000F0, packedOverlay, renderColor);
     }
 
     @Override
@@ -61,42 +64,27 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             this.texture = texture;
         }
 
+
         @Override
         public void render(MatrixStack matrices, T animatable, BakedGeoModel bakedModel,
                            @Nullable RenderLayer renderType, VertexConsumerProvider bufferSource,
                            @Nullable net.minecraft.client.render.VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay, int renderColor) {
-            matrices.push();
-
             if (animatable instanceof MulaEntity entity) {
-                // ✅ Get the "body" bone
-                var bodyBone = bakedModel.getBone("body");
-                if (bodyBone != null) {
-                    Vector3d  position = bodyBone.get().getPositionVector().div(16);
-                    matrices.translate(position.x, position.y + entity.getHeight() / 1.2f, position.z);
+                var bodyBone = bakedModel.getBone("head");
+                if (bodyBone.isPresent()) {
+                    var client = MinecraftClient.getInstance();
+                    var camera = client.gameRenderer.getCamera();
+                    var rotation = camera.getRotation();
+                    Vector3d bonePos = bodyBone.get().getLocalPosition();
+                    //matrices.push();
+                    matrices.translate(bonePos.x, bonePos.y, bonePos.z);
+                    matrices.multiply(rotation);
+                    matrices.scale(1f, 1f, 1f);
+                    drawQuad(matrices, bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture)), packedLight);
+//                    matrices.pop();
                 }
             }
-
-            // Move to entity center
-            /*if (animatable instanceof MulaEntity entity) {
-                matrices.translate(0.0, entity.getHeight() / 2.0, 0.0);
-            }*/
-
-
-            // Rotate to face player camera
-            var client = MinecraftClient.getInstance();
-            var camera = client.gameRenderer.getCamera();
-            var rotation = camera.getRotation();
-
-            // Scale billboard
-            matrices.scale(0.6f, 0.6f, 0.6f);
-            matrices.multiply(rotation);
-
-            // Get buffer
-            net.minecraft.client.render.VertexConsumer vc = bufferSource.getBuffer(RenderLayer.getEntityTranslucent(texture));
-            drawQuad(matrices, vc, packedLight);
-
-            matrices.pop();
         }
 
         private void drawQuad(MatrixStack matrices, net.minecraft.client.render.VertexConsumer vertices, int light) {

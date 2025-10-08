@@ -13,6 +13,11 @@
 			"bones": [
 				{
 					"name": "body",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "head",
+					"parent": "body",
 					"pivot": [0, 6.53218, -0.04],
 					"cubes": [
 						{"origin": [-4, 2.5, -4], "size": [8, 8, 8], "uv": [0, 0]},
@@ -57,7 +62,7 @@
 				},
 				{
 					"name": "left_hand2",
-					"parent": "body",
+					"parent": "head",
 					"pivot": [-4, 8, 0],
 					"cubes": [
 						{"origin": [-5.5, 5, -0.5], "size": [3, 3, 1], "pivot": [-4, 8, 0], "rotation": [0, -90, 0], "uv": [16, 16]},
@@ -79,7 +84,7 @@
 				},
 				{
 					"name": "left_hand3",
-					"parent": "body",
+					"parent": "head",
 					"pivot": [4, 8, 0],
 					"cubes": [
 						{"origin": [2.5, 5, -0.5], "size": [3, 3, 1], "pivot": [4, 8, 0], "rotation": [0, -90, 0], "uv": [16, 20]},
