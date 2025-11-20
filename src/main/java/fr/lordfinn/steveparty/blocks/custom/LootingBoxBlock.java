@@ -30,7 +30,7 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
     public static final VoxelShape RENDER_SHAPE = Block.createCuboidShape(0, 0, 0, 16, 16, 16);
 
     public LootingBoxBlock(Settings settings) {
-        super(settings);
+        super(settings, 1);
         this.setDefaultState(this.stateManager.getDefaultState().with(ACTIVATED, false).with(TRIGGERED, false));
     }
 

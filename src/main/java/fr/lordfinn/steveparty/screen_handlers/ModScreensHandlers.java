@@ -19,8 +19,8 @@ import net.minecraft.screen.ScreenHandlerType;
 
 public class ModScreensHandlers {
     // Screen handler registrations
-    public static final ExtendedScreenHandlerType<TileScreenHandler, BlockPosPayload> TILE_SCREEN_HANDLER =
-            register("tile_screen_handler", TileScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+    public static final ExtendedScreenHandlerType<BoardSpaceScreenHandler, BlockPosPayload> TILE_SCREEN_HANDLER =
+            register("tile_screen_handler", BoardSpaceScreenHandler::new, BlockPosPayload.PACKET_CODEC);
 
     public static final ExtendedScreenHandlerType<HopSwitchScreenHandler, BlockPosPayload> HOP_SWITCH_SCREEN_HANDLER =
             register(

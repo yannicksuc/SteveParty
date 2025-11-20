@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.*;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
@@ -170,6 +171,13 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
             "tile", true);
+
+    public static final Block SIMPLE_TILE = register(SimpleTileBlock::new,
+            Block.Settings.create()
+                    .strength(2f, 3600000.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
+            "simple_tile", true);
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()

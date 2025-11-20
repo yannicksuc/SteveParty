@@ -24,9 +24,11 @@ import org.jetbrains.annotations.Nullable;
 import static net.minecraft.util.ActionResult.*;
 
 public abstract class CartridgeContainer extends HorizontalFacingBlock implements BlockEntityProvider {
-    protected CartridgeContainer(Settings settings) {
+    protected CartridgeContainer(Settings settings, int numberOfCartridges) {
         super(settings);
+        this.numberOfCartridges = numberOfCartridges;
     }
+    protected final int numberOfCartridges;
 
     @Override
     public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {

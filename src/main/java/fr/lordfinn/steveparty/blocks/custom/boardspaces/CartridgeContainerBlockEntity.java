@@ -39,7 +39,7 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
 
     @Override
     public ItemStack getStack(int slot) {
-        return slot >= 0 && slot < this.heldStacks.size() ? this.heldStacks.get(slot) : ItemStack.EMPTY;
+        return this.heldStacks.get(slot % size);
     }
 
     public List<ItemStack> clearToList() {

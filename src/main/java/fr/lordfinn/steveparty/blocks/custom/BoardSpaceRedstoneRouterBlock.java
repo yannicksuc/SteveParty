@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
     public static final MapCodec<BoardSpaceRedstoneRouterBlock> CODEC = Block.createCodec(BoardSpaceRedstoneRouterBlock::new);
     public BoardSpaceRedstoneRouterBlock(Settings settings) {
-        super(settings);
+        super(settings, 1);
     }
 
     @Override

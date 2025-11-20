@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.screen_handlers.custom.TileScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
@@ -10,7 +10,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.List;
 
-public class TileScreen extends CartridgeContainerScreen<TileScreenHandler> {
+public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenHandler> {
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/tile.png");
     private static final List<Identifier> TEXTURES_OVERLAY = List.of(
             Steveparty.id("textures/gui/tile-overlay-0.png"),
@@ -30,14 +30,19 @@ public class TileScreen extends CartridgeContainerScreen<TileScreenHandler> {
             Steveparty.id("textures/gui/tile-overlay-14.png"),
             Steveparty.id("textures/gui/tile-overlay-15.png")
     );
+    private static final Identifier SIMPLE_TEXTURE = Steveparty.id("textures/gui/simple_tile.png");
 
-    public TileScreen(TileScreenHandler handler, PlayerInventory inventory, Text title) {
+    private final boolean isSingle;
+
+    public BoardSpaceScreen(BoardSpaceScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title, 183);
+        isSingle = this.handler.isSingle();
     }
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         super.drawBackground(context, delta, mouseX, mouseY);
+        if (isSingle) return;
         int activeSlot = this.handler.getActiveSlot();
         if (activeSlot >= 0 && activeSlot < TEXTURES_OVERLAY.size()) {
             Identifier overlayTexture = TEXTURES_OVERLAY.get(activeSlot);
@@ -55,6 +60,6 @@ public class TileScreen extends CartridgeContainerScreen<TileScreenHandler> {
 
     @Override
     public Identifier getTexture() {
-        return TEXTURE;
+        return isSingle ? SIMPLE_TEXTURE : TEXTURE;
     }
 }

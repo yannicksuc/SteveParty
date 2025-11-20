@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.blocks;
 import fr.lordfinn.steveparty.blocks.custom.*;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlockEntity;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.registry.Registries;
@@ -12,16 +15,22 @@ import net.minecraft.util.Identifier;
 import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 
 public class ModBlockEntities {
-    public static final BlockEntityType<BoardSpaceBlockEntity> TILE_ENTITY = Registry.register(
+    public static final BlockEntityType<TileBlockEntity> TILE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
-            Identifier.of (MOD_ID, "tile_entity"),
-            FabricBlockEntityTypeBuilder.create(BoardSpaceBlockEntity::new, ModBlocks.TILE).build(null)
+            Identifier.of(MOD_ID, "tile_entity"),
+            FabricBlockEntityTypeBuilder.create(TileBlockEntity::new, ModBlocks.TILE).build(null)
     );
 
-    public static final BlockEntityType<BoardSpaceBlockEntity> CHECK_POINT_ENTITY = Registry.register(
+    public static final BlockEntityType<CheckPointBlockEntity> CHECK_POINT_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
-            Identifier.of (MOD_ID, "check_point_entity"),
-            FabricBlockEntityTypeBuilder.create(BoardSpaceBlockEntity::new, ModBlocks.CHECK_POINT).build(null)
+            Identifier.of(MOD_ID, "check_point_entity"),
+            FabricBlockEntityTypeBuilder.create(CheckPointBlockEntity::new, ModBlocks.CHECK_POINT).build(null)
+    );
+
+    public static final BlockEntityType<SimpleTileBlockEntity> SIMPLE_TILE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "simple_tile_entity"),
+            FabricBlockEntityTypeBuilder.create(SimpleTileBlockEntity::new, ModBlocks.SIMPLE_TILE).build(null)
     );
 
     public static final BlockEntityType<BoardSpaceRedstoneRouterBlockEntity> BOARD_SPACE_REDSTONE_ROUTER_ENTITY = Registry.register(

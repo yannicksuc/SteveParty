@@ -67,6 +67,10 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
         return newStack;
     }
 
+    public boolean isSingle() {
+        return inventory.size() == 1;
+    }
+
     @Override
     public void onClosed(PlayerEntity player) {
         super.onClosed(player);

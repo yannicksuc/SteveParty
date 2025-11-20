@@ -206,7 +206,7 @@ public class StevepartyClient implements ClientModInitializer {
         PARTY_STEPS_HUD.initialize();
         
         //Initialize Screens
-        HandledScreens.register(TILE_SCREEN_HANDLER, TileScreen::new);
+        HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
         HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HOP_SWITCH_SCREEN_HANDLER, HopSwitchScreen::new);
         HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);

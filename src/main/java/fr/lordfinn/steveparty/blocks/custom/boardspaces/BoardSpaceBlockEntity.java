@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -12,12 +11,13 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.persistent_state.ClientBoardSpaceRouters;
-import fr.lordfinn.steveparty.screen_handlers.custom.TileScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -55,9 +55,11 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private SoundEvent walkedOnSound = null;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
     private ItemStack currentlyActiveCartridge = null;
+    public final int INV_SIZE;
 
-    public BoardSpaceBlockEntity(BlockPos pos, BlockState state) {
-        super(state.getBlock() instanceof TileBlock ? ModBlockEntities.TILE_ENTITY : ModBlockEntities.CHECK_POINT_ENTITY, pos, state, 16);
+    public BoardSpaceBlockEntity(BlockPos pos, BlockState state, BlockEntityType<? extends BoardSpaceBlockEntity> type, int size) {
+        super(type, pos, state, size);
+        INV_SIZE = size;
     }
 
     private void update() {
@@ -329,7 +331,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     @Override
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-        return new TileScreenHandler(syncId, playerInventory, this);
+        return new BoardSpaceScreenHandler(syncId, playerInventory, this);
     }
 
     @Override
