@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 import fr.lordfinn.steveparty.items.custom.CartridgeContainerOpener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.HorizontalFacingBlock;
@@ -23,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.util.ActionResult.*;
 
-public abstract class CartridgeContainer extends HorizontalFacingBlock implements BlockEntityProvider {
+public abstract class CartridgeContainer extends Block implements BlockEntityProvider {
     protected CartridgeContainer(Settings settings, int numberOfCartridges) {
         super(settings);
         this.numberOfCartridges = numberOfCartridges;

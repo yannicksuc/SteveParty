@@ -74,7 +74,7 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
 
 
     @Override
-    protected MapCodec<? extends HorizontalFacingBlock> getCodec() {
+    protected MapCodec<? extends Block> getCodec() {
         return Block.createCodec(LootingBoxBlock::new);
     }
 

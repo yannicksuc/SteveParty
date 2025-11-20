@@ -1,9 +1,20 @@
 {
   "variants": {
-    "": { "model": "steveparty:block/simple_tile", "uvlock": false },
-    "tile_type=tile_start,facing=north": { "model": "steveparty:block/tile_start", "y":  -180, "uvlock": false },
-    "tile_type=tile_start,facing=east":  { "model": "steveparty:block/tile_start", "y":  -90, "uvlock": false },
-    "tile_type=tile_start,facing=south": { "model": "steveparty:block/tile_start", "y": 0, "uvlock": false },
-    "tile_type=tile_start,facing=west":  { "model": "steveparty:block/tile_start", "y": 90, "uvlock": false }
+    "rotation_8=0": { "model": "steveparty:block/simple_tile", "uvlock": false },
+    "rotation_8=1": { "model": "steveparty:block/simple_tile_45", "uvlock": false },
+    "rotation_8=2": { "model": "steveparty:block/simple_tile", "y": 90 , "uvlock": false },
+    "rotation_8=3": { "model": "steveparty:block/simple_tile_45", "y": 90 , "uvlock": false },
+    "rotation_8=4": { "model": "steveparty:block/simple_tile", "y": 180 , "uvlock": false },
+    "rotation_8=5": { "model": "steveparty:block/simple_tile_45", "y": 180 , "uvlock": false },
+    "rotation_8=6": { "model": "steveparty:block/simple_tile", "y": 270 , "uvlock": false },
+    "rotation_8=7": { "model": "steveparty:block/simple_tile_45", "y": 270 , "uvlock": false },
+    "tile_type=tile_start,rotation_8=0": { "model": "steveparty:block/tile_start", "y":  -180, "uvlock": false },
+    "tile_type=tile_start,rotation_8=1": { "model": "steveparty:block/tile_start", "y":  -180, "uvlock": false },
+    "tile_type=tile_start,rotation_8=2":  { "model": "steveparty:block/tile_start", "y":  -90, "uvlock": false },
+    "tile_type=tile_start,rotation_8=3":  { "model": "steveparty:block/tile_start", "y":  -90, "uvlock": false },
+    "tile_type=tile_start,rotation_8=4": { "model": "steveparty:block/tile_start", "y": 0, "uvlock": false },
+    "tile_type=tile_start,rotation_8=5": { "model": "steveparty:block/tile_start", "y": 0, "uvlock": false },
+    "tile_type=tile_start,rotation_8=6":  { "model": "steveparty:block/tile_start", "y": 90, "uvlock": false },
+    "tile_type=tile_start,rotation_8=7":  { "model": "steveparty:block/tile_start", "y": 90, "uvlock": false }
   }
 }

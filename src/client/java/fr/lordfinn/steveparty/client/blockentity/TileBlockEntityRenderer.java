@@ -27,6 +27,7 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock.ROTATION_8;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static java.lang.Math.PI;
 
@@ -46,7 +47,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     @Override
     public void render(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
         BoardSpaceType tileType = entity.getCachedState().get(TILE_TYPE);
-        Direction direction = entity.getCachedState().get(Properties.HORIZONTAL_FACING);
+        Integer direction = entity.getCachedState().get(ROTATION_8);
         ItemStack stack = entity.getActiveCartridgeItemStack();
         switch (tileType) {
             case TILE_START -> renderTileStart(entity, matrices, vertexConsumers, light, stack);
@@ -55,7 +56,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         }
     }
 
-    private void renderInventoryInteractor(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, ItemStack stack, Direction direction) {
+    private void renderInventoryInteractor(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, ItemStack stack, int direction) {
         Identifier texture = textureBlow;
         int color = stack.getOrDefault(COLOR, 0);
         if (color == InventoryInteractorTileBehavior.GOOD_COLOR)
@@ -80,19 +81,18 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         Identifier texture = SkinUtils.getPlayerSkin(ownerUUID);
 
         if (texture == null) {
-            //Steveparty.LOGGER.error("Failed to fetch texture for UUID: {}", ownerUUID);
             return;
         }
 
         matrices.push();
-        Direction dir = entity.getCachedState().get(Properties.HORIZONTAL_FACING);
-        Vector3f translate = (new Vector3f(9f/16, 0, 9f/16)).mul(dir.getUnitVector()).add(0,-1f/16,0);
+        Integer dir = entity.getCachedState().get(ROTATION_8);
+        Vector3f translate = (new Vector3f(9f/16, 0, 9f/16)).mul(rotation8ToVector(dir)).add(0,-1f/16,0);
         matrices.translate(translate.x, translate.y, translate.z);
         matrices.scale(1.0F, 1.0F, 1.0F);
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
         SkullBlockEntityRenderer.renderSkull(
                 Direction.DOWN,
-                180 + dir.asRotation(),
+                180 + dir * 45,
                 0.0F,
                 matrices,
                 vertexConsumers,
@@ -102,19 +102,28 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         matrices.pop();
     }
 
+    public static Vector3f rotation8ToVector(int rot) {
+        double angle = Math.toRadians(rot * 45);  // 45° increments
 
-    private void renderPicture(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Identifier texture, Direction direction) {
-        float angle = (float) (direction.asRotation() / 180f * PI);
+        // For Minecraft coordinates:
+        // X grows east
+        // Z grows south
+        int x = (int) Math.round(Math.sin(angle));  // sin → X axis
+        int z = (int) Math.round(Math.cos(angle));  // cos → Z axis
+
+        return new Vector3f(x, 0, z);
+    }
+
+
+    private void renderPicture(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Identifier texture, int direction) {
+        float angle = (float) ((direction * 45) / 180f * PI);
         matrices.push();
         matrices.translate(0.5, 0, 0.5);
 
-        // Bind the texture
         Sprite sprite = MinecraftClient.getInstance().getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).apply(texture);
 
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getCutout());
 
-        // Define your cube's geometry and UVs
-        // Here is an example of rendering a simple quad
         MatrixStack.Entry entry = matrices.peek();
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         float side = 1f;
