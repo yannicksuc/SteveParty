@@ -16,9 +16,7 @@ import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.recipes.ModRecipes;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
-import fr.lordfinn.steveparty.service.VillagerBlockSpawnListener;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import fr.lordfinn.steveparty.utils.JumpTracker;
 import fr.lordfinn.steveparty.utils.ServerNetworking;
 import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
@@ -61,8 +59,6 @@ public class Steveparty implements ModInitializer {
 
         MoveTokenCommand.initialize();
         new TokenMovementService();
-
-        VillagerBlockSpawnListener.registerChatListener();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             for (ServerPlayerEntity player : world.getPlayers()) {

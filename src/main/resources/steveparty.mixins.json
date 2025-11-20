@@ -12,7 +12,8 @@
     "ShearsItemMixin",
     "StatusEffectMixin",
     "TokenEntityMixin",
-    "TrackedDataHandlerRegistryMixin"
+    "TrackedDataHandlerRegistryMixin",
+    "MixinPistonBlock"
   ],
   "injectors": {
     "defaultRequire": 1
