@@ -70,7 +70,7 @@ public class HopSwitchBlock extends CartridgeContainer {
     // Constructor
     // -----------------------------
     public HopSwitchBlock(Settings settings) {
-        super(settings);
+        super(settings, 1);
         this.setDefaultState(this.stateManager.getDefaultState().with(PRESSED, false));
     }
 

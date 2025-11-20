@@ -1,14 +1,13 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.BoardSpaceBehaviorFactory;
-import fr.lordfinn.steveparty.screen_handlers.custom.TileScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.sound.SoundCategory;
@@ -29,8 +28,8 @@ import static net.minecraft.util.ActionResult.SUCCESS;
 public abstract class ABoardSpaceBlock extends CartridgeContainer {
     public static final EnumProperty<BoardSpaceType> TILE_TYPE = EnumProperty.of("tile_type", BoardSpaceType.class);
 
-    public ABoardSpaceBlock(Settings settings) {
-        super(settings.nonOpaque());
+    public ABoardSpaceBlock(Settings settings, int numberOfCartridges) {
+        super(settings.nonOpaque(), numberOfCartridges);
     }
 
     @Override
@@ -67,12 +66,6 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         super.onStateReplaced(state, world, pos, newState, moved);
     }
 
-    // Override to create a new TileEntity instance for this block
-    @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new BoardSpaceBlockEntity(pos, state);
-    }
-
     @Override
     public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
@@ -104,7 +97,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         return new SimpleNamedScreenHandlerFactory((syncId, inventory, player) ->
-                new TileScreenHandler(syncId, inventory, (BoardSpaceBlockEntity) blockEntity), Text.empty());
+                new BoardSpaceScreenHandler(syncId, inventory, (BoardSpaceBlockEntity) blockEntity), Text.empty());
     }
 
     @Override

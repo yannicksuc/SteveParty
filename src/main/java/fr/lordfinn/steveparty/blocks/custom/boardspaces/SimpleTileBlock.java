@@ -14,18 +14,18 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-public class TileBlock extends ABoardSpaceBlock {
-    public static final MapCodec<TileBlock> CODEC = Block.createCodec(TileBlock::new);
+public class SimpleTileBlock extends ABoardSpaceBlock {
+    public static final MapCodec<SimpleTileBlock> CODEC = Block.createCodec(SimpleTileBlock::new);
 
     private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0.0, 0, 16.0, 2.0, 16.0);
 
-    public TileBlock(Settings settings) {
-        super(settings.nonOpaque(), 16);
+    public SimpleTileBlock(Settings settings) {
+        super(settings.nonOpaque(), 1);
         setDefaultState(getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH));
     }
 
     @Override
-    protected MapCodec<? extends TileBlock> getCodec() {
+    protected MapCodec<SimpleTileBlock> getCodec() {
         return CODEC;
     }
 
@@ -48,6 +48,6 @@ public class TileBlock extends ABoardSpaceBlock {
 
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new TileBlockEntity(pos, state);
+        return new SimpleTileBlockEntity(pos, state);
     }
 }

@@ -1,0 +1,7 @@
+{
+  "parent": "steveparty:block/tile",
+  "textures": {
+    "2": "steveparty:block/simple_tile",
+    "particle": "steveparty:block/simple_tile"
+  }
+}

@@ -5,17 +5,17 @@ import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import net.minecraft.entity.player.PlayerInventory;
 
-public class TileScreenHandler extends CartridgeContainerScreenHandler {
+public class BoardSpaceScreenHandler extends CartridgeContainerScreenHandler {
 
     //Main constructor (Called on the server and the client)
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory, BoardSpaceBlockEntity blockEntity) {
+    public BoardSpaceScreenHandler(int syncId, PlayerInventory playerInventory, BoardSpaceBlockEntity blockEntity) {
         super(ModScreensHandlers.TILE_SCREEN_HANDLER, syncId);
         this.inventory = blockEntity;
         init(playerInventory, 101);
     }
 
     //Client constructor
-    public TileScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload blockPosPayload) {
+    public BoardSpaceScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload blockPosPayload) {
         this(syncId, playerInventory, (BoardSpaceBlockEntity) playerInventory.player.getWorld().getBlockEntity(blockPosPayload.pos()));
     }
 
@@ -29,10 +29,14 @@ public class TileScreenHandler extends CartridgeContainerScreenHandler {
                 }
             }
         }
+
+        if (this.inventory.size() == 1) {
+            this.addSlot(new CartridgeCustomSlot(this.inventory, 0, 80, 39));
+        }
     }
 
     public int getActiveSlot() {
         if (inventory == null) return -1;
-        return ((BoardSpaceBlockEntity)inventory).getActiveSlot(); // Access the method from the block entity
+        return ((BoardSpaceBlockEntity)inventory).getActiveSlot();
     }
 }

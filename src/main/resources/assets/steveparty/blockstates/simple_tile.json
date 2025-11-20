@@ -1,0 +1,9 @@
+{
+  "variants": {
+    "": { "model": "steveparty:block/simple_tile", "uvlock": false },
+    "tile_type=tile_start,facing=north": { "model": "steveparty:block/tile_start", "y":  -180, "uvlock": false },
+    "tile_type=tile_start,facing=east":  { "model": "steveparty:block/tile_start", "y":  -90, "uvlock": false },
+    "tile_type=tile_start,facing=south": { "model": "steveparty:block/tile_start", "y": 0, "uvlock": false },
+    "tile_type=tile_start,facing=west":  { "model": "steveparty:block/tile_start", "y": 90, "uvlock": false }
+  }
+}
