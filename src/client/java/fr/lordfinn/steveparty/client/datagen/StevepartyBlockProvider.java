@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
 import net.minecraft.block.Block;
 import net.minecraft.data.client.BlockStateModelGenerator;
 import net.minecraft.data.client.ItemModelGenerator;
+import net.minecraft.data.client.TexturedModel;
 import net.minecraft.data.family.BlockFamily;
 
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class StevepartyBlockProvider extends FabricModelProvider {
                     .registerCubeAllModelTexturePool(ModBlocks.POLISHED_TERRACOTTA_BRICKS_BLOCKS[i])
                     .family(POLISHED_BRICKS_TERRACOTTA_FAMILY_LIST.get(i));
         }
+        blockStateModelGenerator.registerSingleton(ModBlocks.VILLAGER_BLOCK, TexturedModel.CUBE_BOTTOM_TOP);
     }
 
     @Override
