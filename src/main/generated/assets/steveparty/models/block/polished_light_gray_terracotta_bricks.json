@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "steveparty:block/polished_light_gray_terracotta_bricks"
+  }
+}

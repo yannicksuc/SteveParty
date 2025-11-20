@@ -19,7 +19,13 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ModBlocks {
-    private static final String[] COLORS = {
+    public static final String[] COLORS = {"white", "orange", "magenta", "light_blue",
+            "yellow", "lime", "pink", "gray",
+            "light_gray", "cyan", "purple", "blue",
+            "brown", "green", "red", "black"
+    };
+
+    public static final String[] COLORS_WITH_DEFAULT = {"default",
             "white", "orange", "magenta", "light_blue",
             "yellow", "lime", "pink", "gray",
             "light_gray", "cyan", "purple", "blue",
@@ -46,21 +52,102 @@ public class ModBlocks {
         }
     }
 
-    public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS.length];
+    public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
     static {
-        for (int i = 0; i < COLORS.length; i++) {
-            String color = COLORS[i];
+        for (int i = 0; i < COLORS_WITH_DEFAULT.length; i++) {
+            String color = COLORS_WITH_DEFAULT[i];
             String name = "polished_" + color + "_terracotta";
 
             POLISHED_TERRACOTTA_BLOCKS[i] = register(Block::new,
                     Block.Settings.create()
                             .strength(1.25f, 4.2f)
                             .sounds(BlockSoundGroup.STONE)
+                            .solid()
                             .requiresTool(),
                     name, true);
         }
     }
+
+    // Generate all polished terracotta brick variants automatically
+    public static final Block[] POLISHED_TERRACOTTA_BRICKS_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
+
+    static {
+        for (int i = 0; i < COLORS_WITH_DEFAULT.length; i++) {
+            String color = COLORS_WITH_DEFAULT[i];
+            String name = "polished_" + color + "_terracotta_bricks";
+
+            POLISHED_TERRACOTTA_BRICKS_BLOCKS[i] = register(Block::new,
+                    Block.Settings.create()
+                            .strength(1.5f, 6.0f)
+                            .sounds(BlockSoundGroup.STONE)
+                            .solid()
+                            .requiresTool(),
+                    name, true);
+        }
+    }
+
+    public static final Block[] POLISHED_TERRACOTTA_STAIRS = new StairsBlock[COLORS_WITH_DEFAULT.length];
+    public static final Block[] POLISHED_TERRACOTTA_SLABS = new SlabBlock[COLORS_WITH_DEFAULT.length];
+    public static final Block[] POLISHED_TERRACOTTA_WALLS = new WallBlock[COLORS_WITH_DEFAULT.length];
+
+    public static final Block[] POLISHED_TERRACOTTA_BRICKS_STAIRS = new StairsBlock[COLORS_WITH_DEFAULT.length];
+    public static final Block[] POLISHED_TERRACOTTA_BRICKS_SLABS = new SlabBlock[COLORS_WITH_DEFAULT.length];
+    public static final Block[] POLISHED_TERRACOTTA_BRICKS_WALLS = new WallBlock[COLORS_WITH_DEFAULT.length];
+
+    static {
+        for (int i = 0; i < COLORS_WITH_DEFAULT.length; i++) {
+            final int index = i; // <-- rend la variable finale
+            String color = COLORS_WITH_DEFAULT[i];
+
+            // Terracotta
+            POLISHED_TERRACOTTA_STAIRS[i] = register(
+                    (s) -> new StairsBlock(POLISHED_TERRACOTTA_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(POLISHED_TERRACOTTA_BLOCKS[index]),
+                    color + "_polished_terracotta_stairs",
+                    true
+            );
+
+            POLISHED_TERRACOTTA_SLABS[i] = register(
+                    SlabBlock::new,
+                    Block.Settings.copy(POLISHED_TERRACOTTA_BLOCKS[i]),
+                    color + "_polished_terracotta_slab",
+                    true
+            );
+
+            POLISHED_TERRACOTTA_WALLS[i] = register(
+                    WallBlock::new,
+                    Block.Settings.copy(POLISHED_TERRACOTTA_BLOCKS[i]),
+                    color + "_polished_terracotta_wall",
+                    true
+            );
+
+
+            // Terracotta bricks
+            POLISHED_TERRACOTTA_BRICKS_STAIRS[i] = register(
+                    (s) -> new StairsBlock(POLISHED_TERRACOTTA_BRICKS_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(POLISHED_TERRACOTTA_BRICKS_BLOCKS[index]),
+                    color + "_polished_terracotta_bricks_stairs",
+                    true
+            );
+
+            POLISHED_TERRACOTTA_BRICKS_SLABS[i] = register(
+                    SlabBlock::new,
+                    Block.Settings.copy(POLISHED_TERRACOTTA_BRICKS_BLOCKS[i]),
+                    color + "_polished_terracotta_bricks_slab",
+                    true
+            );
+
+            POLISHED_TERRACOTTA_BRICKS_WALLS[i] = register(
+                    WallBlock::new,
+                    Block.Settings.copy(POLISHED_TERRACOTTA_BRICKS_BLOCKS[i]),
+                    color + "_polished_terracotta_bricks_wall",
+                    true
+            );
+
+        }
+    }
+
 
     public static final Block TRADING_STALL = register(TradingStallBlock::new,
             Block.Settings.create()
@@ -207,13 +294,6 @@ public class ModBlocks {
                     .notSolid()
                     .requiresTool(),
             "looting_box", true);
-
-    public static final Block POLISHED_TERRACOTTA = register(Block::new,
-            Block.Settings.create()
-                    .strength(1.25f, 4.2f)
-                    .sounds(BlockSoundGroup.STONE)
-                    .requiresTool(),
-            "polished_terracotta", true);
 
     public static final Block BLUE_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
             Block.Settings.create()

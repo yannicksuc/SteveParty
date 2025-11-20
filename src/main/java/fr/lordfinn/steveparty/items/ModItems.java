@@ -151,9 +151,32 @@ public class ModItems {
             itemGroup.add(GOAL_POLE);
             itemGroup.add(FLAG);
             itemGroup.add(TRIPLE_JUMP_SHOES);
-            itemGroup.add(POLISHED_TERRACOTTA);
+
             for (Block polishedTerracottaBlock : POLISHED_TERRACOTTA_BLOCKS) {
                 itemGroup.add(polishedTerracottaBlock);
+            }
+            for (Block polishedTerracottaBricksBlock : POLISHED_TERRACOTTA_BRICKS_BLOCKS) {
+                itemGroup.add(polishedTerracottaBricksBlock);
+            }
+
+            for (Block block : ModBlocks.POLISHED_TERRACOTTA_STAIRS) {
+                itemGroup.add(block);
+            }
+            for (Block block : ModBlocks.POLISHED_TERRACOTTA_SLABS) {
+                itemGroup.add(block);
+            }
+            for (Block block : ModBlocks.POLISHED_TERRACOTTA_WALLS) {
+                itemGroup.add(block);
+            }
+
+            for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS) {
+                itemGroup.add(block);
+            }
+            for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS) {
+                itemGroup.add(block);
+            }
+            for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS) {
+                itemGroup.add(block);
             }
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);
