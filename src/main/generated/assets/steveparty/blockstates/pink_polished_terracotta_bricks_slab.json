@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "steveparty:block/pink_polished_terracotta_bricks_slab"
+    },
+    "type=double": {
+      "model": "steveparty:block/polished_pink_terracotta_bricks"
+    },
+    "type=top": {
+      "model": "steveparty:block/pink_polished_terracotta_bricks_slab_top"
+    }
+  }
+}

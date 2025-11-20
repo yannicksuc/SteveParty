@@ -11,5 +11,6 @@ public class StevepartyReferenceDataGenerator implements DataGeneratorEntrypoint
         pack.addProvider(StevepartyReferenceBlockTagProvider::new);
         pack.addProvider(StevepartyReferenceItemTagProvider::new);
         pack.addProvider(StevepartyRecipeProvider::new);
+        pack.addProvider(StevepartyBlockProvider::new);
     }
 }

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "steveparty:block/polished_brown_terracotta_bricks",
+    "side": "steveparty:block/polished_brown_terracotta_bricks",
+    "top": "steveparty:block/polished_brown_terracotta_bricks"
+  }
+}

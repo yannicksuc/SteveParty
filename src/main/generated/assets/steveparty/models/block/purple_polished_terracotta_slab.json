@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "steveparty:block/polished_purple_terracotta",
+    "side": "steveparty:block/polished_purple_terracotta",
+    "top": "steveparty:block/polished_purple_terracotta"
+  }
+}

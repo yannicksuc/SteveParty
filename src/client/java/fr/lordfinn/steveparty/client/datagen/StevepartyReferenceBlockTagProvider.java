@@ -39,9 +39,24 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.STENCIL_MAKER,
                         ModBlocks.HOP_SWITCH,
                         ModBlocks.LOOTING_BOX,
-                        ModBlocks.POLISHED_TERRACOTTA,
                         ModBlocks.GRAVITY_CORE
                 );
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_SLABS)
+            getOrCreateTagBuilder(BlockTags.SLABS).add(b);
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_STAIRS)
+            getOrCreateTagBuilder(BlockTags.STAIRS).add(b);
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_WALLS)
+            getOrCreateTagBuilder(BlockTags.WALLS).add(b);
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS)
+            getOrCreateTagBuilder(BlockTags.SLABS).add(b);
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS)
+            getOrCreateTagBuilder(BlockTags.STAIRS).add(b);
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS)
+            getOrCreateTagBuilder(BlockTags.WALLS).add(b);
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_BLOCKS)
+            getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_BRICKS_BLOCKS)
+            getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,
@@ -76,5 +91,11 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 .add(ModBlocks.GRAVITY_CORE);
         getOrCreateTagBuilder(BlockTags.CLIMBABLE)
                 .add(GOAL_POLE);
+
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_WALLS)
+            getOrCreateTagBuilder(BlockTags.WALLS).add(b);
+
+        for (Block b : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS)
+            getOrCreateTagBuilder(BlockTags.WALLS).add(b);
     }
 }
