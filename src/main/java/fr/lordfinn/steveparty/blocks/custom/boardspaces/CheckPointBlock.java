@@ -20,7 +20,7 @@ public class CheckPointBlock extends ABoardSpaceBlock {
     }
 
     @Override
-    protected MapCodec<? extends HorizontalFacingBlock> getCodec() {
+    protected MapCodec<? extends Block> getCodec() {
         return CODEC;
     }
 
