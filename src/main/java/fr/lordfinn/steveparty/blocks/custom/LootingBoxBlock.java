@@ -4,6 +4,9 @@ import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -109,5 +112,11 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
     @Override
     public @Nullable LootingBoxBlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new LootingBoxBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        return world.isClient ? null : TickableBlockEntity.getTicker(world);
     }
 }

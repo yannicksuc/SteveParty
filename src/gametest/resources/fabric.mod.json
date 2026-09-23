@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "steveparty-gametest",
+  "version": "1.0.0",
+  "name": "SteveParty GameTests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "fr.lordfinn.steveparty.gametest.BoardSpaceGameTests",
+      "fr.lordfinn.steveparty.gametest.CoreGameTests"
+    ]
+  },
+  "depends": {
+    "steveparty": "*",
+    "fabric-gametest-api-v1": "*"
+  }
+}

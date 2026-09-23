@@ -10,6 +10,14 @@ base {
     archivesName = project.archives_base_name
 }
 
+sourceSets {
+    // In-game automated tests (Fabric GameTest), run on a dedicated server: ./gradlew runGametest
+    gametest {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
 loom {
     splitEnvironmentSourceSets()
 
@@ -17,6 +25,20 @@ loom {
         "steveparty" {
             sourceSet sourceSets.main
             sourceSet sourceSets.client
+        }
+        "steveparty-gametest" {
+            sourceSet sourceSets.gametest
+        }
+    }
+
+    runs {
+        gametest {
+            server()
+            name "Game Test"
+            vmArg "-Dfabric-api.gametest"
+            vmArg "-Dfabric-api.gametest.report-file=${project.layout.buildDirectory.get()}/gametest/junit.xml"
+            runDir "build/gametest"
+            source sourceSets.gametest
         }
     }
 }
