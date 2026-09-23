@@ -45,7 +45,9 @@ public class DiceForgeOrbitRenderer {
         List<OrbitFace> orbitFaces = new ArrayList<>();
         DefaultedList<ItemStack> inventory = blockEntity.getInventory();
 
-        for (int i = 0; i < inventory.size(); i++) {
+        // Only the dice faces orbit (not the fragments nor the output die)
+        int faceSlots = Math.min(inventory.size(), DiceForgeBlockEntity.FACE_SLOTS);
+        for (int i = 0; i < faceSlots; i++) {
             ItemStack itemStack = inventory.get(i);
             if (itemStack.isEmpty()) continue;
 
