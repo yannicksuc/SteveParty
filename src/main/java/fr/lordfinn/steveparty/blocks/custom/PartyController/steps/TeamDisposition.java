@@ -51,21 +51,25 @@ public class TeamDisposition {
     public Text toText(MinecraftServer server) {
         if (teamA == null || teamB == null) return Text.empty();
         if (teamA.isEmpty()) return Text.translatable("message.steveparty.free_for_all");
-        MutableText str = Text.literal(teamA.size() + " ").append(Text.translatable("message.steveparty.vs").getLiteralString()).append(" " + " " + teamB.size() + "\n");
-        str.append(getTeamPlayersNames(teamA, server) + " ").append(Text.translatable("message.steveparty.vs").getLiteralString()).append(" " + getTeamPlayersNames(teamB, server));
+        MutableText str = Text.literal(teamA.size() + " ").append(vsText()).append(" " + " " + teamB.size() + "\n");
+        str.append(getTeamPlayersNames(teamA, server) + " ").append(vsText()).append(" " + getTeamPlayersNames(teamB, server));
         return str;
+    }
+
+    private static MutableText vsText() {
+        return Text.translatableWithFallback("message.steveparty.vs", "vs");
     }
 
     @Override
     public String toString() {
-        return Text.literal(teamA.size() + " ").append(Text.translatable("message.steveparty.vs").getLiteralString()).append(" " + " " + teamB.size() + "\n").toString();
+        return teamA.size() + " vs " + teamB.size();
     }
 
     private @NotNull String getTeamPlayersNames(Set<UUID> team, MinecraftServer server) {
         return team.stream()
                 .map(server.getPlayerManager()::getPlayer)
                 .filter(Objects::nonNull)
-                .map(p -> p.hasCustomName() ? p.getCustomName().getString() : p.getName().toString())
+                .map(p -> p.hasCustomName() ? p.getCustomName().getString() : p.getName().getString())
                 .reduce((s1, s2) -> s1 + ", " + s2).orElseGet(() -> "");
     }
 }

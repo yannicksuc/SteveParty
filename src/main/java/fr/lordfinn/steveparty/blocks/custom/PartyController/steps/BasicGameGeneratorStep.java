@@ -9,10 +9,13 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public class BasicGameGeneratorStep extends PartyStep {
+    private UUID startTaskId = null;
+
     public BasicGameGeneratorStep(NbtCompound nbt) {
         super(nbt);
     }
@@ -24,6 +27,7 @@ public class BasicGameGeneratorStep extends PartyStep {
     @Override
     public void start(PartyControllerEntity partyControllerEntity) {
         if (partyControllerEntity == null || partyControllerEntity.getWorld() == null || partyControllerEntity.getWorld().isClient) return;
+        super.start(partyControllerEntity);
         if (partyControllerEntity.getPartyData().getTokens().isEmpty()) {
             partyControllerEntity.nextStep();
             return;
@@ -32,8 +36,34 @@ public class BasicGameGeneratorStep extends PartyStep {
         if (world == null) return;
         PartyData partyData = partyControllerEntity.getPartyData();
         generateSteps(partyData, world);
-        Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 20,
+        partyControllerEntity.markDirty();
+        scheduleStart(partyControllerEntity, world);
+    }
+
+    @Override
+    public void resume(PartyControllerEntity partyControllerEntity) {
+        // The steps were generated (and saved) by start(), only the delayed transition was lost
+        if (partyControllerEntity.getWorld() instanceof ServerWorld world)
+            scheduleStart(partyControllerEntity, world);
+    }
+
+    @Override
+    public void end(PartyControllerEntity partyControllerEntity) {
+        super.end(partyControllerEntity);
+        if (startTaskId != null) {
+            Steveparty.SCHEDULER.cancel(startTaskId);
+            startTaskId = null;
+        }
+    }
+
+    private void scheduleStart(PartyControllerEntity partyControllerEntity, ServerWorld world) {
+        if (startTaskId != null) Steveparty.SCHEDULER.cancel(startTaskId);
+        startTaskId = UUID.randomUUID();
+        Steveparty.SCHEDULER.schedule(startTaskId, 20,
             () -> {
+                startTaskId = null;
+                if (!isStillActive(partyControllerEntity)) return;
+                PartyData partyData = partyControllerEntity.getPartyData();
                 MessageUtils.sendToPlayers(partyData.getOwners(world), Text.translatable("message.steveparty.basic_game_start"), MessageUtils.MessageType.CHAT);
                 partyControllerEntity.nextStep();
             }
@@ -43,6 +73,12 @@ public class BasicGameGeneratorStep extends PartyStep {
     private void generateSteps(PartyData partyData, ServerWorld world) {
         List<UUID> tokens = partyData.getTokens(); // Assuming this method retrieves the list of tokens
         if (tokens.isEmpty()) return;
+
+        // Idempotent: drop what a previous run of this generator produced (restart / previous step)
+        List<PartyStep> steps = partyData.getSteps();
+        int generatorIndex = steps.indexOf(this);
+        if (generatorIndex >= 0 && generatorIndex + 1 < steps.size())
+            steps.subList(generatorIndex + 1, steps.size()).clear();
 
         // Add steps for each turn
         for (int i = 0; i < partyData.getNbTurn(); i++) {
@@ -54,11 +90,11 @@ public class BasicGameGeneratorStep extends PartyStep {
                 }
             }
             // Mini-game step
-            partyData.addStep(new MiniGamePartyStep(tokens));
+            partyData.addStep(new MiniGamePartyStep(new ArrayList<>(tokens)));
         }
 
         // Add the end step
-        partyData.addStep(new EndPartyStep(tokens));
+        partyData.addStep(new EndPartyStep(new ArrayList<>(tokens)));
 
     }
 }

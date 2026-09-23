@@ -68,11 +68,11 @@ public class Steveparty implements ModInitializer {
     }
 
     private void onServerStopped(MinecraftServer minecraftServer) {
-        SERVER = minecraftServer;
+        SERVER = null;
     }
 
     private void onServerStarted(MinecraftServer minecraftServer) {
-        SERVER = null;
+        SERVER = minecraftServer;
     }
 
     public static Identifier id(String path) {

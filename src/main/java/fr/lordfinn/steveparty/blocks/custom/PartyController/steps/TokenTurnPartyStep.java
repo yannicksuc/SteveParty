@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public class TokenTurnPartyStep extends PartyStep {
     private UUID tokenUUID;
     private UUID owner;
+    private UUID cancelTaskId = null;
 
     public TokenTurnPartyStep(NbtCompound nbt) {
         super(nbt);
@@ -36,12 +38,12 @@ public class TokenTurnPartyStep extends PartyStep {
         if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
             List<PlayerEntity> players = partyControllerEntity.getPartyData().getOwners(serverWorld);
             if (this.tokenUUID == null) {
-                cancelTurn(players);
+                cancelTurn(players, partyControllerEntity);
                 return;
             }
             Entity token = serverWorld.getEntity(tokenUUID);
             if (!(token instanceof TokenizedEntityInterface tokenInterface)) {
-                cancelTurn(players);
+                cancelTurn(players, partyControllerEntity);
                 return;
             }
             int status = tokenInterface.steveparty$getStatus();
@@ -50,8 +52,22 @@ public class TokenTurnPartyStep extends PartyStep {
     }
 
     @Override
+    public void resume(PartyControllerEntity partyControllerEntity) {
+        // The token status is saved with the entity, re-grant it anyway in case it was lost.
+        // Never cancel the turn here: the token may simply not be loaded yet.
+        if (tokenUUID != null && partyControllerEntity.getWorld() instanceof ServerWorld serverWorld
+                && serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface tokenInterface) {
+            tokenInterface.steveparty$setStatus(TokenStatus.setStatus(tokenInterface.steveparty$getStatus(), TokenStatus.CAN_MOVE));
+        }
+    }
+
+    @Override
     public void end(PartyControllerEntity partyControllerEntity) {
         super.end(partyControllerEntity);
+        if (cancelTaskId != null) {
+            Steveparty.SCHEDULER.cancel(cancelTaskId);
+            cancelTaskId = null;
+        }
         if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
             if (this.tokenUUID == null) {
                 return;
@@ -65,9 +81,16 @@ public class TokenTurnPartyStep extends PartyStep {
         }
     }
 
-    private void cancelTurn(List<PlayerEntity> players) {
-        MessageUtils.sendToPlayers(players, Text.translatable("message.steveparty.cancel_turn_no_token", tokenUUID)
+    private void cancelTurn(List<PlayerEntity> players, PartyControllerEntity partyControllerEntity) {
+        MessageUtils.sendToPlayers(players, Text.translatable("message.steveparty.cancel_turn_no_token", String.valueOf(tokenUUID))
                 .withColor(Color.RED.hashCode()), MessageUtils.MessageType.CHAT);
+        // Skip to the next step one tick later (not re-entrantly), unless something else moved the party meanwhile
+        cancelTaskId = UUID.randomUUID();
+        Steveparty.SCHEDULER.schedule(cancelTaskId, 1, () -> {
+            cancelTaskId = null;
+            if (isStillActive(partyControllerEntity))
+                partyControllerEntity.nextStep();
+        });
     }
 
     @Override

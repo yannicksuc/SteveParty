@@ -5,7 +5,11 @@ import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
@@ -129,17 +133,20 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
         if (stack.getItem() instanceof MiniGamesCatalogueItem) {
-            ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state);
+            ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state, player);
             if (success != null) return success;
         }
         return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
     }
 
-
     private static ActionResult.@Nullable Success toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state) {
+        return toggleCatalogue(world, pos, empty, state, null);
+    }
+
+    private static ActionResult.@Nullable Success toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state, @Nullable PlayerEntity player) {
         PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
         if (entity != null) {
-            boolean isCatalogued = entity.setCatalogue(empty);
+            boolean isCatalogued = entity.setCatalogue(empty, player);
             world.setBlockState(pos, state.with(PartyController.CATALOGUED, isCatalogued), Block.NOTIFY_ALL);
             return ActionResult.SUCCESS;
         }
@@ -196,6 +203,15 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PartyControllerEntity(pos, state);
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        if (world.isClient || type != ModBlockEntities.PARTY_CONTROLLER_ENTITY) return null;
+        return (w, pos, s, blockEntity) -> {
+            if (w instanceof ServerWorld serverWorld && blockEntity instanceof PartyControllerEntity partyControllerEntity)
+                partyControllerEntity.serverTick(serverWorld);
+        };
     }
 
     @Override

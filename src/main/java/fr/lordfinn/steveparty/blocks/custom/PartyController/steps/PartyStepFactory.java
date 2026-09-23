@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.nbt.NbtCompound;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,16 +20,26 @@ public class PartyStepFactory {
         STEPS_TYPES.put(PartyStepType.BASIC_GAME_GENERATOR, BasicGameGeneratorStep.class);
     }
 
+    /**
+     * Rebuilds a step from NBT. Never returns null: an unknown or broken step is replaced by a generic
+     * placeholder so that the indexes of the following steps (and the saved step index) stay aligned.
+     */
     public static PartyStep get(NbtCompound nbt){
         String type = nbt.getString("Type");
-        Class<? extends PartyStep> stepClass = STEPS_TYPES.get(PartyStepType.valueOf(type.toUpperCase()));
+        PartyStepType stepType;
+        try {
+            stepType = PartyStepType.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Steveparty.LOGGER.warn("Unknown party step type '{}', replaced by a placeholder step", type);
+            return new PartyStep(nbt);
+        }
+        Class<? extends PartyStep> stepClass = STEPS_TYPES.getOrDefault(stepType, PartyStep.class);
         try {
             return stepClass.getConstructor(NbtCompound.class).newInstance(nbt);
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException e) {
-            Steveparty.LOGGER.error(e.getMessage());
-            Steveparty.LOGGER.error(Arrays.toString(e.getStackTrace()));
+            Steveparty.LOGGER.error("Could not rebuild party step of type {}, replaced by a placeholder step", type, e);
         }
-        return null;
+        return new PartyStep(nbt);
     }
 }
