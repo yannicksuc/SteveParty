@@ -45,27 +45,6 @@ public class MessageUtils {
     }
 
     /**
-     * Sends a message to players near a specific position.
-     *
-     * @param server The Minecraft server instance.
-     * @param position The position to use as a reference.
-     * @param radius The radius around the position.
-     * @param message The message to send. Can be a String or a Text.
-     * @param messageType The type of message (CHAT, ACTION_BAR, or TITLE).
-     * @deprecated ignores the dimension; prefer {@link #sendToNearby(ServerWorld, Vec3d, double, Object, MessageType)}.
-     */
-    @Deprecated
-    public static void sendToNearby(MinecraftServer server, Vec3d position, double radius, Object message, MessageType messageType) {
-        if (server == null) return;
-        Text text = convertToText(message);
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            if (player.getPos().isInRange(position, radius)) {
-                sendMessage(player, text, messageType);
-            }
-        }
-    }
-
-    /**
      * Sends a message to players near a specific position, only in the given world (dimension).
      *
      * @param world The world the position belongs to.

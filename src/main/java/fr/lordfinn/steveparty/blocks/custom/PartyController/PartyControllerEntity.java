@@ -104,11 +104,6 @@ public class PartyControllerEntity extends BlockEntity {
                 .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
     }
 
-    /** @deprecated does not filter by world, use {@link #getClosestActivePartyControllerEntity(World, BlockPos, int)}. */
-    @Deprecated
-    public static Optional<PartyControllerEntity> getClosestActivePartyControllerEntity(BlockPos pos, int radius) {
-        return getClosestActivePartyControllerEntity(null, pos, radius);
-    }
 
     @Override
     protected void readComponents(ComponentsAccess components) {
