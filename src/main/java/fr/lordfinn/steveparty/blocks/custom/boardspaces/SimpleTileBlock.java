@@ -5,14 +5,14 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock.ROTATION_8;
 
 public class SimpleTileBlock extends ABoardSpaceBlock {
     public static final MapCodec<SimpleTileBlock> CODEC = Block.createCodec(SimpleTileBlock::new);
@@ -21,7 +21,8 @@ public class SimpleTileBlock extends ABoardSpaceBlock {
 
     public SimpleTileBlock(Settings settings) {
         super(settings.nonOpaque(), 1);
-        setDefaultState(getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH));
+        // Same 8-direction rotation as TileBlock (the blockstate file and the tile renderer rely on it)
+        setDefaultState(getDefaultState().with(ROTATION_8, 0));
     }
 
     @Override
@@ -37,13 +38,23 @@ public class SimpleTileBlock extends ABoardSpaceBlock {
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(Properties.HORIZONTAL_FACING);
+        builder.add(ROTATION_8);
     }
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return Objects.requireNonNull(super.getPlacementState(ctx))
-                .with(Properties.HORIZONTAL_FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+        return this.getDefaultState()
+                .with(ROTATION_8, TileBlock.rotation8FromYaw(ctx.getPlayerYaw()));
+    }
+
+    @Override
+    public BlockState rotate(BlockState state, BlockRotation rotation) {
+        return TileBlock.rotate8(state, rotation);
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, BlockMirror mirror) {
+        return TileBlock.mirror8(state, mirror);
     }
 
     @Override

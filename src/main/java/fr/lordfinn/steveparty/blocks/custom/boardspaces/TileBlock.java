@@ -52,28 +52,31 @@ public class TileBlock extends ABoardSpaceBlock {
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
-
-        float yaw = ctx.getPlayerYaw();
-
-        // Convert yaw → 8 steps of 45°
-        int rot8 = Math.floorMod((int)Math.floor((yaw + 202.5F) / 45.0F), 8);
-
         return this.getDefaultState()
-                .with(ROTATION_8, rot8);
+                .with(ROTATION_8, rotation8FromYaw(ctx.getPlayerYaw()));
+    }
+
+    /** Converts a player yaw into 8 steps of 45° (0 = placed while looking north, same convention as signs). */
+    public static int rotation8FromYaw(float yaw) {
+        return Math.floorMod((int)Math.floor((yaw + 202.5F) / 45.0F), 8);
+    }
+
+    public static BlockState rotate8(BlockState state, BlockRotation rotation) {
+        return state.with(ROTATION_8, rotation.rotate(state.get(ROTATION_8), 8)); // 90° = +2 steps
+    }
+
+    public static BlockState mirror8(BlockState state, BlockMirror mirror) {
+        return state.with(ROTATION_8, mirror.mirror(state.get(ROTATION_8), 8)); // NONE = identity
     }
 
     @Override
     public BlockState rotate(BlockState state, BlockRotation rotation) {
-        int value = state.get(ROTATION_8);
-        int rotated = (value + rotation.ordinal() * 2) & 7; // 90° = +2 steps
-        return state.with(ROTATION_8, rotated);
+        return rotate8(state, rotation);
     }
 
     @Override
     public BlockState mirror(BlockState state, BlockMirror mirror) {
-        int value = state.get(ROTATION_8);
-        int mirrored = (8 - value) & 7;
-        return state.with(ROTATION_8, mirrored);
+        return mirror8(state, mirror);
     }
 
     @Override

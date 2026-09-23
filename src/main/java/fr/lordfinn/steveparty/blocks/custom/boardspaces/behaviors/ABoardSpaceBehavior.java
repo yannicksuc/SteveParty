@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.payloads.custom.UpdateColoredTilePayload;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -97,12 +98,15 @@ public abstract class ABoardSpaceBehavior {
 
     public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {
         ItemStack behaviorItemstack = getActiveCartdridgeItemstack(tileEntity);
-        if (behaviorItemstack == null) return;
+        // Never write components on an empty stack (it may be the shared ItemStack.EMPTY instance)
+        if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return;
+        Integer previousColor = behaviorItemstack.get(ModComponents.COLOR);
+        if (previousColor != null && previousColor == color) return; // nothing changed, nothing to send
         behaviorItemstack.set(ModComponents.COLOR, color);
         World world = tileEntity.getWorld();
-        if (world == null || world.isClient) return;
-        for (PlayerEntity player : world.getPlayers()) {
-            ServerPlayNetworking.send((ServerPlayerEntity) player, new UpdateColoredTilePayload(tileEntity.getPos(), color));
+        if (!(world instanceof ServerWorld serverWorld)) return;
+        for (ServerPlayerEntity player : PlayerLookup.tracking(serverWorld, tileEntity.getPos())) {
+            ServerPlayNetworking.send(player, new UpdateColoredTilePayload(tileEntity.getPos(), color));
         }
     }
 

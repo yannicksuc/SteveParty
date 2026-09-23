@@ -1,14 +1,14 @@
 package fr.lordfinn.steveparty.mixin;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.events.TileReachedEvent;
+import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -16,12 +16,15 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.joml.Vector3d;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -49,6 +52,23 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     private Vec3d targetPosition;
     @Unique
     private double targetPositionSpeed;
+
+    // State of the mob before it became a token, restored when it stops being one
+    @Unique
+    private boolean steveparty$hasPreTokenState = false;
+    @Unique
+    private boolean steveparty$preTokenAiDisabled = false;
+    @Unique
+    private boolean steveparty$preTokenInvulnerable = false;
+    @Unique
+    private boolean steveparty$preTokenCustomNameVisible = false;
+
+    @Shadow
+    @Final
+    protected GoalSelector goalSelector;
+    @Shadow
+    @Final
+    protected GoalSelector targetSelector;
 
     public TokenEntityMixin(EntityType<LivingEntity> type, World world) {
         super(type, world);
@@ -87,18 +107,38 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
 
     public void steveparty$setTokenized(boolean tokenized) {
         MobEntity mob = (MobEntity) (Object) this;
+        boolean wasTokenized = this.steveparty$isTokenized();
         if (tokenized) {
+            if (!wasTokenized) {
+                this.steveparty$preTokenAiDisabled = mob.isAiDisabled();
+                this.steveparty$preTokenInvulnerable = mob.isInvulnerable();
+                this.steveparty$preTokenCustomNameVisible = mob.isCustomNameVisible();
+                this.steveparty$hasPreTokenState = true;
+            }
             mob.setAiDisabled(true);
             mob.clearGoalsAndTasks();
             mob.setTarget(null);
             mob.setInvulnerable(true);
-        } else {
-            mob.setAiDisabled(false);
-            mob.setInvulnerable(false);
-            // Restaure les AI goals vanilla
+            mob.setCustomNameVisible(true);
+        } else if (wasTokenized) {
+            // Only on a real token -> mob transition: never touch regular mobs
+            if (this.steveparty$hasPreTokenState) {
+                mob.setAiDisabled(this.steveparty$preTokenAiDisabled);
+                mob.setInvulnerable(this.steveparty$preTokenInvulnerable);
+                mob.setCustomNameVisible(this.steveparty$preTokenCustomNameVisible);
+            } else {
+                // Token saved before the pre-token state was recorded: previous behavior
+                mob.setAiDisabled(false);
+                mob.setInvulnerable(false);
+                mob.setCustomNameVisible(false);
+            }
+            this.steveparty$hasPreTokenState = false;
+            this.targetPosition = null;
+            // Restaure les AI goals vanilla (cleared first so they are not duplicated)
+            this.goalSelector.clear(goal -> true);
+            this.targetSelector.clear(goal -> true);
             this.initGoals();
         }
-        mob.setCustomNameVisible(tokenized);
         this.dataTracker.set(TOKENIZED, tokenized);
     }
 
@@ -119,36 +159,70 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
 
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
     private void onReadCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-        if (nbt.contains("Tokenized", 99)) {
-            this.steveparty$setTokenized(nbt.getBoolean("Tokenized"));
+        // Regular mobs have no token data (older versions wrote Tokenized:0b on every mob: ignored)
+        if (!nbt.contains("Tokenized", NbtElement.NUMBER_TYPE)) return;
+        boolean tokenized = nbt.getBoolean("Tokenized");
+        this.steveparty$setTokenized(tokenized); // no side effect when false and not currently a token
+        if (!tokenized) return;
+
+        // At this point the vanilla values (NoAI...) are the token ones: use the saved pre-token state instead
+        if (nbt.contains("PreTokenState", NbtElement.COMPOUND_TYPE)) {
+            NbtCompound preTokenState = nbt.getCompound("PreTokenState");
+            this.steveparty$preTokenAiDisabled = preTokenState.getBoolean("NoAI");
+            this.steveparty$preTokenInvulnerable = preTokenState.getBoolean("Invulnerable");
+            this.steveparty$preTokenCustomNameVisible = preTokenState.getBoolean("CustomNameVisible");
+            this.steveparty$hasPreTokenState = true;
+        } else {
+            this.steveparty$hasPreTokenState = false;
         }
-        if (nbt.contains("NbSteps", 99)) {
+
+        if (nbt.contains("NbSteps", NbtElement.NUMBER_TYPE)) {
             this.steveparty$setNbSteps(nbt.getInt("NbSteps"));
         }
 
-        if (nbt.contains("TokenOwner", 11)) { // Use tag type 11 for UUID
+        if (nbt.containsUuid("TokenOwner")) {
             UUID tokenOwner = nbt.getUuid("TokenOwner");
             this.steveparty$setTokenOwner(tokenOwner);
         } else {
             this.steveparty$setTokenOwner((UUID) null); // Clear TOKEN_OWNER if missing
         }
 
-        if (nbt.contains("TokenStatus", 99)) {
+        if (nbt.contains("TokenStatus", NbtElement.NUMBER_TYPE)) {
             this.steveparty$setStatus(nbt.getInt("TokenStatus"));
+        }
+
+        if (nbt.contains("TokenTarget", NbtElement.COMPOUND_TYPE)) {
+            NbtCompound target = nbt.getCompound("TokenTarget");
+            this.targetPosition = new Vec3d(target.getDouble("x"), target.getDouble("y"), target.getDouble("z"));
+            this.targetPositionSpeed = target.getDouble("speed");
         }
     }
 
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     private void onWriteCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        nbt.putBoolean("Tokenized", this.steveparty$isTokenized());
+        if (!this.steveparty$isTokenized()) return; // nothing to write on regular mobs
+        nbt.putBoolean("Tokenized", true);
         nbt.putInt("NbSteps", this.steveparty$getNbSteps());
         UUID tokenOwner = this.steveparty$getTokenOwner();
-        if (tokenOwner != null) { // Safely check if it's not null
+        if (tokenOwner != null) {
             nbt.putUuid("TokenOwner", tokenOwner);
-        } else {
-            nbt.remove("TokenOwner"); // Remove the key if the value is null
         }
         nbt.putInt("TokenStatus", this.steveparty$getStatus());
+        if (this.steveparty$hasPreTokenState) {
+            NbtCompound preTokenState = new NbtCompound();
+            preTokenState.putBoolean("NoAI", this.steveparty$preTokenAiDisabled);
+            preTokenState.putBoolean("Invulnerable", this.steveparty$preTokenInvulnerable);
+            preTokenState.putBoolean("CustomNameVisible", this.steveparty$preTokenCustomNameVisible);
+            nbt.put("PreTokenState", preTokenState);
+        }
+        if (this.targetPosition != null) {
+            NbtCompound target = new NbtCompound();
+            target.putDouble("x", this.targetPosition.x);
+            target.putDouble("y", this.targetPosition.y);
+            target.putDouble("z", this.targetPosition.z);
+            target.putDouble("speed", this.targetPositionSpeed);
+            nbt.put("TokenTarget", target);
+        }
     }
 
     /**
@@ -186,26 +260,19 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         if (this.getWorld().isClient)  return;
         if (this.targetPosition != null) {
             Vec3d currentPosition = this.getPos();
-            Vec3d direction = targetPosition.subtract(currentPosition).normalize();
+            double speed = this.targetPositionSpeed > 0 ? this.targetPositionSpeed : 0.5;
 
-            // Move the entity step by step toward the target.
-            Vec3d newPosition = currentPosition.add(direction.multiply(targetPositionSpeed));
-            this.setPosition(newPosition.x, newPosition.y, newPosition.z);
-
-            // Check if the entity has reached the target (with a small tolerance).
-            if (currentPosition.squaredDistanceTo(targetPosition) < targetPositionSpeed) {
+            // Check if the entity has reached the target (within one step).
+            if (currentPosition.squaredDistanceTo(targetPosition) <= speed * speed) {
                 this.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
                 this.setVelocity(Vec3d.ZERO);
                 this.targetPosition = null;
-                BlockEntity blockEntity = this.getWorld().getBlockEntity(this.getBlockPos());
-                if ((blockEntity instanceof BoardSpaceBlockEntity)) {
-                    if (this.steveparty$getNbSteps() > 0) {//TODO Manage negative Steps (Not urgent)
-                        if (this.getWorld().getBlockState(this.getBlockPos()).getBlock() instanceof TileBlock tile) {
-                            this.steveparty$setNbSteps(this.steveparty$getNbSteps() - 1);
-                        }
-                    }
-                    TileReachedEvent.EVENT.invoker().onTileReached((MobEntity) (Object) this, (BoardSpaceBlockEntity) blockEntity);
-                }
+                TokenMovementService.onTokenArrived((MobEntity) (Object) this);
+            } else {
+                // Move the entity step by step toward the target.
+                Vec3d direction = targetPosition.subtract(currentPosition).normalize();
+                Vec3d newPosition = currentPosition.add(direction.multiply(speed));
+                this.setPosition(newPosition.x, newPosition.y, newPosition.z);
             }
         } else if (this.steveparty$isTokenized()) {
             // Retrieve current velocity
@@ -243,8 +310,12 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (this.steveparty$isTokenized()) {
-            if (source.getAttacker() instanceof PlayerEntity) {
-                MessageUtils.sendToPlayer((ServerPlayerEntity) source.getAttacker(), Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
+            // /kill, void, etc. must still be able to remove a token
+            if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+                return super.damage(world, source, amount);
+            }
+            if (source.getAttacker() instanceof ServerPlayerEntity attacker) {
+                MessageUtils.sendToPlayer(attacker, Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
                 BlockEntity blockEntity = world.getBlockEntity(this.getBlockPos());
                 if (blockEntity instanceof BoardSpaceBlockEntity)
                     EVENT.invoker().onTileUpdated((MobEntity) (Object) this, (BoardSpaceBlockEntity) blockEntity);

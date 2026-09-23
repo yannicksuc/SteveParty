@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -56,18 +56,21 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     private void unboundEntity(ServerWorld world, Entity entity) {
         if (recentlyUnboundEntities.contains(entity.getUuid())) return;
 
-        BlockState state = world.getBlockState(entity.getBlockPos());
-        if (state == null || !(state.getBlock() instanceof TileBlock)) {
-            state = world.getBlockState(entity.getBlockPos().subtract(new Vec3i(0, 1, 0)));
+        BlockPos tilePos = entity.getBlockPos();
+        BlockState state = world.getBlockState(tilePos);
+        if (state == null || !ABoardSpaceBlock.countsAsStep(state.getBlock())) {
+            tilePos = tilePos.subtract(new Vec3i(0, 1, 0));
+            state = world.getBlockState(tilePos);
         }
-        if (state == null || !(state.getBlock() instanceof TileBlock)) {
+        if (state == null || !ABoardSpaceBlock.countsAsStep(state.getBlock())) {
             return;
         }
-        BoardSpaceBlockEntity tileEntity = getTileEntity(world, entity.getBlockPos());
+        BoardSpaceBlockEntity tileEntity = getTileEntity(world, tilePos);
         if (tileEntity == null) return;
         ItemStack stack = getActiveCartdridgeItemstack(tileEntity);
         if (stack == null || stack.isEmpty()) return;
         stack.remove(ModComponents.TB_START_BOUND_ENTITY);
+        tileEntity.update();
         recentlyUnboundEntities.add(entity.getUuid());
         entity.getWorld().playSound(
                 null,
@@ -114,7 +117,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
             ((TokenizedEntityInterface)entity).steveparty$setTokenOwner(owner == null ? null : world.getPlayerByUuid(UUID.fromString(owner)));
         }
         stack.set(ModComponents.TB_START_OWNER, owner);
-        tileEntity.markDirty();
+        tileEntity.update(); // saves and syncs the owner (rendered client-side)
         return SUCCESS;
     }
 
@@ -137,7 +140,11 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         UUID owner = ((TokenizedEntityInterface)entity).steveparty$getTokenOwner();
         stack.set(ModComponents.TB_START_OWNER, owner == null ? null : owner.toString());
         entity.setVelocity(0, 0, 0);
-        setColor(getTileEntity(entity.getWorld(), pos), getColorFromText(entity.getCustomName()));
+        BoardSpaceBlockEntity tileEntity = getTileEntity(entity.getWorld(), pos);
+        if (tileEntity != null) {
+            setColor(tileEntity, getColorFromText(entity.getCustomName()));
+            tileEntity.update(); // saves and syncs the binding / owner
+        }
         entity.getWorld().playSound(
                 null,
                 entity.getBlockPos(),
@@ -152,7 +159,7 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         if (!(entity instanceof MobEntity token) || !((TokenizedEntityInterface) token).steveparty$isTokenized()) return false;
         ItemStack stack = getActiveCartdridgeItemstack(entity.getWorld(), entity.getBlockPos());
         if (stack == null || stack.isEmpty()) return false;
-        String bound_entity = stack.get(ModComponents.TB_START_OWNER);
+        String bound_entity = stack.get(ModComponents.TB_START_BOUND_ENTITY);
         return bound_entity != null && bound_entity.equals(entity.getUuidAsString());
     }
 
@@ -161,9 +168,15 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         if (bound_entity == null) {
             return null;
         }
-        Entity entity = world.getEntity(UUID.fromString(bound_entity));
+        UUID boundUuid;
+        try {
+            boundUuid = UUID.fromString(bound_entity);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        Entity entity = world.getEntity(boundUuid);
+        // null may only mean "not loaded yet" (chunk loading, reload): keep the binding
         if (entity == null) {
-            setBoundEntity(stack, null, pos);
             return null;
         }
         double distance = entity.getPos().distanceTo(new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
@@ -219,7 +232,8 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
         final int newColor = dye.getColor().getEntityColor();
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, pos);
         ItemStack behaviorItemstack = getActiveCartdridgeItemstack(tileEntity);
-        LivingEntity entity = (LivingEntity) getBoundedEntity((ServerWorld) world, behaviorItemstack, pos);
+        if (behaviorItemstack == null || !(world instanceof ServerWorld serverWorld)) return SUCCESS;
+        LivingEntity entity = getBoundedEntity(serverWorld, behaviorItemstack, pos) instanceof LivingEntity living ? living : null;
         if (entity != null)
             handleDyeInteraction(player.getAbilities().creativeMode, dye, entity, stack);
         else {
