@@ -131,7 +131,9 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         return switch (status) {
             case NOT_ACTIVATED -> Text.translatableWithFallback(KEY + "status.not_activated",
                     "Insert a gravity core first (right-click the forge with it or use the center slot)");
-            case NOT_ENOUGH_FACES -> Text.translatableWithFallback(KEY + "status.not_enough_faces",
+            case NOT_ENOUGH_FACES -> DiceForgeBlockEntity.MIN_FACES <= 1
+                    ? Text.translatableWithFallback(KEY + "status.no_face", "Place at least one dice face")
+                    : Text.translatableWithFallback(KEY + "status.not_enough_faces",
                     "Place at least %s dice faces", DiceForgeBlockEntity.MIN_FACES);
             case LAYOUT_CHANGED -> Text.translatableWithFallback(KEY + "status.layout_changed",
                     "The faces changed since the craft started");
