@@ -23,6 +23,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
@@ -33,6 +35,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -55,6 +58,10 @@ public class PartyControllerEntity extends BlockEntity {
     private final Set<UUID> interestedPlayers = new HashSet<>(); // New field
     /** Set once the step that was running when this controller was saved has been resumed. */
     private boolean resumeDone = false;
+    /** Tokens that left the party (excluded / party over) while not loaded: released as soon as they are loaded. */
+    private final Set<UUID> tokensToRelease = new LinkedHashSet<>();
+    /** Radius around the controller in which the players are told about the party (absent turns, exclusions...). */
+    public static final int PARTY_AUDIENCE_RADIUS = 100;
 
     static {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_PARTY_CONTROLLERS.clear());
@@ -104,6 +111,19 @@ public class PartyControllerEntity extends BlockEntity {
                 .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
     }
 
+    /**
+     * Closest party controller a step controller can act on: a started party or, if {@code includeEnded},
+     * a party standing on its END step (so it can be brought back to the previous step).
+     */
+    public static Optional<PartyControllerEntity> getClosestSteppablePartyControllerEntity(@Nullable World world, BlockPos pos, int radius, boolean includeEnded) {
+        return ACTIVE_PARTY_CONTROLLERS.values().stream()
+                .filter(entity -> !entity.isRemoved())
+                .filter(entity -> world == null || entity.getWorld() == world)
+                .filter(entity -> entity.getPartyData().isStarted() || (includeEnded && entity.getPartyData().isAtEnd()))
+                .filter(entity -> radius <= 0 || entity.getPos().getSquaredDistance(pos) < (double) radius * radius)
+                .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
+    }
+
 
     @Override
     protected void readComponents(ComponentsAccess components) {
@@ -137,6 +157,11 @@ public class PartyControllerEntity extends BlockEntity {
             nbt.putBoolean("isCatalogued", false);
         }
         partyData.toNbt(nbt);
+        if (!tokensToRelease.isEmpty()) {
+            NbtList releaseNbt = new NbtList();
+            tokensToRelease.forEach(uuid -> releaseNbt.add(NbtString.of(uuid.toString())));
+            nbt.put("TokensToRelease", releaseNbt);
+        }
     }
 
     @Override
@@ -158,23 +183,43 @@ public class PartyControllerEntity extends BlockEntity {
         if (!nbt.getBoolean("isCatalogued"))
             catalogue = ItemStack.EMPTY;
         partyData = new PartyData(nbt);
+        tokensToRelease.clear();
+        nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
+            try {
+                tokensToRelease.add(UUID.fromString(element.asString()));
+            } catch (IllegalArgumentException ignored) {
+            }
+        });
         resumeDone = false;
     }
 
     /**
      * Server tick. Scheduled tasks are not saved, so after a load the step that was running is resumed
-     * once the party is really playable again (at least one token loaded and one owner online), otherwise
+     * once the party is really playable again (at least one token loaded and one owner online, or any player
+     * for an ownerless token), otherwise
      * a step could wrongly consider the tokens as missing.
      */
     public void serverTick(ServerWorld serverWorld) {
-        if (resumeDone) return;
+        if (!tokensToRelease.isEmpty() && serverWorld.getTime() % 20 == 0)
+            releasePendingTokens(serverWorld);
         PartyStep currentStep = partyData.getCurrentStep();
+        if (resumeDone) {
+            // Once resumed (or started), the current step gets ticked (e.g. the countdown of an absent turn)
+            if (currentStep != null && currentStep.getStatus() == PartyStep.Status.IN_PROGRESS)
+                currentStep.tick(this, serverWorld);
+            return;
+        }
         if (!partyData.isStarted() || currentStep == null || currentStep.getStatus() != PartyStep.Status.IN_PROGRESS) {
             resumeDone = true;
             return;
         }
         if (serverWorld.getTime() % 20 != 0) return;
-        if (partyData.getTokens(serverWorld).isEmpty() || partyData.getOwners(serverWorld).isEmpty()) return;
+        List<TokenizedEntityInterface> loadedTokens = partyData.getTokens(serverWorld);
+        if (loadedTokens.isEmpty()) return;
+        // An ownerless token can be played by anyone: a connected player is enough
+        boolean playable = !partyData.getOwners(serverWorld).isEmpty()
+                || (!serverWorld.getPlayers().isEmpty() && loadedTokens.stream().anyMatch(token -> token.steveparty$getTokenOwner() == null));
+        if (!playable) return;
         resumeDone = true;
         currentStep.resume(this);
         markDirty();
@@ -410,8 +455,158 @@ public class PartyControllerEntity extends BlockEntity {
     }
 
     public void previousStep() {
+        PartyStep currentStep = partyData.getCurrentStep();
+        boolean leavingEnd = currentStep != null && currentStep.getType() == PartyStepType.END && partyData.getStepIndex() > 0;
         endCurrentStep();
+        // The END step released the tokens: going back into the game puts them in game again
+        // (the step being resumed grants CAN_MOVE as usual)
+        if (leavingEnd)
+            restoreTokensInGame();
         startStep(partyData.getStepIndex() - 1);
+    }
+
+    private void restoreTokensInGame() {
+        if (!(this.world instanceof ServerWorld serverWorld)) return;
+        for (UUID tokenUUID : partyData.getTokens()) {
+            tokensToRelease.remove(tokenUUID);
+            if (serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token)
+                token.steveparty$setStatus(TokenStatus.setStatus(token.steveparty$getStatus(), TokenStatus.IN_GAME));
+        }
+    }
+
+    /**
+     * Takes a token out of the game (clears IN_GAME / CAN_MOVE). A token that is not loaded is released
+     * as soon as it is loaded again, unless it joined a running party meanwhile.
+     */
+    public void releaseToken(ServerWorld serverWorld, UUID tokenUUID) {
+        if (serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token) {
+            token.steveparty$setStatus(TokenStatus.clearStatuses(token.steveparty$getStatus(), TokenStatus.IN_GAME, TokenStatus.CAN_MOVE));
+            tokensToRelease.remove(tokenUUID);
+        } else {
+            tokensToRelease.add(tokenUUID);
+        }
+        markDirty();
+    }
+
+    private void releasePendingTokens(ServerWorld serverWorld) {
+        boolean changed = false;
+        Iterator<UUID> iterator = tokensToRelease.iterator();
+        while (iterator.hasNext()) {
+            UUID tokenUUID = iterator.next();
+            if (isTokenInRunningParty(tokenUUID)) {
+                iterator.remove(); // it plays again: nothing to release
+                changed = true;
+            } else if (serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token) {
+                token.steveparty$setStatus(TokenStatus.clearStatuses(token.steveparty$getStatus(), TokenStatus.IN_GAME, TokenStatus.CAN_MOVE));
+                iterator.remove();
+                changed = true;
+            }
+        }
+        if (changed) markDirty();
+    }
+
+    private static boolean isTokenInRunningParty(UUID tokenUUID) {
+        return ACTIVE_PARTY_CONTROLLERS.values().stream()
+                .anyMatch(entity -> !entity.isRemoved() && entity.getPartyData().isStarted()
+                        && entity.getPartyData().getTokens().contains(tokenUUID));
+    }
+
+    /**
+     * Excludes a token from the party: it is removed from the tokens, its next turns are removed (only the
+     * steps after the current one, so the step index stays valid), it is taken out of the game and everybody
+     * is told. If it was the token's turn, the party goes on with the next step.
+     *
+     * @return false if the token is not part of this party
+     */
+    public boolean excludeToken(UUID tokenUUID) {
+        if (!(this.world instanceof ServerWorld serverWorld)) return false;
+        if (!partyData.getTokens().contains(tokenUUID)) return false;
+        Text tokenName = getTokenDisplayName(serverWorld, tokenUUID);
+
+        partyData.removeToken(tokenUUID);
+        int stepIndex = partyData.getStepIndex();
+        PartyStep currentStep = partyData.getCurrentStep();
+        boolean isItsTurn = currentStep instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID())
+                && currentStep.getStatus() == PartyStep.Status.IN_PROGRESS;
+
+        List<PartyStep> steps = partyData.getSteps();
+        for (int i = steps.size() - 1; i > stepIndex; i--) {
+            if (steps.get(i) instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID()))
+                steps.remove(i);
+        }
+        for (PartyStep step : List.copyOf(steps.subList(Math.min(Math.max(stepIndex, 0), steps.size()), steps.size())))
+            step.onTokenExcluded(tokenUUID, this);
+
+        releaseToken(serverWorld, tokenUUID);
+        MessageUtils.sendToPlayers(getPartyAudience(),
+                Text.translatableWithFallback("message.steveparty.token_excluded",
+                        "%s has been excluded from the party.", tokenName).formatted(Formatting.RED),
+                MessageUtils.MessageType.CHAT);
+
+        if (isItsTurn) {
+            nextStep();
+        } else {
+            markDirty();
+            sendPacketToInterestedPlayers();
+        }
+        return true;
+    }
+
+    /**
+     * Name of a token of the party: its current name if loaded, else the name remembered by one of its turns,
+     * else the beginning of its UUID.
+     */
+    public Text getTokenDisplayName(ServerWorld serverWorld, UUID tokenUUID) {
+        if (serverWorld.getEntity(tokenUUID) instanceof Entity entity)
+            return entity.getCustomName() != null ? entity.getCustomName() : entity.getName();
+        for (PartyStep step : partyData.getSteps()) {
+            if (step instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID()))
+                return turn.getTokenDisplayName(null);
+        }
+        return Text.literal(tokenUUID.toString().substring(0, 8));
+    }
+
+    /**
+     * @return true if the player takes part in this party: interested player, or owner of one of its tokens
+     */
+    public boolean isParticipant(ServerPlayerEntity player) {
+        UUID playerUUID = player.getUuid();
+        if (interestedPlayers.contains(playerUUID)) return true;
+        for (UUID tokenUUID : partyData.getTokens()) {
+            if (isTokenOwnedBy(tokenUUID, playerUUID)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * @return true if the player owns the token (read on the loaded token, else on the turns of the party)
+     */
+    public boolean isTokenOwnedBy(UUID tokenUUID, UUID playerUUID) {
+        if (this.world instanceof ServerWorld serverWorld && serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token)
+            return playerUUID.equals(token.steveparty$getTokenOwner());
+        for (PartyStep step : partyData.getSteps()) {
+            if (step instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID()) && playerUUID.equals(turn.getOwnerUUID()))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Players told about the party events: the connected interested players and the players near the controller.
+     */
+    public List<ServerPlayerEntity> getPartyAudience() {
+        List<ServerPlayerEntity> audience = new ArrayList<>();
+        if (this.world instanceof ServerWorld serverWorld) {
+            for (UUID playerUUID : interestedPlayers) {
+                ServerPlayerEntity player = serverWorld.getServer().getPlayerManager().getPlayer(playerUUID);
+                if (player != null) audience.add(player);
+            }
+            for (ServerPlayerEntity player : serverWorld.getPlayers()) {
+                if (!audience.contains(player) && player.getPos().isInRange(this.pos.toCenterPos(), PARTY_AUDIENCE_RADIUS))
+                    audience.add(player);
+            }
+        }
+        return audience;
     }
 
     private void endCurrentStep() {
@@ -423,6 +618,8 @@ public class PartyControllerEntity extends BlockEntity {
     }
 
     private void startStep(int stepIndex) {
+        // The party is live: nothing left to resume from a previous load
+        resumeDone = true;
         partyData.setStepIndex(stepIndex);
         PartyStep currentStep = partyData.getCurrentStep();
         if (currentStep != null)
@@ -466,7 +663,7 @@ public class PartyControllerEntity extends BlockEntity {
         }
     }
 
-    void sendPacketToInterestedPlayers() {
+    public void sendPacketToInterestedPlayers() {
         if (this.world instanceof ServerWorld serverWorld) {
             for (UUID playerUUID : interestedPlayers) {
                 PlayerEntity player = serverWorld.getPlayerByUuid(playerUUID);

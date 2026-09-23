@@ -58,6 +58,7 @@ public class Steveparty implements ModInitializer {
         ServerNetworking.initialize();
 
         MoveTokenCommand.initialize();
+        fr.lordfinn.steveparty.commands.PartyCommands.initialize();
         new TokenMovementService();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {

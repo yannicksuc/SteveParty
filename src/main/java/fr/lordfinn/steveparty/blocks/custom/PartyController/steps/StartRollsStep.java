@@ -91,6 +91,23 @@ public class StartRollsStep extends PartyStep {
         return ActionResult.PASS;
     }
 
+    @Override
+    public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
+        if (rolls.remove(tokenUUID) != null)
+            partyControllerEntity.markDirty();
+        // The excluded token may have been the last one this step was waiting for: check it one tick later
+        if (status != Status.IN_PROGRESS || rolls.isEmpty() || !(partyControllerEntity.getWorld() instanceof ServerWorld world))
+            return;
+        Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 1, () -> {
+            if (!isStillActive(partyControllerEntity)) return;
+            Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = partyControllerEntity.getPartyData().getTokensWithOwners(world);
+            if (tokensWithOwners.keySet().stream().allMatch(token -> rolls.containsKey(((Entity) token).getUuid()))) {
+                sortTokensByRoll(partyControllerEntity);
+                partyControllerEntity.nextStep();
+            }
+        });
+    }
+
     private static boolean isOwnerValid(UUID ownerUUID, TokenizedEntityInterface token, Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners) {
         return ownerUUID.equals(tokensWithOwners.get(token).getUuid());
     }

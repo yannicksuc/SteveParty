@@ -1,8 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.entities.TokenStatus;
-import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -39,12 +37,11 @@ public class EndPartyStep extends PartyStep {
         if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) return;
 
         // Release every token of the party so they are no longer considered in game
+        // (the tokens that are not loaded are released as soon as they are loaded again)
         Set<UUID> allTokens = new LinkedHashSet<>(partyControllerEntity.getPartyData().getTokens());
         allTokens.addAll(tokens);
         for (UUID tokenUUID : allTokens) {
-            if (serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token) {
-                token.steveparty$setStatus(TokenStatus.clearStatuses(token.steveparty$getStatus(), TokenStatus.IN_GAME, TokenStatus.CAN_MOVE));
-            }
+            partyControllerEntity.releaseToken(serverWorld, tokenUUID);
         }
 
         MessageUtils.sendToNearby(
@@ -53,6 +50,11 @@ public class EndPartyStep extends PartyStep {
                 Text.translatableWithFallback("message.steveparty.game_ended", "The party is over !"),
                 MessageUtils.MessageType.CHAT);
         partyControllerEntity.markDirty();
+    }
+
+    @Override
+    public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
+        tokens.remove(tokenUUID);
     }
 
     @Override

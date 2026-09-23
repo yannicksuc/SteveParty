@@ -75,9 +75,8 @@ public class TokenMovementService {
                 entity -> ((TokenizedEntityInterface) entity).steveparty$isTokenized())) {
 
             TokenizedEntityInterface tokenInterface = (TokenizedEntityInterface) token;
-            UUID tokenOwnerUUID = tokenInterface.steveparty$getTokenOwner();
-            if (tokenOwnerUUID != null
-                    && tokenInterface.steveparty$getNbSteps() == 0
+            // Tokens without owner are eligible too: anyone may move them (see isTokenEligible)
+            if (tokenInterface.steveparty$getNbSteps() == 0
                     && isTokenEligible(tokenInterface, ownerUUID)) {
                 eligibleTokens.add(token);
             }
@@ -89,10 +88,10 @@ public class TokenMovementService {
         int status = token.steveparty$getStatus();
         UUID tokenOwner = token.steveparty$getTokenOwner();
         if (TokenStatus.isInGame(status)) {
-            // In game: only the owner can move it, and only when it is its turn
-            return ownerUUID.equals(tokenOwner) && TokenStatus.canMoveInGame(status);
+            // In game: only the owner (anyone for an ownerless token) can move it, and only when it is its turn
+            return (tokenOwner == null || tokenOwner.equals(ownerUUID)) && TokenStatus.canMoveInGame(status);
         }
-        // Free play: a dice only moves the tokens of the player who rolled it (unowned tokens: anyone)
+        // Free play: a dice only moves the tokens of the player who rolled it (ownerless tokens: anyone)
         return tokenOwner == null || tokenOwner.equals(ownerUUID);
     }
 

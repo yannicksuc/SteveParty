@@ -106,6 +106,19 @@ public class PartyStep {
     }
 
     /**
+     * Called every server tick by the controller while this step is the current IN_PROGRESS step
+     * (only once the step has been started or resumed). Must stay cheap.
+     */
+    public void tick(PartyControllerEntity partyControllerEntity, ServerWorld world) {
+    }
+
+    /**
+     * A token was excluded from the party: forget it (the step must not wait for it any more).
+     */
+    public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
+    }
+
+    /**
      * @return true if a delayed callback started by this step may still act on the controller.
      */
     protected boolean isStillActive(PartyControllerEntity partyControllerEntity) {
