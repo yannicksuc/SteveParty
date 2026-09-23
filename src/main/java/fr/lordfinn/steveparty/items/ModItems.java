@@ -29,14 +29,17 @@ import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
+    /** Enchanting table enchantability of the tokenizer wand (it can only receive steveparty:game_master). */
+    private static final int TOKENIZER_WAND_ENCHANTABILITY = 10;
+
     public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
 
-    public static final Item STENCIL = registerUnstackable(StencilItem.class, "stencil");
+    public static final Item STENCIL = register(StencilItem.class, "stencil");
     public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
-    public static final Item BOARD_SPACE_BEHAVIOR = registerUnstackable(CartridgeItem.class, "board_space_behavior");
-    public static final Item TILE_BEHAVIOR_START = registerUnstackable(StartCartridgeItem.class, "tile_behavior_start");
-    public static final Item BOARD_SPACE_BEHAVIOR_STOP = registerUnstackable(StopCartridgeItem.class, "board_space_behavior_stop");
-    public static final Item TOKENIZER_WAND = registerUnstackable(TokenizerWandItem.class, "tokenizer_wand");
+    public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
+    public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
+    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop");
+    public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand", new Item.Settings().maxCount(1).enchantable(TOKENIZER_WAND_ENCHANTABILITY));
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
     public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
@@ -44,8 +47,8 @@ public class ModItems {
     public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
     public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
-    public static final Item INVENTORY_CARTRIDGE = registerUnstackable(InventoryCartridgeItem.class, "inventory_cartridge");
-    public static final Item MINI_GAME_PAGE = registerUnstackable(MiniGamePageItem.class, "mini_game_page");
+    public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
+    public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item HERE_WE_GO_BOOK = registerUnstackable(HereWeGoBookItem.class, "here_we_go_book");
     public static final Item HERE_WE_COME_BOOK = registerUnstackable(HereWeComeBookItem.class, "here_we_come_book");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -66,25 +69,25 @@ public class ModItems {
             .build();
 
 
+    /**
+     * Registers a stackable item. Items whose state lives in immutable data components (cartridges, stencils,
+     * mini game pages...) may stack: only identical stacks (same components) merge, so no state is lost.
+     */
     public static <T extends Item> T register(Class<T> itemClass, String id) {
-        try {
-            T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(new T.Settings(), id));
-            Identifier itemID = Steveparty.id(id);
-            RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
-            Registry.register(Registries.ITEM, key, item);
-            return item;
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to create and register item: " + itemClass, e);
-        }
+        return register(itemClass, id, new Item.Settings());
     }
 
     /**
-     * Registers an item that carries per-stack state (components): it must not stack, otherwise the state of
-     * one item would be shared/lost when merging stacks.
+     * Registers an item whose per-stack state is edited in place over time (catalogue, books, wrench, wand...):
+     * it must not stack, otherwise editing one item would silently edit the whole stack.
      */
     public static <T extends Item> T registerUnstackable(Class<T> itemClass, String id) {
+        return register(itemClass, id, new Item.Settings().maxCount(1));
+    }
+
+    public static <T extends Item> T register(Class<T> itemClass, String id, Item.Settings settings) {
         try {
-            T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(new Item.Settings().maxCount(1), id));
+            T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(settings, id));
             Identifier itemID = Steveparty.id(id);
             RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
             Registry.register(Registries.ITEM, key, item);

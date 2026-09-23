@@ -141,6 +141,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private static final int MAX_HUNGER = 100;
+	/** 1 chance in TAMING_CHANCE to tame the Mula with each star fragment of its colour. */
+	private static final int TAMING_CHANCE = 3;
 
 	public MulaEntity(EntityType<MulaEntity> entityType, World world) {
 		super(entityType, world);
@@ -225,6 +227,14 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	public ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack stack = player.getStackInHand(hand);
 
+		// Taming: sneak + right-click with a star fragment of the Mula's own colour
+		if (player.isSneaking() && !this.isTamed() && stack.isOf(this.getVariant().getFragmentItem())) {
+			if (!this.getWorld().isClient) {
+				tryTame(player, stack);
+			}
+			return ActionResult.SUCCESS;
+		}
+
 		// Check cooldown
 		if (eatCooldown > 0) {
 			triggerAnim("main_controller", "no");
@@ -268,6 +278,18 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 
 		return ActionResult.SUCCESS;
+	}
+
+	/** Like vanilla wolves: consumes one fragment, 1 in {@value #TAMING_CHANCE} chance, hearts or smoke. */
+	private void tryTame(PlayerEntity player, ItemStack stack) {
+		stack.decrementUnlessCreative(1, player);
+		if (this.random.nextInt(TAMING_CHANCE) == 0) {
+			this.setOwner(player);
+			this.navigation.stop();
+			this.getWorld().sendEntityStatus(this, EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES);
+		} else {
+			this.getWorld().sendEntityStatus(this, EntityStatuses.ADD_NEGATIVE_PLAYER_REACTION_PARTICLES);
+		}
 	}
 
 	private <T extends GeoAnimatable> PlayState predicate(AnimationState<T> state) {
