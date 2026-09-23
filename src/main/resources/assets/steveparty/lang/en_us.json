@@ -356,7 +356,7 @@
   "command.steveparty.turn_not_current": "This turn is not the current one any more.",
   "command.steveparty.turn_not_absent": "The token of the current turn is not absent, its turn cannot be skipped.",
   "command.steveparty.token_not_in_party": "This token is not part of the party.",
-  "command.steveparty.exclude_not_allowed": "You can only exclude your own token, or the token whose turn is waiting for it.",
+  "command.steveparty.exclude_not_allowed": "You can only exclude your own token, the token whose turn is waiting for it, or any token with a Game Master wand.",
   "enchantment.steveparty.game_master": "Game Master",
   "message.steveparty.token_not_yours": "This token belongs to another player (operator or Game Master wand required).",
   "message.steveparty.shop.access_denied": "Only a Shopkeeper Key linked to this shop's trader can open it.",
@@ -385,5 +385,10 @@
   "gui.steveparty.dice_forge.status.layout_changed": "The faces changed since the craft started",
   "gui.steveparty.dice_forge.status.missing_fragment": "Put star fragments in the 4 slots around the core",
   "gui.steveparty.dice_forge.status.duplicate_fragment": "Each fragment colour must be different (only black can be repeated)",
-  "gui.steveparty.dice_forge.status.output_blocked": "The output slot is full or holds another die"
+  "gui.steveparty.dice_forge.status.output_blocked": "The output slot is full or holds another die",
+  "message.steveparty.shopkeeper_key.not_owner": "This trader belongs to another player.",
+  "message.steveparty.shop.not_owner_access_denied": "This shop belongs to another player.",
+  "message.steveparty.shop.key_required": "Hold a Shopkeeper Key to open your shop.",
+  "gui.steveparty.dice_forge.status.no_face": "Place at least one dice face",
+  "message.steveparty.dice_forge.core_settling": "The gravity core is still settling into the forge"
 }
