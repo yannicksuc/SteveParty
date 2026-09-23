@@ -134,6 +134,12 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         this.markDirty();
         this.onInventoryChanged();
     }
+    /** One cartridge per slot, also for hoppers and other automation (cartridges stack up to 64 in inventories). */
+    @Override
+    public int getMaxCountPerStack() {
+        return 1;
+    }
+
     @Override
     public int size() {
         return this.size;

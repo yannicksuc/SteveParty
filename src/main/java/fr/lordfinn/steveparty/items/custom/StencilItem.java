@@ -18,7 +18,7 @@ import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEn
 import static fr.lordfinn.steveparty.components.ModComponents.STENCIL_PIXELS;
 
 public class StencilItem extends Item {
-    private static byte[] shape = new byte[]{
+    private static final byte[] shape = new byte[]{
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -60,7 +60,8 @@ public class StencilItem extends Item {
         for (byte b : shape) {
             byteList.add(b);
         }
-        stack.set(STENCIL_PIXELS, byteList);
+        // Immutable value: stencils stack, and stacks sharing a component instance must never see it change
+        stack.set(STENCIL_PIXELS, List.copyOf(byteList));
     }
 
     @Environment(EnvType.CLIENT)

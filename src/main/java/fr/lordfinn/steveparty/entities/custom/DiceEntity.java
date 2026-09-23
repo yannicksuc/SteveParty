@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
 import fr.lordfinn.steveparty.data.handler.ListUuidTrackedDataHandler;
@@ -150,8 +151,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         return this.dataTracker.get(ROLL_VALUE);
     }
 
+    /** A forged die rolls one of its own faces; a plain die rolls MIN..MAX. */
     public int getRandomDiceValue() {
-        return (int) (Math.random() * MAX) + MIN;
+        return DiceFacesComponent.rollFace(itemReference, this.getRandom());
     }
 
     protected void pickRollValue() {
@@ -378,11 +380,27 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         return false;
     }
 
-    private void giveBackDice(ServerPlayerEntity player) {
+    /**
+     * Removes the dice. An Infinity dice is not lost: it goes back to its owner when the owner is online,
+     * otherwise to the player who exploded it (anyone may explode a dice).
+     */
+    private void giveBackDice(@Nullable ServerPlayerEntity player) {
         ItemStack diceItem = getItemReference();
-        if (player != null && hasInfinity())
-            player.getInventory().offerOrDrop(diceItem);
+        if (hasInfinity()) {
+            ServerPlayerEntity recipient = getOnlineOwner();
+            if (recipient == null) recipient = player;
+            if (recipient != null)
+                recipient.getInventory().offerOrDrop(diceItem);
+        }
         this.remove(RemovalReason.DISCARDED);
+    }
+
+    @Nullable
+    private ServerPlayerEntity getOnlineOwner() {
+        if (!(this.getWorld() instanceof ServerWorld world)) return null;
+        return this.getOwner()
+                .map(uuid -> world.getServer().getPlayerManager().getPlayer(uuid))
+                .orElse(null);
     }
 
     @Override
