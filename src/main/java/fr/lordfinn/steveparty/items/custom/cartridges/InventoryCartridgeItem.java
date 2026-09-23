@@ -28,6 +28,8 @@ import net.minecraft.world.World;
 
 import java.util.List;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
@@ -38,6 +40,11 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     public InventoryCartridgeItem(Settings settings) {
         super(settings);
+    }
+
+    @Override
+    public BoardSpaceType getBoardSpaceType() {
+        return BoardSpaceType.TILE_INVENTORY_INTERACTOR;
     }
 
     @Override

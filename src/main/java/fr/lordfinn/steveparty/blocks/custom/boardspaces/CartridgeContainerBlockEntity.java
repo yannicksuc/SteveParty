@@ -122,6 +122,7 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
             return ItemStack.EMPTY;
         } else {
             this.heldStacks.set(wrapped, ItemStack.EMPTY);
+            this.markDirty();
             this.onInventoryChanged();
             return itemStack;
         }

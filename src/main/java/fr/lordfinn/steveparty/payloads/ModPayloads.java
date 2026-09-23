@@ -31,7 +31,6 @@ public class ModPayloads {
     public static final Identifier UPDATE_COLORED_TILE_PAYLOAD = Steveparty.id("update-colored-tile-payload");
     public static final Identifier PARTY_DATA_PAYLOAD = Steveparty.id("party-data");
     public static final Identifier SELECTION_STATE_PAYLOAD = Steveparty.id("selection-state-payload");
-    public static final Identifier BLOCK_POSES_MAP_PAYLOAD = Steveparty.id("block-poses-map-payload");
     public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Steveparty.id("here-we-go-book-payload");
     public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Steveparty.id("here-we-come-book-payload");
     public static final Identifier SAVE_STENCIL_PAYLOAD = Steveparty.id("save_stencil");
@@ -52,7 +51,6 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(PartyDataPayload.ID, PartyDataPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(BlockPosesMapPayload.ID, BlockPosesMapPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeGoBookPayload.ID, HereWeGoBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);

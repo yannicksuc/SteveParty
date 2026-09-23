@@ -311,7 +311,7 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
         ItemStack stack = getStack(0);
         boolean hasItems = false;
         if (stack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory) {
-            hasItems = cartridgeInventory.getItems().stream().anyMatch(s -> !s.isEmpty());
+            hasItems = !cartridgeInventory.isEmpty();
         }
 
         if (!hasItems && currentState.get(ACTIVATED)) {

@@ -27,7 +27,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
-import fr.lordfinn.steveparty.persistent_state.ClientBoardSpaceRouters;
 import fr.lordfinn.steveparty.client.flip.GoalPoleFlipTracker;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -254,7 +253,6 @@ public class StevepartyClient implements ClientModInitializer {
         PartyService.tokens.clear();
         PartyStepsHud.clearData();
         FloatingTextRenderer.clear();
-        ClientBoardSpaceRouters.update(Map.of());
         GoalPoleFlipTracker.clear();
     }
 

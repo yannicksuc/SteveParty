@@ -79,10 +79,11 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
 
     protected abstract ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit);
 
+    /** Cartridge containers don't tick by default; subclasses whose block entity needs it opt in. */
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return TickableBlockEntity.getTicker(world);
+        return null;
     }
 
     @Override

@@ -6,7 +6,6 @@ import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
-import fr.lordfinn.steveparty.persistent_state.ClientBoardSpaceRouters;
 import fr.lordfinn.steveparty.service.TokenData;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
@@ -33,13 +32,6 @@ public class PayloadReceivers {
                 context.player().getWorld().addImportantParticle(ARROW_PARTICLE,
                 payload.position().x, payload.position().y, payload.position().z,
                 payload.velocity().x, payload.velocity().y, payload.velocity().z)));
-
-        ClientPlayNetworking.registerGlobalReceiver(BlockPosesMapPayload.ID,
-                (payload, context) -> context.client().execute(()
-                        -> {
-                    ClientBoardSpaceRouters.update(payload.blockPoses());
-                }
-                ));
 
         ClientPlayNetworking.registerGlobalReceiver(EnchantedCircularParticlePayload.ID,
                 (payload, context) -> context.client().execute(summonEnchanted(context, payload)));

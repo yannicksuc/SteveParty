@@ -5,6 +5,9 @@ import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
@@ -75,8 +78,19 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
 
         if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
-            tileEntity.updateBoardSpaceType();
+            tileEntity.onNeighborUpdate();
         }
+    }
+
+    /**
+     * Only board spaces whose role animates something tick (the start tile animates its bound token), server side.
+     * The ticker is re-evaluated by the chunk whenever the block state (and so the tile type) changes.
+     */
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        if (world.isClient || state.get(TILE_TYPE) != BoardSpaceType.TILE_START) return null;
+        return TickableBlockEntity.getTicker(world);
     }
     /**
      * Whether reaching this block consumes one step of a token's movement.
