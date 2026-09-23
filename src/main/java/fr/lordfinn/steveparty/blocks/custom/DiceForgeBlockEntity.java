@@ -38,7 +38,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     public DiceForgeBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DICE_FORGE_ENTITY, pos, state);
-        this.inventory = DefaultedList.ofSize(27, ItemStack.EMPTY);
+        this.inventory = DefaultedList.ofSize(this.size(), ItemStack.EMPTY);
     }
 
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
@@ -80,7 +80,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     }
 
     private void startCrafting() {
-        if (!isCrafting && hasRequiredPowerStar()) {
+        // Only start (and consume the Power Star) when the forge is activated and holds at least one face
+        if (!isCrafting && isActivated() && hasRequiredPowerStar() && hasAnyFace()) {
             isCrafting = true;
             craftStartTime = world.getTime();
             consumePowerStar();
@@ -157,6 +158,15 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         return false;
     }
 
+    private boolean hasAnyFace() {
+        for (ItemStack stack : inventory) {
+            if (!stack.isEmpty() && !stack.isOf(ModItems.POWER_STAR)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void consumePowerStar() {
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.get(i);
@@ -171,7 +181,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     private void finishCraft() {
         // Gather dice faces
-        DefaultedList<ItemStack> faces = DefaultedList.ofSize(27, ItemStack.EMPTY);
+        DefaultedList<ItemStack> faces = DefaultedList.ofSize(6, ItemStack.EMPTY);
         int count = 0;
         for (ItemStack stack : inventory) {
             if (!stack.isEmpty() && stack.getItem() != ModItems.POWER_STAR) {
@@ -180,9 +190,10 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             }
         }
 
-        // Ensure 6 faces (duplicate if less)
-        while (count < 6) {
-            faces.set(count, faces.get(count % count).copy());
+        // Ensure 6 faces (duplicate if less). No face at all: nothing to duplicate (avoids % 0).
+        int found = count;
+        while (found > 0 && count < 6) {
+            faces.set(count, faces.get(count % found).copy());
             count++;
         }
 

@@ -29,14 +29,15 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_BLOCKS)
             addDrop(block);
+        // Slabs: a double slab must drop 2 items
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_SLABS)
-            addDrop(block);
+            addDrop(block, slabDrops(block));
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_STAIRS)
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_WALLS)
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS)
-            addDrop(block);
+            addDrop(block, slabDrops(block));
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS)
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS)

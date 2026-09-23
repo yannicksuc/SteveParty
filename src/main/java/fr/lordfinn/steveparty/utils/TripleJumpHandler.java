@@ -24,20 +24,10 @@ public class TripleJumpHandler {
                 handleTripleJump(player);
             });
         });
+        // Note: the triple jump itself is applied client-side (LivingEntityMixin + JumpTracker).
+        // The former per-tick server scan only fed handleTripleJump's (disabled) buffer and was removed.
+    }
 
-        ServerTickEvents.END_WORLD_TICK.register(world -> {
-            for (ServerPlayerEntity player : world.getPlayers()) {
-                onPlayerTick(player);
-            }
-        });
-    }
-    public static void onPlayerTick(ServerPlayerEntity player) {
-        if (!player.isOnGround() || !hasTripleJumpBoots(player)) return;
-        TripleJumpComponent comp = getTripleJumpComponent(player);
-        if (comp.getJumpCount() > 0 && comp.getJumpBufferExpire() == 0) {
-            comp.setJumpBufferExpire(player.getWorld().getTime() + JUMP_BUFFER_TICKS);
-        }
-    }
     private static void handleTripleJump(ServerPlayerEntity player) {
      /*   TripleJumpComponent comp = getTripleJumpComponent(player);
         if (!hasTripleJumpBoots(player) || !player.isOnGround()) {

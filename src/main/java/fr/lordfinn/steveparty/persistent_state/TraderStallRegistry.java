@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.persistent_state;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.entity.Entity;
 import java.util.*;
@@ -8,6 +9,16 @@ import java.util.function.Function;
 public class TraderStallRegistry {
     private static final Map<UUID, Set<BlockPos>> traderToStalls = new HashMap<>();
     private static final Map<BlockPos, Set<UUID>> stallToTraders = new HashMap<>();
+
+    static {
+        // Runtime-only links: never leak them from one server/world to the next (singleplayer world switch)
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> clear());
+    }
+
+    public static void clear() {
+        traderToStalls.clear();
+        stallToTraders.clear();
+    }
 
     public static void linkTraderToStall(UUID traderId, BlockPos stallPos) {
         traderToStalls.computeIfAbsent(traderId, k -> new HashSet<>()).add(stallPos);

@@ -1,9 +1,15 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "fr.lordfinn.steveparty.mixin.client",
+  "package": "fr.lordfinn.steveparty.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "CameraGoalPoleRollMixin",
+    "LivingEntityRendererSetupTransformsMixin",
+    "LivingEntityRendererShouldFlipMixin",
+    "LivingEntityRendererSmoothFlipMixin",
+    "LivingEntityRenderStateMixin",
+    "PlayerEntityModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

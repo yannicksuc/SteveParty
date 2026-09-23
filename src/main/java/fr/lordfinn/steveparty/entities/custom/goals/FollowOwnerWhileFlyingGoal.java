@@ -25,10 +25,10 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        if (!entity.isTamed() || entity.getOwner() == null) {
+        if (!entity.isTamed() || !(entity.getOwner() instanceof PlayerEntity player)) {
             return false;
         }
-        this.owner = (PlayerEntity) entity.getOwner();
+        this.owner = player;
         return !(entity.squaredDistanceTo(owner) < (double)(minDistance * minDistance));
     }
 

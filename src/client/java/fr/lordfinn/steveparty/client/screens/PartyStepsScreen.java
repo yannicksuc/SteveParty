@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -89,8 +90,10 @@ public class PartyStepsScreen extends Screen {
     }
 
     @Override
-    public void close() {
-        super.close();
+    public void removed() {
+        // removed() is always called (Escape, setScreen from elsewhere, disconnect), unlike close()
+        super.removed();
         canDisplay = true;
+        ConfigurationManager.setPartyStepsHudPosition(hudX, hudY);
     }
 }

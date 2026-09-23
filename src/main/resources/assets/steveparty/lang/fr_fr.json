@@ -35,6 +35,7 @@
   "tooltip.steveparty.destination_position": "  - (%d, %d, %d)",
   "tooltip.steveparty.no_destinations": "Aucune destination définie.",
   "effect.steveparty.squish": "Écrasement",
+  "effect.steveparty.squished": "Écrasement",
   "entity.steveparty.dice": "Dé par défaut",
   "entity.steveparty.hiding_trader": "Marchand caché",
   "message.steveparty.steps_remaining_for": "Il reste %d pas pour %s",
@@ -62,5 +63,18 @@
   "party_step_type.end": "Fin",
   "status.waiting": "En attente",
   "status.in_progress": "En cours",
-  "status.finished": "Terminé"
+  "status.finished": "Terminé",
+  "block.steveparty.simple_tile": "Tuile simple",
+  "item.steveparty.flag": "Drapeau",
+  "item.steveparty.triple_jump_shoes": "Chaussures de triple saut",
+  "message.steveparty.vs": "vs",
+  "block.steveparty.stencil_maker": "Fabrique de pochoirs",
+  "block.steveparty.blue_star_fragments_block": "Bloc de fragments d'étoile bleus",
+  "block.steveparty.green_star_fragments_block": "Bloc de fragments d'étoile verts",
+  "block.steveparty.red_star_fragments_block": "Bloc de fragments d'étoile rouges",
+  "block.steveparty.yellow_star_fragments_block": "Bloc de fragments d'étoile jaunes",
+  "block.steveparty.purple_star_fragments_block": "Bloc de fragments d'étoile violets",
+  "block.steveparty.black_star_fragments_block": "Bloc de fragments d'étoile noirs",
+  "message.steveparty.game_ended": "La partie est terminée !",
+  "message.steveparty.no_compatible_minigame": "Aucun mini-jeu compatible avec les équipes actuelles, on passe."
 }

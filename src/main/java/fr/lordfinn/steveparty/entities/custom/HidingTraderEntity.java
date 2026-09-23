@@ -31,7 +31,9 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -43,6 +45,8 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.village.MerchantInventory;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.world.World;
@@ -71,17 +75,23 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
 
     private Integer optionalScreenHandlerId = null;
+    /** Client-side countdown (in ticks) before playing the disguise block place sound, -1 when idle. */
+    private int pendingPlaceSoundTicks = -1;
     private BlockState blockState = Blocks.GOLD_BLOCK.getDefaultState();
     private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.STRING);
 
     public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
-        if (!world.isClient) {
-            vendorLinkPersistentState = VendorLinkPersistentState.get(this.getWorld().getServer());
-            updateInventories();
-            updateTradeOffers();
+        // Goals are already registered by MobEntity's constructor (server side).
+        // Inventories/offers are resolved lazily in fillRecipes(): the UUID is not final yet at construction time.
+    }
+
+    @Nullable
+    private VendorLinkPersistentState getVendorLinkState() {
+        if (vendorLinkPersistentState == null && this.getWorld() instanceof ServerWorld serverWorld) {
+            vendorLinkPersistentState = VendorLinkPersistentState.get(serverWorld.getServer());
         }
-        initGoals();
+        return vendorLinkPersistentState;
     }
 
     @Override
@@ -124,12 +134,41 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public void sendOffers(PlayerEntity player, Text name, int levelProgress) {
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
-                        (syncId, playerInventory, playerx) -> new CustomizableMerchantScreenHandler(syncId, playerInventory, this), name))
+                        (syncId, playerInventory, playerx) -> new CustomizableMerchantScreenHandler(syncId, playerInventory, this) {
+                            @Override
+                            public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity clicker) {
+                                // Re-check the stock right before the result can be taken (the stock may have
+                                // been removed since the offer was displayed).
+                                if (slotIndex == OUTPUT_ID && !HidingTraderEntity.this.canTakeCurrentTrade(this)) {
+                                    return;
+                                }
+                                super.onSlotClick(slotIndex, button, actionType, clicker);
+                            }
+                        }, name))
                 .ifPresent(id -> optionalScreenHandlerId = id);
         updateTradesToClient(player, levelProgress);
     }
 
+    /**
+     * Server-side check done when a player clicks the trade result slot.
+     * If the linked storages no longer hold the sold item, the offer is disabled and the result slot cleared.
+     */
+    private boolean canTakeCurrentTrade(MerchantScreenHandler handler) {
+        if (this.getWorld().isClient) return true;
+        if (!(handler.getSlot(0).inventory instanceof MerchantInventory merchantInventory)) return true;
+        TradeOffer offer = merchantInventory.getTradeOffer();
+        if (offer == null || merchantInventory.getStack(2).isEmpty()) return true;
+        if (isStockAvailable(offer.getSellItem())) return true;
+        offer.disable();
+        merchantInventory.updateOffers();
+        PlayerEntity customer = getCustomer();
+        if (customer != null) updateTradesToClient(customer, 0);
+        handler.syncState();
+        return false;
+    }
+
     private void updateTradesToClient(PlayerEntity player, int levelProgress) {
+        if (player == null) return;
         if (optionalScreenHandlerId != null) {
             TradeOfferList tradeOfferList = this.getOffers();
             if (!tradeOfferList.isEmpty()) {
@@ -155,7 +194,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         tradingStalls.clear();
         cashRegisters.clear();
         storages.clear();
-        vendorLinkPersistentState.getVendorLinks(uuid).forEach(pos -> {
+        VendorLinkPersistentState linkState = getVendorLinkState();
+        if (linkState == null) return;
+        linkState.getVendorLinks(this.getUuid()).forEach(pos -> {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof Inventory) {
                 if (blockEntity instanceof TradingStallBlockEntity)
@@ -191,9 +232,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         int requiredAmount = itemStack.getCount();
         int stockAmount = 0;
         for (Inventory inventory : storages) {
+            if (isRemovedStorage(inventory)) continue;
             for (int slot = 0; slot < inventory.size(); slot++) {
                 ItemStack stack = inventory.getStack(slot);
-                if (stack.getItem() == itemStack.getItem()) {
+                if (ItemStack.areItemsAndComponentsEqual(stack, itemStack)) {
                     stockAmount += stack.getCount();
                     if (stockAmount >= requiredAmount) {
                         return true;
@@ -204,19 +246,30 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         return false;
     }
 
+    private static boolean isRemovedStorage(Inventory inventory) {
+        return inventory instanceof BlockEntity blockEntity && blockEntity.isRemoved();
+    }
+
     private void consumeStock(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) return;
         int remainingAmount = itemStack.getCount();
         for (Inventory inventory : storages) {
-            for (int slot = 0; slot < inventory.size(); slot++) {
+            if (isRemovedStorage(inventory)) continue;
+            boolean modified = false;
+            for (int slot = 0; slot < inventory.size() && remainingAmount > 0; slot++) {
                 ItemStack stack = inventory.getStack(slot);
-                if (stack.getItem() == itemStack.getItem()) {
+                if (ItemStack.areItemsAndComponentsEqual(stack, itemStack)) {
                     int consumed = Math.min(stack.getCount(), remainingAmount);
                     stack.decrement(consumed);
                     remainingAmount -= consumed;
-                    if (remainingAmount <= 0) {
-                        return;
-                    }
+                    modified = true;
                 }
+            }
+            if (modified) {
+                inventory.markDirty();
+            }
+            if (remainingAmount <= 0) {
+                return;
             }
         }
     }
@@ -225,29 +278,33 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (stack == null || stack.isEmpty()) {
             return;
         }
-        for (Inventory inventory : cashRegisters) {
+        for (CashRegisterBlockEntity inventory : cashRegisters) {
             if (stack.isEmpty()) {
                 break;
             }
-            for (int slot = 0; slot < inventory.size(); slot++) {
+            if (inventory.isRemoved()) continue;
+            boolean modified = false;
+            for (int slot = 0; slot < inventory.size() && !stack.isEmpty(); slot++) {
                 ItemStack targetStack = inventory.getStack(slot);
                 if (targetStack.isEmpty()) {
-                    inventory.setStack(slot, stack.split(stack.getCount()));
-                    break;
-                } else if (stack.getItem().equals(targetStack.getItem())) {
+                    inventory.setStack(slot, stack.split(Math.min(stack.getCount(), stack.getMaxCount())));
+                    modified = true;
+                } else if (ItemStack.areItemsAndComponentsEqual(stack, targetStack)) {
                     int transferableAmount = Math.min(stack.getCount(), targetStack.getMaxCount() - targetStack.getCount());
                     if (transferableAmount > 0) {
                         targetStack.increment(transferableAmount);
                         stack.decrement(transferableAmount);
+                        modified = true;
                     }
                 }
-                if (stack.isEmpty()) {
-                    break;
-                }
             }
-            if (stack.isEmpty()) {
+            if (modified) {
                 inventory.markDirty();
             }
+        }
+        // Cash registers full or missing: never destroy the payment, drop it at the trader instead
+        if (!stack.isEmpty() && this.getWorld() instanceof ServerWorld serverWorld) {
+            this.dropStack(serverWorld, stack.copyAndEmpty());
         }
     }
 
@@ -305,14 +362,15 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public void readNbt(NbtCompound nbt) {
         super.readNbt(nbt);
-        nbt.putBoolean("isInvisible", this.isInvisible());
+        if (nbt.contains("isInvisible")) {
+            this.setInvisible(nbt.getBoolean("isInvisible"));
+        }
         if (nbt.contains("blockState")) {
             String blockStateJson = nbt.getString("blockState");
             JsonElement jsonElement = JsonParser.parseString(blockStateJson);
             BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
                     .ifPresent(this::setBlockState);
         }
-        initGoals();
     }
 
     private static void printWarnForFailDecodeBlockState(String error) {
@@ -321,9 +379,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
-        if (nbt.contains("isInvisible")) {
-            this.setInvisible(nbt.getBoolean("isInvisible"));
-        }
+        nbt.putBoolean("isInvisible", this.isInvisible());
         if (blockState != null) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
             result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> nbt.putString("blockState", jsonElement.toString()));
@@ -348,6 +404,17 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     public void setOffersFromServer(TradeOfferList offers) {
         tradeOffers.clear();
         tradeOffers.addAll(offers);
+    }
+
+    @Override
+    public void trade(TradeOffer offer) {
+        // Last line of defense: the result slot click is already guarded, but never keep an offer
+        // enabled once its stock is gone.
+        if (!this.getWorld().isClient && !isStockAvailable(offer.getSellItem())) {
+            offer.disable();
+            Steveparty.LOGGER.warn("Trader {} completed a trade without stock for {}", this.getUuid(), offer.getSellItem());
+        }
+        super.trade(offer);
     }
 
     @Override
@@ -398,8 +465,20 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                     if (this.getWorld() == null) return;
                     lastHidingState = false;
                     ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), SoundEvents.ENTITY_PUFFER_FISH_BLOW_OUT, SoundCategory.NEUTRAL, 0.5F, 1.5F);
-                    Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 10, () -> ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), this.blockState.getSoundGroup().getPlaceSound(), SoundCategory.NEUTRAL, 1F, 1.0F));
+                    // Place sound played 10 ticks later from tick(), on the client thread
+                    pendingPlaceSoundTicks = 10;
                 }));
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (this.getWorld().isClient && pendingPlaceSoundTicks >= 0) {
+            if (pendingPlaceSoundTicks-- == 0) {
+                Vec3d soundPos = this.getBlockPos().toCenterPos();
+                this.getWorld().playSound(soundPos.x, soundPos.y, soundPos.z, this.blockState.getSoundGroup().getPlaceSound(), SoundCategory.NEUTRAL, 1F, 1.0F, false);
+            }
+        }
     }
 
     private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {

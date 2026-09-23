@@ -39,7 +39,10 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.STENCIL_MAKER,
                         ModBlocks.HOP_SWITCH,
                         ModBlocks.LOOTING_BOX,
-                        ModBlocks.GRAVITY_CORE
+                        ModBlocks.GRAVITY_CORE,
+                        // requiresTool() blocks that had no mineable tag (unharvestable)
+                        ModBlocks.SIMPLE_TILE,
+                        ModBlocks.DICE_FORGE
                 );
         for (Block b : ModBlocks.POLISHED_TERRACOTTA_SLABS)
             getOrCreateTagBuilder(BlockTags.SLABS).add(b);
@@ -57,9 +60,14 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
             getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
         for (Block b : ModBlocks.POLISHED_TERRACOTTA_BRICKS_BLOCKS)
             getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
+        // Stairs / slabs / walls copy the settings (requiresTool) of their base block: same tool
+        for (Block[] variants : new Block[][]{
+                ModBlocks.POLISHED_TERRACOTTA_STAIRS, ModBlocks.POLISHED_TERRACOTTA_SLABS, ModBlocks.POLISHED_TERRACOTTA_WALLS,
+                ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS, ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS, ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS})
+            for (Block b : variants)
+                getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
-                        ModBlocks.GOAL_POLE_BASE,
                         ModBlocks.TELEPORTATION_PAD,
                         ModBlocks.SPRUCE_TRAFFIC_SIGN,
                         ModBlocks.OAK_TRAFFIC_SIGN,
@@ -91,11 +99,5 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 .add(ModBlocks.GRAVITY_CORE);
         getOrCreateTagBuilder(BlockTags.CLIMBABLE)
                 .add(GOAL_POLE);
-
-        for (Block b : ModBlocks.POLISHED_TERRACOTTA_WALLS)
-            getOrCreateTagBuilder(BlockTags.WALLS).add(b);
-
-        for (Block b : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS)
-            getOrCreateTagBuilder(BlockTags.WALLS).add(b);
     }
 }

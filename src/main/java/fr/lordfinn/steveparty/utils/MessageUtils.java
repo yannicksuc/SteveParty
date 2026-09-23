@@ -6,6 +6,7 @@ import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -51,11 +52,32 @@ public class MessageUtils {
      * @param radius The radius around the position.
      * @param message The message to send. Can be a String or a Text.
      * @param messageType The type of message (CHAT, ACTION_BAR, or TITLE).
+     * @deprecated ignores the dimension; prefer {@link #sendToNearby(ServerWorld, Vec3d, double, Object, MessageType)}.
      */
+    @Deprecated
     public static void sendToNearby(MinecraftServer server, Vec3d position, double radius, Object message, MessageType messageType) {
         if (server == null) return;
         Text text = convertToText(message);
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            if (player.getPos().isInRange(position, radius)) {
+                sendMessage(player, text, messageType);
+            }
+        }
+    }
+
+    /**
+     * Sends a message to players near a specific position, only in the given world (dimension).
+     *
+     * @param world The world the position belongs to.
+     * @param position The position to use as a reference.
+     * @param radius The radius around the position.
+     * @param message The message to send. Can be a String or a Text.
+     * @param messageType The type of message (CHAT, ACTION_BAR, or TITLE).
+     */
+    public static void sendToNearby(ServerWorld world, Vec3d position, double radius, Object message, MessageType messageType) {
+        if (world == null) return;
+        Text text = convertToText(message);
+        for (ServerPlayerEntity player : world.getPlayers()) {
             if (player.getPos().isInRange(position, radius)) {
                 sendMessage(player, text, messageType);
             }

@@ -116,8 +116,7 @@ public class VendorLinkPersistentState extends PersistentState {
         if (server == null || server.getWorld(World.OVERWORLD) == null) return null;
         PersistentStateManager manager = Objects.requireNonNull(server.getWorld(World.OVERWORLD)).getPersistentStateManager();
         if (manager == null) return null;
-        T state = manager.getOrCreate(type, name);
-        state.markDirty();
-        return state;
+        // Only mark dirty on actual modification (linkBlock/unlinkBlock), not on every access
+        return manager.getOrCreate(type, name);
     }
 }

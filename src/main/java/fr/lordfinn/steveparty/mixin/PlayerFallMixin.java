@@ -30,7 +30,7 @@ public abstract class PlayerFallMixin extends PlayerEntity {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
 
         // Vérifie si le joueur est en chute libre
-        if (!player.isOnGround() && player.fallDistance >= 10) {
+        if (!player.isOnGround() && !player.isSpectator() && player.fallDistance >= 10) {
             BlockPos blockPos = player.getBlockPos().down();
             BlockState blockState = player.getWorld().getBlockState(blockPos);
 
@@ -41,6 +41,13 @@ public abstract class PlayerFallMixin extends PlayerEntity {
                 BlockState belowState = world.getBlockState(belowPos);
 
                 if (!belowState.isFullCube(world, belowPos))
+                    return;
+
+                // Never break unbreakable blocks (bedrock, barrier, command blocks...) nor blocks the
+                // player is not allowed to modify (spawn protection, world border).
+                if (belowState.getHardness(world, belowPos) < 0
+                        || !world.canPlayerModifyAt(player, blockPos)
+                        || !world.canPlayerModifyAt(player, belowPos))
                     return;
 
                 // Supprime le bloc actuel et celui en dessous

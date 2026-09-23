@@ -140,7 +140,7 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
                 TradeOffer offer = new TradeOffer(
                         new TradedItem(firstBuyItem.getItem(), firstBuyItem.getCount()),
                         secondBuyItem.isEmpty() ? Optional.empty() : Optional.of(new TradedItem(secondBuyItem.getItem(), secondBuyItem.getCount())),
-                        sellItem,
+                        sellItem.copy(),
                         1, 0, 0
                 );
                 offers.add(offer);

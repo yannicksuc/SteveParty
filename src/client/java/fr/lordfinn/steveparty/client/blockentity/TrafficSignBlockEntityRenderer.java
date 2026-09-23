@@ -28,6 +28,8 @@ import static java.lang.Math.PI;
 
 public class TrafficSignBlockEntityRenderer implements BlockEntityRenderer<TrafficSignBlockEntity> {
     private final BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
+    // Reused (render thread only): the model renderer reseeds it for every call
+    private final Random random = Random.create();
 
     public TrafficSignBlockEntityRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
     }
@@ -48,7 +50,9 @@ public class TrafficSignBlockEntityRenderer implements BlockEntityRenderer<Traff
         BlockPos pos = entity.getPos();
         BakedModel model = blockRenderManager.getModel(entity.getCachedState());
 
-        blockRenderManager.getModelRenderer().renderSmooth(world, model, entity.getCachedState(), pos, matrices, vertexConsumer, true, Random.create(), 42L, overlay);
+        // Flat lighting and no face culling: the model is rotated by 22.5° steps, so world-aligned culling
+        // (and smooth AO sampled in world orientation) would be wrong anyway, and flat is much cheaper per frame.
+        blockRenderManager.getModelRenderer().renderFlat(world, model, entity.getCachedState(), pos, matrices, vertexConsumer, false, random, 42L, overlay);
 
         // Get the symbol texture and apply dye color and glow
         byte[] stencilData = entity.getShape();

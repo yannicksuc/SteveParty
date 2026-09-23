@@ -162,7 +162,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 DiceRollEvent.EVENT.invoker().onRoll(this, owner, totalRollValue);
                 if (this.getWorld() instanceof ServerWorld world) {
                     String playerName = getPlayerNameByUuid(world.getServer(), owner);
-                    MessageUtils.sendToNearby(this.getServer(), this.getPos(), 20,
+                    MessageUtils.sendToNearby(world, this.getPos(), 20,
                             Text.translatable("message.steveparty.owned_dice_rolled", totalRollValue,
                                     playerName == null ? Text.translatable("message.steveparty.unknown_player") : playerName),
                             MessageUtils.MessageType.CHAT);
@@ -185,8 +185,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         if (!this.getWorld().isClient) {
             if (getTick(this) % 200 == 0) {
                 this.getTarget().ifPresent(uuid -> {
-                    LivingEntity entity = (LivingEntity) ((ServerWorld) this.getWorld()).getEntity(uuid);
-                    if (entity != null) {
+                    if (((ServerWorld) this.getWorld()).getEntity(uuid) instanceof LivingEntity entity) {
                         simulation.setTarget(entity);
                     }
                 });
@@ -216,18 +215,16 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     public LivingEntity findClosestEntityInRange(ServerWorld world, Class<? extends LivingEntity> clazz, double radius) {
-        double closestDistance = radius;
+        double closestDistance = radius * radius;
         LivingEntity closestEntity = null;
 
-        for (Entity entity : world.iterateEntities()) {
-            if (clazz.isInstance(entity) && entity instanceof LivingEntity livingEntity) {
-                double distance = this.squaredDistanceTo(entity.getPos());
+        for (LivingEntity livingEntity : world.getEntitiesByClass(clazz, this.getBoundingBox().expand(radius), e -> e != this)) {
+            double distance = this.squaredDistanceTo(livingEntity.getPos());
 
-                if (distance <= (radius * radius)) {
-                    if (closestEntity == null || distance < closestDistance) {
-                        closestDistance = distance;
-                        closestEntity = livingEntity;
-                    }
+            if (distance <= (radius * radius)) {
+                if (closestEntity == null || distance < closestDistance) {
+                    closestDistance = distance;
+                    closestEntity = livingEntity;
                 }
             }
         }
@@ -502,12 +499,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     public void setLinkedDice(List<UUID> linkedDice) {
-        this.dataTracker.set(LINKED_DICE, linkedDice.stream().filter(uuid -> uuid != this.getUuid()).toList());
+        this.dataTracker.set(LINKED_DICE, linkedDice.stream().filter(uuid -> !uuid.equals(this.getUuid())).toList());
     }
 
     public void addLinkedDice(UUID diceUuid) {
         if (this.getLinkedDice().contains(diceUuid)) return;
-        if (diceUuid == this.getUuid()) return;
+        if (diceUuid.equals(this.getUuid())) return;
         List<UUID> linkedDice = new ArrayList<>(this.getLinkedDice());
         linkedDice.add(diceUuid);
         this.setLinkedDice(linkedDice);
@@ -520,26 +517,33 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     private void propagateStateChange(java.util.function.Consumer<DiceEntity> stateChange) {
+        if (!(this.getWorld() instanceof ServerWorld world)) return;
         for (UUID uuid : this.getLinkedDice()) {
-            if (uuid == this.getUuid()) continue;
-            DiceEntity linkedDice = (DiceEntity) ((ServerWorld) this.getWorld()).getEntity(uuid);
-            if (linkedDice != null) {
+            if (uuid.equals(this.getUuid())) continue;
+            if (world.getEntity(uuid) instanceof DiceEntity linkedDice) {
                 stateChange.accept(linkedDice);
             }
         }
     }
 
+    private List<DiceEntity> getLinkedDiceEntities() {
+        if (!(this.getWorld() instanceof ServerWorld world)) return Collections.emptyList();
+        List<DiceEntity> result = new ArrayList<>();
+        for (UUID uuid : this.getLinkedDice()) {
+            if (uuid.equals(this.getUuid())) continue;
+            if (world.getEntity(uuid) instanceof DiceEntity dice && dice != this) {
+                result.add(dice);
+            }
+        }
+        return result;
+    }
+
     private boolean areAllLinkedDiceNotRolling() {
-        return this.getLinkedDice().stream()
-                .map(uuid -> (DiceEntity) ((ServerWorld) this.getWorld()).getEntity(uuid))
-                .filter(Objects::nonNull)
-                .noneMatch(DiceEntity::isRolling);
+        return getLinkedDiceEntities().stream().noneMatch(DiceEntity::isRolling);
     }
 
     public int getTotalRolledValue() {
-        return this.getLinkedDice().stream()
-                .map(uuid -> (DiceEntity) ((ServerWorld) this.getWorld()).getEntity(uuid))
-                .filter(Objects::nonNull)
+        return getLinkedDiceEntities().stream()
                 .mapToInt(DiceEntity::getRollValue)
                 .sum() + this.getRollValue();
     }

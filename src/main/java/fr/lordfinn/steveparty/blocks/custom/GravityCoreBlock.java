@@ -3,10 +3,13 @@ package fr.lordfinn.steveparty.blocks.custom;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -153,7 +156,11 @@ public class GravityCoreBlock extends Block {
      * Get all living entities within a certain radius of the block.
      */
     private List<Entity> getNearbyEntities(ServerWorld world, BlockPos pos, double radius) {
-        return world.getEntitiesByClass(Entity.class, new Box(pos).expand(radius), e -> true);
+        // Skip spectators, display entities (e.g. board direction arrows) and board tokens (moving them breaks board movement)
+        return world.getEntitiesByClass(Entity.class, new Box(pos).expand(radius), e ->
+                EntityPredicates.EXCEPT_SPECTATOR.test(e)
+                        && !(e instanceof DisplayEntity)
+                        && !(e instanceof TokenizedEntityInterface token && token.steveparty$isTokenized()));
     }
 
     /**
