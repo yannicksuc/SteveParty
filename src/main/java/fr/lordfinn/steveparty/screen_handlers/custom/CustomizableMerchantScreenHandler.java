@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -13,6 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
+    private static final int INPUT_SLOT_1 = 0;
+    private static final int INPUT_SLOT_2 = 1;
+    private static final int PLAYER_INVENTORY_START = 3;
+    private static final int PLAYER_INVENTORY_END = 39;
     private int selectedTradeIndex = -1; // To track the player's explicitly selected trade
 
     public CustomizableMerchantScreenHandler(int syncId, PlayerInventory playerInventory) {
@@ -47,7 +52,7 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
 
         // Find matching offers for the input item
         for (TradeOffer offer : offers) {
-            if (offer.getFirstBuyItem().matches(inputStack)) {
+            if (offer.getFirstBuyItem().matches(inputStack) && isExactFirstPayment(offer, inputStack)) {
                 matchingOffers.add(offer);
                 Steveparty.LOGGER.debug("Found matching offer: {}", offer);
             }
@@ -68,6 +73,53 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
             this.setRecipeIndex(-1);
         }
         super.onContentChanged(inventory);
+    }
+
+    /** Trading stall offers require the exact price item (components included). */
+    private static boolean isExactFirstPayment(TradeOffer offer, ItemStack stack) {
+        return !(offer instanceof TradingStallBlockEntity.ExactTradeOffer exactOffer)
+                || TradingStallBlockEntity.isExactPayment(stack, exactOffer.getFirstPrice());
+    }
+
+    /**
+     * Same as vanilla, but for trading stall offers the input slots are auto-filled only with the exact price
+     * items: vanilla auto-fill accepts stacks carrying extra components (e.g. a named or enchanted item), which
+     * the offer would then refuse.
+     */
+    @Override
+    public void switchTo(int recipeIndex) {
+        TradeOfferList offers = this.getRecipes();
+        if (recipeIndex < 0 || recipeIndex >= offers.size()
+                || !(offers.get(recipeIndex) instanceof TradingStallBlockEntity.ExactTradeOffer offer)) {
+            super.switchTo(recipeIndex);
+            return;
+        }
+        // Give the current input items back to the player
+        for (int slot = INPUT_SLOT_1; slot <= INPUT_SLOT_2; slot++) {
+            ItemStack input = this.slots.get(slot).getStack();
+            if (!input.isEmpty()) {
+                if (!this.insertItem(input, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, true)) return;
+                this.slots.get(slot).setStack(input);
+            }
+        }
+        if (this.slots.get(INPUT_SLOT_1).getStack().isEmpty() && this.slots.get(INPUT_SLOT_2).getStack().isEmpty()) {
+            autofillExact(INPUT_SLOT_1, offer.getFirstPrice());
+            if (!offer.getSecondPrice().isEmpty()) autofillExact(INPUT_SLOT_2, offer.getSecondPrice());
+        }
+    }
+
+    private void autofillExact(int inputSlot, ItemStack price) {
+        for (int i = PLAYER_INVENTORY_START; i < PLAYER_INVENTORY_END; i++) {
+            ItemStack stack = this.slots.get(i).getStack();
+            if (stack.isEmpty() || !TradingStallBlockEntity.isExactPayment(stack, price)) continue;
+            ItemStack current = this.slots.get(inputSlot).getStack();
+            int maxCount = stack.getMaxCount();
+            int moved = Math.min(maxCount - current.getCount(), stack.getCount());
+            ItemStack filled = stack.copyWithCount(current.getCount() + moved);
+            stack.decrement(moved);
+            this.slots.get(inputSlot).setStack(filled);
+            if (filled.getCount() >= maxCount) break;
+        }
     }
 
     @Override
