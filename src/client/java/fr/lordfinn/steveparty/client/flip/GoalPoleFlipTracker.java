@@ -24,7 +24,6 @@ public final class GoalPoleFlipTracker {
     private static final int MAX_CATCH_UP_TICKS = 20;
 
     private static final Map<LivingEntity, Progress> MODEL = new WeakHashMap<>();
-    private static final Map<LivingEntity, Progress> CAMERA = new WeakHashMap<>();
 
     private GoalPoleFlipTracker() {}
 
@@ -41,14 +40,8 @@ public final class GoalPoleFlipTracker {
         return MODEL.computeIfAbsent(entity, e -> new Progress()).get(entity.age, flipped, tickDelta);
     }
 
-    /** Camera roll progress for the given (camera) entity, in [0, 1]. */
-    public static float getCameraProgress(LivingEntity entity, float tickDelta) {
-        return CAMERA.computeIfAbsent(entity, e -> new Progress()).get(entity.age, isOnGoalPole(entity), tickDelta);
-    }
-
     public static void clear() {
         MODEL.clear();
-        CAMERA.clear();
     }
 
     private static final class Progress {
