@@ -67,6 +67,24 @@ To install the SteveParty mod, follow these steps:
 2. Place the mod file into the `mods` folder of your Minecraft installation.
 3. Launch Minecraft with the Fabric or Forge profile.
 
+## 🛠️ Development
+
+Requires JDK 21. Everything goes through the Gradle wrapper.
+
+| Command | What it does |
+|---|---|
+| `.\scripts\dev.ps1 up` | Starts the dev server in the background, then a client that joins it as `LordFinn` once the server is ready |
+| `.\scripts\dev.ps1 status` | Shows whether the server and client are running |
+| `.\scripts\dev.ps1 tail server` | Follows the server log (`tail client` for the client) |
+| `.\scripts\dev.ps1 stop` | Stops the client, then the server gracefully (save + stop through RCON) |
+| `./gradlew runClient` | Plain client, singleplayer (Sodium + Iris + shaders for local testing) |
+| `./gradlew runServer` / `runClientJoin` | The same server / joining client, in the foreground (also available as IDE run configs) |
+| `./gradlew runGametest` | Automated in-game tests on a dedicated server (`src/gametest`) |
+
+The dev server lives in `run-server/` and is prepared automatically before each start
+(`gradle/dev-server.gradle`): offline mode, creative, peaceful, eternal day, clear weather, `LordFinn` op,
+port 25580 (RCON 25590). Change the settings in that file.
+
 ## 🌟 Features
 - Custom entities like `HidingTraderEntity` and `DiceEntity`.
 - Unique gameplay mechanics involving tokens and party steps.
