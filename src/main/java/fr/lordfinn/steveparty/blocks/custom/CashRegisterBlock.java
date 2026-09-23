@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
+import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -131,6 +132,10 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         // Drop the collected payments when the register is broken (POWERED changes keep the same block)
         ItemScatterer.onStateReplaced(state, newState, world, pos);
+        if (!state.isOf(newState.getBlock())) {
+            // Really removed: a register placed here later must not inherit the links
+            VendorLinkPersistentState.onShopBlockRemoved(world, pos);
+        }
         super.onStateReplaced(state, world, pos, newState, moved);
     }
 

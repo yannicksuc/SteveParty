@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
+import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import fr.lordfinn.steveparty.utils.WoolColorsUtils;
@@ -183,6 +184,8 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
+            // Really removed (not a color/facing change): a stall placed here later must not inherit the links
+            VendorLinkPersistentState.onShopBlockRemoved(world, pos);
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof TradingStallBlockEntity entity) {
                 TraderStallRegistry.unlinkStallFromAllTraders(pos);

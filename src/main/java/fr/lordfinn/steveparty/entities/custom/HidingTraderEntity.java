@@ -96,6 +96,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     /** Client-side countdown (in ticks) before playing the disguise block place sound, -1 when idle. */
     private int pendingPlaceSoundTicks = -1;
     private BlockState blockState = Blocks.GOLD_BLOCK.getDefaultState();
+    /** First player who linked a Shopkeeper Key to this trader (null until then). Mirrored in {@link VendorLinkPersistentState}. */
+    @Nullable
+    private UUID ownerUuid = null;
+    /** Ticks between two synchronizations of the owner with the persistent link state. */
+    private static final int OWNER_SYNC_INTERVAL = 20;
     private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.STRING);
 
     public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
@@ -110,6 +115,43 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             vendorLinkPersistentState = VendorLinkPersistentState.get(serverWorld.getServer());
         }
         return vendorLinkPersistentState;
+    }
+
+    /**
+     * Keeps the owner saved on the entity and the one of the persistent link state identical: the state wins
+     * (it may have been claimed while the trader was not loaded), else the entity's owner is written to it.
+     */
+    private void syncOwner() {
+        VendorLinkPersistentState linkState = getVendorLinkState();
+        if (linkState == null) return;
+        UUID stateOwner = linkState.getOwner(this.getUuid());
+        if (stateOwner != null) {
+            ownerUuid = stateOwner;
+        } else if (ownerUuid != null) {
+            linkState.setOwner(this.getUuid(), ownerUuid);
+        }
+    }
+
+    /** @return the player owning this trader, or null if no player linked a Shopkeeper Key to it yet. */
+    @Nullable
+    public UUID getOwnerUuid() {
+        if (!this.getWorld().isClient) syncOwner();
+        return ownerUuid;
+    }
+
+    /**
+     * Ownership check done when a player links a Shopkeeper Key to this trader: a trader without owner (new, or
+     * created before ownership existed) is claimed by the player.
+     *
+     * @return true if the player is (now) the owner
+     */
+    public boolean claimOrCheckOwner(PlayerEntity player) {
+        VendorLinkPersistentState linkState = getVendorLinkState();
+        if (linkState == null) return false;
+        syncOwner();
+        boolean owner = linkState.claimOrCheckOwner(this.getUuid(), player.getUuid());
+        if (owner) ownerUuid = player.getUuid();
+        return owner;
     }
 
     @Override
@@ -479,6 +521,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
                     .ifPresent(this::setBlockState);
         }
+        if (nbt.containsUuid("ShopOwner")) {
+            ownerUuid = nbt.getUuid("ShopOwner");
+        }
     }
 
     private static void printWarnForFailDecodeBlockState(String error) {
@@ -491,6 +536,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (blockState != null) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
             result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> nbt.putString("blockState", jsonElement.toString()));
+        }
+        if (ownerUuid != null) {
+            nbt.putUuid("ShopOwner", ownerUuid);
         }
         return super.writeNbt(nbt);
     }
@@ -592,6 +640,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
+        if (!this.getWorld().isClient && this.age % OWNER_SYNC_INTERVAL == 0) {
+            syncOwner();
+        }
         if (!this.getWorld().isClient && this.hasCustomer()) {
             PlayerEntity customer = this.getCustomer();
             if (!isValidCustomer(customer) || customer.currentScreenHandler != activeScreenHandler) {

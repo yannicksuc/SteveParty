@@ -10,24 +10,33 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
+import fr.lordfinn.steveparty.commands.PartyCommands;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -156,6 +165,45 @@ public class CoreGameTests implements FabricGameTest {
         TokenTurnPartyStep turnOfC = (TokenTurnPartyStep) data.getCurrentStep();
         context.assertTrue(turnOfC.skipAbsentTurn(controller), "skipped");
         context.assertEquals(data.getStepIndex(), 3, "second turn of c");
+        context.removeBlock(pos);
+        context.complete();
+    }
+
+    /** /steveparty exclude: own token only, unless holding a Tokenizer Wand enchanted with Game Master (any token). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void gameMasterWandMayExcludeAnyToken(TestContext context) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        PartyControllerEntity controller = placeController(context, pos);
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        UUID othersToken = UUID.randomUUID(), ownToken = UUID.randomUUID();
+        PartyData data = new PartyData();
+        data.addToken(othersToken);
+        data.addToken(ownToken);
+        data.addStep(new PartyStep());
+        data.addStep(new TokenTurnPartyStep(othersToken, UUID.randomUUID()));
+        data.addStep(new TokenTurnPartyStep(ownToken, player.getUuid()));
+        data.addStep(new EndPartyStep(new ArrayList<>(List.of(othersToken, ownToken))));
+        controller.setPartyData(data);
+
+        context.assertTrue(PartyCommands.canExcludeToken(player, controller, ownToken), "own token");
+        context.assertTrue(!PartyCommands.canExcludeToken(player, controller, othersToken), "another player's token refused");
+
+        ItemStack plainWand = new ItemStack(ModItems.TOKENIZER_WAND);
+        player.setStackInHand(Hand.OFF_HAND, plainWand);
+        context.assertTrue(!PartyCommands.canExcludeToken(player, controller, othersToken), "plain wand is not enough");
+
+        RegistryEntry<Enchantment> gameMaster = context.getWorld().getRegistryManager()
+                .getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(TokenizerWandItem.GAME_MASTER);
+        ItemStack enchantedStick = new ItemStack(Items.STICK);
+        enchantedStick.addEnchantment(gameMaster, 1);
+        player.setStackInHand(Hand.MAIN_HAND, enchantedStick);
+        context.assertTrue(!PartyCommands.canExcludeToken(player, controller, othersToken), "only a Tokenizer Wand counts");
+
+        ItemStack gameMasterWand = new ItemStack(ModItems.TOKENIZER_WAND);
+        gameMasterWand.addEnchantment(gameMaster, 1);
+        player.setStackInHand(Hand.OFF_HAND, gameMasterWand);
+        context.assertTrue(PartyCommands.holdsGameMasterWand(player), "game master wand held (off hand)");
+        context.assertTrue(PartyCommands.canExcludeToken(player, controller, othersToken), "game master may exclude any token");
         context.removeBlock(pos);
         context.complete();
     }

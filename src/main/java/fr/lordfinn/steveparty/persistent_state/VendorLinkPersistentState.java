@@ -13,6 +13,7 @@ import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -34,6 +35,11 @@ public class VendorLinkPersistentState extends PersistentState {
     private final Map<UUID, Set<GlobalPos>> vendorLinks = new HashMap<>();
     /** Positions read from saves made before dimensions were stored (dimension unknown). */
     private final Map<UUID, Set<BlockPos>> legacyVendorLinks = new HashMap<>();
+    /**
+     * Owner (player UUID) of each trader: the first player who linked a Shopkeeper Key to it. Mirrors the owner
+     * saved on the trader entity, so it can be checked while the trader is not loaded.
+     */
+    private final Map<UUID, UUID> vendorOwners = new HashMap<>();
 
     public VendorLinkPersistentState() {
         super();
@@ -76,6 +82,15 @@ public class VendorLinkPersistentState extends PersistentState {
         }
 
         nbt.put("Vendors", vendorList);
+
+        NbtList ownerList = new NbtList();
+        vendorOwners.forEach((vendorId, owner) -> {
+            NbtCompound ownerTag = new NbtCompound();
+            ownerTag.putUuid("VendorId", vendorId);
+            ownerTag.putUuid("Owner", owner);
+            ownerList.add(ownerTag);
+        });
+        nbt.put("Owners", ownerList);
         return nbt;
     }
 
@@ -113,6 +128,74 @@ public class VendorLinkPersistentState extends PersistentState {
                 }
             }
         }
+        if (nbt.contains("Owners")) {
+            NbtList ownerList = nbt.getList("Owners", NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < ownerList.size(); i++) {
+                NbtCompound ownerTag = ownerList.getCompound(i);
+                if (ownerTag.containsUuid("VendorId") && ownerTag.containsUuid("Owner")) {
+                    vendorOwners.put(ownerTag.getUuid("VendorId"), ownerTag.getUuid("Owner"));
+                }
+            }
+        }
+    }
+
+    /** @return the player owning the trader, or null if no player linked a key to it yet (or before ownership existed). */
+    @Nullable
+    public UUID getOwner(UUID vendorId) {
+        return vendorOwners.get(vendorId);
+    }
+
+    /** Records the trader's owner (kept in sync with the owner saved on the trader entity). */
+    public void setOwner(UUID vendorId, UUID owner) {
+        if (!owner.equals(vendorOwners.put(vendorId, owner))) markDirty();
+    }
+
+    /**
+     * Ownership check of a link operation: a trader without owner is claimed by the player (first link, or
+     * migration of a trader created before ownership existed).
+     *
+     * @return true if the player is (now) the owner of the trader
+     */
+    public boolean claimOrCheckOwner(UUID vendorId, UUID player) {
+        UUID owner = vendorOwners.get(vendorId);
+        if (owner == null) {
+            setOwner(vendorId, player);
+            return true;
+        }
+        return owner.equals(player);
+    }
+
+    /**
+     * Removes every link to the block at this position (the block was broken), so a new block placed there
+     * does not inherit the links. Legacy (dimension-less) links at the same coordinates are removed too.
+     *
+     * @return true if at least one link was removed
+     */
+    public boolean unlinkPosition(GlobalPos pos) {
+        boolean modified = false;
+        for (Iterator<Map.Entry<UUID, Set<GlobalPos>>> it = vendorLinks.entrySet().iterator(); it.hasNext(); ) {
+            Set<GlobalPos> positions = it.next().getValue();
+            modified |= positions.remove(pos);
+            if (positions.isEmpty()) it.remove();
+        }
+        for (Iterator<Map.Entry<UUID, Set<BlockPos>>> it = legacyVendorLinks.entrySet().iterator(); it.hasNext(); ) {
+            Set<BlockPos> positions = it.next().getValue();
+            modified |= positions.remove(pos.pos());
+            if (positions.isEmpty()) it.remove();
+        }
+        if (modified) markDirty();
+        return modified;
+    }
+
+    /**
+     * Called when a shop block (trading stall, cash register) is really removed from the world (not on a state
+     * change of the same block): forgets its links so a block placed there later starts unlinked.
+     */
+    public static void onShopBlockRemoved(World world, BlockPos pos) {
+        if (world.isClient) return;
+        VendorLinkPersistentState state = get(world.getServer());
+        if (state != null) state.unlinkPosition(GlobalPos.create(world.getRegistryKey(), pos));
+        TraderStallRegistry.unlinkStallFromAllTraders(pos);
     }
 
     public static VendorLinkPersistentState get(MinecraftServer server) {
