@@ -2,9 +2,10 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -34,19 +35,27 @@ public class PartyStep {
         this.type = type;
     }
 
-    PartyStep() {
+    public PartyStep() {
     }
 
-    PartyStep(NbtCompound step) {
+    public PartyStep(NbtCompound step) {
         fromNbt(step);
     }
 
     public void fromNbt(NbtCompound step) {
         if (step.contains("Status")) {
-            this.status = Status.valueOf(step.getString("Status"));
+            try {
+                this.status = Status.valueOf(step.getString("Status"));
+            } catch (IllegalArgumentException e) {
+                Steveparty.LOGGER.warn("Unknown party step status '{}', defaulting to {}", step.getString("Status"), this.status);
+            }
         }
         if (step.contains("Type")) {
-            this.type = PartyStepType.valueOf(step.getString("Type"));
+            try {
+                this.type = PartyStepType.valueOf(step.getString("Type").toUpperCase());
+            } catch (IllegalArgumentException e) {
+                Steveparty.LOGGER.warn("Unknown party step type '{}', defaulting to {}", step.getString("Type"), this.type);
+            }
         }
     }
 
@@ -88,6 +97,24 @@ public class PartyStep {
     public void end(PartyControllerEntity partyControllerEntity) {
     }
 
+    /**
+     * Called once after the controller has been reloaded (server restart / chunk reload) while this step
+     * was IN_PROGRESS. Scheduled tasks are not persisted, so steps that rely on them must re-kick them here.
+     * Must be idempotent and must not replay what was already done.
+     */
+    public void resume(PartyControllerEntity partyControllerEntity) {
+    }
+
+    /**
+     * @return true if a delayed callback started by this step may still act on the controller.
+     */
+    protected boolean isStillActive(PartyControllerEntity partyControllerEntity) {
+        return partyControllerEntity != null
+                && !partyControllerEntity.isRemoved()
+                && this.status == Status.IN_PROGRESS
+                && partyControllerEntity.getPartyData().getCurrentStep() == this;
+    }
+
     public String getName() {
         return this.getType().getTranslationKey();
     }
@@ -100,7 +127,7 @@ public class PartyStep {
     public ActionResult onTileReached(@NotNull MobEntity token, @NotNull BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyControllerEntity) {
         boardSpaceEntity.onTileReached(token, partyControllerEntity);
         if (boardSpaceEntity.getWorld() instanceof ServerWorld world && partyControllerEntity.getWorld() instanceof ServerWorld) {
-            if (world.getBlockState(boardSpaceEntity.getPos()).getBlock() instanceof TileBlock
+            if (ABoardSpaceBlock.countsAsStep(world.getBlockState(boardSpaceEntity.getPos()).getBlock())
                     && ((TokenizedEntityInterface) token).steveparty$isTokenized()
                     && ((TokenizedEntityInterface) token).steveparty$getNbSteps() == 0) {
                 boardSpaceEntity.onDestinationReached(token, partyControllerEntity);
