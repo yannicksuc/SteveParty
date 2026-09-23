@@ -73,7 +73,7 @@ public class StencilItem extends Item {
         for (int i = 0; i < 16; i++) {
             StringBuilder line = new StringBuilder();
             for (int j = 0; j < 16; j++) {
-                line.append((getShape(stack)[j * 16 + i] == 1) ? "⬛" : "⬜");
+                line.append((shape[j * 16 + i] == 1) ? "⬛" : "⬜");
             }
             tooltip.add(Text.literal(line.toString()));
         }

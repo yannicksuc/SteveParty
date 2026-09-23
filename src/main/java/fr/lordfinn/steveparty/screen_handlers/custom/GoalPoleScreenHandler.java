@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.ScreenHandler;
@@ -65,7 +66,8 @@ public class GoalPoleScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return true;
+        // Client-side instance has no block entity; server-side, check the block still exists and is in reach
+        return blockEntity == null || ScreenHandlerChecks.canUseBlockEntity(blockEntity, player);
     }
 
     @Override

@@ -18,7 +18,7 @@ public record TokenPayload(Map<UUID, TokenData> tokens) implements CustomPayload
                 public TokenPayload decode(PacketByteBuf buf) {
                     int size = buf.readInt();
                     Map<UUID, TokenData> map = new HashMap<>();
-                    for (int i = 0; i <= size; i++) {
+                    for (int i = 0; i < size; i++) {
                         map.put(buf.readUuid(), TokenData.fromBuf(buf));
                     }
                     return new TokenPayload(map);

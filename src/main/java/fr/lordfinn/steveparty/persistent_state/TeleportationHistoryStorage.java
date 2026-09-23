@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.persistent_state;
 
-import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
@@ -18,7 +17,7 @@ public class TeleportationHistoryStorage extends PersistentState {
             new Type<>(
                     TeleportationHistoryStorage::new,
                     TeleportationHistoryStorage::readNbt,
-                    DataFixTypes.LEVEL
+                    null // custom data: must not go through the level data fixer
             );
 
     private final Map<UUID, TeleportationRecord> teleportationHistory = new HashMap<>();
@@ -48,7 +47,12 @@ public class TeleportationHistoryStorage extends PersistentState {
         NbtList tpList = nbt.getList("teleportationHistory", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < tpList.size(); i++) {
             NbtCompound tpData = tpList.getCompound(i);
-            UUID playerUuid = UUID.fromString(tpData.getString("playerUuid"));
+            UUID playerUuid;
+            try {
+                playerUuid = UUID.fromString(tpData.getString("playerUuid"));
+            } catch (IllegalArgumentException e) {
+                continue; // corrupted entry
+            }
             BlockPos fromPos = new BlockPos(tpData.getInt("fromX"), tpData.getInt("fromY"), tpData.getInt("fromZ"));
             BlockPos toPos = new BlockPos(tpData.getInt("toX"), tpData.getInt("toY"), tpData.getInt("toZ"));
             storage.teleportationHistory.put(playerUuid, new TeleportationRecord(fromPos, toPos));

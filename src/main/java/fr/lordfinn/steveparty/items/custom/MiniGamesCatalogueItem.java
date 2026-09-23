@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.components.ItemStackBackedInventory;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGamesCatalogueScreenHandler;
 import net.minecraft.entity.player.PlayerEntity;
@@ -37,15 +38,20 @@ public class MiniGamesCatalogueItem extends Item {
 
         // Open the mini-game screen
         if (player instanceof ServerPlayerEntity serverPlayer) {
-            openInventoryScreen(serverPlayer);
+            openInventoryScreen(serverPlayer, hand);
         }
 
         return ActionResult.SUCCESS;
     }
 
     public static void openInventoryScreen(ServerPlayerEntity player) {
-        ItemStack stackMainHand = player.getMainHandStack();
-        InventoryComponent inventory = InventoryComponent.getInventoryFromStack(stackMainHand, 91);
+        openInventoryScreen(player, Hand.MAIN_HAND);
+    }
+
+    public static void openInventoryScreen(ServerPlayerEntity player, Hand hand) {
+        ItemStack catalogue = player.getStackInHand(hand);
+        if (catalogue.isEmpty() || !(catalogue.getItem() instanceof MiniGamesCatalogueItem)) return;
+        ItemStackBackedInventory inventory = InventoryComponent.getInventoryFromStack(catalogue, MiniGamesCatalogueScreenHandler.SIZE);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                 (syncId, inventory1, playerEntity) -> new MiniGamesCatalogueScreenHandler(syncId, inventory1, inventory),
@@ -56,6 +62,7 @@ public class MiniGamesCatalogueItem extends Item {
         if (catalogue.contains(ModComponents.INVENTORY_COMPONENT)) {
             InventoryComponent inventory = catalogue.get(ModComponents.INVENTORY_COMPONENT);
             if (inventory != null) {
+                // Copies: callers can't alter the stored component
                 return inventory.getItems();
             }
         }

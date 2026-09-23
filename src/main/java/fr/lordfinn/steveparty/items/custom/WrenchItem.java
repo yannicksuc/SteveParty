@@ -83,7 +83,8 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
 
     private static void unbindTileAtPosFromWrench(BlockPos clickedPos, ServerPlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
         removeBinding(clickedPos, stack, serverWorld);
-        stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, false);
+        // Remove the override (instead of forcing it to false) so the default glint behaviour applies again
+        stack.remove(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
         MessageUtils.sendToPlayer(player, Text.literal("The wrench is no longer bound to the board space behavior stored at position X: "+ clickedPos.getX()+", Y: "+ clickedPos.getY()+", Z: "+ clickedPos.getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
     }

@@ -31,6 +31,7 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 
 import java.util.List;
+import java.util.UUID;
 
 import static fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPONENT;
 import static net.minecraft.sound.SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE;
@@ -73,8 +74,8 @@ public class TokenItem extends Item {
                 NbtCompound entityData = dataComponent.entityData();
                 Entity entity = createEntityFromData(world, entityData);
 
-                if (entity != null) {
-                    positionAndSpawnEntity(world, merchant.getBlockPos(), dataComponent.attributesData(), entity);
+                // Only empty the token if the entity really spawned
+                if (entity != null && positionAndSpawnEntity(world, merchant.getBlockPos(), dataComponent.attributesData(), entity)) {
                     entity.startRiding(merchant, true);
                     merchant.setInvisible(true);
 
@@ -104,7 +105,19 @@ public class TokenItem extends Item {
         return stack.get(ENTITY_DATA_COMPONENT) == null
                 && !user.getWorld().isClient
                 && entity instanceof MobEntity
-                && ((TokenizedEntityInterface) entity).steveparty$isTokenized();
+                && ((TokenizedEntityInterface) entity).steveparty$isTokenized()
+                && canCaptureToken(user, entity);
+    }
+
+    /**
+     * A token can only be captured by its owner (or a creative / operator player).
+     */
+    private static boolean canCaptureToken(PlayerEntity user, LivingEntity entity) {
+        UUID owner = ((TokenizedEntityInterface) entity).steveparty$getTokenOwner();
+        return owner == null
+                || owner.equals(user.getUuid())
+                || user.isCreative()
+                || user.hasPermissionLevel(2);
     }
 
     private void handleTokenization(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
@@ -147,7 +160,7 @@ public class TokenItem extends Item {
         Hand hand = context.getHand();
 
         EntityDataComponent dataComponent = stack.get(ModComponents.ENTITY_DATA_COMPONENT);
-        if (dataComponent != null) {
+        if (dataComponent != null && player != null) {
             return summonEntityFromToken(world, blockPos, stack, dataComponent, player, hand);
         }
         return ActionResult.PASS;
@@ -158,8 +171,8 @@ public class TokenItem extends Item {
         NbtList attributesData = dataComponent.attributesData();
 
         Entity entity = createEntityFromData(world, entityData);
-        if (entity != null) {
-            positionAndSpawnEntity(world, blockPos, attributesData, entity);
+        // Only empty the token if the entity really spawned (otherwise the mob would be lost)
+        if (entity != null && positionAndSpawnEntity(world, blockPos, attributesData, entity)) {
             player.setStackInHand(hand, clearTokenData(stack));
             playSound(world, blockPos, 1.5F);
 
@@ -173,7 +186,8 @@ public class TokenItem extends Item {
         return EntityType.loadEntityWithPassengers(entityData, world, SpawnReason.COMMAND, e -> e);
     }
 
-    private void positionAndSpawnEntity(World world, BlockPos blockPos, NbtList attributesData, Entity entity) {
+    /** @return true if the entity was added to the world. */
+    private boolean positionAndSpawnEntity(World world, BlockPos blockPos, NbtList attributesData, Entity entity) {
         VoxelShape shape = world.getBlockState(blockPos).getCollisionShape(world, blockPos);
         double blockHeight = shape.isEmpty() ? 0 : shape.getMax(Direction.Axis.Y);
 
@@ -189,7 +203,7 @@ public class TokenItem extends Item {
             mobEntity.getAttributes().readNbt(attributesData);
         }
 
-        world.spawnEntity(entity);
+        return world.spawnEntity(entity);
     }
 
     private ItemStack clearTokenData(ItemStack stack) {

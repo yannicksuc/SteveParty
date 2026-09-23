@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -71,7 +72,7 @@ public class DiceForgeScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return this.inventory.canPlayerUse(player);
+        return ScreenHandlerChecks.canUseInventory(this.inventory, player);
     }
 
     @Override

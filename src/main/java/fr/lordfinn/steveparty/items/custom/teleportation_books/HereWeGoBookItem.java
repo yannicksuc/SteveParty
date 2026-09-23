@@ -21,7 +21,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
@@ -35,7 +34,7 @@ public class HereWeGoBookItem extends AbstractTeleportationBookItem {
         return switch (state) {
             case TP_TO_MINIGAME -> getTpMiniGamePos(player);
             case TP_BACK_LAST_USED_TP_PAD -> getTpBackLastUsedTpPadPos(player);
-            case TP_REGISTERED_POS -> getTpRegisteredPos(book);
+            case TP_REGISTERED_POS -> getTpRegisteredPos(book, player);
         };
     }
 
@@ -59,7 +58,7 @@ public class HereWeGoBookItem extends AbstractTeleportationBookItem {
     }
 
     private static PartyControllerEntity getNearestActivePartyController(PlayerEntity player) {
-        return PartyControllerEntity.getClosestActivePartyControllerEntity(player.getBlockPos(), -1)
+        return PartyControllerEntity.getClosestActivePartyControllerEntity(player.getWorld(), player.getBlockPos(), -1)
                 .orElse(null);
     }
 
@@ -76,9 +75,14 @@ public class HereWeGoBookItem extends AbstractTeleportationBookItem {
         for (BlockPos pos : destinations) {
             ItemStack bookStack = booksStorage.getTeleportationPadBook(pos);
             if (isValidTeleportationBook(bookStack)) {
+                // Work on copies: the targets stored in the book component must never be mutated
+                List<TeleportingTarget> conditions = new ArrayList<>();
+                for (TeleportingTarget target : bookStack.getOrDefault(TP_TARGETS, List.<TeleportingTarget>of())) {
+                    if (target != null) conditions.add(target.copy());
+                }
                 books.add(new HereWeComeBookInfo(
                         pos,
-                        bookStack.getOrDefault(TP_TARGETS, List.of()),
+                        conditions,
                         historyStorage.get(pos)));
             }
         }
@@ -95,17 +99,22 @@ public class HereWeGoBookItem extends AbstractTeleportationBookItem {
         return null;
     }
 
+    /**
+     * Swaps team A and B conditions if team A has more capacity. Only mutates the (copied) conditions of
+     * {@code books}, never the book components.
+     */
     private static void exchangeTeamAAndBBasedOnSizeIfNeeded(List<HereWeComeBookInfo> books) {
-        AtomicInteger teamASize = new AtomicInteger();
-        AtomicInteger teamBSize = new AtomicInteger();
+        // long: getCheckedFillCapacity() returns Integer.MAX_VALUE for "no limit", summing ints would overflow
+        long teamASize = 0;
+        long teamBSize = 0;
         for (HereWeComeBookInfo bookInfo : books) {
-            bookInfo.conditions().forEach(target -> {
-                if (target.getGroup().equals(TeleportingTarget.Group.PLAYER_TEAM_A)) teamASize.getAndAdd(target.getCheckedFillCapacity());
-                if (target.getGroup().equals(TeleportingTarget.Group.PLAYER_TEAM_B)) teamBSize.getAndAdd(target.getCheckedFillCapacity());
-            });
+            for (TeleportingTarget target : bookInfo.conditions()) {
+                if (target.getGroup().equals(TeleportingTarget.Group.PLAYER_TEAM_A)) teamASize += target.getCheckedFillCapacity();
+                if (target.getGroup().equals(TeleportingTarget.Group.PLAYER_TEAM_B)) teamBSize += target.getCheckedFillCapacity();
+            }
         }
 
-        if (teamASize.get() > teamBSize.get()) {
+        if (teamASize > teamBSize) {
             for (HereWeComeBookInfo bookInfo : books) {
                 bookInfo.conditions().forEach(target -> {
                     if (target.getGroup().equals(TeleportingTarget.Group.PLAYER_TEAM_A)) {
@@ -121,13 +130,16 @@ public class HereWeGoBookItem extends AbstractTeleportationBookItem {
 
     private static BlockPos getTpBackLastUsedTpPadPos(PlayerEntity player) {
         TeleportationHistoryStorage storage = TeleportationPadStorageManager.getTeleportationHistoryStorage((ServerWorld) player.getWorld());
-        return storage.get(player.getUuid()).fromPos();
+        var lastTeleportation = storage.get(player.getUuid());
+        // The player may never have used a teleportation pad
+        return lastTeleportation == null ? null : lastTeleportation.fromPos();
     }
 
-    private static BlockPos getTpRegisteredPos(ItemStack book) {
+    private static BlockPos getTpRegisteredPos(ItemStack book, PlayerEntity player) {
         DestinationsComponent component = book.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT);
-        if (component.destinations().isEmpty()) return null;
-        return component.destinations().get(new Random(component.destinations().size()).nextInt());
+        List<BlockPos> destinations = component.destinations();
+        if (destinations == null || destinations.isEmpty()) return null;
+        return destinations.get(player.getWorld().getRandom().nextInt(destinations.size()));
     }
 
     @Override
@@ -152,9 +164,13 @@ public class HereWeGoBookItem extends AbstractTeleportationBookItem {
         return new HereWeGoBookScreenHandler(syncId, inv);
     }
 
+    /** Must run on the server thread. */
     public static void handleHereWeGoBookPayload(ServerPlayerEntity player, int newState) {
+        // The book screen must be open, with the book in the main hand (where it was opened from)
+        if (!(player.currentScreenHandler instanceof HereWeGoBookScreenHandler handler) || !handler.canUse(player)) return;
+        if (newState < 0 || newState >= State.values().length) return;
         ItemStack bookStack = player.getMainHandStack();
-        if (bookStack.getItem() instanceof AbstractTeleportationBookItem) {
+        if (bookStack.getItem() instanceof HereWeGoBookItem) {
             bookStack.set(STATE, newState);
             player.getInventory().markDirty();
         }
@@ -181,7 +197,8 @@ public class HereWeGoBookItem extends AbstractTeleportationBookItem {
                     return e;
                 }
             }
-            throw new IllegalArgumentException("Unexpected value: " + i);
+            // Corrupted/unknown value: fall back to the default state instead of crashing
+            return TP_TO_MINIGAME;
         }
     }
 }

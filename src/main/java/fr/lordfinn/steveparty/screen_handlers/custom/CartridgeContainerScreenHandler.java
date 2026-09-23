@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -11,7 +12,6 @@ import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 
-import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_COMPONENT;
 
 public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
     protected Inventory inventory = null;
@@ -37,7 +37,7 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return this.inventory.canPlayerUse(player);
+        return ScreenHandlerChecks.canUseInventory(this.inventory, player);
     }
 
     // Shift + Player Inv Slot
@@ -47,7 +47,6 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
         Slot slot = this.slots.get(invSlot);
         if (slot.hasStack()) {
             ItemStack originalStack = slot.getStack();
-            originalStack.getOrDefault(INVENTORY_COMPONENT,ItemStack.EMPTY);
             newStack = originalStack.copy();
             if (invSlot < this.inventory.size()) {
                 if (!this.insertItem(originalStack, this.inventory.size(), this.slots.size(), true)) {

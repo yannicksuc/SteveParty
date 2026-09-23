@@ -19,11 +19,15 @@ public abstract class TeleportationBookScreenHandler extends ScreenHandler {
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
-        return null;
+        return ItemStack.EMPTY;
     }
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return true;
+        // The book screen is only opened from the main hand: close it if the book is no longer there
+        return isValidBook(player.getMainHandStack());
     }
+
+    /** @return true if {@code stack} is the kind of book this screen edits. */
+    public abstract boolean isValidBook(ItemStack stack);
 }

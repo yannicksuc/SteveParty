@@ -1,25 +1,31 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
-import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.components.ItemStackBackedInventory;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundCategory;
 
 public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
-    private final InventoryComponent inventory;
+    public static final int SIZE = 91;
+    private final Inventory inventory;
 
     public MiniGamesCatalogueScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new InventoryComponent(91));
+        this(syncId, playerInventory, new SimpleInventory(SIZE));
     }
 
-    public MiniGamesCatalogueScreenHandler(int syncId, PlayerInventory playerInventory, InventoryComponent inventory) {
+    /**
+     * @param inventory server side: an {@link ItemStackBackedInventory} bound to the catalogue stack,
+     *                  so that the pages are written back to the item on every change.
+     */
+    public MiniGamesCatalogueScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
         super(ModScreensHandlers.MINI_GAMES_CATALOGUE_SCREEN_HANDLER, syncId);
         this.inventory = inventory;
 
@@ -36,7 +42,14 @@ public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return true;
+        // Server side: the catalogue must still be owned by the player (not dropped/moved away), otherwise pages could be duped
+        return this.inventory.canPlayerUse(player);
+    }
+
+    @Override
+    public void onSlotClick(int slotIndex, int button, net.minecraft.screen.slot.SlotActionType actionType, PlayerEntity player) {
+        if (!this.canUse(player)) return;
+        super.onSlotClick(slotIndex, button, actionType, player);
     }
 
     public Inventory getInventory() {
@@ -63,6 +76,9 @@ public class MiniGamesCatalogueScreenHandler extends ScreenHandler {
     @Override
     public void onClosed(PlayerEntity player) {
         super.onClosed(player);
+        if (this.inventory instanceof ItemStackBackedInventory backed) {
+            backed.writeBack();
+        }
         player.getWorld().playSound(null, player.getBlockPos(), ModSounds.CLOSE_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 }

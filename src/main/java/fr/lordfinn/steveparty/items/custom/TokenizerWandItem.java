@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -38,15 +40,23 @@ public class TokenizerWandItem extends Item {
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (entity instanceof MobEntity mob) {
             if (!((TokenizedEntityInterface) mob).steveparty$isTokenized()) {
+                // Bosses can't become tokens (exploit: shrinking/controlling them)
+                if (isBoss(mob)) return ActionResult.FAIL;
                 tokenizeEntity(mob, user);
             } else {
                 String uuid = entity.getUuidAsString();
-                user.getMainHandStack().set(MOB_ENTITY_COMPONENT, new MobEntityComponent(uuid));
+                ItemStack wand = user.getStackInHand(hand);
+                if (wand.isEmpty()) return ActionResult.PASS;
+                wand.set(MOB_ENTITY_COMPONENT, new MobEntityComponent(uuid));
                 user.getWorld().playSound(null, entity.getBlockPos(), ModSounds.SELECT_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
             }
             return ActionResult.SUCCESS;
         }
         return super.useOnEntity(stack, user, entity, hand);
+    }
+
+    private static boolean isBoss(MobEntity mob) {
+        return mob instanceof EnderDragonEntity || mob instanceof WitherEntity;
     }
 
     private void tokenizeEntity(MobEntity mob, PlayerEntity user) {
@@ -131,11 +141,11 @@ public class TokenizerWandItem extends Item {
 
     @Nullable
     private static Entity getEntityFromComponent(MobEntityComponent component, ServerWorld world) {
-        if (component == null || component.entityUUID() == null) {
+        if (component == null) {
             return null;
         }
-        UUID entityUUID = UUID.fromString(component.entityUUID());
-        return world.getEntity(entityUUID);
+        UUID entityUUID = component.getUuid();
+        return entityUUID == null ? null : world.getEntity(entityUUID);
     }
 
     private static boolean isInvalidContext(ItemStack stack, PlayerEntity user) {

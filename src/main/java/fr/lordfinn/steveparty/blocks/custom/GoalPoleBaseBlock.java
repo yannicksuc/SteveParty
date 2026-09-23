@@ -129,14 +129,19 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             return;
         }
 
-        // Otherwise → if neighbor update is not the powering side, treat as reset
-        // (safer to check actual redstone power too, so you only reset on impulse)
+        // Otherwise → power on any other side is a reset impulse.
+        // Only trigger on the rising edge, not on every neighbor update while a side stays powered.
+        boolean resetSidePowered = false;
         for (Direction dir : Direction.values()) {
             if (dir == poweringSide) continue;
-            if (world.getEmittedRedstonePower(pos.offset(dir), dir.getOpposite()) > 0) {
-                goalPoleBaseBlockEntity.resetGoal();
+            // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
+            if (world.getEmittedRedstonePower(pos.offset(dir), dir) > 0) {
+                resetSidePowered = true;
                 break;
             }
+        }
+        if (goalPoleBaseBlockEntity.updateResetSidePower(resetSidePowered)) {
+            goalPoleBaseBlockEntity.resetGoal();
         }
     }
 
@@ -144,7 +149,8 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
         Direction facing = state.get(FACING);
         Direction southRelative = facing.rotateYClockwise().rotateYClockwise();
         BlockPos checkPos = pos.offset(southRelative);
-        return world.getEmittedRedstonePower(checkPos, southRelative.getOpposite()) > 0;
+        // Same convention as World#getReceivedRedstonePower (repeaters/comparators are directional)
+        return world.getEmittedRedstonePower(checkPos, southRelative) > 0;
     }
 
     public static VoxelShape makeShape() {

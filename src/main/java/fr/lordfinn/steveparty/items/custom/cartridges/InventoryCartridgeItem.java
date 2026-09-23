@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.components.ItemStackBackedInventory;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeInventoryScreenHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -92,14 +93,20 @@ public class InventoryCartridgeItem extends CartridgeItem {
             return super.use(world, player, hand); // Don't activate if targeting a block
         }
 
-        openInventoryScreen(player);
+        // The cartridge screen (selection state, linked inventory) works on the main hand stack
+        openInventoryScreen(player, Hand.MAIN_HAND);
         return ActionResult.SUCCESS;
     }
 
 
     public static void openInventoryScreen(PlayerEntity player) {
-        ItemStack stackMainHand = player.getMainHandStack();
-        InventoryComponent inventory = InventoryComponent.getInventoryFromStack(stackMainHand, 9);
+        openInventoryScreen(player, Hand.MAIN_HAND);
+    }
+
+    public static void openInventoryScreen(PlayerEntity player, Hand hand) {
+        ItemStack cartridge = player.getStackInHand(hand);
+        if (cartridge.isEmpty() || !(cartridge.getItem() instanceof InventoryCartridgeItem)) return;
+        ItemStackBackedInventory inventory = InventoryComponent.getInventoryFromStack(cartridge, CartridgeInventoryScreenHandler.GHOST_SLOT_COUNT);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                 (syncId, inventory1, playerEntity) -> new CartridgeInventoryScreenHandler(syncId, inventory1, inventory),

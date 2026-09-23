@@ -7,9 +7,14 @@ import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
 import fr.lordfinn.steveparty.components.TripleJumpComponent;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.*;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
+import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleScreenHandler;
+import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
 import fr.lordfinn.steveparty.utils.TripleJumpHandler;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
@@ -35,6 +40,9 @@ public class ModPayloads {
     public static final Identifier GOAL_POLE_PAYLOAD = Steveparty.id("goal-pole-payload");
     public static final Identifier FLOATING_TEXT_PAYLOAD = Steveparty.id("floating-text-payload");
     public static final Identifier TRIPLE_JUMP_PAYLOAD = Steveparty.id("triple-jump-payload");
+    public static final Identifier CARTRIDGE_SLOT_SCROLL_PAYLOAD = Steveparty.id("cartridge-slot-scroll-payload");
+    /** Max length accepted for the goal pole base selector / goal strings. */
+    private static final int MAX_GOAL_POLE_STRING_LENGTH = 256;
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
@@ -52,6 +60,12 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(GoalPolePayload.ID, GoalPolePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TripleJumpPayload.ID, TripleJumpPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(CartridgeSlotScrollPayload.ID, CartridgeSlotScrollPayload.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(CartridgeSlotScrollPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            player.server.execute(() -> CartridgeSlotScrollPayload.handle(payload, player));
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -68,8 +82,18 @@ public class ModPayloads {
             player.server.execute(() -> {
                 BlockPos pos = payload.pos();
                 byte[] shape = payload.shape();
-                if (player.getWorld().getBlockEntity(pos) instanceof StencilMakerBlockEntity blockEntity) {
-                    StencilItem.setShape(shape, blockEntity.getStencil());
+                if (shape == null || shape.length != SaveStencilPayload.SHAPE_SIZE) return;
+                // The stencil maker screen for this block must be open and the block in reach
+                if (!(player.currentScreenHandler instanceof StencilMakerScreenHandler handler)
+                        || handler.getBlockEntity() == null
+                        || !pos.equals(handler.getBlockEntity().getPos())
+                        || !ScreenHandlerChecks.isInReach(player, pos)) return;
+                if (player.getWorld().getBlockEntity(pos) instanceof StencilMakerBlockEntity blockEntity
+                        && blockEntity == handler.getBlockEntity()) {
+                    ItemStack stencil = blockEntity.getStencil();
+                    if (stencil.isEmpty() || !(stencil.getItem() instanceof StencilItem)) return;
+                    StencilItem.setShape(shape, stencil);
+                    blockEntity.markDirty();
                 }
             });
         });
@@ -79,6 +103,13 @@ public class ModPayloads {
             // Schedule on server thread
             player.server.execute(() -> {
                 BlockPos pos = payload.pos();
+                if (payload.selector() == null || payload.goal() == null
+                        || payload.selector().length() > MAX_GOAL_POLE_STRING_LENGTH
+                        || payload.goal().length() > MAX_GOAL_POLE_STRING_LENGTH) return;
+                // The goal pole base screen for this block must be open and the block in reach
+                if (!(player.currentScreenHandler instanceof GoalPoleBaseScreenHandler handler)
+                        || !pos.equals(handler.getPos())
+                        || !ScreenHandlerChecks.isInReach(player, pos)) return;
 
                 // Check the BlockEntity type
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity blockEntity) {
@@ -92,6 +123,11 @@ public class ModPayloads {
             ServerPlayerEntity player = context.player();
             player.server.execute(() -> {
                 BlockPos pos = payload.pos();
+                if (payload.comparator() == null) return;
+                // The goal pole screen for this block must be open and the block in reach
+                if (!(player.currentScreenHandler instanceof GoalPoleScreenHandler handler)
+                        || !pos.equals(handler.getPos())
+                        || !ScreenHandlerChecks.isInReach(player, pos)) return;
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBlockEntity blockEntity) {
                     blockEntity.update(payload.comparator(), payload.value());
                 }

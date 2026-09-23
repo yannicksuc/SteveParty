@@ -31,24 +31,24 @@ import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 public class ModItems {
     public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
 
-    public static final Item STENCIL = register(StencilItem.class, "stencil");
-    public static final Item WRENCH = register(WrenchItem.class, "wrench");
-    public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
-    public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
-    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop");
-    public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand");
+    public static final Item STENCIL = registerUnstackable(StencilItem.class, "stencil");
+    public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
+    public static final Item BOARD_SPACE_BEHAVIOR = registerUnstackable(CartridgeItem.class, "board_space_behavior");
+    public static final Item TILE_BEHAVIOR_START = registerUnstackable(StartCartridgeItem.class, "tile_behavior_start");
+    public static final Item BOARD_SPACE_BEHAVIOR_STOP = registerUnstackable(StopCartridgeItem.class, "board_space_behavior_stop");
+    public static final Item TOKENIZER_WAND = registerUnstackable(TokenizerWandItem.class, "tokenizer_wand");
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
     public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
     public static final List<Item> DICE_FACES = new ArrayList<>();
     public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
-    public static final Item MINI_GAMES_CATALOGUE = register(MiniGamesCatalogueItem.class,"mini_games_catalogue");
+    public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
-    public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
-    public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
-    public static final Item HERE_WE_GO_BOOK = register(HereWeGoBookItem.class, "here_we_go_book");
-    public static final Item HERE_WE_COME_BOOK = register(HereWeComeBookItem.class, "here_we_come_book");
-    public static final Item SHOPKEEPER_KEY = register(ShopkeeperKeyItem.class, "shopkeeper_key");
+    public static final Item INVENTORY_CARTRIDGE = registerUnstackable(InventoryCartridgeItem.class, "inventory_cartridge");
+    public static final Item MINI_GAME_PAGE = registerUnstackable(MiniGamePageItem.class, "mini_game_page");
+    public static final Item HERE_WE_GO_BOOK = registerUnstackable(HereWeGoBookItem.class, "here_we_go_book");
+    public static final Item HERE_WE_COME_BOOK = registerUnstackable(HereWeComeBookItem.class, "here_we_come_book");
+    public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
     public static final Item FLAG = register(FlagItem.class, "flag");
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
     public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
@@ -69,6 +69,22 @@ public class ModItems {
     public static <T extends Item> T register(Class<T> itemClass, String id) {
         try {
             T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(new T.Settings(), id));
+            Identifier itemID = Steveparty.id(id);
+            RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
+            Registry.register(Registries.ITEM, key, item);
+            return item;
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to create and register item: " + itemClass, e);
+        }
+    }
+
+    /**
+     * Registers an item that carries per-stack state (components): it must not stack, otherwise the state of
+     * one item would be shared/lost when merging stacks.
+     */
+    public static <T extends Item> T registerUnstackable(Class<T> itemClass, String id) {
+        try {
+            T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(new Item.Settings().maxCount(1), id));
             Identifier itemID = Steveparty.id(id);
             RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
             Registry.register(Registries.ITEM, key, item);

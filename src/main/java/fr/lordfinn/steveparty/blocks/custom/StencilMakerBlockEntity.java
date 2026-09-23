@@ -119,7 +119,7 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
 
     @Override
     public Text getDisplayName() {
-        return Text.translatable("steveparty.block.stencil_maker");
+        return Text.translatable("block.steveparty.stencil_maker");
     }
 
     @Nullable

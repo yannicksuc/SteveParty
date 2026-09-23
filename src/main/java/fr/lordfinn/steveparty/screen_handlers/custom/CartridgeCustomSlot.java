@@ -31,8 +31,8 @@ public class CartridgeCustomSlot extends Slot {
 
     @Override
     public void setStack(ItemStack stack) {
-        if (this.hasStack())
-            return;
+        // Note: setStack(EMPTY) must always be honored (vanilla SWAP/take logic relies on it, ignoring it dupes the cartridge).
+        // Insertion into an occupied slot is already refused by canInsert, and getMaxItemCount limits it to 1 item.
         // Ensure that only one item can be in the slot.
         if (!stack.isEmpty() && stack.getCount() > 1) {
             stack.setCount(1);

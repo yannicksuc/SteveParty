@@ -33,12 +33,12 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
         // Get the current input in the first slot
         ItemStack inputStack = this.slots.getFirst().getStack();
 
-        Steveparty.LOGGER.info("Input stack: {}", inputStack);
+        Steveparty.LOGGER.debug("Input stack: {}", inputStack);
 
         if (inputStack.isEmpty()) {
             // If there's no input, reset the selected trade index
             this.selectedTradeIndex = -1;
-            Steveparty.LOGGER.info("Resetting selected trade index");
+            Steveparty.LOGGER.debug("Resetting selected trade index");
             return;
         }
 
@@ -49,22 +49,22 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
         for (TradeOffer offer : offers) {
             if (offer.getFirstBuyItem().matches(inputStack)) {
                 matchingOffers.add(offer);
-                Steveparty.LOGGER.info("Found matching offer: {}", offer);
+                Steveparty.LOGGER.debug("Found matching offer: {}", offer);
             }
         }
 
         // Update the displayed trade
         if (selectedTradeIndex >= 0 && selectedTradeIndex < matchingOffers.size()) {
             // If a trade is explicitly selected, display it
-            Steveparty.LOGGER.info("Selected trade index: {}", selectedTradeIndex);
+            Steveparty.LOGGER.debug("Selected trade index: {}", selectedTradeIndex);
             this.setRecipeIndex(selectedTradeIndex);
         } else if (matchingOffers.size() == 1) {
             // If there's only one matching trade, display it
-            Steveparty.LOGGER.info("Single matching offer: {}", matchingOffers.getFirst());
+            Steveparty.LOGGER.debug("Single matching offer: {}", matchingOffers.getFirst());
             this.setRecipeIndex(offers.indexOf(matchingOffers.getFirst()));
         } else {
             // No trade is selected or multiple matching trades exist
-            Steveparty.LOGGER.info("No matching offer found");
+            Steveparty.LOGGER.debug("No matching offer found");
             this.setRecipeIndex(-1);
         }
         super.onContentChanged(inventory);
@@ -72,7 +72,7 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
 
     @Override
     public void setRecipeIndex(int index) {
-        Steveparty.LOGGER.info("Setting recipe index: {}", index);
+        Steveparty.LOGGER.debug("Setting recipe index: {}", index);
         super.setRecipeIndex(index);
         this.setSelectedTradeIndex(index); // Track the player's explicit selection
     }
