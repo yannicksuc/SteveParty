@@ -12,12 +12,15 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -194,6 +197,85 @@ public class GameplayRulesGameTests implements FabricGameTest {
             disconnect(context, player);
         }
         context.complete();
+    }
+
+    /**
+     * Only the owner can make a tamed Mula sit / stand (empty hand or a non-food item; food still feeds it).
+     * A sitting Mula stays where it is instead of following, and the order survives a save/load.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
+    public void mulaSitsOnOwnerOrderOnlyAndStaysSitting(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity stranger = context.createMockCreativeServerPlayerInWorld();
+        try {
+            owner.changeGameMode(GameMode.SURVIVAL);
+            stranger.changeGameMode(GameMode.SURVIVAL);
+            mula.setOwner(owner);
+            owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+            stranger.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+
+            mula.interactMob(stranger, Hand.MAIN_HAND);
+            context.assertTrue(!mula.isSitting(), "a stranger can't make it sit");
+
+            // Food keeps feeding it, even for the owner
+            Item food = switch (mula.getVariant()) {
+                case BLUE -> Items.LAPIS_LAZULI;
+                case RED -> Items.RED_DYE;
+                case GREEN -> Items.GREEN_DYE;
+                case YELLOW -> Items.YELLOW_DYE;
+                case PURPLE -> Items.PURPLE_DYE;
+                case BLACK -> Items.COAL;
+            };
+            context.assertTrue(mula.isMulaFood(new ItemStack(food)), food + " is food for " + mula.getVariant());
+            owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(food, 4));
+            int hunger = mula.getHunger();
+            mula.interactMob(owner, Hand.MAIN_HAND);
+            context.assertTrue(!mula.isSitting(), "feeding doesn't toggle sitting");
+            context.assertTrue(mula.getHunger() > hunger, "fed");
+
+            // Non-food item (here a stick) or empty hand: sit order
+            owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.STICK));
+            mula.interactMob(owner, Hand.MAIN_HAND);
+            context.assertTrue(mula.isSitting(), "owner makes it sit");
+            context.assertEquals(owner.getMainHandStack().getCount(), 1, "the item is not consumed");
+        } catch (RuntimeException e) {
+            disconnect(context, owner);
+            disconnect(context, stranger);
+            throw e;
+        }
+        double startX = mula.getX();
+        double startZ = mula.getZ();
+
+        // The owner walks away: a sitting Mula doesn't follow
+        BlockPos far = context.getAbsolutePos(new BlockPos(1, 2, 1)).add(8, 0, 0);
+        owner.refreshPositionAndAngles(far.getX() + 0.5, far.getY(), far.getZ() + 0.5, 0, 0);
+
+        context.waitAndRun(60, () -> {
+            try {
+                context.assertTrue(mula.isInSittingPose(), "sitting pose applied");
+                context.assertTrue(Math.abs(mula.getX() - startX) < 0.5 && Math.abs(mula.getZ() - startZ) < 0.5,
+                        "stayed in place: " + mula.getPos());
+
+                NbtCompound nbt = new NbtCompound();
+                mula.writeNbt(nbt);
+                MulaEntity reloaded = ModEntities.MULA_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
+                context.assertTrue(reloaded != null, "entity created");
+                reloaded.readNbt(nbt);
+                context.assertTrue(reloaded.isSitting() && reloaded.isInSittingPose(), "sitting saved");
+                context.assertTrue(reloaded.isOwner(owner), "owner saved");
+
+                owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+                mula.interactMob(stranger, Hand.MAIN_HAND);
+                context.assertTrue(mula.isSitting(), "a stranger can't make it stand");
+                mula.interactMob(owner, Hand.MAIN_HAND);
+                context.assertTrue(!mula.isSitting(), "owner makes it stand (empty hand)");
+            } finally {
+                disconnect(context, owner);
+                disconnect(context, stranger);
+            }
+            context.complete();
+        });
     }
 
     // ---------------------------------------------------------------- squish

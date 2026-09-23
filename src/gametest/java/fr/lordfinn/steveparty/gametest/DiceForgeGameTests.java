@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlock;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
@@ -13,10 +14,14 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.Registries;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import net.minecraft.util.math.random.Random;
 
 import java.util.List;
@@ -140,6 +145,97 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertTrue(plain >= 1 && plain <= 10, "plain roll " + plain);
         }
         context.complete();
+    }
+
+    /** A single face is enough: the die always rolls that face. No face at all is still refused. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = TICK_LIMIT)
+    public void singleFaceDieIsForgedAndAlwaysRollsThatFace(TestContext context) {
+        DiceForgeBlockEntity forge = placeActivatedForge(context);
+        for (int i = 0; i < FRAGMENT_SLOTS; i++) {
+            forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
+        }
+        context.assertEquals(forge.getStatus(false), Status.NOT_ENOUGH_FACES, "no face at all");
+        forge.setStack(7, new ItemStack(face(4), 2));
+        context.assertEquals(forge.getStatus(false), Status.OK, "one face is enough");
+        context.assertTrue(forge.start(), "production starts with a single face");
+
+        context.waitAndRun(CRAFT_TIME + 10, () -> {
+            ItemStack output = forge.getStack(CENTER_SLOT);
+            context.assertTrue(output.isOf(ModItems.DEFAULT_DICE), "a die was forged: " + output);
+            DiceFacesComponent faces = output.get(DiceFacesComponent.TYPE);
+            context.assertTrue(faces != null, "the die carries its face");
+            context.assertEquals(faces.faces(), List.of(new DiceFace(Kind.NORMAL, 4)), "faces");
+            Random random = Random.create(7);
+            for (int i = 0; i < 100; i++) {
+                context.assertEquals(DiceFacesComponent.rollFace(output, random), 4, "single-face roll");
+            }
+            forge.toggleProduction();
+            context.complete();
+        });
+    }
+
+    /**
+     * Sneak + right-click (empty hand) takes the core back: the forge is deactivated, the running craft stops
+     * without consuming anything, the core and the forged dice go to the player, and re-inserting replays the
+     * insertion. Refused while the insertion animation plays.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = TICK_LIMIT)
+    public void sneakUseRemovesTheCoreAndDeactivates(TestContext context) {
+        DiceForgeBlockEntity forge = placeActivatedForge(context);
+        ItemStack forged = DiceFacesComponent.createDie(List.of(new ItemStack(face(2))));
+        forge.setStack(CENTER_SLOT, forged.copyWithCount(3));
+        forge.setStack(0, new ItemStack(face(5), 4));
+        for (int i = 0; i < FRAGMENT_SLOTS; i++) {
+            forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
+        }
+        forge.setStack(FIRST_FRAGMENT_SLOT, new ItemStack(ModItems.RED_STAR_FRAGMENT, 2));
+
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        player.changeGameMode(GameMode.SURVIVAL);
+        player.getInventory().clear();
+        player.setSneaking(true);
+        BlockPos abs = context.getAbsolutePos(FORGE_POS);
+        BlockHitResult hit = new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false);
+
+        context.assertTrue(!forge.canRemoveCore(), "not removable during the insertion animation");
+        context.getBlockState(FORGE_POS).onUse(context.getWorld(), player, hit);
+        context.assertTrue(forge.isActivated(), "still activated while the core settles");
+
+        context.waitAndRun(CORE_INSERT_TICKS + 5, () -> {
+            try {
+                // The output holds another die: the loop runs but waits at 100% (OUTPUT_BLOCKED)
+                context.assertTrue(forge.start(), "production starts");
+                context.assertTrue(forge.isCrafting(), "crafting before removal");
+
+                context.getBlockState(FORGE_POS).onUse(context.getWorld(), player, hit);
+
+                context.assertTrue(!context.getBlockState(FORGE_POS).get(DiceForgeBlock.ACTIVATED), "block state deactivated");
+                context.assertTrue(!forge.isActivated(), "forge deactivated");
+                context.assertTrue(!forge.isCrafting(), "craft stopped");
+                context.assertEquals(forge.getStatus(false), Status.NOT_ACTIVATED, "status");
+                context.assertTrue(forge.getStack(CENTER_SLOT).isEmpty(), "center slot freed for the core");
+                context.assertEquals(player.getInventory().count(ModBlocks.GRAVITY_CORE.asItem()), 1, "core given back");
+                context.assertEquals(player.getInventory().count(ModItems.DEFAULT_DICE), 3, "forged dice given back");
+                context.assertEquals(forge.getStack(0).getCount(), 4, "faces not consumed");
+                context.assertEquals(forge.getStack(FIRST_FRAGMENT_SLOT).getCount(), 2, "fragments not consumed");
+                context.assertTrue(forge.getExtraDrops().isEmpty(), "no core left to drop when broken");
+
+                // Saved state: no activation time left over
+                DiceForgeBlockEntity reloaded = new DiceForgeBlockEntity(abs, context.getBlockState(FORGE_POS));
+                reloaded.read(forge.createNbt(context.getWorld().getRegistryManager()), context.getWorld().getRegistryManager());
+                context.assertTrue(!reloaded.isCrafting(), "not crafting after reload");
+                context.assertEquals(reloaded.getActivationTime(), forge.getActivationTime(), "activation time saved");
+
+                // Re-inserting plays the insertion again
+                forge.setStack(CENTER_SLOT, new ItemStack(ModBlocks.GRAVITY_CORE));
+                context.assertTrue(forge.isActivated(), "re-activated");
+                context.assertEquals(forge.getActivationTime(), context.getWorld().getTime(), "new activation time");
+                context.assertTrue(forge.isInsertingCore(0f), "insertion animation replays");
+            } finally {
+                context.getWorld().getServer().getPlayerManager().remove(player);
+            }
+            context.complete();
+        });
     }
 
     /** Old forges kept a power star in slot 12: it is given back (dropped), never deleted. */

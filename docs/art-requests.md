@@ -27,3 +27,19 @@ GUI:
 
 The sale-mode button uses vanilla button sprites and item icons (emerald = free shop, redstone torch = sale available,
 redstone dust = waiting for a signal). A dedicated icon set is welcome but not required.
+
+## Mula sitting (GeckoLib: `mula` geo + `animations/entity/mula.animation.json`)
+
+A tamed Mula can now be ordered to sit by its owner (`MulaSitGoal`): it glides straight down and hovers 0.4 block
+above the ground, and stays there. The model has no sit animation, so it plays `idle` meanwhile
+(`MulaEntity#animationPredicate`, branch `isInSittingPose()`).
+
+- **`sit`** (loop, ~3 s): a "resting" hover — body lower and tucked, slow shallow bob, eyes half closed / sleepy
+  look if the texture allows. It must loop seamlessly; the code would switch `IDLE_ANIM` to it in the sitting branch.
+- Optional **`sit_down`** (play once, ~0.5 s) chained into `sit`, and **`stand_up`** (~0.5 s) back to `idle`.
+
+## Dice Forge: core removal
+
+Sneak + right-click (empty hand) takes the gravity core back: the forge goes back to its static state at once
+(controller stopped). An optional **`core_remove`** animation (play once, ~1 s, the core rising out of the hole,
+the reverse of the first half of `core_insert`) could be added; the code would need a short "removing" state.

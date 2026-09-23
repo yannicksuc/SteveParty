@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
@@ -53,6 +54,9 @@ import java.util.stream.IntStream;
  * Layout: 12 face slots around the vortex, the center slot (gravity core input while the forge is not
  * activated, then the die output) and 4 star fragment slots around the center.
  * <p>
+ * Core: inserted by right-clicking the forge with it or through the center slot; taken back with sneak +
+ * right-click (empty hand) once the insertion animation is over, see {@link #removeCore}.
+ * <p>
  * Production: the CRAFT button (or a redstone rising edge) snapshots the current layout and starts a loop.
  * Each craft ({@link #CRAFT_TIME} ticks) consumes 1 item of every face slot and 1 fragment of every
  * non-black fragment slot, and outputs a die carrying those faces. The loop stops when toggled off, or as
@@ -76,7 +80,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     // ---- tuning
     public static final int CRAFT_TIME = 100;
-    public static final int MIN_FACES = 2;
+    /** A die may have a single face (it then always rolls that face). */
+    public static final int MIN_FACES = 1;
     /** Duration of the "core_insert" animation (must match the animation JSON: 3 s). */
     public static final int CORE_INSERT_TICKS = 60;
 
@@ -485,6 +490,47 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         markDirty();
     }
 
+    /** @return true if the gravity core can be taken back: forge activated and the insertion animation over. */
+    public boolean canRemoveCore() {
+        return world != null && isActivated() && !isInsertingCore(0f);
+    }
+
+    /**
+     * Takes the gravity core back out of the forge (sneak + right-click with an empty hand).
+     * <p>
+     * A running craft is stopped without losing anything: items are only consumed when a craft completes.
+     * The core and the dice waiting in the center slot (which becomes the core input again) are handed to the
+     * player, or dropped when their inventory is full / there is no player. The remembered layout (ghosts) is
+     * kept, and the forge goes back to its static idle state, so re-inserting the core plays "core_insert" again.
+     *
+     * @return true if the core was removed
+     */
+    public boolean removeCore(@Nullable PlayerEntity player) {
+        if (world == null || world.isClient || !canRemoveCore()) return false;
+        if (running) {
+            // No manual stop flag: under redstone power, production resumes once the core is back
+            stop(false);
+        }
+        ItemStack output = inventory.get(CENTER_SLOT);
+        inventory.set(CENTER_SLOT, ItemStack.EMPTY);
+        activationTime = Long.MIN_VALUE / 2;
+        world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, false));
+        giveOrDrop(player, new ItemStack(ModBlocks.GRAVITY_CORE));
+        if (!output.isEmpty()) giveOrDrop(player, output);
+        world.playSound(null, pos, SoundEvents.BLOCK_HEAVY_CORE_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        world.playSound(null, pos, SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 0.6f, 1.2f);
+        markDirty();
+        return true;
+    }
+
+    private void giveOrDrop(@Nullable PlayerEntity player, ItemStack stack) {
+        if (player != null) {
+            player.getInventory().offerOrDrop(stack);
+        } else if (world != null) {
+            ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, stack);
+        }
+    }
+
     /** @return world time at which the gravity core was inserted (drives the insertion animation). */
     public long getActivationTime() {
         return activationTime;
@@ -613,7 +659,11 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     /** idle (static, no core) → core_insert → floating loop; crafting loop while producing. */
     private PlayState mainAnimController(AnimationState<DiceForgeBlockEntity> state) {
-        if (!isActivated()) return PlayState.STOP;
+        if (!isActivated()) {
+            // Core removed (or never inserted): next insertion must replay core_insert from its start
+            state.getController().forceAnimationReset();
+            return PlayState.STOP;
+        }
         if (running) return state.setAndContinue(CRAFTING);
         if (isInsertingCore(state.getPartialTick())) return state.setAndContinue(CORE_INSERT);
         return state.setAndContinue(FLOATING);

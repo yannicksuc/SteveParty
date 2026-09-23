@@ -10,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
@@ -95,6 +96,16 @@ public class DiceForgeBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        // Sneak + right-click with an empty hand on an activated forge: take the gravity core back
+        // (vanilla only reaches onUse while sneaking when both hands are empty)
+        if (player.isSneaking() && state.get(ACTIVATED) && player.getMainHandStack().isEmpty()) {
+            if (world.isClient) return ActionResult.SUCCESS;
+            if (world.getBlockEntity(pos) instanceof DiceForgeBlockEntity blockEntity && !blockEntity.removeCore(player)) {
+                player.sendMessage(Text.translatableWithFallback("message.steveparty.dice_forge.core_settling",
+                        "The gravity core is still settling into the forge"), true);
+            }
+            return ActionResult.SUCCESS_SERVER;
+        }
         if (world.isClient) return ActionResult.SUCCESS;
         if (world.getBlockEntity(pos) instanceof DiceForgeBlockEntity diceForgeBlockEntity) {
             player.openHandledScreen(diceForgeBlockEntity);
