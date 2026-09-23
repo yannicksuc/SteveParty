@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -63,6 +64,8 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
         if (!world.isClient) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (player instanceof ServerPlayerEntity serverPlayer && blockEntity instanceof CashRegisterBlockEntity cashRegisterBlockEntity) {
+                // Reserved to the shopkeeper (linked key), creative players and operators
+                if (!ShopkeeperKeyItem.canOpenShopBlock(serverPlayer, world, pos)) return ActionResult.SUCCESS;
                 serverPlayer.openHandledScreen(cashRegisterBlockEntity);
                 return ActionResult.SUCCESS;
             }
