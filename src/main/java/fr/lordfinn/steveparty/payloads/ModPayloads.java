@@ -4,14 +4,12 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
-import fr.lordfinn.steveparty.components.TripleJumpComponent;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.*;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
-import fr.lordfinn.steveparty.utils.TripleJumpHandler;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemStack;
@@ -22,7 +20,6 @@ import net.minecraft.util.math.BlockPos;
 
 import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookItem.handleHereWeComeBookPayload;
 import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem.handleHereWeGoBookPayload;
-import static fr.lordfinn.steveparty.utils.TripleJumpHandler.getTripleJumpComponent;
 
 public class ModPayloads {
     public static final Identifier ARROW_PARTICLES_PAYLOAD = Steveparty.id("arrow-particles");
@@ -34,11 +31,9 @@ public class ModPayloads {
     public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Steveparty.id("here-we-go-book-payload");
     public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Steveparty.id("here-we-come-book-payload");
     public static final Identifier SAVE_STENCIL_PAYLOAD = Steveparty.id("save_stencil");
-    public static final Identifier HOP_SWITCH_PAYLOAD = Steveparty.id("hop-switch-payload");
     public static final Identifier GOAL_POLE_BASE_PAYLOAD = Steveparty.id("goal-pole-base-payload");
     public static final Identifier GOAL_POLE_PAYLOAD = Steveparty.id("goal-pole-payload");
     public static final Identifier FLOATING_TEXT_PAYLOAD = Steveparty.id("floating-text-payload");
-    public static final Identifier TRIPLE_JUMP_PAYLOAD = Steveparty.id("triple-jump-payload");
     public static final Identifier CARTRIDGE_SLOT_SCROLL_PAYLOAD = Steveparty.id("cartridge-slot-scroll-payload");
     /** Max length accepted for the goal pole base selector / goal strings. */
     private static final int MAX_GOAL_POLE_STRING_LENGTH = 256;
@@ -57,7 +52,6 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPolePayload.ID, GoalPolePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(TripleJumpPayload.ID, TripleJumpPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(CartridgeSlotScrollPayload.ID, CartridgeSlotScrollPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(CartridgeSlotScrollPayload.ID, (payload, context) -> {
@@ -131,8 +125,6 @@ public class ModPayloads {
                 }
             });
         });
-
-        TripleJumpHandler.register();
     }
 
 }
