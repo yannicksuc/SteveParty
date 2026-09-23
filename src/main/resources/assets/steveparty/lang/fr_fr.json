@@ -91,7 +91,7 @@
   "command.steveparty.turn_not_current": "Ce tour n'est plus le tour en cours.",
   "command.steveparty.turn_not_absent": "Le pion du tour en cours n'est pas absent, son tour ne peut pas être passé.",
   "command.steveparty.token_not_in_party": "Ce pion ne fait pas partie de la partie.",
-  "command.steveparty.exclude_not_allowed": "Vous ne pouvez exclure que votre propre pion, ou le pion dont le tour l'attend.",
+  "command.steveparty.exclude_not_allowed": "Vous ne pouvez exclure que votre propre pion, le pion dont le tour l'attend, ou n'importe quel pion avec une baguette Maître du jeu.",
   "enchantment.steveparty.game_master": "Maître du jeu",
   "message.steveparty.token_not_yours": "Ce pion appartient à un autre joueur (opérateur ou baguette Maître du jeu requis).",
   "message.steveparty.shop.access_denied": "Seule une Clé du Marchand liée au marchand de cette boutique peut l'ouvrir.",
@@ -120,5 +120,10 @@
   "gui.steveparty.dice_forge.status.layout_changed": "Les faces ont changé depuis le début du craft",
   "gui.steveparty.dice_forge.status.missing_fragment": "Placez des fragments d'étoile dans les 4 emplacements autour du noyau",
   "gui.steveparty.dice_forge.status.duplicate_fragment": "Chaque couleur de fragment doit être différente (seul le noir peut être répété)",
-  "gui.steveparty.dice_forge.status.output_blocked": "L'emplacement de sortie est plein ou contient un autre dé"
+  "gui.steveparty.dice_forge.status.output_blocked": "L'emplacement de sortie est plein ou contient un autre dé",
+  "message.steveparty.shopkeeper_key.not_owner": "Ce marchand appartient à un autre joueur.",
+  "message.steveparty.shop.not_owner_access_denied": "Cette boutique appartient à un autre joueur.",
+  "message.steveparty.shop.key_required": "Tenez une clé de commerçant pour ouvrir votre boutique.",
+  "gui.steveparty.dice_forge.status.no_face": "Placez au moins une face de dé",
+  "message.steveparty.dice_forge.core_settling": "Le cœur de gravité se met encore en place dans la forge"
 }
