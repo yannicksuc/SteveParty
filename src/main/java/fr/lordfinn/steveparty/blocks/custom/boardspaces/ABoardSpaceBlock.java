@@ -7,6 +7,7 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
@@ -23,6 +24,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
+import static net.minecraft.util.ActionResult.PASS;
 import static net.minecraft.util.ActionResult.SUCCESS;
 
 public abstract class ABoardSpaceBlock extends CartridgeContainer {
@@ -45,6 +47,8 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
 
     @Override
     protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
+        if (world.isClient) return stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS;
         return BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit);
     }
 
@@ -74,6 +78,14 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
             tileEntity.updateBoardSpaceType();
         }
     }
+    /**
+     * Whether reaching this block consumes one step of a token's movement.
+     * Tiles and simple tiles count; check points deliberately do not (they are waypoints).
+     */
+    public static boolean countsAsStep(Block block) {
+        return block instanceof TileBlock || block instanceof SimpleTileBlock;
+    }
+
     public static BoardSpaceBlockEntity getBoardSpaceEntity(World world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (blockEntity instanceof BoardSpaceBlockEntity tileEntity)

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ClientBoardSpaceRouters {
-    private static final Map<BlockPos, BlockPos> ROUTER_MAP = new HashMap<>();
+    private static final Map<BlockPos, BlockPos> ROUTER_MAP = new java.util.concurrent.ConcurrentHashMap<>();
 
     public static void update(Map<BlockPos, BlockPos> map) {
         ROUTER_MAP.clear();

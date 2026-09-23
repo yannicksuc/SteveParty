@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
@@ -32,10 +33,11 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.ACTIVATED;
 import static fr.lordfinn.steveparty.blocks.custom.LootingBoxBlock.TRIGGERED;
@@ -49,7 +51,8 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     protected static final RawAnimation PUNCHED_ANIM = RawAnimation.begin().thenPlay("punched");
     protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
 
-    private static final Map<PlayerEntity, Boolean> playerJumpStates = new HashMap<>();
+    /** Players that already punched a looting box during their current jump (removed when they land). */
+    private static final Set<UUID> playersWhoPunchedThisJump = new HashSet<>();
 
     // -------------------------
     // Fields
@@ -91,9 +94,13 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
 
     @Override
     public void triggerAnim(@Nullable String controllerName, String animName) {
-        if (world.isClient) {
-            world.setBlockState(pos, this.getCachedState().with(TRIGGERED, true));
-
+        if (world != null && !world.isClient) {
+            // Block state changes are server-side only (a client-side change desyncs the TRIGGERED property)
+            BlockState state = world.getBlockState(pos);
+            if (state.contains(TRIGGERED) && !state.get(TRIGGERED))
+                world.setBlockState(pos, state.with(TRIGGERED, true), Block.NOTIFY_ALL);
+        }
+        if (world != null && world.isClient) {
             int particleCount = 8;
             double speed = 20; // adjust for how fast particles fly out
 
@@ -124,6 +131,9 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
         super.writeNbt(nbt, registryManager);
         nbt.putInt("RepeatTime", repeatTime);
         nbt.putInt("CooldownTime", cooldownTime);
+        nbt.putInt("CooldownTicks", cooldownTicks);
+        nbt.putInt("HitsRemaining", hitsRemaining);
+        nbt.putInt("CycleIndex", cycleIndex);
     }
 
     @Override
@@ -131,6 +141,9 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
         super.readNbt(nbt, registryManager);
         if (nbt.contains("RepeatTime")) repeatTime = nbt.getInt("RepeatTime");
         if (nbt.contains("CooldownTime")) cooldownTime = nbt.getInt("CooldownTime");
+        if (nbt.contains("CooldownTicks")) cooldownTicks = nbt.getInt("CooldownTicks");
+        if (nbt.contains("HitsRemaining")) hitsRemaining = nbt.getInt("HitsRemaining");
+        if (nbt.contains("CycleIndex")) cycleIndex = nbt.getInt("CycleIndex");
     }
 
     // -------------------------
@@ -181,7 +194,7 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
         if (world.isClient) return;
         if (!getCachedState().get(ACTIVATED)) return;
 
-        boolean playerJumpState = playerJumpStates.getOrDefault(player, false);
+        boolean playerJumpState = playersWhoPunchedThisJump.contains(player.getUuid());
         if (!playerJumpState && processInventoryAction()) {
 
             // Trigger animation & particles
@@ -192,10 +205,11 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
             world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_STEP, SoundCategory.BLOCKS, 1f, 0.5f);
 
             // Register player's jump state
-            playerJumpStates.put(player, true);
+            playersWhoPunchedThisJump.add(player.getUuid());
 
             // Reduce remaining punches
             hitsRemaining--;
+            markDirty();
 
             if (hitsRemaining <= 0) {
                 world.setBlockState(pos, this.getCachedState().with(ACTIVATED, false).with(TRIGGERED, true));
@@ -207,7 +221,7 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
 
 
     public static void resetPlayerInteractionState(ServerPlayerEntity player) {
-        playerJumpStates.put(player, false);
+        playersWhoPunchedThisJump.remove(player.getUuid());
     }
 
     // -------------------------
@@ -250,9 +264,12 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     private boolean transferNextItemInCycle(InventoryComponent cartridgeInventory, Inventory connectedInventory) {
         List<ItemStack> items = cartridgeInventory.getItems().stream().filter(stack -> !stack.isEmpty()).toList();
         if (!items.isEmpty()) {
+            // The cartridge content may have shrunk since the index was stored
+            cycleIndex = Math.floorMod(cycleIndex, items.size());
             ItemStack stack = items.get(cycleIndex);
             boolean success = handleTransfer(stack, connectedInventory);
             cycleIndex = (cycleIndex + 1) % items.size();
+            markDirty();
             return success;
         }
         return false;
@@ -264,16 +281,12 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private boolean transferItem(ItemStack stack, Inventory sourceInventory) {
-        for (int i = 0; i < sourceInventory.size(); i++) {
-            ItemStack sourceStack = sourceInventory.getStack(i);
-            if (ItemStack.areItemsEqual(sourceStack, stack)) {
-                int transferableAmount = Math.min(sourceStack.getCount(), stack.getCount());
-                Block.dropStack(world, pos.down(), new ItemStack(stack.getItem(), transferableAmount));
-                sourceStack.decrement(transferableAmount);
-                return true;
-            }
-        }
-        return false;
+        // Drops exactly the wanted amount (possibly taken from several slots), keeping the item components
+        return InventoryInteractorTileBehavior.extractMatching(stack, sourceInventory, toDrop -> {
+            int count = toDrop.getCount();
+            Block.dropStack(world, pos.down(), toDrop);
+            return count;
+        }) > 0;
     }
 
     public void resetHitsRemaining() {
@@ -291,6 +304,7 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
             if (cooldownTicks <= 0) {
                 world.setBlockState(pos, currentState.with(ACTIVATED, true).with(TRIGGERED, false), Block.NOTIFY_ALL);
                 resetHitsRemaining();
+                markDirty();
             }
         }
 

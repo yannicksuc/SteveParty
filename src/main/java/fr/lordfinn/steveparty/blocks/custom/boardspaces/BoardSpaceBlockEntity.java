@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
@@ -56,16 +57,38 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
     private ItemStack currentlyActiveCartridge = null;
     public final int INV_SIZE;
+    /** Server-side cache of the active slot (-1 = must be recomputed). Invalidated on neighbor/router/inventory changes. */
+    private int cachedActiveSlot = -1;
+    /** Safety net: the cached active slot is recomputed at least this often (ticks). */
+    private static final int ACTIVE_SLOT_REFRESH_INTERVAL = 20;
+    /** Last state for which a TileUpdatedEvent was fired, to fire it only on real changes. */
+    private ItemStack lastNotifiedCartridge = null;
+    private BoardSpaceType lastNotifiedType = null;
 
     public BoardSpaceBlockEntity(BlockPos pos, BlockState state, BlockEntityType<? extends BoardSpaceBlockEntity> type, int size) {
         super(type, pos, state, size);
         INV_SIZE = size;
     }
 
-    private void update() {
+    /** Marks the block entity dirty and sends its data (cartridges and their components) to the tracking clients. */
+    public void update() {
         markDirty();
-        if (world != null)
+        syncToClients();
+    }
+
+    private void syncToClients() {
+        if (world != null && !world.isClient)
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
+    }
+
+    public void invalidateActiveSlot() {
+        this.cachedActiveSlot = -1;
+    }
+
+    @Override
+    protected void onInventoryChanged() {
+        invalidateActiveSlot();
+        syncToClients();
     }
 
     public DefaultedList<ItemStack> getItems() {
@@ -90,6 +113,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void updateBoardSpaceType() {
         if (this.world != null) {
+            invalidateActiveSlot();
             ItemStack stack = getActiveCartridgeItemStack();
             BoardSpaceType tileType = determineBoardSpaceType(stack);
             BlockState state = this.getCachedState();
@@ -99,7 +123,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
                 if (!state.get(TILE_TYPE).equals(tileType)) {
                     this.world.setBlockState(this.pos, state.with(TILE_TYPE, tileType));
                 }
-                this.getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
+                // Only notify the tokens when the active cartridge or the tile type really changed
+                if (stack != this.lastNotifiedCartridge || tileType != this.lastNotifiedType) {
+                    this.lastNotifiedCartridge = stack;
+                    this.lastNotifiedType = tileType;
+                    this.getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
+                }
             }
         }
     }
@@ -130,9 +159,13 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public static void displayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder, List<BoardSpaceDestination> destinations) {
+        displayDestinations(world, pos, holder, destinations, null);
+    }
+
+    public static void displayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder, List<BoardSpaceDestination> destinations, @Nullable UUID token) {
         if (destinations.isEmpty()) return;
         for (BoardSpaceDestination destination : destinations) {
-            new DirectionDisplayEntity(world, destination, pos, holder);
+            new DirectionDisplayEntity(world, destination, pos, holder, token);
         }
     }
 
@@ -147,6 +180,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         displayDestinations((ServerWorld) this.getWorld(), this.getPos(), player, destinations);
     }
 
+    public void displayDestinations(ServerPlayerEntity player, List<BoardSpaceDestination> destinations, @Nullable UUID token) {
+        displayDestinations((ServerWorld) this.getWorld(), this.getPos(), player, destinations, token);
+    }
+
     public static void hideDestinations(ServerWorld world, BlockPos pos) {
         if (world == null) return;
         List<DirectionDisplayEntity> spawnedDestinations = getSpawnedDestinations(world, pos);
@@ -156,7 +193,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     private static void hideDestinations(List<DirectionDisplayEntity> e, BlockPos pos) {
         e.forEach(entity -> {
-            if (entity.getTileOrigin().equals(pos)) entity.remove(Entity.RemovalReason.DISCARDED);
+            if (pos.equals(entity.getTileOrigin())) entity.remove(Entity.RemovalReason.DISCARDED);
         });
     }
 
@@ -181,12 +218,41 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public int getActiveSlot() {
+        if (world == null) return 0;
+        if (world.isClient) return computeActiveSlot(getPowerPos());
+        if (cachedActiveSlot < 0) {
+            BlockPos powerPos = getPowerPos();
+            int slot = computeActiveSlot(powerPos);
+            // Only cache when everything that can power this position is loaded: a chunk loading later
+            // does not trigger any neighbor update, so the cached value could otherwise stay stale.
+            if (!isPowerAreaLoaded(powerPos)) return slot;
+            cachedActiveSlot = slot;
+        }
+        return cachedActiveSlot;
+    }
+
+    private BlockPos getPowerPos() {
         BlockPos routerPos = getRouterPos();
-        return world != null ? world.getReceivedRedstonePower(routerPos != null ? routerPos : pos) : 0;
+        return routerPos != null ? routerPos : pos;
+    }
+
+    private int computeActiveSlot(BlockPos powerPos) {
+        return world != null ? world.getReceivedRedstonePower(powerPos) : 0;
+    }
+
+    private boolean isPowerAreaLoaded(BlockPos powerPos) {
+        if (world == null) return false;
+        return world.isChunkLoaded(powerPos.add(-2, 0, -2))
+                && world.isChunkLoaded(powerPos.add(2, 0, -2))
+                && world.isChunkLoaded(powerPos.add(-2, 0, 2))
+                && world.isChunkLoaded(powerPos.add(2, 0, 2));
     }
 
     private BlockPos getRouterPos() {
-        if (world instanceof ServerWorld sw) return BoardSpaceRoutersPersistentState.get(sw.getServer()).get(pos);
+        if (world instanceof ServerWorld sw) {
+            BoardSpaceRoutersPersistentState routers = BoardSpaceRoutersPersistentState.get(sw.getServer());
+            return routers == null ? null : routers.get(pos);
+        }
         return ClientBoardSpaceRouters.getRouter(pos);
     }
 
@@ -196,13 +262,18 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         }
         int slot = getActiveSlot();
         ItemStack newActiveCartridgeItemStack = this.getStack(slot);
-        if (!newActiveCartridgeItemStack.equals(this.currentlyActiveCartridge)) {
-            if (!this.world.isClient() && this.currentlyActiveCartridge != null)
-                spawnChangementParticles(this.currentlyActiveCartridge, newActiveCartridgeItemStack);
+        if (newActiveCartridgeItemStack != this.currentlyActiveCartridge) {
+            ItemStack previous = this.currentlyActiveCartridge;
             this.currentlyActiveCartridge = newActiveCartridgeItemStack;
-            markDirty();
+            if (!this.world.isClient()) {
+                if (previous != null)
+                    spawnChangementParticles(previous, newActiveCartridgeItemStack);
+                markDirty();
+                if (previous != null)
+                    syncToClients();
+            }
         }
-        return this.getStack(slot);
+        return newActiveCartridgeItemStack;
     }
 
     private void spawnChangementParticles(ItemStack currentlyActiveCartridge, ItemStack newActiveCartridgeItemStack) {
@@ -250,6 +321,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         super.markDirty();
         if (this.world == null) return;
         if (this.world instanceof ServerWorld serverWorld) {
+            invalidateActiveSlot();
             updateBoardSpaceColor();
             serverWorld.getServer().submit(this::updateBoardSpaceType);
         }
@@ -259,6 +331,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void tick() {
         if (this.world == null || this.world.isClient) return;
         ticks++;
+        if (ticks % ACTIVE_SLOT_REFRESH_INTERVAL == 0)
+            invalidateActiveSlot();
         ItemStack stack = getActiveCartridgeItemStack();
         BoardSpaceType tileType = determineBoardSpaceType(stack);
         if (tileType != null)
@@ -302,7 +376,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
         ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
-        if (behavior == null) return;
+        // A board space without (known) cartridge acts as a default one: the game must go on
+        if (behavior == null) behavior = BoardSpaceBehaviorFactory.get(BoardSpaceType.DEFAULT);
         behavior.onDestinationReached(this.world, this.pos, token, this, partyController);
         partyController.nextStep();
     }
