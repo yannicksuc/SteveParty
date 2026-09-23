@@ -20,25 +20,31 @@ import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
 import fr.lordfinn.steveparty.client.screens.*;
+import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
 import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
-import fr.lordfinn.steveparty.payloads.custom.TripleJumpPayload;
+import fr.lordfinn.steveparty.persistent_state.ClientBoardSpaceRouters;
+import fr.lordfinn.steveparty.client.flip.GoalPoleFlipTracker;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.color.item.ItemColorProvider;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
-import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
@@ -56,6 +62,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 
+import java.util.Map;
+
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR1;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR2;
@@ -69,12 +77,15 @@ public class StevepartyClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("steveparty");
     public static final PartyStepsHud PARTY_STEPS_HUD = new PartyStepsHud();
 
+    /*
+     * Runs on chunk-builder threads: must only READ. The color itself is computed server side
+     * (ABoardSpaceBehavior#setColor) and synced through the block entity / UpdateColoredTilePayload.
+     */
     private static final BlockColorProvider getTileColor = (state, world, pos, tintIndex) -> {
-        if (world == null) return 0xFFFFFFFF;
-        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity  tileEntity)) return 0xFFFFFFFF;
-        ItemStack behaviorItemstack = tileEntity.getActiveCartridgeItemStack();
-        if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return 0xFFFFFFFF;
-        tileEntity.getBoardSpaceBehavior(behaviorItemstack).updateBoardSpaceColor(tileEntity, behaviorItemstack);
+        if (world == null || pos == null) return 0xFFFFFFFF;
+        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity)) return 0xFFFFFFFF;
+        ItemStack behaviorItemstack = BoardSpaceClientUtils.getDisplayedCartridge(tileEntity);
+        if (behaviorItemstack.isEmpty()) return 0xFFFFFFFF;
         return behaviorItemstack.getOrDefault(ModComponents.COLOR, 0xFFFFFFFF);
     };
 
@@ -128,7 +139,8 @@ public class StevepartyClient implements ClientModInitializer {
 
         HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
         PartyStepsHud.registerKeyHandlers();
-        Runtime.getRuntime().addShutdownHook(new Thread(PartyStepsHud::saveConfigOnExit));
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> PartyStepsHud.saveConfigOnExit());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
         initParticleRenderers();
 
@@ -162,6 +174,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
 
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
+        TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TRAFFIC_SIGN_ENTITY, TrafficSignBlockEntityRenderer::new);
@@ -224,13 +237,11 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(DICE_FORGE_SCREEN_HANDLER, DiceForgeScreen::new);
     }
 
-    public static KeyBinding exportRecipeKey;
     private static void initKeybinds() {
-
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            tick();
-        });
-
+        // Recipe export is a developer tool only
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
+        }
     }
 
 
@@ -238,28 +249,40 @@ public class StevepartyClient implements ClientModInitializer {
         FloatingTextRenderer.registerRenderCallback();
     }
 
+    /** Client caches are per server connection: drop them on disconnect. */
+    private static void resetClientState() {
+        PartyService.tokens.clear();
+        PartyStepsHud.clearData();
+        FloatingTextRenderer.clear();
+        ClientBoardSpaceRouters.update(Map.of());
+        GoalPoleFlipTracker.clear();
+    }
+
     private static boolean lastPressed = false;
-    private static boolean lastJumpPressed = false;
 
     public static void tick() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
         long window = client.getWindow().getHandle();
+        // Raw GLFW read (key bindings are not dispatched while a screen is open)
         boolean isPressed = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_0) == GLFW.GLFW_PRESS;
 
         if (isPressed && !lastPressed) {
-            if (client.currentScreen != null) {
+            if (client.currentScreen != null && !isTyping(client.currentScreen)) {
                 RecipeExporter.exportRecipe(client);
             }
         }
         lastPressed = isPressed;
+    }
 
-        boolean jumpPressed = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_SPACE) == GLFW.GLFW_PRESS;
-        if (jumpPressed && !lastJumpPressed) {
-            ClientPlayNetworking.send(new TripleJumpPayload());
+    private static boolean isTyping(Element element) {
+        if (element instanceof TextFieldWidget textField) return textField.isFocused();
+        if (element instanceof ParentElement parent) {
+            Element focused = parent.getFocused();
+            return focused != null && isTyping(focused);
         }
-        lastJumpPressed = jumpPressed;
+        return false;
     }
 
 }

@@ -13,6 +13,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import org.lwjgl.glfw.GLFW;
 
 import static fr.lordfinn.steveparty.sounds.ModSounds.CLOSE_TILE_GUI_SOUND_EVENT;
 import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
@@ -23,6 +24,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private TextFieldWidget goalField;
     private ButtonWidget cancelButton;
     private ButtonWidget validateButton;
+    private boolean openSoundPlayed = false;
 
     public GoalPoleBaseScreen(GoalPoleBaseScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -37,16 +39,19 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         int y = (height - backgroundHeight) / 2;
 
         // Création des champs de texte
+        // init() runs again on every resize: keep what the player already typed
+        String selectorText = selectorField != null ? selectorField.getText() : handler.getSelector();
+        String goalText = goalField != null ? goalField.getText() : handler.getGoal();
         selectorField = new TextFieldWidget(textRenderer, x + 15, y + 30, backgroundWidth - 31, 20,
                 Text.translatable("gui.steveparty.goal_pole_base.selector"));
         selectorField.setMaxLength(256);
-        selectorField.setText(handler.getSelector());
+        selectorField.setText(selectorText);
         addDrawableChild(selectorField);
 
         goalField = new TextFieldWidget(textRenderer, x + 15, y + 70, backgroundWidth - 31, 20,
                 Text.translatable("gui.steveparty.goal_pole_base.goal"));
         goalField.setMaxLength(256);
-        goalField.setText(handler.getGoal());
+        goalField.setText(goalText);
         addDrawableChild(goalField);
         // Création des boutons
         // Cancel button (left)
@@ -71,8 +76,9 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
                 .build();
         addDrawableChild(validateButton);
 
-        // Play open sound once when screen opens
-        if (client != null && client.player != null) {
+        // Play open sound once when screen opens (init() is called again on resize)
+        if (!openSoundPlayed && client != null && client.player != null) {
+            openSoundPlayed = true;
             client.player.playSound(
                     OPEN_TILE_GUI_SOUND_EVENT, // example sound
                     1.0F, // volume
@@ -103,6 +109,11 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Escape must always close the screen, even while typing
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+        // While a field is focused, swallow the other keys (e.g. the inventory key must not close the screen)
         if (selectorField.keyPressed(keyCode, scanCode, modifiers) || selectorField.isActive()) {
             return true;
         }

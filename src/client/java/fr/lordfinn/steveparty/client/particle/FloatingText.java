@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.client.particle;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Quaternionf;
 
 public class FloatingText {
     private final String text;
@@ -52,7 +52,11 @@ public class FloatingText {
     }
 
     public float alpha() {
-        float progress = (float) age / maxAge;
+        return alpha(0.0F);
+    }
+
+    private float alpha(float tickDelta) {
+        float progress = Math.min(1.0F, (age + tickDelta) / maxAge);
         if (progress < fadeStart) {
             return 1.0f;
         } else {
@@ -60,9 +64,12 @@ public class FloatingText {
         }
     }
 
-    public void render(MatrixStack matrices, double camX, double camY, double camZ,
-                       TextRenderer textRenderer, float tickDelta) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+    public void render(MatrixStack matrices, double camX, double camY, double camZ, Quaternionf cameraRotation,
+                       TextRenderer textRenderer, VertexConsumerProvider vertexConsumers, float tickDelta) {
+        int alphaInt = Math.min(255, Math.max(0, (int)(alpha(tickDelta) * 255)));
+        // TextRenderer treats an alpha below 4 as fully opaque: skip the fully faded frames instead
+        if (alphaInt < 4) return;
+
         matrices.push();
 
         double renderX = prevX + (x - prevX) * tickDelta;
@@ -71,14 +78,11 @@ public class FloatingText {
 
         // Move to particle position relative to camera
         matrices.translate(renderX - camX, renderY - camY, renderZ - camZ);
-        matrices.multiply(mc.gameRenderer.getCamera().getRotation());
+        matrices.multiply(cameraRotation);
 
         matrices.scale(scale, -scale, -scale);
 
-        int alphaInt = Math.min(255, Math.max(0, (int)(alpha() * 255)));
         int finalColor = (alphaInt << 24) | color;
-
-        VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
 
         textRenderer.draw(
                 text,
@@ -92,8 +96,6 @@ public class FloatingText {
                 0,
                 0xF000F0
         );
-
-        vertexConsumers.draw(); // flush the buffer
 
         matrices.pop();
     }

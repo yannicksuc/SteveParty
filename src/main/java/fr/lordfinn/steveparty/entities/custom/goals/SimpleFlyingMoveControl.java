@@ -43,7 +43,7 @@ public class SimpleFlyingMoveControl extends MoveControl {
             double nextX = entity.getX() + dx * speed;
             double nextY = entity.getY() + dy * speed;
             double nextZ = entity.getZ() + dz * speed;
-            BlockPos nextBlockpos =new BlockPos((int) nextX, (int) nextY, (int) nextZ);
+            BlockPos nextBlockpos = BlockPos.ofFloored(nextX, nextY, nextZ);
             BlockState nextBlockstate = entity.getWorld().getBlockState(nextBlockpos);
             if (!nextBlockstate.canPathfindThrough(NavigationType.AIR)) {
                 dx = dz = 0;

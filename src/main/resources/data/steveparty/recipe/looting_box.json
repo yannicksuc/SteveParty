@@ -10,7 +10,7 @@
     "G": "minecraft:gold_ingot",
     "C": "minecraft:chest",
     "A": "minecraft:amethyst_shard",
-    "P": "steveparty:polished_terracotta"
+    "P": "steveparty:polished_default_terracotta"
   },
   "result": {
     "id": "steveparty:looting_box"

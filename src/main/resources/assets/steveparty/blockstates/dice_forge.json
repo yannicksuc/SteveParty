@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "activated=false": {
+      "model": "steveparty:block/dice_forge"
+    },
+    "activated=true": {
+      "model": "steveparty:block/dice_forge"
+    }
+  }
+}

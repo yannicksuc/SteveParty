@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Objects;
 
 public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+    /** Shortest selectable duration (0.5 s), must match the first step of HopSwitchBlock's duration list. */
+    public static final int MIN_DURATION_TICKS = 10;
     private int durationTicks = 200; // par défaut 10s
     private int modeInt = 0; // persisted as int in NBT
     // Enum to represent the modes
@@ -74,10 +76,6 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implemen
 
     public HopSwitchBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.HOP_SWITCH_ENTITY, pos, state, 1);
-    }
-    @Override
-    public void markDirty() {
-        super.markDirty();
     }
 
     // -------------------------
@@ -162,7 +160,7 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implemen
     }
 
     public void setDurationTicks(int durationTicks) {
-        this.durationTicks = Math.max(20, durationTicks); // min = 1 seconde
+        this.durationTicks = Math.max(MIN_DURATION_TICKS, durationTicks); // min = 0.5 seconde (first clock step)
         markDirty();
     }
 

@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.client.gui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
@@ -19,6 +18,7 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
@@ -31,6 +31,8 @@ public class PartyStepsHud implements HudRenderCallback {
     private static final Identifier DEFAULT_ICON = Identifier.of("steveparty", "textures/gui/steps/default.png");
     private static final Identifier BG_ICON = Identifier.of("steveparty", "textures/gui/step-background.png");
     private static final Map<PartyStepType, Identifier> STEP_ICON_MAP = new HashMap<>();
+    private static final int CURRENT_STEP_COLOR = 0xFFFFFFFF;
+    private static final int UPCOMING_STEP_COLOR = ColorHelper.fromFloats(0.3F, 1.0F, 1.0F, 1.0F);
 
     public static int hudX = 0; // Default X position
     public static int hudY = 0; // Default Y position
@@ -70,6 +72,10 @@ public class PartyStepsHud implements HudRenderCallback {
         data = partyData;
     }
 
+    public static void clearData() {
+        data = new PartyData();
+    }
+
     @Override
     public void onHudRender(DrawContext drawContext, RenderTickCounter renderTickCounter) {
         if (canDisplay)
@@ -84,41 +90,20 @@ public class PartyStepsHud implements HudRenderCallback {
         if (data.getSteps().isEmpty() || data.getStepIndex() < 0 || data.getStepIndex() >= data.getSteps().size())
             return;
 
-        initShader();
+        // Colors are baked into the vertices (DrawContext is deferred since 1.21.2: global shader
+        // color / depth / blend state would not apply and would leak into the rest of the UI).
         int startX = calculateStepWidth(client, data.getSteps().get(data.getStepIndex())) + hudX + 57;
         for (int i = data.getStepIndex() + 1; i < data.getSteps().size(); i++) {
-            startX = drawStep(drawContext, i, client, startX);
-            RenderSystem.setShaderColor(1, 1, 1, 0.3f); // Reduced opacity for other steps
+            startX = drawStep(drawContext, i, client, startX, UPCOMING_STEP_COLOR); // Reduced opacity for other steps
         }
-        drawStep(drawContext, data.getStepIndex(), client, hudX + 12);
-        RenderSystem.setShaderColor(1, 1, 1, 1f);
-        drawStep(drawContext, data.getStepIndex(), client, hudX + 12);
-        resetShader();
+        drawStep(drawContext, data.getStepIndex(), client, hudX + 12, CURRENT_STEP_COLOR);
     }
 
-    private static void initShader() {
-        RenderSystem.disableDepthTest();
-        RenderSystem.depthMask(false);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1, 1, 1, 0.3f);
-    }
-
-    private static void resetShader() {
-        RenderSystem.clearShader();
-        RenderSystem.disableBlend();
-        RenderSystem.depthMask(true);
-        RenderSystem.enableDepthTest();
-        RenderSystem.setShaderColor(1, 1, 1, 1f);
-    }
-
-    private int drawStep(DrawContext drawContext, int i, MinecraftClient client, int startX) {
+    private int drawStep(DrawContext drawContext, int i, MinecraftClient client, int startX, int color) {
         PartyStep step = data.getSteps().get(i);
-        if (true) {
-            drawStepBackground(drawContext, client, step, startX, hudY + 8);
-            drawStepIcon(drawContext, client, step, startX, hudY + 8);
-            drawStepText(drawContext, client, step, startX + 25);
-        }
+        drawStepBackground(drawContext, client, step, startX, hudY + 8, color);
+        drawStepIcon(drawContext, client, step, startX, hudY + 8, color);
+        drawStepText(drawContext, client, step, startX + 25, color);
         startX += calculateStepWidth(client, step) + 45;
         return startX;
     }
@@ -127,32 +112,33 @@ public class PartyStepsHud implements HudRenderCallback {
         return data.getSteps() != null && !data.getSteps().isEmpty();
     }
 
-    private void drawStepIcon(DrawContext drawContext, MinecraftClient client, PartyStep step, int x, int y) {
+    private void drawStepIcon(DrawContext drawContext, MinecraftClient client, PartyStep step, int x, int y, int color) {
         Identifier icon = getStepIcon(step);
         if (icon != null) {
-            drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, icon, x+3, y, 0, 0, 16, 16, 16,16);
+            drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, icon, x+3, y, 0, 0, 16, 16, 16,16, color);
         }
         if (step.getType() == PartyStepType.TOKEN_TURN) {
-            drawPlayerSkinHead(drawContext, (TokenTurnPartyStep) step, x, y, 20);
+            drawPlayerSkinHead(drawContext, (TokenTurnPartyStep) step, x, y, 20, color);
         }
     }
 
-    private static void drawPlayerSkinHead(DrawContext drawContext, TokenTurnPartyStep step, int x, int y, int side) {
+    private static void drawPlayerSkinHead(DrawContext drawContext, TokenTurnPartyStep step, int x, int y, int side, int color) {
         UUID playerUuid = step.getOwnerUUID();
         if (playerUuid == null)
             return;
         Identifier skinTexture = SkinUtils.getPlayerSkin(playerUuid);
         if (skinTexture == null) {
-            drawContext.fill(x, y, x + side, y + side, Color.GRAY.getRGB());
+            drawContext.fill(x, y, x + side, y + side, ColorHelper.withAlpha(ColorHelper.getAlpha(color), Color.GRAY.getRGB()));
         } else {
-            drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, skinTexture, x + 3, y, 16, 16, 16, 16, 128, 128);
+            drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, skinTexture, x + 3, y, 16, 16, 16, 16, 128, 128, color);
         }
     }
 
-    private void drawStepBackground(DrawContext drawContext, MinecraftClient client, PartyStep step, int x, int y) {
-        drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, BG_ICON, x -8, y -8, 0, 0, 27, 32, 400,64);
-        drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, BG_ICON, x +19, y -8, 0, 32, calculateStepWidth(client, step) + 10, 32, 400,64);
-        drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, BG_ICON, x +19+calculateStepWidth(client, step) + 10, y -8, 27, 0, 12, 32, 400,64);
+    private void drawStepBackground(DrawContext drawContext, MinecraftClient client, PartyStep step, int x, int y, int color) {
+        int stepWidth = calculateStepWidth(client, step);
+        drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, BG_ICON, x -8, y -8, 0, 0, 27, 32, 400,64, color);
+        drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, BG_ICON, x +19, y -8, 0, 32, stepWidth + 10, 32, 400,64, color);
+        drawContext.drawTexture(RenderLayer::getGuiTexturedOverlay, BG_ICON, x +19+stepWidth + 10, y -8, 27, 0, 12, 32, 400,64, color);
     }
 
     private Identifier getStepIcon(PartyStep step) {
@@ -160,10 +146,10 @@ public class PartyStepsHud implements HudRenderCallback {
         return STEP_ICON_MAP.getOrDefault(stepType, DEFAULT_ICON);
     }
 
-    private void drawStepText(DrawContext drawContext, MinecraftClient client, PartyStep step, int x) {
+    private void drawStepText(DrawContext drawContext, MinecraftClient client, PartyStep step, int x, int color) {
         Text stepName = Text.translatable(step.getName());
         int textY = hudY + 7 + (20 - client.textRenderer.fontHeight) / 2;
-        drawContext.drawText(client.textRenderer, stepName, x, textY, 0xFFFFFF, true);
+        drawContext.drawText(client.textRenderer, stepName, x, textY, color, true);
     }
 
     private Color getStepColor(PartyStep step) {
@@ -177,7 +163,6 @@ public class PartyStepsHud implements HudRenderCallback {
     }
 
     public static void saveConfigOnExit() {
-        ConfigurationManager.setPartyStepsHudX(hudX);
-        ConfigurationManager.setPartyStepsHudY(hudY);
+        ConfigurationManager.setPartyStepsHudPosition(hudX, hudY);
     }
 }

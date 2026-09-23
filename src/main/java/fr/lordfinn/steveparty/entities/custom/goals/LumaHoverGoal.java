@@ -34,7 +34,8 @@ public class LumaHoverGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return true;
+        // Yield as soon as the entity has an owner, so FollowOwnerWhileFlyingGoal can run
+        return canStart();
     }
 
     @Override

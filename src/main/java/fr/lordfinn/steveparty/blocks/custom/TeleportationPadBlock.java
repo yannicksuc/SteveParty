@@ -30,6 +30,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public class TeleportationPadBlock extends BlockWithEntity {
@@ -61,15 +62,14 @@ public class TeleportationPadBlock extends BlockWithEntity {
 
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        if (state.getBlock() != newState.getBlock() && !world.isClient) {
-            TeleportationPadBlockEntity entity = (TeleportationPadBlockEntity) world.getBlockEntity(pos);
-            if (entity != null) {
+        if (state.getBlock() != newState.getBlock() && world instanceof ServerWorld serverWorld) {
+            if (world.getBlockEntity(pos) instanceof TeleportationPadBlockEntity entity) {
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.book);
-                TeleportationPadBooksStorage storage = TeleportationPadStorageManager.getBooksStorage((ServerWorld) world);
+                TeleportationPadBooksStorage storage = TeleportationPadStorageManager.getBooksStorage(serverWorld);
                 storage.removeTeleportationPad(pos);
             }
-            super.onStateReplaced(state, world, pos, newState, moved);
         }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override
@@ -107,16 +107,27 @@ public class TeleportationPadBlock extends BlockWithEntity {
     public void onEntityCollision(BlockState state, World world, BlockPos padPos, Entity entity) {
         if (world.isClient || !(entity instanceof PlayerEntity player)) return;  // Only detect players
 
-        TeleportationPadBlockEntity entityBlock = (TeleportationPadBlockEntity) world.getBlockEntity(padPos);
-        if (entityBlock == null || !(entityBlock.getBook() instanceof ItemStack book) || book.isEmpty()) return;  // Ensure the pad is not empty
+        if (!(world.getBlockEntity(padPos) instanceof TeleportationPadBlockEntity entityBlock)) return;
+        ItemStack book = entityBlock.getBook();
+        if (book == null || book.isEmpty()) return;  // Ensure the pad is not empty
         if (!(book.getItem() instanceof HereWeGoBookItem)) return;
-        BlockPos tpPos = HereWeGoBookItem.getTpPos(book, player);
-        if (tpPos != null) {
-            TeleportationHistoryStorage storage = TeleportationPadStorageManager.getTeleportationHistoryStorage((ServerWorld) player.getWorld());
-            storage.addTeleportation(player.getUuid(), padPos, tpPos);
-        }
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
 
-        teleportPlayer((ServerPlayerEntity) player, padPos.add(5, 1, 5));
+        // onEntityCollision fires every tick of contact: only handle one pending teleport per player
+        UUID taskId = getTeleportTaskId(player);
+        if (Steveparty.SCHEDULER.isScheduled(taskId)) return;
+
+        BlockPos tpPos = HereWeGoBookItem.getTpPos(book, player);
+        if (tpPos == null) return; // No valid destination: do not teleport
+
+        TeleportationHistoryStorage storage = TeleportationPadStorageManager.getTeleportationHistoryStorage((ServerWorld) player.getWorld());
+        storage.addTeleportation(player.getUuid(), padPos, tpPos);
+
+        teleportPlayer(serverPlayer, tpPos, taskId);
+    }
+
+    private static UUID getTeleportTaskId(PlayerEntity player) {
+        return UUID.nameUUIDFromBytes(("steveparty:teleportation_pad:" + player.getUuid()).getBytes(StandardCharsets.UTF_8));
     }
 
     private void playTeleportationSound(World world, BlockPos pos) {
@@ -138,14 +149,15 @@ public class TeleportationPadBlock extends BlockWithEntity {
         );
     }
 
-    private void teleportPlayer(ServerPlayerEntity player, BlockPos pos) {
+    private void teleportPlayer(ServerPlayerEntity player, BlockPos pos, UUID taskId) {
         Steveparty.SCHEDULER.schedule(
-                player.getUuid(),
-                10, // Delay by 1 tick
+                taskId,
+                10, // Delay by 10 ticks
                 () -> {
+                    if (player.isRemoved()) return;
                     // Teleport the player after the tick is done
                     playTeleportationSound(player.getWorld(), pos);
-                    player.teleport(pos.getX(), pos.getY(), pos.getZ(), true);
+                    player.teleport(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, true);
                 }
         );
     }

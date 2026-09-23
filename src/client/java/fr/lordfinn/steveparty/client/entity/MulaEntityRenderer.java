@@ -77,12 +77,12 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                     var camera = client.gameRenderer.getCamera();
                     var rotation = camera.getRotation();
                     Vector3d bonePos = bodyBone.get().getLocalPosition();
-                    //matrices.push();
+                    matrices.push();
                     matrices.translate(bonePos.x, bonePos.y, bonePos.z);
                     matrices.multiply(rotation);
                     matrices.scale(1f, 1f, 1f);
                     drawQuad(matrices, bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture)), packedLight);
-//                    matrices.pop();
+                    matrices.pop();
                 }
             }
         }

@@ -40,7 +40,7 @@ public class DiceForgeOrbitRenderer {
      */
     public List<OrbitFace> render(DiceForgeBlockEntity blockEntity, float partialTick,
                                   MatrixStack poseStack, VertexConsumerProvider bufferSource,
-                                  int packedLight, int packedOverlay, float scale) {
+                                  int packedLight, int packedOverlay, float scale, boolean spawnParticles) {
 
         List<OrbitFace> orbitFaces = new ArrayList<>();
         DefaultedList<ItemStack> inventory = blockEntity.getInventory();
@@ -63,9 +63,7 @@ public class DiceForgeOrbitRenderer {
             double y = 0;
 
             // World-space position
-            double worldX = blockEntity.getPos().getX() + 0.5 + x;
             double worldY = blockEntity.getPos().getY() + 2.5 + y;
-            double worldZ = blockEntity.getPos().getZ() + 0.5 + z;
 
             // Rotation facing inward
             float yaw = (float) Math.toDegrees(Math.atan2(-z, -x)) - 90f;
@@ -83,15 +81,27 @@ public class DiceForgeOrbitRenderer {
                     packedLight, packedOverlay, poseStack, bufferSource, blockEntity.getWorld(), 0);
             poseStack.pop();
 
-            if (spawnTrail) spawnTrailParticle(blockEntity, worldX, worldY, worldZ);
+            if (spawnTrail && spawnParticles) {
+                // Called once per tick: two samples along the orbit (tick start and half tick) give the
+                // same trail density as the former per-frame spawning at ~60 FPS (0.4 x 60 = 24/s).
+                double baseTicks = blockEntity.getRotationTicks();
+                for (double sub = 0; sub < 1; sub += 0.5) {
+                    double a = ((baseTicks + sub) * speed) + angleOffset;
+                    spawnTrailParticle(blockEntity,
+                            blockEntity.getPos().getX() + 0.5 + Math.cos(a) * radius,
+                            worldY,
+                            blockEntity.getPos().getZ() + 0.5 + Math.sin(a) * radius,
+                            0.6f);
+                }
+            }
         }
 
         return orbitFaces;
     }
 
-    private void spawnTrailParticle(DiceForgeBlockEntity blockEntity, double x, double y, double z) {
+    private void spawnTrailParticle(DiceForgeBlockEntity blockEntity, double x, double y, double z, float chance) {
         if (blockEntity.getWorld() == null || !blockEntity.getWorld().isClient) return;
-        if (blockEntity.getWorld().random.nextFloat() < 0.4f) {
+        if (blockEntity.getWorld().random.nextFloat() < chance) {
             blockEntity.getWorld().addParticle(ParticleTypes.END_ROD, x, y, z, 0, 0, 0);
         }
     }

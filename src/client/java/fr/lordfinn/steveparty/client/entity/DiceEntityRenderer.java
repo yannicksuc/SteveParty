@@ -5,10 +5,15 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
-    private int fakeValue = -999999;
+    private static final Map<Integer, Identifier> TEXTURES = new ConcurrentHashMap<>();
+
     public DiceEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new DiceEntityModel());
     }
@@ -21,12 +26,19 @@ public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
             worldTicks = client.world.getTime();
         }
         if (animatable.isRolling()) {
-            if (worldTicks % 4 == 0 || fakeValue == -999999)
-                fakeValue = animatable.getRandomDiceValue();
-            if (animatable.isRolling())
-                return Steveparty.id("textures/entity/dice/default_dice" + fakeValue + ".png");
+            // Per-dice fake face, changing every 4 ticks (deterministic: no state shared between dice)
+            return getTexture(fakeValue(animatable, worldTicks));
         }
-        return Steveparty.id("textures/entity/dice/default_dice"+animatable.getRollValue()+".png");
+        return getTexture(animatable.getRollValue());
+    }
+
+    private static int fakeValue(DiceEntity dice, long worldTicks) {
+        long hash = MathHelper.hashCode(dice.getId(), (int) (worldTicks >> 2), 0x5EED);
+        return (int) Math.floorMod(hash ^ (hash >>> 32), (long) (DiceEntity.MAX - DiceEntity.MIN + 1)) + DiceEntity.MIN;
+    }
+
+    private static Identifier getTexture(int value) {
+        return TEXTURES.computeIfAbsent(value, v -> Steveparty.id("textures/entity/dice/default_dice" + v + ".png"));
     }
 
     @Override

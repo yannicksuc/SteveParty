@@ -149,8 +149,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	@Override protected void initGoals() {
-		this.goalSelector.add(0, new LumaHoverGoal(this, 0.2, 1.5, 6.0));
-		this.goalSelector.add(1, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f)); super.initGoals();
+		// Following the owner has priority; idle hovering only runs (and keeps running) without an owner
+		this.goalSelector.add(0, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
+		this.goalSelector.add(1, new LumaHoverGoal(this, 0.2, 1.5, 6.0)); super.initGoals();
 	}
 
 	public static DefaultAttributeContainer.Builder setAttributes() {
@@ -252,7 +253,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			message = message.copy().styled(style -> style.withColor(this.getVariant().getColor()));
 			player.sendMessage(message, true);
 
-			stack.decrement(1);
+			stack.decrementUnlessCreative(1, player);
 
 			// Explode if max hunger
 			if (getHunger() >= MAX_HUNGER) {

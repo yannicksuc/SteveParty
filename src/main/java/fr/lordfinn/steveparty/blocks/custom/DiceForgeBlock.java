@@ -18,6 +18,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
@@ -86,8 +87,7 @@ public class DiceForgeBlock extends BlockWithEntity {
         ItemStack itemStack = player.getStackInHand(Hand.MAIN_HAND);
 
         if (world.isClient) return ActionResult.PASS;
-        DiceForgeBlockEntity blockEntity = (DiceForgeBlockEntity) world.getBlockEntity(pos);
-        if (blockEntity != null && itemStack.getItem() instanceof BlockItem bi && bi.getBlock() instanceof GravityCoreBlock) {
+        if (world.getBlockEntity(pos) instanceof DiceForgeBlockEntity blockEntity && itemStack.getItem() instanceof BlockItem bi && bi.getBlock() instanceof GravityCoreBlock) {
             if (!blockEntity.isActivated()) {
                 blockEntity.activate();
                 return ActionResult.SUCCESS;
@@ -100,5 +100,12 @@ public class DiceForgeBlock extends BlockWithEntity {
         }
 
         return ActionResult.SUCCESS;
+    }
+
+    @Override
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        // Drop the forge contents when the block is broken (ACTIVATED changes keep the same block)
+        ItemScatterer.onStateReplaced(state, newState, world, pos);
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 }

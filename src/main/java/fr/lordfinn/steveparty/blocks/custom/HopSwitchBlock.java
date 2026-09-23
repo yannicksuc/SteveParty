@@ -127,10 +127,6 @@ public class HopSwitchBlock extends CartridgeContainer {
                 ? String.format("%dm%ss", minutes, secondsStr)
                 : String.format("%ss", secondsStr);
 
-        String key = added
-                ? "message.steveparty.hopswitch.time.added"
-                : "message.steveparty.hopswitch.time.removed";
-
         player.sendMessage(Text.literal(formattedDuration), true); // optionally wrap in translatable key if needed
     }
 
@@ -161,9 +157,9 @@ public class HopSwitchBlock extends CartridgeContainer {
                                                                 World world, BlockPos pos,
                                                                 PlayerEntity player, Hand hand,
                                                                 BlockHitResult hit) {
-        if (world.isClient) return ActionResult.PASS;
-
         if (!stack.isOf(Items.CLOCK)) return ActionResult.PASS;
+        // Same decision on both sides (called client-side too by CartridgeContainer)
+        if (world.isClient) return ActionResult.CONSUME;
 
         HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
         if (be != null) increaseDuration(be, player);
@@ -269,10 +265,7 @@ public class HopSwitchBlock extends CartridgeContainer {
         }
     }
 
-    @Override
-    public boolean hasRandomTicks(BlockState state) {
-        return true;
-    }
+    // Cartridge drops on break are handled by CartridgeContainer#onBreak
 
     // -----------------------------
     // Redstone neighbor update

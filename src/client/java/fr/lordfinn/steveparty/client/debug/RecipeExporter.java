@@ -4,7 +4,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
-import net.minecraft.util.collection.DefaultedList;
 
 import java.util.*;
 
@@ -20,7 +19,8 @@ public class RecipeExporter {
             return;
         }
 
-        DefaultedList<Slot> slots = craftingHandler.slots;
+        // Work on a copy: the handler's slot list must never be mutated (client/server desync)
+        List<Slot> slots = new ArrayList<>(craftingHandler.slots);
         slots.removeFirst(); // Remove output slot
 
         String[] pattern = new String[3];

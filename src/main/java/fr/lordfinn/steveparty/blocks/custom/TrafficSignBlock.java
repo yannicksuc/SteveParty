@@ -40,10 +40,10 @@ import org.jetbrains.annotations.Nullable;
 import static fr.lordfinn.steveparty.items.ModItems.STENCIL;
 
 public class TrafficSignBlock extends BlockWithEntity {
-    public static final MapCodec<SignBlock> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance
+    public static final MapCodec<TrafficSignBlock> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance
             .group(WoodType.CODEC.fieldOf("wood_type")
-                    .forGetter(TrafficSignBlock::getWoodType), createSettingsCodec())
-            .apply(instance, SignBlock::new));
+                    .forGetter(block -> block.type), createSettingsCodec())
+            .apply(instance, TrafficSignBlock::new));
     protected static final VoxelShape SHAPE;
     protected static final BooleanProperty WATERLOGGED;
     protected static final IntProperty ROTATION;
@@ -284,26 +284,7 @@ public class TrafficSignBlock extends BlockWithEntity {
         world.playSound(null, pos, soundEvent, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
-
-    @Override
-    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-
-        // Check if the block has a BlockEntity (like your TrafficSignBlockEntity)
-        if (blockEntity instanceof TrafficSignBlockEntity signEntity) {
-            // Prevent dropping the block in creative mode
-            if (!player.isCreative()) {
-                // Drop the block as an item
-                ItemStack itemStack = new ItemStack(this);
-                Block.dropStack(world, pos, itemStack);
-            }
-        }
-
-        // Remove the block from the world
-        world.removeBlock(pos, false);
-
-        return super.onBreak(world, pos, state, player);
-    }
+    // Drops are handled by the loot tables (data/steveparty/loot_table/blocks/*_traffic_sign.json)
 
     static {
         ROTATION = Properties.ROTATION;

@@ -14,6 +14,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,9 +26,11 @@ import java.util.stream.Stream;
 
 @Mixin(ShearsItem.class)
 public abstract class ShearsItemMixin {
+    private static final TagKey<Block> STEVEPARTY$SWITCHABLE = TagKey.of(RegistryKeys.BLOCK, Identifier.of(Steveparty.MOD_ID, "switchable"));
+
     @Inject(method = "postMine", at = @At("HEAD"), cancellable = true)
     public void allowCustomBlocks(ItemStack stack, World world, BlockState state, BlockPos pos, LivingEntity miner, CallbackInfoReturnable<Boolean> cir) {
-        if (state.streamTags().anyMatch(tag -> tag.equals(TagKey.of(RegistryKeys.BLOCK, Steveparty.id("switchable"))))) {
+        if (state.isIn(STEVEPARTY$SWITCHABLE)) {
             if (!world.isClient && !state.isIn(BlockTags.FIRE)) {
                 stack.damage(1, miner, EquipmentSlot.MAINHAND);
             }
@@ -41,7 +44,7 @@ public abstract class ShearsItemMixin {
 
         RegistryEntryLookup<Block> lookup = Registries.createEntryLookup(Registries.BLOCK);
 
-        RegistryEntryList<Block> switchableBlocks = lookup.getOrThrow(TagKey.of(RegistryKeys.BLOCK, Steveparty.id("switchable")));
+        RegistryEntryList<Block> switchableBlocks = lookup.getOrThrow(STEVEPARTY$SWITCHABLE);
 
         ToolComponent newComp = new ToolComponent(
                 Stream.concat(

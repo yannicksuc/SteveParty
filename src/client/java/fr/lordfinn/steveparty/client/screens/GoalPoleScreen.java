@@ -13,6 +13,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import org.lwjgl.glfw.GLFW;
 
 import static fr.lordfinn.steveparty.sounds.ModSounds.CLOSE_TILE_GUI_SOUND_EVENT;
 import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
@@ -27,6 +28,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
 
     private GoalPoleBlockEntity.Comparator[] comparators = GoalPoleBlockEntity.Comparator.values();
     private int currentComparatorIndex = 0;
+    private boolean openSoundPlayed = false;
 
     public GoalPoleScreen(GoalPoleScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -40,18 +42,19 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
 
-        // Comparator button
-        currentComparatorIndex = handler.getComparator().ordinal();
-        comparatorButton = ButtonWidget.builder(Text.literal(handler.getComparator().name()), button -> {
+        // Comparator button (init() runs again on every resize: keep the current selection)
+        if (!openSoundPlayed) currentComparatorIndex = handler.getComparator().ordinal();
+        comparatorButton = ButtonWidget.builder(Text.literal(comparators[currentComparatorIndex].name()), button -> {
             currentComparatorIndex = (currentComparatorIndex + 1) % comparators.length;
             button.setMessage(Text.literal(comparators[currentComparatorIndex].name()));
         }).dimensions(x + 15, y + 30, backgroundWidth - 30, 20).build();
         addDrawableChild(comparatorButton);
 
         // Value text field
+        String valueText = valueField != null ? valueField.getText() : Integer.toString(handler.getValue());
         valueField = new TextFieldWidget(textRenderer, x + 15, y + 70, backgroundWidth - 30, 20,
                 Text.literal("Value"));
-        valueField.setText(Integer.toString(handler.getValue()));
+        valueField.setText(valueText);
         addDrawableChild(valueField);
 
         // Buttons
@@ -78,10 +81,11 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         }).dimensions(x + 10 + buttonWidth + 10, buttonY, buttonWidth, buttonHeight).build();
         addDrawableChild(validateButton);
 
-        // Play open sound
-        if (client != null && client.player != null) {
+        // Play open sound once (not on every resize)
+        if (!openSoundPlayed && client != null && client.player != null) {
             client.player.playSound(OPEN_TILE_GUI_SOUND_EVENT, 1.0F, 1.0F);
         }
+        openSoundPlayed = true;
     }
 
     @Override
@@ -101,6 +105,16 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Escape always closes; while typing a value, the inventory key must not close the screen
+        if (keyCode != GLFW.GLFW_KEY_ESCAPE && keyCode != GLFW.GLFW_KEY_TAB && valueField != null && valueField.isActive()) {
+            valueField.keyPressed(keyCode, scanCode, modifiers);
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

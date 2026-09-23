@@ -36,61 +36,80 @@ public class HidingTraderEntityRenderLayer extends GeoRenderLayer<HidingTraderEn
     }
 
 
+    // Per-call caches / scratch objects (render thread only)
+    private final VertexConsumer[] faceConsumers = new VertexConsumer[DIRECTIONS.length + 1];
+    private final Vector4f scratchPosition = new Vector4f();
+    private final Vector3f scratchNormal = new Vector3f();
+    private static final Direction[] DIRECTIONS = Direction.values();
+
     @Override
     public void renderForBone(MatrixStack poseStack, HidingTraderEntity animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+        if (!bone.getName().startsWith(CUBE_BONE_ID)) return;
         RenderLayer type = getRenderer().getRenderType(animatable, textureId, bufferSource, partialTick);
-        if (type == null || !bone.getName().startsWith(CUBE_BONE_ID)) return;
-        renderRecursively(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(), animatable.getBlockState());
+        if (type == null) return;
+        BlockState blockState = animatable.getBlockState();
+        BakedModel blockModel = MinecraftClient.getInstance().getBlockRenderManager().getModel(blockState);
+        // Buffers are resolved lazily, once per face direction, for this call only
+        java.util.Arrays.fill(faceConsumers, null);
+        renderRecursively(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(), blockState, blockModel);
     }
 
-    private void renderRecursively(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState) {
+    private void renderRecursively(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
         poseStack.push();
         RenderUtil.prepMatrixForBone(poseStack, bone);
-        this.renderCubesOfBone(poseStack, bone, buffer, packedLight, renderColor, blockState);
+        this.renderCubesOfBone(poseStack, bone, buffer, packedLight, renderColor, blockState, blockModel);
         poseStack.pop();
     }
 
-    private void renderCubesOfBone(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState) {
+    private void renderCubesOfBone(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
         if (!bone.isHidden()) {
             for (GeoCube cube : bone.getCubes()) {
                 poseStack.push();
-                this.renderCube(poseStack, cube, buffer, packedLight, renderColor, blockState);
+                this.renderCube(poseStack, cube, buffer, packedLight, renderColor, blockState, blockModel);
                 poseStack.pop();
             }
 
         }
     }
 
-    private void renderCube(MatrixStack poseStack, GeoCube cube, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState) {
+    private void renderCube(MatrixStack poseStack, GeoCube cube, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
         RenderUtil.translateToPivotPoint(poseStack, cube);
         RenderUtil.rotateMatrixAroundCube(poseStack, cube);
         RenderUtil.translateAwayFromPivotPoint(poseStack, cube);
         Matrix3f normalisedPoseState = poseStack.peek().getNormalMatrix();
-        Matrix4f poseState = new Matrix4f(poseStack.peek().getPositionMatrix());
+        Matrix4f poseState = poseStack.peek().getPositionMatrix();
         GeoQuad[] var9 = cube.quads();
 
         for (GeoQuad quad : var9) {
             if (quad != null) {
-                Vector3f normal = normalisedPoseState.transform(new Vector3f(quad.normal()));
+                Vector3f normal = normalisedPoseState.transform(scratchNormal.set(quad.normal()));
                 RenderUtil.fixInvertedFlatCube(cube, normal);
-                this.createVerticesOfQuad(quad, poseState, normal, buffer, packedLight, renderColor, blockState);
+                this.createVerticesOfQuad(quad, poseState, normal, buffer, packedLight, renderColor, blockState, blockModel);
             }
         }
 
     }
 
-    private void createVerticesOfQuad(GeoQuad quad, Matrix4f poseState, Vector3f normal, VertexConsumerProvider bufferSource, int packedLight, int renderColor, BlockState blockState) {
+    private void createVerticesOfQuad(GeoQuad quad, Matrix4f poseState, Vector3f normal, VertexConsumerProvider bufferSource, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
         GeoVertex[] var8 = quad.vertices();
-        Direction direction = quad.direction();
-
-        Sprite quadSprite = getQuadSpriteForDirection(direction, MinecraftClient.getInstance().getBlockRenderManager().getModel(blockState), blockState);
-        VertexConsumer vertexConsumer = quadSprite.getTextureSpecificVertexConsumer(bufferSource.getBuffer(RenderLayer.getEntityCutout(quadSprite.getAtlasId())));
+        VertexConsumer vertexConsumer = getFaceConsumer(quad.direction(), bufferSource, blockState, blockModel);
 
         for (GeoVertex vertex : var8) {
             Vector3f position = vertex.position();
-            Vector4f vector4f = poseState.transform(new Vector4f(position.x(), position.y(), position.z(), 1.0F));
+            Vector4f vector4f = poseState.transform(scratchPosition.set(position.x(), position.y(), position.z(), 1.0F));
             vertexConsumer.vertex(vector4f.x(), vector4f.y(), vector4f.z(), renderColor, vertex.texU(), vertex.texV(), OverlayTexture.DEFAULT_UV, packedLight, normal.x(), normal.y(), normal.z());
         }
+    }
+
+    private VertexConsumer getFaceConsumer(Direction direction, VertexConsumerProvider bufferSource, BlockState blockState, BakedModel blockModel) {
+        int index = direction == null ? DIRECTIONS.length : direction.ordinal();
+        VertexConsumer consumer = faceConsumers[index];
+        if (consumer == null) {
+            Sprite quadSprite = getQuadSpriteForDirection(direction, blockModel, blockState);
+            consumer = quadSprite.getTextureSpecificVertexConsumer(bufferSource.getBuffer(RenderLayer.getEntityCutout(quadSprite.getAtlasId())));
+            faceConsumers[index] = consumer;
+        }
+        return consumer;
     }
 
 
@@ -101,8 +120,7 @@ public class HidingTraderEntityRenderLayer extends GeoRenderLayer<HidingTraderEn
 
         // If there are no quads for this face, return a default texture
         if (quads.isEmpty()) {
-            return MinecraftClient.getInstance().getBlockRenderManager()
-                    .getModel(blockState).getParticleSprite();
+            return bakedModel.getParticleSprite();
         }
 
         // Get the first quad's sprite (assuming all quads for a face share the same sprite)

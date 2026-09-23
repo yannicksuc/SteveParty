@@ -13,7 +13,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.joml.Vector2d;
 
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +22,9 @@ import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
 import static fr.lordfinn.steveparty.particles.ModParticles.ENCHANTED_CIRCULAR_PARTICLE;
 
 public class PayloadReceivers {
+    private static final int ENCHANTED_DEFAULT_COLOR = 0xdec253;
+    private static final double ENCHANTED_DEFAULT_ANGULAR_SPEED = 0.1;
+
     public static void initialize() {
 
         // Used to spawn arrow particles from the server
@@ -54,6 +56,7 @@ public class PayloadReceivers {
             BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
             if (tileEntity == null) return;
             ItemStack behaviorItemstack = tileEntity.getActiveCartridgeItemStack();
+            if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return;
             behaviorItemstack.set(ModComponents.COLOR, payload.color());
             MinecraftClient.getInstance().worldRenderer.updateBlock(world, pos, world.getBlockState(pos), world.getBlockState(pos), 3);
         }));
@@ -67,15 +70,16 @@ public class PayloadReceivers {
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {
-        for (int i = 0; i < payload.count(); i++) {
-            double randomRadian = Math.random() * 2 * Math.PI;
-            Vector2d vec = new Vector2d(payload.distance() * Math.cos(randomRadian) - payload.distance() * Math.sin(randomRadian),
-                    payload.distance() * Math.sin(randomRadian) + payload.distance() * Math.cos(randomRadian));
-
-            context.player().getWorld().addImportantParticle(ENCHANTED_CIRCULAR_PARTICLE,
-                    payload.position().x + vec.x, payload.position().y, payload.position().z + vec.y,
-                    payload.position().x, payload.position().y, payload.position().z);
-        }
-        return null;
+        return () -> {
+            if (context.player() == null) return;
+            World world = context.player().getWorld();
+            double distance = payload.distance();
+            for (int i = 0; i < payload.count(); i++) {
+                // EnchantedCircularParticle: (x, y, z) = circle center, velocity = (radius, color, angular speed)
+                world.addImportantParticle(ENCHANTED_CIRCULAR_PARTICLE,
+                        payload.position().x, payload.position().y, payload.position().z,
+                        distance, ENCHANTED_DEFAULT_COLOR, ENCHANTED_DEFAULT_ANGULAR_SPEED);
+            }
+        };
     }
 }
