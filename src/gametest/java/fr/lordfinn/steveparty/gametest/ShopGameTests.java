@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlock;
 import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.TradingStallBlock;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -9,6 +11,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
+import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -18,6 +21,7 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -30,8 +34,11 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.world.GameMode;
@@ -203,6 +210,134 @@ public class ShopGameTests implements FabricGameTest {
             state.unlinkBlock(owner, globalPos);
         }
         context.complete();
+    }
+
+    /**
+     * The first player linking a key owns the trader: another player can't link keys to it nor link blocks with
+     * it; the owner opens the trader's shop blocks with any of their keys.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void traderBelongsToTheFirstPlayerLinkingAKey(TestContext context) {
+        BlockPos stallRelative = new BlockPos(1, 1, 1);
+        context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
+        BlockPos stallPos = context.getAbsolutePos(stallRelative);
+        GlobalPos stallGlobalPos = GlobalPos.create(context.getWorld().getRegistryKey(), stallPos);
+        HidingTraderEntity trader = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(3, 1, 3));
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(context.getWorld().getServer());
+        ShopkeeperKeyItem keyItem = (ShopkeeperKeyItem) ModItems.SHOPKEEPER_KEY;
+
+        PlayerEntity owner = context.createMockPlayer(GameMode.SURVIVAL);
+        PlayerEntity other = context.createMockPlayer(GameMode.SURVIVAL);
+        PlayerEntity creative = context.createMockPlayer(GameMode.CREATIVE);
+        try {
+            context.assertTrue(trader.getOwnerUuid() == null, "new trader has no owner");
+
+            ItemStack ownerKey = new ItemStack(ModItems.SHOPKEEPER_KEY);
+            owner.setStackInHand(Hand.MAIN_HAND, ownerKey);
+            context.assertEquals(keyItem.useOnEntity(ownerKey, owner, trader, Hand.MAIN_HAND), ActionResult.SUCCESS, "first link");
+            context.assertEquals(trader.getOwnerUuid(), owner.getUuid(), "first linker owns the trader");
+            context.assertEquals(state.getOwner(trader.getUuid()), owner.getUuid(), "owner in the persistent state");
+
+            ItemStack otherKey = new ItemStack(ModItems.SHOPKEEPER_KEY);
+            other.setStackInHand(Hand.MAIN_HAND, otherKey);
+            context.assertEquals(keyItem.useOnEntity(otherKey, other, trader, Hand.MAIN_HAND), ActionResult.FAIL, "other player refused");
+            context.assertFalse(otherKey.contains(ModComponents.SHOPKEEPER_UUID), "other player's key not linked");
+            context.assertEquals(trader.getOwnerUuid(), owner.getUuid(), "owner unchanged");
+
+            ItemStack secondOwnerKey = new ItemStack(ModItems.SHOPKEEPER_KEY);
+            owner.setStackInHand(Hand.MAIN_HAND, secondOwnerKey);
+            context.assertEquals(keyItem.useOnEntity(secondOwnerKey, owner, trader, Hand.MAIN_HAND), ActionResult.SUCCESS, "owner links a second key");
+            context.assertEquals(secondOwnerKey.get(ModComponents.SHOPKEEPER_UUID), trader.getUuid(), "second key linked");
+
+            // Linking blocks with a key of the trader is reserved to the owner too
+            ItemStack strayKey = linkedKey(trader.getUuid());
+            other.setStackInHand(Hand.MAIN_HAND, strayKey);
+            context.assertEquals(keyItem.useOnBlock(useOn(other, stallPos)), ActionResult.FAIL, "other player can't link blocks");
+            context.assertFalse(state.isBlockLinkedToVendor(trader.getUuid(), stallGlobalPos), "stall not linked by the other player");
+            owner.setStackInHand(Hand.MAIN_HAND, ownerKey);
+            context.assertEquals(keyItem.useOnBlock(useOn(owner, stallPos)), ActionResult.SUCCESS, "owner links the stall");
+            context.assertTrue(state.isBlockLinkedToVendor(trader.getUuid(), stallGlobalPos), "stall linked");
+
+            // Access: the owner with any Shopkeeper Key (even unlinked), never another player
+            owner.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+            context.assertFalse(ShopkeeperKeyItem.canOpenShopBlock(owner, context.getWorld(), stallPos), "owner without key refused");
+            owner.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.SHOPKEEPER_KEY));
+            context.assertTrue(ShopkeeperKeyItem.canOpenShopBlock(owner, context.getWorld(), stallPos), "owner with any key (off hand)");
+            owner.setStackInHand(Hand.OFF_HAND, secondOwnerKey);
+            context.assertTrue(ShopkeeperKeyItem.canOpenShopBlock(owner, context.getWorld(), stallPos), "owner with another of their keys");
+            context.assertFalse(ShopkeeperKeyItem.canOpenShopBlock(other, context.getWorld(), stallPos), "other player with a key of the trader refused");
+            context.assertTrue(ShopkeeperKeyItem.canOpenShopBlock(creative, context.getWorld(), stallPos), "creative override kept");
+
+            // Persistence: on the trader entity and in the persistent state
+            NbtCompound traderNbt = trader.writeNbt(new NbtCompound());
+            context.assertEquals(traderNbt.getUuid("ShopOwner"), owner.getUuid(), "owner saved on the trader");
+            VendorLinkPersistentState reloaded = VendorLinkPersistentState.fromNbt(state.writeNbt(new NbtCompound(), context.getWorld().getRegistryManager()));
+            context.assertEquals(reloaded.getOwner(trader.getUuid()), owner.getUuid(), "owner saved in the persistent state");
+        } finally {
+            state.unlinkPosition(stallGlobalPos);
+        }
+        context.complete();
+    }
+
+    /** A trader created before ownership existed is claimed by the next player linking a key (migration). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void unownedTraderIsClaimedByTheNextLinker(TestContext context) {
+        VendorLinkPersistentState state = VendorLinkPersistentState.fromNbt(new NbtCompound());
+        UUID legacyTrader = UUID.randomUUID();
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        context.assertTrue(state.getOwner(legacyTrader) == null, "legacy trader has no owner");
+        context.assertTrue(state.claimOrCheckOwner(legacyTrader, first), "next linker claims it");
+        context.assertFalse(state.claimOrCheckOwner(legacyTrader, second), "then the others are refused");
+        context.assertTrue(state.claimOrCheckOwner(legacyTrader, first), "the owner is still accepted");
+        context.complete();
+    }
+
+    /** Breaking a stall or a register forgets its links; a state change of the same block keeps them. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void breakingShopBlocksRemovesTheirLinks(TestContext context) {
+        BlockPos stallRelative = new BlockPos(1, 1, 1);
+        BlockPos registerRelative = new BlockPos(3, 1, 1);
+        context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
+        context.setBlockState(registerRelative, ModBlocks.CASH_REGISTER);
+        BlockPos stallPos = context.getAbsolutePos(stallRelative);
+        BlockPos registerPos = context.getAbsolutePos(registerRelative);
+        GlobalPos stallGlobalPos = GlobalPos.create(context.getWorld().getRegistryKey(), stallPos);
+        GlobalPos registerGlobalPos = GlobalPos.create(context.getWorld().getRegistryKey(), registerPos);
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(context.getWorld().getServer());
+        UUID vendor = UUID.randomUUID();
+        state.linkBlock(vendor, stallGlobalPos);
+        state.linkBlock(vendor, registerGlobalPos);
+        TraderStallRegistry.linkTraderToStall(vendor, stallPos);
+        try {
+            // Same block, other state: links kept
+            context.setBlockState(stallRelative, context.getBlockState(stallRelative).with(TradingStallBlock.COLOR1, 5));
+            ((CashRegisterBlock) ModBlocks.CASH_REGISTER).setPowered(context.getWorld(), registerPos, true);
+            context.assertTrue(state.isBlockLinkedToVendor(vendor, stallGlobalPos), "stall recolored: still linked");
+            context.assertTrue(state.isBlockLinkedToVendor(vendor, registerGlobalPos), "register powered: still linked");
+
+            // Broken: links removed
+            context.setBlockState(stallRelative, Blocks.AIR);
+            context.setBlockState(registerRelative, Blocks.AIR);
+            context.assertTrue(state.getVendorsLinkedTo(stallGlobalPos).isEmpty(), "broken stall unlinked");
+            context.assertTrue(state.getVendorsLinkedTo(registerGlobalPos).isEmpty(), "broken register unlinked");
+            context.assertTrue(TraderStallRegistry.getLinkedTraders(stallPos).isEmpty(), "runtime stall link removed");
+
+            // A new stall at the same place starts unlinked (opens with any key, for setup)
+            context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
+            PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.SHOPKEEPER_KEY));
+            context.assertTrue(ShopkeeperKeyItem.canOpenShopBlock(player, context.getWorld(), stallPos), "new stall has no inherited owner");
+        } finally {
+            state.unlinkPosition(stallGlobalPos);
+            state.unlinkPosition(registerGlobalPos);
+            TraderStallRegistry.unlinkStallFromAllTraders(stallPos);
+        }
+        context.complete();
+    }
+
+    private static ItemUsageContext useOn(PlayerEntity player, BlockPos pos) {
+        return new ItemUsageContext(player, Hand.MAIN_HAND, new BlockHitResult(pos.toCenterPos(), Direction.UP, pos, false));
     }
 
     /** ONE_SALE_PER_SIGNAL: locked by default, a rising edge gives one credit (max 1), a sale consumes it. */

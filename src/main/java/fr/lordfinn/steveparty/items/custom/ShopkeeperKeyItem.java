@@ -50,7 +50,12 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
             }
         }
 
-        if (entity instanceof HidingTraderEntity) {
+        if (entity instanceof HidingTraderEntity trader) {
+            // The first player linking a key owns the trader; afterwards only that player can link keys to it
+            if (!trader.claimOrCheckOwner(user)) {
+                sendNotOwner(user);
+                return ActionResult.FAIL;
+            }
             stack.set(ModComponents.SHOPKEEPER_UUID, uuid);
             // The destinations shown by the key are derived from the persistent link state
             refreshDestinations(stack, (ServerWorld) entity.getWorld());
@@ -89,6 +94,12 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
 
         VendorLinkPersistentState vendorLinks = VendorLinkPersistentState.get(server);
         if (vendorLinks == null) return ActionResult.PASS;
+
+        // Only the trader's owner links / unlinks its blocks (a key linked before ownership existed claims it)
+        if (!vendorLinks.claimOrCheckOwner(vendorId, player.getUuid())) {
+            sendNotOwner(player);
+            return ActionResult.FAIL;
+        }
 
         // The persistent state is the single source of truth: toggle it, then derive the key display from it
         // (two keys linked to the same trader can no longer disagree).
@@ -155,12 +166,20 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
         return false;
     }
 
+    /** Action-bar message sent when a player tries to link a key to (or with) another player's trader. */
+    private static void sendNotOwner(PlayerEntity player) {
+        player.sendMessage(Text.translatableWithFallback("message.steveparty.shopkeeper_key.not_owner",
+                "This trader belongs to another player."), true);
+    }
+
     /**
      * Server-side access rule of the shop GUIs (Trading Stall, Cash Register).
      * <ul>
      *     <li>creative players and operators (permission level 2+) always have access;</li>
-     *     <li>a block linked to one or more traders only opens for a player holding (either hand) a Shopkeeper
-     *     Key linked to one of these traders;</li>
+     *     <li>a block linked to an owned trader only opens for the owner of that trader, holding (either hand)
+     *     any Shopkeeper Key;</li>
+     *     <li>a block linked to a trader without owner yet (created before ownership existed) keeps the old rule:
+     *     a Shopkeeper Key linked to that trader;</li>
      *     <li>a block linked to no trader yet opens for a player holding any Shopkeeper Key, so a shop can be set up.</li>
      * </ul>
      * Sends an action-bar message to the player when the access is denied.
@@ -168,28 +187,50 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
     public static boolean canOpenShopBlock(PlayerEntity player, World world, BlockPos pos) {
         if (player.isCreative() || player.hasPermissionLevel(2)) return true;
 
-        Set<UUID> owners = new HashSet<>();
+        Set<UUID> traders = new HashSet<>();
         VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
         if (state != null) {
-            owners.addAll(state.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), pos)));
+            traders.addAll(state.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), pos)));
         }
         if (world.getBlockEntity(pos) instanceof TradingStallBlockEntity) {
             // Runtime links made by the stall's key block (slot 27)
-            owners.addAll(TraderStallRegistry.getLinkedTraders(pos));
+            traders.addAll(TraderStallRegistry.getLinkedTraders(pos));
         }
 
-        if (owners.isEmpty()) {
-            if (holdsKey(player)) return true;
+        boolean holdsKey = holdsKey(player);
+        if (traders.isEmpty()) {
+            if (holdsKey) return true;
             player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.no_owner_access_denied",
                     "This shop isn't linked to a trader yet: hold a Shopkeeper Key to set it up."), true);
             return false;
         }
 
-        for (UUID vendorId : getHeldKeyVendors(player)) {
-            if (owners.contains(vendorId)) return true;
+        Set<UUID> heldKeyVendors = getHeldKeyVendors(player);
+        boolean ownsATrader = false;
+        boolean ownedShop = false;
+        for (UUID traderId : traders) {
+            UUID owner = state != null ? state.getOwner(traderId) : null;
+            if (owner == null) {
+                // Trader not claimed yet: a key linked to it
+                if (heldKeyVendors.contains(traderId)) return true;
+            } else {
+                ownedShop = true;
+                if (owner.equals(player.getUuid())) {
+                    if (holdsKey) return true;
+                    ownsATrader = true;
+                }
+            }
         }
-        player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.access_denied",
-                "Only a Shopkeeper Key linked to this shop's trader can open it."), true);
+        if (ownsATrader) {
+            player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.key_required",
+                    "Hold a Shopkeeper Key to open your shop."), true);
+        } else if (ownedShop) {
+            player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.not_owner_access_denied",
+                    "This shop belongs to another player."), true);
+        } else {
+            player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.access_denied",
+                    "Only a Shopkeeper Key linked to this shop's trader can open it."), true);
+        }
         return false;
     }
 }
