@@ -15,8 +15,9 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 
@@ -26,9 +27,12 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     private static final double OSCILLATION_FREQUENCY = 0.1; // Frequency of the oscillation
     private static final double BASE_ROTATION_SPEED = 2; // Base rotation speed
     private static final double AMPLIFIER_ROTATION_MULTIPLIER = 0.5; // Frequency of the oscillation
-    private static final Map <LivingEntity, Double> maxScaleFactors = new HashMap<>();
-    private static final Map <LivingEntity, Long> maxDurations = new HashMap<>();
-    private static final Map <LivingEntity, Long> startTimestamps = new HashMap<>();
+    // Weak keys: entries disappear with the entity (no leak if the effect never ends properly, e.g. unload/death).
+    // Synchronized: the integrated server and the client thread can both touch these maps.
+    private static final Map <LivingEntity, Double> maxScaleFactors = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map <LivingEntity, Long> maxDurations = Collections.synchronizedMap(new WeakHashMap<>());
+    /** Start time in world ticks. */
+    private static final Map <LivingEntity, Long> startTimestamps = Collections.synchronizedMap(new WeakHashMap<>());
 
 
     public SquishEffect() {
@@ -60,17 +64,17 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         double scaleFactor = maxHeight / initialHeight;
         maxScaleFactors.put(entity, amplifier == 0 ? 1 : scaleFactor);
         maxDurations.put(entity, getCurrentDuration(entity));
-        startTimestamps.put(entity, System.currentTimeMillis());
+        startTimestamps.put(entity, entity.getWorld().getTime());
         return scaleFactor;
     }
 
 
-    private Long getMaxDuration(LivingEntity entity) {
-        return maxDurations.get(entity);
+    private long getMaxDuration(LivingEntity entity) {
+        return maxDurations.getOrDefault(entity, 0L);
     }
 
     private long getStartTimestamp(LivingEntity entity) {
-        return startTimestamps.get(entity);
+        return startTimestamps.getOrDefault(entity, entity.getWorld().getTime());
     }
 
     private long getCurrentDuration(LivingEntity entity) {
@@ -126,9 +130,10 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     private void applyScalingWithOscillation(LivingEntity entity, double targetScale, long duration) {
         EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
         if (scaleAttribute == null) return;
+        // Timing in world ticks (same curve as the former millisecond timing at 20 TPS, but pause/lag safe)
         long startTimestamp = getStartTimestamp(entity);
-        long endTimestamp = startTimestamp + getMaxDuration(entity) * 1000L / 20L;
-        long currentTime = System.currentTimeMillis();
+        long endTimestamp = startTimestamp + getMaxDuration(entity);
+        long currentTime = entity.getWorld().getTime();
         double currentScale = scaleAttribute.getBaseValue();
         //Steveparty.LOGGER.info("MAX Duration: " + getMaxDuration(entity));
         //Steveparty.LOGGER.info("Current scale: " + currentScale + ", Target scale: " + targetScale);
@@ -136,7 +141,9 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         //Steveparty.LOGGER.info("Duration: " + duration);
 
 
-        float progress = (float) (currentTime - startTimestamp) / (endTimestamp - startTimestamp);
+        float progress = endTimestamp > startTimestamp
+                ? (float) (currentTime - startTimestamp) / (endTimestamp - startTimestamp)
+                : 1.0f;
         progress = Math.max(0.0f, Math.min(1.0f, progress));
         //Steveparty.LOGGER.info("Progress: " + progress);
 
@@ -162,6 +169,9 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
             double maxHeight = maxScaleFactors.remove(livingEntity);
             scaleAttribute.setBaseValue(maxHeight);
         }
+        maxScaleFactors.remove(livingEntity);
+        maxDurations.remove(livingEntity);
+        startTimestamps.remove(livingEntity);
         livingEntity.setGlowing(false);
         livingEntity.getWorld().playSound(livingEntity, livingEntity.getBlockPos(),
                 SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.converted")),

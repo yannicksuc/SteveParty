@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.command.EntitySelector;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -20,6 +21,7 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -27,6 +29,8 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,6 +50,13 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     private List<ServerPlayerEntity> cacheSelectedPlayers = List.of();
     private final Map<UUID, Integer> lastValues = new HashMap<>();
     private int redstoneOutput = 0;
+    /** Command-block permission level: enough for selectors, not more. */
+    private static final int SELECTOR_PERMISSION_LEVEL = 2;
+    // Parsed selector cache (re-parsed only when the selector string changes)
+    private String cachedSelectorString = null;
+    @Nullable private EntitySelector cachedEntitySelector = null;
+    /** Whether a reset side was powered at the last neighbor update (rising-edge detection). */
+    private boolean resetSidePowered = false;
 
     public int getComparatorOutput() {
         return redstoneOutput;
@@ -62,6 +73,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public void setSelector(String selector) {
         if (Objects.equals(selector, this.selector)) return;
         this.selector = selector;
+        this.cachedSelectorString = null;
+        this.cachedEntitySelector = null;
         markDirty();
     }
 
@@ -102,6 +115,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         if (nbt.contains("Goal", NbtElement.STRING_TYPE)) {
             this.goal = nbt.getString("Goal");
         }
+        this.resetSidePowered = nbt.getBoolean("ResetSidePowered");
 
         // Load lastScores
         this.lastScores.clear();
@@ -122,6 +136,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         super.writeNbt(nbt, registries);
         nbt.putString("Selector", selector);
         nbt.putString("Goal", goal);
+        nbt.putBoolean("ResetSidePowered", resetSidePowered);
 
         // Save lastScores
         NbtCompound scoresNbt = new NbtCompound();
@@ -185,17 +200,52 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         this.cachedObjective = objective;
     }
 
+    /**
+     * Command source used to evaluate the selector: positioned at this base, in its world, with command-block
+     * permissions (so {@code @p} is relative to the base and the selector can't do more than a command block).
+     */
+    private ServerCommandSource createSelectorSource(MinecraftServer server) {
+        ServerWorld serverWorld = this.world instanceof ServerWorld sw ? sw : server.getOverworld();
+        return new ServerCommandSource(
+                CommandOutput.DUMMY,
+                Vec3d.ofCenter(this.getPos()),
+                Vec2f.ZERO,
+                serverWorld,
+                SELECTOR_PERMISSION_LEVEL,
+                "GoalPole",
+                Text.literal("Goal Pole"),
+                server,
+                null
+        );
+    }
+
+    /** @return the parsed selector, or null if the string is not a valid selector (it may be a player name). */
+    @Nullable
+    private EntitySelector getParsedSelector(String selector) {
+        if (!selector.equals(this.cachedSelectorString)) {
+            this.cachedSelectorString = selector;
+            try {
+                this.cachedEntitySelector = EntityArgumentType.players().parse(new StringReader(selector));
+            } catch (CommandSyntaxException e) {
+                this.cachedEntitySelector = null;
+            }
+        }
+        return this.cachedEntitySelector;
+    }
+
     public List<ServerPlayerEntity> resolveSelector(MinecraftServer server, String selector) {
         if (selector == null || selector.isEmpty()) return Collections.emptyList();
 
-        ServerCommandSource source = server.getCommandSource();
-
-        try {
-            return EntityArgumentType.players().parse(new StringReader(selector)).getPlayers(source);
-        } catch (CommandSyntaxException e) {
-            ServerPlayerEntity player = server.getPlayerManager().getPlayer(selector);
-            return player != null ? List.of(player) : Collections.emptyList();
+        EntitySelector entitySelector = getParsedSelector(selector);
+        if (entitySelector != null) {
+            try {
+                return entitySelector.getPlayers(createSelectorSource(server));
+            } catch (CommandSyntaxException e) {
+                return Collections.emptyList();
+            }
         }
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(selector);
+        return player != null ? List.of(player) : Collections.emptyList();
     }
 
     public List<ServerPlayerEntity> getTrackedPlayers(boolean forceRefresh) {
@@ -229,6 +279,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             // If we’ve never tracked this player before, initialize baseline
             if (last == -1) {
                 this.lastScores.put(player.getUuid(), current);
+                markDirty();
                 continue; // don’t pulse yet, wait for actual change
             }
 
@@ -236,6 +287,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
                 pulseRedstone();
                 spawnFloatingText((ServerWorld) this.world,  "+1", pos.toCenterPos().add(0.5).add(Math.random() - 1 ,  Math.random() / 2, Math.random() - 1).toVector3f(), TextColor.fromRgb(0xC90E0E), 50);
                 this.lastScores.put(player.getUuid(), current);
+                markDirty();
             }
         }
     }
@@ -299,6 +351,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             scoreboard.removeScore(player, this.cachedObjective);
             this.lastScores.put(player.getUuid(), 0);
         }
+        markDirty();
         this.cacheSelectedPlayers = resolveSelector(this.world.getServer(), this.selector);
     }
 
@@ -317,6 +370,19 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public void update(String selector, String goal) {
         setSelector(selector);
         setGoal(goal);
+    }
+
+    /**
+     * Updates the reset-side power state.
+     * @return true only on a rising edge (unpowered -> powered), i.e. when a reset must be triggered.
+     */
+    public boolean updateResetSidePower(boolean powered) {
+        boolean risingEdge = powered && !this.resetSidePowered;
+        if (powered != this.resetSidePowered) {
+            this.resetSidePowered = powered;
+            markDirty();
+        }
+        return risingEdge;
     }
 
     public ScoreboardObjective getCachedObjective() {

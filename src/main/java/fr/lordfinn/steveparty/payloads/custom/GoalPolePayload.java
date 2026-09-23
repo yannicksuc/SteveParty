@@ -17,7 +17,9 @@ public record GoalPolePayload(BlockPos pos, GoalPoleBlockEntity.Comparator compa
                 @Override
                 public GoalPoleBlockEntity.Comparator decode(ByteBuf buf) {
                     int i = buf.readInt();
-                    return GoalPoleBlockEntity.Comparator.values()[i];
+                    GoalPoleBlockEntity.Comparator[] values = GoalPoleBlockEntity.Comparator.values();
+                    // Never trust the index sent by the client
+                    return values[Math.clamp(i, 0, values.length - 1)];
                 }
 
                 @Override
