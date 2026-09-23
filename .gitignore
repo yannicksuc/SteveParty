@@ -118,3 +118,7 @@ run/
 
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
+
+# Local dev server (gradle/dev-server.gradle) and dev launcher state (scripts/dev.ps1)
+run-server/
+.dev-launch/
