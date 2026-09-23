@@ -120,6 +120,11 @@ public class MiniGamePartyStep extends PartyStep {
         cancelRoulette();
     }
 
+    @Override
+    public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
+        tokens.remove(tokenUUID);
+    }
+
     private void cancelRoulette() {
         if (rouletteTaskId != null) {
             Steveparty.SCHEDULER.cancel(rouletteTaskId);
