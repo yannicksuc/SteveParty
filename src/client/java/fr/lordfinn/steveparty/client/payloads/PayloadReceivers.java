@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.PartyService;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
+import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
 import fr.lordfinn.steveparty.service.TokenData;
@@ -59,6 +60,9 @@ public class PayloadReceivers {
         {
             FloatingTextRenderer.spawn(payload.text(), payload.pos(), payload.velocity(), payload.duration(), payload.scale(), payload.color(), payload.fadeStart());
         }));
+
+        ClientPlayNetworking.registerGlobalReceiver(SquishAnimationPayload.ID, (payload, context) -> context.client().execute(() ->
+                SquishAnimations.start(context.client().world, payload)));
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {
