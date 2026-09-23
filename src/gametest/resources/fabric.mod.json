@@ -7,7 +7,10 @@
   "entrypoints": {
     "fabric-gametest": [
       "fr.lordfinn.steveparty.gametest.BoardSpaceGameTests",
-      "fr.lordfinn.steveparty.gametest.CoreGameTests"
+      "fr.lordfinn.steveparty.gametest.CoreGameTests",
+      "fr.lordfinn.steveparty.gametest.DiceForgeGameTests",
+      "fr.lordfinn.steveparty.gametest.GameplayRulesGameTests",
+      "fr.lordfinn.steveparty.gametest.ShopGameTests"
     ]
   },
   "depends": {

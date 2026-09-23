@@ -16,6 +16,7 @@ import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
+import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
@@ -254,6 +255,7 @@ public class StevepartyClient implements ClientModInitializer {
         PartyStepsHud.clearData();
         FloatingTextRenderer.clear();
         GoalPoleFlipTracker.clear();
+        SquishAnimations.clear();
     }
 
     private static boolean lastPressed = false;
