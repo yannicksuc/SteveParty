@@ -314,7 +314,9 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
                 return super.damage(world, source, amount);
             }
-            if (source.getAttacker() instanceof ServerPlayerEntity attacker) {
+            // Hitting a token only makes sense while it still has steps to walk: it relaunches a stuck move.
+            // A resting token (e.g. outside a party) just ignores the hit.
+            if (source.getAttacker() instanceof ServerPlayerEntity attacker && this.steveparty$getNbSteps() > 0) {
                 MessageUtils.sendToPlayer(attacker, Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
                 BlockEntity blockEntity = world.getBlockEntity(this.getBlockPos());
                 if (blockEntity instanceof BoardSpaceBlockEntity)
