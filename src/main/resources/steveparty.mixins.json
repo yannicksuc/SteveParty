@@ -16,7 +16,8 @@
     "StatusEffectMixin",
     "TokenEntityMixin",
     "TokenBaseDimensionsMixin",
-    "MixinPistonBlock"
+    "MixinPistonBlock",
+    "ServerScoreboardMixin"
   ],
   "injectors": {
     "defaultRequire": 1

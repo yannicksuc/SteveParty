@@ -114,36 +114,33 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             return;
         }
 
-        // Determine powering side (south relative to facing)
-        Direction facing = state.get(FACING);
-        Direction poweringSide = facing.rotateYClockwise().rotateYClockwise();
-
-        // Check redstone on powering side → pause/resume logic
+        // Back port: pauses or runs the base, depending on its redstone mode
         boolean isPowered = isReceivingPowerFromSouth(world, pos, state);
         if (state.get(POWERED) != isPowered) {
             world.setBlockState(pos, state.with(POWERED, isPowered), 3);
-
-            if (isPowered) {
-                goalPoleBaseBlockEntity.resumeGoal();
-            } else {
-                goalPoleBaseBlockEntity.pauseGoal();
-            }
+            goalPoleBaseBlockEntity.onBackPowerChanged();
             return;
         }
 
-        // Otherwise → power on any other side is a reset impulse.
-        // Only trigger on the rising edge, not on every neighbor update while a side stays powered.
-        boolean resetSidePowered = false;
-        for (Direction dir : Direction.values()) {
-            if (dir == poweringSide) continue;
-            // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
-            if (world.getEmittedRedstonePower(pos.offset(dir), dir) > 0) {
-                resetSidePowered = true;
-                break;
+        // Reset port: the marked side (or, for bases placed before it existed, any side but the back).
+        // Only on the rising edge, not on every neighbor update while it stays powered.
+        Direction back = state.get(FACING).getOpposite();
+        boolean resetPowered = false;
+        if (goalPoleBaseBlockEntity.getResetPort() == GoalPoleBaseBlockEntity.ResetPort.MARKED_SIDE) {
+            Direction side = GoalPoleBaseBlockEntity.resetSide(state);
+            resetPowered = world.getEmittedRedstonePower(pos.offset(side), side) > 0;
+        } else {
+            for (Direction dir : Direction.values()) {
+                if (dir == back) continue;
+                // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
+                if (world.getEmittedRedstonePower(pos.offset(dir), dir) > 0) {
+                    resetPowered = true;
+                    break;
+                }
             }
         }
-        if (goalPoleBaseBlockEntity.updateResetSidePower(resetSidePowered)) {
-            goalPoleBaseBlockEntity.resetGoal();
+        if (goalPoleBaseBlockEntity.updateResetSidePower(resetPowered)) {
+            goalPoleBaseBlockEntity.reset();
         }
     }
 
@@ -172,19 +169,12 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
         if (!state.isOf(newState.getBlock())) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof GoalPoleBaseBlockEntity entity) {
-                entity.removeGoal();
+                entity.onBroken();
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }
 
-    @Override
-    public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (!world.isClient && type == ModBlockEntities.GOAL_POLE_BASE_ENTITY) {
-            return (world1, pos, state1, blockEntity) -> ((GoalPoleBaseBlockEntity) blockEntity).tick(world1, pos, state1, blockEntity);
-        }
-        return null;
-    }
     @Override
     public boolean hasComparatorOutput(BlockState state) {
         return true;

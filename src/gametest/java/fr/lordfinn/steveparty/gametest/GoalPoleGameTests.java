@@ -1,6 +1,9 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
+import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
@@ -330,65 +333,180 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    // ------------------------------------------------------------------ scoreboard
+    // ------------------------------------------------------------------ scoreboard (event driven)
 
-    /** Remembered scores follow the score down too, and -1 is a score like any other. */
+    /** Places a base (and runs its end-of-tick setup now, so the test can use it right away). */
+    private static GoalPoleBaseBlockEntity placeBase(TestContext context, BlockState state) {
+        context.setBlockState(BASE, state);
+        GoalPoleNetwork.processPending();
+        return baseEntity(context);
+    }
+
+    private static ScoreboardObjective sourceObjective(TestContext context) {
+        return context.getWorld().getScoreboard().getNullableObjective(baseEntity(context).getSourceObjectiveName());
+    }
+
+    private static int mirrorScore(TestContext context, String holder) {
+        var score = context.getWorld().getScoreboard().getScore(net.minecraft.scoreboard.ScoreHolder.fromName(holder), objective(context));
+        return score == null ? 0 : score.getScore();
+    }
+
+    /** Neither the base nor the pole ticks: they only work when something happens. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void rememberedScoresFollowTheScoreDown(TestContext context) {
-        context.setBlockState(BASE, base());
-        GoalPoleBaseBlockEntity base = baseEntity(context);
-        UUID player = UUID.randomUUID();
-        context.assertTrue(base.trackScore(player, 3) == 0, "first score is the baseline");
-        context.assertTrue(base.trackScore(player, 5) == 2, "gained 2");
-        context.assertTrue(base.trackScore(player, 0) == 0, "reset from outside: no pulse");
-        context.assertTrue(base.trackScore(player, 1) == 1, "counts again right after a reset (was blocked until > 5)");
-        UUID other = UUID.randomUUID();
-        context.assertTrue(base.trackScore(other, -1) == 0, "baseline -1");
-        context.assertTrue(base.trackScore(other, 0) == 1, "-1 is a real score, not 'never seen'");
+    public void basesAndPolesDoNotTick(TestContext context) {
+        ServerWorld world = context.getWorld();
+        context.assertTrue(base().getBlockEntityTicker(world, ModBlockEntities.GOAL_POLE_BASE_ENTITY) == null, "base has no ticker");
+        context.assertTrue(pole(true, true).getBlockEntityTicker(world, ModBlockEntities.GOAL_POLE_ENTITY) == null, "pole has no ticker");
+        context.complete();
+    }
+
+    /** A new base counts as soon as it is placed; a signal at its back pauses it (points and objective kept). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void newBaseCountsAndPausesWhenPowered(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "new base: the signal pauses");
+        context.assertTrue(base.isActive(), "counts when placed");
+        context.assertTrue(base.credit("Alex", 2, null), "point counted");
+        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+        context.assertTrue(!base.isActive(), "paused by the signal at the back");
+        context.assertTrue(!base.credit("Alex", 5, null), "nothing counted while paused");
+        context.assertTrue(base.getTotal() == 2, "points kept, got " + base.getTotal());
+        context.assertTrue(objective(context) != null && mirrorScore(context, "Alex") == 2, "objective kept while paused");
+        context.setBlockState(BASE.south(), Blocks.AIR);
+        context.assertTrue(base.credit("Alex", 1, null) && base.getTotal() == 3, "counts again");
+        removeBase(context);
+        context.assertTrue(objective(context) == null, "objective removed with the base");
+        context.complete();
+    }
+
+    /** Run-when-powered counts only with a signal at the back; ignore counts always. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void redstoneModesDecideWhenTheBaseCounts(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED);
+        context.assertTrue(!base.isActive(), "run mode: idle without a signal");
+        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.isActive(), "run mode: counts with a signal");
+        base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.IGNORE);
+        context.assertTrue(base.isActive(), "ignore: counts with a signal");
+        context.setBlockState(BASE.south(), Blocks.AIR);
+        context.assertTrue(base.isActive(), "ignore: counts without a signal");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** Points are mirrored in the scoreboard, and a command changing the mirror changes the points. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void pointsAreMirroredInTheScoreboard(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        ScoreboardObjective mirror = objective(context);
+        context.assertTrue(mirror != null && mirror.getCriterion() == net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, "dummy mirror");
+        base.credit("Alex", 2, null);
+        context.assertTrue(mirrorScore(context, "Alex") == 2, "mirrored");
+        var scoreboard = context.getWorld().getScoreboard();
+        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Alex"), mirror).setScore(7);
+        context.assertTrue(base.getPoints("Alex") == 7 && base.getTotal() == 7, "command sets the points, got " + base.getTotal());
+        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Sam"), mirror).setScore(1);
+        context.assertTrue(base.getTotal() == 8, "another holder added by a command");
+        scoreboard.removeScore(net.minecraft.scoreboard.ScoreHolder.fromName("Alex"), mirror);
+        context.assertTrue(base.getTotal() == 1, "removed score = 0 points, got " + base.getTotal());
+        removeBase(context);
+        context.complete();
+    }
+
+    /** The poles above get the total pushed at once: no waiting for a tick. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void polesFollowTheTotalAtOnce(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity low = poleEntity(context, BASE.up()), high = poleEntity(context, BASE.up(2));
+        low.update(GoalPoleBlockEntity.Comparator.EQUAL, 3);
+        high.update(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2);
+        base.credit("Alex", 2, null);
+        context.assertTrue(low.getRedstoneOutput() == 0 && high.getRedstoneOutput() == 15, "2 points: only >= 2 is on");
+        base.credit("Alex", 1, null);
+        context.assertTrue(low.getRedstoneOutput() == 15 && low.isGoalMet(), "3 points: = 3 is on");
+        context.assertTrue(low.getTotal() == 3 && high.getTotal() == 3, "poles know the total");
+        base.credit("Alex", 1, null);
+        context.assertTrue(low.getRedstoneOutput() == 0 && high.getRedstoneOutput() == 15, "4 points: = 3 is off again");
+        removeBase(context);
+        context.assertTrue(poleEntity(context, BASE.up()).getRedstoneOutput() == 0, "no base: no signal");
+        context.complete();
+    }
+
+    /** Reset: the marked port (right side seen from the front) and not the others; legacy bases: any side. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void resetPortClearsThePoints(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        base.credit("Alex", 2, null);
+        base.credit("Sam", 3, null);
+        BlockPos other = BASE.offset(Direction.EAST);
+        context.setBlockState(other, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 5, "another side does not reset");
+        context.setBlockState(other, Blocks.AIR);
+        BlockPos marked = BASE.offset(GoalPoleBaseBlockEntity.resetSide(context.getBlockState(BASE)));
+        context.setBlockState(marked, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Sam") == 0, "the marked port resets everything");
+        context.setBlockState(marked, Blocks.AIR);
+        base.credit("Alex", 1, null);
+        base.setResetPort(GoalPoleBaseBlockEntity.ResetPort.ANY_SIDE);
+        context.setBlockState(other, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 0, "any side resets in the legacy mode");
+        context.setBlockState(other, Blocks.AIR);
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A criterion source: the source objective exists, and an unknown criterion is flagged without errors. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void criterionSourceObjective(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, "deathCount");
+        context.assertTrue(sourceObjective(context) != null && sourceObjective(context).getCriterion().getName().equals("deathCount"), "deathCount source");
+        base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, "not a criterion!");
+        context.assertTrue(sourceObjective(context) == null && base.isSourceInvalid(), "unknown criterion: no source, flagged");
+        base.setSource(GoalPoleBaseBlockEntity.Source.LANDINGS_HERE, "");
+        context.assertTrue(sourceObjective(context) == null && !base.isSourceInvalid(), "landings: no source objective");
+        context.assertTrue(objective(context) != null, "the mirror stays");
         removeBase(context);
         context.complete();
     }
 
     /**
-     * Unpowered = paused: the objective is removed and must stay removed (the tick used to recreate it at once),
-     * then comes back when the back is powered again.
+     * A base saved before the rewrite: it counted while powered, reset on any side, and its objective counted the
+     * criterion. It keeps working the same way, and the objective's scores become its points.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void pausedBaseDoesNotRecreateItsObjective(TestContext context) {
-        context.setBlockState(BASE, base());
-        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(context.getBlockState(BASE).get(GoalPoleBaseBlock.POWERED), "powered from the back");
-        context.assertTrue(objective(context) != null, "objective while counting");
-        context.setBlockState(BASE.south(), Blocks.AIR);
-        context.assertTrue(!context.getBlockState(BASE).get(GoalPoleBaseBlock.POWERED), "unpowered");
-        context.assertTrue(objective(context) == null, "objective removed by the pause");
-        context.waitAndRun(30, () -> {
-            context.assertTrue(objective(context) == null, "still no objective while paused");
-            context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
-            context.assertTrue(objective(context) != null, "objective back on resume");
-            removeBase(context);
-            context.assertTrue(objective(context) == null, "objective removed with the base");
-            context.complete();
-        });
-    }
-
-    /** Changing the goal changes the objective's criterion; an unknown goal is ignored without errors. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void goalChangesTheObjectiveCriterion(TestContext context) {
-        context.setBlockState(BASE, base());
-        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void legacyBaseIsMigrated(TestContext context) {
+        var scoreboard = context.getWorld().getScoreboard();
+        String name = GoalPoleBaseBlockEntity.getObjectiveName(context.getWorld(), context.getAbsolutePos(BASE));
+        ScoreboardObjective old = scoreboard.addObjective(name, net.minecraft.scoreboard.ScoreboardCriterion.getOrCreateStatCriterion("deathCount").orElseThrow(),
+                Text.literal("old"), net.minecraft.scoreboard.ScoreboardCriterion.RenderType.INTEGER, true, null);
+        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Bob"), old).setScore(4);
+        net.minecraft.nbt.NbtCompound legacy = new net.minecraft.nbt.NbtCompound();
+        legacy.putString("Selector", "@a");
+        legacy.putString("Goal", "deathCount");
+        legacy.putBoolean("ResetSidePowered", false);
+        legacy.put("LastScores", new net.minecraft.nbt.NbtCompound());
+        context.setBlockState(BASE, base().with(GoalPoleBaseBlock.POWERED, true));
         GoalPoleBaseBlockEntity base = baseEntity(context);
-        base.setGoal("dummy");
-        context.assertTrue(objective(context) != null && objective(context).getCriterion().getName().equals("dummy"), "dummy objective");
-        base.setGoal("not a criterion!");
-        context.assertTrue(objective(context) == null, "no objective for an unknown goal");
-        context.waitAndRun(30, () -> {
-            context.assertTrue(objective(context) == null, "still none, and no error while retrying");
-            base.setGoal("deathCount");
-            context.assertTrue(objective(context) != null && objective(context).getCriterion().getName().equals("deathCount"), "deathCount objective");
-            removeBase(context);
-            context.complete();
-        });
+        base.read(legacy, context.getWorld().getRegistryManager());
+        GoalPoleNetwork.processPending();
+        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED, "counts while powered, like before");
+        context.assertTrue(base.getResetPort() == GoalPoleBaseBlockEntity.ResetPort.ANY_SIDE, "resets on any side, like before");
+        context.assertTrue(base.getSource() == GoalPoleBaseBlockEntity.Source.CRITERION && base.getCriterion().equals("deathCount"), "same criterion");
+        context.assertTrue(base.getSelector().equals("@a"), "same selector");
+        context.assertTrue(base.getPoints("Bob") == 4 && base.getTotal() == 4, "old scores become points, got " + base.getTotal());
+        ScoreboardObjective mirror = objective(context);
+        context.assertTrue(mirror != null && mirror.getCriterion() == net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, "the objective is now the dummy mirror");
+        context.assertTrue(mirrorScore(context, "Bob") == 4, "mirror keeps the score");
+        context.assertTrue(sourceObjective(context) != null, "source objective created");
+        var saved = base.createNbt(context.getWorld().getRegistryManager());
+        context.assertTrue(saved.getInt("Version") == GoalPoleBaseBlockEntity.VERSION, "saved in the new format");
+        removeBase(context);
+        context.complete();
     }
 
     /** Two bases at the same coordinates in two dimensions get two objectives (overworld names are unchanged). */
@@ -435,39 +553,54 @@ public class GoalPoleGameTests implements FabricGameTest {
     }
 
     /**
-     * End to end: a pole above a counting base lights its comparator output when the tracked player's score matches.
-     * Uses a server player joined to the server: in its own batch so that no other test runs alongside.
+     * With a real player: a criterion source counts each increase of the followed player's score (not decreases,
+     * not while paused), and a landing is recognised once (standing on the pole or jumping on the spot is not a new
+     * landing). In its own batch so that no other test runs alongside.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player", tickLimit = 100)
-    public void poleOutputFollowsTheTrackedScore(TestContext context) {
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player", tickLimit = 120)
+    public void criterionIncreasesAndLandingsWithAPlayer(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        String name = player.getGameProfile().getName();
+        GoalPoleBaseBlockEntity base;
         try {
-            context.setBlockState(BASE, base());
+            base = placeBase(context, base());
+            base.setSelector(name);
+            base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, "dummy");
+            var scoreboard = context.getWorld().getScoreboard();
+            ScoreboardObjective src = sourceObjective(context);
+            scoreboard.getOrCreateScore(player, src).setScore(2);
+            context.assertTrue(base.getPoints(name) == 2, "+2 counted, got " + base.getPoints(name));
+            scoreboard.getOrCreateScore(player, src).setScore(5);
+            context.assertTrue(base.getPoints(name) == 5, "+3 counted");
+            scoreboard.getOrCreateScore(player, src).setScore(1);
+            context.assertTrue(base.getPoints(name) == 5, "a decrease is not taken off");
+            scoreboard.getOrCreateScore(player, src).setScore(3);
+            context.assertTrue(base.getPoints(name) == 7, "+2 from the new low, got " + base.getPoints(name));
             context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+            scoreboard.getOrCreateScore(player, src).setScore(10);
+            context.assertTrue(base.getPoints(name) == 7, "paused: not counted");
+            context.setBlockState(BASE.south(), Blocks.AIR);
+            base.setSelector("SomeoneElse");
+            scoreboard.getOrCreateScore(player, src).setScore(11);
+            context.assertTrue(base.getPoints(name) == 7, "a player the base does not follow does not count");
+
             context.setBlockState(BASE.up(), pole(true, true));
-            GoalPoleBaseBlockEntity base = baseEntity(context);
-            base.update(player.getGameProfile().getName(), "dummy");
+            GoalPoleNetwork.processPending();
             GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
-            pole.update(GoalPoleBlockEntity.Comparator.EQUAL, 3);
-            ScoreboardObjective objective = objective(context);
-            context.assertTrue(objective != null, "objective");
-            context.getWorld().getScoreboard().getOrCreateScore(player, objective).setScore(3);
+            context.assertTrue(pole.onPlayerTouch(player), "first touch: a landing");
+            context.assertTrue(!pole.onPlayerTouch(player), "still standing: not a new landing");
         } catch (RuntimeException e) {
             context.getWorld().getServer().getPlayerManager().remove(player);
             throw e;
         }
-        context.waitAndRun(3, () -> {
-            GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
-            boolean on = pole.getRedstoneOutput() == 15;
-            context.getWorld().getScoreboard().getOrCreateScore(player, objective(context)).setScore(4);
-            context.waitAndRun(3, () -> {
-                boolean off = poleEntity(context, BASE.up()).getRedstoneOutput() == 0;
-                context.getWorld().getServer().getPlayerManager().remove(player);
-                removeBase(context);
-                context.assertTrue(on, "signal when the total equals 3");
-                context.assertTrue(off, "no signal at 4");
-                context.complete();
-            });
+        GoalPoleBaseBlockEntity finalBase = base;
+        context.waitAndRun(45, () -> {
+            boolean again = poleEntity(context, BASE.up()).onPlayerTouch(player);
+            context.getWorld().getServer().getPlayerManager().remove(player);
+            removeBase(context);
+            context.assertTrue(again, "back after 2 s away: a new landing");
+            context.assertTrue(finalBase.isRemoved(), "base removed");
+            context.complete();
         });
     }
 }
