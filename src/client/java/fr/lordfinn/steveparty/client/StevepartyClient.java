@@ -28,6 +28,8 @@ import fr.lordfinn.steveparty.client.particle.ForgeBeamParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
+import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
+import fr.lordfinn.steveparty.client.tokenspell.TokenSpellPreview;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
@@ -143,8 +145,10 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
         StencilResourceManager.registerReloadListener();
         MaterialSprites.registerReloadListener();
+        MobTextureColors.registerReloadListener();
         StencilGunHud.initialize();
         SwitchableClient.initialize();
+        fr.lordfinn.steveparty.client.token.TokenBaseRenderer.initialize();
 
         initScreens();
         initParticles();
@@ -290,6 +294,7 @@ public class StevepartyClient implements ClientModInitializer {
         FloatingTextRenderer.clear();
         GoalPoleFlipTracker.clear();
         SquishAnimations.clear();
+        TokenSpellPreview.clear();
     }
 
     private static boolean lastPressed = false;

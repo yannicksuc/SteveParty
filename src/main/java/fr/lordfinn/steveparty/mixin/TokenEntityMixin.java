@@ -53,6 +53,12 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     private Vec3d targetPosition;
     @Unique
     private double targetPositionSpeed;
+    /** Size chosen with the wand spell (biggest dimension, in blocks), 0 = never chosen. Server side only. */
+    @Unique
+    private float steveparty$tokenSize = 0;
+    /** Colour computed from the mob texture (0xRRGGBB), -1 = never set. Server side only. */
+    @Unique
+    private int steveparty$tokenColor = -1;
 
     // State of the mob before it became a token, restored when it stops being one
     @Unique
@@ -135,6 +141,8 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             }
             this.steveparty$hasPreTokenState = false;
             this.targetPosition = null;
+            this.steveparty$tokenSize = 0;
+            this.steveparty$tokenColor = -1;
             // Restaure les AI goals vanilla (cleared first so they are not duplicated)
             this.goalSelector.clear(goal -> true);
             this.targetSelector.clear(goal -> true);
@@ -156,6 +164,22 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
 
     public UUID steveparty$getTokenOwner() {
         return this.dataTracker.get(TOKEN_OWNER).orElse(null);
+    }
+
+    public float steveparty$getTokenSize() {
+        return this.steveparty$tokenSize;
+    }
+
+    public void steveparty$setTokenSize(float size) {
+        this.steveparty$tokenSize = Float.isFinite(size) && size > 0 ? size : 0;
+    }
+
+    public int steveparty$getTokenColor() {
+        return this.steveparty$tokenColor;
+    }
+
+    public void steveparty$setTokenColor(int color) {
+        this.steveparty$tokenColor = color >= 0 && color <= 0xFFFFFF ? color : -1;
     }
 
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
@@ -192,6 +216,9 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             this.steveparty$setStatus(nbt.getInt("TokenStatus"));
         }
 
+        this.steveparty$setTokenSize(nbt.contains("TokenSize", NbtElement.NUMBER_TYPE) ? nbt.getFloat("TokenSize") : 0);
+        this.steveparty$setTokenColor(nbt.contains("TokenColor", NbtElement.NUMBER_TYPE) ? nbt.getInt("TokenColor") : -1);
+
         if (nbt.contains("TokenTarget", NbtElement.COMPOUND_TYPE)) {
             NbtCompound target = nbt.getCompound("TokenTarget");
             this.targetPosition = new Vec3d(target.getDouble("x"), target.getDouble("y"), target.getDouble("z"));
@@ -209,6 +236,12 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             nbt.putUuid("TokenOwner", tokenOwner);
         }
         nbt.putInt("TokenStatus", this.steveparty$getStatus());
+        if (this.steveparty$tokenSize > 0) {
+            nbt.putFloat("TokenSize", this.steveparty$tokenSize);
+        }
+        if (this.steveparty$tokenColor >= 0) {
+            nbt.putInt("TokenColor", this.steveparty$tokenColor);
+        }
         if (this.steveparty$hasPreTokenState) {
             NbtCompound preTokenState = new NbtCompound();
             preTokenState.putBoolean("NoAI", this.steveparty$preTokenAiDisabled);
@@ -320,7 +353,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             if (source.getAttacker() instanceof ServerPlayerEntity attacker && this.steveparty$getNbSteps() <= 0) {
                 if (!TokenStatus.hasStatus(this.steveparty$getStatus(), TokenStatus.IN_GAME)) {
                     MessageUtils.sendToPlayer(attacker, Text.translatableWithFallback("message.steveparty.token_hint",
-                            "I'm a token now! To move me, store me in a Token or use the Tokenizer Wand."), MessageUtils.MessageType.ACTION_BAR);
+                            "I'm a token now! To move me, store me in a Token."), MessageUtils.MessageType.ACTION_BAR);
                 }
                 return false;
             }
