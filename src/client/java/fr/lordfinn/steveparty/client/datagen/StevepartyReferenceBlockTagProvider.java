@@ -23,17 +23,21 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
 
     @Override
     protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
-        // Plastic blocks and studs: the hop switch can switch them (datapacks and the server config can add more)
+        // Everything made of plastic (Switchables.PLASTIC): the wrench and shears take it apart quickly, the hop switch
+        // can switch it (datapacks and the server config can add more)
         for (Block[] plastic : new Block[][]{ModBlocks.PLASTIC_BLOCKS, ModBlocks.PLASTIC_STUDS})
             for (Block block : plastic) {
                 getOrCreateTagBuilder(Switchables.PLASTIC).add(block);
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(block);
             }
         getOrCreateTagBuilder(Switchables.SWITCHABLE).addTag(Switchables.PLASTIC);
+        // Plastic fences and the plastic road sign: plastic too (the road sign has a block entity: never switchable)
         for (Block fence : ModBlocks.PLASTIC_FENCES) {
+            getOrCreateTagBuilder(Switchables.PLASTIC).add(fence);
             getOrCreateTagBuilder(BlockTags.FENCES).add(fence);
             getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(fence);
         }
+        getOrCreateTagBuilder(Switchables.PLASTIC).add(ModBlocks.PLASTIC_ROAD_SIGN);
         // Plastic slabs, stairs and walls: plastic too (taken apart in one hit with the wrench, switchable)
         for (int i = 0; i < ModBlocks.COLORS.length; i++) {
             getOrCreateTagBuilder(BlockTags.SLABS).add(ModBlocks.PLASTIC_SLABS[i]);
