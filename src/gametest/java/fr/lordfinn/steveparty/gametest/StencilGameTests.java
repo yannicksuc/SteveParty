@@ -465,7 +465,9 @@ public class StencilGameTests implements FabricGameTest {
         context.runAtTick(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 3, () -> {
             try {
                 context.expectBlock(ModBlocks.PLASTIC_BLOCKS[0], start.up());
-                context.assertTrue(player.getVelocity().y <= 0.3, "carried gently, not flung: " + player.getVelocity().y);
+                // A block per RISE_DELAY ticks through the water's drag (about 0.35), far from the column's 1.4
+                context.assertTrue(player.getVelocity().y <= fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RIDE_STILL_SPEED + 1e-3,
+                        "carried gently, not flung: " + player.getVelocity().y);
             } finally {
                 context.getWorld().getServer().getPlayerManager().remove(player);
             }

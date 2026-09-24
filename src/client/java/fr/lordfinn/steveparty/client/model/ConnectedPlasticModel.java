@@ -1,9 +1,14 @@
 package fr.lordfinn.steveparty.client.model;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.SlabBlock;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.json.ModelOverrideList;
@@ -15,7 +20,7 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -24,16 +29,26 @@ import java.util.function.Supplier;
  * Connected texture for the plastic blocks: touching blocks of the same colour merge into one plastic
  * piece, at most 4 blocks wide on X/Z and 2 blocks high. Pieces start from the edge of the build, and two blocks
  * only merge when they are aligned on the other two axes too, so a piece never outgrows its 4x2x4 box (it can
- * still wrap around another block, hence the inner corner sprites).
+ * still wrap around another block, hence the inner corner sprites). Where pieces start is worked out by
+ * {@link PieceLayout}. A double plastic slab (drawn with this model) is the full block of its colour and merges with
+ * those blocks; a half slab never joins a piece.
  * <p>
  * Each face picks one of 47 sprites from which of its 4 edges are connected (bit 1 up, 2 right, 4 down, 8 left,
  * in the texture orientation of vanilla block faces) and which inner corners it must close (bits 16 to 128).
  */
 public class ConnectedPlasticModel implements BakedModel {
-    private static final int SPAN_HORIZONTAL = 4;
-    private static final int SPAN_VERTICAL = 2;
-    // Longest run measured from the edge of the build; longer runs fall back to the world grid
-    private static final int MAX_SCAN = 12;
+    /** The full plastic block of each plastic slab's colour: a double slab is that block. */
+    private static final Map<Block, Block> FULL_BLOCK_OF_SLAB = new IdentityHashMap<>();
+
+    static {
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) FULL_BLOCK_OF_SLAB.put(ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_BLOCKS[i]);
+    }
+
+    private static final PieceLayout.Lookup LOOKUP = BlockRenderView::getBlockState;
+    private static final PieceLayout.Joiner JOINER = (here, there, dir) -> {
+        Block piece = pieceOf(here);
+        return piece != null && pieceOf(there) == piece;
+    };
 
     // Texture up / left of each face, following the vanilla block face UVs
     private static final Direction[] TEXTURE_UP = new Direction[6];
@@ -79,46 +94,53 @@ public class ConnectedPlasticModel implements BakedModel {
     @Override
     public void emitBlockQuads(BlockRenderView world, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context) {
         QuadEmitter emitter = context.getEmitter();
-        Map<BlockPos, int[]> phases = new HashMap<>();
-        for (Direction face : Direction.values()) {
-            if (context.isFaceCulled(face)) continue;
-            Direction up = TEXTURE_UP[face.ordinal()];
-            Direction left = TEXTURE_LEFT[face.ordinal()];
-            Direction right = left.getOpposite();
-            Direction down = up.getOpposite();
-            boolean u = connected(world, state, pos, up, phases);
-            boolean r = connected(world, state, pos, right, phases);
-            boolean d = connected(world, state, pos, down, phases);
-            boolean l = connected(world, state, pos, left, phases);
-            int mask = (u ? UP : 0) | (r ? RIGHT : 0) | (d ? DOWN : 0) | (l ? LEFT : 0);
-            // Inner corners: both sides belong to the piece but the diagonal block does not
-            if (u && l && !connected(world, state, pos.offset(up), left, phases)) mask |= INNER_UP_LEFT;
-            if (u && r && !connected(world, state, pos.offset(up), right, phases)) mask |= INNER_UP_RIGHT;
-            if (d && r && !connected(world, state, pos.offset(down), right, phases)) mask |= INNER_DOWN_RIGHT;
-            if (d && l && !connected(world, state, pos.offset(down), left, phases)) mask |= INNER_DOWN_LEFT;
-            emitter.square(face, 0, 0, 1, 1, 0);
-            emitter.cullFace(face);
-            emitter.spriteBake(sprites[mask], MutableQuadView.BAKE_LOCK_UV);
-            emitter.color(-1, -1, -1, -1);
-            emitter.emit();
+        Block piece = pieceOf(state);
+        PieceLayout layout = PieceLayout.begin(world, pos, LOOKUP, JOINER);
+        try {
+            for (Direction face : Direction.values()) {
+                if (context.isFaceCulled(face)) continue;
+                Direction up = TEXTURE_UP[face.ordinal()];
+                Direction left = TEXTURE_LEFT[face.ordinal()];
+                Direction right = left.getOpposite();
+                Direction down = up.getOpposite();
+                boolean u = connected(world, layout, piece, pos, up);
+                boolean r = connected(world, layout, piece, pos, right);
+                boolean d = connected(world, layout, piece, pos, down);
+                boolean l = connected(world, layout, piece, pos, left);
+                int mask = (u ? UP : 0) | (r ? RIGHT : 0) | (d ? DOWN : 0) | (l ? LEFT : 0);
+                // Inner corners: both sides belong to the piece but the diagonal block does not
+                if (u && l && !connected(world, layout, piece, pos.offset(up), left)) mask |= INNER_UP_LEFT;
+                if (u && r && !connected(world, layout, piece, pos.offset(up), right)) mask |= INNER_UP_RIGHT;
+                if (d && r && !connected(world, layout, piece, pos.offset(down), right)) mask |= INNER_DOWN_RIGHT;
+                if (d && l && !connected(world, layout, piece, pos.offset(down), left)) mask |= INNER_DOWN_LEFT;
+                emitter.square(face, 0, 0, 1, 1, 0);
+                emitter.cullFace(face);
+                emitter.spriteBake(sprites[mask], MutableQuadView.BAKE_LOCK_UV);
+                emitter.color(-1, -1, -1, -1);
+                emitter.emit();
+            }
+        } finally {
+            layout.end();
         }
     }
 
-    private static boolean connected(BlockRenderView world, BlockState state, BlockPos pos, Direction dir, Map<BlockPos, int[]> phases) {
-        BlockPos other = pos.offset(dir);
+    /**
+     * @return the full plastic block a block counts as in a piece: a plastic block itself, the block of its colour
+     * for a double plastic slab, null for anything else (half slabs included)
+     */
+    @Nullable
+    private static Block pieceOf(BlockState state) {
+        Block block = state.getBlock();
+        if (block instanceof PlasticBlock) return block;
+        Block full = FULL_BLOCK_OF_SLAB.get(block);
+        return full != null && state.get(SlabBlock.TYPE) == SlabType.DOUBLE ? full : null;
+    }
+
+    /** @return whether the block at {@code pos} and its neighbour on {@code dir} are both {@code piece} and one piece. */
+    private static boolean connected(BlockRenderView world, PieceLayout layout, @Nullable Block piece, BlockPos pos, Direction dir) {
         // Same colour, wet or dry
-        if (!world.getBlockState(pos).isOf(state.getBlock()) || !world.getBlockState(other).isOf(state.getBlock())) return false;
-        int[] phase = phases.computeIfAbsent(pos, p -> phases(world, state, p));
-        int axis = dir.getAxis().ordinal();
-        int span = span(axis);
-        // A piece boundary on the axis between the two blocks
-        if (phase[axis] == (dir.getDirection() == Direction.AxisDirection.POSITIVE ? span - 1 : 0)) return false;
-        // Aligned on the two other axes, so that a piece never grows past 4x2x4
-        int[] otherPhase = phases.computeIfAbsent(other, p -> phases(world, state, p));
-        for (int a = 0; a < 3; a++) {
-            if (a != axis && otherPhase[a] != phase[a]) return false;
-        }
-        return true;
+        if (piece == null || pieceOf(world.getBlockState(pos)) != piece || pieceOf(world.getBlockState(pos.offset(dir))) != piece) return false;
+        return layout.samePiece(pos, dir);
     }
 
     /** Sprite index of a face: which edges are connected, plus the inner corners (a valid mask has 47 values). */
@@ -130,26 +152,6 @@ public class ConnectedPlasticModel implements BakedModel {
                 && ((mask & INNER_UP_RIGHT) == 0 || (mask & (UP | RIGHT)) == (UP | RIGHT))
                 && ((mask & INNER_DOWN_RIGHT) == 0 || (mask & (DOWN | RIGHT)) == (DOWN | RIGHT))
                 && ((mask & INNER_DOWN_LEFT) == 0 || (mask & (DOWN | LEFT)) == (DOWN | LEFT));
-    }
-
-    /** Position inside the piece on each axis (X, Y, Z), counted from the edge of the build. */
-    private static int[] phases(BlockRenderView world, BlockState state, BlockPos pos) {
-        int[] phase = new int[3];
-        for (Direction.Axis axis : Direction.Axis.values()) {
-            Direction back = Direction.from(axis, Direction.AxisDirection.NEGATIVE);
-            int span = span(axis.ordinal());
-            int run = 0;
-            BlockPos.Mutable cursor = pos.mutableCopy();
-            while (run < MAX_SCAN && world.getBlockState(cursor.move(back)).isOf(state.getBlock())) run++;
-            phase[axis.ordinal()] = run < MAX_SCAN
-                    ? run % span
-                    : Math.floorMod(axis.choose(pos.getX(), pos.getY(), pos.getZ()), span);
-        }
-        return phase;
-    }
-
-    private static int span(int axisOrdinal) {
-        return axisOrdinal == Direction.Axis.Y.ordinal() ? SPAN_VERTICAL : SPAN_HORIZONTAL;
     }
 
     // Everything else (items, particles, fallback) uses the standalone tile

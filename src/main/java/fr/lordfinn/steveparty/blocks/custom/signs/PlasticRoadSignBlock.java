@@ -198,14 +198,14 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
     @Override
     protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
         super.onBlockAdded(state, world, pos, oldState, notify);
-        if (floats(state)) world.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+        if (floats(state)) PlasticBlock.scheduleStep(world, world, pos, this);
     }
 
     @Override
     protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
                                                    Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
         // Water arriving, a bubble column forming, or a chain holding it being broken: try again
-        if (floats(state)) tickView.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+        if (floats(state)) PlasticBlock.scheduleStep(tickView, world, pos, this);
         return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
     }
 
@@ -216,11 +216,11 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
 
     /** One step of a floating sign, like a stud's: it carries its block entity (plate, symbol) along. */
     @Nullable
-    private static BlockPos step(BlockState state, ServerWorld world, BlockPos pos) {
-        if (!floats(state) || !state.get(WATERLOGGED) || PlasticBlock.isChained(world, pos)) return null;
+    private static BlockPos step(BlockState state, ServerWorld world, BlockPos pos, PlasticBlock.Flow flow) {
+        if (!floats(state) || !state.get(WATERLOGGED) || PlasticBlock.isHeld(world, pos, flow.current())) return null;
         BlockPos target;
         BlockState moved;
-        if (PlasticBlock.getCurrent(world, pos) == PlasticBlock.Current.DOWN) {
+        if (flow.current() == PlasticBlock.Current.DOWN) {
             target = pos.down();
             if (!PlasticBlock.canSinkInto(world.getBlockState(target))) {
                 turn(state, world, pos, Mount.FLOOR); // lies on the magma that pulled it down
@@ -241,7 +241,7 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
         }
         NbtCompound data = world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas
                 ? canvas.createNbt(world.getRegistryManager()) : null;
-        if (!PlasticBlock.moveWithRiders(world, pos, target, moved)) return PlasticBlock.retry(world, pos, state);
+        if (!PlasticBlock.moveWithRiders(world, pos, target, moved, flow)) return PlasticBlock.retry(world, pos, state, flow);
         if (data != null && world.getBlockEntity(target) instanceof StencilCanvasBlockEntity canvas) {
             canvas.read(data, world.getRegistryManager());
             canvas.markDirty();
