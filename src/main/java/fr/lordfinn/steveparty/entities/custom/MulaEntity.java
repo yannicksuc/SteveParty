@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.LumaHoverGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaBodyControl;
+import fr.lordfinn.steveparty.entities.custom.goals.MulaBrain;
+import fr.lordfinn.steveparty.entities.custom.goals.MulaGoals;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaSitGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -144,6 +146,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	/** Client: the float layer and the fly / hover state (see {@link MulaMotion}). */
 	private final MulaMotion motion;
+	/** Server: what is around it, refreshed rarely (see {@link MulaBrain}). */
+	private final MulaBrain brain = new MulaBrain(this);
 	/** Client: ticks before the next blink (each client blinks on its own: purely cosmetic, never synced). */
 	private int blinkCooldown = 40;
 	/** Client: last age at which the renderer spawned its particles (at most once per tick, only when drawn). */
@@ -166,6 +170,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	/** Counts the meals: when it changes, the clients show the food melting into light and spiralling into it. */
 	private static final TrackedData<Integer> FEED_COUNT =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	/** A wild Mula resting on a flower in the morning (plays the sit animation). */
+	private static final TrackedData<Boolean> RESTING =
+			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	/** Just spawned: it pops in from nothing on the clients. */
 	private static final TrackedData<Boolean> FRESH =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -228,6 +235,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (eatCooldown > 0) eatCooldown--;
 		if (bellyClearTicks > 0 && --bellyClearTicks == 0) setLastFood(ItemStack.EMPTY);
 		if (freshTicks > 0 && --freshTicks == 0) this.dataTracker.set(FRESH, false);
+		brain.tick();
 		tickEmotes();
 	}
 
@@ -251,11 +259,34 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	@Override protected void initGoals() {
-		// Sitting (owner's order) wins; following the owner stops by itself while sitting (cannotFollowOwner);
-		// idle hovering only runs (and keeps running) without an owner
+		// All hold the MOVE control: a lower number interrupts a higher one. Sitting (owner's order) wins; hit, it
+		// hides for a few seconds; following the owner stops by itself while sitting (cannotFollowOwner); when the
+		// owner stands still it circles them; wild ones follow their curiosity, play, look at shiny things, go up to
+		// the sky at night and rest on flowers in the morning, and otherwise wander in little flocks. Far from every
+		// player (MulaBrain#isActive) the new behaviours don't start.
 		this.goalSelector.add(0, new MulaSitGoal(this));
-		this.goalSelector.add(0, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
-		this.goalSelector.add(1, new LumaHoverGoal(this, 0.2, 1.5, 6.0)); super.initGoals();
+		this.goalSelector.add(1, new MulaGoals.Shy(this));
+		this.goalSelector.add(2, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
+		this.goalSelector.add(3, new MulaGoals.OrbitOwner(this));
+		this.goalSelector.add(4, new MulaGoals.Curious(this));
+		this.goalSelector.add(5, new MulaGoals.Play(this));
+		this.goalSelector.add(5, new MulaGoals.Shiny(this));
+		this.goalSelector.add(6, new MulaGoals.Sky(this));
+		this.goalSelector.add(7, new LumaHoverGoal(this, 0.2, 1.5, 6.0));
+		super.initGoals();
+	}
+
+	public MulaBrain getMulaBrain() {
+		return brain;
+	}
+
+	/** A wild Mula resting on a flower (synced: the clients play its sit animation). */
+	public boolean isResting() {
+		return this.dataTracker.get(RESTING);
+	}
+
+	public void setResting(boolean resting) {
+		this.dataTracker.set(RESTING, resting);
 	}
 
 	/** Turns its body smoothly (vanilla snaps it after 10 ticks without moving). */
@@ -292,6 +323,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		builder.add(LAST_FOOD, ItemStack.EMPTY);
 		builder.add(FEED_COUNT, 0);
 		builder.add(FRESH, false);
+		builder.add(RESTING, false);
 	}
 
 	@Override
@@ -551,7 +583,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (--emoteCooldown > 0) return;
 		emoteCooldown = EMOTE_MIN_TICKS + this.random.nextInt(EMOTE_RANDOM_TICKS);
 		if (!canEmote()) return;
-		boolean sitting = this.isInSittingPose();
+		boolean sitting = this.isInSittingPose() || this.isResting();
 		boolean moving = this.getVelocity().lengthSquared() > 0.05 * 0.05;
 		if (moving && this.random.nextBoolean()) return; // rarer while flying around
 		Emote emote = pickEmote(sitting, moving);
@@ -564,6 +596,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	/** Never over another triggered animation, while hurt, eating, carried, leashed or used as a board token. */
 	private boolean canEmote() {
 		return this.isAlive() && specialAnimTicks == 0 && eatCooldown == 0 && this.hurtTime == 0
+				&& !brain.isShy() && !brain.isPlaying()
 				&& !this.hasVehicle() && !this.hasPassengers() && !this.isLeashed()
 				&& !((Object) this instanceof TokenizedEntityInterface token && token.steveparty$isTokenized())
 				&& this.getWorld().getClosestPlayer(this, EMOTE_AUDIENCE_RANGE) != null;
@@ -634,7 +667,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	/** Not when its eyes are already busy: sitting (half-closed, own slow blink) or in a triggered animation. */
 	private boolean canBlink() {
-		if (!this.isAlive() || this.isInSittingPose()) return false;
+		if (!this.isAlive() || this.isInSittingPose() || this.isResting()) return false;
 		AnimatableManager<?> manager = getAnimatableInstanceCache().getManagerForId(this.getId());
 		AnimationController<?> main = manager == null ? null : manager.getAnimationControllers().get(MAIN_CONTROLLER);
 		return main == null || !main.isPlayingTriggeredAnimation();
@@ -696,7 +729,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private PlayState animationPredicate(AnimationState<MulaEntity> state) {
-		if (this.isInSittingPose()) {
+		if (this.isInSittingPose() || this.isResting()) {
 			return state.setAndContinue(SIT_ANIM);
 		}
 		// Smoothed speed with hysteresis (MulaMotion): no flicker between fly and idle around a threshold
@@ -779,6 +812,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	public boolean damage(ServerWorld world, DamageSource source, float amount) {
 		boolean damaged = super.damage(world, source, amount);
 		if (damaged) {
+			// shy: it flees a short way and hides (behind its owner, in leaves...), peeks out and comes back
+			if (this.isAlive()) brain.onHurt(source.getAttacker());
 			stopEmote();
 			if (this.isSitting()) {
 				this.setSitting(false);

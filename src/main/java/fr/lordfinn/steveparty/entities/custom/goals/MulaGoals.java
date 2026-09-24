@@ -1,0 +1,451 @@
+package fr.lordfinn.steveparty.entities.custom.goals;
+
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.ai.control.MoveControl;
+import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+
+import java.util.EnumSet;
+
+/**
+ * The Mula's behaviours beyond wandering and following, each a goal holding the MOVE control, so they exclude each
+ * other by priority (MulaEntity#initGoals):
+ * sit 0, {@link Shy} 1, follow owner 2, {@link OrbitOwner} 3, {@link Curious} 4, {@link Play} 5, {@link Shiny} 5,
+ * {@link Sky} 6, wander (flocks) 7.
+ * They read what is around from {@link MulaBrain} (refreshed rarely) and steer the move control towards points
+ * computed from formulas: no pathfinding, nothing allocated per tick.
+ */
+public final class MulaGoals {
+    private MulaGoals() {
+    }
+
+    static void fly(MulaEntity mula, double x, double y, double z, double speed, boolean through) {
+        MoveControl move = mula.getMoveControl();
+        if (through && move instanceof SimpleFlyingMoveControl flying) {
+            flying.moveThrough(x, y, z, speed);
+        } else {
+            move.moveTo(x, y, z, speed);
+        }
+    }
+
+    /** Ground height under a point (first solid block within 64 blocks), or NaN over the void. */
+    static double groundBelow(World world, double x, double y, double z) {
+        BlockPos.Mutable pos = new BlockPos.Mutable(MathHelper.floor(x), MathHelper.floor(y), MathHelper.floor(z));
+        for (int i = 0; i < 64 && pos.getY() > world.getBottomY(); i++) {
+            pos.move(0, -1, 0);
+            if (!world.getBlockState(pos).getCollisionShape(world, pos).isEmpty()) return pos.getY() + 1.0;
+        }
+        return Double.NaN;
+    }
+
+    // ------------------------------------------------------------------------------------------ 6. shy after a hit
+
+    /**
+     * Hit: flees a short way (fast) to its hideout (behind its owner, or leaves / a block between it and the threat),
+     * waits there, peeks out (look_around), then goes back to what it was doing.
+     */
+    public static final class Shy extends Goal {
+        private final MulaEntity mula;
+        private boolean peeked;
+
+        public Shy(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        @Override
+        public boolean canStart() {
+            return mula.getMulaBrain().isShy() && !mula.isSitting();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void start() {
+            mula.getNavigation().stop();
+            peeked = false;
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            MulaBrain brain = mula.getMulaBrain();
+            Vec3d target = brain.shyTarget();
+            if (target == null) return;
+            int t = MulaBrain.SHY_TICKS - brain.shyTicks();
+            fly(mula, target.x, target.y, target.z, t < MulaBrain.SHY_FLEE_TICKS ? 0.35 : 0.1, false);
+            Vec3d threat = brain.shyThreat();
+            if (t >= MulaBrain.SHY_FLEE_TICKS && threat != null) {
+                mula.getLookControl().lookAt(threat.x, threat.y, threat.z, 10, 10);
+            }
+            if (!peeked && t >= MulaBrain.SHY_PEEK_TICKS) {
+                peeked = true;
+                mula.playAnimation("look_around");
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------ 1. orbit the owner
+
+    /**
+     * The owner has stood still for 3 s: the tamed Mula slowly circles them at head height, bobbing, leaning into the
+     * curve (the client banks it), turning back now and then. As soon as the owner moves it stops and follows again.
+     */
+    public static final class OrbitOwner extends Goal {
+        public static final int STILL_TICKS = 60;
+        private static final double RADIUS = 1.7, ANGULAR_SPEED = 0.045;
+        private final MulaEntity mula;
+        private double angle;
+        private float direction;
+        private int reverseIn;
+        private int t;
+
+        public OrbitOwner(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        private PlayerEntity owner() {
+            return mula.getOwner() instanceof PlayerEntity p && !p.isSpectator() ? p : null;
+        }
+
+        @Override
+        public boolean canStart() {
+            PlayerEntity owner = owner();
+            return owner != null && mula.isTamed() && !mula.isSitting() && mula.getMulaBrain().isActive()
+                    && mula.getMulaBrain().ownerStillTicks() >= STILL_TICKS && owner.squaredDistanceTo(mula) < 36;
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            PlayerEntity owner = owner();
+            return owner != null && !mula.isSitting() && mula.getMulaBrain().ownerStillTicks() > 0
+                    && owner.squaredDistanceTo(mula) < 49;
+        }
+
+        @Override
+        public void start() {
+            PlayerEntity owner = owner();
+            angle = Math.atan2(mula.getZ() - owner.getZ(), mula.getX() - owner.getX());
+            direction = mula.getRandom().nextBoolean() ? 1 : -1;
+            reverseIn = 160 + mula.getRandom().nextInt(160);
+            t = 0;
+            mula.getNavigation().stop();
+            mula.getMulaBrain().orbiting = true;
+        }
+
+        @Override
+        public void stop() {
+            mula.getMulaBrain().orbiting = false;
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            PlayerEntity owner = owner();
+            if (owner == null) return;
+            t++;
+            // eases into its speed, turns back now and then
+            if (--reverseIn <= 0) {
+                direction = -direction;
+                reverseIn = 160 + mula.getRandom().nextInt(160);
+            }
+            angle += direction * ANGULAR_SPEED * Math.min(1, t / 30.0);
+            double y = owner.getY() + owner.getHeight() + 0.35 + 0.3 * Math.sin(angle * 2);
+            fly(mula, owner.getX() + Math.cos(angle) * RADIUS, y, owner.getZ() + Math.sin(angle) * RADIUS, 0.2, true);
+            if ((t & 31) == 0) mula.getLookControl().lookAt(owner, 10, 10);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------ 3. curiosity
+
+    /**
+     * A wild Mula comes shyly towards a player holding star fragments or its food: stops at a comfortable distance
+     * (within reach to be fed), tilts its head, inches closer if the player stays still, backs off a little if they
+     * sprint or rush at it, then comes back.
+     */
+    public static final class Curious extends Goal {
+        private final MulaEntity mula;
+        private int startled;
+        private boolean tilted;
+
+        public Curious(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        @Override
+        public boolean canStart() {
+            return !mula.isTamed() && mula.getMulaBrain().isActive() && mula.getMulaBrain().curiousPlayer() != null;
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            PlayerEntity p = mula.getMulaBrain().curiousPlayer();
+            return p != null && !mula.isTamed() && p.squaredDistanceTo(mula) < 144;
+        }
+
+        @Override
+        public void start() {
+            tilted = false;
+            startled = 0;
+            mula.getNavigation().stop();
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            MulaBrain brain = mula.getMulaBrain();
+            PlayerEntity p = brain.curiousPlayer();
+            if (p == null) return;
+            double wanted = MulaBrain.curiousDistance(brain.curiousStillTicks(), p.isSprinting(), brain.curiousApproach());
+            if (wanted > 3) startled = 30;
+            if (startled > 0) {
+                startled--;
+                wanted = 4.5;
+            }
+            Vec3d away = MulaBrain.flatAway(mula.getPos(), p.getPos());
+            double x = p.getX() + away.x * wanted, z = p.getZ() + away.z * wanted, y = p.getEyeY() + 0.2;
+            fly(mula, x, y, z, startled > 0 ? 0.25 : 0.12, false);
+            mula.getLookControl().lookAt(p, 10, 10);
+            if (!tilted && mula.squaredDistanceTo(x, y, z) < 0.3) {
+                tilted = true;
+                mula.playAnimation("head_tilt");
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------ 5. play
+
+    /** Two idle wild Mulas chase each other on a spiral for a few seconds, twirling, then settle. */
+    public static final class Play extends Goal {
+        private final MulaEntity mula;
+        private int t;
+
+        public Play(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE));
+        }
+
+        @Override
+        public boolean canStart() {
+            MulaBrain brain = mula.getMulaBrain();
+            if (mula.isTamed() || !brain.isActive()) return false;
+            if (brain.isPlaying()) return true;
+            // tried at the brain's refresh rhythm only (1 chance in 40 each second)
+            return (mula.age + mula.getId()) % MulaBrain.NEIGHBOUR_TICKS == 0 && brain.tryStartPlay();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return mula.getMulaBrain().isPlaying() && !mula.isTamed();
+        }
+
+        @Override
+        public void start() {
+            t = 0;
+            mula.playAnimation("twirl");
+        }
+
+        @Override
+        public void stop() {
+            if (mula.getMulaBrain().playTicks() <= 1) mula.playAnimation("happy_hop");
+            mula.getMulaBrain().stopPlay();
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            MulaBrain b = mula.getMulaBrain();
+            t++;
+            double a = b.playPhase() + b.playDirection() * t * 0.16;
+            double r = 1.3 + 0.35 * Math.sin(t * 0.1);
+            double y = b.playCenterY() + 0.6 * Math.sin(t * 0.12 + b.playPhase());
+            fly(mula, b.playCenterX() + Math.cos(a) * r, y, b.playCenterZ() + Math.sin(a) * r, 0.3, true);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------ 7. shiny things
+
+    /**
+     * Drawn to shiny things (its food or star fragments dropped, star fragment blocks, a Dice Forge, a gravity core):
+     * it circles them curiously, tilts its head, twirls, then goes on. It never picks anything up.
+     */
+    public static final class Shiny extends Goal {
+        private final MulaEntity mula;
+        private int t;
+        private double angle;
+
+        public Shiny(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        @Override
+        public boolean canStart() {
+            return !mula.isTamed() && mula.getMulaBrain().isActive() && mula.getMulaBrain().shiny() != null;
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart() && t < 150;
+        }
+
+        @Override
+        public void start() {
+            t = 0;
+            Vec3d s = mula.getMulaBrain().shiny();
+            angle = Math.atan2(mula.getZ() - s.z, mula.getX() - s.x);
+        }
+
+        @Override
+        public void stop() {
+            if (mula.getMulaBrain().shiny() != null) mula.getMulaBrain().doneInspecting();
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            Vec3d s = mula.getMulaBrain().shiny();
+            if (s == null) return;
+            t++;
+            boolean near = mula.squaredDistanceTo(s) < 4;
+            if (near) angle += 0.06;
+            fly(mula, s.x + Math.cos(angle) * 1.1, s.y + 0.5 + 0.2 * Math.sin(t * 0.1), s.z + Math.sin(angle) * 1.1,
+                    near ? 0.12 : 0.18, near);
+            mula.getLookControl().lookAt(s.x, s.y, s.z, 10, 10);
+            if (t == 40) mula.playAnimation("head_tilt");
+            if (t == 100) mula.playAnimation("twirl");
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------ 4. day / night
+
+    /**
+     * Night: wild Mulas rise 10 to 18 blocks above the ground (never above the build limit, never over the void) and
+     * drift there together, twinkling like stars. Morning: they come down and rest on a flower or grass, sleepy.
+     */
+    public static final class Sky extends Goal {
+        private final MulaEntity mula;
+        private boolean night;
+        private double skyY;
+        private BlockPos perch;
+        private final BlockPos.Mutable probe = new BlockPos.Mutable();
+        private int t;
+
+        public Sky(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE));
+        }
+
+        @Override
+        public boolean canStart() {
+            if (mula.isTamed() || !mula.getMulaBrain().isActive()) return false;
+            if ((mula.age + mula.getId()) % MulaBrain.NEIGHBOUR_TICKS != 0) return false; // looked at once a second
+            World world = mula.getWorld();
+            if (world.isNight()) {
+                double ground = groundBelow(world, mula.getX(), mula.getY(), mula.getZ());
+                if (Double.isNaN(ground)) return false;
+                night = true;
+                skyY = MulaBrain.nightAltitude(ground, world.getTopYInclusive(), mula.getId());
+                return true;
+            }
+            if (MulaBrain.isMorning(world.getTimeOfDay())) {
+                BlockPos found = findPerch(world);
+                if (found == null) return false;
+                night = false;
+                perch = found;
+                return true;
+            }
+            return false;
+        }
+
+        /** A flower or tuft of grass within 8 blocks, a few random samples. */
+        private BlockPos findPerch(World world) {
+            for (int i = 0; i < 8; i++) {
+                probe.set(mula.getBlockX() + mula.getRandom().nextBetween(-8, 8), mula.getBlockY(),
+                        mula.getBlockZ() + mula.getRandom().nextBetween(-8, 8));
+                if (!world.isChunkLoaded(probe)) continue;
+                for (int dy = 0; dy < 10; dy++) {
+                    BlockState state = world.getBlockState(probe);
+                    if (state.isIn(BlockTags.FLOWERS) || state.isOf(net.minecraft.block.Blocks.SHORT_GRASS)) {
+                        return probe.toImmutable();
+                    }
+                    if (!state.isAir()) break;
+                    probe.move(0, -1, 0);
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            World world = mula.getWorld();
+            if (mula.isTamed()) return false;
+            return night ? world.isNight() : MulaBrain.isMorning(world.getTimeOfDay());
+        }
+
+        @Override
+        public void start() {
+            t = 0;
+            mula.getNavigation().stop();
+        }
+
+        @Override
+        public void stop() {
+            mula.setResting(false);
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            t++;
+            if (night) {
+                // drifting slowly with its flock, like a star
+                MulaEntity leader = mula.getMulaBrain().flockLeader();
+                double cx = leader != null ? leader.getX() : mula.getX(), cz = leader != null ? leader.getZ() : mula.getZ();
+                double a = t * 0.015 + mula.getId();
+                double r = leader != null ? 1.6 + (mula.getId() % 3) * 0.6 : 0.6;
+                fly(mula, cx + Math.cos(a) * r, skyY + 0.4 * Math.sin(t * 0.04 + mula.getId()), cz + Math.sin(a) * r,
+                        mula.getY() < skyY - 2 ? 0.1 : 0.06, true);
+            } else {
+                double x = perch.getX() + 0.5, y = perch.getY() + 0.45, z = perch.getZ() + 0.5;
+                fly(mula, x, y, z, 0.1, false);
+                if (!mula.isResting() && mula.squaredDistanceTo(x, y, z) < 0.2) mula.setResting(true);
+            }
+        }
+    }
+}

@@ -124,7 +124,10 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         boolean fewer = mode == ParticlesMode.DECREASED;
         World world = mula.getWorld();
         Random random = mula.getRandom();
-        if (mula.age % (fewer ? 10 : 5) == 0) {
+        // at night they twinkle like little stars: twice as often
+        long day = Math.floorMod(world.getTimeOfDay(), 24000L);
+        int every = (fewer ? 10 : 5) / (day >= 13000 && day < 23000 ? 2 : 1);
+        if (mula.age % every == 0) {
             double offsetX = (random.nextDouble() - 0.5) * 0.9;
             double offsetY = random.nextDouble() * 0.8 + 0.2;
             double offsetZ = (random.nextDouble() - 0.5) * 0.9;
