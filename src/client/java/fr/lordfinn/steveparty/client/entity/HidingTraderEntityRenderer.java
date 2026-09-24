@@ -14,10 +14,26 @@ import static fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderLayer
 
 
 public class HidingTraderEntityRenderer extends GeoEntityRenderer<HidingTraderEntity> {
+    /** Base texture (gold bandana), used until the bandana colour is synced. */
+    private static final Identifier BASE_TEXTURE = Steveparty.id("textures/entity/hiding_trader.png");
+    /** One texture per bandana colour, in HidingTraderEntity's BandanaColor order (the art sources). */
+    private static final Identifier[] BANDANA_TEXTURES = {
+            Steveparty.id("textures/entity/hiding_trader_teal.png"),
+            Steveparty.id("textures/entity/hiding_trader_blue.png"),
+            Steveparty.id("textures/entity/hiding_trader_pink.png"),
+            Steveparty.id("textures/entity/hiding_trader_orange.png"),
+            Steveparty.id("textures/entity/hiding_trader_yellow.png"),
+    };
 
     public HidingTraderEntityRenderer(EntityRendererFactory.Context ctx) {
         super(ctx, new DefaultedEntityGeoModel<>(Steveparty.id("hiding_trader")));
         addRenderLayer(new HidingTraderEntityRenderLayer(this));
+    }
+
+    @Override
+    public Identifier getTextureLocation(HidingTraderEntity animatable) {
+        int color = animatable.getBandanaColor();
+        return color >= 0 && color < BANDANA_TEXTURES.length ? BANDANA_TEXTURES[color] : BASE_TEXTURE;
     }
 
     @Override

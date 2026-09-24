@@ -33,6 +33,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
@@ -50,10 +51,13 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.MerchantInventory;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -104,6 +108,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     /** Ticks between two synchronizations of the owner with the persistent link state. */
     private static final int OWNER_SYNC_INTERVAL = 20;
     private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.STRING);
+    /** Number of bandana colours (textures hiding_trader_<colour>.png, see the art sources). */
+    public static final int BANDANA_COLORS = 5;
+    public static final String BANDANA_COLOR_NBT = "BandanaColor";
+    /** Bandana colour 0-4 (teal, blue, pink, orange, yellow), -1 until picked. */
+    private static final TrackedData<Integer> BANDANA_COLOR = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
@@ -160,6 +169,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
         builder.add(BLOCK_STATE, "");
+        builder.add(BANDANA_COLOR, -1);
     }
 
     @Override
@@ -535,6 +545,12 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (nbt.containsUuid("ShopOwner")) {
             ownerUuid = nbt.getUuid("ShopOwner");
         }
+        if (nbt.contains(BANDANA_COLOR_NBT, NbtElement.NUMBER_TYPE)) {
+            setBandanaColor(nbt.getInt(BANDANA_COLOR_NBT));
+        } else if (getBandanaColor() < 0) {
+            // Trader saved before bandanas existed, or summoned with NBT but without a colour
+            rollBandanaColor();
+        }
     }
 
     private static void printWarnForFailDecodeBlockState(String error) {
@@ -550,6 +566,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
         if (ownerUuid != null) {
             nbt.putUuid("ShopOwner", ownerUuid);
+        }
+        if (getBandanaColor() >= 0) {
+            nbt.putInt(BANDANA_COLOR_NBT, getBandanaColor());
         }
         return super.writeNbt(nbt);
     }
@@ -651,6 +670,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
+        if (!this.getWorld().isClient && getBandanaColor() < 0) {
+            // Spawned from code without initialize() nor NBT (e.g. the villager block fall)
+            rollBandanaColor();
+        }
         if (!this.getWorld().isClient && this.age % OWNER_SYNC_INTERVAL == 0) {
             syncOwner();
         }
@@ -720,6 +743,25 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     protected SoundEvent getDeathSound() {
         return isHiding() ? blockState.getSoundGroup().getBreakSound() : SoundEvents.ENTITY_VILLAGER_DEATH;
+    }
+
+    @Override
+    public @Nullable EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
+        if (getBandanaColor() < 0) rollBandanaColor();
+        return super.initialize(world, difficulty, spawnReason, entityData);
+    }
+
+    /** @return the bandana colour 0-4, or -1 if it was not picked yet (client side before sync). */
+    public int getBandanaColor() {
+        return this.dataTracker.get(BANDANA_COLOR);
+    }
+
+    public void setBandanaColor(int color) {
+        this.dataTracker.set(BANDANA_COLOR, MathHelper.clamp(color, 0, BANDANA_COLORS - 1));
+    }
+
+    private void rollBandanaColor() {
+        setBandanaColor(this.random.nextInt(BANDANA_COLORS));
     }
 
     public BlockState getBlockState() {
