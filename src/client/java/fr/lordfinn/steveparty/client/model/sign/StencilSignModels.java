@@ -170,7 +170,8 @@ public final class StencilSignModels {
     /**
      * Rock sign: the leaning stone (base model, drawn upright in the JSON and leant here) whose 16x16 front is built
      * from the engraving: engraved pixels are dug one pixel deep, their bottom darker (or lighter, see
-     * {@link #LIGHT_ENGRAVING}) or painted with the dye, glowing with glow ink; plus one of the pebble sets.
+     * {@link #LIGHT_ENGRAVING}) or painted with the dye, glowing with glow ink; plus pebbles at its foot: one of the
+     * sets behind it, and now and then one in front of it (which ones depends on where it stands).
      */
     static final class RockSign extends SignModel {
         /** Engraving bottom lighter than the stone (unshaded) instead of darker. */
@@ -178,12 +179,15 @@ public final class StencilSignModels {
         private static final int DARK_BOTTOM = 0xFF6C6C6C;
         private static final int WALL = 0xFF9A9A9A;
         private static final float DEPTH = 1;
-        private final BakedModel[] pebbles;
+        /** Chance, in percent, of each set of pebbles in front of the stone (the rest of the time: none). */
+        private static final int FRONT_PEBBLES_CHANCE = 15;
+        private final BakedModel[] backPebbles, frontPebbles;
         private final Sprite stone;
 
-        RockSign(BakedModel base, BakedModel[] pebbles, Sprite stone) {
+        RockSign(BakedModel base, BakedModel[] backPebbles, BakedModel[] frontPebbles, Sprite stone) {
             super(base);
-            this.pebbles = pebbles;
+            this.backPebbles = backPebbles;
+            this.frontPebbles = frontPebbles;
             this.stone = stone;
         }
 
@@ -195,7 +199,11 @@ public final class StencilSignModels {
                     .rotateX((float) Math.toRadians(RockSignBlock.TILT_DEGREES)).translate(0, 0, -pivot));
             leant.model(base, state, random, rock, 0);
             engraving(leant, look, look.material() == null ? stone : MaterialSprites.rock(SignMaterial.ROCK.resolve(look.material())).side());
-            if (pebbles.length > 0) out.model(pebbles[(int) Math.floorMod(HashCommon.mix(seed), (long) pebbles.length)], state, random, rock, 0);
+            // Full avalanche: neighbouring rocks (seeds differing in a few high bits) get unrelated pebbles
+            long hash = HashCommon.murmurHash3(seed);
+            if (backPebbles.length > 0) out.model(backPebbles[(int) Math.floorMod(hash, (long) backPebbles.length)], state, random, rock, 0);
+            int front = (int) Math.floorMod(hash >>> 16, 100L) / FRONT_PEBBLES_CHANCE;
+            if (front < frontPebbles.length) out.model(frontPebbles[front], state, random, rock, 0);
         }
 
         private static void engraving(Output out, Look look, Sprite side) {

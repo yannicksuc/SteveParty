@@ -1,0 +1,88 @@
+{
+	"credit": "SteveParty - pebbles in front of the rock sign (devant 4 15%)",
+	"textures": {
+		"side": "minecraft:block/stone",
+		"top": "minecraft:block/smooth_stone",
+		"particle": "minecraft:block/stone"
+	},
+	"elements": [
+		{
+			"from": [
+				8.5,
+				-0.5,
+				1.25
+			],
+			"to": [
+				12.5,
+				1.25,
+				5.25
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1.75,
+						8.75,
+						5.75,
+						10.5
+					],
+					"texture": "#side"
+				},
+				"south": {
+					"uv": [
+						3.75,
+						8.75,
+						7.75,
+						10.5
+					],
+					"texture": "#side"
+				},
+				"west": {
+					"uv": [
+						8.75,
+						1.75,
+						12.75,
+						3.5
+					],
+					"texture": "#side"
+				},
+				"east": {
+					"uv": [
+						11.75,
+						1.75,
+						15.75,
+						3.5
+					],
+					"texture": "#side"
+				},
+				"up": {
+					"uv": [
+						1.75,
+						9.75,
+						5.75,
+						13.75
+					],
+					"texture": "#top"
+				},
+				"down": {
+					"uv": [
+						2.75,
+						8.75,
+						6.75,
+						12.75
+					],
+					"texture": "#top"
+				}
+			},
+			"name": "pebble",
+			"rotation": {
+				"angle": -22.5,
+				"axis": "y",
+				"origin": [
+					11.5,
+					-0.5,
+					2.25
+				]
+			}
+		}
+	]
+}

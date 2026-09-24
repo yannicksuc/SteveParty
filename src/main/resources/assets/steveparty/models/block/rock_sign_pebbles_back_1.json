@@ -1,0 +1,235 @@
+{
+	"credit": "SteveParty - pebbles behind the rock sign (arriere 2 25%)",
+	"textures": {
+		"side": "minecraft:block/stone",
+		"top": "minecraft:block/smooth_stone",
+		"particle": "minecraft:block/stone"
+	},
+	"elements": [
+		{
+			"from": [
+				7,
+				-0.5,
+				12.5
+			],
+			"to": [
+				13.5,
+				4,
+				16
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						2.5,
+						9.5,
+						9.0,
+						14.0
+					],
+					"texture": "#side"
+				},
+				"south": {
+					"uv": [
+						4.5,
+						9.5,
+						11.0,
+						14.0
+					],
+					"texture": "#side"
+				},
+				"west": {
+					"uv": [
+						9.5,
+						2.5,
+						13.0,
+						7.0
+					],
+					"texture": "#side"
+				},
+				"east": {
+					"uv": [
+						12.5,
+						2.5,
+						16.0,
+						7.0
+					],
+					"texture": "#side"
+				},
+				"up": {
+					"uv": [
+						2.5,
+						10.5,
+						9.0,
+						14.0
+					],
+					"texture": "#top"
+				},
+				"down": {
+					"uv": [
+						3.5,
+						9.5,
+						10.0,
+						13.0
+					],
+					"texture": "#top"
+				}
+			},
+			"name": "pebble",
+			"rotation": {
+				"angle": 22.5,
+				"axis": "y",
+				"origin": [
+					9.25,
+					-0.5,
+					14.25
+				]
+			}
+		},
+		{
+			"from": [
+				3,
+				-0.5,
+				12.5
+			],
+			"to": [
+				6.5,
+				4,
+				16
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						9.5,
+						2.5,
+						13.0,
+						7.0
+					],
+					"texture": "#side"
+				},
+				"south": {
+					"uv": [
+						11.5,
+						2.5,
+						15.0,
+						7.0
+					],
+					"texture": "#side"
+				},
+				"west": {
+					"uv": [
+						2.5,
+						9.5,
+						6.0,
+						14.0
+					],
+					"texture": "#side"
+				},
+				"east": {
+					"uv": [
+						5.5,
+						9.5,
+						9.0,
+						14.0
+					],
+					"texture": "#side"
+				},
+				"up": {
+					"uv": [
+						9.5,
+						3.5,
+						13.0,
+						7.0
+					],
+					"texture": "#top"
+				},
+				"down": {
+					"uv": [
+						10.5,
+						2.5,
+						14.0,
+						6.0
+					],
+					"texture": "#top"
+				}
+			},
+			"name": "pebble",
+			"rotation": {
+				"angle": -22.5,
+				"axis": "y",
+				"origin": [
+					5.25,
+					-0.5,
+					14.25
+				]
+			}
+		},
+		{
+			"from": [
+				5,
+				4,
+				12.5
+			],
+			"to": [
+				9.5,
+				9.5,
+				16
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						10.5,
+						4.5,
+						15.0,
+						10.0
+					],
+					"texture": "#side"
+				},
+				"south": {
+					"uv": [
+						11.5,
+						4.5,
+						16.0,
+						10.0
+					],
+					"texture": "#side"
+				},
+				"west": {
+					"uv": [
+						4.5,
+						10.5,
+						8.0,
+						16.0
+					],
+					"texture": "#side"
+				},
+				"east": {
+					"uv": [
+						7.5,
+						10.5,
+						11.0,
+						16.0
+					],
+					"texture": "#side"
+				},
+				"up": {
+					"uv": [
+						10.5,
+						5.5,
+						15.0,
+						9.0
+					],
+					"texture": "#top"
+				},
+				"down": {
+					"uv": [
+						11.5,
+						4.5,
+						16.0,
+						8.0
+					],
+					"texture": "#top"
+				}
+			},
+			"name": "pebble"
+		}
+	]
+}
