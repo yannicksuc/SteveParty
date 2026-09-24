@@ -27,6 +27,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTable;
 import net.minecraft.loot.LootTables;
@@ -288,6 +289,63 @@ public class StencilGameTests implements FabricGameTest {
             context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a plastic fence");
         }
         context.assertTrue(ModBlocks.PLASTIC_FENCES[3].getDefaultState().isIn(net.minecraft.registry.tag.BlockTags.FENCES), "plastic fences are fences");
+        context.complete();
+    }
+
+    /** Uses the item in the player's main hand on the {@code side} face of the block at {@code against}. */
+    private static void useOn(TestContext context, PlayerEntity player, BlockPos against, Direction side) {
+        BlockPos abs = context.getAbsolutePos(against);
+        Vec3d face = Vec3d.ofCenter(abs).add(Vec3d.of(side.getVector()).multiply(0.5));
+        player.getMainHandStack().useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND, new BlockHitResult(face, side, abs, false)));
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void signsGoAgainstFencesAndWalls(TestContext context) {
+        PlayerEntity player = survivalPlayer(context);
+        player.setPosition(Vec3d.of(context.getAbsolutePos(SIGN)).add(0, 0, -6));
+        BlockPos front = SIGN.south();
+
+        // Post signs hang on the side of a fence, facing away from it, whatever lies below
+        for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL, ModBlocks.PLASTIC_ROAD_SIGN)) {
+            context.setBlockState(SIGN, Blocks.OAK_FENCE);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.SOUTH);
+            BlockState hung = context.getBlockState(front);
+            context.assertTrue(hung.isOf(sign) && hung.get(AbstractStencilSignBlock.HUNG)
+                    && AbstractStencilSignBlock.hungFacing(hung) == Direction.SOUTH, sign + " hung on the fence, facing south");
+            // It falls when its post goes
+            context.setBlockState(SIGN, Blocks.AIR);
+            context.expectBlock(Blocks.AIR, front);
+        }
+
+        // On the side of a wall too
+        context.setBlockState(SIGN, Blocks.COBBLESTONE_WALL);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.WOODEN_PANEL));
+        useOn(context, player, SIGN, Direction.SOUTH);
+        context.assertTrue(AbstractStencilSignBlock.hungFacing(context.getBlockState(front)) == Direction.SOUTH, "panel hung on a wall");
+        context.setBlockState(front, Blocks.AIR);
+
+        // Signs standing on the ground stand in front of it, their back against it
+        context.setBlockState(front.down(), Blocks.STONE);
+        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.SOUTH);
+            BlockState leaning = context.getBlockState(front);
+            context.assertTrue(leaning.isOf(sign) && !leaning.get(AbstractStencilSignBlock.HUNG)
+                    && leaning.get(AbstractStencilSignBlock.ROTATION) == 0, sign + " against the wall, facing south");
+            context.setBlockState(front, Blocks.AIR);
+        }
+
+        // Every sign also stands on top of a fence or a wall
+        BlockPos abs = context.getAbsolutePos(front);
+        context.setBlockState(front.down(), Blocks.BIRCH_FENCE);
+        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+            context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a fence");
+        }
+        context.setBlockState(front.down(), Blocks.MOSSY_STONE_BRICK_WALL);
+        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+            context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a wall");
+        }
         context.complete();
     }
 
