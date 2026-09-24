@@ -16,7 +16,9 @@
       "fr.lordfinn.steveparty.gametest.ShopGameTests",
       "fr.lordfinn.steveparty.gametest.LootAndBrewingGameTests",
       "fr.lordfinn.steveparty.gametest.DecisionsGameTests",
-      "fr.lordfinn.steveparty.gametest.StencilGameTests"
+      "fr.lordfinn.steveparty.gametest.StencilGameTests",
+      "fr.lordfinn.steveparty.gametest.TokenSpellGameTests",
+      "fr.lordfinn.steveparty.gametest.TokenBaseGameTests"
     ]
   },
   "depends": {

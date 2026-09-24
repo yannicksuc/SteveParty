@@ -415,5 +415,18 @@
   "block.steveparty.black_plastic_fence": "Barrière en plastique noire",
   "tooltip.steveparty.cutout_panel.usage": "Se découpe avec un pochoir et une hache (un dans chaque main)",
   "tooltip.steveparty.sign_post.usage": "Se pose sur une barrière ou un muret, ou contre son côté",
-  "message.steveparty.token_hint": "Je suis un pion maintenant ! Pour me déplacer, stocke-moi dans un Token ou utilise la Tokenizer Wand."
+  "message.steveparty.token_hint": "Je suis un pion maintenant ! Pour me déplacer, stocke-moi dans un Token.",
+  "screen.steveparty.token_spell.title": "Sort de pion",
+  "screen.steveparty.token_spell.resize_title": "Sort de redimensionnement",
+  "screen.steveparty.token_spell.height": "Hauteur : %s blocs",
+  "screen.steveparty.token_spell.width": "Largeur : %s blocs",
+  "screen.steveparty.token_spell.cast": "Lancer",
+  "screen.steveparty.token_spell.cancel": "Annuler",
+  "screen.steveparty.token_spell.token_name": "Pion : %s",
+  "screen.steveparty.token_spell.token_name_kept": "Pion : %s (couleur conservée)",
+  "screen.steveparty.token_spell.hint": "Entrée : lancer · Échap : annuler · Molette/flèches : ajuster",
+  "message.steveparty.token_spell_out_of_reach": "Le sort échoue : le mob est hors de portée.",
+  "tooltip.steveparty.tokenizer_wand.tokenize": "Utiliser sur un mob : lancer le sort de pion et choisir sa taille",
+  "tooltip.steveparty.tokenizer_wand.resize": "Utiliser sur un de tes pions : le redimensionner",
+  "tooltip.steveparty.tokenizer_wand.move": "Pour déplacer un pion, stocke-le dans un Token"
 }

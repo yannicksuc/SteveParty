@@ -11,7 +11,9 @@
     "LivingEntityRendererSquishMixin",
     "MouseScrollMixin",
     "LivingEntityRenderStateMixin",
-    "PlayerEntityModelMixin"
+    "PlayerEntityModelMixin",
+    "TokenBaseLivingEntityRendererMixin",
+    "TokenBaseRenderStateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -15,6 +15,7 @@
     "EntityBubbleColumnMixin",
     "StatusEffectMixin",
     "TokenEntityMixin",
+    "TokenBaseDimensionsMixin",
     "MixinPistonBlock"
   ],
   "injectors": {

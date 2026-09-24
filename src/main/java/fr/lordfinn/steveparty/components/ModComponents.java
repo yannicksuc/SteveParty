@@ -31,6 +31,11 @@ public class ModComponents {
             registerComponent("tile-behavior-component", DestinationsComponent.CODEC);
     public static final ComponentType<BlockOriginComponent> BLOCK_ORIGIN_COMPONENT =
             registerComponent("block-origin-component", BlockOriginComponent.CODEC);
+    /**
+     * Legacy: token selected by the Tokenizer Wand when it could move tokens. No longer written; kept registered so
+     * wands saved by older versions still load (an unknown component would drop the item), and stripped from them
+     * by {@code TokenizerWandItem#inventoryTick}.
+     */
     public static final ComponentType<MobEntityComponent> MOB_ENTITY_COMPONENT =
             registerComponent("mob-entity-component", MobEntityComponent.CODEC);
     public static final ComponentType<EntityDataComponent> ENTITY_DATA_COMPONENT =

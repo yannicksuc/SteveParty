@@ -4,12 +4,14 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.PartyService;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
+import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
 import fr.lordfinn.steveparty.service.TokenData;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -63,6 +65,15 @@ public class PayloadReceivers {
 
         ClientPlayNetworking.registerGlobalReceiver(SquishAnimationPayload.ID, (payload, context) -> context.client().execute(() ->
                 SquishAnimations.start(context.client().world, payload)));
+
+        // The server accepted a Tokenizer Wand use: open the token spell (size slider), unless another screen is open
+        ClientPlayNetworking.registerGlobalReceiver(OpenTokenSpellPayload.ID, (payload, context) -> context.client().execute(() -> {
+            MinecraftClient client = context.client();
+            if (client.world == null || client.currentScreen != null) return;
+            if (client.world.getEntityById(payload.entityId()) instanceof MobEntity mob) {
+                client.setScreen(new TokenSpellScreen(mob, payload.currentSize(), payload.resize(), payload.currentColor()));
+            }
+        }));
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {

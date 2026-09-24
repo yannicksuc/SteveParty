@@ -652,5 +652,18 @@
   "block.steveparty.black_plastic_fence": "Black Plastic Fence",
   "tooltip.steveparty.cutout_panel.usage": "Cut with a stencil and an axe (one in each hand)",
   "tooltip.steveparty.sign_post.usage": "Stands on a fence or a wall, or hangs on its side",
-  "message.steveparty.token_hint": "I'm a token now! To move me, store me in a Token or use the Tokenizer Wand."
+  "message.steveparty.token_hint": "I'm a token now! To move me, store me in a Token.",
+  "screen.steveparty.token_spell.title": "Token spell",
+  "screen.steveparty.token_spell.resize_title": "Resizing spell",
+  "screen.steveparty.token_spell.height": "Height: %s blocks",
+  "screen.steveparty.token_spell.width": "Width: %s blocks",
+  "screen.steveparty.token_spell.cast": "Cast",
+  "screen.steveparty.token_spell.cancel": "Cancel",
+  "screen.steveparty.token_spell.token_name": "Token: %s",
+  "screen.steveparty.token_spell.token_name_kept": "Token: %s (colour kept)",
+  "screen.steveparty.token_spell.hint": "Enter: cast · Esc: cancel · Scroll/arrows: adjust",
+  "message.steveparty.token_spell_out_of_reach": "The spell fizzles: the mob is out of reach.",
+  "tooltip.steveparty.tokenizer_wand.tokenize": "Use on a mob: cast the token spell and choose its size",
+  "tooltip.steveparty.tokenizer_wand.resize": "Use on one of your tokens: resize it",
+  "tooltip.steveparty.tokenizer_wand.move": "To move a token, store it in a Token"
 }
