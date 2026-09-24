@@ -15,6 +15,7 @@ import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
+import fr.lordfinn.steveparty.client.particle.ForgeBeamParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
@@ -215,6 +216,7 @@ public class StevepartyClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.HERE_PARTICLE, HereParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ENCHANTED_CIRCULAR_PARTICLE, EnchantedCircularParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.FORGE_BEAM, ForgeBeamParticle.Factory::new);
     }
 
     private static void initScreens() {

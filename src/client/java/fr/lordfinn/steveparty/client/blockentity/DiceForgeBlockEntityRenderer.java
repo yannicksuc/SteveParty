@@ -8,6 +8,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
@@ -19,6 +20,7 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlock.ACTIVATED;
 public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBlockEntity> {
     private final DiceForgeOrbitRenderer orbitRenderer = new DiceForgeOrbitRenderer();
     private final DiceForgeConvergenceRenderer convergenceRenderer = new DiceForgeConvergenceRenderer();
+    private final DiceForgeForgedRenderer forgedRenderer = new DiceForgeForgedRenderer();
     // Last world tick at which trail particles were spawned, per forge (render thread only)
     private final Map<DiceForgeBlockEntity, Long> lastParticleTick = new WeakHashMap<>();
 
@@ -47,11 +49,15 @@ public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBloc
         // Render orbiting faces and collect orbit info
         var orbitFaces = orbitRenderer.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay, 0.4f, spawnParticles);
 
-        // Render convergence on top if crafting
+        // The die forms around the core and turns with it (root bone, just animated for this forge by super.render)
+        float coreYaw = getGeoModel().getBone(DiceForgeCoreLayer.ROOT_BONE).map(GeoBone::getRotY).orElse(0f);
         if (blockEntity.isCrafting()) {
             convergenceRenderer.render(blockEntity, partialTick, poseStack, bufferSource,
-                    packedLight, packedOverlay, orbitFaces);
+                    packedLight, packedOverlay, orbitFaces, coreYaw);
         }
+        // Once forged, it falls into the forge
+        forgedRenderer.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay,
+                orbitFaces, coreYaw, spawnParticles);
     }
 
     /** The core and the orbiting faces are drawn well above / around the block. */

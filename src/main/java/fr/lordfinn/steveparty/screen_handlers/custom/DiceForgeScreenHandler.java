@@ -21,16 +21,19 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FORGE_SCREEN_HANDLER;
 
 /**
- * Dice forge GUI. Handler slot indices match the forge inventory: 0..11 faces, 12 center (core / output),
- * 13..16 star fragments (N, E, S, W), then the player inventory.
- * The CRAFT button uses the vanilla button click packet (syncId + canUse, i.e. same forge open and in reach).
+ * Dice forge GUI. Handler slot indices match the forge inventory: 0..11 faces, 12 center (gravity core input,
+ * hidden once the forge is activated: the screen draws the core there as the FORGE button), 13..16 star fragments
+ * (NW, NE, SE, SW), 17 blank faces (left of the core), 18 output (right of the core), then the player inventory.
+ * The FORGE button uses the vanilla button click packet (syncId + canUse, i.e. same forge open and in reach).
  */
 public class DiceForgeScreenHandler extends ScreenHandler {
     public static final int BUTTON_TOGGLE = 0;
-    /** Position (GUI coordinates) of the center slot and of the 4 fragment slots around it. */
+    /** Position (GUI coordinates) of the center slot (the core) and of the slots around it. */
     public static final int CENTER_X = 80, CENTER_Y = 63;
+    /** Star fragments on the 4 diagonals of the core (NW, NE, SE, SW). */
     public static final int[][] FRAGMENT_POSITIONS = {
-            {CENTER_X, CENTER_Y - 21}, {CENTER_X + 21, CENTER_Y}, {CENTER_X, CENTER_Y + 21}, {CENTER_X - 21, CENTER_Y}
+            {CENTER_X - 19, CENTER_Y - 19}, {CENTER_X + 19, CENTER_Y - 19},
+            {CENTER_X + 19, CENTER_Y + 19}, {CENTER_X - 19, CENTER_Y + 19}
     };
     public static final int[][] FACE_POSITIONS = {
             {80, 9},   {54, 19},  {106, 19},
@@ -38,6 +41,9 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             {134, 63}, {36, 89},  {124, 89},
             {54, 107}, {106, 107},{80, 117}
     };
+    /** Blank faces go in on the left of the core, the forged die comes out on its right. */
+    public static final int BLANK_X = CENTER_X - 24, BLANK_Y = CENTER_Y;
+    public static final int OUTPUT_X = CENTER_X + 24, OUTPUT_Y = CENTER_Y;
     private static final int PLAYER_INVENTORY_START = SIZE;
 
     private final Inventory inventory;
@@ -56,11 +62,16 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             this.addSlot(new ForgeSlot(inventory, i, FACE_POSITIONS[i][0], FACE_POSITIONS[i][1]));
         }
 
-        // --- Center slot: gravity core input until the forge is activated, then die output ---
+        // --- Center slot: gravity core input until the forge is activated (then the FORGE button) ---
         this.addSlot(new ForgeSlot(inventory, CENTER_SLOT, CENTER_X, CENTER_Y) {
             @Override
             public int getMaxItemCount(ItemStack stack) {
                 return isGravityCore(stack) ? 1 : super.getMaxItemCount(stack);
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return !isActivated();
             }
         });
 
@@ -69,8 +80,18 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             this.addSlot(new ForgeSlot(inventory, FIRST_FRAGMENT_SLOT + i, FRAGMENT_POSITIONS[i][0], FRAGMENT_POSITIONS[i][1]));
         }
 
+        // --- Blank faces (consumed) and output (take only) ---
+        this.addSlot(new ForgeSlot(inventory, BLANK_SLOT, BLANK_X, BLANK_Y));
+        this.addSlot(new Slot(inventory, OUTPUT_SLOT, OUTPUT_X, OUTPUT_Y) {
+            @Override
+            public boolean canInsert(ItemStack stack) {
+                return false;
+            }
+        });
+
         // --- Player inventory ---
-        addPlayerSlots(playerInventory, 8, 140);
+        // Matches the slot cells painted in the texture (rows at y = 143, 161, 179, hotbar at 201)
+        addPlayerSlots(playerInventory, 8, 143);
         addProperties(properties);
     }
 
@@ -137,10 +158,14 @@ public class DiceForgeScreenHandler extends ScreenHandler {
                 }
             } else if (isGravityCore(stackInSlot) && !isActivated()) {
                 if (!this.insertItem(stackInSlot, CENTER_SLOT, CENTER_SLOT + 1, false)) return ItemStack.EMPTY;
+            } else if (isBlankFace(stackInSlot)) {
+                // Blank faces go to the blank faces slot; only when it is full do they go to the ring (as a face)
+                boolean moved = insertPreferringGhosts(stackInSlot, BLANK_SLOT, BLANK_SLOT + 1);
+                if (!moved && !insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
             } else if (DiceFace.isFace(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
             } else if (isStarFragment(stackInSlot)) {
-                if (!insertPreferringGhosts(stackInSlot, FIRST_FRAGMENT_SLOT, SIZE)) return ItemStack.EMPTY;
+                if (!insertPreferringGhosts(stackInSlot, FIRST_FRAGMENT_SLOT, FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS)) return ItemStack.EMPTY;
             } else {
                 return ItemStack.EMPTY;
             }

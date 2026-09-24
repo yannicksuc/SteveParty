@@ -29,8 +29,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Faces of a die forged in the Dice Forge. A die carrying this component rolls one of these faces
- * (uniformly) instead of the default 1..10 range.
+ * Faces of a die forged in the Dice Forge. A die carrying this component rolls one of these faces instead of the
+ * default 1..10 range, each face being as likely as its weight (the number of that face placed in the forge).
+ * Dice forged before weights existed read a weight of 1 for every face.
  */
 public record DiceFacesComponent(List<DiceFace> faces) {
     public static final int MAX_FACES = 12;
@@ -68,35 +69,47 @@ public record DiceFacesComponent(List<DiceFace> faces) {
      * uniform {@link DiceEntity#MIN}..{@link DiceEntity#MAX} roll (plain dice keep working as before).
      */
     public static int rollFace(@Nullable ItemStack stack, Random random) {
-        DiceFacesComponent component = stack == null ? null : stack.get(TYPE);
-        if (component == null || component.faces().isEmpty()) {
-            return random.nextBetween(DiceEntity.MIN, DiceEntity.MAX);
-        }
-        return component.faces().get(random.nextInt(component.faces().size())).value();
+        DiceFace face = rollDiceFace(stack, random);
+        return face == null ? random.nextBetween(DiceEntity.MIN, DiceEntity.MAX) : face.value();
     }
 
     /** Same as {@link #rollFace(ItemStack, Random)} but also tells which face was rolled (null for a plain die). */
     public static @Nullable DiceFace rollDiceFace(@Nullable ItemStack stack, Random random) {
         DiceFacesComponent component = stack == null ? null : stack.get(TYPE);
         if (component == null || component.faces().isEmpty()) return null;
-        return component.faces().get(random.nextInt(component.faces().size()));
+        int roll = random.nextInt(component.totalWeight());
+        for (DiceFace face : component.faces()) {
+            roll -= face.weight();
+            if (roll < 0) return face;
+        }
+        return component.faces().getLast();
+    }
+
+    /** Sum of the face weights (at least 1). */
+    public int totalWeight() {
+        int total = 0;
+        for (DiceFace face : faces) total += face.weight();
+        return Math.max(1, total);
     }
 
     /**
-     * Builds the die produced by the forge for these face items (empty stacks are ignored).
-     * Faces are sorted so the same set of faces always gives stackable dice.
+     * Builds the die produced by the forge for these face stacks (empty stacks are ignored): each stack count is the
+     * weight of its face, and the same face given several times adds up its weights. Faces are sorted so the same
+     * faces and weights always give stackable dice.
      *
      * @return the die, or {@link ItemStack#EMPTY} if no valid face was given
      */
     public static ItemStack createDie(List<ItemStack> faceStacks) {
-        List<DiceFace> faces = new ArrayList<>();
+        java.util.Map<DiceFace, Integer> weights = new java.util.LinkedHashMap<>();
         for (ItemStack stack : faceStacks) {
             if (stack == null || stack.isEmpty()) continue;
-            DiceFace.fromItem(stack.getItem()).ifPresent(faces::add);
+            DiceFace.fromItem(stack.getItem()).ifPresent(face -> weights.merge(face, stack.getCount(), Integer::sum));
         }
-        if (faces.isEmpty()) return ItemStack.EMPTY;
-        if (faces.size() > MAX_FACES) faces = faces.subList(0, MAX_FACES);
+        if (weights.isEmpty()) return ItemStack.EMPTY;
+        List<DiceFace> faces = new ArrayList<>();
+        weights.forEach((face, weight) -> faces.add(face.withWeight(weight)));
         faces.sort(DiceFace.ORDER);
+        if (faces.size() > MAX_FACES) faces.subList(MAX_FACES, faces.size()).clear();
 
         DiceFacesComponent component = new DiceFacesComponent(faces);
         ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
@@ -107,12 +120,15 @@ public record DiceFacesComponent(List<DiceFace> faces) {
         return die;
     }
 
-    /** One tooltip line listing the faces, e.g. "Faces: 1, 3, 5★, 2☠, –". */
+    /** One tooltip line listing the faces and their weights, e.g. "Faces: 1, 3 ×10, 5★, 2☠, –". */
     public Text describe() {
         MutableText list = Text.empty();
         for (int i = 0; i < faces.size(); i++) {
             if (i > 0) list.append(Text.literal(", ").formatted(Formatting.GRAY));
             list.append(faces.get(i).asText());
+            if (faces.get(i).weight() > 1) {
+                list.append(Text.literal(" ×" + faces.get(i).weight()).formatted(Formatting.DARK_GRAY));
+            }
         }
         return Text.translatableWithFallback("tooltip.steveparty.dice_faces", "Faces: %s", list)
                 .styled(style -> style.withItalic(false).withColor(Formatting.GRAY));
@@ -120,11 +136,25 @@ public record DiceFacesComponent(List<DiceFace> faces) {
 
     // ------------------------------------------------------------------ face
 
-    public record DiceFace(Kind kind, int value) {
+    /**
+     * @param weight how likely this face is compared to the others (the number of that face placed in the forge)
+     */
+    public record DiceFace(Kind kind, int value, int weight) {
+        public static final int MAX_WEIGHT = 64 * 12;
         public static final Codec<DiceFace> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Kind.CODEC.fieldOf("kind").forGetter(DiceFace::kind),
-                Codec.INT.optionalFieldOf("value", 0).forGetter(DiceFace::value)
+                Codec.INT.optionalFieldOf("value", 0).forGetter(DiceFace::value),
+                // Dice forged before weights existed: every face counts once
+                Codec.intRange(1, MAX_WEIGHT).optionalFieldOf("weight", 1).forGetter(DiceFace::weight)
         ).apply(instance, DiceFace::new));
+
+        public DiceFace(Kind kind, int value) {
+            this(kind, value, 1);
+        }
+
+        public DiceFace withWeight(int weight) {
+            return new DiceFace(kind, value, Math.clamp(weight, 1, MAX_WEIGHT));
+        }
         public static final Comparator<DiceFace> ORDER =
                 Comparator.comparing(DiceFace::kind).thenComparingInt(DiceFace::value);
         private static final Pattern FACE_PATTERN = Pattern.compile("^(premium_|cursed_)?dice_face_(\\d+)$");

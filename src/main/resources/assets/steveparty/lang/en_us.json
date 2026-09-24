@@ -518,8 +518,6 @@
   "gui.steveparty.trading_stall.mode.click": "Click to change the sale mode",
   "item.steveparty.forged_dice": "Forged Dice",
   "tooltip.steveparty.dice_faces": "Faces: %s",
-  "gui.steveparty.dice_forge.craft": "Craft",
-  "gui.steveparty.dice_forge.stop": "Stop",
   "gui.steveparty.dice_forge.start_hint": "Start forging: loops until stopped or a slot runs out",
   "gui.steveparty.dice_forge.stop_hint": "Click to stop production",
   "gui.steveparty.dice_forge.progress": "Progress: %s%%",
@@ -537,5 +535,10 @@
   "message.steveparty.shop.not_owner_access_denied": "This shop belongs to another player.",
   "message.steveparty.shop.key_required": "Hold a Shopkeeper Key to open your shop.",
   "gui.steveparty.dice_forge.status.no_face": "Place at least one dice face",
-  "message.steveparty.dice_forge.core_settling": "The gravity core is still settling into the forge"
+  "message.steveparty.dice_forge.core_settling": "The gravity core is still settling into the forge",
+  "gui.steveparty.dice_forge.core_hint": "Click the core to forge",
+  "gui.steveparty.dice_forge.weight": "Weight %s: %s%% chance per roll",
+  "gui.steveparty.dice_forge.blank_hint": "Consumed: one per face on the ring (%s per die)",
+  "gui.steveparty.dice_forge.blank_slot": "Blank dice faces",
+  "gui.steveparty.dice_forge.status.not_enough_blank_faces": "Each die needs %s blank faces (one per face placed on the ring)"
 }

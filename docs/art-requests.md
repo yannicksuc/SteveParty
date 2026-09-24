@@ -7,21 +7,26 @@ Things the code now expects from the art side. The code works without them (fall
 State machine driven by `DiceForgeBlockEntity#mainAnimController`:
 static (not activated) → `core_insert` (once) → `floating` (loop) → `crafting` (loop while forging).
 
-- **Bone `core`**, child of `root`, pivot at the centre of the seated core `[0,16,0]` (cubes may stay empty).
-  When present, the gravity core item is rendered on it and fully driven by the animations;
-  otherwise the code computes the fall itself on `root` (`DiceForgeCoreLayer`).
-- **`core_insert`**: exactly 3.0 s, no loop (`CORE_INSERT_TICKS = 60`). Must end with `root` at position `[0,8,0]`,
-  rotation 0, to chain with `floating`. With the `core` bone: descend `[0,20,0]` → `[0,0,0]` between 0 and 1.5 s.
-- **`floating`**: 12 s loop, `root` floats around +8 px and turns 360°.
-- **`crafting`**: 2 s loop, fast spin and a slight pump of `spike`.
-  (Placeholder versions of the three animations exist; replace them freely, keep names and durations.)
+The forge body (the "observatory") never leaves its block: only the gravity core floats above it. So `root` keeps
+position `[0,0,0]` in every animation and only turns (the block outline stays where the model is).
 
-GUI:
-- `textures/gui/dice_forge.png` may draw the 5 frames the code currently draws itself (16 px slots, GUI coords):
-  fragments at (80,42), (101,63), (80,84), (59,63); output at (80,63).
-  The "Dice Forge" title at (8,6) overlaps the vortex (already the case before).
-- `textures/gui/dice_forge_widgets.png` (64×64): button 40×14 normal at (0,0), hover (0,16), disabled (0,32),
-  progress gauge (0,48). The button sits at (134,2).
+- **The core turns with `root`** (no rotation of its own), so core and observatory always share speed and direction:
+  `floating` = one turn in 12 s, `crafting` = one turn in 2 s.
+- **Core altitude is code driven** (`DiceForgeCoreLayer`, `DiceForgeBlockEntity#getCoreAltitude`): after the insertion
+  it rises out of the plate (+0.5 block), then with the star fragments (a black fragment counts 64), up to
+  24 blocks for 256 fragments, smoothly. The orbiting faces follow it, level with the core; while forging, the die forms around the core and turns with it.
+- Optional **bone `core`**, child of `root`, pivot at the centre of the seated core `[0,16,0]` (cubes may stay empty).
+  When present, the core is rendered on it and fully driven by the animations (the code then skips its own fall and
+  altitude); otherwise the code handles the fall and the altitude on `root`.
+- **`core_insert`**: exactly 3.0 s, no loop (`CORE_INSERT_TICKS = 60`), ends with `root` at `[0,0,0]`, rotation 0.
+  The core falls into the plate during the first 1.5 s (code), the forge shakes on impact (1.5 → 1.9 s).
+- **`floating`**: 12 s loop, `root` turns 360°. **`crafting`**: 2 s loop, fast spin and a slight pump of `spike`.
+
+GUI (`textures/gui/dice_forge.png`, drawn by `DiceForgeScreen`):
+- The vortex holds the 12 face slots (the count of a face is its weight) and, in the center, the gravity core, which is
+  the FORGE button (golden progress ring drawn by the code). Blank faces go in on its left (56,63), the forged die
+  comes out on its right (104,63), and the 4 fragment slots sit on its diagonals (61,44), (99,44), (99,82), (61,82)
+  (16 px slots, GUI coords; the code draws their frames).
 
 ## Trading Stall GUI
 
