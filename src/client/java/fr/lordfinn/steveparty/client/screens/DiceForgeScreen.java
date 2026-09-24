@@ -12,6 +12,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -21,7 +22,10 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,16 +40,79 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
  */
 public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/dice_forge.png");
+    /** The galaxy, drawn under TEXTURE (which has a hole for it) and slowly turning. */
+    private static final Identifier GALAXY = Steveparty.id("textures/gui/dice_forge_galaxy.png");
+    private static final int GALAXY_SIZE = 142, GALAXY_CENTER_X = 88, GALAXY_CENTER_Y = 71;
+    /** One turn of the galaxy (ms). */
+    private static final long GALAXY_TURN_MS = 90_000;
     private static final float GHOST_ALPHA = 0.35f;
     private static final String KEY = "gui.steveparty.dice_forge.";
 
-    // The core button, drawn pixel by pixel over the vortex center
+    // The core button, drawn pixel by pixel over the vortex center (CORE_X/Y: its center, between 4 pixels)
     private static final int CORE_X = DiceForgeScreenHandler.CENTER_X + 8, CORE_Y = DiceForgeScreenHandler.CENTER_Y + 8;
-    private static final float DISC_RADIUS = 9.5f, RING_INNER = 9.5f, RING_OUTER = 11.5f;
-    private static final int RING_EXTENT = 12;
+    private static final int BUTTON_SIZE = 24;
+    /**
+     * Pixel-art parts of the round button, from its edge inwards: outline, progress gauge (2 px), inner line, bevel,
+     * face (-1: outside). The outer disc and the inner one are each a clean pixel circle; the gauge fills between.
+     */
+    private static final int[][] BUTTON_PARTS = buttonParts();
+    private static final int PART_OUTLINE = 0, PART_GAUGE = 1, PART_LINE = 2, PART_BEVEL = 3, PART_FACE = 4;
+    /** Outline and inner line: lit top-left, in shadow bottom-right, like the button itself. */
+    private static final int CONTOUR_LIGHT = 0xFF4A2F78, CONTOUR_MID = 0xFF25163A, CONTOUR_DARK = 0xFF000000;
+    /** The same, neutral grey, while the button cannot be pressed. */
+    private static final int OFF_CONTOUR_LIGHT = 0xFF2C2A33, OFF_CONTOUR_MID = 0xFF1A1920;
+    /** The gauge fills clockwise through a smooth gradient of these colours, violet to gold; orange when blocked. */
+    private static final int[] GAUGE_COLORS = {0xFF8A3FFC, 0xFFD23CF0, 0xFFFF4FA3, 0xFFFF8A3D, 0xFFFFD35A};
+    private static final int GAUGE_TRACK = 0xFF505050, GAUGE_BLOCKED = 0xFFE0703A;
 
     private final ItemStack gravityCore = new ItemStack(ModBlocks.GRAVITY_CORE);
     private final ItemStack blankFace = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("blank_dice_face")));
+
+    private static int[][] buttonParts() {
+        int[][] outer = peelDisc(BUTTON_SIZE, 11.8f), inner = peelDisc(BUTTON_SIZE, 8.9f);
+        int[][] parts = new int[BUTTON_SIZE][BUTTON_SIZE];
+        for (int y = 0; y < BUTTON_SIZE; y++) {
+            for (int x = 0; x < BUTTON_SIZE; x++) {
+                if (inner[y][x] >= 0) parts[y][x] = Math.min(PART_LINE + inner[y][x], PART_FACE);
+                else if (outer[y][x] == 0) parts[y][x] = PART_OUTLINE;
+                else parts[y][x] = outer[y][x] > 0 ? PART_GAUGE : -1;
+            }
+        }
+        return parts;
+    }
+
+    /** @return for each pixel of a {@code size}-wide disc, its layer counted from the edge (-1 outside it). */
+    private static int[][] peelDisc(int size, float radius) {
+        int[][] layers = new int[size][size];
+        float center = (size - 1) / 2f;
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                float dx = x - center, dy = y - center;
+                layers[y][x] = dx * dx + dy * dy <= radius * radius ? Integer.MAX_VALUE : -1;
+            }
+        }
+        // Peel it: the pixels of what is left that touch its outside (4 neighbors) make the next layer
+        for (int layer = 0; ; layer++) {
+            boolean peeled = false;
+            int[][] snapshot = new int[size][];
+            for (int y = 0; y < size; y++) snapshot[y] = layers[y].clone();
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    if (snapshot[y][x] != Integer.MAX_VALUE) continue;
+                    if (isOutside(snapshot, x + 1, y) || isOutside(snapshot, x - 1, y)
+                            || isOutside(snapshot, x, y + 1) || isOutside(snapshot, x, y - 1)) {
+                        layers[y][x] = layer;
+                        peeled = true;
+                    }
+                }
+            }
+            if (!peeled) return layers;
+        }
+    }
+
+    private static boolean isOutside(int[][] layers, int x, int y) {
+        return y < 0 || y >= layers.length || x < 0 || x >= layers[y].length || layers[y][x] != Integer.MAX_VALUE;
+    }
 
     public DiceForgeScreen(DiceForgeScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -56,11 +123,11 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        RenderSystem.setShaderTexture(0, TEXTURE);
         int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
-        context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground,
-                TEXTURE, x, y, 0, 0,
+        drawGalaxy(context, x + GALAXY_CENTER_X, y + GALAXY_CENTER_Y);
+        // Over it: its bevelled rim, the squares under the faces and the inventory panel
+        context.drawTexture(RenderLayer::getGuiTextured, TEXTURE, x, y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, 256, 256);
 
         // Faces: the brighter the frame, the more likely the face
@@ -119,10 +186,38 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         return handler.isActivated() && (handler.isRunning() || handler.getStatus().allowsRunning());
     }
 
+    /** The galaxy turns slowly around its center, under the rest of the screen. */
+    private static void drawGalaxy(DrawContext context, int centerX, int centerY) {
+        float angle = (Util.getMeasuringTimeMs() % GALAXY_TURN_MS) / (float) GALAXY_TURN_MS * 360f;
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(centerX, centerY, 0);
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angle));
+        int half = GALAXY_SIZE / 2;
+        context.drawTexture(RenderLayer::getGuiTextured, GALAXY, -half, -half, 0, 0,
+                GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE);
+        matrices.pop();
+    }
+
+    /** @return the gauge colour at {@code t} (0 at the top, 1 back to it), blended smoothly between GAUGE_COLORS. */
+    private static int gaugeColor(float t) {
+        float scaled = MathHelper.clamp(t, 0f, 1f) * (GAUGE_COLORS.length - 1);
+        int from = Math.min(GAUGE_COLORS.length - 2, (int) scaled);
+        return ColorHelper.lerp(scaled - from, GAUGE_COLORS[from], GAUGE_COLORS[from + 1]);
+    }
+
+    /** No title: the forge speaks for itself (the player inventory title stays). */
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX,
+                this.playerInventoryTitleY, 0x404040, false);
+    }
+
     private boolean isOverButton(double mouseX, double mouseY) {
         if (!handler.isActivated()) return false;
-        double dx = mouseX - (this.x + CORE_X), dy = mouseY - (this.y + CORE_Y);
-        return dx * dx + dy * dy <= RING_OUTER * RING_OUTER;
+        int px = (int) Math.floor(mouseX) - (this.x + CORE_X) + BUTTON_SIZE / 2;
+        int py = (int) Math.floor(mouseY) - (this.y + CORE_Y) + BUTTON_SIZE / 2;
+        return px >= 0 && py >= 0 && px < BUTTON_SIZE && py < BUTTON_SIZE && BUTTON_PARTS[py][px] >= 0;
     }
 
     private float getSmoothProgress(float delta) {
@@ -132,33 +227,48 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         return MathHelper.clamp(progress, 0f, 1f);
     }
 
+    /**
+     * The core button: a round violet button with a bevel (light top-left, dark bottom-right, like the vanilla
+     * buttons), lighter when hovered, pressed in (bevel reversed) while the forge runs, dull when it cannot be
+     * pressed; around it, the progress gauge, outlined in black so that it shows on the bright vortex.
+     */
     private void drawCoreButton(DrawContext context, int cx, int cy, int mouseX, int mouseY, float delta) {
         boolean enabled = isButtonEnabled();
-        boolean hovered = isOverButton(mouseX, mouseY);
+        boolean hovered = enabled && isOverButton(mouseX, mouseY);
+        boolean pressed = handler.isRunning();
         float progress = getSmoothProgress(delta);
-        int disc = enabled ? 0xE8200C38 : 0xE0181420;
-        int rim = !enabled ? 0xFF5E586C : hovered ? 0xFFFFE08A : 0xFFD8C8F0;
-        int ringFill = handler.isBlocked() ? 0xFFE0703A : 0xFFFFD35A;
-        int ringTrack = handler.isRunning() ? 0x55FFFFFF : 0x30FFFFFF;
+        // Disabled: neutral grey (the violet belongs to the button you can press), the core faded (see below)
+        int face = !enabled ? 0xFF25232A : hovered ? 0xFF3C2560 : 0xFF2A1840;
+        int light = !enabled ? 0xFF4C4958 : hovered ? 0xFF9B7BD0 : 0xFF7A5AA8;
+        int dark = !enabled ? 0xFF141317 : 0xFF140A20;
+        int contourLight = enabled ? CONTOUR_LIGHT : OFF_CONTOUR_LIGHT, contourMid = enabled ? CONTOUR_MID : OFF_CONTOUR_MID;
+        int half = BUTTON_SIZE / 2;
 
-        for (int dy = -RING_EXTENT; dy < RING_EXTENT; dy++) {
-            for (int dx = -RING_EXTENT; dx < RING_EXTENT; dx++) {
-                float px = dx + 0.5f, py = dy + 0.5f;
-                float d = MathHelper.sqrt(px * px + py * py);
+        for (int y = 0; y < BUTTON_SIZE; y++) {
+            for (int x = 0; x < BUTTON_SIZE; x++) {
+                int part = BUTTON_PARTS[y][x];
+                if (part < 0) continue;
+                float px = x - (BUTTON_SIZE - 1) / 2f, py = y - (BUTTON_SIZE - 1) / 2f;
+                // Which side of the light the pixel is on: top-left (< -1), bottom-right (> 1), or in between
+                float side = px + py;
                 int color;
-                if (d < DISC_RADIUS - 1f) {
-                    color = disc;
-                } else if (d < DISC_RADIUS) {
-                    color = rim;
-                } else if (d >= RING_INNER + 0.5f && d < RING_OUTER) {
+                if (part == PART_OUTLINE && hovered) {
+                    color = 0xFFFFFFFF; // hovered: white outline, like the vanilla buttons
+                } else if (part == PART_OUTLINE || part == PART_LINE) {
+                    color = side < -1 ? contourLight : side > 1 ? CONTOUR_DARK : contourMid;
+                } else if (part == PART_GAUGE) {
                     // Clockwise from the top
                     float angle = (float) Math.toDegrees(Math.atan2(px, -py));
                     if (angle < 0) angle += 360f;
-                    color = angle < progress * 360f ? ringFill : ringTrack;
+                    color = angle >= progress * 360f ? GAUGE_TRACK
+                            : handler.isBlocked() ? GAUGE_BLOCKED
+                            : gaugeColor(angle / 360f);
+                } else if (part == PART_BEVEL && Math.abs(side) > 1) {
+                    color = (side < 0) != pressed ? light : dark;
                 } else {
-                    continue;
+                    color = face;
                 }
-                context.fill(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, color);
+                context.fill(cx - half + x, cy - half + y, cx - half + x + 1, cy - half + y + 1, color);
             }
         }
         if (enabled) {
@@ -196,8 +306,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
                     ? Text.translatableWithFallback(KEY + "status.no_face", "Place at least one dice face")
                     : Text.translatableWithFallback(KEY + "status.not_enough_faces",
                     "Place at least %s dice faces", DiceForgeBlockEntity.MIN_FACES);
-            case LAYOUT_CHANGED -> Text.translatableWithFallback(KEY + "status.layout_changed",
-                    "The faces changed since the craft started");
             case MISSING_FRAGMENT -> Text.translatableWithFallback(KEY + "status.missing_fragment",
                     "Put star fragments in the 4 slots around the core");
             case DUPLICATE_FRAGMENT -> Text.translatableWithFallback(KEY + "status.duplicate_fragment",

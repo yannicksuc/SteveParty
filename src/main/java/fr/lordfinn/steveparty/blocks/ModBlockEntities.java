@@ -104,6 +104,12 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "looting_box_entity"),
             FabricBlockEntityTypeBuilder.create(LootingBoxBlockEntity::new, ModBlocks.LOOTING_BOX).build(null)
     );
+    public static final BlockEntityType<GravityCoreBlockEntity> GRAVITY_CORE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "gravity_core"),
+            FabricBlockEntityTypeBuilder.create(GravityCoreBlockEntity::new, ModBlocks.GRAVITY_CORE).build(null)
+    );
+
     public static final BlockEntityType<DiceForgeBlockEntity> DICE_FORGE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "dice_forge_entity"),

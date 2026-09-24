@@ -14,7 +14,7 @@ position `[0,0,0]` in every animation and only turns (the block outline stays wh
   `floating` = one turn in 12 s, `crafting` = one turn in 2 s.
 - **Core altitude is code driven** (`DiceForgeCoreLayer`, `DiceForgeBlockEntity#getCoreAltitude`): after the insertion
   it rises out of the plate (+0.5 block), then with the star fragments (a black fragment counts 64), up to
-  24 blocks for 256 fragments, smoothly. The orbiting faces follow it, level with the core; while forging, the die forms around the core and turns with it.
+  16 blocks for 256 fragments, smoothly. The orbiting faces follow it, level with the core; while forging, the die forms around the core and turns with it.
 - Optional **bone `core`**, child of `root`, pivot at the centre of the seated core `[0,16,0]` (cubes may stay empty).
   When present, the core is rendered on it and fully driven by the animations (the code then skips its own fall and
   altitude); otherwise the code handles the fall and the altitude on `root`.

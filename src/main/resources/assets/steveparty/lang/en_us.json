@@ -527,7 +527,6 @@
   "gui.steveparty.dice_forge.insert_core": "Gravity core slot",
   "gui.steveparty.dice_forge.status.not_activated": "Insert a gravity core first (right-click the forge with it or use the center slot)",
   "gui.steveparty.dice_forge.status.not_enough_faces": "Place at least %s dice faces",
-  "gui.steveparty.dice_forge.status.layout_changed": "The faces changed since the craft started",
   "gui.steveparty.dice_forge.status.missing_fragment": "Put star fragments in the 4 slots around the core",
   "gui.steveparty.dice_forge.status.duplicate_fragment": "Each fragment colour must be different (only black can be repeated)",
   "gui.steveparty.dice_forge.status.output_blocked": "The output slot is full or holds another die",

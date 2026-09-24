@@ -47,6 +47,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
+import fr.lordfinn.steveparty.utils.GravityPull;
+import net.minecraft.entity.Entity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import java.util.UUID;
 
 /**
  * Dice Forge.
@@ -59,20 +68,23 @@ import java.util.stream.IntStream;
  * comes up 10 times more often than a face placed once). Each die consumes one blank face per face slot used,
  * whatever its weight, and one fragment of every non-black fragment slot.
  * <p>
- * The core floats above the forge, higher with more fragments: {@link #getCoreAltitude} (client visual only).
+ * The core floats above the forge, higher with more fragments ({@link #getCoreAltitude}), and pulls what is around it
+ * like a small planet ({@link GravityPull}): the higher, the stronger and the farther (32 blocks at the top). Hitting
+ * it ({@link ForgeCoreEntity}) blows it up, flinging everything away: the way out of its pull when nothing else works.
  * <p>
  * Core: inserted by right-clicking the forge with it or through the center slot; taken back with sneak +
  * right-click (empty hand) once the insertion animation is over, see {@link #removeCore}.
  * <p>
- * Production: the CRAFT button (or a redstone rising edge) snapshots the current layout and starts a loop.
- * Each craft ({@link #CRAFT_TIME} ticks) consumes 1 item of every face slot and 1 fragment of every
- * non-black fragment slot, and outputs a die carrying those faces. The loop stops when toggled off, or as
- * soon as a slot of the snapshot runs out / changes (so an unwanted die is never made). Missing items are
- * shown as ghosts in the GUI from the remembered layout.
+ * Production: the FORGE button (or a redstone rising edge) starts a loop. Each craft ({@link #CRAFT_TIME} ticks)
+ * consumes the blank faces and 1 fragment of every non-black fragment slot, and outputs a die carrying the faces
+ * currently in the ring (changing them changes the next die). The loop stops when toggled off or when something runs
+ * out. The fragments and blank faces in use are remembered: missing ones are shown as ghosts in the GUI.
  * <p>
- * Redstone: powered = production enabled. Rising edge starts production (like pressing CRAFT), falling edge
- * stops it. While powered, a loop stopped by a shortage resumes by itself once the slots are refilled with the
- * remembered layout (or starts once the forge is complete if nothing is remembered yet), unless the player
+ * It fills like any container, by hand or by hoppers (any valid item in any free slot; blank faces only in their
+ * own slot); hoppers below take the dice out.
+ * <p>
+ * Redstone: powered = production enabled. Rising edge starts production (like pressing FORGE), falling edge
+ * stops it. While powered, a loop stopped by a shortage resumes by itself once refilled, unless the player
  * stopped it with the button (manual stop wins until the next rising edge).
  */
 public class DiceForgeBlockEntity extends LootableContainerBlockEntity implements GeoBlockEntity, TickableBlockEntity, SidedInventory {
@@ -85,7 +97,10 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public static final int BLANK_SLOT = FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS;
     public static final int OUTPUT_SLOT = BLANK_SLOT + 1;
     public static final int SIZE = OUTPUT_SLOT + 1;
-    /** Layout memory covers the face slots, the fragment slots, then the blank faces slot. */
+    /**
+     * Layout indices: the face slots, the fragment slots, then the blank faces slot. Only the fragments and the blank
+     * faces are remembered (faces are not consumed, nothing to refill).
+     */
     public static final int LAYOUT_SIZE = FACE_SLOTS + FRAGMENT_SLOTS + 1;
     private static final int BLANK_LAYOUT_INDEX = FACE_SLOTS + FRAGMENT_SLOTS;
 
@@ -99,11 +114,20 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public static final int CORE_INSERT_TICKS = 60;
     /** Fragments counted for the core altitude: 256 (4 full stacks) lift it {@link #MAX_CORE_ALTITUDE} blocks. */
     public static final int MAX_ALTITUDE_FRAGMENTS = 256;
-    public static final float MAX_CORE_ALTITUDE = 24f;
+    public static final float MAX_CORE_ALTITUDE = 16f;
     /** A black fragment is never consumed: it counts as a full stack. */
     public static final int BLACK_FRAGMENT_WORTH = 64;
     /** Height of the core above the plate once risen, before the fragments lift it (blocks). */
     public static final float CORE_BASE_LIFT = 0.5f;
+    /** Height of the core center above the forge block when resting in the plate (blocks). */
+    public static final float CORE_REST_HEIGHT = 1f;
+    /** Reach (blocks) and pull (blocks per tick²) of the core at its highest; both grow with its altitude. */
+    public static final double PULL_RANGE = 32, PULL_STRENGTH = 0.3;
+    /** Radius of the orbit what the core pulls ends up circling on (blocks): within reach to hit it. */
+    public static final double PULL_ORBIT = 2.5;
+    /** The core blowing up: explosion power (an end crystal is 6), then everything within the radius is flung away. */
+    public static final float CORE_EXPLOSION_POWER = 2f;
+    public static final double CORE_BLAST_RADIUS = 8, CORE_BLAST_SPEED = 4;
 
     // ---- synced properties (PropertyDelegate)
     public static final int PROP_PROGRESS = 0;
@@ -124,7 +148,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     /** Why production can't run (synced as an ordinal). */
     public enum Status {
-        OK, NOT_ACTIVATED, NOT_ENOUGH_FACES, LAYOUT_CHANGED, MISSING_FRAGMENT, DUPLICATE_FRAGMENT, OUTPUT_BLOCKED,
+        OK, NOT_ACTIVATED, NOT_ENOUGH_FACES, MISSING_FRAGMENT, DUPLICATE_FRAGMENT, OUTPUT_BLOCKED,
         NOT_ENOUGH_BLANK_FACES;
 
         public static Status byId(int id) {
@@ -146,7 +170,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     // ---- state
     private DefaultedList<ItemStack> inventory;
-    /** Item expected in each face/fragment slot for the current loop (null = slot unused). */
+    /** Fragment and blank faces remembered for the ghosts (null = nothing remembered; faces are never remembered). */
     private final Item[] layout = new Item[LAYOUT_SIZE];
     private boolean running = false;
     private int progress = 0;
@@ -161,6 +185,9 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     // Core altitude smoothly following the fragments (client only, blocks above the plate)
     private float coreAltitude = 0f;
     private float prevCoreAltitude = 0f;
+    /** The hitbox entity of the core in the sky (server only, never saved: respawned as needed). */
+    @Nullable
+    private UUID coreEntityId;
     /** Redstone input read once after placement/load (the block entity does not exist yet in onBlockAdded). */
     private boolean powerChecked = false;
 
@@ -171,7 +198,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
                 case PROP_PROGRESS -> progress;
                 case PROP_CRAFT_TIME -> CRAFT_TIME;
                 case PROP_FLAGS -> getFlags();
-                case PROP_STATUS -> getStatus(running).ordinal();
+                case PROP_STATUS -> getStatus().ordinal();
                 default -> {
                     int layoutIndex = index - PROP_FIRST_GHOST;
                     if (layoutIndex < 0 || layoutIndex >= LAYOUT_SIZE || layout[layoutIndex] == null) yield 0;
@@ -260,7 +287,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         Arrays.fill(layout, null);
         if (nbt.contains("Layout", NbtElement.LIST_TYPE)) {
             NbtList layoutNbt = nbt.getList("Layout", NbtElement.STRING_TYPE);
-            for (int i = 0; i < Math.min(LAYOUT_SIZE, layoutNbt.size()); i++) {
+            // Faces saved by older versions are forgotten (they are no longer remembered)
+            for (int i = FACE_SLOTS; i < Math.min(LAYOUT_SIZE, layoutNbt.size()); i++) {
                 Identifier id = Identifier.tryParse(layoutNbt.getString(i));
                 if (id == null) continue;
                 Item item = Registries.ITEM.get(id);
@@ -296,12 +324,14 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     @Override
     public void tick() {
         if (world == null) return;
+        updateCoreAltitude();
+        pullAround();
         if (world.isClient) {
             rotationTicks++; // client-side rotation for rendering
             if (running && progress < CRAFT_TIME) progress++; // client prediction, resynced on each craft
-            updateCoreAltitude();
             return;
         }
+        syncCoreEntity((ServerWorld) world);
 
         if (!powerChecked) {
             powerChecked = true;
@@ -317,21 +347,12 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         }
 
         if (!running) {
-            // Automation: while powered, resume a loop stopped by a shortage once refilled with the same layout
-            // (or, with nothing remembered yet, start as soon as the forge is complete)
-            if (powered && !manualStop && world.getTime() % 10 == 0) {
-                if (!hasLayout()) {
-                    if (getStatus(false) == Status.OK) start();
-                } else if (getStatus(true) == Status.OK) {
-                    running = true;
-                    progress = 0;
-                    markDirty();
-                }
-            }
+            // Automation: while powered, resume a loop stopped by a shortage as soon as it is refilled
+            if (powered && !manualStop && world.getTime() % 10 == 0 && getStatus() == Status.OK) start();
             return;
         }
 
-        Status status = getStatus(true);
+        Status status = getStatus();
         if (!status.allowsRunning()) {
             stop(false);
             return;
@@ -343,7 +364,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         if (progress >= CRAFT_TIME && status == Status.OK) {
             completeCraft();
             progress = 0;
-            if (!getStatus(true).allowsRunning()) {
+            if (!getStatus().allowsRunning()) {
                 // A slot ran out: stop the loop, the missing items show as ghosts
                 running = false;
             }
@@ -365,7 +386,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** Starts production with the current layout. @return true if started. */
     public boolean start() {
         if (world == null || running) return false;
-        if (!getStatus(false).allowsRunning()) return false;
+        if (!getStatus().allowsRunning()) return false;
         snapshotLayout();
         running = true;
         progress = 0;
@@ -400,16 +421,12 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         markDirty();
     }
 
+    /** Remembers the fragments and blank faces in use (their ghosts show once they run out). */
     private void snapshotLayout() {
-        for (int i = 0; i < LAYOUT_SIZE; i++) {
+        for (int i = FACE_SLOTS; i < LAYOUT_SIZE; i++) {
             ItemStack stack = inventory.get(layoutSlot(i));
             layout[i] = stack.isEmpty() ? null : stack.getItem();
         }
-    }
-
-    private boolean hasLayout() {
-        for (int i = 0; i < FACE_SLOTS; i++) if (layout[i] != null) return true;
-        return false;
     }
 
     /** @return the inventory slot of a layout index (faces 0..11, fragments 13..16, then the blank faces slot). */
@@ -427,28 +444,17 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         return -1;
     }
 
-    /**
-     * @param matchLayout true while a loop runs: every face slot must still hold the remembered face
-     * @return the first reason preventing a craft, or {@link Status#OK}
-     */
-    public Status getStatus(boolean matchLayout) {
+    /** @return the first reason preventing a craft, or {@link Status#OK} */
+    public Status getStatus() {
         if (!isActivated()) return Status.NOT_ACTIVATED;
-        Status resources = checkResources(this, matchLayout ? layout : null);
+        Status resources = checkResources(this);
         if (resources != Status.OK) return resources;
         return canAcceptOutput(createDie()) ? Status.OK : Status.OUTPUT_BLOCKED;
     }
 
-    /** Resource checks shared with the client screen (faces count, layout, fragments, blank faces). */
-    public static Status checkResources(Inventory inventory, @Nullable Item[] expectedLayout) {
-        int faces = 0;
-        for (int i = 0; i < FACE_SLOTS; i++) {
-            ItemStack stack = inventory.getStack(i);
-            if (expectedLayout != null) {
-                Item expected = expectedLayout[i];
-                if (stack.isEmpty() ? expected != null : stack.getItem() != expected) return Status.LAYOUT_CHANGED;
-            }
-            if (DiceFace.isFace(stack)) faces++;
-        }
+    /** Resource checks shared with the client screen (faces count, fragments, blank faces). */
+    public static Status checkResources(Inventory inventory) {
+        int faces = countFaces(inventory);
         if (faces < MIN_FACES) return Status.NOT_ENOUGH_FACES;
         Set<Item> colours = new java.util.HashSet<>();
         for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
@@ -604,7 +610,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
                 .map(face -> face.kind() == DiceFacesComponent.Kind.BLANK).orElse(false);
     }
 
-    // ---- core altitude (client visual)
+    // ---- core altitude
 
     /** @return fragments counted for the altitude: every fragment, a black one worth a full stack (max 256). */
     public static int countAltitudeFragments(Inventory inventory) {
@@ -631,7 +637,74 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         coreAltitude += step;
     }
 
-    /** @return height of the core above the plate (blocks), smoothed (client). */
+    /** @return the center of the core, in the world. */
+    public Vec3d getCoreCenter() {
+        return new Vec3d(pos.getX() + 0.5, pos.getY() + CORE_REST_HEIGHT + coreAltitude, pos.getZ() + 0.5);
+    }
+
+    /** The risen core pulls what is around it: the higher, the stronger and the farther. */
+    private void pullAround() {
+        float lift = coreAltitude - CORE_BASE_LIFT;
+        if (world == null || !isActivated() || lift <= 0) return;
+        double height = Math.min(1, lift / MAX_CORE_ALTITUDE);
+        GravityPull.pullAround(world, getCoreCenter(), PULL_RANGE * height, PULL_STRENGTH * height, true, PULL_ORBIT);
+    }
+
+    /** Keeps the hitbox entity on the risen core (and removes it when there is no core). */
+    private void syncCoreEntity(ServerWorld world) {
+        Entity current = coreEntityId == null ? null : world.getEntity(coreEntityId);
+        if (!isActivated() || isInsertingCore(0f)) {
+            if (current != null) current.discard();
+            coreEntityId = null;
+            return;
+        }
+        Vec3d center = getCoreCenter();
+        if (current == null || current.isRemoved()) {
+            ForgeCoreEntity core = new ForgeCoreEntity(ModEntities.FORGE_CORE, world);
+            core.setForgePos(pos);
+            core.setPosition(center.x, center.y - core.getHeight() / 2, center.z);
+            world.spawnEntity(core);
+            coreEntityId = core.getUuid();
+        } else {
+            current.setPosition(center.x, center.y - current.getHeight() / 2, center.z);
+        }
+    }
+
+    /**
+     * The core, hit in the sky, blows up: a small explosion, then everything around it is flung away. The core is
+     * lost and the forge goes back to its idle state (nothing else is lost).
+     */
+    public void explodeCore(@Nullable Entity cause) {
+        if (!(world instanceof ServerWorld serverWorld) || !isActivated()) return;
+        Vec3d center = getCoreCenter();
+        if (running) stop(false);
+        activationTime = Long.MIN_VALUE / 2;
+        world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, false));
+        coreAltitude = prevCoreAltitude = 0f;
+        // Hurts, but breaks no block (the forge right under a low core included)
+        serverWorld.createExplosion(cause, center.x, center.y, center.z, CORE_EXPLOSION_POWER, World.ExplosionSourceType.NONE);
+        Box blast = new Box(center, center).expand(CORE_BLAST_RADIUS);
+        for (Entity entity : serverWorld.getOtherEntities(null, blast, e -> !e.isSpectator() && !(e instanceof ForgeCoreEntity))) {
+            Vec3d away = entity.getBoundingBox().getCenter().subtract(center);
+            double distance = away.length();
+            if (distance > CORE_BLAST_RADIUS) continue;
+            Vec3d direction = distance < 1.0E-3 ? new Vec3d(0, 1, 0) : away.multiply(1 / distance);
+            entity.setVelocity(entity.getVelocity().add(direction.multiply(CORE_BLAST_SPEED * (1 - distance / CORE_BLAST_RADIUS))));
+            entity.velocityModified = true;
+        }
+        markDirty();
+    }
+
+    @Override
+    public void markRemoved() {
+        super.markRemoved();
+        if (world instanceof ServerWorld serverWorld && coreEntityId != null) {
+            Entity core = serverWorld.getEntity(coreEntityId);
+            if (core != null) core.discard();
+        }
+    }
+
+    /** @return height of the core above the plate (blocks), smoothed. */
     public float getCoreAltitude(float partialTick) {
         return prevCoreAltitude + (coreAltitude - prevCoreAltitude) * partialTick;
     }
@@ -686,17 +759,14 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         return side == Direction.DOWN ? DOWN_SLOTS : OTHER_SLOTS;
     }
 
+    /**
+     * Like any container: any valid item in any slot (merging is up to the hopper). Blank faces only go to their own
+     * slot: automation never turns them into faces of the die.
+     */
     @Override
     public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
         if (dir == Direction.DOWN || !isValid(slot, stack)) return false;
-        int layoutIndex = layoutIndex(slot);
-        if (layoutIndex < 0) return true; // gravity core in the center slot (the output slot is never valid)
-        ItemStack current = inventory.get(slot);
-        if (!current.isEmpty()) return current.isOf(stack.getItem());
-        // Automation only refills: an empty slot accepts the remembered item (or anything if nothing is remembered)
-        Item expected = layout[layoutIndex];
-        if (expected != null) return stack.isOf(expected);
-        return layoutIndex >= FACE_SLOTS || !hasLayout();
+        return slot >= FACE_SLOTS || !isBlankFace(stack);
     }
 
     @Override

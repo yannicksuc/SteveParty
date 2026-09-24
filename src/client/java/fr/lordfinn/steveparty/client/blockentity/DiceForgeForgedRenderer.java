@@ -12,19 +12,19 @@ import net.minecraft.world.World;
 import java.util.List;
 
 /**
- * Plays when a die is forged: a laser of sparkles shoots down from the core to the forge, and the die, formed around
- * the core, falls down along it like a shooting star, shrinking until it vanishes into the forge.
+ * Plays when a die is forged: the die, formed around the core, falls into the forge like a shooting star, leaving a
+ * streak of sparkles behind it, and shrinks until it vanishes into the forge.
  */
 public class DiceForgeForgedRenderer {
     /** Ticks for the die to fall from the core to the forge. */
     public static final int FALL_TICKS = 16;
-    /** Ticks during which the laser shoots. */
-    private static final int BEAM_TICKS = 10;
-    /** Laser speed (blocks per tick) and sparkles per tick: one every {@code BEAM_SPEED / BEAM_DENSITY} blocks. */
-    private static final double BEAM_SPEED = 1.2;
-    private static final int BEAM_DENSITY = 4;
+    /** Sparkles of the trail per block the die falls (plus a few around the die every tick). */
+    private static final double TRAIL_DENSITY = 7;
+    private static final int TRAIL_HEAD = 3;
     /** Height of the forge top (blocks above the block), where the die vanishes. */
     private static final double FORGE_TOP = 1.0;
+    /** How late the die shrinks: it keeps its size most of the way, then melts away at the end (higher = later). */
+    private static final float SHRINK_SHARPNESS = 6f;
 
     public void render(DiceForgeBlockEntity blockEntity, float partialTick, MatrixStack poseStack,
                        VertexConsumerProvider bufferSource, int packedLight, int packedOverlay,
@@ -37,32 +37,40 @@ public class DiceForgeForgedRenderer {
 
         BlockPos pos = blockEntity.getPos();
         double core = DiceForgeOrbitRenderer.getOrbitHeight(blockEntity, partialTick);
-        // Falls faster and faster, like a shooting star, shrinking to nothing
+        // Falls faster and faster, like a shooting star, then shrinks to nothing at the very end
         float t = elapsed / FALL_TICKS;
-        double y = core + (FORGE_TOP - core) * t * t;
-        float size = 1f - t;
+        double y = fallHeight(core, t);
+        float size = (1f - (float) Math.exp(SHRINK_SHARPNESS * (t - 1f))) / (1f - (float) Math.exp(-SHRINK_SHARPNESS));
 
         if (spawnParticles) {
+            // The trail: sparkles all along the way the die went since the last tick, so that it is one continuous
+            // streak starting from the die; they stay where they are, wider near the die, and fade out
             Random random = world.random;
-            if (tick < BEAM_TICKS) {
-                // Spread along the first tick of travel: a continuous line rather than dots
-                for (int i = 0; i < BEAM_DENSITY; i++) {
-                    world.addParticle(ModParticles.FORGE_BEAM,
-                            pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.06,
-                            pos.getY() + core - i * BEAM_SPEED / BEAM_DENSITY,
-                            pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.06,
-                            0, -BEAM_SPEED, 0);
-                }
+            double to = fallHeight(core, (float) tick / FALL_TICKS);
+            double from = tick == 0 ? to : fallHeight(core, (tick - 1f) / FALL_TICKS);
+            int count = TRAIL_HEAD + (int) Math.round((from - to) * TRAIL_DENSITY);
+            for (int i = 0; i < count; i++) {
+                double along = i < TRAIL_HEAD ? 0 : random.nextDouble(); // 0 at the die, 1 a tick behind it
+                double spread = (0.06 + 0.3 * size) * (1 - 0.6 * along);
+                world.addParticle(ModParticles.FORGE_BEAM,
+                        pos.getX() + 0.5 + (random.nextDouble() - 0.5) * spread,
+                        pos.getY() + to + (from - to) * along,
+                        pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * spread,
+                        (random.nextDouble() - 0.5) * 0.02, 0.004, (random.nextDouble() - 0.5) * 0.02);
             }
-            // The shooting star's tail
-            world.addParticle(ParticleTypes.END_ROD,
-                    pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.3 * size,
-                    pos.getY() + y,
-                    pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.3 * size,
-                    0, 0.01, 0);
+            // A few brighter sparks thrown off the die itself
+            if (random.nextFloat() < 0.6f) {
+                world.addParticle(ParticleTypes.END_ROD, pos.getX() + 0.5, pos.getY() + to, pos.getZ() + 0.5,
+                        (random.nextDouble() - 0.5) * 0.08, 0.02, (random.nextDouble() - 0.5) * 0.08);
+            }
         }
 
         DiceForgeConvergenceRenderer.renderDie(faces, poseStack, bufferSource, packedLight, packedOverlay, world,
                 0.5, y, 0.5, coreYaw, size);
+    }
+
+    /** @return height of the falling die above the block at {@code t} (0 at the core, 1 at the forge): faster and faster. */
+    private static double fallHeight(double core, float t) {
+        return core + (FORGE_TOP - core) * t * t;
     }
 }
