@@ -16,7 +16,6 @@ import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,8 +46,13 @@ public record StencilLibrary(List<Entry> entries) {
             return StencilShape.sanitize(StencilShape.fromList(shape));
         }
 
+        /** Compared in place: called for every entry, every few seconds, for every stencil carried. */
         boolean is(byte[] other) {
-            return Arrays.equals(StencilShape.fromList(shape), other);
+            if (other == null || other.length != shape.size()) return false;
+            for (int i = 0; i < other.length; i++) {
+                if (shape.get(i) != other[i]) return false;
+            }
+            return true;
         }
     }
 

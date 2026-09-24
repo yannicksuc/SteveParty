@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.payloads.custom.StencilGunScrollPayload;
@@ -39,6 +41,13 @@ public final class StencilGunHud {
     /** True: the wheel picks the colour, false: the stencil. */
     private static boolean colorMode = false;
 
+    /** What the HUD shows of a gun, worked out again only when its contents or selection change. */
+    private record Shown(InventoryComponent contentsComponent, StencilGunSelection selectionComponent, List<ItemStack> contents,
+                         StencilGunSelection selection, StencilGunItem.Load load, Text stencilName) {
+    }
+
+    private static Shown shown;
+
     private StencilGunHud() {
     }
 
@@ -73,13 +82,29 @@ public final class StencilGunHud {
         return true;
     }
 
-    private static void render(DrawContext context, RenderTickCounter tickCounter) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.options.hudHidden || client.currentScreen != null || !isHoldingGun(client)) return;
-        ItemStack gun = client.player.getMainHandStack();
+    /** Item components are immutable: the same component instances mean the same contents and selection. */
+    private static Shown shown(ItemStack gun) {
+        InventoryComponent contentsComponent = gun.get(ModComponents.STENCIL_GUN_CONTENTS);
+        StencilGunSelection selectionComponent = gun.get(ModComponents.STENCIL_GUN_SELECTION);
+        Shown last = shown;
+        if (last != null && last.contentsComponent() == contentsComponent && last.selectionComponent() == selectionComponent) return last;
         List<ItemStack> contents = StencilGunItem.contents(gun);
         StencilGunSelection selection = StencilGunItem.validSelection(contents, StencilGunItem.selection(gun));
         StencilGunItem.Load load = StencilGunItem.selectedLoad(gun);
+        StencilPatterns.Pattern pattern = load.shape() == null ? null : StencilPatterns.byShape(load.shape());
+        Text stencilName = load.shape() == null ? Text.translatable("tooltip.steveparty.stencil_gun.no_stencil")
+                : pattern != null ? pattern.name() : Text.translatable("tooltip.steveparty.stencil.custom");
+        shown = new Shown(contentsComponent, selectionComponent, contents, selection, load, stencilName);
+        return shown;
+    }
+
+    private static void render(DrawContext context, RenderTickCounter tickCounter) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.options.hudHidden || client.currentScreen != null || !isHoldingGun(client)) return;
+        Shown shown = shown(client.player.getMainHandStack());
+        List<ItemStack> contents = shown.contents();
+        StencilGunSelection selection = shown.selection();
+        StencilGunItem.Load load = shown.load();
 
         int width = context.getScaledWindowWidth();
         int y = context.getScaledWindowHeight() - 59 - BOX - 12;
@@ -118,9 +143,7 @@ public final class StencilGunHud {
         }
 
         // Names and hint
-        Text stencilName = load.shape() == null ? Text.translatable("tooltip.steveparty.stencil_gun.no_stencil")
-                : StencilPatterns.byShape(load.shape()) != null ? StencilPatterns.byShape(load.shape()).name()
-                : Text.translatable("tooltip.steveparty.stencil.custom");
+        Text stencilName = shown.stencilName();
         Text hint = Text.translatable(colorMode ? "hud.steveparty.stencil_gun.hint_color" : "hud.steveparty.stencil_gun.hint_stencil",
                 MODE_KEY.getBoundKeyLocalizedText());
         context.drawCenteredTextWithShadow(client.textRenderer, stencilName, stencilX + BOX / 2, y + BOX + 2, 0xFFFFFFFF);

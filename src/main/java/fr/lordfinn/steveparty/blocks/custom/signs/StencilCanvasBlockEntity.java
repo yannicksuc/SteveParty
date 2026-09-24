@@ -59,6 +59,11 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
     /** Not saved: last brush step, so that holding the brush fades step by step. */
     private long lastBrushTick = NEVER_BRUSHED;
     private static final long NEVER_BRUSHED = Long.MIN_VALUE;
+    /**
+     * Not saved, client only: what the block entity renderer worked out to draw this symbol (texture, transform),
+     * dropped whenever the symbol changes.
+     */
+    private @Nullable Object renderCache;
 
     public StencilCanvasBlockEntity(BlockPos pos, BlockState state) {
         this(ModBlockEntities.STENCIL_CANVAS, pos, state);
@@ -169,6 +174,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
     // ---------------------------------------------------------------- sync
 
     private void onChanged() {
+        renderCache = null;
         markDirty();
         if (world != null && !world.isClient) {
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
@@ -198,6 +204,14 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         return new RenderData(material, plateColor, shape, color, glowing, fade);
     }
 
+    public @Nullable Object getRenderCache() {
+        return renderCache;
+    }
+
+    public void setRenderCache(@Nullable Object renderCache) {
+        this.renderCache = renderCache;
+    }
+
     // ---------------------------------------------------------------- persistence
 
     @Override
@@ -225,6 +239,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         material = nbt.contains(MATERIAL_KEY, NbtElement.STRING_TYPE) ? Identifier.tryParse(nbt.getString(MATERIAL_KEY)) : null;
         plateColor = nbt.contains(PLATE_COLOR_KEY, NbtElement.STRING_TYPE) ? DyeColor.byName(nbt.getString(PLATE_COLOR_KEY), null) : null;
         fade = Math.clamp(nbt.getInt(FADE_KEY), 0, MAX_FADE);
+        renderCache = null;
 
         // Client: what the chunk mesh draws changed, rebuild it
         if (world != null && world.isClient && !sameRender((RenderData) oldRender, (RenderData) getRenderData())) {

@@ -54,6 +54,7 @@ public class StencilResourceManager {
         protected boolean removeEldestEntry(Map.Entry<Key, Identifier> eldest) {
             if (size() > MAX_CACHED_TEXTURES) {
                 destroy(eldest.getValue());
+                generation++;
                 return true;
             }
             return false;
@@ -62,6 +63,9 @@ public class StencilResourceManager {
 
     private record Key(Kind kind, ByteBuffer shape) {
     }
+
+    /** Changes whenever a texture is destroyed: texture ids kept by callers from an older generation may be gone. */
+    private static int generation;
 
     private StencilResourceManager() {
     }
@@ -97,6 +101,12 @@ public class StencilResourceManager {
     public static void clearCache() {
         TEXTURES.values().forEach(StencilResourceManager::destroy);
         TEXTURES.clear();
+        generation++;
+    }
+
+    /** @return the current generation: a texture id from {@link #getTexture} is valid while it does not change. */
+    public static int generation() {
+        return generation;
     }
 
     private static void destroy(Identifier texture) {

@@ -74,6 +74,10 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private long lastSoundTime;
     private long savedMessageUntil;
     private IconButton libraryButton;
+    /** {@link #libraryItems()} is asked for several times a frame: rebuilt only when the library or the game mode changes. */
+    private StencilLibrary cachedLibrary;
+    private boolean cachedCreative;
+    private List<LibraryItem> cachedItems = List.of();
 
     /** A pattern shown in the library. */
     private record LibraryItem(byte[] shape, boolean favorite, boolean own, Text name) {
@@ -154,18 +158,24 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     /** Favourites first, then the rest of the player's library, then (creative) the built-in patterns. */
     private List<LibraryItem> libraryItems() {
         StencilLibrary library = client == null || client.player == null ? StencilLibrary.EMPTY : StencilLibrary.of(client.player);
+        boolean creative = client != null && client.player != null && client.player.isCreative();
+        // The library is immutable: a change is a new instance
+        if (library == cachedLibrary && creative == cachedCreative) return cachedItems;
         List<LibraryItem> items = new ArrayList<>();
         for (boolean favorites : new boolean[]{true, false}) {
             for (StencilLibrary.Entry entry : library.entries()) {
                 if (entry.favorite() == favorites) items.add(item(entry.shapeArray(), entry.favorite(), true));
             }
         }
-        if (client != null && client.player != null && client.player.isCreative()) {
+        if (creative) {
             for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
                 if (!library.contains(pattern.shape())) items.add(item(pattern.shape(), false, false));
             }
         }
-        return items;
+        cachedLibrary = library;
+        cachedCreative = creative;
+        cachedItems = List.copyOf(items);
+        return cachedItems;
     }
 
     private static LibraryItem item(byte[] shape, boolean favorite, boolean own) {
