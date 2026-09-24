@@ -17,6 +17,7 @@
   status  - show whether the server / client are running.
   stop    - stop the server (gracefully, via RCON), the client, or both (default: all).
   tail    - follow the server or client log (Ctrl+C stops following, not the process).
+  cmd     - run a server command through RCON and print its output, e.g. .\scripts\dev.ps1 cmd "time set day".
 
 .EXAMPLE
   .\scripts\dev.ps1 up
@@ -28,11 +29,10 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('up', 'server', 'client', 'status', 'stop', 'tail')]
+    [ValidateSet('up', 'server', 'client', 'status', 'stop', 'tail', 'cmd')]
     [string]$Command = 'up',
 
     [Parameter(Position = 1)]
-    [ValidateSet('server', 'client', 'all')]
     [string]$Kind = 'all',
 
     # Dev server port (RCON = port + 10). Default: gradle/dev-server.gradle (25580).
@@ -143,21 +143,23 @@ function Read-RconRequestId {
     }
     $length = [BitConverter]::ToInt32((& $read 4), 0)
     $payload = & $read $length
-    return [BitConverter]::ToInt32($payload, 0)
+    $body = if ($length -gt 10) { [System.Text.Encoding]::UTF8.GetString($payload, 8, $length - 10) } else { '' }
+    return @{ RequestId = [BitConverter]::ToInt32($payload, 0); Body = $body }
 }
 
 function Send-RconCommands {
-    param([int]$Port, [string]$Password, [string[]]$Commands)
+    param([int]$Port, [string]$Password, [string[]]$Commands, [switch]$PrintOutput)
     $client = New-Object System.Net.Sockets.TcpClient
     try {
         if (-not $client.ConnectAsync('127.0.0.1', $Port).Wait(3000)) { return $false }
         $stream = $client.GetStream()
         $stream.ReadTimeout = 5000
         Send-RconPacket $stream 1 3 $Password
-        if ((Read-RconRequestId $stream) -eq -1) { return $false }
+        if ((Read-RconRequestId $stream).RequestId -eq -1) { return $false }
         foreach ($command in $Commands) {
             Send-RconPacket $stream 2 2 $command
-            Read-RconRequestId $stream | Out-Null
+            $response = Read-RconRequestId $stream
+            if ($PrintOutput -and $response.Body) { Write-Host ($response.Body -replace '§.', '') }
         }
         return $true
     } catch {
@@ -196,6 +198,8 @@ function Show-Status {
     }
 }
 
+if ($Command -in 'stop', 'tail' -and $Kind -notin 'server', 'client', 'all') { throw "Kind must be server, client or all." }
+
 switch ($Command) {
     'up' {
         $info = Get-DevServerInfo
@@ -214,6 +218,13 @@ switch ($Command) {
         # Client first, so it doesn't sit on a "connection lost" screen while the server saves
         if ($Kind -in 'client', 'all') { Stop-Kind 'client' }
         if ($Kind -in 'server', 'all') { Stop-Kind 'server' }
+    }
+    'cmd' {
+        if ($Kind -eq 'all') { throw 'Usage: .\scripts\dev.ps1 cmd "<server command>"' }
+        $info = Get-DevServerInfo
+        if (-not (Send-RconCommands -Port ([int]$info.rconPort) -Password $info.rconPassword -Commands @($Kind) -PrintOutput)) {
+            Write-Warning "RCON unreachable: is the server running (.\scripts\dev.ps1 status)?"
+        }
     }
     'tail' {
         $k = if ($Kind -eq 'all') { 'server' } else { $Kind }

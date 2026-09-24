@@ -77,6 +77,7 @@ Requires JDK 21. Everything goes through the Gradle wrapper.
 | `.\scripts\dev.ps1 status` | Shows whether the server and client are running |
 | `.\scripts\dev.ps1 tail server` | Follows the server log (`tail client` for the client) |
 | `.\scripts\dev.ps1 stop` | Stops the client, then the server gracefully (save + stop through RCON) |
+| `.\scripts\dev.ps1 cmd "<commande>"` | Runs a server command through RCON and prints its output (e.g. `cmd "time set day"`) |
 | `./gradlew runClient` | Plain client, singleplayer (Sodium + Iris + shaders for local testing) |
 | `./gradlew runServer` / `runClientJoin` | The same server / joining client, in the foreground (also available as IDE run configs) |
 | `./gradlew runGametest` | Automated in-game tests on a dedicated server (`src/gametest`) |
