@@ -55,8 +55,12 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private static final int PRESET_SIZE = 18;
     private static final int BUTTONS_Y = HEIGHT - 30;
     private static final ItemStack BASE_ICON = new ItemStack(ModBlocks.GOAL_POLE_BASE);
-    private static final ItemStack[] LEGEND_ICONS = {new ItemStack(Items.REDSTONE_TORCH), new ItemStack(Items.STONE_BUTTON),
-            new ItemStack(Items.COMPARATOR)};
+    /** The ports as they look on the base: the back plug, the reset plate, the comparator plate. */
+    private static final net.minecraft.util.Identifier[] LEGEND_ICONS = {
+            fr.lordfinn.steveparty.Steveparty.id("textures/block/goal_pole_base_plug_on.png"),
+            fr.lordfinn.steveparty.Steveparty.id("textures/block/goal_pole_base_port_reset.png"),
+            fr.lordfinn.steveparty.Steveparty.id("textures/block/goal_pole_base_port_output.png")};
+    private static final int[][] LEGEND_UV = {{4, 0, 4, 3}, {0, 0, 6, 5}, {0, 0, 6, 5}};
     private static final String[] LEGEND_KEYS = {"legend.power", "legend.reset", "legend.pulse"};
 
     /** Criterion presets: criterion and the key of its description. */
@@ -297,12 +301,12 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             if (legendRowAt(mouseX, mouseY) == i) {
                 context.fill(x + RIGHT_X, rowY - 1, x + RIGHT_X + COLUMN, rowY + 13, 0x40FFFFFF);
             }
-            var matrices = context.getMatrices();
-            matrices.push();
-            matrices.translate(x + RIGHT_X + 1, rowY, 0);
-            matrices.scale(0.75f, 0.75f, 1f);
-            context.drawItem(LEGEND_ICONS[i], 0, 0);
-            matrices.pop();
+            int[] uv = LEGEND_UV[i];
+            // Each port icon at twice its pixel size, framed like a slot
+            int iconX = x + RIGHT_X + 1, iconY = rowY + 1;
+            context.fill(iconX - 1, iconY - 1, iconX + 13, iconY + 11, 0xFF3A3A3A);
+            context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, LEGEND_ICONS[i],
+                    iconX + (12 - uv[2] * 2) / 2, iconY + (10 - uv[3] * 2) / 2, uv[0], uv[1], uv[2] * 2, uv[3] * 2, uv[2], uv[3], 16, 16);
             String line = textRenderer.trimToWidth(Text.translatable(KEY + LEGEND_KEYS[i]).getString(), COLUMN - 16);
             context.drawText(textRenderer, line, x + RIGHT_X + 16, rowY + 3, PartyGui.TEXT_DARK, false);
         }

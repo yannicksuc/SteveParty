@@ -698,4 +698,23 @@ public class GoalPoleGameTests implements FabricGameTest {
         }
         context.complete();
     }
+
+    /** The base's comparator: a pulse per point by default, or the progress towards the pole's goal (0 to 15). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void baseComparatorGivesPulsesOrProgress(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up()).update(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 4);
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getComparatorOutput() == 15, "pulse mode: 15 right after a point");
+        base.setOutputMode(GoalPoleBaseBlockEntity.OutputMode.PROGRESS);
+        context.assertTrue(base.getComparatorOutput() == 3, "1 of 4: 15 * 1 / 4 = 3, got " + base.getComparatorOutput());
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getComparatorOutput() == 7, "2 of 4: 7, got " + base.getComparatorOutput());
+        base.credit("Alex", 2, null);
+        context.assertTrue(base.getComparatorOutput() == 15, "goal met: 15");
+        removeBase(context);
+        context.complete();
+    }
 }
