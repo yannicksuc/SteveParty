@@ -58,8 +58,6 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
 
     @Override
     public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        NbtCompound nbt = new NbtCompound();
-        writeNbt(nbt, this.getWorld().getRegistryManager());
         return BlockEntityUpdateS2CPacket.create(this);
     }
 
@@ -103,9 +101,9 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
         stencilIn = false;
     }
 
+    /** Only one stencil goes in: stencils stack, and editing it must not edit the whole stack. */
     private void swapInStencil(PlayerEntity player, ItemStack itemStack) {
-        this.stencil = itemStack.copy();
-        player.getMainHandStack().setCount(0);
+        this.stencil = itemStack.split(1);
         stencilIn = true;
     }
 
@@ -115,6 +113,13 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
 
     public ItemStack getStencil() {
         return this.stencil;
+    }
+
+    /** Saves the shape drawn in the editor on the stencil inside and shows it to everyone around. */
+    public void setStencilShape(byte[] shape) {
+        if (stencil.isEmpty() || !(stencil.getItem() instanceof StencilItem)) return;
+        StencilItem.setShape(shape, stencil);
+        updateListeners();
     }
 
     @Override

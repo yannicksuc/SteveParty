@@ -87,8 +87,7 @@ public class ModPayloads {
                         && blockEntity == handler.getBlockEntity()) {
                     ItemStack stencil = blockEntity.getStencil();
                     if (stencil.isEmpty() || !(stencil.getItem() instanceof StencilItem)) return;
-                    StencilItem.setShape(shape, stencil);
-                    blockEntity.markDirty();
+                    blockEntity.setStencilShape(shape);
                 }
             });
         });

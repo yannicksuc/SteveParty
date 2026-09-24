@@ -52,15 +52,14 @@ public class StencilMakerBlock extends BlockWithEntity {
         return SHAPE;
     }
 
+    /** The stencil inside drops however the block goes (mined, blown up, replaced by a command...). */
     @Override
-    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        if (!world.isClient) {
-            StencilMakerBlockEntity blockEntity = (StencilMakerBlockEntity) world.getBlockEntity(pos);
-            if (blockEntity != null) {
-                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, blockEntity.getStencil());
-            }
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.isOf(newState.getBlock()) && world.getBlockEntity(pos) instanceof StencilMakerBlockEntity blockEntity
+                && !blockEntity.getStencil().isEmpty()) {
+            ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, blockEntity.getStencil());
         }
-        return super.onBreak(world, pos, state, player);
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override
