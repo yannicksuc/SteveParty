@@ -133,6 +133,15 @@ public class PartyData {
                 && steps.get(stepIndex).getType() != PartyStepType.END;
     }
 
+    /**
+     * True when the party reached its END step: it is over (see {@link #isStarted()}), but a step controller
+     * can still bring it back to the previous step.
+     */
+    public boolean isAtEnd() {
+        return stepIndex > -1 && stepIndex < steps.size()
+                && steps.get(stepIndex).getType() == PartyStepType.END;
+    }
+
     public List<PartyStep> getSteps() {
         return steps;
     }

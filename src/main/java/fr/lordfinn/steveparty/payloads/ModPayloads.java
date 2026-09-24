@@ -55,6 +55,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(CartridgeSlotScrollPayload.ID, CartridgeSlotScrollPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SwitchableBlocksPayload.ID, SwitchableBlocksPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(SquishAnimationPayload.ID, SquishAnimationPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(CartridgeSlotScrollPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();

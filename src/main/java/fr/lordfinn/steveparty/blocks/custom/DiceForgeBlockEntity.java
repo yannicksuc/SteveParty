@@ -1,135 +1,245 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.inventory.SidedInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.screen.GenericContainerScreenHandler;
+import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class DiceForgeBlockEntity extends LootableContainerBlockEntity implements GeoBlockEntity, TickableBlockEntity {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.IntStream;
+
+/**
+ * Dice Forge.
+ * <p>
+ * Layout: 12 face slots around the vortex, the center slot (gravity core input while the forge is not
+ * activated, then the die output) and 4 star fragment slots around the center.
+ * <p>
+ * Core: inserted by right-clicking the forge with it or through the center slot; taken back with sneak +
+ * right-click (empty hand) once the insertion animation is over, see {@link #removeCore}.
+ * <p>
+ * Production: the CRAFT button (or a redstone rising edge) snapshots the current layout and starts a loop.
+ * Each craft ({@link #CRAFT_TIME} ticks) consumes 1 item of every face slot and 1 fragment of every
+ * non-black fragment slot, and outputs a die carrying those faces. The loop stops when toggled off, or as
+ * soon as a slot of the snapshot runs out / changes (so an unwanted die is never made). Missing items are
+ * shown as ghosts in the GUI from the remembered layout.
+ * <p>
+ * Redstone: powered = production enabled. Rising edge starts production (like pressing CRAFT), falling edge
+ * stops it. While powered, a loop stopped by a shortage resumes by itself once the slots are refilled with the
+ * remembered layout (or starts once the forge is complete if nothing is remembered yet), unless the player
+ * stopped it with the button (manual stop wins until the next rising edge).
+ */
+public class DiceForgeBlockEntity extends LootableContainerBlockEntity implements GeoBlockEntity, TickableBlockEntity, SidedInventory {
+    // ---- slots
+    public static final int FACE_SLOTS = 12;
+    public static final int CENTER_SLOT = 12;
+    public static final int FIRST_FRAGMENT_SLOT = 13;
+    public static final int FRAGMENT_SLOTS = 4;
+    public static final int SIZE = FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS;
+    /** Layout memory covers the face slots then the fragment slots. */
+    public static final int LAYOUT_SIZE = FACE_SLOTS + FRAGMENT_SLOTS;
+
+    // ---- tuning
+    public static final int CRAFT_TIME = 100;
+    /** A die may have a single face (it then always rolls that face). */
+    public static final int MIN_FACES = 1;
+    /** Duration of the "core_insert" animation (must match the animation JSON: 3 s). */
+    public static final int CORE_INSERT_TICKS = 60;
+
+    // ---- synced properties (PropertyDelegate)
+    public static final int PROP_PROGRESS = 0;
+    public static final int PROP_CRAFT_TIME = 1;
+    public static final int PROP_FLAGS = 2;
+    public static final int PROP_STATUS = 3;
+    public static final int PROP_FIRST_GHOST = 4;
+    public static final int PROPERTY_COUNT = PROP_FIRST_GHOST + LAYOUT_SIZE;
+    public static final int FLAG_RUNNING = 1;
+    public static final int FLAG_ACTIVATED = 1 << 1;
+    public static final int FLAG_BLOCKED = 1 << 2;
+    public static final int FLAG_POWERED = 1 << 3;
+
+    private static final int FORMAT_VERSION = 2;
+    private static final int[] DOWN_SLOTS = {CENTER_SLOT};
+    private static final int[] OTHER_SLOTS = IntStream.range(0, SIZE).toArray();
+
+    /** Why production can't run (synced as an ordinal). */
+    public enum Status {
+        OK, NOT_ACTIVATED, NOT_ENOUGH_FACES, LAYOUT_CHANGED, MISSING_FRAGMENT, DUPLICATE_FRAGMENT, OUTPUT_BLOCKED;
+
+        public static Status byId(int id) {
+            Status[] values = values();
+            return id >= 0 && id < values.length ? values[id] : OK;
+        }
+
+        /** Output full is not a reason to stop: the craft simply waits at 100%. */
+        public boolean allowsRunning() {
+            return this == OK || this == OUTPUT_BLOCKED;
+        }
+    }
+
+    // ---- animations
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
-    protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
+    protected static final RawAnimation FLOATING = RawAnimation.begin().thenLoop("floating");
+    protected static final RawAnimation CORE_INSERT = RawAnimation.begin().thenPlay("core_insert").thenLoop("floating");
+    protected static final RawAnimation CRAFTING = RawAnimation.begin().thenLoop("crafting");
+
+    // ---- state
     private DefaultedList<ItemStack> inventory;
-    private float rotationTicks  = 0f;
-    private long craftStartTime = -1L; // -1 = not crafting
-    private int craftTimeTotal = 100;  // ticks required to complete a craft
-    private boolean isCrafting = false;
+    /** Item expected in each face/fragment slot for the current loop (null = slot unused). */
+    private final Item[] layout = new Item[LAYOUT_SIZE];
+    private boolean running = false;
+    private int progress = 0;
+    private boolean powered = false;
+    /** Production stopped with the button while powered: no auto-resume until the next rising edge. */
+    private boolean manualStop = false;
+    private long activationTime = Long.MIN_VALUE / 2;
+    /** Items that must leave the forge (legacy power star, extra cores): dropped on the next tick. */
+    private final List<ItemStack> pendingDrops = new ArrayList<>();
+    private float rotationTicks = 0f; // client only
+    /** Redstone input read once after placement/load (the block entity does not exist yet in onBlockAdded). */
+    private boolean powerChecked = false;
+
+    private final PropertyDelegate properties = new PropertyDelegate() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case PROP_PROGRESS -> progress;
+                case PROP_CRAFT_TIME -> CRAFT_TIME;
+                case PROP_FLAGS -> getFlags();
+                case PROP_STATUS -> getStatus(running).ordinal();
+                default -> {
+                    int layoutIndex = index - PROP_FIRST_GHOST;
+                    if (layoutIndex < 0 || layoutIndex >= LAYOUT_SIZE || layout[layoutIndex] == null) yield 0;
+                    yield Registries.ITEM.getRawId(layout[layoutIndex]);
+                }
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            // Server authoritative: nothing is writable from the client
+        }
+
+        @Override
+        public int size() {
+            return PROPERTY_COUNT;
+        }
+    };
 
     public DiceForgeBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DICE_FORGE_ENTITY, pos, state);
-        this.inventory = DefaultedList.ofSize(this.size(), ItemStack.EMPTY);
+        this.inventory = DefaultedList.ofSize(SIZE, ItemStack.EMPTY);
     }
 
+    // =================================================================== NBT
+
+    @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
         if (!this.writeLootTable(nbt)) {
             Inventories.writeNbt(nbt, this.inventory, registries);
         }
-        nbt.putBoolean("IsCrafting", isCrafting);
-        nbt.putLong("CraftStartTime", craftStartTime);
+        nbt.putInt("ForgeVersion", FORMAT_VERSION);
+        nbt.putBoolean("Running", running);
+        nbt.putInt("Progress", progress);
+        nbt.putBoolean("Powered", powered);
+        nbt.putBoolean("ManualStop", manualStop);
+        nbt.putLong("ActivationTime", activationTime);
+        NbtList layoutNbt = new NbtList();
+        for (Item item : layout) {
+            layoutNbt.add(NbtString.of(item == null ? "" : Registries.ITEM.getId(item).toString()));
+        }
+        nbt.put("Layout", layoutNbt);
+        if (!pendingDrops.isEmpty()) {
+            NbtList drops = new NbtList();
+            for (ItemStack stack : pendingDrops) {
+                if (!stack.isEmpty()) drops.add(stack.toNbt(registries));
+            }
+            nbt.put("PendingDrops", drops);
+        }
     }
 
+    @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
-        this.inventory = DefaultedList.ofSize(this.size(), ItemStack.EMPTY);
+        this.inventory = DefaultedList.ofSize(SIZE, ItemStack.EMPTY);
         if (!this.readLootTable(nbt)) {
             Inventories.readNbt(nbt, this.inventory, registries);
         }
-        this.isCrafting = nbt.getBoolean("IsCrafting");
-        this.craftStartTime = nbt.getLong("CraftStartTime");
-    }
-
-    public void activate() {
-        world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, true));
-    }
-
-    @Override
-    public void tick() {
-        if (world.isClient) {
-            rotationTicks++; // client-side rotation for rendering
-            return;
+        pendingDrops.clear();
+        if (nbt.contains("PendingDrops", NbtElement.LIST_TYPE)) {
+            NbtList drops = nbt.getList("PendingDrops", NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < drops.size(); i++) {
+                ItemStack.fromNbt(registries, drops.getCompound(i)).ifPresent(pendingDrops::add);
+            }
         }
-
-        // --- Server-side crafting logic ---
-        if (isCrafting) {
-            if (craftStartTime + craftTimeTotal < world.getTime() ) finishCraft();
-        } else {
-            startCrafting();
+        if (nbt.getInt("ForgeVersion") < FORMAT_VERSION) {
+            // Legacy forge (power star in slot 12): the center slot is now the die output, give the star back
+            ItemStack legacy = inventory.get(CENTER_SLOT);
+            if (!legacy.isEmpty()) {
+                pendingDrops.add(legacy);
+                inventory.set(CENTER_SLOT, ItemStack.EMPTY);
+            }
         }
-    }
-
-    private void startCrafting() {
-        // Only start (and consume the Power Star) when the forge is activated and holds at least one face
-        if (!isCrafting && isActivated() && hasRequiredPowerStar() && hasAnyFace()) {
-            isCrafting = true;
-            craftStartTime = world.getTime();
-            consumePowerStar();
-            markDirty(); // sends update to client
+        this.running = nbt.getBoolean("Running");
+        this.progress = Math.max(0, Math.min(CRAFT_TIME, nbt.getInt("Progress")));
+        this.powered = nbt.getBoolean("Powered");
+        this.manualStop = nbt.getBoolean("ManualStop");
+        this.activationTime = nbt.contains("ActivationTime") ? nbt.getLong("ActivationTime") : Long.MIN_VALUE / 2;
+        Arrays.fill(layout, null);
+        if (nbt.contains("Layout", NbtElement.LIST_TYPE)) {
+            NbtList layoutNbt = nbt.getList("Layout", NbtElement.STRING_TYPE);
+            for (int i = 0; i < Math.min(LAYOUT_SIZE, layoutNbt.size()); i++) {
+                Identifier id = Identifier.tryParse(layoutNbt.getString(i));
+                if (id == null) continue;
+                Item item = Registries.ITEM.get(id);
+                layout[i] = item == Items.AIR ? null : item;
+            }
         }
-    }
-
-
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
-        controllerRegistrar.add(new AnimationController<>(this, "idle", 0, this::idleAnimController));
-    }
-
-    private PlayState idleAnimController(AnimationState<DiceForgeBlockEntity> state) {
-        return state.setAndContinue(IDLE);
-    }
-
-    @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return cache;
-    }
-
-    public boolean isActivated() {
-        return getCachedState().get(DiceForgeBlock.ACTIVATED);
-    }
-
-    public int size() {
-        return 13;
-    }
-    protected DefaultedList<ItemStack> getHeldStacks() {
-        return this.inventory;
-    }
-
-    protected void setHeldStacks(DefaultedList<ItemStack> inventory) {
-        this.inventory = inventory;
-    }
-
-    protected Text getContainerName() {
-        return Text.translatable("block.steveparty.dice_forge");
     }
 
     @Override
     public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        NbtCompound nbt = super.toInitialChunkDataNbt(registries);
-        Inventories.writeNbt(nbt, this.inventory, registries);
-        nbt.putBoolean("IsCrafting", isCrafting);
-        nbt.putLong("CraftStartTime", craftStartTime);
-        return nbt;
+        return createNbt(registries);
     }
 
     @Override
@@ -149,104 +259,470 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         sync();
     }
 
-    private boolean hasRequiredPowerStar() {
-        for (ItemStack stack : inventory) {
-            if (!stack.isEmpty() && stack.isOf(ModItems.POWER_STAR)) {
-                return true;
-            }
+    // =================================================================== tick
+
+    @Override
+    public void tick() {
+        if (world == null) return;
+        if (world.isClient) {
+            rotationTicks++; // client-side rotation for rendering
+            if (running && progress < CRAFT_TIME) progress++; // client prediction, resynced on each craft
+            return;
         }
-        return false;
+
+        if (!powerChecked) {
+            powerChecked = true;
+            onRedstoneChanged(world.isReceivingRedstonePower(pos));
+        }
+
+        if (!pendingDrops.isEmpty()) {
+            for (ItemStack stack : pendingDrops) {
+                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, stack);
+            }
+            pendingDrops.clear();
+            markDirty();
+        }
+
+        if (!running) {
+            // Automation: while powered, resume a loop stopped by a shortage once refilled with the same layout
+            // (or, with nothing remembered yet, start as soon as the forge is complete)
+            if (powered && !manualStop && world.getTime() % 10 == 0) {
+                if (!hasLayout()) {
+                    if (getStatus(false) == Status.OK) start();
+                } else if (getStatus(true) == Status.OK) {
+                    running = true;
+                    progress = 0;
+                    markDirty();
+                }
+            }
+            return;
+        }
+
+        Status status = getStatus(true);
+        if (!status.allowsRunning()) {
+            stop(false);
+            return;
+        }
+        if (progress < CRAFT_TIME) {
+            progress++;
+            world.markDirty(pos); // saved, but no client sync needed: the client predicts the progress
+        }
+        if (progress >= CRAFT_TIME && status == Status.OK) {
+            completeCraft();
+            progress = 0;
+            if (!getStatus(true).allowsRunning()) {
+                // A slot ran out: stop the loop, the missing items show as ghosts
+                running = false;
+            }
+            markDirty();
+        }
     }
 
-    private boolean hasAnyFace() {
-        for (ItemStack stack : inventory) {
-            if (!stack.isEmpty() && !stack.isOf(ModItems.POWER_STAR)) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // =================================================================== production
 
-    private void consumePowerStar() {
-        for (int i = 0; i < inventory.size(); i++) {
-            ItemStack stack = inventory.get(i);
-            if (!stack.isEmpty() && stack.isOf(ModItems.POWER_STAR)) {
-                stack.decrement(1);
-                if (stack.isEmpty()) inventory.set(i, ItemStack.EMPTY);
-                markDirty();
-                return;
-            }
+    /** Toggles production (CRAFT button). */
+    public void toggleProduction() {
+        if (running) {
+            stop(powered);
+        } else {
+            start();
         }
     }
 
-    private void finishCraft() {
-        // Gather dice faces
-        DefaultedList<ItemStack> faces = DefaultedList.ofSize(6, ItemStack.EMPTY);
-        int count = 0;
-        for (ItemStack stack : inventory) {
-            if (!stack.isEmpty() && stack.getItem() != ModItems.POWER_STAR) {
-                faces.set(count++, stack);
-                if (count >= 6) break;
-            }
-        }
-
-        // Ensure 6 faces (duplicate if less). No face at all: nothing to duplicate (avoids % 0).
-        int found = count;
-        while (found > 0 && count < 6) {
-            faces.set(count, faces.get(count % found).copy());
-            count++;
-        }
-
-        craftStartTime = -1;
-        isCrafting = false;
-
-        /*
-        // Remove used faces from inventory
-        int removed = 0;
-        for (int i = 0; i < inventory.size() && removed < 6; i++) {
-            ItemStack stack = inventory.get(i);
-            if (!stack.isEmpty() && stack != ModBlocks.POWER_STAR) {
-                inventory.set(i, ItemStack.EMPTY);
-                removed++;
-            }
-        }
-
-        // TODO: create the new dice item and place in output slot or drop
-        ItemStack newDice = new ItemStack(ModBlocks.CRAFTED_DICE); // replace with your item
-        // Try to insert in first empty slot
-        for (int i = 0; i < inventory.size(); i++) {
-            if (inventory.get(i).isEmpty()) {
-                inventory.set(i, newDice);
-                break;
-            }
-        }*/
-
+    /** Starts production with the current layout. @return true if started. */
+    public boolean start() {
+        if (world == null || running) return false;
+        if (!getStatus(false).allowsRunning()) return false;
+        snapshotLayout();
+        running = true;
+        progress = 0;
+        manualStop = false;
+        world.playSound(null, pos, SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.BLOCKS, 0.6f, 1.6f);
         markDirty();
+        return true;
+    }
+
+    /** Stops production. @param manual stopped by the player while powered (prevents auto-resume). */
+    public void stop(boolean manual) {
+        boolean wasRunning = running;
+        running = false;
+        progress = 0;
+        manualStop = manual;
+        if (wasRunning && world != null && !world.isClient) {
+            world.playSound(null, pos, SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 0.5f, 1.6f);
+        }
+        markDirty();
+    }
+
+    /** Redstone input (called by the block on neighbour updates / placement). */
+    public void onRedstoneChanged(boolean isPowered) {
+        if (isPowered == powered) return;
+        powered = isPowered;
+        manualStop = false;
+        if (powered) {
+            start();
+        } else if (running) {
+            stop(false);
+        }
+        markDirty();
+    }
+
+    private void snapshotLayout() {
+        for (int i = 0; i < LAYOUT_SIZE; i++) {
+            ItemStack stack = inventory.get(layoutSlot(i));
+            layout[i] = stack.isEmpty() ? null : stack.getItem();
+        }
+    }
+
+    private boolean hasLayout() {
+        for (int i = 0; i < FACE_SLOTS; i++) if (layout[i] != null) return true;
+        return false;
+    }
+
+    /** @return the inventory slot of a layout index (faces 0..11 then fragments 13..16). */
+    public static int layoutSlot(int layoutIndex) {
+        return layoutIndex < FACE_SLOTS ? layoutIndex : FIRST_FRAGMENT_SLOT + (layoutIndex - FACE_SLOTS);
+    }
+
+    /** @return the layout index of an inventory slot, or -1 for the center slot. */
+    public static int layoutIndex(int slot) {
+        if (slot < FACE_SLOTS) return slot;
+        if (slot >= FIRST_FRAGMENT_SLOT && slot < SIZE) return FACE_SLOTS + slot - FIRST_FRAGMENT_SLOT;
+        return -1;
+    }
+
+    /**
+     * @param matchLayout true while a loop runs: every face slot must still hold the remembered face
+     * @return the first reason preventing a craft, or {@link Status#OK}
+     */
+    public Status getStatus(boolean matchLayout) {
+        if (!isActivated()) return Status.NOT_ACTIVATED;
+        Status resources = checkResources(this, matchLayout ? layout : null);
+        if (resources != Status.OK) return resources;
+        return canAcceptOutput(createDie()) ? Status.OK : Status.OUTPUT_BLOCKED;
+    }
+
+    /** Resource checks shared with the client screen (faces count, layout, fragments). */
+    public static Status checkResources(Inventory inventory, @Nullable Item[] expectedLayout) {
+        int faces = 0;
+        for (int i = 0; i < FACE_SLOTS; i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (expectedLayout != null) {
+                Item expected = expectedLayout[i];
+                if (stack.isEmpty() ? expected != null : stack.getItem() != expected) return Status.LAYOUT_CHANGED;
+            }
+            if (DiceFace.isFace(stack)) faces++;
+        }
+        if (faces < MIN_FACES) return Status.NOT_ENOUGH_FACES;
+        Set<Item> colours = new java.util.HashSet<>();
+        for (int i = FIRST_FRAGMENT_SLOT; i < SIZE; i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (!isStarFragment(stack)) return Status.MISSING_FRAGMENT;
+            if (!isInfiniteFragment(stack) && !colours.add(stack.getItem())) return Status.DUPLICATE_FRAGMENT;
+        }
+        return Status.OK;
+    }
+
+    /** @return the die the current face slots would produce (EMPTY if not enough faces). */
+    public ItemStack createDie() {
+        return createDie(this);
+    }
+
+    public static ItemStack createDie(Inventory inventory) {
+        List<ItemStack> faces = new ArrayList<>();
+        int count = 0;
+        for (int i = 0; i < FACE_SLOTS; i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (DiceFace.isFace(stack)) {
+                faces.add(stack);
+                count++;
+            }
+        }
+        if (count < MIN_FACES) return ItemStack.EMPTY;
+        return DiceFacesComponent.createDie(faces);
+    }
+
+    private boolean canAcceptOutput(ItemStack die) {
+        if (die.isEmpty()) return false;
+        ItemStack output = inventory.get(CENTER_SLOT);
+        if (output.isEmpty()) return true;
+        return ItemStack.areItemsAndComponentsEqual(output, die)
+                && output.getCount() + die.getCount() <= output.getMaxCount();
+    }
+
+    private void completeCraft() {
+        ItemStack die = createDie();
+        if (die.isEmpty()) return;
+        for (int i = 0; i < FACE_SLOTS; i++) {
+            ItemStack stack = inventory.get(i);
+            if (!stack.isEmpty()) stack.decrement(1);
+        }
+        for (int i = FIRST_FRAGMENT_SLOT; i < SIZE; i++) {
+            ItemStack stack = inventory.get(i);
+            // Black fragments are never consumed
+            if (!stack.isEmpty() && !isInfiniteFragment(stack)) stack.decrement(1);
+        }
+        ItemStack output = inventory.get(CENTER_SLOT);
+        if (output.isEmpty()) {
+            inventory.set(CENTER_SLOT, die);
+        } else {
+            output.increment(die.getCount());
+        }
+        if (world != null) {
+            world.playSound(null, pos, SoundEvents.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 0.4f, 1.8f);
+            world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 0.8f, 1.2f);
+        }
+    }
+
+    // =================================================================== activation
+
+    public boolean isActivated() {
+        BlockState state = getCachedState();
+        return state.contains(DiceForgeBlock.ACTIVATED) && state.get(DiceForgeBlock.ACTIVATED);
+    }
+
+    public void activate() {
+        if (world == null || isActivated()) return;
+        activationTime = world.getTime();
+        world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, true));
+        world.playSound(null, pos, SoundEvents.BLOCK_HEAVY_CORE_PLACE, SoundCategory.BLOCKS, 1.0f, 0.8f);
+        world.playSound(null, pos, SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 0.7f, 1.2f);
+        markDirty();
+    }
+
+    /** @return true if the gravity core can be taken back: forge activated and the insertion animation over. */
+    public boolean canRemoveCore() {
+        return world != null && isActivated() && !isInsertingCore(0f);
+    }
+
+    /**
+     * Takes the gravity core back out of the forge (sneak + right-click with an empty hand).
+     * <p>
+     * A running craft is stopped without losing anything: items are only consumed when a craft completes.
+     * The core and the dice waiting in the center slot (which becomes the core input again) are handed to the
+     * player, or dropped when their inventory is full / there is no player. The remembered layout (ghosts) is
+     * kept, and the forge goes back to its static idle state, so re-inserting the core plays "core_insert" again.
+     *
+     * @return true if the core was removed
+     */
+    public boolean removeCore(@Nullable PlayerEntity player) {
+        if (world == null || world.isClient || !canRemoveCore()) return false;
+        if (running) {
+            // No manual stop flag: under redstone power, production resumes once the core is back
+            stop(false);
+        }
+        ItemStack output = inventory.get(CENTER_SLOT);
+        inventory.set(CENTER_SLOT, ItemStack.EMPTY);
+        activationTime = Long.MIN_VALUE / 2;
+        world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, false));
+        giveOrDrop(player, new ItemStack(ModBlocks.GRAVITY_CORE));
+        if (!output.isEmpty()) giveOrDrop(player, output);
+        world.playSound(null, pos, SoundEvents.BLOCK_HEAVY_CORE_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
+        world.playSound(null, pos, SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 0.6f, 1.2f);
+        markDirty();
+        return true;
+    }
+
+    private void giveOrDrop(@Nullable PlayerEntity player, ItemStack stack) {
+        if (player != null) {
+            player.getInventory().offerOrDrop(stack);
+        } else if (world != null) {
+            ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, stack);
+        }
+    }
+
+    /** @return world time at which the gravity core was inserted (drives the insertion animation). */
+    public long getActivationTime() {
+        return activationTime;
+    }
+
+    /** @return true while the core insertion animation plays (client). */
+    public boolean isInsertingCore(float partialTick) {
+        if (world == null || !isActivated()) return false;
+        long elapsed = world.getTime() - activationTime;
+        return elapsed >= 0 && elapsed + partialTick < CORE_INSERT_TICKS;
+    }
+
+    public static boolean isGravityCore(ItemStack stack) {
+        return !stack.isEmpty() && stack.isOf(ModBlocks.GRAVITY_CORE.asItem());
+    }
+
+    // =================================================================== item rules
+
+    public static boolean isStarFragment(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        Item item = stack.getItem();
+        return item == ModItems.BLUE_STAR_FRAGMENT || item == ModItems.PURPLE_STAR_FRAGMENT
+                || item == ModItems.RED_STAR_FRAGMENT || item == ModItems.YELLOW_STAR_FRAGMENT
+                || item == ModItems.GREEN_STAR_FRAGMENT || item == ModItems.BLACK_STAR_FRAGMENT;
+    }
+
+    /** Black star fragments power the forge forever and may be used in several slots. */
+    public static boolean isInfiniteFragment(ItemStack stack) {
+        return !stack.isEmpty() && stack.isOf(ModItems.BLACK_STAR_FRAGMENT);
+    }
+
+    /**
+     * Slot rules, shared by the block entity, the GUI slots (also client side, with a plain inventory) and hoppers.
+     */
+    public static boolean isValidForSlot(Inventory inventory, int slot, ItemStack stack, boolean activated) {
+        if (stack.isEmpty()) return true;
+        if (slot >= 0 && slot < FACE_SLOTS) return DiceFace.isFace(stack);
+        if (slot == CENTER_SLOT) return !activated && isGravityCore(stack);
+        if (slot >= FIRST_FRAGMENT_SLOT && slot < SIZE) {
+            if (!isStarFragment(stack)) return false;
+            if (isInfiniteFragment(stack)) return true;
+            // Non-black colours must differ from one slot to another
+            for (int i = FIRST_FRAGMENT_SLOT; i < SIZE; i++) {
+                if (i != slot && inventory.getStack(i).isOf(stack.getItem())) return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isValid(int slot, ItemStack stack) {
+        return isValidForSlot(this, slot, stack, isActivated());
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack) {
+        if (slot == CENTER_SLOT && !isActivated() && isGravityCore(stack) && world != null && !world.isClient) {
+            // Inserting the core in the center slot activates the forge: the core goes into the forge itself
+            if (stack.getCount() > 1) pendingDrops.add(stack.copyWithCount(stack.getCount() - 1));
+            inventory.set(CENTER_SLOT, ItemStack.EMPTY);
+            activate();
+            return;
+        }
+        super.setStack(slot, stack);
+    }
+
+    // ---- hoppers / automation
+
+    @Override
+    public int[] getAvailableSlots(Direction side) {
+        return side == Direction.DOWN ? DOWN_SLOTS : OTHER_SLOTS;
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
+        if (dir == Direction.DOWN || !isValid(slot, stack)) return false;
+        int layoutIndex = layoutIndex(slot);
+        if (layoutIndex < 0) return true; // gravity core in the center slot
+        ItemStack current = inventory.get(slot);
+        if (!current.isEmpty()) return current.isOf(stack.getItem());
+        // Automation only refills: an empty slot accepts the remembered item (or anything if nothing is remembered)
+        Item expected = layout[layoutIndex];
+        if (expected != null) return stack.isOf(expected);
+        return layoutIndex >= FACE_SLOTS || !hasLayout();
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, Direction dir) {
+        return slot == CENTER_SLOT && dir == Direction.DOWN && isActivated();
+    }
+
+    // =================================================================== misc
+
+    public int getComparatorOutput() {
+        ItemStack output = inventory.get(CENTER_SLOT);
+        if (output.isEmpty() || !isActivated()) return 0;
+        return 1 + (int) (14f * output.getCount() / output.getMaxCount());
+    }
+
+    /** Items to drop when the forge is broken, on top of its inventory (core, legacy items). */
+    public List<ItemStack> getExtraDrops() {
+        List<ItemStack> drops = new ArrayList<>(pendingDrops);
+        pendingDrops.clear();
+        if (isActivated()) drops.add(new ItemStack(ModBlocks.GRAVITY_CORE));
+        return drops;
+    }
+
+    private int getFlags() {
+        int flags = 0;
+        if (running) flags |= FLAG_RUNNING;
+        if (isActivated()) flags |= FLAG_ACTIVATED;
+        if (running && progress >= CRAFT_TIME) flags |= FLAG_BLOCKED;
+        if (powered) flags |= FLAG_POWERED;
+        return flags;
+    }
+
+    public PropertyDelegate getProperties() {
+        return properties;
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
+        controllerRegistrar.add(new AnimationController<>(this, "main", 10, this::mainAnimController));
+    }
+
+    /** idle (static, no core) → core_insert → floating loop; crafting loop while producing. */
+    private PlayState mainAnimController(AnimationState<DiceForgeBlockEntity> state) {
+        if (!isActivated()) {
+            // Core removed (or never inserted): next insertion must replay core_insert from its start
+            state.getController().forceAnimationReset();
+            return PlayState.STOP;
+        }
+        if (running) return state.setAndContinue(CRAFTING);
+        if (isInsertingCore(state.getPartialTick())) return state.setAndContinue(CORE_INSERT);
+        return state.setAndContinue(FLOATING);
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return cache;
+    }
+
+    @Override
+    public int size() {
+        return SIZE;
+    }
+
+    @Override
+    protected DefaultedList<ItemStack> getHeldStacks() {
+        return this.inventory;
+    }
+
+    @Override
+    protected void setHeldStacks(DefaultedList<ItemStack> inventory) {
+        this.inventory = inventory;
+    }
+
+    @Override
+    protected Text getContainerName() {
+        return Text.translatable("block.steveparty.dice_forge");
     }
 
     @Override
     protected ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
-        return new DiceForgeScreenHandler(syncId, playerInventory, this);
+        return new DiceForgeScreenHandler(syncId, playerInventory, this, this.properties);
     }
 
     public DefaultedList<ItemStack> getInventory() {
         return this.inventory;
     }
 
+    /** @return the remembered item of a layout index (null if none). */
+    public @Nullable Item getLayoutItem(int layoutIndex) {
+        return layout[layoutIndex];
+    }
 
     public float getRotationTicks() {
         return rotationTicks;
     }
 
     public float getCraftProgress(float partialTick) {
-        if (!isCrafting || craftStartTime < 0) return 0f;
-
-        double currentTime = (world != null) ? world.getTime() + partialTick : 0;
-        float progress = (float) ((currentTime - craftStartTime) / craftTimeTotal);
-        return Math.min(1f, Math.max(0f, progress));
+        if (!running) return 0f;
+        float value = progress < CRAFT_TIME ? progress + partialTick : progress;
+        return Math.min(1f, Math.max(0f, value / CRAFT_TIME));
     }
 
     public boolean isCrafting() {
-        return isCrafting;
+        return running;
+    }
+
+    public boolean isPowered() {
+        return powered;
     }
 }

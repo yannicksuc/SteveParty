@@ -32,9 +32,8 @@ public class DiceForgeConvergenceRenderer {
                        List<DiceForgeOrbitRenderer.OrbitFace> orbitFaces) {
 
         ItemRenderer itemRenderer = MinecraftClient.getInstance().getItemRenderer();
-        // Ensure 6 faces (duplicate if needed)
-        int faceCount = Math.min(orbitFaces.size(), 6);
-        if (faceCount < 6)
+        // The 6 cube faces cycle through the orbiting faces (a die can have 2 to 12 faces)
+        if (orbitFaces.isEmpty())
             return;
         // Inside render method
         for (int i = 0; i < 6; i++) {

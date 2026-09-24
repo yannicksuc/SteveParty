@@ -25,7 +25,8 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        if (!entity.isTamed() || !(entity.getOwner() instanceof PlayerEntity player)) {
+        if (!entity.isTamed() || entity.cannotFollowOwner() || !(entity.getOwner() instanceof PlayerEntity player)
+                || player.isSpectator()) {
             return false;
         }
         this.owner = player;
@@ -34,12 +35,25 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return owner != null && entity.squaredDistanceTo(owner) > (double)(minDistance * minDistance) && entity.squaredDistanceTo(owner) < (double)(maxDistance * maxDistance);
+        return owner != null && owner.isAlive() && !owner.isSpectator() && !entity.cannotFollowOwner()
+                && entity.squaredDistanceTo(owner) > (double)(minDistance * minDistance);
+    }
+
+    @Override
+    public void stop() {
+        this.owner = null;
+        entity.getNavigation().stop();
     }
 
     @Override
     public void tick() {
         if (owner == null) return;
+
+        // Too far to path (beyond the follow range): catch up like vanilla pets do
+        if (entity.squaredDistanceTo(owner) > (double)(maxDistance * maxDistance)) {
+            entity.tryTeleportToOwner();
+            return;
+        }
 
         // Target 2 blocks above player
         double targetX = owner.getX();
