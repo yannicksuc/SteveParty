@@ -59,6 +59,7 @@ public class ModItems {
     public static final Item GREEN_STAR_FRAGMENT = register(Item.class, "green_star_fragment");
     public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
+    public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(PARTY_CONTROLLER))
@@ -161,6 +162,7 @@ public class ModItems {
             itemGroup.add(STENCIL);
             itemGroup.add(STENCIL_MAKER);
             itemGroup.add(HOP_SWITCH);
+            itemGroup.add(PLASTIC_PELLETS);
             for (Block switcherBlock : ModBlocks.SWITCHER_BLOCKS) {
                 itemGroup.add(switcherBlock);
             }

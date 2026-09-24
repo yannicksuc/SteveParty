@@ -26,6 +26,8 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
     protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
         for (Block switcher : SWITCHER_BLOCKS)
             getOrCreateTagBuilder(SWITCHABLE).add(switcher);
+        for (Block switcher : SWITCHER_BLOCKS)
+            getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(switcher);
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,
