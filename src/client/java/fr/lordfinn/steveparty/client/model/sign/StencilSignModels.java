@@ -13,6 +13,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -79,7 +80,7 @@ public final class StencilSignModels {
 
     // ---------------------------------------------------------------- wooden panel
 
-    /** Wooden panel: the post of the fence below and the board (base model). */
+    /** Wooden panel: the board (base model); the post through its block is drawn by the fence below. */
     static final class Panel extends SignModel {
         Panel(BakedModel board) {
             super(board);
@@ -87,15 +88,14 @@ public final class StencilSignModels {
 
         @Override
         protected void emit(Output out, BlockState state, Look look, long seed, Supplier<Random> random) {
-            out.post(look.post(), random);
-            look.board(out).model(base, state, random, wood(look.material()), 0);
+            out.model(base, state, random, wood(look.material()), 0);
         }
     }
 
     // ---------------------------------------------------------------- cut-out panel
 
     /**
-     * Cut-out panel: the post of the fence below, and a one block board built from the stencil, one pixel of planks
+     * Cut-out panel: a one block board built from the stencil, one pixel of planks
      * per stencil pixel, with sides where the outline goes.
      */
     static final class CutoutPanel extends SignModel {
@@ -107,9 +107,7 @@ public final class StencilSignModels {
         }
 
         @Override
-        protected void emit(Output post, BlockState state, Look look, long seed, Supplier<Random> random) {
-            post.post(look.post(), random);
-            Output out = look.board(post);
+        protected void emit(Output out, BlockState state, Look look, long seed, Supplier<Random> random) {
             Sprite planks = look.material() == null ? oakPlanks : MaterialSprites.wood(SignMaterial.WOOD.resolve(look.material())).planks();
             byte[] shape = look.shape();
             if (StencilShape.isBlank(shape)) shape = StencilShape.full();
@@ -170,7 +168,8 @@ public final class StencilSignModels {
     /**
      * Rock sign: the leaning stone (base model, drawn upright in the JSON and leant here) whose 16x16 front is built
      * from the engraving: engraved pixels are dug one pixel deep, their bottom darker (or lighter, see
-     * {@link #LIGHT_ENGRAVING}) or painted with the dye, glowing with glow ink; plus one of the pebble sets.
+     * {@link #LIGHT_ENGRAVING}) or painted with the dye, glowing with glow ink; plus pebbles at its foot: one of the
+     * sets behind it, and now and then one in front of it (which ones depends on where it stands).
      */
     static final class RockSign extends SignModel {
         /** Engraving bottom lighter than the stone (unshaded) instead of darker. */
@@ -178,13 +177,19 @@ public final class StencilSignModels {
         private static final int DARK_BOTTOM = 0xFF6C6C6C;
         private static final int WALL = 0xFF9A9A9A;
         private static final float DEPTH = 1;
-        private final BakedModel[] pebbles;
-        private final Sprite stone;
+        /** Chance, in percent, of each set of pebbles in front of the stone (the rest of the time: none). */
+        private static final int FRONT_PEBBLES_CHANCE = 15;
+        /** The top of the stone, in model pixels; it reaches the side of its block towards a joined neighbour. */
+        private static final float TOP_X1 = 2, TOP_X2 = 14, TOP_Y1 = 16, TOP_Y2 = 19, TOP_Z1 = 6, TOP_Z2 = 10;
+        private final BakedModel[] backPebbles, frontPebbles;
+        private final Sprite stone, smoothStone;
 
-        RockSign(BakedModel base, BakedModel[] pebbles, Sprite stone) {
+        RockSign(BakedModel base, BakedModel[] backPebbles, BakedModel[] frontPebbles, Sprite stone, Sprite smoothStone) {
             super(base);
-            this.pebbles = pebbles;
+            this.backPebbles = backPebbles;
+            this.frontPebbles = frontPebbles;
             this.stone = stone;
+            this.smoothStone = smoothStone;
         }
 
         @Override
@@ -193,9 +198,36 @@ public final class StencilSignModels {
             float pivot = RockSignBlock.BACK_Z / 16F;
             Output leant = out.with(new Matrix4f().translate(0, 0, pivot)
                     .rotateX((float) Math.toRadians(RockSignBlock.TILT_DEGREES)).translate(0, 0, -pivot));
-            leant.model(base, state, random, rock, 0);
-            engraving(leant, look, look.material() == null ? stone : MaterialSprites.rock(SignMaterial.ROCK.resolve(look.material())).side());
-            if (pebbles.length > 0) out.model(pebbles[(int) Math.floorMod(HashCommon.mix(seed), (long) pebbles.length)], state, random, rock, 0);
+            boolean plusX = (look.joins() & RockSignBlock.JOIN_PLUS_X) != 0, minusX = (look.joins() & RockSignBlock.JOIN_MINUS_X) != 0;
+            // The sides against a joined neighbour are hidden
+            leant.model(base, state, random, rock, 0, face -> !(face == Direction.EAST && plusX) && !(face == Direction.WEST && minusX));
+            MaterialSprites.Rock material = look.material() == null ? null : MaterialSprites.rock(SignMaterial.ROCK.resolve(look.material()));
+            Sprite side = material == null ? stone : material.side(), top = material == null ? smoothStone : material.top();
+            top(leant, minusX ? 0 : TOP_X1, plusX ? 16 : TOP_X2, !minusX, !plusX, side, top);
+            engraving(leant, look, side);
+            // Full avalanche: neighbouring rocks (seeds differing in a few high bits) get unrelated pebbles
+            long hash = HashCommon.murmurHash3(seed);
+            if (backPebbles.length > 0) out.model(backPebbles[(int) Math.floorMod(hash, (long) backPebbles.length)], state, random, rock, 0);
+            int front = (int) Math.floorMod(hash >>> 16, 100L) / FRONT_PEBBLES_CHANCE;
+            if (front < frontPebbles.length) out.model(frontPebbles[front], state, random, rock, 0);
+        }
+
+        /** The top of the stone from x1 to x2 (pixels), textured like a vanilla block, its ends drawn only if asked. */
+        private static void top(Output out, float x1, float x2, boolean minusEnd, boolean plusEnd, Sprite side, Sprite top) {
+            float y1 = TOP_Y1, y2 = TOP_Y2, z1 = TOP_Z1, z2 = TOP_Z2, h = (y2 - y1) / 16;
+            // Front (north) and back (south)
+            out.quad(new Vector3f(x2, y2, z1), new Vector3f(x2, y1, z1), new Vector3f(x1, y1, z1), new Vector3f(x1, y2, z1),
+                    NORTH, side, (16 - x2) / 16, 0, (16 - x1) / 16, h);
+            out.quad(new Vector3f(x1, y2, z2), new Vector3f(x1, y1, z2), new Vector3f(x2, y1, z2), new Vector3f(x2, y2, z2),
+                    SOUTH, side, x1 / 16, 0, x2 / 16, h);
+            // Up
+            out.quad(new Vector3f(x1, y2, z1), new Vector3f(x1, y2, z2), new Vector3f(x2, y2, z2), new Vector3f(x2, y2, z1),
+                    UP, top, x1 / 16, z1 / 16, x2 / 16, z2 / 16);
+            // Ends (west / east)
+            if (minusEnd) out.quad(new Vector3f(x1, y2, z1), new Vector3f(x1, y1, z1), new Vector3f(x1, y1, z2), new Vector3f(x1, y2, z2),
+                    WEST, side, z1 / 16, 0, z2 / 16, h);
+            if (plusEnd) out.quad(new Vector3f(x2, y2, z2), new Vector3f(x2, y1, z2), new Vector3f(x2, y1, z1), new Vector3f(x2, y2, z1),
+                    EAST, side, (16 - z2) / 16, 0, (16 - z1) / 16, h);
         }
 
         private static void engraving(Output out, Look look, Sprite side) {
@@ -273,13 +305,11 @@ public final class StencilSignModels {
 
         @Override
         protected void emit(Output out, BlockState state, Look look, long seed, Supplier<Random> random) {
-            out.post(look.post(), random);
             PlasticRoadSignBlock.Plate plate = state.contains(PlasticRoadSignBlock.PLATE) ? state.get(PlasticRoadSignBlock.PLATE) : PlasticRoadSignBlock.Plate.ROUND;
             Sprite sprite = plastic[(look.plateColor() == null ? DyeColor.WHITE : look.plateColor()).getId()];
-            Output board = look.board(out);
             Output plateOut = plate.turned()
-                    ? board.with(new Matrix4f().translate(0.5F, 0.5F, 0).rotateZ((float) Math.toRadians(45)).translate(-0.5F, -0.5F, 0))
-                    : board;
+                    ? out.with(new Matrix4f().translate(0.5F, 0.5F, 0).rotateZ((float) Math.toRadians(45)).translate(-0.5F, -0.5F, 0))
+                    : out;
             plate(plateOut, plate.mask(), sprite);
         }
 

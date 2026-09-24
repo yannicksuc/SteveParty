@@ -22,6 +22,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationAxis;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -75,14 +76,10 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         } else if (state.getBlock() instanceof AbstractStencilSignBlock) {
             List<SymbolLayouts.SymbolQuad> quads = SymbolLayouts.forSign(state);
             if (!quads.isEmpty()) {
-                Direction hung = AbstractStencilSignBlock.hungFacing(state);
-                if (hung != null) matrices.translate(-hung.getOffsetX(), 0, -hung.getOffsetZ());
-                matrices.translate(0.5, 0, 0.5);
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(SignShapes.angleDegrees(state.get(AbstractStencilSignBlock.ROTATION))));
-                matrices.translate(-0.5, 0, -0.5);
-                // Moved back with the board, against its post
-                double shift = ((AbstractStencilSignBlock) state.getBlock()).boardShift(entity.getWorld(), entity.getPos(), state);
-                if (shift != 0) matrices.translate(0, 0, shift / 16);
+                // Where the board is drawn: turned, against its post or wall, on its floor or ceiling
+                Matrix4f transform = ((AbstractStencilSignBlock) state.getBlock()).modelTransform(entity.getWorld(), entity.getPos(), state);
+                matrices.peek().getPositionMatrix().mul(transform);
+                matrices.peek().getNormalMatrix().mul(new Matrix3f(transform));
                 for (SymbolLayouts.SymbolQuad quad : quads) drawQuad(matrices.peek(), consumer, quad, argb, symbolLight);
             }
         }

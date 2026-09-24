@@ -48,6 +48,16 @@ public class ConnectedPlasticModel implements BakedModel {
         set(Direction.EAST, Direction.UP, Direction.SOUTH);
     }
 
+    /** @return the side the top of {@code face}'s texture points to (vanilla block face UVs). */
+    public static Direction textureUp(Direction face) {
+        return TEXTURE_UP[face.ordinal()];
+    }
+
+    /** @return the side the left of {@code face}'s texture points to (vanilla block face UVs). */
+    public static Direction textureLeft(Direction face) {
+        return TEXTURE_LEFT[face.ordinal()];
+    }
+
     private static void set(Direction face, Direction up, Direction left) {
         TEXTURE_UP[face.ordinal()] = up;
         TEXTURE_LEFT[face.ordinal()] = left;

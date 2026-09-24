@@ -5,6 +5,13 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.tick.ScheduledTickView;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.util.math.Direction;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.nbt.NbtCompound;
+import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.component.DataComponentTypes;
@@ -29,13 +36,17 @@ import net.minecraft.world.WorldView;
  * Plastic road sign: a round, square, diamond, star or heart plate of one of the 16 plastic colours on top of any
  * fence or wall ({@link SignPosts}, plastic fences included), turning in 16 directions. Every plate fills the 16x16
  * pixel grid (the diamond is the square turned by 45°). Stencils paint on the plate. The wrench changes the plate.
+ * <p>
+ * Made of plastic: unless it is on a post (standing on a fence or a wall, or hung on its side), it floats like the
+ * plastic studs ({@link PlasticBlock}). Under water it rises, lies flat on the surface, is pressed flat under a block
+ * that stops it, lies on the magma that pulls it down; a chain holds it. Like them it needs nothing to hold it.
  */
 public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
     public static final MapCodec<PlasticRoadSignBlock> CODEC = createCodec(PlasticRoadSignBlock::new);
     public static final EnumProperty<Plate> PLATE = EnumProperty.of("plate", Plate.class);
 
     public enum Plate implements StringIdentifiable {
-        ROUND("round"), SQUARE("square"), DIAMOND("diamond"), STAR("star"), HEART("heart");
+        ROUND("round"), SQUARE("square"), DIAMOND("diamond"), TRIANGLE("triangle"), STAR("star"), HEART("heart");
 
         private final String name;
         private byte[] mask;
@@ -66,23 +77,40 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
                             "...##########...",
                             ".....######.....");
                     case SQUARE, DIAMOND -> StencilShape.full();
+                    case TRIANGLE -> StencilShape.fromRows(
+                            ".......##.......",
+                            ".......##.......",
+                            "......####......",
+                            "......####......",
+                            ".....######.....",
+                            ".....######.....",
+                            "....########....",
+                            "....########....",
+                            "...##########...",
+                            "...##########...",
+                            "..############..",
+                            "..############..",
+                            ".##############.",
+                            ".##############.",
+                            "################",
+                            "################");
                     case STAR -> StencilShape.fromRows(
                             "......####......",
                             "......####......",
                             ".....######.....",
-                            ".....######.....",
+                            "################",
                             "################",
                             "################",
                             ".##############.",
+                            ".##############.",
                             "..############..",
-                            "...##########...",
-                            "...##########...",
                             "..############..",
-                            "..#####..#####..",
-                            ".#####....#####.",
-                            ".####......####.",
-                            "####........####",
-                            "###..........###");
+                            ".##############.",
+                            ".##############.",
+                            "#######..#######",
+                            "######....######",
+                            "#####......#####",
+                            "####........####");
                     case HEART -> StencilShape.fromRows(
                             "................",
                             ".#####....#####.",
@@ -156,9 +184,80 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
         return SignPosts.standsOnPost(world, pos);
     }
 
+    /** @return whether the sign is free to float: not standing on a post nor hung on one. */
+    public static boolean floats(BlockState state) {
+        Mount mount = state.get(MOUNT);
+        return mount != Mount.POST && mount != Mount.HUNG;
+    }
+
+    @Override
+    protected boolean needsSupport(BlockState state) {
+        return !floats(state);
+    }
+
+    @Override
+    protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+        super.onBlockAdded(state, world, pos, oldState, notify);
+        if (floats(state)) world.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+    }
+
+    @Override
+    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
+                                                   Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+        // Water arriving, a bubble column forming, or a chain holding it being broken: try again
+        if (floats(state)) tickView.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
+    }
+
+    @Override
+    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        if (floats(state)) PlasticBlock.drift(world, pos, this, PlasticRoadSignBlock::step);
+    }
+
+    /** One step of a floating sign, like a stud's: it carries its block entity (plate, symbol) along. */
+    @Nullable
+    private static BlockPos step(BlockState state, ServerWorld world, BlockPos pos) {
+        if (!floats(state) || !state.get(WATERLOGGED) || PlasticBlock.isChained(world, pos)) return null;
+        BlockPos target;
+        BlockState moved;
+        if (PlasticBlock.getCurrent(world, pos) == PlasticBlock.Current.DOWN) {
+            target = pos.down();
+            if (!PlasticBlock.canSinkInto(world.getBlockState(target))) {
+                turn(state, world, pos, Mount.FLOOR); // lies on the magma that pulled it down
+                return null;
+            }
+            moved = state;
+        } else {
+            target = pos.up();
+            BlockState above = world.getBlockState(target);
+            if (PlasticBlock.canRiseInto(above)) {
+                moved = state; // still under water
+            } else if (above.isAir()) {
+                moved = state.with(WATERLOGGED, false).with(MOUNT, Mount.FLOOR); // floats flat on the surface
+            } else {
+                turn(state, world, pos, Mount.CEILING); // pressed flat under the block that stops it
+                return null;
+            }
+        }
+        NbtCompound data = world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas
+                ? canvas.createNbt(world.getRegistryManager()) : null;
+        if (!PlasticBlock.moveWithRiders(world, pos, target, moved)) return PlasticBlock.retry(world, pos, state);
+        if (data != null && world.getBlockEntity(target) instanceof StencilCanvasBlockEntity canvas) {
+            canvas.read(data, world.getRegistryManager());
+            canvas.markDirty();
+            world.updateListeners(target, moved, moved, Block.NOTIFY_ALL);
+        }
+        return target;
+    }
+
+    /** Lays the sign flat in place (it keeps its water and its block entity). */
+    private static void turn(BlockState state, ServerWorld world, BlockPos pos, Mount mount) {
+        if (state.get(MOUNT) != mount) world.setBlockState(pos, state.with(MOUNT, mount), Block.NOTIFY_ALL);
+    }
+
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return OUTLINE.get(state, boardShift(world, pos, state));
+        return OUTLINE.get(this, world, pos, state);
     }
 
     @Override

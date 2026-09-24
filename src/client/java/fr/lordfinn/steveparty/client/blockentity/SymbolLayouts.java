@@ -28,10 +28,9 @@ public final class SymbolLayouts {
     private SymbolLayouts() {
     }
 
-    // Traffic sign: the board of traffic_sign.json, tilted by 22.5° around x at (8, 0, 3); symbol on both faces
+    // Traffic sign: the board of traffic_sign.json, tilted by 22.5° around x at (8, 0, 3); symbol on its front only
     private static final List<SymbolQuad> TRAFFIC_SIGN = List.of(
-            tiltX(front(new Vector3f(8, 7.75F, 1 - GAP), 16, 16), 22.5F, 0, 3),
-            tiltX(back(new Vector3f(8, 7.75F, 3 + GAP), 16, 16), 22.5F, 0, 3));
+            tiltX(front(new Vector3f(8, 7.75F, 1 - GAP), 16, 16), 22.5F, 0, 3));
 
     // Wooden panel: the planks of the board (z = 3) between its rails, one symbol pixel per board pixel
     private static final List<SymbolQuad> WOODEN_PANEL = List.of(front(new Vector3f(8, 9, 3 - GAP), 16, 16));
@@ -67,11 +66,6 @@ public final class SymbolLayouts {
     /** Quad on a face looking north (-z): seen from the front, right is -x. */
     private static SymbolQuad front(Vector3f center, float width, float height) {
         return quad(center, new Vector3f(-1, 0, 0), new Vector3f(0, 1, 0), width, height, new Vector3f(0, 0, -1));
-    }
-
-    /** Quad on a face looking south (+z): seen from behind the sign, right is +x. */
-    private static SymbolQuad back(Vector3f center, float width, float height) {
-        return quad(center, new Vector3f(1, 0, 0), new Vector3f(0, 1, 0), width, height, new Vector3f(0, 0, 1));
     }
 
     private static SymbolQuad quad(Vector3f center, Vector3f right, Vector3f up, float width, float height, Vector3f normal) {

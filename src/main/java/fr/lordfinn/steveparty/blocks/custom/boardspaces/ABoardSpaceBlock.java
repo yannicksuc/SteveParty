@@ -9,6 +9,7 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
@@ -71,6 +72,14 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
             tileEntity.hideDestinations();
         }
         super.onStateReplaced(state, world, pos, newState, moved);
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
+            tileEntity.onPlaced();
+        }
     }
 
     @Override
