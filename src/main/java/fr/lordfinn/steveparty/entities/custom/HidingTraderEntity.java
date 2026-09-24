@@ -722,7 +722,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     private boolean isHiding() {
-        return ((getWorld() != null && getWorld().getClosestPlayer(getPos().getX(), getPos().getY(), getPos().getZ(), 15d, player -> !player.isSneaking()) == null) || isLeashed());
+        return ((getWorld() != null && getWorld().getClosestPlayer(getPos().getX(), getPos().getY(), getPos().getZ(), 15d, player -> !player.isSneaking() && !player.isSpectator()) == null) || isLeashed());
     }
 
     private void syncBlockData(BlockState blockState) {

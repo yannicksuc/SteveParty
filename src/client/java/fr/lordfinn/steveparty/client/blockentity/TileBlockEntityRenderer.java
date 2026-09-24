@@ -55,6 +55,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureBad = Steveparty.id("block/tile_overlay_angry");
     private static final Identifier textureNeutral = Steveparty.id("block/tile_overlay_neutral");
     private static final Identifier textureExcited = Steveparty.id("block/tile_overlay_excited");
+    private static final int WHITE = 0xFFFFFF;
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
 
 
@@ -70,7 +71,9 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         switch (tileType) {
             case TILE_START -> renderTileStart(entity, matrices, vertexConsumers, light, stack);
             case TILE_INVENTORY_INTERACTOR -> renderInventoryInteractor(entity, matrices, vertexConsumers, light, overlay, stack, direction);
-            default -> {        renderPicture(matrices, vertexConsumers, light, overlay, textureNeutral, direction);}
+            // The neutral face covers the tinted top of the model: it takes the cartridge colour (dyes), white by default
+            default -> renderPicture(matrices, vertexConsumers, light, overlay, textureNeutral, direction,
+                    stack.isEmpty() ? WHITE : stack.getOrDefault(COLOR, WHITE));
         }
     }
 
@@ -81,7 +84,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
             texture = textureExcited;
         else if (color == InventoryInteractorTileBehavior.BAD_COLOR)
             texture = textureBad;
-        renderPicture(matrices, vertexConsumers, light, overlay, texture, direction);
+        renderPicture(matrices, vertexConsumers, light, overlay, texture, direction, WHITE);
     }
 
     private void renderTileStart(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
@@ -178,7 +181,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     }
 
 
-    private void renderPicture(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Identifier texture, int direction) {
+    private void renderPicture(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Identifier texture, int direction, int color) {
+        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
         float angle = (float) ((direction * 45) / 180f * PI);
         matrices.push();
         matrices.translate(0.5, 0, 0.5);
@@ -191,32 +195,32 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         float side = 1f;
         rotate(matrices, angle, 0, -1, 0);
-        vertexConsumer.vertex(matrix, -side, 2/16f, side).color(255, 255, 255, 255).texture(sprite.getMinU(), sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
-        vertexConsumer.vertex(matrix, side, 2/16f, side).color(255, 255, 255, 255).texture(sprite.getMaxU(), sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
-        vertexConsumer.vertex(matrix, side, 2/16f, -side).color(255, 255, 255, 255).texture(sprite.getMaxU(), sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
-        vertexConsumer.vertex(matrix, -side, 2/16f, -side).color(255, 255, 255, 255).texture(sprite.getMinU(), sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
+        vertexConsumer.vertex(matrix, -side, 2/16f, side).color(r, g, b, 255).texture(sprite.getMinU(), sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
+        vertexConsumer.vertex(matrix, side, 2/16f, side).color(r, g, b, 255).texture(sprite.getMaxU(), sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
+        vertexConsumer.vertex(matrix, side, 2/16f, -side).color(r, g, b, 255).texture(sprite.getMaxU(), sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
+        vertexConsumer.vertex(matrix, -side, 2/16f, -side).color(r, g, b, 255).texture(sprite.getMinU(), sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, -1, 0);
         float unitUV = (sprite.getMaxV() - sprite.getMinV()) / 32f;
         rotate(matrices, (float) (PI/2f), 1, 0, 0);
-        vertexConsumer.vertex(matrix, -side, 14/16f, -1/16f).color(255, 255, 255, 255).texture(sprite.getMinU(), sprite.getMaxV() - unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, side, 14/16f, -1/16f).color(255, 255, 255, 255).texture(sprite.getMaxU(), sprite.getMaxV() - unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, side, 14/16f, -2/16f).color(255, 255, 255, 255).texture(sprite.getMaxU(), sprite.getMinV()  + unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, -side, 14/16f, -2/16f).color(255, 255, 255, 255).texture(sprite.getMinU(), sprite.getMinV()  + unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -side, 14/16f, -1/16f).color(r, g, b, 255).texture(sprite.getMinU(), sprite.getMaxV() - unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, side, 14/16f, -1/16f).color(r, g, b, 255).texture(sprite.getMaxU(), sprite.getMaxV() - unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, side, 14/16f, -2/16f).color(r, g, b, 255).texture(sprite.getMaxU(), sprite.getMinV()  + unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -side, 14/16f, -2/16f).color(r, g, b, 255).texture(sprite.getMinU(), sprite.getMinV()  + unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
         rotate(matrices, (float) -PI, 1, 0, 0);
-        vertexConsumer.vertex(matrix, -side, 14/16f, 2/16f).color(255, 255, 255, 255).texture(sprite.getMinU(), sprite.getMaxV() - unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, side, 14/16f, 2/16f).color(255, 255, 255, 255).texture(sprite.getMaxU(), sprite.getMaxV() - unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, side, 14/16f, 1/16f).color(255, 255, 255, 255).texture(sprite.getMaxU(), sprite.getMinV()  + unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, -side, 14/16f, 1/16f).color(255, 255, 255, 255).texture(sprite.getMinU(), sprite.getMinV()  + unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -side, 14/16f, 2/16f).color(r, g, b, 255).texture(sprite.getMinU(), sprite.getMaxV() - unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, side, 14/16f, 2/16f).color(r, g, b, 255).texture(sprite.getMaxU(), sprite.getMaxV() - unitUV * 29).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, side, 14/16f, 1/16f).color(r, g, b, 255).texture(sprite.getMaxU(), sprite.getMinV()  + unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -side, 14/16f, 1/16f).color(r, g, b, 255).texture(sprite.getMinU(), sprite.getMinV()  + unitUV * 2).light(light).overlay(overlay).normal(entry, 0, 1, 0);
         rotate(matrices, (float) PI/2, 1, 0, 0);
         rotate(matrices, (float) PI/2, 0, 0, 1);
-        vertexConsumer.vertex(matrix, 1/16f, 14/16f, side).color(255, 255, 255, 255).texture(sprite.getMinU()  + unitUV * 2, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, 2/16f, 14/16f, side).color(255, 255, 255, 255).texture(sprite.getMaxU() - unitUV * 29, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, 2/16f, 14/16f, -side).color(255, 255, 255, 255).texture(sprite.getMaxU() - unitUV * 29, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, 1/16f, 14/16f, -side).color(255, 255, 255, 255).texture(sprite.getMinU()  + unitUV * 2, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, 1/16f, 14/16f, side).color(r, g, b, 255).texture(sprite.getMinU()  + unitUV * 2, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, 2/16f, 14/16f, side).color(r, g, b, 255).texture(sprite.getMaxU() - unitUV * 29, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, 2/16f, 14/16f, -side).color(r, g, b, 255).texture(sprite.getMaxU() - unitUV * 29, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, 1/16f, 14/16f, -side).color(r, g, b, 255).texture(sprite.getMinU()  + unitUV * 2, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
         rotate(matrices, (float) -PI, 0, 0, 1);
-        vertexConsumer.vertex(matrix, -2/16f, 14/16f, side).color(255, 255, 255, 255).texture(sprite.getMinU()  + unitUV * 29, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, -1/16f, 14/16f, side).color(255, 255, 255, 255).texture(sprite.getMaxU() - unitUV * 2, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, -1/16f, 14/16f, -side).color(255, 255, 255, 255).texture(sprite.getMaxU() - unitUV * 2, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
-        vertexConsumer.vertex(matrix, -2/16f, 14/16f, -side).color(255, 255, 255, 255).texture(sprite.getMinU()  + unitUV * 29, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -2/16f, 14/16f, side).color(r, g, b, 255).texture(sprite.getMinU()  + unitUV * 29, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -1/16f, 14/16f, side).color(r, g, b, 255).texture(sprite.getMaxU() - unitUV * 2, sprite.getMaxV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -1/16f, 14/16f, -side).color(r, g, b, 255).texture(sprite.getMaxU() - unitUV * 2, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
+        vertexConsumer.vertex(matrix, -2/16f, 14/16f, -side).color(r, g, b, 255).texture(sprite.getMinU()  + unitUV * 29, sprite.getMinV()).light(light).overlay(overlay).normal(entry, 0, 1, 0);
 
         matrices.pop();
     }
