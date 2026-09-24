@@ -21,6 +21,8 @@ import software.bernie.geckolib.model.DefaultedEntityGeoModel;
  */
 public class MulaModel extends DefaultedEntityGeoModel<MulaEntity> {
     private final MulaMotion.Layer layer = new MulaMotion.Layer();
+    /** Offset of the whole model (pixels): the body cube spans y 2..11 in the geo, drawn at 0..9 (its hitbox). */
+    public static final float BODY_Y = -2f;
 
     public MulaModel() {
         super(Steveparty.id("mula"));
@@ -35,7 +37,9 @@ public class MulaModel extends DefaultedEntityGeoModel<MulaEntity> {
         mula.getMotion().layer(animationState.getPartialTick(), layer);
 
         body.setPosX(layer.posX);
-        body.setPosY(layer.posY);
+        // the body cube's bottom is 2 px above the model's origin in the geo: brought down onto the feet, so the model
+        // sits in its hitbox (MulaEntity.MODEL_SIZE) instead of floating above it; the bob stays centred on it
+        body.setPosY(layer.posY + BODY_Y);
         body.setRotX(-layer.pitch * MathHelper.RADIANS_PER_DEGREE);
         body.setRotY(-layer.yaw * MathHelper.RADIANS_PER_DEGREE);
         body.setRotZ(layer.roll * MathHelper.RADIANS_PER_DEGREE);

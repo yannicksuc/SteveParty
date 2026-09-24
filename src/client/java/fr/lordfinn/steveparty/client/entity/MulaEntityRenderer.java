@@ -137,7 +137,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         if (mula.getMotion().speed() > TRAIL_SPEED && mula.age % (fewer ? 4 : 2) == 0) {
             // behind it: where it was a tick ago, a little below its centre
             world.addParticle(mula.starDust(), mula.prevX + (random.nextDouble() - 0.5) * 0.25,
-                    mula.prevY + mula.getHeight() * 0.4 + (random.nextDouble() - 0.5) * 0.2,
+                    mula.prevY + mula.getHeight() * 0.3 + (random.nextDouble() - 0.5) * 0.2,
                     mula.prevZ + (random.nextDouble() - 0.5) * 0.25, 0, -0.01, 0);
         }
     }
@@ -214,7 +214,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             if (headScale < 0.05f) return;
             // how far the body's surface is towards the camera: the view direction in the body's frame hits the cube
             double dx = camera.getPos().x - MathHelper.lerp(partialTick, mula.prevX, mula.getX());
-            double dy = camera.getPos().y - (MathHelper.lerp(partialTick, mula.prevY, mula.getY()) + mula.getHeight() * 0.8);
+            double dy = camera.getPos().y - (MathHelper.lerp(partialTick, mula.prevY, mula.getY()) + mula.getHeight() * MulaEntity.CENTER);
             double dz = camera.getPos().z - MathHelper.lerp(partialTick, mula.prevZ, mula.getZ());
             double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (length < 1.0E-3) return;

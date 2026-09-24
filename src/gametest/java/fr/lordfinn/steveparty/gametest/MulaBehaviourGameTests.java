@@ -96,6 +96,29 @@ public class MulaBehaviourGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /**
+     * The hitbox is the model's body cube at every size (it was 2 model pixels lower and smaller than the model, and
+     * the gap grew with its size), with the eyes at the model's eyes.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void hitboxMatchesTheModelAtEverySize(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 2, 1));
+        for (int hunger : new int[]{0, 10, 20, 30, MulaEntity.MAX_HUNGER - 1}) {
+            mula.setHunger(hunger);
+            mula.calculateDimensions();
+            float scale = mula.getScaleFactor();
+            double size = MulaEntity.MODEL_SIZE * scale;
+            context.assertTrue(Math.abs(mula.getHeight() - size) < 1.0E-4 && Math.abs(mula.getWidth() - size) < 1.0E-4,
+                    "hitbox = body cube x " + scale + ": " + mula.getWidth() + " x " + mula.getHeight());
+            context.assertTrue(Math.abs(mula.getBoundingBox().minY - mula.getY()) < 1.0E-4
+                            && Math.abs(mula.getBoundingBox().maxY - (mula.getY() + size)) < 1.0E-4,
+                    "from its feet to the top of its body");
+            context.assertTrue(Math.abs(mula.getStandingEyeHeight() - MulaEntity.MODEL_EYE_HEIGHT * scale) < 1.0E-4,
+                    "eyes at the model's eyes: " + mula.getStandingEyeHeight());
+        }
+        context.complete();
+    }
+
     /** Hit, a wild Mula flees away from what hit it; a tamed one hides on the far side of its owner. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void shyFleesAwayOrBehindItsOwner(TestContext context) {

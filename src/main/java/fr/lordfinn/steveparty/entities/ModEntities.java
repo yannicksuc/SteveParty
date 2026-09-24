@@ -47,7 +47,9 @@ public class ModEntities {
             Steveparty.id("mula"),
             EntityType.Builder
                     .create(MulaEntity::new, SpawnGroup.MISC)
-                    .dimensions(0.5f, 0.5f)
+                    // the hitbox is the body cube of the model, the eyes at the model's eyes (both scale with its size)
+                    .dimensions(MulaEntity.MODEL_SIZE, MulaEntity.MODEL_SIZE)
+                    .eyeHeight(MulaEntity.MODEL_EYE_HEIGHT)
                     .makeFireImmune()
                     .build(MULA_ENTITY_KEY)
     );

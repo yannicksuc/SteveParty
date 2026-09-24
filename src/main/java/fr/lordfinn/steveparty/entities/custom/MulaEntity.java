@@ -205,6 +205,15 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	 * meals, or a couple of long strong potions.
 	 */
 	public static final int MAX_HUNGER = 40;
+	/**
+	 * Size of its body cube (9 model pixels) at scale 1: its hitbox (width and height). The model is drawn with the
+	 * bottom of that cube on its feet (MulaModel), so the hitbox is exactly what is seen, at every size.
+	 */
+	public static final float MODEL_SIZE = 9 / 16f;
+	/** Height of its eyes' centre above the bottom of the cube (5 model pixels) at scale 1. */
+	public static final float MODEL_EYE_HEIGHT = 5 / 16f;
+	/** Height of the middle of its body, as a fraction of its height (the model is centred in its hitbox). */
+	public static final double CENTER = 0.5;
 	/** 1 chance in TAMING_CHANCE to tame the Mula with each star fragment of its colour. */
 	private static final int TAMING_CHANCE = 3;
 
