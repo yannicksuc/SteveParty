@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaEntityRenderer;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
+import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
@@ -127,6 +128,7 @@ public class StevepartyClient implements ClientModInitializer {
         ConfigurationManager.loadConfig();
         PayloadReceivers.initialize();
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
+        ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
 
         initScreens();
         initParticles();
