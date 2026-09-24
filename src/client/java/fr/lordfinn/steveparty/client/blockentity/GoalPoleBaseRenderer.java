@@ -10,13 +10,14 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.Locale;
 
 /**
- * With a wrench in hand, near a goal pole base: a small panel, on the side facing the player, telling what each port
+ * With a wrench in hand, near a goal pole base, looking at it or at its pole: a small panel, on the side facing the player, telling what each port
  * does (the back plug, the red reset plate, the comparator plate) and whether the base counts. Nothing is drawn
  * otherwise.
  */
@@ -24,6 +25,8 @@ public class GoalPoleBaseRenderer implements BlockEntityRenderer<GoalPoleBaseBlo
     private static final String KEY = "hint.steveparty.goal_pole_base.";
     private static final double DETAIL_DISTANCE_SQ = 10 * 10;
     private static final int BACKGROUND = 0x90000000;
+    /** How high above the base looking at its pole still counts as looking at the base. */
+    private static final int COLUMN_REACH = 64;
 
     private final BlockEntityRenderDispatcher dispatcher;
 
@@ -35,6 +38,9 @@ public class GoalPoleBaseRenderer implements BlockEntityRenderer<GoalPoleBaseBlo
     public void render(GoalPoleBaseBlockEntity base, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers,
                        int light, int overlay) {
         if (dispatcher.camera == null || !WorldLabels.holdingWrench()) return;
+        // Only the base looked at (itself or its pole): panels of bases side by side would cover each other
+        BlockPos pos = base.getPos();
+        if (!WorldLabels.lookingAtColumn(pos.getX(), pos.getZ(), pos.getY(), pos.getY() + COLUMN_REACH)) return;
         Vec3d camera = dispatcher.camera.getPos();
         Vec3d center = Vec3d.ofCenter(base.getPos());
         if (camera.squaredDistanceTo(center) > DETAIL_DISTANCE_SQ) return;

@@ -806,5 +806,11 @@
   "gui.steveparty.goal_pole.mode.column": "Un seul but pour tout le mât",
   "gui.steveparty.goal_pole.mode.column.details": "Tous les segments de ce mât partagent ce but : réglez-le sur n'importe quel segment.",
   "gui.steveparty.goal_pole.mode.per_segment": "Un but par segment (avancé)",
-  "gui.steveparty.goal_pole.mode.per_segment.details": "Chaque segment a son propre but et son propre signal de comparateur : réglez celui-ci ici, les autres à la clé sur eux. Une encoche sur chaque segment le montre (verte quand il est atteint)."
+  "gui.steveparty.goal_pole.mode.per_segment.details": "Chaque segment a son propre but et son propre signal de comparateur : réglez celui-ci ici, les autres à la clé sur eux. Une encoche sur chaque segment le montre (verte quand il est atteint).",
+  "hint.steveparty.goal_pole.no_base": "Pas de socle sous ce mât",
+  "hint.steveparty.goal_pole.goal": "But :",
+  "hint.steveparty.goal_pole.segment": "Segment %s :",
+  "hint.steveparty.goal_pole.players": "Joueurs :",
+  "hint.steveparty.goal_pole.points": "Points :",
+  "hint.steveparty.goal_pole.points.none": "Aucun point pour l'instant"
 }

@@ -56,6 +56,8 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     private int flagColor = FlagItem.NO_COLOR;
     /** Total of the base below, as last pushed (0 without a base). */
     private long total = 0;
+    /** Whether a base stands under this pole (synced: the progress above the ball is only shown then). */
+    private boolean linked = false;
     private boolean goalMet = false;
     private long goalMetTick = 0;
     /** Last tick each player touched the top of this pole (the block is told every tick while they stand on it). */
@@ -286,8 +288,9 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         long newTotal = base != null ? base.getTotal() : 0;
         boolean met = base != null && compare(comparator, (int) Math.clamp(newTotal, Integer.MIN_VALUE, Integer.MAX_VALUE), value);
         int output = met ? 15 : 0;
-        boolean changed = newTotal != total || met != goalMet;
+        boolean changed = newTotal != total || met != goalMet || linked != (base != null);
         total = newTotal;
+        linked = base != null;
         if (met != goalMet) {
             goalMet = met;
             goalMetTick = world.getTime();
@@ -310,6 +313,11 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
     public long getTotal() {
         return total;
+    }
+
+    /** Whether a base stands under this pole (its total is then the base's). */
+    public boolean isLinked() {
+        return linked;
     }
 
     /**
@@ -358,6 +366,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         if (legacyGoal) nbt.putBoolean("LegacyGoal", true);
         if (flagColor != FlagItem.NO_COLOR) nbt.putInt("FlagColor", flagColor);
         nbt.putLong("Total", total);
+        nbt.putBoolean("Linked", linked);
         nbt.putBoolean("GoalMet", goalMet);
         nbt.putLong("GoalMetTick", goalMetTick);
     }
@@ -378,6 +387,8 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         }
         flagColor = nbt.contains("FlagColor", NbtElement.INT_TYPE) ? nbt.getInt("FlagColor") & 0xFFFFFF : FlagItem.NO_COLOR;
         total = nbt.getLong("Total");
+        // Saved before the flag existed: poles with a total had a base
+        linked = nbt.contains("Linked") ? nbt.getBoolean("Linked") : total != 0;
         goalMet = nbt.getBoolean("GoalMet");
         goalMetTick = nbt.getLong("GoalMetTick");
         // Same signal as before the chunk was unloaded: no spurious comparator pulse on load

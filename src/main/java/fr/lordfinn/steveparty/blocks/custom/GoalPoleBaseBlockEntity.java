@@ -547,6 +547,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public ResetPort getResetPort() { return resetPort; }
     public long getTotal() { return total; }
     public int getPoints(String holder) { return points.getOrDefault(holder, 0); }
+    /** Points per player (read only; synced to clients for the wrench details). */
+    public Map<String, Integer> getPointsView() { return java.util.Collections.unmodifiableMap(points); }
     public boolean isSourceInvalid() { return sourceInvalid; }
     @Nullable public ScoreboardObjective getMirror() { return mirror; }
 

@@ -805,5 +805,11 @@
   "gui.steveparty.goal_pole.mode.column": "One goal for the whole pole",
   "gui.steveparty.goal_pole.mode.column.details": "Every segment of this pole shares this goal: set it on any segment.",
   "gui.steveparty.goal_pole.mode.per_segment": "A goal per segment (advanced)",
-  "gui.steveparty.goal_pole.mode.per_segment.details": "Each segment has its own goal and its own comparator signal: set this one here, the others with the wrench on them. A notch on each segment shows it (green when reached)."
+  "gui.steveparty.goal_pole.mode.per_segment.details": "Each segment has its own goal and its own comparator signal: set this one here, the others with the wrench on them. A notch on each segment shows it (green when reached).",
+  "hint.steveparty.goal_pole.no_base": "No base under this pole",
+  "hint.steveparty.goal_pole.goal": "Goal:",
+  "hint.steveparty.goal_pole.segment": "Segment %s:",
+  "hint.steveparty.goal_pole.players": "Players:",
+  "hint.steveparty.goal_pole.points": "Points:",
+  "hint.steveparty.goal_pole.points.none": "No points yet"
 }

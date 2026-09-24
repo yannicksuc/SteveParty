@@ -96,6 +96,8 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         if (!state.contains(GoalPoleBlock.FLAG)) return;
         World world = entity.getWorld();
         if (world == null) return;
+        // The top of the pole: the progress above the ball, the lit ball, the details with a wrench
+        if (state.get(GoalPoleBlock.TOP)) GoalPoleTopDisplay.render(entity, tickDelta, matrices, vertexConsumers, dispatcher);
         // A goal per segment: a notch on each segment, gold, green while its goal is met
         if (entity.isPerSegment()) drawNotch(vertexConsumers.getBuffer(RenderLayer.getCutout()), matrices.peek(),
                 entity.isGoalMet() ? NOTCH_MET : NOTCH, light);
@@ -185,7 +187,7 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         quad(buffer, entry, min, top, min, max, top, min, max, top, max, min, top, max, u0, v0, u1, v1, up, light, 0, 1, 0);
     }
 
-    private static void quad(VertexConsumer buffer, MatrixStack.Entry entry, float x0, float y0, float z0, float x1, float y1, float z1,
+    static void quad(VertexConsumer buffer, MatrixStack.Entry entry, float x0, float y0, float z0, float x1, float y1, float z1,
                              float x2, float y2, float z2, float x3, float y3, float z3, float u0, float v0, float u1, float v1,
                              int color, int light, float nx, float ny, float nz) {
         Matrix4f pose = entry.getPositionMatrix();

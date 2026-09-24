@@ -797,4 +797,24 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.assertTrue(poleEntity(context, BASE.up()).createNbt(registries).getInt("Version") == GoalPoleBlockEntity.VERSION, "saved in the new format");
         context.complete();
     }
+
+    /** The progress above the ball needs to know whether a base is under the pole: synced, and saved. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void polesKnowWhetherABaseIsUnderThem(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity top = poleEntity(context, BASE.up(2));
+        context.assertTrue(top.isLinked() && top.toInitialChunkDataNbt(registries).getBoolean("Linked"), "linked to the base");
+        base.credit("Alex", 3, null);
+        context.assertTrue(base.getPointsView().get("Alex") == 3 && top.getTotal() == 3, "points and total");
+        context.assertTrue(base.toInitialChunkDataNbt(registries).getCompound("Points").getInt("Alex") == 3,
+                "the points are sent to clients (wrench details)");
+        removeBase(context);
+        GoalPoleNetwork.processPending();
+        context.assertTrue(!top.isLinked() && top.getTotal() == 0, "no base any more");
+        context.complete();
+    }
 }
