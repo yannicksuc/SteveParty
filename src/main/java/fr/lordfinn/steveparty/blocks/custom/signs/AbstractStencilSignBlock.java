@@ -232,6 +232,14 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
         return true;
     }
 
+    /**
+     * @return whether the sign ({@code state}, at {@code pos}) is held by the block at {@code support}: it would fall
+     * if that block went away (floating plastic stays put rather than drop it)
+     */
+    public boolean isHeldBy(BlockState state, BlockPos pos, BlockPos support) {
+        return needsSupport(state) && pos.offset(supportSide(state)).equals(support);
+    }
+
     /** @return whether this sign can stand at {@code pos} (on what is below it). */
     protected boolean canStandAt(WorldView world, BlockPos pos) {
         return world.getBlockState(pos.down()).isSolid();

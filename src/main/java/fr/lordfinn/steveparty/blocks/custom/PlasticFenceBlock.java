@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Plastic fence: made of plastic, it floats like the plastic blocks ({@link PlasticBlock}): under water it rises
  * until its top is level with the surface, bubble columns carry it, magma pulls it down, a chain holds it, and it
- * never cuts a bubble column.
+ * never cuts a bubble column. A sign hung on it (or standing on it) holds it too: it would fall off.
  */
 public class PlasticFenceBlock extends FenceBlock {
     public PlasticFenceBlock(Settings settings) {
@@ -25,14 +25,14 @@ public class PlasticFenceBlock extends FenceBlock {
     @Override
     protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
         super.onBlockAdded(state, world, pos, oldState, notify);
-        world.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+        PlasticBlock.scheduleStep(world, world, pos, this);
     }
 
     @Override
     protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
                                                    Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
         // Water arriving, a bubble column forming, or a chain holding it being broken: try again
-        tickView.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+        PlasticBlock.scheduleStep(tickView, world, pos, this);
         return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
     }
 
@@ -42,11 +42,11 @@ public class PlasticFenceBlock extends FenceBlock {
     }
 
     @Nullable
-    private static BlockPos step(BlockState state, ServerWorld world, BlockPos pos) {
-        if (!state.get(WATERLOGGED) || PlasticBlock.isChained(world, pos)) return null;
+    private static BlockPos step(BlockState state, ServerWorld world, BlockPos pos, PlasticBlock.Flow flow) {
+        if (!state.get(WATERLOGGED) || PlasticBlock.isHeld(world, pos, flow.current())) return null;
         BlockPos target;
         BlockState moved;
-        if (PlasticBlock.getCurrent(world, pos) == PlasticBlock.Current.DOWN) {
+        if (flow.current() == PlasticBlock.Current.DOWN) {
             target = pos.down();
             if (!PlasticBlock.canSinkInto(world.getBlockState(target))) return null; // resting on the magma
             moved = state;
@@ -58,6 +58,6 @@ public class PlasticFenceBlock extends FenceBlock {
         }
         // Linked to the fences around its new place
         moved = Block.postProcessState(moved, world, target);
-        return PlasticBlock.moveWithRiders(world, pos, target, moved) ? target : PlasticBlock.retry(world, pos, state);
+        return PlasticBlock.moveWithRiders(world, pos, target, moved, flow) ? target : PlasticBlock.retry(world, pos, state, flow);
     }
 }

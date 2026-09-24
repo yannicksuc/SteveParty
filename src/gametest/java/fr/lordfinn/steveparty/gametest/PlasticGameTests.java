@@ -465,13 +465,18 @@ public class PlasticGameTests implements FabricGameTest {
 
     /** A 28-block water shaft (y 1 to SHAFT_TOP) over {@code source}, then {@code then} once its bubble column formed. */
     private static void shaft(TestContext context, Block source, Runnable then) {
-        for (int y = 0; y <= SHAFT_TOP + 1; y++) {
+        shaft(context, source, SHAFT_TOP, then);
+    }
+
+    /** A water shaft from y 1 to {@code top} over {@code source}, then {@code then} once its bubble column formed. */
+    private static void shaft(TestContext context, Block source, int top, Runnable then) {
+        for (int y = 0; y <= top + 1; y++) {
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dz = -1; dz <= 1; dz++) context.setBlockState(new BlockPos(X + dx, y, Z + dz), Blocks.GLASS);
             }
         }
-        for (int y = 1; y <= SHAFT_TOP; y++) context.setBlockState(new BlockPos(X, y, Z), Blocks.WATER);
-        context.setBlockState(new BlockPos(X, SHAFT_TOP + 1, Z), Blocks.AIR);
+        for (int y = 1; y <= top; y++) context.setBlockState(new BlockPos(X, y, Z), Blocks.WATER);
+        context.setBlockState(new BlockPos(X, top + 1, Z), Blocks.AIR);
         context.setBlockState(new BlockPos(X, 0, Z), source);
         context.waitAndRun(40, then);
     }
@@ -527,6 +532,151 @@ public class PlasticGameTests implements FabricGameTest {
                 context.complete();
             });
         });
+    }
+
+    /** A vertical chain above holds it in a whirlpool (going up, a chain above only blocks the way); breaking it lets it sink. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aChainAboveHoldsItInAWhirlpool(TestContext context) {
+        waterColumn(context);
+        context.setBlockState(new BlockPos(X, BOTTOM, Z), Blocks.MAGMA_BLOCK);
+        BlockPos chain = new BlockPos(X, TOP, Z);
+        // Put in once the whirlpool formed, so that it pulls from the start
+        context.waitAndRun(25, () -> {
+            context.setBlockState(chain, Blocks.CHAIN.getDefaultState().with(ChainBlock.AXIS, Direction.Axis.Y));
+            context.setBlockState(chain.down(), plastic());
+            context.waitAndRun(20, () -> {
+                context.expectBlock(plastic(), chain.down());
+                context.setBlockState(chain, Blocks.WATER);
+                context.waitAndRun((TOP - BOTTOM) * COLUMN_TICKS + 20, () -> {
+                    context.expectBlock(plastic(), new BlockPos(X, BOTTOM + 1, Z));
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    private static final int TALL_SHAFT_TOP = 72;
+
+    /**
+     * In a column taller than the 64 blocks {@link PlasticBlock#getCurrentSource} looks down, the whirlpool still
+     * pulls it down all the way (the column cells tell the way past that).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 400)
+    public void aColumnTallerThan64BlocksStillCarriesIt(TestContext context) {
+        shaft(context, Blocks.MAGMA_BLOCK, TALL_SHAFT_TOP, () -> {
+            BlockPos start = new BlockPos(X, TALL_SHAFT_TOP - 2, Z);
+            context.setBlockState(start, plastic());
+            context.waitAndRun(10, () -> {
+                context.assertTrue(!context.getBlockState(start).isOf(plastic()), "left the top of the tall column");
+                context.waitAndRun(TALL_SHAFT_TOP * 5 / 3 + 20, () -> {
+                    context.expectBlock(plastic(), new BlockPos(X, 1, Z));
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    /** Plastic slabs, stairs and walls are made of plastic but no pieces: put in water, they stay where they are. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void plasticStairsSlabsAndWallsDoNotFloat(TestContext context) {
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            for (Block shape : new Block[]{ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_STAIRS[i], ModBlocks.PLASTIC_WALLS[i]}) {
+                var state = shape.getDefaultState();
+                context.assertTrue(PlasticBlock.isPlastic(state) && !PlasticBlock.isPlasticPiece(state), "plastic but no piece: " + shape);
+            }
+        }
+        waterColumn(context);
+        BlockPos stairs = new BlockPos(X, BOTTOM, Z);
+        context.setBlockState(stairs, ModBlocks.PLASTIC_STAIRS[2].getDefaultState().with(net.minecraft.block.StairsBlock.WATERLOGGED, true));
+        context.waitAndRun(risingTicks(TOP - BOTTOM), () -> {
+            context.expectBlock(ModBlocks.PLASTIC_STAIRS[2], stairs);
+            for (int y = BOTTOM + 1; y <= TOP; y++) context.expectBlock(Blocks.WATER, new BlockPos(X, y, Z));
+            context.complete();
+        });
+    }
+
+    /**
+     * Everything made of plastic is in the one steveparty:plastic tag (the wrench, the shears and the hop switch go by
+     * it): every floating piece, fences and the road sign included.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void everyPlasticPieceIsInThePlasticTag(TestContext context) {
+        var wrench = new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.WRENCH);
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            for (Block piece : new Block[]{ModBlocks.PLASTIC_BLOCKS[i], ModBlocks.PLASTIC_STUDS[i], ModBlocks.PLASTIC_FENCES[i]}) {
+                var state = piece.getDefaultState();
+                context.assertTrue(PlasticBlock.isPlasticPiece(state) && PlasticBlock.isPlastic(state), "a plastic piece: " + piece);
+                context.assertTrue(wrench.getMiningSpeedMultiplier(state) > 100, "the wrench takes it apart at once: " + piece);
+            }
+            context.assertTrue(fr.lordfinn.steveparty.blocks.switchable.Switchables.isSwitchable(ModBlocks.PLASTIC_FENCES[i].getDefaultState()),
+                    "the hop switch switches plastic fences");
+        }
+        var sign = ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState();
+        context.assertTrue(PlasticBlock.isPlasticPiece(sign) && PlasticBlock.isPlastic(sign), "the road sign is plastic");
+        context.assertTrue(!fr.lordfinn.steveparty.blocks.switchable.Switchables.isSwitchable(sign), "but not switchable (block entity)");
+        context.complete();
+    }
+
+    /** A sign hung on a plastic fence holds it (it would fall off); once it is gone, the fence floats up. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aSignHungOnAPlasticFenceHoldsIt(TestContext context) {
+        waterColumn(context);
+        BlockPos fence = new BlockPos(X, BOTTOM, Z), sign = fence.east();
+        context.setBlockState(fence, ModBlocks.PLASTIC_FENCES[1].getDefaultState().with(net.minecraft.block.FenceBlock.WATERLOGGED, true));
+        // In the tube's glass wall, on the east side of the fence, facing east
+        context.setBlockState(sign, ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()
+                .with(fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock.MOUNT,
+                        fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock.Mount.HUNG)
+                .with(fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock.ROTATION,
+                        net.minecraft.util.math.RotationPropertyHelper.fromDirection(Direction.EAST)));
+        context.waitAndRun(risingTicks(TOP - BOTTOM), () -> {
+            context.expectBlock(ModBlocks.PLASTIC_FENCES[1], fence);
+            context.expectBlock(ModBlocks.PLASTIC_ROAD_SIGN, sign);
+            context.setBlockState(sign, Blocks.GLASS);
+            context.waitAndRun(risingTicks(TOP - BOTTOM), () -> {
+                context.expectBlock(ModBlocks.PLASTIC_FENCES[1], new BlockPos(X, TOP, Z));
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * The bubble column only leaves a player alone (to move at the piece's speed) over a piece it is carrying: over a
+     * chained one it acts as usual.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void onlyAMovingPieceTakesItsRiderOutOfTheColumn(TestContext context) {
+        waterColumn(context);
+        context.setBlockState(new BlockPos(X, BOTTOM, Z), Blocks.SOUL_SAND);
+        BlockPos chain = new BlockPos(X + 1, BOTTOM + 1, Z);
+        context.setBlockState(chain, Blocks.CHAIN.getDefaultState().with(ChainBlock.AXIS, Direction.Axis.X));
+        context.setBlockState(new BlockPos(X, BOTTOM + 1, Z), plastic());
+        context.waitAndRun(40, () -> {
+            var world = context.getWorld();
+            var rider = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND,
+                    new net.minecraft.util.math.Vec3d(X + 0.5, BOTTOM + 2, Z + 0.5));
+            context.assertTrue(!PlasticBlock.isRidingPlastic(world, rider), "over a chained piece: the column acts");
+            context.setBlockState(chain, Blocks.GLASS); // released: the column carries it
+            context.assertTrue(PlasticBlock.isRidingPlastic(world, rider), "over a piece the column carries");
+            rider.discard();
+            context.complete();
+        });
+    }
+
+    /**
+     * Riding a piece up through still water, a player starts each step at {@link PlasticBlock#RIDE_STILL_SPEED}: with
+     * the water slowing it down every tick (vanilla: speed x 0.8 - 0.005), it covers exactly the piece's block before
+     * the next step, instead of falling behind into the piece.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aRiderKeepsPaceWithAPieceRisingInStillWater(TestContext context) {
+        double speed = PlasticBlock.RIDE_STILL_SPEED, covered = 0;
+        for (int tick = 0; tick < PlasticBlock.RISE_DELAY; tick++) {
+            covered += speed;
+            speed = speed * 0.8F - 0.08 / 16;
+        }
+        context.assertTrue(Math.abs(covered - 1) < 1e-9, "a block per step: " + covered);
+        context.complete();
     }
 
     /** A stud resting on magma does not cut the whirlpool either. */
