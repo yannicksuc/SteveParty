@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:polished_orange_concrete_bricks",
+  "result": {
+    "count": 1,
+    "id": "steveparty:orange_polished_concrete_bricks_stairs"
+  }
+}

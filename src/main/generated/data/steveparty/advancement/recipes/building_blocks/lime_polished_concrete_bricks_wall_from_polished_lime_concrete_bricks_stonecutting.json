@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_polished_lime_concrete_bricks": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:polished_lime_concrete_bricks"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:lime_polished_concrete_bricks_wall_from_polished_lime_concrete_bricks_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_polished_lime_concrete_bricks"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:lime_polished_concrete_bricks_wall_from_polished_lime_concrete_bricks_stonecutting"
+    ]
+  }
+}

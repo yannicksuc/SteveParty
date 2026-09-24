@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "steveparty:block/polished_gray_concrete_bricks",
+    "side": "steveparty:block/polished_gray_concrete_bricks",
+    "top": "steveparty:block/polished_gray_concrete_bricks"
+  }
+}

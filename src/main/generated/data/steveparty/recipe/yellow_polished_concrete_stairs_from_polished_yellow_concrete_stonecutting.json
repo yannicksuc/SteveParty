@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:polished_yellow_concrete",
+  "result": {
+    "count": 1,
+    "id": "steveparty:yellow_polished_concrete_stairs"
+  }
+}

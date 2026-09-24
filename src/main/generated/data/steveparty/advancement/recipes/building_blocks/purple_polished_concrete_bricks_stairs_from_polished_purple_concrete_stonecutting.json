@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_polished_purple_concrete": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:polished_purple_concrete"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:purple_polished_concrete_bricks_stairs_from_polished_purple_concrete_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_polished_purple_concrete"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:purple_polished_concrete_bricks_stairs_from_polished_purple_concrete_stonecutting"
+    ]
+  }
+}

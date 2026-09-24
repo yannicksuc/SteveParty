@@ -13,6 +13,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.RegistryKeys;
 
@@ -149,6 +150,87 @@ public class ModBlocks {
         }
     }
 
+    // Polished concrete: same pattern as the polished terracotta, in the vanilla concrete colours
+    public static final Block[] POLISHED_CONCRETE_BLOCKS = new Block[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_BRICKS_BLOCKS = new Block[COLORS.length];
+
+    public static final Block[] POLISHED_CONCRETE_STAIRS = new StairsBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_SLABS = new SlabBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_WALLS = new WallBlock[COLORS.length];
+
+    public static final Block[] POLISHED_CONCRETE_BRICKS_STAIRS = new StairsBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_BRICKS_SLABS = new SlabBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_BRICKS_WALLS = new WallBlock[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            final int index = i;
+            String color = COLORS[i];
+            DyeColor dyeColor = DyeColor.byName(color, DyeColor.WHITE);
+
+            POLISHED_CONCRETE_BLOCKS[i] = register(Block::new,
+                    Block.Settings.create()
+                            .mapColor(dyeColor)
+                            .strength(1.8f, 1.8f)
+                            .sounds(BlockSoundGroup.STONE)
+                            .solid()
+                            .requiresTool(),
+                    "polished_" + color + "_concrete", true);
+
+            POLISHED_CONCRETE_BRICKS_BLOCKS[i] = register(Block::new,
+                    Block.Settings.create()
+                            .mapColor(dyeColor)
+                            .strength(2.0f, 2.5f)
+                            .sounds(BlockSoundGroup.STONE)
+                            .solid()
+                            .requiresTool(),
+                    "polished_" + color + "_concrete_bricks", true);
+
+            // Concrete
+            POLISHED_CONCRETE_STAIRS[i] = register(
+                    (s) -> new StairsBlock(POLISHED_CONCRETE_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(POLISHED_CONCRETE_BLOCKS[index]),
+                    color + "_polished_concrete_stairs",
+                    true
+            );
+
+            POLISHED_CONCRETE_SLABS[i] = register(
+                    SlabBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BLOCKS[i]),
+                    color + "_polished_concrete_slab",
+                    true
+            );
+
+            POLISHED_CONCRETE_WALLS[i] = register(
+                    WallBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BLOCKS[i]),
+                    color + "_polished_concrete_wall",
+                    true
+            );
+
+            // Concrete bricks
+            POLISHED_CONCRETE_BRICKS_STAIRS[i] = register(
+                    (s) -> new StairsBlock(POLISHED_CONCRETE_BRICKS_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(POLISHED_CONCRETE_BRICKS_BLOCKS[index]),
+                    color + "_polished_concrete_bricks_stairs",
+                    true
+            );
+
+            POLISHED_CONCRETE_BRICKS_SLABS[i] = register(
+                    SlabBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BRICKS_BLOCKS[i]),
+                    color + "_polished_concrete_bricks_slab",
+                    true
+            );
+
+            POLISHED_CONCRETE_BRICKS_WALLS[i] = register(
+                    WallBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BRICKS_BLOCKS[i]),
+                    color + "_polished_concrete_bricks_wall",
+                    true
+            );
+        }
+    }
 
     public static final Block TRADING_STALL = register(TradingStallBlock::new,
             Block.Settings.create()

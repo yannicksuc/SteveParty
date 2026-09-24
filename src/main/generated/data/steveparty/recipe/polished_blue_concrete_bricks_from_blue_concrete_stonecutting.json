@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "minecraft:blue_concrete",
+  "result": {
+    "count": 1,
+    "id": "steveparty:polished_blue_concrete_bricks"
+  }
+}

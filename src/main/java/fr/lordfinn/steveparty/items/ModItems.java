@@ -195,6 +195,15 @@ public class ModItems {
             for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS) {
                 itemGroup.add(block);
             }
+
+            for (Block[] blocks : new Block[][]{
+                    ModBlocks.POLISHED_CONCRETE_BLOCKS, ModBlocks.POLISHED_CONCRETE_BRICKS_BLOCKS,
+                    ModBlocks.POLISHED_CONCRETE_STAIRS, ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_WALLS,
+                    ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS}) {
+                for (Block block : blocks) {
+                    itemGroup.add(block);
+                }
+            }
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);
             itemGroup.add(BLUE_STAR_FRAGMENTS_BLOCK);

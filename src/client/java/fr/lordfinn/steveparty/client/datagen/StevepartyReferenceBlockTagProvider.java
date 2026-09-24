@@ -66,6 +66,18 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS, ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS, ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS})
             for (Block b : variants)
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
+        for (Block b : ModBlocks.POLISHED_CONCRETE_SLABS) getOrCreateTagBuilder(BlockTags.SLABS).add(b);
+        for (Block b : ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS) getOrCreateTagBuilder(BlockTags.SLABS).add(b);
+        for (Block b : ModBlocks.POLISHED_CONCRETE_STAIRS) getOrCreateTagBuilder(BlockTags.STAIRS).add(b);
+        for (Block b : ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS) getOrCreateTagBuilder(BlockTags.STAIRS).add(b);
+        for (Block b : ModBlocks.POLISHED_CONCRETE_WALLS) getOrCreateTagBuilder(BlockTags.WALLS).add(b);
+        for (Block b : ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS) getOrCreateTagBuilder(BlockTags.WALLS).add(b);
+        for (Block[] variants : new Block[][]{
+                ModBlocks.POLISHED_CONCRETE_BLOCKS, ModBlocks.POLISHED_CONCRETE_BRICKS_BLOCKS,
+                ModBlocks.POLISHED_CONCRETE_STAIRS, ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_WALLS,
+                ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS})
+            for (Block b : variants)
+                getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
                         ModBlocks.TELEPORTATION_PAD,

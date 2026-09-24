@@ -10,7 +10,11 @@ import net.minecraft.data.server.recipe.RecipeGenerator;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
+import net.minecraft.data.family.BlockFamily;
 import net.minecraft.recipe.book.RecipeCategory;
+import net.minecraft.registry.Registries;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
+import net.minecraft.util.Identifier;
 import java.util.List;
 import net.minecraft.registry.RegistryWrapper;
 import java.util.concurrent.CompletableFuture;
@@ -102,6 +106,43 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .input(ModItems.BLACK_STAR_FRAGMENT, 5)
                         .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
                         .offerTo(recipeExporter, "power_star_from_black_fragments");
+
+                generatePolishedConcrete();
+            }
+
+            // Same chain as the vanilla polished stones: concrete -> polished (2x2) -> bricks (2x2),
+            // stairs / slabs / walls at the crafting table, everything at the stonecutter.
+            private void generatePolishedConcrete() {
+                RecipeCategory building = RecipeCategory.BUILDING_BLOCKS;
+                for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+                    Block concrete = Registries.BLOCK.get(Identifier.ofVanilla(ModBlocks.COLORS[i] + "_concrete"));
+                    Block polished = ModBlocks.POLISHED_CONCRETE_BLOCKS[i];
+                    Block bricks = ModBlocks.POLISHED_CONCRETE_BRICKS_BLOCKS[i];
+                    Block[] polishedVariants = {ModBlocks.POLISHED_CONCRETE_STAIRS[i], ModBlocks.POLISHED_CONCRETE_SLABS[i], ModBlocks.POLISHED_CONCRETE_WALLS[i]};
+                    Block[] bricksVariants = {ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS[i], ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS[i], ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS[i]};
+
+                    offerPolishedStoneRecipe(building, polished, concrete);
+                    offerPolishedStoneRecipe(building, bricks, polished);
+                    generateFamily(new BlockFamily.Builder(polished)
+                            .stairs(polishedVariants[0]).slab(polishedVariants[1]).wall(polishedVariants[2]).build(), FeatureFlags.VANILLA_FEATURES);
+                    generateFamily(new BlockFamily.Builder(bricks)
+                            .stairs(bricksVariants[0]).slab(bricksVariants[1]).wall(bricksVariants[2]).build(), FeatureFlags.VANILLA_FEATURES);
+
+                    offerStonecuttingRecipe(building, polished, concrete);
+                    offerStonecuttingRecipe(building, bricks, concrete);
+                    offerStonecuttingRecipe(building, bricks, polished);
+                    for (Block input : new Block[]{concrete, polished})
+                        offerStonecuttingVariants(polishedVariants, input);
+                    for (Block input : new Block[]{concrete, polished, bricks})
+                        offerStonecuttingVariants(bricksVariants, input);
+                }
+            }
+
+            // {stairs, slab, wall}: a slab is half a block, so the stonecutter gives two
+            private void offerStonecuttingVariants(Block[] variants, Block input) {
+                offerStonecuttingRecipe(RecipeCategory.BUILDING_BLOCKS, variants[0], input);
+                offerStonecuttingRecipe(RecipeCategory.BUILDING_BLOCKS, variants[1], input, 2);
+                offerStonecuttingRecipe(RecipeCategory.BUILDING_BLOCKS, variants[2], input);
             }
         };
     }

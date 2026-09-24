@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "steveparty:block/purple_polished_concrete_slab"
+    },
+    "type=double": {
+      "model": "steveparty:block/polished_purple_concrete"
+    },
+    "type=top": {
+      "model": "steveparty:block/purple_polished_concrete_slab_top"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:polished_lime_concrete_bricks",
+  "result": {
+    "count": 1,
+    "id": "steveparty:lime_polished_concrete_bricks_stairs"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:polished_gray_concrete",
+  "result": {
+    "count": 2,
+    "id": "steveparty:gray_polished_concrete_slab"
+  }
+}

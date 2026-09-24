@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "minecraft:cyan_concrete",
+  "result": {
+    "count": 1,
+    "id": "steveparty:polished_cyan_concrete_bricks"
+  }
+}
