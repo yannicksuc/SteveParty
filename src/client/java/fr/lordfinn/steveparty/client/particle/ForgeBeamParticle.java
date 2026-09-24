@@ -10,8 +10,8 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 
 /**
- * End rod sparkle shot at a constant speed (vanilla end rod particles slow down right away), gone as soon as it hits a
- * block: the laser of the dice forge.
+ * End rod sparkle that keeps its speed (vanilla end rod particles slow down right away) and fades quickly, gone as soon
+ * as it hits a block: the shooting star trail of the dice forge.
  */
 public class ForgeBeamParticle extends AnimatedParticle {
     /** End rod sparkle color. */
@@ -24,8 +24,8 @@ public class ForgeBeamParticle extends AnimatedParticle {
         this.velocityY = velocityY;
         this.velocityZ = velocityZ;
         this.velocityMultiplier = 1f; // keeps its speed
-        this.scale *= 0.75f;
-        this.maxAge = 40;
+        this.scale *= 0.55f + random.nextFloat() * 0.4f;
+        this.maxAge = 10 + random.nextInt(12);
         setTargetColor(TARGET_COLOR);
         setSpriteForAge(sprites);
     }

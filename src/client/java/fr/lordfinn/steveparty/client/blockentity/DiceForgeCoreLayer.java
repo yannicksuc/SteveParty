@@ -30,7 +30,7 @@ public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
     public static final String CORE_BONE = "core";
     public static final String ROOT_BONE = "root";
     /** Core center in root bone space (px): the 8px core sits on the plate recess bottom (y = 12). */
-    private static final float CORE_REST_Y = 16f / 16f;
+    private static final float CORE_REST_Y = DiceForgeBlockEntity.CORE_REST_HEIGHT;
     /** Height (blocks) from which the core falls into the hole. */
     private static final float CORE_DROP_HEIGHT = 1.25f;
     /** Part of the insertion animation during which the core falls (the forge rises afterwards). */

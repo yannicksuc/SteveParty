@@ -110,13 +110,13 @@ public class DiceForgeGameTests implements FabricGameTest {
         // Forced duplicates (e.g. old data) are still refused by the craft itself
         forge.setStack(FIRST_FRAGMENT_SLOT + 2, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
         forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.RED_STAR_FRAGMENT));
-        context.assertEquals(forge.getStatus(false), Status.DUPLICATE_FRAGMENT, "status");
+        context.assertEquals(forge.getStatus(), Status.DUPLICATE_FRAGMENT, "status");
         context.assertTrue(!forge.start(), "craft refused with two red slots");
 
         forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
-        context.assertEquals(forge.getStatus(false), Status.NOT_ENOUGH_BLANK_FACES, "no blank faces yet");
+        context.assertEquals(forge.getStatus(), Status.NOT_ENOUGH_BLANK_FACES, "no blank faces yet");
         forge.setStack(BLANK_SLOT, blanks(2));
-        context.assertEquals(forge.getStatus(false), Status.OK, "1 red + 3 black is valid");
+        context.assertEquals(forge.getStatus(), Status.OK, "1 red + 3 black is valid");
         context.complete();
     }
 
@@ -138,7 +138,7 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertEquals(forge.getStack(BLANK_SLOT).getCount(), 1, "one blank face left");
             context.assertEquals(forge.getStack(0).getCount(), 1, "faces kept");
             context.assertEquals(forge.getStack(1).getCount(), 5, "faces kept");
-            context.assertEquals(forge.getStatus(false), Status.NOT_ENOUGH_BLANK_FACES, "status");
+            context.assertEquals(forge.getStatus(), Status.NOT_ENOUGH_BLANK_FACES, "status");
             for (int i = 0; i < FRAGMENT_SLOTS; i++) {
                 context.assertEquals(forge.getStack(FIRST_FRAGMENT_SLOT + i).getCount(), 1, "black fragments kept");
             }
@@ -146,6 +146,48 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertTrue(!forge.canInsert(BLANK_SLOT, new ItemStack(face(9)), Direction.UP), "wrong item refused");
             context.assertTrue(forge.canInsert(BLANK_SLOT, blanks(1), Direction.UP), "blank faces accepted");
             context.assertTrue(!forge.canInsert(OUTPUT_SLOT, blanks(1), Direction.UP), "nothing goes in the output");
+            context.complete();
+        });
+    }
+
+    /** Hoppers fill it like any container; blank faces only go to their own slot, never on the ring. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void hoppersFillItLikeAContainer(TestContext context) {
+        DiceForgeBlockEntity forge = placeActivatedForge(context);
+        forge.setStack(0, new ItemStack(face(2)));
+        context.assertTrue(forge.canInsert(0, new ItemStack(face(2)), Direction.UP), "same face stacks up");
+        context.assertTrue(forge.canInsert(1, new ItemStack(face(5)), Direction.UP), "any face in a free slot");
+        context.assertTrue(!forge.canInsert(1, blanks(1), Direction.UP), "blank faces never go on the ring");
+        context.assertTrue(forge.canInsert(BLANK_SLOT, blanks(1), Direction.UP), "blank faces go to their slot");
+        context.assertTrue(forge.canInsert(FIRST_FRAGMENT_SLOT, new ItemStack(ModItems.RED_STAR_FRAGMENT), Direction.UP),
+                "fragments go to the fragment slots");
+        context.assertTrue(!forge.canInsert(FIRST_FRAGMENT_SLOT, new ItemStack(face(5)), Direction.UP), "faces do not");
+        // Hoppers below only take the forged dice out
+        for (int slot = 0; slot < SIZE; slot++) {
+            context.assertTrue(forge.canExtract(slot, new ItemStack(face(2)), Direction.DOWN) == (slot == OUTPUT_SLOT),
+                    "only the output can be emptied, slot " + slot);
+        }
+        context.assertTrue(java.util.Arrays.equals(forge.getAvailableSlots(Direction.DOWN), new int[]{OUTPUT_SLOT}),
+                "a hopper below only sees the output");
+        context.complete();
+    }
+
+    /** Faces are not remembered: changing one during a loop does not stop it, the next die carries the new face. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = TICK_LIMIT)
+    public void changingAFaceDuringALoopChangesTheNextDie(TestContext context) {
+        DiceForgeBlockEntity forge = placeActivatedForge(context);
+        forge.setStack(0, new ItemStack(face(1)));
+        for (int i = 0; i < FRAGMENT_SLOTS; i++) {
+            forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
+        }
+        forge.setStack(BLANK_SLOT, blanks(10));
+        context.assertTrue(forge.start(), "production starts");
+        forge.setStack(0, new ItemStack(face(4)));
+        context.waitAndRun(CRAFT_TIME + 10, () -> {
+            context.assertTrue(forge.isCrafting(), "still running");
+            ItemStack die = forge.getStack(OUTPUT_SLOT);
+            context.assertTrue(!die.isEmpty(), "a die was forged");
+            context.assertEquals(DiceFacesComponent.rollFace(die, Random.create(1)), 4, "with the new face");
             context.complete();
         });
     }
@@ -171,10 +213,10 @@ public class DiceForgeGameTests implements FabricGameTest {
         for (int i = 0; i < FRAGMENT_SLOTS; i++) {
             forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
         }
-        context.assertEquals(forge.getStatus(false), Status.NOT_ENOUGH_FACES, "no face at all");
+        context.assertEquals(forge.getStatus(), Status.NOT_ENOUGH_FACES, "no face at all");
         forge.setStack(BLANK_SLOT, blanks(4));
         forge.setStack(7, new ItemStack(face(4), 2));
-        context.assertEquals(forge.getStatus(false), Status.OK, "one face is enough");
+        context.assertEquals(forge.getStatus(), Status.OK, "one face is enough");
         context.assertTrue(forge.start(), "production starts with a single face");
 
         context.waitAndRun(CRAFT_TIME + 10, () -> {
@@ -232,7 +274,7 @@ public class DiceForgeGameTests implements FabricGameTest {
                 context.assertTrue(!context.getBlockState(FORGE_POS).get(DiceForgeBlock.ACTIVATED), "block state deactivated");
                 context.assertTrue(!forge.isActivated(), "forge deactivated");
                 context.assertTrue(!forge.isCrafting(), "craft stopped");
-                context.assertEquals(forge.getStatus(false), Status.NOT_ACTIVATED, "status");
+                context.assertEquals(forge.getStatus(), Status.NOT_ACTIVATED, "status");
                 context.assertTrue(forge.getStack(CENTER_SLOT).isEmpty(), "center slot freed for the core");
                 context.assertEquals(player.getInventory().count(ModBlocks.GRAVITY_CORE.asItem()), 1, "core given back");
                 context.assertEquals(forge.getStack(OUTPUT_SLOT).getCount(), 3, "forged dice stay in the output slot");
@@ -341,7 +383,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Core altitude: every fragment counts, a black one as a full stack, 256 fragments = 24 blocks (max). */
+    /** Core altitude: every fragment counts, a black one as a full stack, 256 fragments = 16 blocks (max). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void coreAltitudeFollowsTheFragments(TestContext context) {
         DiceForgeBlockEntity forge = placeActivatedForge(context);
@@ -350,11 +392,11 @@ public class DiceForgeGameTests implements FabricGameTest {
         forge.setStack(FIRST_FRAGMENT_SLOT + 2, new ItemStack(ModItems.YELLOW_STAR_FRAGMENT, 20));
         forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.BLACK_STAR_FRAGMENT, 1));
         context.assertEquals(countAltitudeFragments(forge), 188, "64 + 40 + 20 + black (64)");
-        context.assertTrue(Math.abs(getTargetAltitude(forge) - 17.625f) < 1e-4, "188 / 256 x 24 blocks");
+        context.assertTrue(Math.abs(getTargetAltitude(forge) - 11.75f) < 1e-4, "188 / 256 x 16 blocks");
         for (int i = 0; i < FRAGMENT_SLOTS; i++) {
             forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
         }
-        context.assertTrue(getTargetAltitude(forge) == MAX_CORE_ALTITUDE, "4 black fragments: 24 blocks");
+        context.assertTrue(getTargetAltitude(forge) == MAX_CORE_ALTITUDE, "4 black fragments: 16 blocks");
         context.complete();
     }
 }

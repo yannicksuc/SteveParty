@@ -30,20 +30,23 @@ public class DiceForgeScreenHandler extends ScreenHandler {
     public static final int BUTTON_TOGGLE = 0;
     /** Position (GUI coordinates) of the center slot (the core) and of the slots around it. */
     public static final int CENTER_X = 80, CENTER_Y = 63;
-    /** Star fragments on the 4 diagonals of the core (NW, NE, SE, SW). */
+    /**
+     * Inner ring, 28 px from the core, one slot every 60 degrees: the blank faces on its left, the forged die on its
+     * right, and the 4 star fragments in between (NW, NE, SE, SW, at 330, 30, 150 and 210 degrees).
+     */
     public static final int[][] FRAGMENT_POSITIONS = {
-            {CENTER_X - 19, CENTER_Y - 19}, {CENTER_X + 19, CENTER_Y - 19},
-            {CENTER_X + 19, CENTER_Y + 19}, {CENTER_X - 19, CENTER_Y + 19}
+            {CENTER_X - 14, CENTER_Y - 24}, {CENTER_X + 14, CENTER_Y - 24},
+            {CENTER_X + 14, CENTER_Y + 24}, {CENTER_X - 14, CENTER_Y + 24}
     };
+    public static final int BLANK_X = CENTER_X - 28, BLANK_Y = CENTER_Y;
+    public static final int OUTPUT_X = CENTER_X + 28, OUTPUT_Y = CENTER_Y;
+    /** Outer ring, 54 px from the core, one face every 30 degrees (the squares of the texture sit under them). */
     public static final int[][] FACE_POSITIONS = {
-            {80, 9},   {54, 19},  {106, 19},
-            {36, 37},  {124, 37}, {26, 63},
-            {134, 63}, {36, 89},  {124, 89},
-            {54, 107}, {106, 107},{80, 117}
+            {80, 9},   {53, 16},  {107, 16},
+            {33, 36},  {127, 36}, {26, 63},
+            {134, 63}, {33, 90},  {127, 90},
+            {53, 110}, {107, 110},{80, 117}
     };
-    /** Blank faces go in on the left of the core, the forged die comes out on its right. */
-    public static final int BLANK_X = CENTER_X - 24, BLANK_Y = CENTER_Y;
-    public static final int OUTPUT_X = CENTER_X + 24, OUTPUT_Y = CENTER_Y;
     private static final int PLAYER_INVENTORY_START = SIZE;
 
     private final Inventory inventory;
@@ -159,9 +162,8 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             } else if (isGravityCore(stackInSlot) && !isActivated()) {
                 if (!this.insertItem(stackInSlot, CENTER_SLOT, CENTER_SLOT + 1, false)) return ItemStack.EMPTY;
             } else if (isBlankFace(stackInSlot)) {
-                // Blank faces go to the blank faces slot; only when it is full do they go to the ring (as a face)
-                boolean moved = insertPreferringGhosts(stackInSlot, BLANK_SLOT, BLANK_SLOT + 1);
-                if (!moved && !insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
+                // Blank faces go to their slot only (put one on the ring by hand to make it a blank side)
+                if (!insertPreferringGhosts(stackInSlot, BLANK_SLOT, BLANK_SLOT + 1)) return ItemStack.EMPTY;
             } else if (DiceFace.isFace(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
             } else if (isStarFragment(stackInSlot)) {

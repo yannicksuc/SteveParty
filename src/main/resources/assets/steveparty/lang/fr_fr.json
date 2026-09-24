@@ -278,7 +278,6 @@
   "gui.steveparty.dice_forge.insert_core": "Emplacement du noyau de gravité",
   "gui.steveparty.dice_forge.status.not_activated": "Insérez d'abord un noyau de gravité (clic droit sur la forge ou emplacement central)",
   "gui.steveparty.dice_forge.status.not_enough_faces": "Placez au moins %s faces de dé",
-  "gui.steveparty.dice_forge.status.layout_changed": "Les faces ont changé depuis le début du craft",
   "gui.steveparty.dice_forge.status.missing_fragment": "Placez des fragments d'étoile dans les 4 emplacements autour du noyau",
   "gui.steveparty.dice_forge.status.duplicate_fragment": "Chaque couleur de fragment doit être différente (seul le noir peut être répété)",
   "gui.steveparty.dice_forge.status.output_blocked": "L'emplacement de sortie est plein ou contient un autre dé",
