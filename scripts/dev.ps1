@@ -182,24 +182,32 @@ function Get-ServerProperties {
     return $properties
 }
 
+# Port and RCON settings of this checkout's server as it actually started, whatever -Port says: the default
+# (or a wrong -Port) could be another checkout's server.
+function Get-RunningServer {
+    $info = Get-DevServerInfo
+    $properties = Get-ServerProperties $info.runDir
+    return @{
+        Port         = if ($properties['server-port']) { [int]$properties['server-port'] } else { [int]$info.port }
+        RconPort     = if ($properties['rcon.port']) { [int]$properties['rcon.port'] } else { [int]$info.rconPort }
+        RconPassword = if ($properties['rcon.password']) { $properties['rcon.password'] } else { $info.rconPassword }
+    }
+}
+
 function Stop-Kind {
     param([string]$K)
     $jvms = @(Find-GameJvm $K)
     if ($jvms.Count -eq 0) { Write-Host "$K is not running."; return }
     if ($K -eq 'server') {
-        # RCON goes to this checkout's running server, whatever -Port says: a wrong -Port would otherwise stop
-        # another checkout's server through its RCON, or miss and kill this one without saving.
-        $info = Get-DevServerInfo
-        $properties = Get-ServerProperties $info.runDir
-        $serverPort = if ($properties['server-port']) { [int]$properties['server-port'] } else { [int]$info.port }
-        if ($Port -gt 0 -and $serverPort -ne $Port) {
-            Write-Warning "This checkout's server runs on port $serverPort, not $Port`: left running. Stop it with: .\scripts\dev.ps1 stop server"
+        # A wrong -Port would otherwise stop another checkout's server through its RCON, or miss and kill this one
+        # without saving
+        $server = Get-RunningServer
+        if ($Port -gt 0 -and $server.Port -ne $Port) {
+            Write-Warning "This checkout's server runs on port $($server.Port), not $Port`: left running. Stop it with: .\scripts\dev.ps1 stop server"
             return
         }
-        $rconPort = if ($properties['rcon.port']) { [int]$properties['rcon.port'] } else { [int]$info.rconPort }
-        $rconPassword = if ($properties['rcon.password']) { $properties['rcon.password'] } else { $info.rconPassword }
-        Write-Host "Stopping the server on port $serverPort gracefully (save-all flush, stop)..."
-        if (Send-RconCommands -Port $rconPort -Password $rconPassword -Commands @('save-all flush', 'stop')) {
+        Write-Host "Stopping the server on port $($server.Port) gracefully (save-all flush, stop)..."
+        if (Send-RconCommands -Port $server.RconPort -Password $server.RconPassword -Commands @('save-all flush', 'stop')) {
             $deadline = (Get-Date).AddSeconds(30)
             while ((Get-Date) -lt $deadline -and @(Find-GameJvm 'server').Count -gt 0) { Start-Sleep -Milliseconds 500 }
             if (@(Find-GameJvm 'server').Count -eq 0) { Write-Host "Server stopped."; return }
@@ -244,9 +252,20 @@ switch ($Command) {
     }
     'cmd' {
         if ($Kind -eq 'all') { throw 'Usage: .\scripts\dev.ps1 cmd "<server command>"' }
-        $info = Get-DevServerInfo
-        if (-not (Send-RconCommands -Port ([int]$info.rconPort) -Password $info.rconPassword -Commands @($Kind) -PrintOutput)) {
-            Write-Warning "RCON unreachable: is the server running (.\scripts\dev.ps1 status)?"
+        # Without -Port: this checkout's running server only, never whatever listens on the default RCON port.
+        # With -Port: the server on that port, possibly another checkout's (like client -Port).
+        $running = @(Find-GameJvm 'server').Count -gt 0
+        $server = if ($running) { Get-RunningServer }
+        if (-not $server -or ($Port -gt 0 -and $server.Port -ne $Port)) {
+            if ($Port -eq 0) {
+                Write-Warning "This checkout's server is not running (.\scripts\dev.ps1 status). Use -Port to reach another checkout's server."
+                return
+            }
+            $info = Get-DevServerInfo
+            $server = @{ Port = $Port; RconPort = [int]$info.rconPort; RconPassword = $info.rconPassword }
+        }
+        if (-not (Send-RconCommands -Port $server.RconPort -Password $server.RconPassword -Commands @($Kind) -PrintOutput)) {
+            Write-Warning "RCON unreachable on port $($server.RconPort): is the server on port $($server.Port) running?"
         }
     }
     'tail' {
