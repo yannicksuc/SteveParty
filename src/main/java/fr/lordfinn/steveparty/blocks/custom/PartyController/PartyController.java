@@ -2,6 +2,10 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import net.minecraft.block.*;
@@ -131,6 +135,16 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
 
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (stack.getItem() instanceof WrenchItem) {
+            // Settings: coin and star items, party program
+            if (!world.isClient && world.getBlockEntity(pos) instanceof PartyControllerEntity entity) {
+                world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
+                        new PartyControllerScreenHandler(syncId, playerInventory, entity.getSettings(), entity),
+                        Text.translatable("block.steveparty.party_controller")));
+            }
+            return ActionResult.SUCCESS;
+        }
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
         if (stack.getItem() instanceof MiniGamesCatalogueItem) {
             ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state, player);
@@ -180,6 +194,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
             PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
             if (entity != null) {
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.catalogue);
+                ItemScatterer.spawn(world, pos, entity.getSettings());
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
@@ -193,6 +208,17 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
         return 0;
+    }
+
+    /** Comparator: phase of the party (see {@link PartyControllerEntity#getPhase()}). */
+    @Override
+    protected boolean hasComparatorOutput(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+        return world.getBlockEntity(pos) instanceof PartyControllerEntity entity ? entity.getPhase() : 0;
     }
 
     @Override

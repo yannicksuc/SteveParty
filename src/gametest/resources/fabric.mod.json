@@ -15,7 +15,8 @@
       "fr.lordfinn.steveparty.gametest.GameplayRulesGameTests",
       "fr.lordfinn.steveparty.gametest.ShopGameTests",
       "fr.lordfinn.steveparty.gametest.LootAndBrewingGameTests",
-      "fr.lordfinn.steveparty.gametest.DecisionsGameTests"
+      "fr.lordfinn.steveparty.gametest.DecisionsGameTests",
+      "fr.lordfinn.steveparty.gametest.PartyLoopGameTests"
     ]
   },
   "depends": {

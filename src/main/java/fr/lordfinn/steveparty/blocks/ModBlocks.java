@@ -345,6 +345,27 @@ public class ModBlocks {
                     .nonOpaque()  // Non-opaque to allow transparency for hourglass visualization
                     .requiresTool(),  // Requires a pickaxe or equivalent tool to break
             "step_controller", true);
+    public static final Block PARTY_BELL = register(PartyBellBlock::new,
+            Block.Settings.create()
+                    .strength(1.5f, 6.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .nonOpaque()
+                    .requiresTool(),
+            "party_bell", true);
+    public static final Block PODIUM = register(PodiumBlock::new,
+            Block.Settings.create()
+                    .strength(2.0f, 6.0f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .nonOpaque()
+                    .requiresTool(),
+            "podium", true);
+    public static final Block PIGGY_BANK = register(PiggyBankBlock::new,
+            Block.Settings.create()
+                    .strength(1.0f, 3.0f)
+                    .sounds(BlockSoundGroup.DECORATED_POT)
+                    .nonOpaque()
+                    .requiresTool(),
+            "piggy_bank", true);
     public static final Block BOARD_SPACE_REDSTONE_ROUTER = register(BoardSpaceRedstoneRouterBlock::new,
             Block.Settings.create()
                     .strength(3.0f, 9.0f)  // Stronger than the cash register due to its mechanical components

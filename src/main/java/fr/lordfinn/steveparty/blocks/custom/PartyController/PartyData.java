@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFactory;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
@@ -24,6 +25,18 @@ public class PartyData {
     private List<UUID> tokens = new ArrayList<>();
     private int stepIndex = -1;
     private int nbTurn = 10;
+    /** Coins and stars of the players, for the HUD (sent to the clients, not saved: the controller keeps them). */
+    private ScoreBoard scores = ScoreBoard.EMPTY;
+
+    public record ScoreEntry(UUID player, String name, int coins, int stars) {}
+
+    /**
+     * @param coinItem id of the coin item ("" if none), for its icon
+     * @param starItem id of the star item ("" if none)
+     */
+    public record ScoreBoard(String coinItem, String starItem, List<ScoreEntry> entries) {
+        public static final ScoreBoard EMPTY = new ScoreBoard("", "", List.of());
+    }
 
     // Constructor
     public PartyData() {
@@ -100,6 +113,16 @@ public class PartyData {
 
         buf.writeInt(stepIndex);
         buf.writeInt(nbTurn);
+
+        buf.writeString(scores.coinItem());
+        buf.writeString(scores.starItem());
+        buf.writeInt(scores.entries().size());
+        for (ScoreEntry entry : scores.entries()) {
+            buf.writeUuid(entry.player());
+            buf.writeString(entry.name());
+            buf.writeInt(entry.coins());
+            buf.writeInt(entry.stars());
+        }
     }
 
     public static PartyData fromBuf(PacketByteBuf buf) {
@@ -121,7 +144,23 @@ public class PartyData {
 
         party.stepIndex = buf.readInt();
         party.nbTurn = buf.readInt();
+
+        String coinItem = buf.readString();
+        String starItem = buf.readString();
+        int scoreCount = buf.readInt();
+        List<ScoreEntry> entries = new ArrayList<>();
+        for (int i = 0; i < scoreCount; i++)
+            entries.add(new ScoreEntry(buf.readUuid(), buf.readString(), buf.readInt(), buf.readInt()));
+        party.scores = new ScoreBoard(coinItem, starItem, entries);
         return party;
+    }
+
+    public ScoreBoard getScores() {
+        return scores;
+    }
+
+    public void setScores(ScoreBoard scores) {
+        this.scores = scores == null ? ScoreBoard.EMPTY : scores;
     }
 
     /**
@@ -221,6 +260,39 @@ public class PartyData {
             }
         });
         return owners;
+    }
+
+    /**
+     * Round of the step at {@code index}: a round starts on each group of consecutive token turns (the transition
+     * steps inserted to wait for a party bell do not split a group). 0 before the first round.
+     */
+    public int getRoundAt(int index) {
+        int round = 0;
+        PartyStep previous = null;
+        for (int i = 0; i <= index && i < steps.size(); i++) {
+            PartyStep step = steps.get(i);
+            if (step instanceof EventPartyStep event && event.isTransition()) continue;
+            if (step.getType() == PartyStepType.TOKEN_TURN && (previous == null || previous.getType() != PartyStepType.TOKEN_TURN))
+                round++;
+            previous = step;
+        }
+        return round;
+    }
+
+    /** @return true if a new round starts with the step at {@code index} (see {@link #getRoundAt}). */
+    public boolean isRoundStart(int index) {
+        if (index < 0 || index >= steps.size() || steps.get(index).getType() != PartyStepType.TOKEN_TURN) return false;
+        for (int i = index - 1; i >= 0; i--) {
+            PartyStep step = steps.get(i);
+            if (step instanceof EventPartyStep event && event.isTransition()) continue;
+            return step.getType() != PartyStepType.TOKEN_TURN;
+        }
+        return true;
+    }
+
+    /** @return the rank (1 = first) of the token in the play order, 0 if it is not part of the party. */
+    public int getTokenRank(UUID token) {
+        return tokens.indexOf(token) + 1;
     }
 
     public PartyStep getCurrentStep() {

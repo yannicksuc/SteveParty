@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -116,6 +117,20 @@ public class PartyStep {
      * A token was excluded from the party: forget it (the step must not wait for it any more).
      */
     public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
+    }
+
+    /**
+     * A party bell in waiting mode received its redstone signal for {@code moment}.
+     *
+     * @return true if this step was waiting for it (and goes on)
+     */
+    public boolean onMomentReleased(PartyMoment moment, PartyControllerEntity partyControllerEntity) {
+        return false;
+    }
+
+    /** @return true while this step waits for a signal on a party bell. */
+    public boolean isWaitingForBell() {
+        return false;
     }
 
     /**

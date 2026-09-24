@@ -46,7 +46,10 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.GRAVITY_CORE,
                         // requiresTool() blocks that had no mineable tag (unharvestable)
                         ModBlocks.SIMPLE_TILE,
-                        ModBlocks.DICE_FORGE
+                        ModBlocks.DICE_FORGE,
+                        ModBlocks.PARTY_BELL,
+                        ModBlocks.PODIUM,
+                        ModBlocks.PIGGY_BANK
                 );
         for (Block b : ModBlocks.POLISHED_TERRACOTTA_SLABS)
             getOrCreateTagBuilder(BlockTags.SLABS).add(b);

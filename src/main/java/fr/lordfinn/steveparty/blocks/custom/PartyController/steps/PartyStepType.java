@@ -9,7 +9,8 @@ public enum PartyStepType {
     MINI_GAME("party_step_type.mini_game"),
     START_ROLLS("party_step_type.start_rolls"),
     BASIC_GAME_GENERATOR("party_step_type.basic_game_generator"),
-    END("party_step_type.end");
+    END("party_step_type.end"),
+    EVENT("party_step_type.event");
 
     private final String translationKey;
 

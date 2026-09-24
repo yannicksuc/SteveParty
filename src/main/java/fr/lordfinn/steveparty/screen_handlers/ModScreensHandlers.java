@@ -68,6 +68,8 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
             register("looting_box_screen_handler", LootingBoxScreenHandler::new);
     public static final ScreenHandlerType<DiceForgeScreenHandler> DICE_FORGE_SCREEN_HANDLER = register("dice_forge_screen_handler", DiceForgeScreenHandler::new);
+    public static final ScreenHandlerType<PartyControllerScreenHandler> PARTY_CONTROLLER_SCREEN_HANDLER =
+            register("party_controller_screen_handler", PartyControllerScreenHandler::new);
 
     private static <T extends ScreenHandler> ScreenHandlerType<T> register(String id, ScreenHandlerType.Factory<T> factory) {
         return (ScreenHandlerType)Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(id), new ScreenHandlerType(factory, FeatureFlags.VANILLA_FEATURES));

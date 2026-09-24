@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "steveparty:block/podium"
+    },
+    "powered=true": {
+      "model": "steveparty:block/podium_on"
+    }
+  }
+}

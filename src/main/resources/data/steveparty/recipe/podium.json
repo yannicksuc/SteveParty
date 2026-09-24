@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "GPG",
+    "QRQ",
+    "QQQ"
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "P": "minecraft:heavy_weighted_pressure_plate",
+    "Q": "minecraft:quartz_block",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "steveparty:podium"
+  }
+}

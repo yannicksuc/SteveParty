@@ -16,6 +16,8 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
@@ -97,6 +99,44 @@ public class PartyStepsHud implements HudRenderCallback {
             startX = drawStep(drawContext, i, client, startX, UPCOMING_STEP_COLOR); // Reduced opacity for other steps
         }
         drawStep(drawContext, data.getStepIndex(), client, hudX + 12, CURRENT_STEP_COLOR);
+        drawScores(drawContext, client);
+    }
+
+    /** Coins and stars of each player, under the steps (only when the party controller has coin / star items). */
+    private void drawScores(DrawContext drawContext, MinecraftClient client) {
+        PartyData.ScoreBoard scores = data.getScores();
+        if (scores.entries().isEmpty()) return;
+        ItemStack coin = iconOf(scores.coinItem());
+        ItemStack star = iconOf(scores.starItem());
+        int x = hudX + 4;
+        int y = hudY + 36;
+        int nameWidth = scores.entries().stream().mapToInt(entry -> client.textRenderer.getWidth(entry.name())).max().orElse(0);
+        int rowWidth = 20 + nameWidth + (coin.isEmpty() ? 0 : 42) + (star.isEmpty() ? 0 : 42);
+        drawContext.fill(x - 2, y - 2, x + rowWidth, y + scores.entries().size() * 18, 0x80000000);
+        for (PartyData.ScoreEntry entry : scores.entries()) {
+            Identifier skin = SkinUtils.getPlayerSkin(entry.player());
+            if (skin != null)
+                drawContext.drawTexture(RenderLayer::getGuiTextured, skin, x, y, 16, 16, 16, 16, 128, 128);
+            int textY = y + 4;
+            drawContext.drawText(client.textRenderer, entry.name(), x + 20, textY, 0xFFFFFFFF, true);
+            int cx = x + 20 + nameWidth + 4;
+            if (!coin.isEmpty()) {
+                drawContext.drawItem(coin, cx, y);
+                drawContext.drawText(client.textRenderer, String.valueOf(entry.coins()), cx + 17, textY, 0xFFFFD700, true);
+                cx += 42;
+            }
+            if (!star.isEmpty()) {
+                drawContext.drawItem(star, cx, y);
+                drawContext.drawText(client.textRenderer, String.valueOf(entry.stars()), cx + 17, textY, 0xFFFFFF55, true);
+            }
+            y += 18;
+        }
+    }
+
+    private static ItemStack iconOf(String itemId) {
+        Identifier id = itemId.isEmpty() ? null : Identifier.tryParse(itemId);
+        if (id == null || !Registries.ITEM.containsId(id)) return ItemStack.EMPTY;
+        return new ItemStack(Registries.ITEM.get(id));
     }
 
     private int drawStep(DrawContext drawContext, int i, MinecraftClient client, int startX, int color) {

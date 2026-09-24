@@ -63,6 +63,10 @@ public class ModItems {
     public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
+    public static final Item PARTY_CARD_TURNS = registerCard(PartyCardItem.CardType.TURNS);
+    public static final Item PARTY_CARD_MINIGAME = registerCard(PartyCardItem.CardType.MINIGAME);
+    public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
+    public static final Item PARTY_CARD_REPEAT = registerCard(PartyCardItem.CardType.REPEAT);
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(PARTY_CONTROLLER))
@@ -96,6 +100,12 @@ public class ModItems {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to create and register item: " + itemClass, e);
         }
+    }
+
+    private static Item registerCard(PartyCardItem.CardType type) {
+        String id = "party_card_" + type.getName();
+        Item item = new PartyCardItem(type, getSettings(new Item.Settings(), id));
+        return Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(id)), item);
     }
 
     public static Item.Settings getSettings(Item.Settings itemSettings, String id) {
@@ -146,6 +156,13 @@ public class ModItems {
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
+            itemGroup.add(PARTY_CARD_TURNS);
+            itemGroup.add(PARTY_CARD_MINIGAME);
+            itemGroup.add(PARTY_CARD_EVENT);
+            itemGroup.add(PARTY_CARD_REPEAT);
+            itemGroup.add(PARTY_BELL);
+            itemGroup.add(PODIUM);
+            itemGroup.add(PIGGY_BANK);
             itemGroup.add(MINI_GAMES_CATALOGUE);
             itemGroup.add(MINI_GAME_PAGE);
             itemGroup.add(VILLAGER_BLOCK);
