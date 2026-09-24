@@ -14,14 +14,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.scoreboard.ScoreHolder;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +38,9 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
 public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPolePayload>, BlockEntityTicker {
     // --- Cached base ---
     private GoalPoleBaseBlockEntity cachedBase;
+    /** Whether {@link #cachedBase} was looked up at least once (null then means "no base under this pole"). */
+    private boolean baseResolved = false;
+    private static final int BASE_RECHECK_TICKS = 20;
     private int redstoneOutput = 0;
     private final Set<UUID> playersOnBlock = new HashSet<>();
 
@@ -58,12 +60,22 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         );
 
         playersOnBlock.add(uuid);
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 0, false, true));
-        player.setAbsorptionAmount(player.getAbsorptionAmount() - 2.0F);
+        grantGoldenHeart(player);
         world.playSound(null, pos, GOAL_POLE_REACH, SoundCategory.BLOCKS, 1f, 1.2f);
         spawnFloatingText((ServerWorld) this.world,
                 "1up", player.getPos().add(0,2,0).toVector3f(),
                 0x43FA44, 50, 0.04f);
+    }
+
+    /**
+     * The "1up": one golden heart (2 absorption points) for 10 seconds. The absorption the player already has is
+     * kept: subtracting 2 from whatever the effect left used to take hearts away from players who already had
+     * absorption (golden apple, or landing again while the previous heart was still there).
+     */
+    public static void grantGoldenHeart(PlayerEntity player) {
+        float before = player.getAbsorptionAmount();
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 0, false, true));
+        player.setAbsorptionAmount(Math.max(before, 2.0F));
     }
 
     // --- Comparator + Value fields ---
@@ -90,7 +102,13 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
     // --- Cached base access ---
     public GoalPoleBaseBlockEntity getCachedBase() {
-        if (cachedBase == null || cachedBase.isRemoved()) updateCachedBase();
+        // A pole without a base does not walk down its column every tick: neighbor updates refresh the cache,
+        // and a slow re-check covers the changes that come without one (e.g. a base placed under an existing pole
+        // notifies its neighbors with the old block, air)
+        if (!baseResolved || (cachedBase != null && cachedBase.isRemoved())
+                || (cachedBase == null && world != null && (world.getTime() + pos.getY()) % BASE_RECHECK_TICKS == 0)) {
+            updateCachedBase();
+        }
         return cachedBase;
     }
 
@@ -100,6 +118,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
         BlockPos currentPos = getPos();
         cachedBase = null;
+        baseResolved = true;
 
         while (currentPos.getY() > world.getBottomY()) {
             currentPos = currentPos.down();
@@ -116,12 +135,14 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         World world = getWorld();
         if (world == null || world.isClient) return;
 
-        BlockPos currentPos = getPos().up();
-        while (currentPos.getY() < world.getHeight()) {
-            var be = world.getBlockEntity(currentPos);
-            if (!(be instanceof GoalPoleBlockEntity pole)) break;
-            pole.updateCachedBase();
-            currentPos = currentPos.up();
+        if (!baseResolved) updateCachedBase();
+        BlockPos.Mutable currentPos = getPos().mutableCopy().move(Direction.UP);
+        while (!world.isOutOfHeightLimit(currentPos)) {
+            // The poles stacked right above share this pole's base: no need for each of them to walk down again
+            if (!(world.getBlockEntity(currentPos) instanceof GoalPoleBlockEntity pole)) break;
+            pole.cachedBase = this.cachedBase;
+            pole.baseResolved = true;
+            currentPos.move(Direction.UP);
         }
     }
 
@@ -149,33 +170,27 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         if (world == null || world.isClient) return;
 
         GoalPoleBaseBlockEntity base = getCachedBase();
-        if (base == null || base.getCachedObjective() == null || !base.getCachedState().get(POWERED)) {
-            setRedstoneOutput(0);
-            return;
+        boolean conditionMet = false;
+        if (base != null && base.getCachedObjective() != null && base.getCachedState().get(POWERED)) {
+            // Sum of the tracked players' scores, computed once per tick by the base for all the poles above it
+            conditionMet = compare(comparator, base.getTrackedTotalScore(), value);
         }
-
-        int totalScore = 0;
-
-        ServerScoreboard scoreboard = world.getServer().getScoreboard();
-        // Sum scores of all tracked players
-        for (ServerPlayerEntity player : base.getTrackedPlayers(true)) {
-            int score = scoreboard.getOrCreateScore(player, base.getCachedObjective()).getScore();
-            totalScore += score;
+        int output = conditionMet ? 15 : 0;
+        // Comparators are only told when the signal changes (not every tick, by every segment of the pole)
+        if (output != redstoneOutput) {
+            setRedstoneOutput(output);
+            world.updateComparators(pos, getCachedState().getBlock());
         }
+    }
 
-        // Compare sum against this block's value
-        boolean conditionMet = switch (comparator) {
-            case LESS_OR_EQUAL -> totalScore <= value;
-            case GREATER_OR_EQUAL -> totalScore >= value;
-            case EQUAL -> totalScore == value;
-            case GREATER -> totalScore > value;
-            case LESS -> totalScore < value;
+    public static boolean compare(Comparator comparator, int total, int value) {
+        return switch (comparator) {
+            case LESS_OR_EQUAL -> total <= value;
+            case GREATER_OR_EQUAL -> total >= value;
+            case EQUAL -> total == value;
+            case GREATER -> total > value;
+            case LESS -> total < value;
         };
-
-        // Set comparator output
-        setRedstoneOutput(conditionMet ? 15 : 0);
-
-        world.updateComparators(pos, getCachedState().getBlock());
     }
 
     public void setRedstoneOutput(int value) {
@@ -202,7 +217,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
     @Override
     public Text getDisplayName() {
-        return Text.literal("Goal Pole");
+        return Text.translatable("block.steveparty.goal_pole");
     }
 
     @Nullable
@@ -213,8 +228,9 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
     @Override
     public void tick(World world, BlockPos pos, BlockState state, BlockEntity blockEntity) {
-        updateComparatorOutput();
         if (world.isClient) return;
+        updateComparatorOutput();
+        if (playersOnBlock.isEmpty()) return;
 
         Iterator<UUID> iterator = playersOnBlock.iterator();
         while (iterator.hasNext()) {

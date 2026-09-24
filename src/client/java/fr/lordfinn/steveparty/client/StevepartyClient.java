@@ -230,6 +230,8 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.TRADING_STALL, TradingStallBlockEntityRenderer::new);
 
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.GOAL_POLE, RenderLayer.getCutout());
+        // The flag is drawn by the block entity renderer (it ripples in the wind); the baked model is the pole only
+        BlockEntityRendererFactories.register(ModBlockEntities.GOAL_POLE_ENTITY, GoalPoleFlagRenderer::new);
 
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);
