@@ -1,0 +1,6 @@
+{
+  "parent": "steveparty:block/plastic_stud_ceiling",
+  "textures": {
+    "stud": "steveparty:block/plastic_stud/orange_plastic_stud"
+  }
+}

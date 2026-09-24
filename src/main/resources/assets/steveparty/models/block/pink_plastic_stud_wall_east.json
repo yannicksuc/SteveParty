@@ -1,0 +1,6 @@
+{
+  "parent": "steveparty:block/plastic_stud_wall_east",
+  "textures": {
+    "stud": "steveparty:block/plastic_stud/pink_plastic_stud"
+  }
+}

@@ -470,5 +470,21 @@
   "block.steveparty.black_polished_concrete_bricks_stairs": "Polished Black Concrete Brick Stairs",
   "block.steveparty.black_polished_concrete_bricks_slab": "Polished Black Concrete Brick Slab",
   "block.steveparty.black_polished_concrete_bricks_wall": "Polished Black Concrete Brick Wall",
-  "item.steveparty.plastic_pellets": "Plastic Pellets"
+  "item.steveparty.plastic_pellets": "Plastic Pellets",
+  "block.steveparty.white_plastic_stud": "White Plastic Stud",
+  "block.steveparty.light_gray_plastic_stud": "Light Gray Plastic Stud",
+  "block.steveparty.gray_plastic_stud": "Gray Plastic Stud",
+  "block.steveparty.black_plastic_stud": "Black Plastic Stud",
+  "block.steveparty.brown_plastic_stud": "Brown Plastic Stud",
+  "block.steveparty.red_plastic_stud": "Red Plastic Stud",
+  "block.steveparty.orange_plastic_stud": "Orange Plastic Stud",
+  "block.steveparty.yellow_plastic_stud": "Yellow Plastic Stud",
+  "block.steveparty.lime_plastic_stud": "Lime Plastic Stud",
+  "block.steveparty.green_plastic_stud": "Green Plastic Stud",
+  "block.steveparty.cyan_plastic_stud": "Cyan Plastic Stud",
+  "block.steveparty.light_blue_plastic_stud": "Light Blue Plastic Stud",
+  "block.steveparty.blue_plastic_stud": "Blue Plastic Stud",
+  "block.steveparty.purple_plastic_stud": "Purple Plastic Stud",
+  "block.steveparty.magenta_plastic_stud": "Magenta Plastic Stud",
+  "block.steveparty.pink_plastic_stud": "Pink Plastic Stud"
 }
