@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:magenta_plastic_wall_from_magenta_plastic_block_stonecutting"
+        "recipe": "steveparty:magenta_plastic_wall_from_magenta_plastic_block_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:magenta_plastic_wall_from_magenta_plastic_block_stonecutting"
+      "steveparty:magenta_plastic_wall_from_magenta_plastic_block_stonecutting"
     ]
   }
 }

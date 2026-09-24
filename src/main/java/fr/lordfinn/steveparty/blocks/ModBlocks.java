@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
 import fr.lordfinn.steveparty.registry.RegistryAliases;
 import net.minecraft.block.*;
+import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
@@ -19,6 +20,7 @@ import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.DyeColor;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.RegistryKeys;
 
@@ -131,6 +133,11 @@ public class ModBlocks {
 
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
+    /** The vanilla terracotta a polished terracotta is made from ("default" = plain terracotta): same map colour. */
+    private static Block vanillaTerracotta(String color) {
+        return color.equals("default") ? Blocks.TERRACOTTA : Registries.BLOCK.get(Identifier.ofVanilla(color + "_terracotta"));
+    }
+
     static {
         for (int i = 0; i < COLORS_WITH_DEFAULT.length; i++) {
             String color = COLORS_WITH_DEFAULT[i];
@@ -138,6 +145,8 @@ public class ModBlocks {
 
             POLISHED_TERRACOTTA_BLOCKS[i] = register(Block::new,
                     Block.Settings.create()
+                            .mapColor(vanillaTerracotta(color).getDefaultMapColor())
+                            .instrument(NoteBlockInstrument.BASEDRUM)
                             .strength(1.25f, 4.2f)
                             .sounds(BlockSoundGroup.STONE)
                             .solid()
@@ -156,6 +165,8 @@ public class ModBlocks {
 
             POLISHED_TERRACOTTA_BRICKS_BLOCKS[i] = register(Block::new,
                     Block.Settings.create()
+                            .mapColor(vanillaTerracotta(color).getDefaultMapColor())
+                            .instrument(NoteBlockInstrument.BASEDRUM)
                             .strength(1.5f, 6.0f)
                             .sounds(BlockSoundGroup.STONE)
                             .solid()

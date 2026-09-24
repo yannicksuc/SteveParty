@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:gray_plastic_stairs_from_gray_plastic_block_stonecutting"
+        "recipe": "steveparty:gray_plastic_stairs_from_gray_plastic_block_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:gray_plastic_stairs_from_gray_plastic_block_stonecutting"
+      "steveparty:gray_plastic_stairs_from_gray_plastic_block_stonecutting"
     ]
   }
 }

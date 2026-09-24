@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:red_plastic_wall_from_red_plastic_block_stonecutting"
+        "recipe": "steveparty:red_plastic_wall_from_red_plastic_block_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:red_plastic_wall_from_red_plastic_block_stonecutting"
+      "steveparty:red_plastic_wall_from_red_plastic_block_stonecutting"
     ]
   }
 }

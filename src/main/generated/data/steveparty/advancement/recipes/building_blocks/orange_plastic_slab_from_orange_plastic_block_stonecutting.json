@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:orange_plastic_slab_from_orange_plastic_block_stonecutting"
+        "recipe": "steveparty:orange_plastic_slab_from_orange_plastic_block_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:orange_plastic_slab_from_orange_plastic_block_stonecutting"
+      "steveparty:orange_plastic_slab_from_orange_plastic_block_stonecutting"
     ]
   }
 }

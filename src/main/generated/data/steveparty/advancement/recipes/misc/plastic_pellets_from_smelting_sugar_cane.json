@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:plastic_pellets_from_smelting_sugar_cane"
+        "recipe": "steveparty:plastic_pellets_from_smelting_sugar_cane"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:plastic_pellets_from_smelting_sugar_cane"
+      "steveparty:plastic_pellets_from_smelting_sugar_cane"
     ]
   }
 }

@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:yellow_plastic_block_from_plastic_studs"
+        "recipe": "steveparty:yellow_plastic_block_from_plastic_studs"
       },
       "trigger": "minecraft:recipe_unlocked"
     },
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:yellow_plastic_block_from_plastic_studs"
+      "steveparty:yellow_plastic_block_from_plastic_studs"
     ]
   }
 }

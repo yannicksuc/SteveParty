@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:light_blue_plastic_stairs_from_light_blue_plastic_block_stonecutting"
+        "recipe": "steveparty:light_blue_plastic_stairs_from_light_blue_plastic_block_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:light_blue_plastic_stairs_from_light_blue_plastic_block_stonecutting"
+      "steveparty:light_blue_plastic_stairs_from_light_blue_plastic_block_stonecutting"
     ]
   }
 }

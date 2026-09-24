@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:yellow_plastic_wall_from_yellow_plastic_block_stonecutting"
+        "recipe": "steveparty:yellow_plastic_wall_from_yellow_plastic_block_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     },
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:yellow_plastic_wall_from_yellow_plastic_block_stonecutting"
+      "steveparty:yellow_plastic_wall_from_yellow_plastic_block_stonecutting"
     ]
   }
 }
