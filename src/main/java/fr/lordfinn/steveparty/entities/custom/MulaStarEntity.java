@@ -28,6 +28,8 @@ public class MulaStarEntity extends Entity {
     private static final TrackedData<Float> DISTANCE = DataTracker.registerData(MulaStarEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Float> APEX = DataTracker.registerData(MulaStarEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Integer> FLIGHT = DataTracker.registerData(MulaStarEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Height of its landing point above its start (blocks): 0 far away, the forge's height for a short loop home. */
+    private static final TrackedData<Float> END_DY = DataTracker.registerData(MulaStarEntity.class, TrackedDataHandlerRegistry.FLOAT);
 
     /** Arc heights (blocks above the start) and the distances they give. */
     public static final double MIN_APEX = 25, MAX_APEX = 90, MIN_DISTANCE = 100, MAX_DISTANCE = 400;
@@ -59,7 +61,7 @@ public class MulaStarEntity extends Entity {
 
     /** Server: sets its path (before it is spawned). */
     public void launch(double x, double y, double z, MulaEntity.MulaVariant variant, double dirX, double dirZ,
-                       double distance, double apex) {
+                       double distance, double apex, double endDy) {
         this.setPosition(x, y, z);
         this.startX = x;
         this.startY = y;
@@ -70,6 +72,7 @@ public class MulaStarEntity extends Entity {
         this.dataTracker.set(DISTANCE, (float) distance);
         this.dataTracker.set(APEX, (float) apex);
         this.dataTracker.set(FLIGHT, flightTicksFor(distance));
+        this.dataTracker.set(END_DY, (float) endDy);
     }
 
     @Override
@@ -99,8 +102,8 @@ public class MulaStarEntity extends Entity {
         flightAge++;
         double u = Math.min(1.0, flightAge / (double) flightTicks());
         double d = this.dataTracker.get(DISTANCE) * u;
-        // parabola: up to its apex half way, back down to its start height at the end
-        double y = startY + 4 * this.dataTracker.get(APEX) * u * (1 - u);
+        // parabola: up to its apex half way, down to its landing height at the end
+        double y = startY + 4 * this.dataTracker.get(APEX) * u * (1 - u) + this.dataTracker.get(END_DY) * u;
         this.setPosition(startX + this.dataTracker.get(DIR_X) * d, y, startZ + this.dataTracker.get(DIR_Z) * d);
         if (this.getWorld().isClient) {
             System.arraycopy(tail, 0, tail, 3, (TAIL - 1) * 3);
@@ -181,6 +184,7 @@ public class MulaStarEntity extends Entity {
         builder.add(DISTANCE, (float) MIN_DISTANCE);
         builder.add(APEX, (float) MIN_APEX);
         builder.add(FLIGHT, 100);
+        builder.add(END_DY, 0f);
     }
 
     @Override

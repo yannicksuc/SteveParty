@@ -136,8 +136,8 @@ public class LumaHoverGoal extends Goal {
     private void followLeader(Vec3d leaderTarget) {
         double a = entity.getId() * 2.39996;
         double r = 1.6 + (entity.getId() % 3) * 0.6;
-        startArc(new Vec3d(leaderTarget.x + Math.cos(a) * r, leaderTarget.y + ((entity.getId() % 5) - 2) * 0.3,
-                leaderTarget.z + Math.sin(a) * r));
+        startArc(entity.keepHome(new Vec3d(leaderTarget.x + Math.cos(a) * r, leaderTarget.y + ((entity.getId() % 5) - 2) * 0.3,
+                leaderTarget.z + Math.sin(a) * r)));
     }
 
     private void pickNewTarget() {
@@ -152,7 +152,7 @@ public class LumaHoverGoal extends Goal {
         double groundY = pos.getY() + 1.0;
         double targetY = groundY + minHeight + random.nextDouble() * (maxHeight - minHeight);
 
-        startArc(new Vec3d(targetX, targetY, targetZ));
+        startArc(entity.keepHome(new Vec3d(targetX, targetY, targetZ)));
     }
 
     private void startArc(Vec3d to) {

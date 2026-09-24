@@ -190,20 +190,121 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private int starLaunchTicks = 0;
 	/** From the order to burst to the pop of the explode animation, when it leaves as a shooting star. */
 	private static final int STAR_LAUNCH_TICKS = 32;
+	/** Server: ticks before it bursts in its forge's core explosion (the chain reaction), 0 when none. */
+	private int coreBurstTicks = 0;
+	/** Server: the way its star goes (radians), NaN for a random one. */
+	private double starAngle = Double.NaN;
+
+	// ------------------------------------------------------------------------------------------ home (MulaHome)
+
+	/** The Dice Forge it lives at, or null; saved with it. */
+	private @Nullable net.minecraft.util.math.BlockPos homeForge;
+	/** Server: its owner is leading it (following them): the only thing that may take it out of its forge's area. */
+	private boolean ledByOwner;
+
+	public @Nullable net.minecraft.util.math.BlockPos homeForge() {
+		return homeForge;
+	}
+
+	/** Server, from the forge conducting (once a second): it lives there now. */
+	public void setHomeForge(net.minecraft.util.math.BlockPos forge) {
+		this.homeForge = forge.toImmutable();
+	}
+
+	/** Released: no home any more, and no dance. */
+	public void clearHome() {
+		this.homeForge = null;
+		stopDancing();
+	}
+
+	public boolean isLedByOwner() {
+		return ledByOwner;
+	}
+
+	public void setLedByOwner(boolean led) {
+		this.ledByOwner = led;
+	}
+
+	/** A point brought back inside its forge's area (the point itself when it has no home). */
+	public net.minecraft.util.math.Vec3d keepHome(net.minecraft.util.math.Vec3d v) {
+		return homeForge == null ? v : MulaHome.clamp(homeForge, v);
+	}
+
+	/** Inside its forge's area (anywhere when it has no home). */
+	public boolean isInHome(net.minecraft.util.math.Vec3d v) {
+		return homeForge == null || MulaHome.contains(homeForge, v.x, v.y, v.z);
+	}
 
 	/**
-	 * Server: the pop of its burst: it leaves as a shooting star (MulaStarEntity) on a random arc, and is recorded to be
-	 * reborn where the star lands, 100 to 400 blocks away that way (MulaRebirths), the same Mula (colour, owner, name,
-	 * UUID) with an empty belly. It is removed without dying (no death message, no loot: its 64 fragments are already
-	 * dropped).
+	 * Server, once a second: the home is released when its forge is gone or has lost its core (only looked at while the
+	 * forge's chunk is loaded: an unloaded forge keeps its Mulas), or when its owner has led it far away.
+	 */
+	public void checkHome() {
+		if (homeForge == null) return;
+		World world = this.getWorld();
+		if (world.isChunkLoaded(homeForge) && !MulaHome.holds(world, homeForge)) {
+			clearHome();
+			return;
+		}
+		double dx = this.getX() - (homeForge.getX() + 0.5), dz = this.getZ() - (homeForge.getZ() + 0.5);
+		if (isTamed() && ledByOwner && dx * dx + dz * dz > MulaHome.RELEASE_DISTANCE * MulaHome.RELEASE_DISTANCE) clearHome();
+	}
+
+	/**
+	 * Server, from its forge's core exploding (DiceForgeBlockEntity#explodeCore): in {@code delay} ticks it bursts like
+	 * when it has eaten too much (same animation, flash and star bits), but without dropping fragments, then flies away
+	 * as a shooting star the way given (radians), 100 to 400 blocks: its forge can't hold it any more. Nothing if it is
+	 * already bursting.
+	 */
+	public void burstFromCore(int delay, double angle) {
+		if (this.isRemoved() || isBursting()) return;
+		homeForge = null;
+		stopDancing();
+		starAngle = angle;
+		coreBurstTicks = Math.max(1, delay);
+	}
+
+	public boolean isBursting() {
+		return starLaunchTicks > 0 || coreBurstTicks > 0;
+	}
+
+	/**
+	 * Server: the pop of its burst: it leaves as a shooting star (MulaStarEntity) and is recorded to be reborn where the
+	 * star lands (MulaRebirths), the same Mula (colour, owner, name, UUID, home) with an empty belly. It is removed without
+	 * dying (no death message, no loot: its fragments, if any, are already dropped).
+	 * <p>
+	 * Far from any forge: a random arc, the higher the farther, 100 to 400 blocks away. At home by a forge with its core:
+	 * a short, high loop that falls back next to the forge, where it is reborn (a Mula near a forge never leaves).
 	 */
 	public void burstIntoStar() {
 		if (!(this.getWorld() instanceof ServerWorld world) || this.isRemoved()) return;
 		net.minecraft.util.math.random.Random random = this.getRandom();
-		double angle = random.nextDouble() * MathHelper.TAU;
-		double apex = MulaStarEntity.MIN_APEX + random.nextDouble() * (MulaStarEntity.MAX_APEX - MulaStarEntity.MIN_APEX);
-		double distance = MulaStarEntity.distanceFor(apex);
-		double dirX = Math.cos(angle), dirZ = Math.sin(angle);
+		boolean atForge = homeForge != null && MulaHome.holds(world, homeForge);
+		double startY = this.getY() + this.getHeight() * CENTER;
+		double apex, distance, dirX, dirZ, endY;
+		int x, z;
+		if (atForge) {
+			// lands 2 to 4 blocks from the forge, on a loop 10 to 16 blocks high
+			double around = random.nextDouble() * MathHelper.TAU, r = 2 + random.nextDouble() * 2;
+			double tx = homeForge.getX() + 0.5 + Math.cos(around) * r, tz = homeForge.getZ() + 0.5 + Math.sin(around) * r;
+			double dx = tx - this.getX(), dz = tz - this.getZ(), d = Math.sqrt(dx * dx + dz * dz);
+			dirX = d < 1.0E-3 ? 1 : dx / d;
+			dirZ = d < 1.0E-3 ? 0 : dz / d;
+			distance = d;
+			apex = 10 + random.nextDouble() * 6;
+			x = MathHelper.floor(tx);
+			z = MathHelper.floor(tz);
+			endY = homeForge.getY() + 2.5;
+		} else {
+			double angle = Double.isNaN(starAngle) ? random.nextDouble() * MathHelper.TAU : starAngle;
+			apex = MulaStarEntity.MIN_APEX + random.nextDouble() * (MulaStarEntity.MAX_APEX - MulaStarEntity.MIN_APEX);
+			distance = MulaStarEntity.distanceFor(apex);
+			dirX = Math.cos(angle);
+			dirZ = Math.sin(angle);
+			x = MathHelper.floor(this.getX() + dirX * distance);
+			z = MathHelper.floor(this.getZ() + dirZ * distance);
+			endY = startY;
+		}
 		// what is reborn: the same Mula, standing, free, empty
 		this.detachLeash(true, true);
 		this.stopRiding();
@@ -212,17 +313,19 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.setHunger(0);
 		this.setLastFood(ItemStack.EMPTY);
 		stopDancing();
+		starLaunchTicks = 0;
+		coreBurstTicks = 0;
+		starAngle = Double.NaN;
 		NbtCompound saved = new NbtCompound();
 		if (!this.saveSelfNbt(saved)) return;
-		int x = MathHelper.floor(this.getX() + dirX * distance), z = MathHelper.floor(this.getZ() + dirZ * distance);
-		MulaRebirths.get(world).add(new MulaRebirths.Entry(this.getUuid(), x, z, this.getY(),
-				world.getTime() + MulaStarEntity.flightTicksFor(distance), saved));
+		int flight = MulaStarEntity.flightTicksFor(distance);
+		MulaRebirths.get(world).add(new MulaRebirths.Entry(this.getUuid(), x, z, atForge ? endY : this.getY(),
+				world.getTime() + flight, saved));
 		MulaStarEntity star = new MulaStarEntity(fr.lordfinn.steveparty.entities.ModEntities.MULA_STAR, world);
-		star.launch(this.getX(), this.getY() + this.getHeight() * CENTER, this.getZ(), this.getVariant(), dirX, dirZ,
-				distance, apex);
+		star.launch(this.getX(), startY, this.getZ(), this.getVariant(), dirX, dirZ, distance, apex, endY - startY);
 		world.spawnEntity(star);
-		fr.lordfinn.steveparty.Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s",
-				getVariant().name().toLowerCase(Locale.ROOT), x, z, MulaStarEntity.flightTicksFor(distance) / 20);
+		fr.lordfinn.steveparty.Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s{}",
+				getVariant().name().toLowerCase(Locale.ROOT), x, z, flight / 20, atForge ? " (at its forge)" : "");
 		this.discard();
 	}
 
@@ -246,10 +349,16 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (bellyClearTicks > 0 && --bellyClearTicks == 0) setLastFood(ItemStack.EMPTY);
 		if (freshTicks > 0 && --freshTicks == 0) this.dataTracker.set(FRESH, false);
 		if ((this.age & 3) == 0) keepOutOfBlocks();
+		if (coreBurstTicks > 0 && --coreBurstTicks == 0) {
+			// its forge's core blew up: it bursts too (no fragments: the core's blast is not a meal)
+			playSpecial("explode", EXPLODE_TICKS);
+			starLaunchTicks = STAR_LAUNCH_TICKS;
+		}
 		if (starLaunchTicks > 0 && --starLaunchTicks == 0) {
 			burstIntoStar();
 			return;
 		}
+		if ((this.age + this.getId()) % 20 == 3) checkHome();
 		brain.tick();
 		tickEmotes();
 	}
@@ -583,6 +692,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putInt("Variant", this.getVariant().getId());
 		nbt.putInt("Hunger", this.getHunger());
+		if (homeForge != null) nbt.putIntArray("HomeForge", new int[]{homeForge.getX(), homeForge.getY(), homeForge.getZ()});
 		if (!getLastFood().isEmpty()) {
 			nbt.putString("LastFood", Registries.ITEM.getId(getLastFood().getItem()).toString());
 		}
@@ -593,6 +703,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		super.readCustomDataFromNbt(nbt);
 		this.setVariant(MulaVariant.byId(nbt.getInt("Variant")));
 		this.setHunger(nbt.getInt("Hunger"));
+		int[] home = nbt.getIntArray("HomeForge");
+		this.homeForge = home.length == 3 ? new net.minecraft.util.math.BlockPos(home[0], home[1], home[2]) : null;
 		Identifier food = nbt.contains("LastFood") ? Identifier.tryParse(nbt.getString("LastFood")) : null;
 		setLastFood(food == null ? ItemStack.EMPTY : new ItemStack(Registries.ITEM.get(food)));
 		// it always floats: /summon with any NBT (no "NoGravity" in it) used to give it gravity, and it fell

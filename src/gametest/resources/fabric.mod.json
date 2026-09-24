@@ -21,6 +21,7 @@
       "fr.lordfinn.steveparty.gametest.MulaDanceGameTests",
       "fr.lordfinn.steveparty.gametest.MulaRebirthGameTests",
       "fr.lordfinn.steveparty.gametest.MulaSafetyGameTests",
+      "fr.lordfinn.steveparty.gametest.MulaHomeGameTests",
       "fr.lordfinn.steveparty.gametest.StencilGameTests",
       "fr.lordfinn.steveparty.gametest.TokenSpellGameTests",
       "fr.lordfinn.steveparty.gametest.TokenBaseGameTests"

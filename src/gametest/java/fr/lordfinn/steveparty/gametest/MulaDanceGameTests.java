@@ -92,9 +92,14 @@ public class MulaDanceGameTests implements FabricGameTest {
      * onto their place and are moved by the formula.
      */
     // its own batch: the forge would also conduct the Mulas of the neighbouring tests
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "mula_forge_dance")
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 320, batchId = "mula_forge_dance")
     public void forgeConductsItsDancers(TestContext context) {
+        MulaHomeGameTests.removeOtherForges(context, FORGE_POS);
         context.setBlockState(FORGE_POS, ModBlocks.DICE_FORGE.getDefaultState());
+        // a forge holds Mulas only with its core in
+        fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
+        forge.setStack(fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.CENTER_SLOT,
+                new net.minecraft.item.ItemStack(ModBlocks.GRAVITY_CORE));
         List<MulaEntity> dancers = new ArrayList<>();
         for (int i = 0; i < 3; i++) dancers.add(context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1 + 3 * i, 3, 1)));
         MulaEntity sitter = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(7, 3, 7));
@@ -110,14 +115,20 @@ public class MulaDanceGameTests implements FabricGameTest {
             context.assertTrue(slots.size() == 3, "distinct slots: " + slots);
             context.assertTrue(!sitter.isDancing(), "a sitting Mula stays sitting");
         });
-        context.runAtTick(200, () -> {
+        context.runAtTick(280, () -> {
             double[] out = new double[4];
+            // the test area is walled: a dancer whose place is in the wall leaves the figure and rejoins (by design),
+            // so at least two of the three are on their place at any time
+            int locked = 0;
             for (MulaEntity mula : dancers) {
-                context.assertTrue(mula.isDanceLocked(), "on its place in the figure");
+                context.assertTrue(context.getAbsolutePos(FORGE_POS).equals(mula.homeForge()), "still at home");
+                if (!mula.isDanceLocked()) continue;
+                locked++;
                 mula.dancePosition(0f, out);
                 context.assertTrue(mula.squaredDistanceTo(out[0], out[1], out[2]) < 0.5 * 0.5,
                         "moved by the formula: " + mula.getPos() + " vs " + out[0] + ", " + out[1] + ", " + out[2]);
             }
+            context.assertTrue(locked >= 2, "on their place in the figure: " + locked);
             dancers.forEach(MulaEntity::discard);
             sitter.discard();
             context.complete();

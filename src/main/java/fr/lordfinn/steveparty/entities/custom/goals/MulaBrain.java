@@ -212,6 +212,7 @@ public final class MulaBrain {
 
     private void setShiny(Vec3d where) {
         if (lastInspected != null && lastInspected.squaredDistanceTo(where) < 4) return;
+        if (!mula.isInHome(where)) return; // out of its forge's area: not for it
         shiny = where;
     }
 
@@ -282,8 +283,9 @@ public final class MulaBrain {
         if (friend.playTicks > 0 || friend.shyTicks > 0) return false;
         int ticks = 90 + mula.getRandom().nextInt(50);
         float direction = mula.getRandom().nextBoolean() ? 1f : -1f;
-        double cx = (mula.getX() + other.getX()) / 2, cy = (mula.getY() + other.getY()) / 2 + 0.5;
-        double cz = (mula.getZ() + other.getZ()) / 2;
+        Vec3d c = mula.keepHome(new Vec3d((mula.getX() + other.getX()) / 2, (mula.getY() + other.getY()) / 2 + 0.5,
+                (mula.getZ() + other.getZ()) / 2));
+        double cx = c.x, cy = c.y, cz = c.z;
         this.startPlay(other, ticks, cx, cy, cz, 0f, direction);
         friend.startPlay(mula, ticks, cx, cy, cz, MathHelper.PI, direction);
         return true;
@@ -329,7 +331,8 @@ public final class MulaBrain {
         if (toThreat.lengthSquared() > 8 * 8) threat = mula.getPos().add(toThreat.normalize().multiply(8));
         shyThreat = threat;
         shyTicks = SHY_TICKS;
-        shyTarget = hideout(threat);
+        // a flee stays inside its forge's area
+        shyTarget = mula.keepHome(hideout(threat));
     }
 
     public static final int SHY_TICKS = 120, SHY_FLEE_TICKS = 40, SHY_PEEK_TICKS = 75;

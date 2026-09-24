@@ -51,13 +51,39 @@ public class SimpleFlyingMoveControl extends MoveControl {
     public void moveTo(double x, double y, double z, double speed) {
         super.moveTo(x, y, z, speed);
         this.passThrough = false;
+        keepHome();
     }
 
     /** Like {@link #moveTo}, for a point on the way: no slowing down near it. */
     public void moveThrough(double x, double y, double z, double speed) {
         super.moveTo(x, y, z, speed);
         this.passThrough = true;
+        keepHome();
     }
+
+    private final double[] target = new double[3];
+
+    /**
+     * A Mula living at a Dice Forge (MulaHome) never flies out of its area, whatever the behaviour asks: the target is
+     * brought back inside. Only its owner leading it away may take it out (it is then released).
+     */
+    private void keepHome() {
+        if (!(entity instanceof fr.lordfinn.steveparty.entities.custom.MulaEntity mula)) return;
+        BlockPos home = mula.homeForge();
+        if (home == null || mula.isLedByOwner()) return;
+        target[0] = targetX;
+        target[1] = targetY;
+        target[2] = targetZ;
+        fr.lordfinn.steveparty.entities.custom.MulaHome.clamp(home, target);
+        targetX = target[0];
+        targetY = target[1];
+        targetZ = target[2];
+    }
+
+    /** Where it is flying to (after keepHome), for the tests. */
+    public double targetX() { return targetX; }
+    public double targetY() { return targetY; }
+    public double targetZ() { return targetZ; }
 
     @Override
     public void tick() {

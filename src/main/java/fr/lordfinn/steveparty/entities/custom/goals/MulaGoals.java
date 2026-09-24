@@ -461,8 +461,10 @@ public final class MulaGoals {
             if (mula.isTamed() || !mula.getMulaBrain().isActive()) return false;
             if ((mula.age + mula.getId()) % MulaBrain.NEIGHBOUR_TICKS != 0) return false; // looked at once a second
             World world = mula.getWorld();
+            BlockPos home = mula.homeForge();
             if (world.isNight()) {
-                double ground = groundBelow(world, mula.getX(), mula.getY(), mula.getZ());
+                // at home: it twinkles above its forge
+                double ground = home != null ? home.getY() + 1.0 : groundBelow(world, mula.getX(), mula.getY(), mula.getZ());
                 if (Double.isNaN(ground)) return false;
                 night = true;
                 skyY = MulaBrain.nightAltitude(ground, world.getTopYInclusive(), mula.getId());
@@ -483,7 +485,10 @@ public final class MulaGoals {
          * the night 10 to 18 blocks up: a 10-block scan never reached the flowers, and it stayed in the sky all day).
          */
         private BlockPos findPerch(World world) {
-            return findPerch(world, mula.getBlockPos(), mula.getRandom(), probe);
+            BlockPos home = mula.homeForge();
+            // at home: a flower round its forge
+            BlockPos from = home != null ? new BlockPos(home.getX(), mula.getBlockY(), home.getZ()) : mula.getBlockPos();
+            return findPerch(world, from, mula.getRandom(), probe);
         }
 
         public static BlockPos findPerch(World world, BlockPos from, net.minecraft.util.math.random.Random random,
@@ -532,9 +537,16 @@ public final class MulaGoals {
             if (night) {
                 // drifting slowly with its flock, like a star
                 MulaEntity leader = mula.getMulaBrain().flockLeader();
+                BlockPos home = mula.homeForge();
                 double cx = leader != null ? leader.getX() : mula.getX(), cz = leader != null ? leader.getZ() : mula.getZ();
                 double a = t * 0.015 + mula.getId();
                 double r = leader != null ? 1.6 + (mula.getId() % 3) * 0.6 : 0.6;
+                if (home != null) {
+                    // at home: a slow ring of little stars over its forge
+                    cx = home.getX() + 0.5;
+                    cz = home.getZ() + 0.5;
+                    r = 2 + (mula.getId() % 4) * 0.9;
+                }
                 fly(mula, cx + Math.cos(a) * r, skyY + 0.4 * Math.sin(t * 0.04 + mula.getId()), cz + Math.sin(a) * r,
                         mula.getY() < skyY - 2 ? 0.1 : 0.06, true);
             } else {
