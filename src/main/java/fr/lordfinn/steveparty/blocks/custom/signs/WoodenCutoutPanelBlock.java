@@ -57,6 +57,6 @@ public class WoodenCutoutPanelBlock extends AbstractStencilSignBlock {
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return OUTLINE.get(state, boardShift(world, pos, state));
+        return OUTLINE.get(this, world, pos, state);
     }
 }
