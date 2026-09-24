@@ -18,7 +18,9 @@ position `[0,0,0]` in every animation and only turns (the block outline stays wh
 - Optional **bone `core`**, child of `root`, pivot at the centre of the seated core `[0,16,0]` (cubes may stay empty).
   When present, the core is rendered on it and fully driven by the animations (the code then skips its own fall and
   altitude); otherwise the code handles the fall and the altitude on `root`.
-- **`core_insert`**: exactly 3.0 s, no loop (`CORE_INSERT_TICKS = 60`), ends with `root` at `[0,0,0]`, rotation 0.
+- **`core_insert`**: exactly 1.0 s, no loop (`CORE_INSERT_TICKS = 30`: the controller's 10-tick transition + 1 s),
+  ends with `root` at `[0,0,0]`, rotation 0. The core is set right into the hole (no fall), the forge is pushed in
+  like a button (-1 px, bounce +0.5 px, back to 0 by 0.4 s), then the core rises and floats.
   The core falls into the plate during the first 1.5 s (code), the forge shakes on impact (1.5 → 1.9 s).
 - **`floating`**: 12 s loop, `root` turns 360°. **`crafting`**: 2 s loop, fast spin and a slight pump of `spike`.
 

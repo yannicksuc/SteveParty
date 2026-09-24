@@ -47,6 +47,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
         forge.setStack(CENTER_SLOT, new ItemStack(ModBlocks.GRAVITY_CORE));
         context.assertTrue(forge.isActivated(), "core inserted in the center slot activates the forge");
+        context.assertTrue(forge.isCoreInPlace(), "the insertion is known: the core is drawn and animated");
         context.assertTrue(forge.getStack(CENTER_SLOT).isEmpty(), "the core goes into the forge, not the output slot");
         return forge;
     }
