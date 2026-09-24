@@ -99,7 +99,9 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
 
         matrices.push();
         Integer dir = entity.getCachedState().get(ROTATION_8);
-        Vector3f translate = (new Vector3f(9f/16, 0, 9f/16)).mul(rotation8ToVector(dir)).add(0,-1f/16,0);
+        // The head sits on the pedestal of the model, on the front side (toward the player who placed the tile).
+        // The model only has 4 orientations: diagonals keep the pedestal of the previous side, the head still looks diagonally.
+        Vector3f translate = (new Vector3f(9f/16, 0, 9f/16)).mul(frontVector(dir)).add(0,-1f/16,0);
         matrices.translate(translate.x, translate.y, translate.z);
         matrices.scale(1.0F, 1.0F, 1.0F);
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
@@ -162,16 +164,17 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         matrices.multiply(ROTATION.rotationAxis(angle, x, y, z));
     }
 
-    public static Vector3f rotation8ToVector(int rot) {
-        double angle = Math.toRadians(rot * 45);  // 45° increments
-
-        // For Minecraft coordinates:
-        // X grows east
-        // Z grows south
-        int x = (int) Math.round(Math.sin(angle));  // sin → X axis
-        int z = (int) Math.round(Math.cos(angle));  // cos → Z axis
-
-        return new Vector3f(x, 0, z);
+    /**
+     * Side the tile faces, snapped to the 4 orientations of the start tile model: rotation 0 = placed while looking
+     * north, faces south; the rotation turns clockwise (2 = west, 4 = north, 6 = east), like the blockstate "y".
+     */
+    private static Vector3f frontVector(int rot) {
+        return switch ((rot >> 1) & 3) {
+            case 0 -> new Vector3f(0, 0, 1);
+            case 1 -> new Vector3f(-1, 0, 0);
+            case 2 -> new Vector3f(0, 0, -1);
+            default -> new Vector3f(1, 0, 0);
+        };
     }
 
 
