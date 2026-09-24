@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_lime_plastic_stud": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:lime_plastic_stud"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:lime_plastic_block_from_plastic_studs"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_lime_plastic_stud"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:lime_plastic_block_from_plastic_studs"
+    ]
+  }
+}

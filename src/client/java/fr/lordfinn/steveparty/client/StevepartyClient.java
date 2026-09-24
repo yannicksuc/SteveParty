@@ -129,6 +129,7 @@ public class StevepartyClient implements ClientModInitializer {
         PayloadReceivers.initialize();
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
+        SwitchableClient.initialize();
 
         initScreens();
         initParticles();

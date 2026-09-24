@@ -7,11 +7,11 @@
       },
       "trigger": "minecraft:recipe_unlocked"
     },
-    "has_yellow_switcher_block": {
+    "has_yellow_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:yellow_switcher_block"
+            "items": "steveparty:yellow_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_yellow_switcher_block"
+      "has_yellow_plastic_block"
     ]
   ],
   "rewards": {

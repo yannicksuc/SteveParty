@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_green_switcher_block": {
+    "has_green_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:green_switcher_block"
+            "items": "steveparty:green_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_green_switcher_block"
+      "has_green_plastic_block"
     ]
   ],
   "rewards": {

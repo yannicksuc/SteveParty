@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_orange_switcher_block": {
+    "has_orange_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:orange_switcher_block"
+            "items": "steveparty:orange_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_orange_switcher_block"
+      "has_orange_plastic_block"
     ]
   ],
   "rewards": {

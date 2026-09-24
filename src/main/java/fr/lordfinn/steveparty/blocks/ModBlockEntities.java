@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlockEntity;
@@ -19,6 +20,12 @@ public class ModBlockEntities {
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "tile_entity"),
             FabricBlockEntityTypeBuilder.create(TileBlockEntity::new, ModBlocks.TILE).build(null)
+    );
+
+    public static final BlockEntityType<SwitchedOffBlockEntity> SWITCHED_OFF_BLOCK_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "switched_off_block_entity"),
+            FabricBlockEntityTypeBuilder.create(SwitchedOffBlockEntity::new, ModBlocks.SWITCHED_OFF_BLOCK).build(null)
     );
 
     public static final BlockEntityType<CheckPointBlockEntity> CHECK_POINT_ENTITY = Registry.register(

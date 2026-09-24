@@ -163,8 +163,8 @@ public class ModItems {
             itemGroup.add(STENCIL_MAKER);
             itemGroup.add(HOP_SWITCH);
             itemGroup.add(PLASTIC_PELLETS);
-            for (Block switcherBlock : ModBlocks.SWITCHER_BLOCKS) {
-                itemGroup.add(switcherBlock);
+            for (Block plasticBlock : ModBlocks.PLASTIC_BLOCKS) {
+                itemGroup.add(plasticBlock);
             }
             for (Block stud : ModBlocks.PLASTIC_STUDS) {
                 itemGroup.add(stud);

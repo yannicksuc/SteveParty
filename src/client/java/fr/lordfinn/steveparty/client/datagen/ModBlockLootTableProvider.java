@@ -8,7 +8,6 @@ import net.minecraft.registry.RegistryWrapper;
 
 import java.util.concurrent.CompletableFuture;
 
-import static fr.lordfinn.steveparty.blocks.ModBlocks.SWITCHER_BLOCKS;
 
 public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
 
@@ -20,8 +19,8 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
     public void generate() {
         // Make blocks drop themselves
         addDrop(ModBlocks.HOP_SWITCH);
-        for (Block switcher : SWITCHER_BLOCKS)
-            addDrop(switcher);
+        for (Block plasticBlock : ModBlocks.PLASTIC_BLOCKS)
+            addDrop(plasticBlock);
         for (Block stud : ModBlocks.PLASTIC_STUDS)
             addDrop(stud);
         addDrop(ModBlocks.GOAL_POLE_BASE);

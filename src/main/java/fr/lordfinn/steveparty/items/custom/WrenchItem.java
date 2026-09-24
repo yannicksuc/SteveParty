@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
-import fr.lordfinn.steveparty.blocks.custom.PlotBlock;
-import fr.lordfinn.steveparty.blocks.custom.SwitchyBlock;
+import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
@@ -9,7 +8,6 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
@@ -32,11 +30,10 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         super(settings);
     }
 
-    // The wrench takes plastic pieces (switcher blocks, studs) apart in one hit
+    // The wrench takes plastic pieces (plastic blocks, studs) apart in one hit
     @Override
     public float getMiningSpeed(ItemStack stack, BlockState state) {
-        Block block = state.getBlock();
-        if (block instanceof SwitchyBlock || block instanceof PlotBlock) return PLASTIC_MINING_SPEED;
+        if (state.isIn(Switchables.PLASTIC)) return PLASTIC_MINING_SPEED;
         return super.getMiningSpeed(stack, state);
     }
 
