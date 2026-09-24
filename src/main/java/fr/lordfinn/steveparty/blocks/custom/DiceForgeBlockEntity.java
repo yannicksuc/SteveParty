@@ -339,6 +339,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             return;
         }
         syncCoreEntity((ServerWorld) world);
+        if (Math.floorMod(world.getTime() + pos.hashCode(), 20) == 0) conductMulas();
 
         if (!powerChecked) {
             powerChecked = true;
@@ -656,6 +657,24 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** @return the center of the core, in the world. */
     public Vec3d getCoreCenter() {
         return new Vec3d(pos.getX() + 0.5, pos.getY() + CORE_REST_HEIGHT + coreAltitude, pos.getZ() + 0.5);
+    }
+
+    /** Mulas dance round a forge: up to this many, the others wait their turn nearby. */
+    private static final int MAX_DANCERS = 8;
+    private static final double DANCE_RANGE = 11;
+
+    /**
+     * Once a second: the Mulas around (not sitting, not scared) get their place in the forge's dance, in the order of
+     * their ids (stable), up to {@value #MAX_DANCERS}. The dance itself is computed by each from the time.
+     */
+    private void conductMulas() {
+        java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> mulas = world.getEntitiesByClass(
+                fr.lordfinn.steveparty.entities.custom.MulaEntity.class, new net.minecraft.util.math.Box(pos).expand(DANCE_RANGE),
+                m -> m.isAlive() && !m.isSitting() && !m.getMulaBrain().isShy() && !m.dancesElsewhere(pos));
+        if (mulas.isEmpty()) return;
+        mulas.sort(java.util.Comparator.comparingInt(net.minecraft.entity.Entity::getId));
+        int count = Math.min(MAX_DANCERS, mulas.size());
+        for (int i = 0; i < count; i++) mulas.get(i).assignDance(pos, i, count);
     }
 
     /** The risen core pulls what is around it: the higher, the stronger and the farther. */

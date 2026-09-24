@@ -69,6 +69,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
 	protected static final RawAnimation FLY_ANIM = RawAnimation.begin().thenLoop("fly");
 	protected static final RawAnimation SIT_ANIM = RawAnimation.begin().thenLoop("sit");
+	/** Dancing round a Dice Forge: twirl (arms up, spins), sway (waving, blissful), hold (arms out, holding hands). */
+	protected static final RawAnimation[] DANCE_ANIMS = {RawAnimation.begin().thenLoop("dance_twirl"),
+			RawAnimation.begin().thenLoop("dance_sway"), RawAnimation.begin().thenLoop("dance_hold")};
 	protected static final RawAnimation EXPLODE_ANIM = RawAnimation.begin().thenPlay("explode");
 	protected static final RawAnimation CELEBRATE_ANIM = RawAnimation.begin().thenPlay("celebrate");
 	protected static final RawAnimation NO_ANIM = RawAnimation.begin().thenPlay("no");
@@ -171,6 +174,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private static final TrackedData<Integer> FEED_COUNT =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	/** A wild Mula resting on a flower in the morning (plays the sit animation). */
+	/** Dancing round a Dice Forge: -1, or slot | count << 4 | locked << 8 (locked: on its figure, moved by formula). */
+	private static final TrackedData<Integer> DANCE =
+			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<java.util.Optional<net.minecraft.util.math.BlockPos>> DANCE_FORGE =
+			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
 	private static final TrackedData<Boolean> RESTING =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	/** Just spawned: it pops in from nothing on the clients. */
@@ -178,7 +186,6 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
 	private int eatCooldown = 0;
-
 	@Override
 	public void tick() {
 		super.tick();
@@ -234,12 +241,13 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.goalSelector.add(0, new MulaSitGoal(this));
 		this.goalSelector.add(1, new MulaGoals.Shy(this));
 		this.goalSelector.add(2, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
-		this.goalSelector.add(3, new MulaGoals.OrbitOwner(this));
-		this.goalSelector.add(4, new MulaGoals.Curious(this));
-		this.goalSelector.add(5, new MulaGoals.Play(this));
-		this.goalSelector.add(5, new MulaGoals.Shiny(this));
-		this.goalSelector.add(6, new MulaGoals.Sky(this));
-		this.goalSelector.add(7, new LumaHoverGoal(this, 0.2, 1.5, 6.0));
+		this.goalSelector.add(3, new MulaGoals.Dance(this));
+		this.goalSelector.add(4, new MulaGoals.OrbitOwner(this));
+		this.goalSelector.add(5, new MulaGoals.Curious(this));
+		this.goalSelector.add(6, new MulaGoals.Play(this));
+		this.goalSelector.add(6, new MulaGoals.Shiny(this));
+		this.goalSelector.add(7, new MulaGoals.Sky(this));
+		this.goalSelector.add(8, new LumaHoverGoal(this, 0.2, 1.5, 6.0));
 		super.initGoals();
 	}
 
@@ -250,6 +258,127 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	/** A wild Mula resting on a flower (synced: the clients play its sit animation). */
 	public boolean isResting() {
 		return this.dataTracker.get(RESTING);
+	}
+
+	// ------------------------------------------------------------------------------------------ dances
+
+	/** Previous slot / count (for the blend when someone joins or leaves) and when it changed. */
+	private int prevDanceSlot, prevDanceCount;
+	private long danceChangeTick;
+	/** Server: when the forge last counted it among its dancers. */
+	private long danceAssignedTick = Long.MIN_VALUE;
+	private final double[] danceOut = new double[4], danceTmp = new double[4];
+	/** Client: ticks left to catch up with its place in the dance after locking onto it. */
+	private int lockBlendTicks;
+
+	/** Server, from the Dice Forge conducting (once a second): its place in the dance. */
+	public void assignDance(net.minecraft.util.math.BlockPos forge, int slot, int count) {
+		int current = this.dataTracker.get(DANCE);
+		boolean sameForge = forge.equals(this.dataTracker.get(DANCE_FORGE).orElse(null));
+		int locked = sameForge && current >= 0 ? current & 0x100 : 0;
+		int value = slot | count << 4 | locked;
+		if (!sameForge || (current & 0xFF) != (value & 0xFF)) {
+			noteDanceChange(sameForge ? current : -1);
+			this.dataTracker.set(DANCE_FORGE, java.util.Optional.of(forge));
+			this.dataTracker.set(DANCE, value);
+		}
+		danceAssignedTick = this.getWorld().getTime();
+	}
+
+	private void noteDanceChange(int previous) {
+		prevDanceSlot = previous >= 0 ? previous & 0xF : 0;
+		prevDanceCount = previous >= 0 ? (previous >> 4) & 0xF : 0;
+		danceChangeTick = this.getWorld().getTime();
+	}
+
+	public void stopDancing() {
+		this.dataTracker.set(DANCE, -1);
+		this.dataTracker.set(DANCE_FORGE, java.util.Optional.empty());
+	}
+
+	/** Server: reached its place in the figure: from now on it is moved by the formula (on every side). */
+	public void lockDance() {
+		int current = this.dataTracker.get(DANCE);
+		if (current >= 0) this.dataTracker.set(DANCE, current | 0x100);
+	}
+
+	public boolean isDancing() {
+		return this.dataTracker.get(DANCE) >= 0 && this.dataTracker.get(DANCE_FORGE).isPresent();
+	}
+
+	public boolean isDanceLocked() {
+		return isDancing() && (this.dataTracker.get(DANCE) & 0x100) != 0;
+	}
+
+	public long danceAssignedTick() {
+		return danceAssignedTick;
+	}
+
+	/** The forge it dances around, or null. */
+	public @Nullable net.minecraft.util.math.BlockPos danceForge() {
+		return this.dataTracker.get(DANCE_FORGE).orElse(null);
+	}
+
+	/** Its place among the dancers (0-based) and how many they are. */
+	public int danceSlot() {
+		return Math.max(0, this.dataTracker.get(DANCE)) & 0xF;
+	}
+
+	public int danceCount() {
+		return (Math.max(0, this.dataTracker.get(DANCE)) >> 4) & 0xF;
+	}
+
+	/** Server: dancing round another forge than this one (counted by it less than 2 s ago). */
+	public boolean dancesElsewhere(net.minecraft.util.math.BlockPos forge) {
+		return isDancing() && !forge.equals(danceForge()) && this.getWorld().getTime() - danceAssignedTick < 40;
+	}
+
+	/** The dance its forge plays now (index in {@link MulaDances}), -1 if not dancing. */
+	public int currentDance() {
+		return isDancing() ? MulaDances.danceAt(this.getWorld().getTime(), this.dataTracker.get(DANCE_FORGE).get()) : -1;
+	}
+
+	/**
+	 * Where it is in the dance at this moment (world position into out[0..2], out[3] facing yaw in degrees or NaN),
+	 * the same on the server and every client (the forge, the slot, the count and the world time).
+	 */
+	public void dancePosition(float partialTick, double[] out) {
+		net.minecraft.util.math.BlockPos forge = this.dataTracker.get(DANCE_FORGE).orElse(this.getBlockPos());
+		int value = Math.max(0, this.dataTracker.get(DANCE));
+		MulaDances.position(forge, value & 0xF, (value >> 4) & 0xF, prevDanceSlot, prevDanceCount, danceChangeTick,
+				this.getWorld().getTime(), partialTick, out, danceTmp);
+		double cx = forge.getX() + 0.5, cy = forge.getY() + 2.4, cz = forge.getZ() + 0.5;
+		if (this.getWorld().getBlockEntity(forge) instanceof fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity be) {
+			cy = Math.max(cy, be.getCoreCenter().y);
+		}
+		out[0] += cx;
+		out[1] += cy - this.getHeight() * CENTER;
+		out[2] += cz;
+		if (!Double.isNaN(out[3])) out[3] = out[3] * MathHelper.DEGREES_PER_RADIAN - 90;
+	}
+
+	/** Moves it onto its place in the dance (kinematic: no physics, no path), facing its way or its partner. */
+	public void followDance() {
+		dancePosition(0f, danceOut);
+		if (lockBlendTicks > 0) {
+			// client: it was a few ticks behind (interpolated server positions) when it locked: catch up smoothly
+			float k = 1f / lockBlendTicks--;
+			for (int i = 0; i < 3; i++) danceOut[i] = MathHelper.lerp(k, i == 0 ? getX() : i == 1 ? getY() : getZ(), danceOut[i]);
+		}
+		double dx = danceOut[0] - this.getX(), dz = danceOut[2] - this.getZ();
+		this.setPosition(danceOut[0], danceOut[1], danceOut[2]);
+		this.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+		float yaw = !Double.isNaN(danceOut[3]) ? (float) danceOut[3]
+				: dx * dx + dz * dz > 1.0E-5 ? (float) (MathHelper.atan2(dz, dx) * MathHelper.DEGREES_PER_RADIAN) - 90f
+				: this.getYaw();
+		this.setYaw(yaw);
+	}
+
+	/** Client: a dancer's place comes from the formula, not from the server's position updates (they would lag). */
+	@Override
+	public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps) {
+		if (this.getWorld().isClient && isDanceLocked()) return;
+		super.updateTrackedPositionAndAngles(x, y, z, yaw, pitch, interpolationSteps);
 	}
 
 	public void setResting(boolean resting) {
@@ -291,6 +420,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		builder.add(FEED_COUNT, 0);
 		builder.add(FRESH, false);
 		builder.add(RESTING, false);
+		builder.add(DANCE, -1);
+		builder.add(DANCE_FORGE, java.util.Optional.empty());
 	}
 
 	@Override
@@ -526,6 +657,13 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	/** Client: a meal (the feed counter changed) shows the food being absorbed. Both sides: size. */
 	@Override
 	public void onTrackedDataSet(TrackedData<?> data) {
+		if (DANCE.equals(data) && this.getWorld() != null && this.getWorld().isClient && this.age > 0) {
+			// someone joined or left the dance: blend from its previous place (the server does the same)
+			int now = this.dataTracker.get(DANCE);
+			if (now >= 0 && (now & 0xFF) != (lastSeenDance & 0xFF)) noteDanceChange(lastSeenDance);
+			if (now >= 0 && (now & 0x100) != 0 && (lastSeenDance < 0 || (lastSeenDance & 0x100) == 0)) lockBlendTicks = 8;
+			lastSeenDance = now;
+		}
 		super.onTrackedDataSet(data);
 		// its size follows its hunger (getScaleFactor): refresh the hitbox at once, it only did on a pose change
 		if (HUNGER.equals(data)) {
@@ -572,7 +710,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	/** Never over another triggered animation, while hurt, eating, carried, leashed or used as a board token. */
 	private boolean canEmote() {
 		return this.isAlive() && specialAnimTicks == 0 && eatCooldown == 0 && this.hurtTime == 0
-				&& !brain.isShy() && !brain.isPlaying()
+				&& !brain.isShy() && !brain.isPlaying() && !isDancing()
 				&& !this.hasVehicle() && !this.hasPassengers() && !this.isLeashed()
 				&& !((Object) this instanceof TokenizedEntityInterface token && token.steveparty$isTokenized())
 				&& this.getWorld().getClosestPlayer(this, EMOTE_AUDIENCE_RANGE) != null;
@@ -616,7 +754,13 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	// ------------------------------------------------------------------------------------------ client animation
 
 	/** Client, every tick: float layer, fly / hover state, blinks, effects. Plain arithmetic, no allocation. */
+	private int lastSeenDance = -1;
+
 	private void tickClientAnimation() {
+		if (isDanceLocked()) {
+			followDance();
+			effects.danceTick();
+		}
 		if ((this.age & 3) == 0) {
 			// a player close by holding its food: it turns to them, eyes wide (all players see the same: it only
 			// depends on synced things, the players' positions and held items)
@@ -705,6 +849,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private PlayState animationPredicate(AnimationState<MulaEntity> state) {
+		if (isDanceLocked()) {
+			return state.setAndContinue(DANCE_ANIMS[MulaDances.STYLE[Math.max(0, currentDance())]]);
+		}
 		if (this.isInSittingPose() || this.isResting()) {
 			return state.setAndContinue(SIT_ANIM);
 		}

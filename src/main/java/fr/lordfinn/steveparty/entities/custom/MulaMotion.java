@@ -210,6 +210,11 @@ public final class MulaMotion {
 		flare = 1f;
 	}
 
+	/** A beat of a dance: the halo pulses (a little less than a flare). */
+	public void beat() {
+		flare = Math.max(flare, 0.55f);
+	}
+
 	/** A meal's light has sunk in: a warm glow spreads from its heart and fades over 2 s. */
 	public void absorbGlow() {
 		absorbGlow = 1f;

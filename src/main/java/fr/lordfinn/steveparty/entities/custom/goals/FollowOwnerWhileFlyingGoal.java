@@ -21,6 +21,8 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
     private static final double MIN_SPEED = 0.12, MAX_SPEED = 0.55;
     /** Extra speed per block of distance beyond the stop distance. */
     private static final double SPEED_PER_BLOCK = 0.05;
+    /** A dancing Mula whose owner is closer than this (blocks) keeps dancing. */
+    private static final double DANCE_WITH_OWNER = 14;
     /** Closer than this (blocks), it flies straight to its place instead of following a path. */
     private static final double DIRECT_RANGE = 8;
 
@@ -46,6 +48,8 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
             return false;
         }
         this.owner = player;
+        // dancing round a Dice Forge with its owner close by: it keeps dancing
+        if (entity.isDancing() && entity.squaredDistanceTo(owner) < DANCE_WITH_OWNER * DANCE_WITH_OWNER) return false;
         return !(entity.squaredDistanceTo(owner) < (double)(minDistance * minDistance));
     }
 

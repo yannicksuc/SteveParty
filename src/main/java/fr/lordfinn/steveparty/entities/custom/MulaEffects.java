@@ -180,6 +180,22 @@ public final class MulaEffects {
 
     // ------------------------------------------------------------------------------------------ events
 
+    /**
+     * Client, every tick of a dance: a trail of twinkles in its colour, a glow pulse on every beat (once a second, the
+     * same beat for every dancer since it comes from the world time), and a little shower of star bits every 8 s.
+     */
+    void danceTick() {
+        long time = mula.getWorld().getTime();
+        if (time % 20 == 0) mula.getMotion().beat();
+        if (!visible()) return;
+        World world = mula.getWorld();
+        if ((time & 1) == 0) {
+            world.addParticle((time & 2) == 0 ? mula.getVariant().getTwinkle() : WHITE_TWINKLE,
+                    mula.prevX, mula.prevY + mula.getHeight() * 0.8, mula.prevZ, 0, 0, 0);
+        }
+        if (time % 160 == 80) shower(6);
+    }
+
     /** Timeline instructions of the animations. */
     void instruction(String instructions) {
         for (String raw : instructions.split(";")) {

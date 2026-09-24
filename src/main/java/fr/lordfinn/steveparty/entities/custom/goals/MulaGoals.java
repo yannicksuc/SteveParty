@@ -16,8 +16,8 @@ import java.util.EnumSet;
 /**
  * The Mula's behaviours beyond wandering and following, each a goal holding the MOVE control, so they exclude each
  * other by priority (MulaEntity#initGoals):
- * sit 0, {@link Shy} 1, follow owner 2, {@link OrbitOwner} 3, {@link Curious} 4, {@link Play} 5, {@link Shiny} 5,
- * {@link Sky} 6, wander (flocks) 7.
+ * sit 0, {@link Shy} 1, follow owner 2, {@link Dance} 3, {@link OrbitOwner} 4, {@link Curious} 5, {@link Play} 6,
+ * {@link Shiny} 6, {@link Sky} 7, wander (flocks) 8.
  * They read what is around from {@link MulaBrain} (refreshed rarely) and steer the move control towards points
  * computed from formulas: no pathfinding, nothing allocated per tick.
  */
@@ -42,6 +42,88 @@ public final class MulaGoals {
             if (!world.getBlockState(pos).getCollisionShape(world, pos).isEmpty()) return pos.getY() + 1.0;
         }
         return Double.NaN;
+    }
+
+    // ------------------------------------------------------------------------------------------ forge dances
+
+    /**
+     * Near a Dice Forge (which counts its dancers once a second, DiceForgeBlockEntity#conductMulas) a Mula doesn't
+     * leave: it flies to its place in the figure, then is moved by the formula (MulaDances), the same on every side.
+     */
+    public static final class Dance extends Goal {
+        private final MulaEntity mula;
+        private final double[] out = new double[4];
+
+        public Dance(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        private boolean assigned() {
+            return mula.isDancing() && mula.getWorld().getTime() - mula.danceAssignedTick() < 60;
+        }
+
+        @Override
+        public boolean canStart() {
+            return assigned() && !mula.isSitting();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void start() {
+            mula.getNavigation().stop();
+            joinX = mula.getX();
+            joinY = mula.getY();
+            joinZ = mula.getZ();
+            joinStart = mula.getWorld().getTime();
+            joinTicks = -1;
+        }
+
+        @Override
+        public void stop() {
+            mula.stopDancing();
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            if (mula.isDanceLocked()) {
+                mula.followDance();
+                return;
+            }
+            // joining: glides from where it was onto its (moving) place in the figure, eased, then locks onto it
+            mula.dancePosition(0f, out);
+            if (joinTicks < 0) {
+                double d = Math.sqrt(mula.squaredDistanceTo(out[0], out[1], out[2]));
+                joinTicks = (int) MathHelper.clamp(d * 6, 20, 80);
+            }
+            double u = (mula.getWorld().getTime() - joinStart) / (double) joinTicks;
+            if (u >= 1) {
+                mula.lockDance();
+                mula.followDance();
+                return;
+            }
+            double e = u * u * (3 - 2 * u);
+            double x = MathHelper.lerp(e, joinX, out[0]), z = MathHelper.lerp(e, joinZ, out[2]);
+            // a little arc up on the way, like a leap into the dance
+            double y = MathHelper.lerp(e, joinY, out[1]) + 0.8 * Math.sin(Math.PI * u);
+            double dx = x - mula.getX(), dz = z - mula.getZ();
+            mula.setPosition(x, y, z);
+            mula.setVelocity(Vec3d.ZERO);
+            if (dx * dx + dz * dz > 1.0E-4) mula.setYaw((float) (MathHelper.atan2(dz, dx) * MathHelper.DEGREES_PER_RADIAN) - 90f);
+        }
+
+        private double joinX, joinY, joinZ;
+        private long joinStart;
+        private int joinTicks;
     }
 
     // ------------------------------------------------------------------------------------------ 6. shy after a hit
