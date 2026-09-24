@@ -15,6 +15,9 @@ public class ModParticles {
     public static final SimpleParticleType ENCHANTED_CIRCULAR_PARTICLE = FabricParticleTypes.simple();
     /** End rod sparkle keeping its speed: the dice forge laser. */
     public static final SimpleParticleType FORGE_BEAM = FabricParticleTypes.simple();
+    /** The Mula's tinted twinkles, star bits and sleepy z's (client-side animation effects). */
+    public static final ParticleType<MulaSparkleEffect> MULA_SPARKLE =
+            FabricParticleTypes.complex(MulaSparkleEffect.CODEC, MulaSparkleEffect.PACKET_CODEC);
 
     public static void initialize() {
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("here"),
@@ -24,5 +27,6 @@ public class ModParticles {
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("enchanted_circular"),
                 ENCHANTED_CIRCULAR_PARTICLE);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("forge_beam"), FORGE_BEAM);
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("mula_sparkle"), MULA_SPARKLE);
     }
 }

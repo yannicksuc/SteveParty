@@ -64,6 +64,7 @@ public class Steveparty implements ModInitializer {
         ServerNetworking.initialize();
 
         MoveTokenCommand.initialize();
+        fr.lordfinn.steveparty.commands.MulaCommand.initialize();
         fr.lordfinn.steveparty.commands.PartyCommands.initialize();
         new TokenMovementService();
 

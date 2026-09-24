@@ -12,6 +12,10 @@ import net.minecraft.util.math.MathHelper;
  * switch of animation never restarts or breaks the float. Its speed and depth ease from one state to the other, and
  * each Mula starts at its own phase so they never bob in sync.
  * <p>
+ * Readable states on top of it: how full it is (the core swells and glows faster, the halo grows, and near bursting it
+ * trembles), and the excitement when a player close by holds its food (it turns to face them, eyes wide, bobbing and
+ * flapping faster).
+ * <p>
  * Keep the constants in sync with {@code the art sources} (Motion), which renders the previews.
  */
 public final class MulaMotion {
@@ -29,12 +33,16 @@ public final class MulaMotion {
 	/** Minimum ticks in a state before switching (no flicker on a speed hovering around a threshold). */
 	private static final int MIN_FLY_TICKS = 10, MIN_HOVER_TICKS = 6;
 
-	/** Lean / bank springs: pulled by this share of the gap, velocity kept by this share (slight overshoot). */
+	/** Lean / bank / look springs: pulled by this share of the gap, velocity kept by this share (slight overshoot). */
 	private static final float SPRING = 0.10f, DAMPING = 0.72f;
-	/** Springy visual size ("gulp" when it grows after eating). */
-	private static final float SCALE_SPRING = 0.18f, SCALE_DAMPING = 0.7f;
+	/** Springy visual size: it swells with a bouncy "gulp" when fed, pops in from nothing when it appears. */
+	private static final float SCALE_SPRING = 0.24f, SCALE_DAMPING = 0.64f;
 	/** The phase is kept below this (the sway runs at half the bob frequency: 4 pi is a whole cycle of both). */
 	private static final float PHASE_WRAP = (float) (4 * Math.PI);
+	/** Fullness above which the Mula trembles, more and more until it bursts. */
+	private static final float TREMBLE_FROM = 0.7f;
+	/** Most the Mula turns to face a player holding its food (degrees). */
+	private static final float MAX_LOOK = 70f;
 
 	private float phase, prevPhase;
 	private float amplitude, omega, squash, sway;
@@ -42,15 +50,23 @@ public final class MulaMotion {
 	private final float swayOffset;
 	private float lean, prevLean, leanVelocity;
 	private float bank, prevBank, bankVelocity;
+	private float look, prevLook, lookVelocity;
+	private float excitement, prevExcitement;
+	private float fullness, prevFullness;
+	private float glowPhase, prevGlowPhase;
+	private float tremblePhase, prevTremblePhase;
+	private float flare, prevFlare;
 	private float speed;
 	private boolean flying;
 	private int ticksInState;
+	private boolean ticked;
 	private float visualScale = -1, prevVisualScale, visualScaleVelocity;
 
 	public MulaMotion(int seed) {
 		// golden-ratio hashing of the entity id: neighbours get well spread phases
 		float r = (seed * 0.6180339887f) % 1f;
 		this.phase = this.prevPhase = r * PHASE_WRAP;
+		this.glowPhase = this.prevGlowPhase = r * MathHelper.TAU;
 		this.swayOffset = r * 5.1f;
 		this.amplitude = this.prevAmplitude = AMPLITUDE[IDLE];
 		this.omega = MathHelper.TAU / PERIOD[IDLE];
@@ -59,18 +75,29 @@ public final class MulaMotion {
 	}
 
 	/**
-	 * @param dx dy dz  movement of the entity during the last tick (client interpolated position)
-	 * @param bodyYaw   body yaw (degrees), to know what is "forward"
-	 * @param yawDelta  change of body yaw during the last tick (degrees)
-	 * @param scale     current size factor of the entity ({@code getScaleFactor})
+	 * @param dx dy dz   movement of the entity during the last tick (client interpolated position)
+	 * @param bodyYaw    body yaw (degrees), to know what is "forward"
+	 * @param yawDelta   change of body yaw during the last tick (degrees)
+	 * @param scale      current size factor of the entity ({@code getScaleFactor})
+	 * @param full       how full it is, 0..1 (hunger / max)
+	 * @param excited    a player close by holds its food
+	 * @param lookTarget where that player is, relative to the body yaw (degrees)
 	 */
-	public void tick(boolean sitting, double dx, double dy, double dz, float bodyYaw, float yawDelta, float scale) {
+	public void tick(boolean sitting, double dx, double dy, double dz, float bodyYaw, float yawDelta, float scale,
+					 float full, boolean excited, float lookTarget) {
+		ticked = true;
 		prevPhase = phase;
 		prevAmplitude = amplitude;
 		prevSquash = squash;
 		prevSway = sway;
 		prevLean = lean;
 		prevBank = bank;
+		prevLook = look;
+		prevExcitement = excitement;
+		prevFullness = fullness;
+		prevGlowPhase = glowPhase;
+		prevTremblePhase = tremblePhase;
+		prevFlare = flare;
 		prevVisualScale = visualScale < 0 ? scale : visualScale;
 
 		// fly / hover, from the smoothed speed, with hysteresis and a minimum time in each state
@@ -85,16 +112,31 @@ public final class MulaMotion {
 			ticksInState = 0;
 		}
 
+		excitement += ((excited && !sitting ? 1f : 0f) - excitement) * 0.12f;
+		fullness += (full - fullness) * 0.1f;
+
 		int mode = sitting ? SIT : flying ? FLY : IDLE;
 		amplitude += (AMPLITUDE[mode] - amplitude) * MODE_EASE;
 		omega += (MathHelper.TAU / PERIOD[mode] - omega) * MODE_EASE;
 		squash += (SQUASH[mode] - squash) * MODE_EASE;
 		sway += (SWAY[mode] - sway) * MODE_EASE;
-		phase += omega;
+		phase += omega * (1f + 0.6f * excitement + 0.3f * fullness);
 		if (phase > PHASE_WRAP) {
 			phase -= PHASE_WRAP;
 			prevPhase -= PHASE_WRAP;
 		}
+		// the heart beats faster the fuller it is; the tremble runs on its own quick phase
+		glowPhase += 0.12f + 0.3f * fullness;
+		if (glowPhase > MathHelper.TAU) {
+			glowPhase -= MathHelper.TAU;
+			prevGlowPhase -= MathHelper.TAU;
+		}
+		tremblePhase += 1.7f;
+		if (tremblePhase > MathHelper.TAU) {
+			tremblePhase -= MathHelper.TAU;
+			prevTremblePhase -= MathHelper.TAU;
+		}
+		flare = Math.max(0f, flare - 0.03f);
 
 		// lean into the flight (forward speed), back when climbing; bank into turns; springs overshoot a little
 		float yawRad = bodyYaw * MathHelper.RADIANS_PER_DEGREE;
@@ -105,6 +147,10 @@ public final class MulaMotion {
 		float bankTarget = MathHelper.clamp(-yawDelta * 1.2f, -12f, 12f);
 		bankVelocity = (bankVelocity + (bankTarget - bank) * SPRING) * DAMPING;
 		bank += bankVelocity;
+		// turn to face the player holding its food
+		float lookGoal = MathHelper.clamp(lookTarget, -MAX_LOOK, MAX_LOOK) * excitement;
+		lookVelocity = (lookVelocity + (lookGoal - look) * SPRING) * DAMPING;
+		look += lookVelocity;
 
 		// visual size: springs up when it grows (fed), follows at once when it shrinks (reset after it bursts)
 		if (visualScale < 0 || scale < visualScale - 0.001f) {
@@ -114,6 +160,17 @@ public final class MulaMotion {
 			visualScaleVelocity = (visualScaleVelocity + (scale - visualScale) * SCALE_SPRING) * SCALE_DAMPING;
 			visualScale += visualScaleVelocity;
 		}
+	}
+
+	/** It has just appeared (spawn egg, summon...): its visual size pops in from nothing. */
+	public void popIn() {
+		visualScale = prevVisualScale = 0.02f;
+		visualScaleVelocity = 0;
+	}
+
+	/** A burst of light (glow_rings): the halo swells and brightens, then fades back over ~1.5 s. */
+	public void flare() {
+		flare = 1f;
 	}
 
 	public boolean isFlying() {
@@ -128,13 +185,24 @@ public final class MulaMotion {
 		return MathHelper.lerp(partialTick, prevPhase, phase);
 	}
 
-	/** 0..1, bright at the top of the bob: drives the glow pulse of the halo. */
+	/** 0..1, the heartbeat of the core and halo (faster the fuller it is). */
 	public float glow(float partialTick) {
-		return 0.5f + 0.5f * MathHelper.sin(phase(partialTick));
+		return 0.5f + 0.5f * MathHelper.sin(MathHelper.lerp(partialTick, prevGlowPhase, glowPhase));
 	}
 
-	/** Visual size / real size, to draw the springy size without touching the hitbox. */
+	/** 0..1, how full it is (smoothed). */
+	public float fullness(float partialTick) {
+		return MathHelper.lerp(partialTick, prevFullness, fullness);
+	}
+
+	/** 0..1, the glow_rings flare. */
+	public float flareLevel(float partialTick) {
+		return MathHelper.lerp(partialTick, prevFlare, flare);
+	}
+
+	/** Visual size / real size, to draw the springy size without touching the hitbox (0 before its first tick). */
 	public float visualScaleRatio(float partialTick, float scale) {
+		if (!ticked) return 0f;
 		if (visualScale < 0 || scale <= 0) return 1f;
 		return MathHelper.lerp(partialTick, prevVisualScale, visualScale) / scale;
 	}
@@ -145,19 +213,27 @@ public final class MulaMotion {
 		float amp = MathHelper.lerp(partialTick, prevAmplitude, amplitude);
 		float sq = MathHelper.lerp(partialTick, prevSquash, squash);
 		float sw = MathHelper.lerp(partialTick, prevSway, sway);
+		float ex = MathHelper.lerp(partialTick, prevExcitement, excitement);
+		float full = fullness(partialTick);
 		float rel = amp / AMPLITUDE[IDLE];
 		float s = sq * MathHelper.sin(p - 0.5f);
+		float tremble = full > TREMBLE_FROM ? 2.2f * (full - TREMBLE_FROM) / (1f - TREMBLE_FROM) : 0f;
+		float tp = MathHelper.lerp(partialTick, prevTremblePhase, tremblePhase);
 		out.posY = amp * MathHelper.sin(p);
-		out.posX = 0.35f * amp * MathHelper.sin(0.5f * p + swayOffset);
+		out.posX = 0.35f * amp * MathHelper.sin(0.5f * p + swayOffset) + 0.25f * tremble * MathHelper.sin(tp * 1.3f);
 		out.pitch = MathHelper.lerp(partialTick, prevLean, lean) + 1.2f * rel * MathHelper.sin(p - 1.2f);
-		out.roll = sw * MathHelper.sin(0.5f * p + swayOffset) + MathHelper.lerp(partialTick, prevBank, bank);
+		out.roll = sw * MathHelper.sin(0.5f * p + swayOffset) + MathHelper.lerp(partialTick, prevBank, bank)
+				+ tremble * MathHelper.sin(tp);
+		out.yaw = MathHelper.lerp(partialTick, prevLook, look);
 		out.scaleY = 1 + s;
 		out.scaleXZ = 1 - 0.5f * s;
-		out.handFlutter = 6f * rel * MathHelper.sin(p - 1.4f);
+		out.handFlutter = 6f * rel * MathHelper.sin(p - 1.4f) * (1f + 1.2f * ex);
+		out.eyeWiden = 1f + 0.15f * ex;
+		out.coreScale = 1f + 0.45f * full + (0.05f + 0.12f * full) * (2f * glow(partialTick) - 1f);
 	}
 
 	/** Reusable holder for {@link #layer} (one per renderer, no allocation per frame). */
 	public static final class Layer {
-		public float posX, posY, pitch, roll, scaleY, scaleXZ, handFlutter;
+		public float posX, posY, pitch, roll, yaw, scaleY, scaleXZ, handFlutter, eyeWiden, coreScale;
 	}
 }

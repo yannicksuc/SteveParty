@@ -1,23 +1,30 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.custom.MulaEffects;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaMotion;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.particle.ParticlesMode;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
+import software.bernie.geckolib.util.RenderUtil;
 
 import java.util.Map;
 
@@ -34,6 +41,11 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     );
     /** Smoothed speed (blocks/tick) above which the Mula leaves a trail of star dust. */
     private static final float TRAIL_SPEED = 0.05f;
+    /**
+     * Where the food it ate floats, in the head bone (model pixels): in the belly, below the eyes, in the thin glassy
+     * gap between its inner body (z -4) and its translucent shell (z -4.5), so the shell tints it and nothing hides it.
+     */
+    private static final float BELLY_Y = 4.1f, BELLY_Z = -4.26f, BELLY_SIZE = 4.2f;
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new MulaModel());
@@ -58,9 +70,91 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     @Override
     public void actuallyRender(MatrixStack poseStack, MulaEntity animatable, BakedGeoModel model, @Nullable RenderLayer renderType, VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
         if (!isReRender) {
+            animatable.getEffects().lastRenderAge = animatable.age;
             spawnParticles(animatable);
+            renderFlyingItem(poseStack, animatable, bufferSource, partialTick);
         }
         super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, 0xF000F0, packedOverlay, renderColor);
+    }
+
+    /** The food it ate floats in its belly: drawn first, in the head's space, so its glassy shell covers it. */
+    @Override
+    public void renderRecursively(MatrixStack poseStack, MulaEntity mula, GeoBone bone, RenderLayer renderType,
+                                  VertexConsumerProvider bufferSource, VertexConsumer buffer, boolean isReRender,
+                                  float partialTick, int packedLight, int packedOverlay, int renderColor) {
+        if (!isReRender && "head".equals(bone.getName())) {
+            renderBellyItem(poseStack, mula, bone, bufferSource, partialTick);
+        }
+        super.renderRecursively(poseStack, mula, bone, renderType, bufferSource, buffer, isReRender, partialTick,
+                packedLight, packedOverlay, renderColor);
+    }
+
+    private static void renderBellyItem(MatrixStack poseStack, MulaEntity mula, GeoBone head,
+                                        VertexConsumerProvider bufferSource, float partialTick) {
+        ItemStack food = mula.getLastFood();
+        if (food.isEmpty()) return;
+        float plop = mula.getEffects().bellyItemScale(partialTick);
+        if (plop <= 0.01f) return;
+        poseStack.push();
+        // the head's own transform, as GeckoLib applies it
+        RenderUtil.translateMatrixToBone(poseStack, head);
+        RenderUtil.translateToPivotPoint(poseStack, head);
+        RenderUtil.rotateMatrixAroundBone(poseStack, head);
+        RenderUtil.scaleMatrixForBone(poseStack, head);
+        RenderUtil.translateAwayFromPivotPoint(poseStack, head);
+        // it bobs and rocks a little in there, like in jelly
+        float t = mula.age + partialTick;
+        poseStack.translate(0, (BELLY_Y + 0.25f * MathHelper.sin(t * 0.09f)) / 16f, BELLY_Z / 16f);
+        poseStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(8f * MathHelper.sin(t * 0.06f)));
+        float size = BELLY_SIZE / 16f * plop;
+        poseStack.scale(size, size, size);
+        MinecraftClient.getInstance().getItemRenderer().renderItem(food, ModelTransformationMode.FIXED, 0xF000F0,
+                OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId());
+        poseStack.pop();
+    }
+
+    /**
+     * The food flying from the feeder's hand into its mouth (accelerating, spinning, shrinking: sucked in), or a
+     * refused item spat back at the player in an arc.
+     */
+    private static void renderFlyingItem(MatrixStack poseStack, MulaEntity mula, VertexConsumerProvider bufferSource,
+                                         float partialTick) {
+        MulaEffects effects = mula.getEffects();
+        ItemStack stack = effects.flyingStack();
+        if (stack.isEmpty()) return;
+        float p = effects.flyingProgress(partialTick);
+        double mx = MathHelper.lerp(partialTick, mula.prevX, mula.getX());
+        double my = MathHelper.lerp(partialTick, mula.prevY, mula.getY()) + mula.getHeight() * 0.5;
+        double mz = MathHelper.lerp(partialTick, mula.prevZ, mula.getZ());
+        double x, y, z;
+        float size, spin;
+        if (effects.isFlyingOut()) {
+            // out of the mouth, up and back to the player, shrinking away
+            double e = p;
+            x = MathHelper.lerp(e, mx, effects.flyX());
+            z = MathHelper.lerp(e, mz, effects.flyZ());
+            y = MathHelper.lerp(e, my, effects.flyY()) + Math.sin(e * Math.PI) * 0.6;
+            size = 0.4f * (1f - 0.6f * p);
+            spin = p * 540f;
+        } else {
+            // sucked in: slow start, fast end, a little arc
+            double e = p * p;
+            x = MathHelper.lerp(e, effects.flyX(), mx);
+            z = MathHelper.lerp(e, effects.flyZ(), mz);
+            y = MathHelper.lerp(e, effects.flyY(), my) + Math.sin(p * Math.PI) * 0.35;
+            size = 0.4f * (1f - 0.7f * p);
+            spin = p * 720f;
+        }
+        // the pose stack is at the entity, already scaled by the springy size ratio (scaleModelForRender)
+        float ratio = mula.getMotion().visualScaleRatio(partialTick, mula.getScaleFactor());
+        if (ratio <= 0.01f) return;
+        poseStack.push();
+        poseStack.translate((x - mx) / ratio, (y - my + mula.getHeight() * 0.5) / ratio, (z - mz) / ratio);
+        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(spin));
+        poseStack.scale(size / ratio, size / ratio, size / ratio);
+        MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, 0xF000F0,
+                OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId() + 1);
+        poseStack.pop();
     }
 
     @Override
@@ -101,8 +195,10 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     // ----------------------
     // Billboard render layer
     // ----------------------
-    /** The soft halo: a camera-facing glow on the Mula's centre, breathing with its bob (brighter and a bit bigger at
-     * the top). */
+    /**
+     * The soft halo: a camera-facing glow on the Mula's centre in its own colour, breathing with its heartbeat, bigger
+     * and brighter the fuller it is, flaring when it breathes out rings of light.
+     */
     private static class HalloLayer extends GeoRenderLayer<MulaEntity> {
         private final Identifier texture;
 
@@ -125,51 +221,59 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 Vector3d bonePos = bodyBone.get().getLocalPosition();
                 MulaMotion motion = entity.getMotion();
                 float glow = motion.glow(partialTick);
+                float full = motion.fullness(partialTick);
+                float flare = motion.flareLevel(partialTick);
                 matrices.push();
                 matrices.translate(bonePos.x, bonePos.y, bonePos.z);
                 matrices.multiply(rotation);
-                float size = 0.95f + 0.1f * glow;
+                float size = (0.95f + 0.1f * glow) * (1f + 0.25f * full + 0.35f * flare);
                 matrices.scale(size, size, size);
+                int tint = entity.getVariant().getGlowColor();
+                // mostly white near the centre of the texture, tinted towards the Mula's colour
+                int r = 170 + (((tint >> 16) & 0xFF) * 85 / 255);
+                int g = 170 + (((tint >> 8) & 0xFF) * 85 / 255);
+                int b = 170 + ((tint & 0xFF) * 85 / 255);
+                int alpha = (int) (255 * MathHelper.clamp(0.7f + 0.2f * glow + 0.1f * full + 0.3f * flare, 0f, 1f));
                 drawQuad(matrices, bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture)), packedLight,
-                        (int) (255 * (0.75f + 0.25f * glow)));
+                        r, g, b, alpha);
                 matrices.pop();
             }
         }
 
-        private void drawQuad(MatrixStack matrices, net.minecraft.client.render.VertexConsumer vertices, int light, int alpha) {
+        private void drawQuad(MatrixStack matrices, net.minecraft.client.render.VertexConsumer vertices, int light,
+                              int r, int g, int b, int alpha) {
             MatrixStack.Entry entry = matrices.peek();
             float minU = 0f, maxU = 1f;
             float minV = 0f, maxV = 1f;
             float halfSize = 1.0f;
 
             vertices.vertex(entry.getPositionMatrix(), -halfSize, -halfSize, 0.0F)
-                    .color(255, 255, 255, alpha)
+                    .color(r, g, b, alpha)
                     .texture(minU, maxV)
                     .overlay(OverlayTexture.DEFAULT_UV)
                     .light(light)
                     .normal(entry, 0.0F, 1.0F, 0.0F);
 
             vertices.vertex(entry.getPositionMatrix(), halfSize, -halfSize, 0.0F)
-                    .color(255, 255, 255, alpha)
+                    .color(r, g, b, alpha)
                     .texture(maxU, maxV)
                     .overlay(OverlayTexture.DEFAULT_UV)
                     .light(light)
                     .normal(entry, 0.0F, 1.0F, 0.0F);
 
             vertices.vertex(entry.getPositionMatrix(), halfSize, halfSize, 0.0F)
-                    .color(255, 255, 255, alpha)
+                    .color(r, g, b, alpha)
                     .texture(maxU, minV)
                     .overlay(OverlayTexture.DEFAULT_UV)
                     .light(light)
                     .normal(entry, 0.0F, 1.0F, 0.0F);
 
             vertices.vertex(entry.getPositionMatrix(), -halfSize, halfSize, 0.0F)
-                    .color(255, 255, 255, alpha)
+                    .color(r, g, b, alpha)
                     .texture(minU, minV)
                     .overlay(OverlayTexture.DEFAULT_UV)
                     .light(light)
                     .normal(entry, 0.0F, 1.0F, 0.0F);
-
         }
     }
 
