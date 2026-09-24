@@ -42,11 +42,13 @@ public record StencilMakerActionPayload(Action action, byte[] shape) implements 
             return;
         }
         if (!StencilShape.isValid(shape)) return;
+        // Pixels other than 0 / 1 from a modified client would never match a library entry
+        byte[] clean = StencilShape.sanitize(shape);
         StencilLibrary library = StencilLibrary.of(player);
         StencilLibrary changed = switch (action) {
-            case SAVE -> library.with(shape);
-            case DELETE -> library.without(shape);
-            case FAVORITE -> library.toggleFavorite(shape);
+            case SAVE -> library.with(clean);
+            case DELETE -> library.without(clean);
+            case FAVORITE -> library.toggleFavorite(clean);
             case TAKE_OUT -> library;
         };
         if (changed != library) StencilLibrary.set(player, changed);

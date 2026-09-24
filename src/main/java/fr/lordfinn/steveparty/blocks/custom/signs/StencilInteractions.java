@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.signs;
 
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
+import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
@@ -31,7 +32,7 @@ import java.util.Objects;
  *     <li>stencil + dye (one in each hand, either way round): paints the stencil's shape in that colour;</li>
  *     <li>stencil alone: engraves the shape, unpainted;</li>
  *     <li>dye alone: repaints the symbol already there;</li>
- *     <li>glow ink sac: the paint glows; sponge: it stops glowing;</li>
+ *     <li>glow ink sac: the paint glows (on a painted symbol only); sponge: it stops glowing;</li>
  *     <li>brush, held on it: fades the symbol a little every half second, then scrubs it off;</li>
  *     <li>wet sponge: washes the symbol off;</li>
  *     <li>stencil gun: sprays its selected stencil in its selected colour.</li>
@@ -125,7 +126,7 @@ public final class StencilInteractions {
             Hand axeHand = main.getItem() instanceof AxeItem ? Hand.MAIN_HAND : off.getItem() instanceof AxeItem ? Hand.OFF_HAND : null;
             if (stencil.isEmpty() || axeHand == null) return null;
             byte[] shape = StencilItem.getShape(stencil);
-            if (sameShape(canvas, shape)) return null;
+            if (StencilShape.isBlank(shape) || sameShape(canvas, shape)) return null;
             return () -> {
                 canvas.setSymbol(shape, canvas.getColor());
                 player.getStackInHand(axeHand).damage(1, player, axeHand == Hand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
@@ -133,13 +134,15 @@ public final class StencilInteractions {
             };
         }
 
-        if (main.getItem() instanceof StencilGunItem) {
-            StencilGunItem.Load load = StencilGunItem.selectedLoad(main);
+        // The gun sprays from whichever hand holds it (the leading item)
+        if (leading.getItem() instanceof StencilGunItem) {
+            ItemStack gun = leading;
+            StencilGunItem.Load load = StencilGunItem.selectedLoad(gun);
             if (load.shape() == null) return null;
             if (sameSymbol(canvas, load.shape(), load.color())) return null;
             return () -> {
                 canvas.setSymbol(load.shape(), load.color());
-                if (load.color() != null && !player.isCreative()) StencilGunItem.consumeDye(main, load.dyeSlot());
+                if (load.color() != null && !player.isCreative()) StencilGunItem.consumeDye(gun, load.dyeSlot());
                 StencilGunItem.playSpray(world, pos, load.color());
             };
         }
@@ -148,6 +151,8 @@ public final class StencilInteractions {
 
         if (!stencil.isEmpty()) {
             byte[] shape = StencilItem.getShape(stencil);
+            // A blank stencil has nothing to paint or engrave
+            if (StencilShape.isBlank(shape)) return null;
             DyeColor color = dye.isEmpty() ? null : ((DyeItem) dye.getItem()).getColor();
             if (sameSymbol(canvas, shape, color)) return null;
             return () -> {
@@ -169,7 +174,8 @@ public final class StencilInteractions {
             };
         }
         if (leading.isOf(Items.GLOW_INK_SAC)) {
-            if (canvas.isGlowing()) return null;
+            // Only paint glows: no ink used where it would not show (no symbol, or only engraved)
+            if (canvas.isGlowing() || !canvas.hasShape() || canvas.getColor() == null) return null;
             return () -> {
                 canvas.setGlowing(true);
                 play(world, pos, SoundEvents.ITEM_GLOW_INK_SAC_USE, 1.0F);

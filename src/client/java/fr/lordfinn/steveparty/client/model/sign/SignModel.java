@@ -59,7 +59,11 @@ import java.util.function.Supplier;
  */
 public abstract class SignModel implements BakedModel {
     protected final BakedModel base;
-    private static RenderMaterial solid, emissive, unshaded;
+    /** Found once, from whichever chunk builder thread gets there first: published whole, never half set. */
+    private record Materials(RenderMaterial solid, RenderMaterial emissive, RenderMaterial unshaded) {
+    }
+
+    private static volatile Materials materials;
 
     protected SignModel(BakedModel base) {
         this.base = base;
@@ -120,13 +124,14 @@ public abstract class SignModel implements BakedModel {
     }
 
     private static boolean materials() {
-        if (solid == null) {
+        if (materials == null) {
             Renderer renderer = RendererAccess.INSTANCE.getRenderer();
             if (renderer == null) return false;
             // Flat light like the traffic sign always had: ambient occlusion is wrong on turned faces
-            solid = renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).find();
-            emissive = renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).emissive(true).disableDiffuse(true).find();
-            unshaded = renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).disableDiffuse(true).find();
+            materials = new Materials(
+                    renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).find(),
+                    renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).emissive(true).disableDiffuse(true).find(),
+                    renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).disableDiffuse(true).find());
         }
         return true;
     }
@@ -180,7 +185,7 @@ public abstract class SignModel implements BakedModel {
                 Sprite from = quad.getSprite();
                 Sprite to = retexture.apply(from);
                 boolean swap = to != null && to != from;
-                emitter.material(quad.hasShade() ? solid : unshaded);
+                emitter.material(quad.hasShade() ? materials.solid() : materials.unshaded());
                 emitter.cullFace(null);
                 emitter.nominalFace(null);
                 emitter.colorIndex(-1);
@@ -214,10 +219,11 @@ public abstract class SignModel implements BakedModel {
 
         void quad(Vector3f topLeft, Vector3f bottomLeft, Vector3f bottomRight, Vector3f topRight, Vector3f normal,
                   Sprite sprite, float u0, float v0, float u1, float v1, int color, Light light) {
+            Materials found = materials;
             emitter.material(switch (light) {
-                case SHADED -> solid;
-                case UNSHADED -> unshaded;
-                case EMISSIVE -> emissive;
+                case SHADED -> found.solid();
+                case UNSHADED -> found.unshaded();
+                case EMISSIVE -> found.emissive();
             });
             emitter.cullFace(null);
             emitter.nominalFace(null);

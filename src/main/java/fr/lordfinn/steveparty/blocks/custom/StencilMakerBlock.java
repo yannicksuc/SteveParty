@@ -64,19 +64,18 @@ public class StencilMakerBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient) return ActionResult.PASS;
-
-        StencilMakerBlockEntity blockEntity = (StencilMakerBlockEntity) world.getBlockEntity(pos);
-        if (blockEntity == null) return ActionResult.PASS;
+        if (!(world.getBlockEntity(pos) instanceof StencilMakerBlockEntity blockEntity)) return ActionResult.PASS;
 
         // Empty maker: a stencil in hand goes in
         if (blockEntity.getStencil().isEmpty()) {
             if (player.getMainHandStack().getItem() instanceof StencilItem) {
-                blockEntity.swapStencil(player);
+                if (!world.isClient) blockEntity.swapStencil(player);
                 return ActionResult.SUCCESS;
             }
             return ActionResult.PASS;
         }
+        // Same answer on the client (from the synced stencil): the arm swings and the off-hand item is not used too
+        if (world.isClient) return ActionResult.SUCCESS;
         // A stencil inside: sneaking (empty handed) takes it out, otherwise the editor opens (it has a button to take it out)
         if (player.isSneaking()) {
             blockEntity.takeOutStencil(player);

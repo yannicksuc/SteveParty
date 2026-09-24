@@ -74,6 +74,10 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private long lastSoundTime;
     private long savedMessageUntil;
     private IconButton libraryButton;
+    /** {@link #libraryItems()} is asked for several times a frame: rebuilt only when the library or the game mode changes. */
+    private StencilLibrary cachedLibrary;
+    private boolean cachedCreative;
+    private List<LibraryItem> cachedItems = List.of();
 
     /** A pattern shown in the library. */
     private record LibraryItem(byte[] shape, boolean favorite, boolean own, Text name) {
@@ -120,7 +124,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         addDrawableChild(new IconButton(toolX, toolY += 21, Text.translatable("gui.steveparty.stencil_maker.redo"), ICON_REDO, b -> redo()));
         libraryButton = addDrawableChild(new IconButton(toolX, toolY += 27, Text.empty(), ICON_SAVE, b -> toggleInLibrary()));
         addDrawableChild(new IconButton(toolX, toolY += 21, Text.translatable("gui.steveparty.stencil_maker.take_out"), ICON_TAKE_OUT,
-                b -> send(StencilMakerActionPayload.Action.TAKE_OUT, shape)));
+                b -> takeOut()));
         updateLibraryButton();
     }
 
@@ -154,18 +158,24 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     /** Favourites first, then the rest of the player's library, then (creative) the built-in patterns. */
     private List<LibraryItem> libraryItems() {
         StencilLibrary library = client == null || client.player == null ? StencilLibrary.EMPTY : StencilLibrary.of(client.player);
+        boolean creative = client != null && client.player != null && client.player.isCreative();
+        // The library is immutable: a change is a new instance
+        if (library == cachedLibrary && creative == cachedCreative) return cachedItems;
         List<LibraryItem> items = new ArrayList<>();
         for (boolean favorites : new boolean[]{true, false}) {
             for (StencilLibrary.Entry entry : library.entries()) {
                 if (entry.favorite() == favorites) items.add(item(entry.shapeArray(), entry.favorite(), true));
             }
         }
-        if (client != null && client.player != null && client.player.isCreative()) {
+        if (creative) {
             for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
                 if (!library.contains(pattern.shape())) items.add(item(pattern.shape(), false, false));
             }
         }
-        return items;
+        cachedLibrary = library;
+        cachedCreative = creative;
+        cachedItems = List.copyOf(items);
+        return cachedItems;
     }
 
     private static LibraryItem item(byte[] shape, boolean favorite, boolean own) {
@@ -337,10 +347,23 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
      */
     @Override
     public void close() {
+        saveIfChanged();
+        super.close();
+    }
+
+    /**
+     * Take out button: the drawing is saved on the stencil first (the server handles both packets in order, and
+     * closes the screen itself, without going through {@link #close()}).
+     */
+    private void takeOut() {
+        saveIfChanged();
+        send(StencilMakerActionPayload.Action.TAKE_OUT, shape);
+    }
+
+    private void saveIfChanged() {
         if (!Arrays.equals(shape, savedShape) && handler.getBlockEntity() != null && !handler.getBlockEntity().getStencil().isEmpty()) {
             save();
         }
-        super.close();
     }
 
     // ---------------------------------------------------------------- drawing

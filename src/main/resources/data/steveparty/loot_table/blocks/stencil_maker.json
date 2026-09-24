@@ -3,6 +3,7 @@
   "pools": [
     {
       "rolls": 1,
+      "bonus_rolls": 0,
       "entries": [
         {
           "type": "minecraft:item",
@@ -11,13 +12,10 @@
       ],
       "conditions": [
         {
-          "condition": "minecraft:match_tool",
-          "predicate": {
-            "enchantments": [],
-            "tag": "minecraft:mineable/pickaxe"
-          }
+          "condition": "minecraft:survives_explosion"
         }
       ]
     }
-  ]
+  ],
+  "random_sequence": "steveparty:blocks/stencil_maker"
 }
