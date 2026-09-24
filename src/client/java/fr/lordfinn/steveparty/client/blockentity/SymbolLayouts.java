@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.blocks.custom.TrafficSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
-import fr.lordfinn.steveparty.blocks.custom.signs.RockSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.WoodenPanelBlock;
 import net.minecraft.block.BlockState;
@@ -34,32 +33,20 @@ public final class SymbolLayouts {
             tiltX(front(new Vector3f(8, 7.75F, 1 - GAP), 16, 16), 22.5F, 0, 3),
             tiltX(back(new Vector3f(8, 7.75F, 3 + GAP), 16, 16), 22.5F, 0, 3));
 
-    // Wooden panel: front of the board (z = 4), 12 pixel symbol in its middle
-    private static final List<SymbolQuad> WOODEN_PANEL = List.of(front(new Vector3f(8, 8, 4 - GAP), 12, 12));
+    // Wooden panel: the planks of the board (z = 3) between its rails, one symbol pixel per board pixel
+    private static final List<SymbolQuad> WOODEN_PANEL = List.of(front(new Vector3f(8, 9, 3 - GAP), 16, 16));
 
-    // Rock sign: front of the leaning stone (z = 2), tilted by 22.5° around x at (8, 0, 4)
-    private static final List<SymbolQuad> ROCK_SIGN = List.of(tiltX(front(new Vector3f(8, 11, 2 - GAP), 8, 8), 22.5F, 0, 4));
-
-    // Plastic road sign: front of the plate (z = 7), centred on the plate
-    private static final List<SymbolQuad> PLATE_ROUND = List.of(front(new Vector3f(8, 19, 7 - GAP), 10, 10));
-    private static final List<SymbolQuad> PLATE_SQUARE = List.of(front(new Vector3f(8, 19, 7 - GAP), 12, 12));
-    private static final List<SymbolQuad> PLATE_DIAMOND = List.of(turned(front(new Vector3f(8, 19, 7 - GAP), 9, 9), 45));
-    private static final List<SymbolQuad> PLATE_STAR = List.of(front(new Vector3f(8, 18.5F, 7 - GAP), 7, 7));
-    private static final List<SymbolQuad> PLATE_HEART = List.of(front(new Vector3f(8, 20, 7 - GAP), 8, 8));
+    // Plastic road sign: front of the plate (z = 3), the whole 16x16 plate (the diamond turned with it).
+    // The rock sign's engraving is dug in its stone: drawn in the chunk mesh, not here
+    private static final List<SymbolQuad> PLATE = List.of(front(new Vector3f(8, 8, 3 - GAP), 16, 16));
+    private static final List<SymbolQuad> PLATE_DIAMOND = List.of(turned(front(new Vector3f(8, 8, 3 - GAP), 16, 16), 45));
 
     /** @return the symbol quads of a sign in model space, or an empty list if it shows no symbol. */
     public static List<SymbolQuad> forSign(BlockState state) {
         if (state.getBlock() instanceof TrafficSignBlock) return TRAFFIC_SIGN;
         if (state.getBlock() instanceof WoodenPanelBlock) return WOODEN_PANEL;
-        if (state.getBlock() instanceof RockSignBlock) return ROCK_SIGN;
         if (state.getBlock() instanceof PlasticRoadSignBlock) {
-            return switch (state.get(PlasticRoadSignBlock.PLATE)) {
-                case ROUND -> PLATE_ROUND;
-                case SQUARE -> PLATE_SQUARE;
-                case DIAMOND -> PLATE_DIAMOND;
-                case STAR -> PLATE_STAR;
-                case HEART -> PLATE_HEART;
-            };
+            return state.get(PlasticRoadSignBlock.PLATE).turned() ? PLATE_DIAMOND : PLATE;
         }
         return List.of();
     }

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/fence_side",
+  "textures": {
+    "texture": "steveparty:block/plastic_block/white_plastic_block"
+  }
+}

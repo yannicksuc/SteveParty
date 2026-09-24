@@ -24,9 +24,23 @@ public final class SignShapes {
 
     /** @return the outline of these model boxes for each of the 16 rotations. */
     public static VoxelShape[] rotations(Box... boxes) {
+        return rotations(boxes, new Box[0]);
+    }
+
+    /**
+     * @param turning boxes turning with the sign
+     * @param fixed   boxes that never turn (the post of the fence it stands on), in block pixels
+     * @return the outline for each of the 16 rotations
+     */
+    public static VoxelShape[] rotations(Box[] turning, Box[] fixed) {
+        VoxelShape still = VoxelShapes.empty();
+        for (Box box : fixed) {
+            still = VoxelShapes.union(still, VoxelShapes.cuboid(box.x1 / 16, box.y1 / 16, box.z1 / 16, box.x2 / 16, box.y2 / 16, box.z2 / 16));
+        }
+        Box[] boxes = turning;
         VoxelShape[] shapes = new VoxelShape[16];
         for (int rotation = 0; rotation < 16; rotation++) {
-            VoxelShape shape = VoxelShapes.empty();
+            VoxelShape shape = still;
             double angle = Math.toRadians(angleDegrees(rotation));
             for (Box box : boxes) {
                 for (Box segment : split(box)) shape = VoxelShapes.union(shape, turned(segment, angle));

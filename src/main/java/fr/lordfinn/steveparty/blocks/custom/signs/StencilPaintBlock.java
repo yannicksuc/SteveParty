@@ -35,8 +35,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Paint sprayed through a stencil on the face of a full block (wall, floor or ceiling). It is a thin layer in the
- * space in front of that face: blocks can be put over it, water washes it away, a brush scrubs it off, and it goes
- * when its block goes. It drops nothing. The symbol can be repainted like on a sign.
+ * space in front of that face: blocks can be put over it, water washes it away, a brush fades it then scrubs it off,
+ * and it goes when its block goes. It drops nothing. The symbol can be repainted like on a sign.
  * <p>
  * {@link #ORIENTATION}: facing = side of the block it is sprayed on (pointing out of it), rotation = which way the
  * top of the symbol points.
@@ -121,16 +121,18 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
                                          Hand hand, BlockHitResult hit) {
         if (stack.isOf(Items.BRUSH)) {
-            if (world instanceof ServerWorld serverWorld) {
+            // Held on the paint, the brush fades it step by step, then scrubs it off the wall
+            if (!world.isClient && world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas
+                    && StencilInteractions.brush(canvas, player, hand) == StencilInteractions.BrushResult.GONE) {
                 world.removeBlock(pos, false);
-                world.playSound(null, pos, SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.BLOCKS, 1.0F, 1.0F);
                 Direction facing = getFacing(state);
                 BlockPos support = pos.offset(facing.getOpposite());
-                serverWorld.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, world.getBlockState(support)),
-                        pos.getX() + 0.5 - facing.getOffsetX() * 0.45, pos.getY() + 0.5 - facing.getOffsetY() * 0.45,
-                        pos.getZ() + 0.5 - facing.getOffsetZ() * 0.45, 12, 0.25, 0.25, 0.25, 0.05);
+                if (world instanceof ServerWorld serverWorld) {
+                    serverWorld.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, world.getBlockState(support)),
+                            pos.getX() + 0.5 - facing.getOffsetX() * 0.45, pos.getY() + 0.5 - facing.getOffsetY() * 0.45,
+                            pos.getZ() + 0.5 - facing.getOffsetZ() * 0.45, 12, 0.25, 0.25, 0.25, 0.05);
+                }
                 world.emitGameEvent(GameEvent.BLOCK_DESTROY, pos, GameEvent.Emitter.of(player, state));
-                stack.damage(1, player, hand == Hand.MAIN_HAND ? net.minecraft.entity.EquipmentSlot.MAINHAND : net.minecraft.entity.EquipmentSlot.OFFHAND);
             }
             return ActionResult.SUCCESS;
         }

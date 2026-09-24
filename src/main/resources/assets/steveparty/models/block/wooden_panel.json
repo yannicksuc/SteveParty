@@ -1,5 +1,5 @@
 {
-	"credit": "SteveParty - post of the wooden panel (front of the panel: north)",
+	"credit": "SteveParty - board of the wooden panel, in front of the post of the fence below (front: north)",
 	"textures": {
 		"planks": "minecraft:block/oak_planks",
 		"log": "minecraft:block/stripped_oak_log",
@@ -9,72 +9,399 @@
 	"elements": [
 		{
 			"from": [
-				6,
-				0,
-				6
+				-4,
+				1,
+				3
 			],
 			"to": [
-				10,
-				16,
-				10
+				8,
+				17,
+				5
 			],
 			"faces": {
 				"north": {
 					"uv": [
-						6,
 						0,
-						10,
+						0,
+						12,
+						16
+					],
+					"texture": "#planks"
+				},
+				"south": {
+					"uv": [
+						4,
+						0,
+						16,
+						16
+					],
+					"texture": "#planks"
+				},
+				"west": {
+					"uv": [
+						3,
+						0,
+						5,
+						16
+					],
+					"texture": "#planks"
+				},
+				"up": {
+					"uv": [
+						4,
+						3,
+						16,
+						5
+					],
+					"texture": "#planks"
+				},
+				"down": {
+					"uv": [
+						4,
+						11,
+						16,
+						13
+					],
+					"texture": "#planks"
+				}
+			},
+			"name": "planks left"
+		},
+		{
+			"from": [
+				8,
+				1,
+				3
+			],
+			"to": [
+				20,
+				17,
+				5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0,
+						0,
+						12,
+						16
+					],
+					"texture": "#planks"
+				},
+				"east": {
+					"uv": [
+						11,
+						0,
+						13,
+						16
+					],
+					"texture": "#planks"
+				},
+				"south": {
+					"uv": [
+						4,
+						0,
+						16,
+						16
+					],
+					"texture": "#planks"
+				},
+				"up": {
+					"uv": [
+						4,
+						3,
+						16,
+						5
+					],
+					"texture": "#planks"
+				},
+				"down": {
+					"uv": [
+						4,
+						11,
+						16,
+						13
+					],
+					"texture": "#planks"
+				}
+			},
+			"name": "planks right"
+		},
+		{
+			"from": [
+				-4,
+				17,
+				2
+			],
+			"to": [
+				20,
+				18,
+				5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0,
+						14,
+						16,
+						15
+					],
+					"texture": "#log"
+				},
+				"east": {
+					"uv": [
+						11,
+						14,
+						14,
+						15
+					],
+					"texture": "#log"
+				},
+				"south": {
+					"uv": [
+						0,
+						14,
+						16,
+						15
+					],
+					"texture": "#log"
+				},
+				"west": {
+					"uv": [
+						2,
+						14,
+						5,
+						15
+					],
+					"texture": "#log"
+				},
+				"up": {
+					"uv": [
+						0,
+						2,
+						16,
+						5
+					],
+					"texture": "#log"
+				},
+				"down": {
+					"uv": [
+						0,
+						11,
+						16,
+						14
+					],
+					"texture": "#log"
+				}
+			},
+			"name": "top rail"
+		},
+		{
+			"from": [
+				-4,
+				0,
+				2
+			],
+			"to": [
+				20,
+				1,
+				5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0,
+						15,
+						16,
 						16
 					],
 					"texture": "#log"
 				},
 				"east": {
 					"uv": [
-						6,
-						0,
-						10,
+						11,
+						15,
+						14,
 						16
 					],
 					"texture": "#log"
 				},
 				"south": {
 					"uv": [
-						6,
 						0,
-						10,
+						15,
+						16,
 						16
 					],
 					"texture": "#log"
 				},
 				"west": {
 					"uv": [
-						6,
-						0,
-						10,
+						2,
+						15,
+						5,
 						16
 					],
 					"texture": "#log"
 				},
 				"up": {
 					"uv": [
-						6,
-						6,
+						0,
+						2,
+						16,
+						5
+					],
+					"texture": "#log"
+				},
+				"down": {
+					"uv": [
+						0,
+						11,
+						16,
+						14
+					],
+					"texture": "#log"
+				}
+			},
+			"name": "bottom rail"
+		},
+		{
+			"from": [
+				7,
+				3,
+				5
+			],
+			"to": [
+				9,
+				5,
+				6
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						7,
+						11,
+						9,
+						13
+					],
+					"texture": "#log"
+				},
+				"east": {
+					"uv": [
 						10,
-						10
+						11,
+						11,
+						13
+					],
+					"texture": "#log"
+				},
+				"south": {
+					"uv": [
+						7,
+						11,
+						9,
+						13
+					],
+					"texture": "#log"
+				},
+				"west": {
+					"uv": [
+						5,
+						11,
+						6,
+						13
+					],
+					"texture": "#log"
+				},
+				"up": {
+					"uv": [
+						7,
+						5,
+						9,
+						6
 					],
 					"texture": "#log_top"
 				},
 				"down": {
 					"uv": [
-						6,
-						6,
+						7,
 						10,
-						10
+						9,
+						11
 					],
 					"texture": "#log_top"
 				}
 			},
-			"name": "post"
+			"name": "bracket"
+		},
+		{
+			"from": [
+				7,
+				13,
+				5
+			],
+			"to": [
+				9,
+				15,
+				6
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						7,
+						1,
+						9,
+						3
+					],
+					"texture": "#log"
+				},
+				"east": {
+					"uv": [
+						10,
+						1,
+						11,
+						3
+					],
+					"texture": "#log"
+				},
+				"south": {
+					"uv": [
+						7,
+						1,
+						9,
+						3
+					],
+					"texture": "#log"
+				},
+				"west": {
+					"uv": [
+						5,
+						1,
+						6,
+						3
+					],
+					"texture": "#log"
+				},
+				"up": {
+					"uv": [
+						7,
+						5,
+						9,
+						6
+					],
+					"texture": "#log_top"
+				},
+				"down": {
+					"uv": [
+						7,
+						10,
+						9,
+						11
+					],
+					"texture": "#log_top"
+				}
+			},
+			"name": "bracket"
 		}
 	],
 	"display": {
@@ -139,13 +466,13 @@
 		"ground": {
 			"translation": [
 				0,
-				3,
+				4,
 				0
 			],
 			"scale": [
-				0.25,
-				0.25,
-				0.25
+				0.2,
+				0.2,
+				0.2
 			]
 		},
 		"gui": {
@@ -156,13 +483,13 @@
 			],
 			"translation": [
 				0,
-				-2,
+				3.5,
 				0
 			],
 			"scale": [
-				0.45,
-				0.45,
-				0.45
+				0.36,
+				0.36,
+				0.36
 			]
 		},
 		"fixed": {
@@ -171,10 +498,15 @@
 				180,
 				0
 			],
+			"translation": [
+				0,
+				4,
+				0
+			],
 			"scale": [
-				0.5,
-				0.5,
-				0.5
+				0.4,
+				0.4,
+				0.4
 			]
 		}
 	}

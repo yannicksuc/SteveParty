@@ -91,6 +91,25 @@ public class ModBlocks {
         }
     }
 
+    // Plastic fences: posts for the plastic road signs (and fences like any other)
+    public static final Block[] PLASTIC_FENCES = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            String color = COLORS[i];
+            PLASTIC_FENCES[i] = register(
+                    FenceBlock::new,
+                    Block.Settings.create()
+                            .mapColor(DyeColor.byName(color, DyeColor.WHITE))
+                            .solid()
+                            .strength(1.0f, 1.0f)
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD),
+                    color + "_plastic_fence",
+                    true
+            );
+        }
+    }
+
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
     static {

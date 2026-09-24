@@ -10,19 +10,16 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.WorldView;
 
 /**
- * Wooden panel cut out along a stencil: the stencil gives the board its outline (a star, an arrow...), each
- * stencil pixel being a 1.5 pixel square of wood. Without a stencil the board is a plain square. Stands on a post
- * like {@link WoodenPanelBlock}.
+ * Wooden panel cut out along a stencil: a one block board (one pixel of wood per stencil pixel) whose outline is
+ * cut with a stencil and an axe. Uncut, it is a plain square. Stands on a post like {@link WoodenPanelBlock}.
  */
 public class WoodenCutoutPanelBlock extends AbstractStencilSignBlock {
     public static final MapCodec<WoodenCutoutPanelBlock> CODEC = createCodec(WoodenCutoutPanelBlock::new);
 
-    /** Board of 16x16 stencil pixels of {@link #PIXEL} model pixels, from (BOARD_X, BOARD_Y) up, front at BOARD_Z. */
-    public static final float PIXEL = 1.5F, BOARD_X = -4, BOARD_Y = 0, BOARD_Z = 4, BOARD_DEPTH = 2;
-    public static final SignShapes.Box POST = new SignShapes.Box(6, 0, 6, 10, 16, 10);
-    public static final SignShapes.Box BOARD = new SignShapes.Box(BOARD_X, BOARD_Y, BOARD_Z,
-            BOARD_X + 16 * PIXEL, BOARD_Y + 16 * PIXEL, BOARD_Z + BOARD_DEPTH);
-    private static final VoxelShape[] SHAPES = SignShapes.rotations(POST, BOARD);
+    /** Board of 16x16 stencil pixels, one model pixel each, front at BOARD_Z. */
+    public static final float BOARD_X = 0, BOARD_Y = 0, BOARD_Z = 3, BOARD_DEPTH = 2;
+    public static final SignShapes.Box BOARD = new SignShapes.Box(BOARD_X, BOARD_Y, BOARD_Z, BOARD_X + 16, BOARD_Y + 16, BOARD_Z + BOARD_DEPTH);
+    private static final VoxelShape[] SHAPES = SignShapes.rotations(new SignShapes.Box[]{BOARD}, new SignShapes.Box[]{SignPosts.POST});
 
     public WoodenCutoutPanelBlock(Settings settings) {
         super(settings);
@@ -45,7 +42,7 @@ public class WoodenCutoutPanelBlock extends AbstractStencilSignBlock {
 
     @Override
     protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
-        return world.getBlockState(pos.down()).isIn(WoodenPanelBlock.SIGN_POSTS);
+        return SignPosts.standsOnPost(world, pos);
     }
 
     @Override
