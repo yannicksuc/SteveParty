@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_pink_switcher_block": {
+    "has_pink_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:pink_switcher_block"
+            "items": "steveparty:pink_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_pink_switcher_block"
+      "has_pink_plastic_block"
     ]
   ],
   "rewards": {

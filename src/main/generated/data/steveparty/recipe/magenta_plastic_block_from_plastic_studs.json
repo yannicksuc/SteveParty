@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "plastic_block",
+  "key": {
+    "#": "steveparty:magenta_plastic_stud"
+  },
+  "pattern": [
+    "##",
+    "##"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:magenta_plastic_block"
+  }
+}

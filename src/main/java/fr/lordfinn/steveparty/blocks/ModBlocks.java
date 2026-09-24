@@ -6,8 +6,11 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
+import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
+import fr.lordfinn.steveparty.registry.RegistryAliases;
 import net.minecraft.block.*;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -34,28 +37,40 @@ public class ModBlocks {
             "brown", "green", "red", "black"
     };
 
-    public static final Block[] SWITCHER_BLOCKS = new Block[16];
+    public static final Block[] PLASTIC_BLOCKS = new Block[COLORS.length];
 
     static {
         for (int i = 0; i < COLORS.length; i++) {
             String color = COLORS[i];
-            String name = color + "_switcher_block";
-
-            SWITCHER_BLOCKS[i] = register(
-                    SwitchyBlock::new,
+            PLASTIC_BLOCKS[i] = register(
+                    Block::new,
                     // Moulded plastic: quicker with a pickaxe but still harvestable by hand, not flammable
                     Block.Settings.create()
                             .mapColor(DyeColor.byName(color, DyeColor.WHITE))
                             .strength(1.0f, 1.0f)
-                            .sounds(BlockSoundGroup.BAMBOO_WOOD)
-                            .nonOpaque(),
-                    name,
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD),
+                    color + "_plastic_block",
                     true
             );
+            // Saves from before the rename still know them as "<color>_switcher_block" (blocks and items)
+            RegistryAliases.add(Steveparty.id(color + "_switcher_block"), Steveparty.id(color + "_plastic_block"));
         }
     }
 
-    // Plastic studs: 8x8x4 pieces of the switcher block plastic, on the floor, a wall or the ceiling
+    // A switchable block while the hop switch keeps it switched off (no item). Its collision shape is empty but
+    // it counts as solid, so fluids cannot wash it away; explosion-proof and piston-proof so it cannot be used to
+    // get the original block's drops in a way the original block would not allow.
+    public static final Block SWITCHED_OFF_BLOCK = Blocks.register(
+            RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("switched_off_block")),
+            SwitchedOffBlock::new,
+            Block.Settings.create()
+                    .solid()
+                    .nonOpaque()
+                    .strength(1.0f, 3_600_000f)
+                    .sounds(BlockSoundGroup.BAMBOO_WOOD)
+                    .pistonBehavior(PistonBehavior.BLOCK));
+
+    // Plastic studs: 8x8x4 pieces of the plastic block, on the floor, a wall or the ceiling
     public static final Block[] PLASTIC_STUDS = new Block[COLORS.length];
 
     static {

@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.events.ModEvents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.particles.ModParticles;
+import fr.lordfinn.steveparty.blocks.switchable.SwitchableConfig;
 import fr.lordfinn.steveparty.payloads.ModPayloads;
 import fr.lordfinn.steveparty.recipes.ModRecipes;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
@@ -50,6 +51,7 @@ public class Steveparty implements ModInitializer {
         ModScreensHandlers.initialize();
         ModEffects.initialize();
         ModPayloads.initialize();
+        SwitchableConfig.initialize();
         ModEntities.initialize();
         ModEvents.initialize();
         ModHandler.initialize();

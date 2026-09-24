@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.datagen;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
 import net.minecraft.block.Block;
@@ -13,10 +14,8 @@ import net.minecraft.registry.tag.TagKey;
 import java.util.concurrent.CompletableFuture;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.GOAL_POLE;
-import static fr.lordfinn.steveparty.blocks.ModBlocks.SWITCHER_BLOCKS;
 
 public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block> {
-    public static final TagKey<Block> SWITCHABLE = TagKey.of(RegistryKeys.BLOCK, Steveparty.id("switchable"));
 
     public StevepartyReferenceBlockTagProvider(FabricDataOutput output, CompletableFuture<RegistryWrapper.WrapperLookup> registriesFuture) {
         super(output, RegistryKeys.BLOCK, registriesFuture);
@@ -24,12 +23,13 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
 
     @Override
     protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
-        for (Block switcher : SWITCHER_BLOCKS)
-            getOrCreateTagBuilder(SWITCHABLE).add(switcher);
-        for (Block switcher : SWITCHER_BLOCKS)
-            getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(switcher);
-        for (Block stud : ModBlocks.PLASTIC_STUDS)
-            getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(stud);
+        // Plastic blocks and studs: the hop switch can switch them (datapacks and the server config can add more)
+        for (Block[] plastic : new Block[][]{ModBlocks.PLASTIC_BLOCKS, ModBlocks.PLASTIC_STUDS})
+            for (Block block : plastic) {
+                getOrCreateTagBuilder(Switchables.PLASTIC).add(block);
+                getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(block);
+            }
+        getOrCreateTagBuilder(Switchables.SWITCHABLE).addTag(Switchables.PLASTIC);
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,

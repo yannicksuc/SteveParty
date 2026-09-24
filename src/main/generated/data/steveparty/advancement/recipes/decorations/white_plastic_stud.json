@@ -7,11 +7,11 @@
       },
       "trigger": "minecraft:recipe_unlocked"
     },
-    "has_white_switcher_block": {
+    "has_white_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:white_switcher_block"
+            "items": "steveparty:white_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_white_switcher_block"
+      "has_white_plastic_block"
     ]
   ],
   "rewards": {

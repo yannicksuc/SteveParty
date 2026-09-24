@@ -11,13 +11,13 @@ import net.minecraft.util.Identifier;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Swaps the solid switcher block models for {@link ConnectedPlasticModel}. */
+/** Swaps the plastic block models for {@link ConnectedPlasticModel}. */
 public class ConnectedPlasticModelPlugin implements ModelLoadingPlugin {
     @Override
     public void initialize(Context context) {
         Map<Identifier, String> colorByModel = new HashMap<>();
         for (String color : ModBlocks.COLORS) {
-            colorByModel.put(Steveparty.id("block/" + color + "_switcher_block"), color);
+            colorByModel.put(Steveparty.id("block/" + color + "_plastic_block"), color);
         }
 
         context.modifyModelAfterBake().register((originalModel, ctx) -> {
@@ -25,10 +25,11 @@ public class ConnectedPlasticModelPlugin implements ModelLoadingPlugin {
             String color = resourceId == null ? null : colorByModel.get(resourceId);
             if (color == null) return originalModel;
 
-            Sprite[] sprites = new Sprite[16];
-            for (int mask = 0; mask < 16; mask++) {
+            Sprite[] sprites = new Sprite[256];
+            for (int mask = 0; mask < 256; mask++) {
+                if (!ConnectedPlasticModel.isValidMask(mask)) continue;
                 sprites[mask] = ctx.textureGetter().apply(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE,
-                        Steveparty.id("block/switcher_block/connected/" + color + "_" + mask)));
+                        Steveparty.id("block/plastic_block/connected/" + color + "_" + mask)));
             }
             return new ConnectedPlasticModel(originalModel, sprites);
         });

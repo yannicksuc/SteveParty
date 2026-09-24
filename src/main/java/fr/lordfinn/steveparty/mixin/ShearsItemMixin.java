@@ -26,11 +26,12 @@ import java.util.stream.Stream;
 
 @Mixin(ShearsItem.class)
 public abstract class ShearsItemMixin {
-    private static final TagKey<Block> STEVEPARTY$SWITCHABLE = TagKey.of(RegistryKeys.BLOCK, Identifier.of(Steveparty.MOD_ID, "switchable"));
+    // Plastic only: the switchable tag can be extended with any block (datapacks, server config)
+    private static final TagKey<Block> STEVEPARTY$PLASTIC = TagKey.of(RegistryKeys.BLOCK, Identifier.of(Steveparty.MOD_ID, "plastic"));
 
     @Inject(method = "postMine", at = @At("HEAD"), cancellable = true)
     public void allowCustomBlocks(ItemStack stack, World world, BlockState state, BlockPos pos, LivingEntity miner, CallbackInfoReturnable<Boolean> cir) {
-        if (state.isIn(STEVEPARTY$SWITCHABLE)) {
+        if (state.isIn(STEVEPARTY$PLASTIC)) {
             if (!world.isClient && !state.isIn(BlockTags.FIRE)) {
                 stack.damage(1, miner, EquipmentSlot.MAINHAND);
             }
@@ -44,12 +45,12 @@ public abstract class ShearsItemMixin {
 
         RegistryEntryLookup<Block> lookup = Registries.createEntryLookup(Registries.BLOCK);
 
-        RegistryEntryList<Block> switchableBlocks = lookup.getOrThrow(STEVEPARTY$SWITCHABLE);
+        RegistryEntryList<Block> plasticBlocks = lookup.getOrThrow(STEVEPARTY$PLASTIC);
 
         ToolComponent newComp = new ToolComponent(
                 Stream.concat(
                         original.rules().stream(),
-                        Stream.of(ToolComponent.Rule.of(switchableBlocks, 6.0f))
+                        Stream.of(ToolComponent.Rule.of(plasticBlocks, 6.0f))
                 ).toList(),
                 original.defaultMiningSpeed(),
                 original.damagePerBlock()

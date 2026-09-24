@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_black_switcher_block": {
+    "has_black_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:black_switcher_block"
+            "items": "steveparty:black_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_black_switcher_block"
+      "has_black_plastic_block"
     ]
   ],
   "rewards": {

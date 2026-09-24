@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_light_blue_switcher_block": {
+    "has_light_blue_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:light_blue_switcher_block"
+            "items": "steveparty:light_blue_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_light_blue_switcher_block"
+      "has_light_blue_plastic_block"
     ]
   ],
   "rewards": {

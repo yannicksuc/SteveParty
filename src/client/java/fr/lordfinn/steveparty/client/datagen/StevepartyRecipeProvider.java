@@ -111,57 +111,57 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .offerTo(recipeExporter, "power_star_from_black_fragments");
 
                 generatePolishedConcrete();
-                generateSwitcherBlocks();
+                generatePlasticBlocks();
             }
 
             // Plastic like the real thing: sugar cane (green polyethylene) is turned into pellets in a furnace,
-            // then pellets are moulded with a dye; the amethyst shard is what makes the block switch.
-            private void generateSwitcherBlocks() {
+            // then pellets are moulded with a dye and an amethyst shard.
+            private void generatePlasticBlocks() {
                 offerSmelting(List.of(Items.SUGAR_CANE), RecipeCategory.MISC, ModItems.PLASTIC_PELLETS, 0.1f, 200, "plastic_pellets");
-                Ingredient anySwitcher = Ingredient.ofItems(ModBlocks.SWITCHER_BLOCKS);
+                Ingredient anyPlasticBlock = Ingredient.ofItems(ModBlocks.PLASTIC_BLOCKS);
                 for (int i = 0; i < ModBlocks.COLORS.length; i++) {
-                    Block switcher = ModBlocks.SWITCHER_BLOCKS[i];
+                    Block plasticBlock = ModBlocks.PLASTIC_BLOCKS[i];
                     Item dye = DyeItem.byColor(DyeColor.byName(ModBlocks.COLORS[i], DyeColor.WHITE));
-                    createShapeless(RecipeCategory.BUILDING_BLOCKS, switcher, 4)
+                    createShapeless(RecipeCategory.BUILDING_BLOCKS, plasticBlock, 4)
                             .input(ModItems.PLASTIC_PELLETS, 4)
                             .input(dye)
                             .input(Items.AMETHYST_SHARD)
-                            .group("switcher_block")
+                            .group("plastic_block")
                             .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
                             .offerTo(recipeExporter);
-                    // Re-dye 8 switcher blocks of any colour, like the vanilla terracotta
-                    createShaped(RecipeCategory.BUILDING_BLOCKS, switcher, 8)
+                    // Re-dye 8 plastic blocks of any colour, like the vanilla terracotta
+                    createShaped(RecipeCategory.BUILDING_BLOCKS, plasticBlock, 8)
                             .pattern("###")
                             .pattern("#X#")
                             .pattern("###")
-                            .input('#', anySwitcher)
+                            .input('#', anyPlasticBlock)
                             .input('X', dye)
-                            .group("dyed_switcher_block")
+                            .group("dyed_plastic_block")
                             .criterion(hasItem(dye), conditionsFromItem(dye))
-                            .offerTo(recipeExporter, getItemPath(switcher) + "_from_dyeing");
+                            .offerTo(recipeExporter, getItemPath(plasticBlock) + "_from_dyeing");
                 }
-                generatePlasticStuds(anySwitcher);
+                generatePlasticStuds();
             }
 
-            // A switcher block splits into 4 studs and 4 studs make it back; studs re-dye like switcher blocks
-            private void generatePlasticStuds(Ingredient anySwitcher) {
+            // A plastic block splits into 4 studs and 4 studs make it back; studs re-dye like plastic blocks
+            private void generatePlasticStuds() {
                 Ingredient anyStud = Ingredient.ofItems(ModBlocks.PLASTIC_STUDS);
                 for (int i = 0; i < ModBlocks.COLORS.length; i++) {
-                    Block switcher = ModBlocks.SWITCHER_BLOCKS[i];
+                    Block plasticBlock = ModBlocks.PLASTIC_BLOCKS[i];
                     Block stud = ModBlocks.PLASTIC_STUDS[i];
                     Item dye = DyeItem.byColor(DyeColor.byName(ModBlocks.COLORS[i], DyeColor.WHITE));
                     createShapeless(RecipeCategory.DECORATIONS, stud, 4)
-                            .input(switcher)
+                            .input(plasticBlock)
                             .group("plastic_stud")
-                            .criterion(hasItem(switcher), conditionsFromItem(switcher))
+                            .criterion(hasItem(plasticBlock), conditionsFromItem(plasticBlock))
                             .offerTo(recipeExporter);
-                    createShaped(RecipeCategory.BUILDING_BLOCKS, switcher)
+                    createShaped(RecipeCategory.BUILDING_BLOCKS, plasticBlock)
                             .pattern("##")
                             .pattern("##")
                             .input('#', stud)
-                            .group("switcher_block")
+                            .group("plastic_block")
                             .criterion(hasItem(stud), conditionsFromItem(stud))
-                            .offerTo(recipeExporter, getItemPath(switcher) + "_from_plastic_studs");
+                            .offerTo(recipeExporter, getItemPath(plasticBlock) + "_from_plastic_studs");
                     createShaped(RecipeCategory.DECORATIONS, stud, 8)
                             .pattern("###")
                             .pattern("#X#")

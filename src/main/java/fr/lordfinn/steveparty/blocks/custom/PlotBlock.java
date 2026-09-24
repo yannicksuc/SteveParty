@@ -11,9 +11,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.WorldView;
 
 /**
- * An 8x8x4 plastic stud, mounted on the floor, a wall or the ceiling like a button (solid, no redstone).
+ * An 8x8x4 plastic stud, on the floor, a wall or the ceiling like a button (solid, no redstone), with or without support.
  */
 public class PlotBlock extends WallMountedBlock {
     public static final MapCodec<PlotBlock> CODEC = Block.createCodec(PlotBlock::new);
@@ -39,6 +40,12 @@ public class PlotBlock extends WallMountedBlock {
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         builder.add(FACING, FACE);
+    }
+
+    // Studs go anywhere: no support needed, and they stay put when their support goes away
+    @Override
+    protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+        return true;
     }
 
     @Override

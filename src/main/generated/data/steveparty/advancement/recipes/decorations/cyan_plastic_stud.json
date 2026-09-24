@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_cyan_switcher_block": {
+    "has_cyan_plastic_block": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:cyan_switcher_block"
+            "items": "steveparty:cyan_plastic_block"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_cyan_switcher_block"
+      "has_cyan_plastic_block"
     ]
   ],
   "rewards": {
