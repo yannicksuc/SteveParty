@@ -135,6 +135,19 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         syncToClients(); // the GUI shows the active slot, even when the cartridge doesn't change
     }
 
+    /**
+     * Placed from an item that already holds cartridges: the loaded cartridges count as applied, but the block state
+     * still has the default type. Takes the role of the active cartridge right away.
+     */
+    public void onPlaced() {
+        if (!(world instanceof ServerWorld)) return;
+        refreshActiveSlot();
+        if (getCachedState().get(TILE_TYPE) != determineBoardSpaceType(getStack(activeSlot))) {
+            appliedCartridge = null;
+            applyActiveCartridge();
+        }
+    }
+
     @Override
     protected void onInventoryChanged() {
         applyActiveCartridge();
