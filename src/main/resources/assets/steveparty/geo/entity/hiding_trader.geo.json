@@ -329,6 +329,40 @@
 					]
 				},
 				{
+					"name": "arm_hole_right",
+					"parent": "cube_box",
+					"pivot": [-8.02, 10.0, 0],
+					"cubes": [
+						{
+							"origin": [-8.02, 7, -3],
+							"size": [0, 6, 6],
+							"uv": {
+								"east": {
+									"uv": [48, 0],
+									"uv_size": [6, 6]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "arm_hole_left",
+					"parent": "cube_box",
+					"pivot": [8.02, 10.0, 0],
+					"cubes": [
+						{
+							"origin": [8.02, 7, -3],
+							"size": [0, 6, 6],
+							"uv": {
+								"west": {
+									"uv": [48, 0],
+									"uv_size": [6, 6]
+								}
+							}
+						}
+					]
+				},
+				{
 					"name": "right_arm",
 					"parent": "body",
 					"pivot": [-7, 10, 0],
