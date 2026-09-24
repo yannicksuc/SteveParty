@@ -35,7 +35,7 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
     public static final EnumProperty<Plate> PLATE = EnumProperty.of("plate", Plate.class);
 
     public enum Plate implements StringIdentifiable {
-        ROUND("round"), SQUARE("square"), DIAMOND("diamond"), STAR("star"), HEART("heart");
+        ROUND("round"), SQUARE("square"), DIAMOND("diamond"), TRIANGLE("triangle"), STAR("star"), HEART("heart");
 
         private final String name;
         private byte[] mask;
@@ -66,23 +66,40 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
                             "...##########...",
                             ".....######.....");
                     case SQUARE, DIAMOND -> StencilShape.full();
+                    case TRIANGLE -> StencilShape.fromRows(
+                            ".......##.......",
+                            ".......##.......",
+                            "......####......",
+                            "......####......",
+                            ".....######.....",
+                            ".....######.....",
+                            "....########....",
+                            "....########....",
+                            "...##########...",
+                            "...##########...",
+                            "..############..",
+                            "..############..",
+                            ".##############.",
+                            ".##############.",
+                            "################",
+                            "################");
                     case STAR -> StencilShape.fromRows(
                             "......####......",
                             "......####......",
                             ".....######.....",
-                            ".....######.....",
+                            "################",
                             "################",
                             "################",
                             ".##############.",
+                            ".##############.",
                             "..############..",
-                            "...##########...",
-                            "...##########...",
                             "..############..",
-                            "..#####..#####..",
-                            ".#####....#####.",
-                            ".####......####.",
-                            "####........####",
-                            "###..........###");
+                            ".##############.",
+                            ".##############.",
+                            "#######..#######",
+                            "######....######",
+                            "#####......#####",
+                            "####........####");
                     case HEART -> StencilShape.fromRows(
                             "................",
                             ".#####....#####.",
