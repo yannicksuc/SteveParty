@@ -49,11 +49,11 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     /** Length of the pulse: 2 redstone ticks. */
     public static final int PULSE_TICKS = 4;
 
-    /** A reception desk bell (wide dome and its button) on the redstone plate of the other redstone blocks. */
+    /** A reception desk bell (dome and plunger) on the redstone plate of the other redstone blocks. */
     private static final VoxelShape SHAPE = VoxelShapes.union(
             Block.createCuboidShape(0, 0, 0, 16, 2, 16),
-            Block.createCuboidShape(4, 2, 4, 12, 5, 12),
-            Block.createCuboidShape(7, 5, 7, 9, 7, 9)
+            Block.createCuboidShape(4, 2, 4, 12, 8, 12),
+            Block.createCuboidShape(6, 8, 6, 10, 10, 10)
     );
 
     public PartyBellBlock(Settings settings) {
