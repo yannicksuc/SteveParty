@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import net.minecraft.entity.damage.DamageSource;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
@@ -438,5 +439,15 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			if (RANDOM.nextInt(100) == 0) return BLACK;
 			return COMMON_VARIANTS.get(RANDOM.nextInt(COMMON_VARIANTS.size()));
 		}
+	}
+
+	/** Like wolves, a sitting Mula stands up when it gets hurt. */
+	@Override
+	public boolean damage(ServerWorld world, DamageSource source, float amount) {
+		boolean damaged = super.damage(world, source, amount);
+		if (damaged && this.isSitting()) {
+			this.setSitting(false);
+		}
+		return damaged;
 	}
 }

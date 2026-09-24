@@ -302,6 +302,15 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         return clientOffers;
     }
 
+    /** A dead trader releases its shop: owner and links are forgotten, the blocks can be claimed again. */
+    @Override
+    public void onDeath(DamageSource damageSource) {
+        super.onDeath(damageSource);
+        if (this.getWorld() instanceof ServerWorld serverWorld) {
+            VendorLinkPersistentState.get(serverWorld.getServer()).forgetVendor(this.getUuid());
+        }
+    }
+
     @Override
     public void onRemoved() {
         TraderStallRegistry.unlinkTraderFromAllStalls(this.getUuid());
