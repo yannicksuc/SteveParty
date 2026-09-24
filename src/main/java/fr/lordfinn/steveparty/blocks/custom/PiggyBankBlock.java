@@ -38,10 +38,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PiggyBankBlock extends CartridgeContainer {
     public static final MapCodec<PiggyBankBlock> CODEC = Block.createCodec(PiggyBankBlock::new);
-    private static final VoxelShape SHAPE = VoxelShapes.union(
-            Block.createCuboidShape(3, 0, 4, 13, 9, 12),
-            Block.createCuboidShape(5, 9, 7, 11, 10, 9)
-    );
+    /** Covers the pig (body, snout, ears) whatever its facing. */
+    private static final VoxelShape SHAPE = Block.createCuboidShape(3, 0, 3, 13, 10, 13);
 
     public PiggyBankBlock(Settings settings) {
         super(settings, 1);
