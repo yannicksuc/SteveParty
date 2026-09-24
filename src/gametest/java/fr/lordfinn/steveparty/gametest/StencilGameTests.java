@@ -388,6 +388,20 @@ public class StencilGameTests implements FabricGameTest {
             else context.expectBlock(Blocks.AIR, SIGN.down());
             context.setBlockState(SIGN.down(), Blocks.AIR);
         }
+        // On top of a fence: flat on it; sneaking: standing on it as on a post
+        context.setBlockState(SIGN, Blocks.OAK_FENCE);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.WOODEN_PANEL));
+        useOn(context, player, SIGN, Direction.UP);
+        context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.FLOOR,
+                "flat on the fence");
+        context.setBlockState(SIGN.up(), Blocks.AIR);
+        player.setSneaking(true);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.WOODEN_PANEL));
+        useOn(context, player, SIGN, Direction.UP);
+        context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST,
+                "standing on the fence when sneaking");
+        player.setSneaking(false);
+        context.setBlockState(SIGN.up(), Blocks.AIR);
         // Signs standing on the ground do not go flat
         context.setBlockState(SIGN, Blocks.STONE);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.ROCK_SIGN));

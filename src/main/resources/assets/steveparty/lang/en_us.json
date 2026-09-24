@@ -652,7 +652,7 @@
   "block.steveparty.red_plastic_fence": "Red Plastic Fence",
   "block.steveparty.black_plastic_fence": "Black Plastic Fence",
   "tooltip.steveparty.cutout_panel.usage": "Cut with a stencil and an axe (one in each hand)",
-  "tooltip.steveparty.sign_post.usage": "Goes on a fence or a wall or on its side, and flat on walls, floors and ceilings",
+  "tooltip.steveparty.sign_post.usage": "Flat on any face, hung on the side of a fence or a wall, or standing on top of it when sneaking",
   "message.steveparty.token_hint": "I'm a token now! To move me, store me in a Token.",
   "screen.steveparty.token_spell.title": "Token spell",
   "screen.steveparty.token_spell.resize_title": "Resizing spell",
