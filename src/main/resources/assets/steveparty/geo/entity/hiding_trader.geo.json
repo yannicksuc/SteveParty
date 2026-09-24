@@ -396,6 +396,23 @@
 					]
 				},
 				{
+					"name": "peek_eyes",
+					"parent": "cube_box",
+					"pivot": [1.5, 17.2, 0],
+					"cubes": [
+						{
+							"origin": [1.5, 15.7, -3.5],
+							"size": [0, 3.0, 7.0],
+							"uv": {
+								"east": {
+									"uv": [44, 8],
+									"uv_size": [7, 3]
+								}
+							}
+						}
+					]
+				},
+				{
 					"name": "right_arm",
 					"parent": "body",
 					"pivot": [-7, 10, 0],

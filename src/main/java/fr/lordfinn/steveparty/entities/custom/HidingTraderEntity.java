@@ -495,6 +495,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 return ActionResult.PASS;
             this.setCustomer(player);
             this.sendOffers(player, this.getDisplayName(), 0);
+            playHappyGesture();
             return ActionResult.SUCCESS;
         }
         return super.interactMob(player, hand);
@@ -648,16 +649,45 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     private boolean lastHidingState = false;
 
+    // Little random animations, triggered by the server (see tickFunAnimations): while the merchant is out, and
+    // rare hints that someone lives inside while it is hidden. They all start and end on the idle / closed pose.
+    private static final String IDLE_CONTROLLER = "Idle";
+    private static final String STARE_CONTROLLER = "Stare";
+    private static final String[] OPEN_FUN_ANIMS = {"fun_peek", "fun_coucou", "fun_shimmy", "fun_tap", "fun_yawn", "fun_sneeze", "fun_wave"};
+    /** Played when a customer opens the trade screen. */
+    private static final String HAPPY_ANIM = "fun_happy";
+    private static final String[] HIDDEN_FUN_ANIMS = {"hidden_peek", "hidden_hop", "hidden_breath"};
+    /** The closed box at rest, after a hidden animation (without replaying the closing). */
+    protected static final RawAnimation HIDDEN_ANIM = RawAnimation.begin().thenPlayAndHold("hidden");
+    /** Ticks after the merchant came out / hid before a random animation may play (open is 1.6 s, closed 1.08 s). */
+    private static final int FUN_SETTLE_TICKS = 60;
+    private static final int OPEN_FUN_MIN_TICKS = 120, OPEN_FUN_RANGE_TICKS = 181;       // every 6-15 s
+    private static final int HIDDEN_FUN_MIN_TICKS = 600, HIDDEN_FUN_RANGE_TICKS = 1201;  // every 30-90 s
+    private static final double HIDDEN_FUN_PLAYER_RANGE = 24;
+    /** Server side: hiding state (sampled every 10 ticks), when it last changed, next random animation. */
+    private boolean serverHiding = true;
+    private int hidingChangedAge = 0;
+    private int nextFunAge = HIDDEN_FUN_MIN_TICKS;
+    @Nullable
+    private String lastFunAnim = null;
+
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "Idle", 5, this::idleAnimController)
+        AnimationController<HidingTraderEntity> idle = new AnimationController<>(this, IDLE_CONTROLLER, 5, this::idleAnimController)
+                .receiveTriggeredAnimations();
+        for (String anim : OPEN_FUN_ANIMS) idle.triggerableAnim(anim, RawAnimation.begin().thenPlay(anim));
+        idle.triggerableAnim(HAPPY_ANIM, RawAnimation.begin().thenPlay(HAPPY_ANIM));
+        AnimationController<HidingTraderEntity> stare = new AnimationController<>(this, STARE_CONTROLLER, 2, this::closedAnimController)
+                .receiveTriggeredAnimations();
+        for (String anim : HIDDEN_FUN_ANIMS) stare.triggerableAnim(anim, RawAnimation.begin().thenPlay(anim));
+        controllers.add(idle
                 .setSoundKeyframeHandler(context -> {
                     if (this.getWorld() == null) return;
                     if (!lastHidingState)
                         ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), SoundEvents.ENTITY_PUFFER_FISH_BLOW_UP, SoundCategory.NEUTRAL, 0.5F, 1.5F);
                     lastHidingState = true;
                 }));
-        controllers.add(new AnimationController<>(this, "Stare", 2, this::closedAnimController)
+        controllers.add(stare
                 .setSoundKeyframeHandler(context -> {
                     if (this.getWorld() == null) return;
                     lastHidingState = false;
@@ -676,6 +706,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
         if (!this.getWorld().isClient && this.age % OWNER_SYNC_INTERVAL == 0) {
             syncOwner();
+        }
+        if (!this.getWorld().isClient) {
+            tickFunAnimations();
         }
         if (!this.getWorld().isClient && this.hasCustomer()) {
             PlayerEntity customer = this.getCustomer();
@@ -700,25 +733,85 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
     }
 
+    /**
+     * Server side: now and then, a random little animation. While the merchant is out (not during "open", nor while a
+     * customer has the trade screen open) every 6-15 s; while it is hidden, rarely (every 30-90 s) and only when a
+     * player is close enough to notice. Random per trader, so they never play in sync. Cheap: the hiding state is
+     * sampled every 10 ticks, the rest is a counter.
+     */
+    private void tickFunAnimations() {
+        if (this.age % 10 == 0) {
+            boolean hiding = isHiding();
+            if (hiding != serverHiding) {
+                serverHiding = hiding;
+                hidingChangedAge = this.age;
+                nextFunAge = this.age + (hiding ? HIDDEN_FUN_MIN_TICKS + this.random.nextInt(HIDDEN_FUN_RANGE_TICKS)
+                        : OPEN_FUN_MIN_TICKS + this.random.nextInt(OPEN_FUN_RANGE_TICKS));
+            }
+        }
+        if (this.age < nextFunAge) return;
+        boolean settled = this.age - hidingChangedAge >= FUN_SETTLE_TICKS;
+        if (!serverHiding) {
+            if (!settled || this.hasCustomer()) {
+                nextFunAge = this.age + 20;
+                return;
+            }
+            triggerAnim(IDLE_CONTROLLER, pickFunAnim(OPEN_FUN_ANIMS));
+            nextFunAge = this.age + OPEN_FUN_MIN_TICKS + this.random.nextInt(OPEN_FUN_RANGE_TICKS);
+        } else {
+            if (!settled || this.getWorld().getClosestPlayer(this, HIDDEN_FUN_PLAYER_RANGE) == null) {
+                nextFunAge = this.age + 40;
+                return;
+            }
+            triggerAnim(STARE_CONTROLLER, pickFunAnim(HIDDEN_FUN_ANIMS));
+            nextFunAge = this.age + HIDDEN_FUN_MIN_TICKS + this.random.nextInt(HIDDEN_FUN_RANGE_TICKS);
+        }
+    }
+
+    /** A random animation of the list, never the same one twice in a row. */
+    private String pickFunAnim(String[] anims) {
+        int index = this.random.nextInt(anims.length);
+        if (anims[index].equals(lastFunAnim)) index = (index + 1) % anims.length;
+        lastFunAnim = anims[index];
+        return lastFunAnim;
+    }
+
+    /** "Happy to see you" when a customer opens the trade screen, once the merchant is fully out. */
+    private void playHappyGesture() {
+        if (!serverHiding && this.age - hidingChangedAge >= FUN_SETTLE_TICKS) {
+            triggerAnim(IDLE_CONTROLLER, HAPPY_ANIM);
+            nextFunAge = Math.max(nextFunAge, this.age + OPEN_FUN_MIN_TICKS);
+        }
+    }
+
     private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {
+        AnimationController<HidingTraderEntity> controller = event.getController();
         if (!isHiding()) {
+            // A little random animation: let it play, "idle" resumes after it (it ends on idle's first frame)
+            if (controller.isPlayingTriggeredAnimation()) return PlayState.CONTINUE;
             // "open" then "idle" are chained here rather than queued in one RawAnimation: GeckoLib 4 lerps a queued
             // animation from the pose saved when the FIRST one started (the closed box), which made the box snap back
             // and re-open at the end of "open". setAnimation() snapshots the current pose (= idle's first frame).
-            AnimationController<HidingTraderEntity> controller = event.getController();
             RawAnimation current = controller.getCurrentRawAnimation();
-            if (current == IDLE_ANIM || (current == OPEN_ANIM && controller.hasAnimationFinished())) {
-                return event.setAndContinue(IDLE_ANIM);
+            if (current == null || current == CLOSED_ANIM || (current == OPEN_ANIM && !controller.hasAnimationFinished())) {
+                return event.setAndContinue(OPEN_ANIM);
             }
-            return event.setAndContinue(OPEN_ANIM);
+            return event.setAndContinue(IDLE_ANIM);
         }
+        // Hiding: also cuts a random animation short, the Stare controller closes the box
         event.setAnimation(CLOSED_ANIM);
         return PlayState.STOP;
     }
 
     private PlayState closedAnimController(AnimationState<HidingTraderEntity> event) {
+        AnimationController<HidingTraderEntity> controller = event.getController();
         if (isHiding()) {
-            return event.setAndContinue(CLOSED_ANIM);
+            if (controller.isPlayingTriggeredAnimation()) return PlayState.CONTINUE;
+            RawAnimation current = controller.getCurrentRawAnimation();
+            if (current == CLOSED_ANIM || current == HIDDEN_ANIM) return event.setAndContinue(current);
+            if (current == null || current == IDLE_ANIM) return event.setAndContinue(CLOSED_ANIM);
+            // After a rare hidden animation (it ends on the closed block pose): stay closed, without closing again
+            return event.setAndContinue(HIDDEN_ANIM);
         }
         event.setAnimation(IDLE_ANIM);
         return PlayState.STOP;
