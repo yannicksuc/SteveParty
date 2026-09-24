@@ -280,15 +280,19 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         }
     }
 
-    /** The base below pushes its total (null: no base). */
-    void acceptTotal(@Nullable GoalPoleBaseBlockEntity base) {
-        if (world == null || world.isClient) return;
+    /**
+     * The base below pushes its total (null: no base).
+     * @return true when this pushes the pole's goal from not met to met
+     */
+    boolean acceptTotal(@Nullable GoalPoleBaseBlockEntity base) {
+        if (world == null || world.isClient) return false;
         cachedBase = base;
         baseResolved = true;
         long newTotal = base != null ? base.getTotal() : 0;
         boolean met = base != null && compare(comparator, (int) Math.clamp(newTotal, Integer.MIN_VALUE, Integer.MAX_VALUE), value);
         int output = met ? 15 : 0;
         boolean changed = newTotal != total || met != goalMet || linked != (base != null);
+        boolean justMet = met && !goalMet;
         total = newTotal;
         linked = base != null;
         if (met != goalMet) {
@@ -303,6 +307,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
             markDirty();
             sync();
         }
+        return justMet;
     }
 
     /** The goal of this pole changed: compare again with the base's total. */

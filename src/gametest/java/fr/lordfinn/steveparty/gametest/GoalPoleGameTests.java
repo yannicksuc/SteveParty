@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleFlags;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
@@ -815,6 +816,74 @@ public class GoalPoleGameTests implements FabricGameTest {
         removeBase(context);
         GoalPoleNetwork.processPending();
         context.assertTrue(!top.isLinked() && top.getTotal() == 0, "no base any more");
+        context.complete();
+    }
+
+    /**
+     * Flags of met goals rest at the bottom of the pole, stacked (11 pixels high, 1 apart), each on the flag below it
+     * wherever that one is; a flag never rests above its own place.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void metFlagsRestStackedAtTheBottom(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 1, true);
+        poleEntity(context, BASE.up(2)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2, true);
+        poleEntity(context, BASE.up(3)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 3, true);
+        base.credit("Alex", 3, null);
+        BlockPos.Mutable scratch = new BlockPos.Mutable();
+        ServerWorld world = context.getWorld();
+        float low = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up()), scratch);
+        float middle = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(2)), scratch);
+        float high = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(3)), scratch);
+        context.assertTrue(low == 0f && middle == -4f && high == -8f, "stacked: 0, -4, -8 pixels, got " + low + ", " + middle + ", " + high);
+        // Only the top flag down: it rests on the middle flag, which stays at its place
+        base.reset();
+        poleEntity(context, BASE.up(3)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 0, true);
+        context.assertTrue(poleEntity(context, BASE.up(3)).isGoalMet() && !poleEntity(context, BASE.up(2)).isGoalMet(), "only the top met");
+        high = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(3)), scratch);
+        context.assertTrue(high == -4f, "on the middle flag at its place: -4, got " + high);
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A flag alone at the top of a tall pole slides all the way down to the bottom segment. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aLoneFlagSlidesToTheBottom(TestContext context) {
+        placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, y == 3));
+        GoalPoleNetwork.processPending();
+        float drop = GoalPoleFlags.restingDrop(context.getWorld(), context.getAbsolutePos(BASE.up(3)), new BlockPos.Mutable());
+        context.assertTrue(drop == -32f, "two segments down: -32 pixels, got " + drop);
+        removeBase(context);
+        context.complete();
+    }
+
+    /** Reaching the goal is sent to clients (met, and when), and rings one chime for the whole pole. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void reachingTheGoalIsSyncedAndRingsOnce(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2, false);
+        int chimes = base.getGoalChimes();
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getGoalChimes() == chimes, "not reached: no chime");
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getGoalChimes() == chimes + 1, "reached: one chime for three segments");
+        GoalPoleBlockEntity top = poleEntity(context, BASE.up(3));
+        var nbt = top.toInitialChunkDataNbt(registries);
+        context.assertTrue(nbt.getBoolean("GoalMet") && nbt.getLong("GoalMetTick") == context.getWorld().getTime(),
+                "met, and when, sent to clients");
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getGoalChimes() == chimes + 1, "still met: no new chime");
+        base.reset();
+        context.assertTrue(!top.isGoalMet() && !top.toInitialChunkDataNbt(registries).getBoolean("GoalMet"), "reset: not met");
+        base.credit("Alex", 2, null);
+        context.assertTrue(base.getGoalChimes() == chimes + 2, "reached again: a new chime");
+        removeBase(context);
         context.complete();
     }
 }

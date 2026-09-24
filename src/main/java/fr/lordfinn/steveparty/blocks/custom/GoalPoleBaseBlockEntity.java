@@ -30,6 +30,8 @@ import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
@@ -435,19 +437,37 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         total = 0;
         markDirty();
         pushTotal();
+        world.playSound(null, pos, SoundEvents.BLOCK_COMPARATOR_CLICK, SoundCategory.BLOCKS, 0.8f, 0.6f);
+        world.playSound(null, pos, SoundEvents.BLOCK_COPPER_BULB_TURN_OFF, SoundCategory.BLOCKS, 0.7f, 0.8f);
     }
 
     // ------------------------------------------------------------------ poles
 
-    /** Tells every pole stacked on this base the total (and whether the base counts). */
+    /**
+     * Tells every pole stacked on this base the total (and whether the base counts). A goal reached rings a chime,
+     * once for the pole (at the highest segment that reached it).
+     */
     public void pushTotal() {
         if (world == null || world.isClient) return;
         BlockPos.Mutable cursor = pos.mutableCopy().move(Direction.UP);
+        BlockPos chime = null;
         while (!world.isOutOfHeightLimit(cursor) && world.getBlockEntity(cursor) instanceof GoalPoleBlockEntity pole) {
-            pole.acceptTotal(this);
+            if (pole.acceptTotal(this)) chime = cursor.toImmutable();
             cursor.move(Direction.UP);
         }
         world.updateComparators(pos, getCachedState().getBlock());
+        if (chime != null) {
+            goalChimes++;
+            world.playSound(null, chime, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 1f, 1.19f);
+            world.playSound(null, chime, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 1.2f, 1.2f);
+        }
+    }
+
+    /** Chimes rung since loaded (goals reached), for tests. */
+    private int goalChimes = 0;
+
+    public int getGoalChimes() {
+        return goalChimes;
     }
 
     // ------------------------------------------------------------------ redstone
@@ -462,10 +482,15 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         };
     }
 
-    /** The back port's power changed. */
+    /** The back port's power changed: a base that pauses or resumes says so with a sound. */
     public void onBackPowerChanged() {
         pushTotal();
         markDirty();
+        if (redstoneMode != RedstoneMode.IGNORE && world != null && !world.isClient) {
+            boolean active = isActive();
+            world.playSound(null, pos, active ? SoundEvents.BLOCK_BEACON_ACTIVATE : SoundEvents.BLOCK_BEACON_DEACTIVATE,
+                    SoundCategory.BLOCKS, 0.35f, 1.8f);
+        }
     }
 
     private void pulseRedstone() {

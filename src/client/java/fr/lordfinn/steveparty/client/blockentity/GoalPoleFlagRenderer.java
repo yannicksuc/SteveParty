@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleFlags;
+import fr.lordfinn.steveparty.client.flag.FlagSlide;
 import fr.lordfinn.steveparty.client.flag.FlagPalettes;
 import fr.lordfinn.steveparty.client.flag.FlagWind;
 import fr.lordfinn.steveparty.client.flag.ShaderPacks;
@@ -13,12 +15,15 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.screen.PlayerScreenHandler;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -28,6 +33,9 @@ import net.minecraft.world.World;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * The goal pole's flag, drawn as a strip of thin columns that ripple in the wind ({@link FlagWind}): an idle flutter
@@ -48,6 +56,10 @@ import org.joml.Vector3f;
  * shade of each column comes from the direction it faces in the world, so the waves show as a light ripple around
  * the brightness of the old flag. The entity layers used before add vanilla's entity lighting (at most ~74 % on a
  * vertical cloth, 50 % facing east/west), which made every flag darker than the old model, wool or banners.
+ * <p>
+ * When its goal is met, the flag slides down the pole ({@link FlagSlide}) to rest at the bottom, stacked on the flags
+ * below ({@link GoalPoleFlags}); a ring stays on its own segment, with a thin rope down to the flag, so that everyone
+ * sees where it belongs (shears and dye work there). Only the drawing moves: the flag stays on its segment.
  */
 public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEntity> {
     /** The flag's sprites in the block atlas: the original red one, and a greyscale one tinted with a dye's colour. */
@@ -55,6 +67,14 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
     /** The notch of a segment with its own goal: the pole's white metal, tinted. */
     private static final Identifier NOTCH_SPRITE = Steveparty.id("block/goal_pole");
     private static final int NOTCH = 0xFFC83C, NOTCH_MET = 0x5EE05A;
+    /** The ring the flag hangs from (on its own segment), and the rope down to the flag while it has slid. */
+    private static final int RING = 0x8A8A94, ROPE = 0x8C7458;
+    // Around the top of the flag (the flag is tied to it), just under the ball on a top segment
+    private static final float RING_BOTTOM = 12.4f, RING_TOP = 13.6f, ROPE_X = 6.3f, ROPE_WIDTH = 0.7f;
+    private static final double SOUND_DISTANCE_SQ = 24 * 24;
+    /** Slide state per flag (one per flag, not per frame). */
+    private static final Map<GoalPoleBlockEntity, FlagSlide> SLIDES = new WeakHashMap<>();
+    private static final BlockPos.Mutable SCRATCH = new BlockPos.Mutable();
     /** White masks of the flag's shading levels (darkest first): a dyed flag tints each with its wool colour. */
     private static final Identifier[] LEVEL_SPRITES = new Identifier[FlagPalettes.LEVELS];
 
@@ -99,8 +119,8 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         // The top of the pole: the progress above the ball, the lit ball, the details with a wrench
         if (state.get(GoalPoleBlock.TOP)) GoalPoleTopDisplay.render(entity, tickDelta, matrices, vertexConsumers, dispatcher);
         // A goal per segment: a notch on each segment, gold, green while its goal is met
-        if (entity.isPerSegment()) drawNotch(vertexConsumers.getBuffer(RenderLayer.getCutout()), matrices.peek(),
-                entity.isGoalMet() ? NOTCH_MET : NOTCH, light);
+        if (entity.isPerSegment()) drawBand(vertexConsumers.getBuffer(RenderLayer.getCutout()), matrices.peek(),
+                entity.isGoalMet() ? NOTCH_MET : NOTCH, light, 6.1f, 9.9f, 7.4f, 8.6f);
         if (!state.get(GoalPoleBlock.FLAG)) return;
 
         BlockPos pos = entity.getPos();
@@ -116,10 +136,34 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         float gust = FlagWind.gust(pos.getX(), pos.getZ(), seconds);
         computeCloth(columns, seconds, phase, speed, gust);
 
+        // Goal met: the flag slides down to the bottom of the pole (on the flags below), and back up afterwards
+        boolean met = entity.isGoalMet();
+        float wanted = met ? GoalPoleFlags.restingDrop(world, pos, SCRATCH) : 0f;
+        FlagSlide slide = SLIDES.computeIfAbsent(entity, e -> new FlagSlide());
+        double changeSecond = (entity.getGoalMetTick() % 2_400_000L) / 20.0;
+        float stagger = ((seed >>> 40) & 0xFF) / 255f * 0.3f;
+        if (slide.update(wanted, met, changeSecond, stagger, seconds) && distanceSq < SOUND_DISTANCE_SQ) {
+            // A reel: the flag runs down (lower) or up (higher) its rope
+            world.playSound(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.ENTITY_FISHING_BOBBER_RETRIEVE,
+                    SoundCategory.BLOCKS, 0.8f, slide.isDown() ? 0.75f : 1.15f, false);
+        }
+        float drop = slide.offset(seconds);
+        int flagLight = light;
+        if (drop <= -8f) {
+            // Lit like the block the flag is in now
+            SCRATCH.set(pos.getX(), pos.getY() + MathHelper.floor((GoalPoleFlags.FLAG_BOTTOM + GoalPoleFlags.FLAG_HEIGHT / 2 + drop) / 16f), pos.getZ());
+            flagLight = WorldRenderer.getLightmapCoordinates(world, SCRATCH);
+        }
+
         matrices.push();
         matrices.translate(0.5f, 0f, 0.5f);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-facingDegrees(state)));
         matrices.translate(-0.5f, 0f, -0.5f);
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getCutout());
+        // The ring stays on the flag's segment; the rope runs down to the flag while it is away
+        drawBand(buffer, matrices.peek(), RING, light, 6.2f, 9.8f, RING_BOTTOM, RING_TOP);
+        if (TOP_Y + drop < RING_BOTTOM) drawRope(buffer, matrices.peek(), light, RING_BOTTOM, TOP_Y + drop);
+        matrices.translate(0f, drop / 16f, 0f);
         // The whole flag swings a little around the pole during gusts
         float swing = FlagWind.swing(seconds, phase, gust);
         if (swing != 0f) {
@@ -131,14 +175,13 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         // Undyed: the classic red texture. Dyed: one pass per shading level, in the colours of the dye's wool
         int flagColor = entity.getFlagColor();
         computeShades(columns, -facingDegrees(state) + swing);
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getCutout());
         var atlas = MinecraftClient.getInstance().getBakedModelManager().getAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE);
         if (flagColor == FlagItem.NO_COLOR) {
-            drawCloth(buffer, entry, atlas.getSprite(SPRITE), columns, 0xFFFFFF, light);
+            drawCloth(buffer, entry, atlas.getSprite(SPRITE), columns, 0xFFFFFF, flagLight);
         } else {
             int[] ramp = FlagPalettes.ramp(flagColor);
             for (int level = 0; level < FlagPalettes.LEVELS; level++) {
-                drawCloth(buffer, entry, atlas.getSprite(LEVEL_SPRITES[level]), columns, ramp[level], light);
+                drawCloth(buffer, entry, atlas.getSprite(LEVEL_SPRITES[level]), columns, ramp[level], flagLight);
             }
         }
         matrices.pop();
@@ -172,11 +215,12 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         }
     }
 
-    /** A thin band around the rod at mid height, shaded like block faces. */
-    private static void drawNotch(VertexConsumer buffer, MatrixStack.Entry entry, int color, int light) {
+    /** A thin band around the rod (a notch, the flag's ring), shaded like block faces; sizes in pixels. */
+    private static void drawBand(VertexConsumer buffer, MatrixStack.Entry entry, int color, int light,
+                                 float minPx, float maxPx, float bottomPx, float topPx) {
         Sprite sprite = MinecraftClient.getInstance().getBakedModelManager()
                 .getAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).getSprite(NOTCH_SPRITE);
-        float min = 6.1f / 16f, max = 9.9f / 16f, bottom = 7.4f / 16f, top = 8.6f / 16f;
+        float min = minPx / 16f, max = maxPx / 16f, bottom = bottomPx / 16f, top = topPx / 16f;
         float u0 = sprite.getFrameU(0.1f), u1 = sprite.getFrameU(0.3f), v0 = sprite.getFrameV(0.1f), v1 = sprite.getFrameV(0.2f);
         int z = shaded(color, SHADE_Z), x = shaded(color, SHADE_X), up = shaded(color, 1f);
         // north, south, west, east, top
@@ -185,6 +229,18 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         quad(buffer, entry, min, top, min, min, top, max, min, bottom, max, min, bottom, min, u0, v0, u1, v1, x, light, -1, 0, 0);
         quad(buffer, entry, max, top, max, max, top, min, max, bottom, min, max, bottom, max, u0, v0, u1, v1, x, light, 1, 0, 0);
         quad(buffer, entry, min, top, min, max, top, min, max, top, max, min, top, max, u0, v0, u1, v1, up, light, 0, 1, 0);
+        quad(buffer, entry, min, bottom, max, max, bottom, max, max, bottom, min, min, bottom, min, u0, v0, u1, v1, z, light, 0, -1, 0);
+    }
+
+    /** The rope from the ring down to the top of the slid flag: two thin crossed strips beside the rod (pixels). */
+    private static void drawRope(VertexConsumer buffer, MatrixStack.Entry entry, int light, float topPx, float bottomPx) {
+        Sprite sprite = MinecraftClient.getInstance().getBakedModelManager()
+                .getAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).getSprite(NOTCH_SPRITE);
+        float u0 = sprite.getFrameU(0.1f), u1 = sprite.getFrameU(0.12f), v0 = sprite.getFrameV(0.1f), v1 = sprite.getFrameV(0.4f);
+        float x = ROPE_X / 16f, z = PLANE_Z / 16f, half = ROPE_WIDTH / 32f, top = topPx / 16f, bottom = bottomPx / 16f;
+        int front = shaded(ROPE, SHADE_Z), side = shaded(ROPE, SHADE_X);
+        quad(buffer, entry, x - half, top, z, x + half, top, z, x + half, bottom, z, x - half, bottom, z, u0, v0, u1, v1, front, light, 0, 0, -1);
+        quad(buffer, entry, x, top, z - half, x, top, z + half, x, bottom, z + half, x, bottom, z - half, u0, v0, u1, v1, side, light, -1, 0, 0);
     }
 
     static void quad(VertexConsumer buffer, MatrixStack.Entry entry, float x0, float y0, float z0, float x1, float y1, float z1,
@@ -270,6 +326,16 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
             case EAST -> 90f;
             default -> 0f;
         };
+    }
+
+    /**
+     * A flag can slide down several blocks, and the progress floats above the top: those poles are drawn even when
+     * their own block is out of view (the render distance still applies).
+     */
+    @Override
+    public boolean rendersOutsideBoundingBox(GoalPoleBlockEntity entity) {
+        BlockState state = entity.getCachedState();
+        return state.contains(GoalPoleBlock.FLAG) && (state.get(GoalPoleBlock.FLAG) || state.get(GoalPoleBlock.TOP));
     }
 
     @Override
