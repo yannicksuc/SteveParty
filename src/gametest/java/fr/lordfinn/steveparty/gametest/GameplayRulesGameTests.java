@@ -219,14 +219,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertTrue(!mula.isSitting(), "a stranger can't make it sit");
 
             // Food keeps feeding it, even for the owner
-            Item food = switch (mula.getVariant()) {
-                case BLUE -> Items.LAPIS_LAZULI;
-                case RED -> Items.RED_DYE;
-                case GREEN -> Items.GREEN_DYE;
-                case YELLOW -> Items.YELLOW_DYE;
-                case PURPLE -> Items.PURPLE_DYE;
-                case BLACK -> Items.COAL;
-            };
+            Item food = fr.lordfinn.steveparty.entities.custom.MulaFood.foodsOf(mula.getVariant()).iterator().next();
             context.assertTrue(mula.isMulaFood(new ItemStack(food)), food + " is food for " + mula.getVariant());
             owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(food, 4));
             int hunger = mula.getHunger();

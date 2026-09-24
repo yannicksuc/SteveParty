@@ -179,52 +179,6 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	private int eatCooldown = 0;
 
-	// Feedable items per variant
-	private static final Map<MulaVariant, Map<Item, Integer>> FEED_ITEMS = new HashMap<>();
-
-	static {
-		// BLUE variant: blue-ish vanilla items
-		FEED_ITEMS.put(MulaVariant.BLUE, Map.of(
-				net.minecraft.item.Items.LAPIS_LAZULI, 10,
-				net.minecraft.item.Items.BLUE_DYE, 5,
-				net.minecraft.item.Items.PRISMARINE_SHARD, 8
-		));
-
-		// RED variant: red-ish items
-		FEED_ITEMS.put(MulaVariant.RED, Map.of(
-				net.minecraft.item.Items.RED_DYE, 10,
-				Items.POPPY, 8,
-				net.minecraft.item.Items.REDSTONE, 15
-		));
-
-		// GREEN variant: green-ish items
-		FEED_ITEMS.put(MulaVariant.GREEN, Map.of(
-				net.minecraft.item.Items.GREEN_DYE, 10,
-				Items.CACTUS, 8,
-				net.minecraft.item.Items.EMERALD, 20
-		));
-
-		// YELLOW variant: yellow-ish items
-		FEED_ITEMS.put(MulaVariant.YELLOW, Map.of(
-				net.minecraft.item.Items.YELLOW_DYE, 10,
-				Items.GOLD_INGOT, 15,
-				net.minecraft.item.Items.HONEYCOMB, 8
-		));
-
-		// PURPLE variant: purple-ish items
-		FEED_ITEMS.put(MulaVariant.PURPLE, Map.of(
-				net.minecraft.item.Items.PURPLE_DYE, 10,
-				net.minecraft.item.Items.AMETHYST_SHARD, 15,
-				net.minecraft.item.Items.CHORUS_FRUIT, 8
-		));
-
-		FEED_ITEMS.put(MulaVariant.BLACK, Map.of(
-				net.minecraft.item.Items.INK_SAC, 15,
-				net.minecraft.item.Items.COAL, 20,
-				Items.NETHERITE_INGOT, 100
-		));
-	}
-
 	@Override
 	public void tick() {
 		super.tick();
@@ -246,7 +200,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		return baseScale * hungerScale;
 	}
 
-	private static final int MAX_HUNGER = 100;
+	/**
+	 * Satiety at which it bursts. Foods give their nutrition (1 to 8, steak 8), potions minutes x (level x 2): 5 to 40
+	 * meals, or a couple of long strong potions.
+	 */
+	public static final int MAX_HUNGER = 40;
 	/** 1 chance in TAMING_CHANCE to tame the Mula with each star fragment of its colour. */
 	private static final int TAMING_CHANCE = 3;
 
@@ -424,7 +382,6 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 		// Still chewing, or not its food: shakes its head. Played from the server only: the client used to play it
 		// too, then again when the server's order came back, which restarted it halfway (a visible hiccup).
-		Map<Item, Integer> allowedItems = FEED_ITEMS.get(this.getVariant());
 		if (eatCooldown > 0 || !isMulaFood(stack)) {
 			if (!this.getWorld().isClient) {
 				playSpecial("no", NO_TICKS);
@@ -432,26 +389,36 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			return ActionResult.SUCCESS;
 		}
 
-		// Correct item
-		int hungerValue = allowedItems.get(stack.getItem());
+		// Its colour and edible (MulaFood): a food gives its nutrition, a potion minutes x (level x 2)
+		int hungerValue = MulaFood.value(this.getVariant(), stack);
 		int newHunger = Math.min(getHunger() + hungerValue, MAX_HUNGER);
 		setHunger(newHunger);
 
 		if (!player.getWorld().isClient) {
+			boolean potion = stack.isOf(Items.POTION);
+			String how = potion ? " (" + MulaFood.potionFormula(stack.getOrDefault(
+					net.minecraft.component.DataComponentTypes.POTION_CONTENTS,
+					net.minecraft.component.type.PotionContentsComponent.DEFAULT).getEffects()) + ")" : "";
 			Text message = Text.literal(String.format(
-					"Feed level: %d/%d - %s: +%d",
+					"Feed level: %d/%d - %s: +%d%s",
 					getHunger(), MAX_HUNGER,
 					stack.getName().getString(),
-					hungerValue
+					hungerValue, how
 			));
 			message = message.copy().styled(style -> style.withColor(this.getVariant().getColor()));
 			player.sendMessage(message, true);
 
 			// the clients see what it ate melt into light and spiral into it
-			setLastFood(new ItemStack(stack.getItem()));
+			setLastFood(stack.copyWithCount(1));
 			this.dataTracker.set(FEED_COUNT, getFeedCount() + 1);
 			bellyClearTicks = 0;
-			stack.decrementUnlessCreative(1, player);
+			if (potion) {
+				// like drinking it: the empty bottle goes back to the player
+				player.setStackInHand(hand, net.minecraft.item.ItemUsage.exchangeStack(stack, player,
+						new ItemStack(Items.GLASS_BOTTLE)));
+			} else {
+				stack.decrementUnlessCreative(1, player);
+			}
 
 			// Explode if max hunger
 			if (getHunger() >= MAX_HUNGER) {
@@ -499,9 +466,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		specialAnimTicks = ticks;
 	}
 
-	/** @return true if this Mula eats this item (depends on its colour). */
+	/** @return true if this Mula eats this item: of its colour AND edible (a food, or a potion), see {@link MulaFood}. */
 	public boolean isMulaFood(ItemStack stack) {
-		return !stack.isEmpty() && FEED_ITEMS.getOrDefault(this.getVariant(), Map.of()).containsKey(stack.getItem());
+		return MulaFood.value(this.getVariant(), stack) > 0;
 	}
 
 	/** Owner's order, like vanilla wolves: the state is saved by {@link TameableEntity} ("Sitting"). */

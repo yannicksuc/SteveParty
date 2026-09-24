@@ -2,6 +2,13 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaFood;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.potion.Potions;
+import java.util.List;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.SpawnReason;
@@ -27,14 +34,7 @@ import net.minecraft.world.GameMode;
 public class MulaFeedbackGameTests implements FabricGameTest {
 
     private static Item foodOf(MulaEntity mula) {
-        return switch (mula.getVariant()) {
-            case BLUE -> Items.LAPIS_LAZULI;
-            case RED -> Items.RED_DYE;
-            case GREEN -> Items.GREEN_DYE;
-            case YELLOW -> Items.YELLOW_DYE;
-            case PURPLE -> Items.PURPLE_DYE;
-            case BLACK -> Items.COAL;
-        };
+        return MulaFood.foodsOf(mula.getVariant()).iterator().next();
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
@@ -84,7 +84,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         player.changeGameMode(GameMode.SURVIVAL);
         try {
-            mula.setHunger(99);
+            mula.setHunger(MulaEntity.MAX_HUNGER - 1);
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(foodOf(mula), 1));
             mula.interactMob(player, Hand.MAIN_HAND);
             context.assertEquals(mula.getHunger(), 0, "burst: hunger reset");
@@ -163,6 +163,81 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         context.assertTrue(MulaEntity.animationNames().contains("star_orbit"), "new animations are listed");
         context.assertTrue(MulaEntity.animationNames().contains("tame_joy"), "feature animations are listed");
         context.assertTrue(!mula.isTamed() && !mula.isSitting(), "playing animations changes nothing else");
+        context.complete();
+    }
+
+    // ---------------------------------------------------------------- feeding rules
+
+    /** Of its colour but not edible (the old dyes, lapis...): refused. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void nonFoodOfItsColourIsRefused(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        mula.setVariant(MulaEntity.MulaVariant.BLUE);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            player.changeGameMode(GameMode.SURVIVAL);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LAPIS_LAZULI, 4));
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.getHunger(), 0, "lapis is blue but not food");
+            context.assertEquals(player.getMainHandStack().getCount(), 4, "kept");
+            context.assertTrue(!mula.isMulaFood(new ItemStack(Items.APPLE)), "an apple is not blue");
+        } finally {
+            disconnect(context, player);
+        }
+        context.complete();
+    }
+
+    /** A food of its colour gives its nutrition. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void foodGivesItsNutrition(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        mula.setVariant(MulaEntity.MulaVariant.BLUE);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            player.changeGameMode(GameMode.SURVIVAL);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.COOKED_COD, 2));
+            mula.interactMob(player, Hand.MAIN_HAND);
+            int nutrition = new ItemStack(Items.COOKED_COD).get(DataComponentTypes.FOOD).nutrition();
+            context.assertEquals(mula.getHunger(), nutrition, "cooked cod gives its nutrition");
+        } finally {
+            disconnect(context, player);
+        }
+        context.complete();
+    }
+
+    /** Potions: minutes x (level x 2) per effect; Strength II for 3:00 gives 12. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void potionValueFormula(TestContext context) {
+        context.assertEquals(MulaFood.potionValue(List.of(new StatusEffectInstance(StatusEffects.STRENGTH, 3600, 1))), 12,
+                "Strength II 3:00");
+        context.assertEquals(MulaFood.potionValue(List.of(new StatusEffectInstance(StatusEffects.SPEED, 9600, 0),
+                new StatusEffectInstance(StatusEffects.REGENERATION, 2400, 1))), 8 * 2 + 2 * 4, "two effects add up");
+        context.complete();
+    }
+
+    /** A potion of its colour feeds it and the empty bottle goes back to the player; another colour is refused. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void potionOfItsColourFeedsAndGivesTheBottleBack(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        ItemStack strength = PotionContentsComponent.createStack(Items.POTION, Potions.STRENGTH);
+        int colour = strength.get(DataComponentTypes.POTION_CONTENTS).getColor();
+        mula.setVariant(MulaFood.colourOf(colour));
+        context.assertTrue(mula.getVariant() == MulaEntity.MulaVariant.YELLOW, "strength is yellow: " + mula.getVariant());
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            player.changeGameMode(GameMode.SURVIVAL);
+            player.setStackInHand(Hand.MAIN_HAND, strength);
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.getHunger(), 3 * (1 * 2), "Strength I 3:00 gives 6");
+            context.assertTrue(player.getMainHandStack().isOf(Items.GLASS_BOTTLE), "the bottle goes back: "
+                    + player.getMainHandStack());
+            MulaEntity blue = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(2, 3, 2));
+            blue.setVariant(MulaEntity.MulaVariant.BLUE);
+            context.assertTrue(!blue.isMulaFood(PotionContentsComponent.createStack(Items.POTION, Potions.STRENGTH)),
+                    "a yellow potion is not for a blue Mula");
+        } finally {
+            disconnect(context, player);
+        }
         context.complete();
     }
 }

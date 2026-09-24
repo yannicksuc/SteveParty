@@ -46,6 +46,9 @@ public class MulaBehaviourGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void flockNeighbourCacheIsBounded(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        // an audience: Mulas far from every player don't look around
+        BlockPos at = context.getAbsolutePos(new BlockPos(1, 2, 1));
+        player.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         try {
             List<MulaEntity> mulas = new ArrayList<>();
             for (int i = 0; i < 8; i++) {
