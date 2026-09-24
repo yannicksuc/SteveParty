@@ -548,11 +548,17 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		for (int i = 0; i < count; i++) {
 			double a = MathHelper.TAU * i / count + random.nextDouble() * 0.3;
 			double cos = Math.cos(a), sin = Math.sin(a);
-			world.addParticle(ParticleTypes.END_ROD, this.getX() + cos * 0.3, y, this.getZ() + sin * 0.3,
-					cos * speed, 0.015, sin * speed);
+			// little four-pointed twinkles flying out, star dust in its colour between them
+			world.addParticle(ParticleTypes.WAX_OFF, this.getX() + cos * 0.3, y, this.getZ() + sin * 0.3,
+					cos * speed * 40, 1.0, sin * speed * 40); // WAX_OFF scales its velocity down (x0.005 sideways)
 			if (i % 2 == 0) {
 				world.addParticle(starDust(), this.getX() + cos * 0.5, y + 0.1, this.getZ() + sin * 0.5, 0, 0, 0);
 			}
+		}
+		// and a couple of soft glowing motes rising
+		for (int i = 0; i < 2; i++) {
+			world.addParticle(ParticleTypes.END_ROD, this.getX() + (random.nextDouble() - 0.5) * 0.4, y + 0.2,
+					this.getZ() + (random.nextDouble() - 0.5) * 0.4, 0, 0.03, 0);
 		}
 	}
 
