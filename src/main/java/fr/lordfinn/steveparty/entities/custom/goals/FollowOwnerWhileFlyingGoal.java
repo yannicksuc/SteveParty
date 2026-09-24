@@ -11,8 +11,8 @@ import java.util.EnumSet;
 /**
  * A tamed Mula floats after its owner, 2 blocks above them, like a Luma trailing behind Mario: gently when close,
  * faster the farther it lags (it still catches up with a sprinting player), and teleports beyond the follow range as
- * before. The path is recomputed every {@value #REPATH_TICKS} ticks (it was every tick), the move control curves
- * between the updates.
+ * before. Within {@value #DIRECT_RANGE} blocks it floats straight to its place above the owner's head (the move control
+ * steers and slows it); farther, it follows a path recomputed every {@value #REPATH_TICKS} ticks (it was every tick).
  */
 public class FollowOwnerWhileFlyingGoal extends Goal {
     /** Ticks between two path computations (vanilla pets use the same). */
@@ -21,6 +21,8 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
     private static final double MIN_SPEED = 0.12, MAX_SPEED = 0.55;
     /** Extra speed per block of distance beyond the stop distance. */
     private static final double SPEED_PER_BLOCK = 0.05;
+    /** Closer than this (blocks), it flies straight to its place instead of following a path. */
+    private static final double DIRECT_RANGE = 8;
 
     private final MulaEntity entity;
     private PlayerEntity owner;
@@ -83,13 +85,22 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
             repathTicks = 0;
             return;
         }
-        if (--repathTicks > 0 && !entity.getNavigation().isIdle()) return;
+        boolean close = distanceSq < DIRECT_RANGE * DIRECT_RANGE;
+        if (!close && --repathTicks > 0 && !entity.getNavigation().isIdle()) return;
         repathTicks = REPATH_TICKS;
 
         // Target 2 blocks above player
         double targetX = owner.getX();
         double targetY = owner.getY() + 2.0;
         double targetZ = owner.getZ();
+
+        if (close) {
+            // close by: floats straight to its place above the owner's head (no path: path nodes sit on the floor,
+            // which made it creep along the ground), the move control steering round and slowing into it
+            entity.getNavigation().stop();
+            entity.getMoveControl().moveTo(targetX, targetY, targetZ, flightSpeed(distanceSq));
+            return;
+        }
 
         BlockPos pos = entity.getBlockPos().down();
         while (entity.getWorld().isAir(pos) && pos.getY() > entity.getWorld().getBottomY()) {
@@ -98,11 +109,13 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         double groundY = pos.getY() + 1.0;
         targetY = Math.max(groundY + 1.0, Math.min(targetY, groundY + 5.0));
 
-        double distance = Math.sqrt(distanceSq);
-        double flightSpeed = speed * MathHelper.clamp(MIN_SPEED + (distance - minDistance) * SPEED_PER_BLOCK,
-                MIN_SPEED, MAX_SPEED);
-
         // Move the entity using navigation (MoveControl handles velocity)
-        entity.getNavigation().startMovingTo(targetX, targetY, targetZ, flightSpeed);
+        entity.getNavigation().startMovingTo(targetX, targetY, targetZ, flightSpeed(distanceSq));
+    }
+
+    /** Gently when close, faster the farther it lags. */
+    private double flightSpeed(double distanceSq) {
+        double distance = Math.sqrt(distanceSq);
+        return speed * MathHelper.clamp(MIN_SPEED + (distance - minDistance) * SPEED_PER_BLOCK, MIN_SPEED, MAX_SPEED);
     }
 }

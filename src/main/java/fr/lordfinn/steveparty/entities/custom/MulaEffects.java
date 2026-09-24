@@ -120,8 +120,8 @@ public final class MulaEffects {
         double jumpSq = (serverX - lastServerX) * (serverX - lastServerX) + (serverY - lastServerY) * (serverY - lastServerY)
                 + (serverZ - lastServerZ) * (serverZ - lastServerZ);
         if (jumpSq > 16) {
-            poof(lastServerX, lastServerY + mula.getHeight() * 0.5, lastServerZ);
-            poof(serverX, serverY + mula.getHeight() * 0.5, serverZ);
+            poof(lastServerX, lastServerY + mula.getHeight() * 0.8, lastServerZ);
+            poof(serverX, serverY + mula.getHeight() * 0.8, serverZ);
             chime(1.5f);
         }
         lastServerX = serverX;
@@ -289,8 +289,9 @@ public final class MulaEffects {
 
     // ------------------------------------------------------------------------------------------ particles
 
+    /** Height of the middle of the model (it floats above its hitbox's feet: its centre is at 0.8 of its height). */
     private double centerY() {
-        return mula.getY() + mula.getHeight() * 0.55;
+        return mula.getY() + mula.getHeight() * 0.8;
     }
 
     void sparkleSmall() {
@@ -328,7 +329,7 @@ public final class MulaEffects {
     private void shower(int count) {
         World world = mula.getWorld();
         Random random = mula.getRandom();
-        double y = mula.getY() + mula.getHeight() * 0.9;
+        double y = mula.getY() + mula.getHeight() * 1.2;
         for (int i = 0; i < count; i++) {
             world.addParticle(RAINBOW_BITS[i % RAINBOW_BITS.length], mula.getX(), y, mula.getZ(),
                     random.nextGaussian() * 0.07, 0.22 + random.nextDouble() * 0.16, random.nextGaussian() * 0.07);
@@ -355,14 +356,14 @@ public final class MulaEffects {
     private void sleepyZ() {
         float yaw = mula.bodyYaw * MathHelper.RADIANS_PER_DEGREE;
         mula.getWorld().addParticle(SLEEPY_Z, mula.getX() - MathHelper.sin(yaw) * 0.2 + 0.1,
-                mula.getY() + mula.getHeight() * 0.95, mula.getZ() + MathHelper.cos(yaw) * 0.2, 0.004, 0.03, 0);
+                mula.getY() + mula.getHeight() * 1.3, mula.getZ() + MathHelper.cos(yaw) * 0.2, 0.004, 0.03, 0);
     }
 
     /** Hurt: it "sees stars", a few star bits knocked out of it. */
     private void seeStars() {
         World world = mula.getWorld();
         Random random = mula.getRandom();
-        double y = mula.getY() + mula.getHeight() * 0.9;
+        double y = mula.getY() + mula.getHeight() * 1.2;
         for (int i = 0; i < 3; i++) {
             world.addParticle(RAINBOW_BITS[i == 2 ? 5 : 0], mula.getX(), y, mula.getZ(),
                     random.nextGaussian() * 0.06, 0.18, random.nextGaussian() * 0.06);
@@ -387,9 +388,9 @@ public final class MulaEffects {
     private void poof(double x, double y, double z) {
         World world = mula.getWorld();
         Random random = mula.getRandom();
-        for (int i = 0; i < 4; i++) {
-            world.addParticle(ParticleTypes.POOF, x + random.nextGaussian() * 0.15, y + random.nextGaussian() * 0.15,
-                    z + random.nextGaussian() * 0.15, 0, 0.01, 0);
+        for (int i = 0; i < 3; i++) {
+            world.addParticle(ParticleTypes.SMOKE, x + random.nextGaussian() * 0.12, y + random.nextGaussian() * 0.12,
+                    z + random.nextGaussian() * 0.12, 0, 0.02, 0);
         }
         for (int i = 0; i < 4; i++) {
             world.addParticle(mula.getVariant().getTwinkle(), x + random.nextGaussian() * 0.25,

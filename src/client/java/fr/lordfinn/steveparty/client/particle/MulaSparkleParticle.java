@@ -34,7 +34,8 @@ public class MulaSparkleParticle extends SpriteBillboardParticle {
         setColor(((color >> 16) & 0xFF) / 255f, ((color >> 8) & 0xFF) / 255f, (color & 0xFF) / 255f);
         this.phase = random.nextFloat() * MathHelper.TAU;
         this.spin = (random.nextFloat() - 0.5f) * 0.5f;
-        this.angle = this.prevAngle = random.nextFloat() * MathHelper.TAU;
+        // only star bits spin; twinkles and z's stay upright (a turned twinkle reads as an "x")
+        this.angle = this.prevAngle = style == MulaSparkleEffect.STAR_BIT ? random.nextFloat() * MathHelper.TAU : 0f;
         this.collidesWithWorld = false;
         switch (style) {
             case MulaSparkleEffect.STAR_BIT -> {

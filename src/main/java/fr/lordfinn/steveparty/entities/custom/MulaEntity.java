@@ -311,6 +311,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.setHunger(nbt.getInt("Hunger"));
 		Identifier food = nbt.contains("LastFood") ? Identifier.tryParse(nbt.getString("LastFood")) : null;
 		setLastFood(food == null ? ItemStack.EMPTY : new ItemStack(Registries.ITEM.get(food)));
+		// it always floats: /summon with any NBT (no "NoGravity" in it) used to give it gravity, and it fell
+		this.setNoGravity(true);
 	}
 
 	@Override
@@ -513,10 +515,14 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 	}
 
-	/** Client: a meal (the feed counter changed) shows the food flying into its mouth. */
+	/** Client: a meal (the feed counter changed) shows the food flying into its mouth. Both sides: size. */
 	@Override
 	public void onTrackedDataSet(TrackedData<?> data) {
 		super.onTrackedDataSet(data);
+		// its size follows its hunger (getScaleFactor): refresh the hitbox at once, it only did on a pose change
+		if (HUNGER.equals(data)) {
+			this.calculateDimensions();
+		}
 		if (FEED_COUNT.equals(data) && this.getWorld().isClient && this.age > 0) {
 			effects.onFed();
 		}

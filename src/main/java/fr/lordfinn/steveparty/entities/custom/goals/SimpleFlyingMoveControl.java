@@ -18,7 +18,8 @@ import net.minecraft.util.math.Vec3d;
  * move), so what pushed the Mula meanwhile (a hit, a gravity core, a wall) is kept and steered from.
  */
 public class SimpleFlyingMoveControl extends MoveControl {
-    /** Air drag applied after each move by LivingEntity#travel to a no-gravity mob: horizontal, vertical. */
+    /** Air drag applied after each move by LivingEntity#travel to a no-gravity mob: horizontal, vertical (on the
+     * ground, the horizontal one is multiplied by the block's slipperiness). */
     private static final double DRAG_XZ = 0.91, DRAG_Y = 0.98;
     /** Within this distance of its last target the Mula slows down, never below MIN_ARRIVE_SPEED (blocks/tick). */
     private static final double ARRIVE_RADIUS = 1.5, MIN_ARRIVE_SPEED = 0.03;
@@ -61,7 +62,11 @@ public class SimpleFlyingMoveControl extends MoveControl {
     @Override
     public void tick() {
         Vec3d v = entity.getVelocity();
-        double vx = v.x / DRAG_XZ, vy = v.y / DRAG_Y, vz = v.z / DRAG_XZ;
+        // on the ground (e.g. a path node on the floor) travel slows it by the block's slipperiness too
+        double dragXZ = entity.isOnGround()
+                ? entity.getWorld().getBlockState(entity.getVelocityAffectingPos()).getBlock().getSlipperiness() * DRAG_XZ
+                : DRAG_XZ;
+        double vx = v.x / dragXZ, vy = v.y / DRAG_Y, vz = v.z / dragXZ;
 
         if (this.state == MoveControl.State.MOVE_TO) {
             double dx = targetX - entity.getX();

@@ -42,10 +42,11 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     /** Smoothed speed (blocks/tick) above which the Mula leaves a trail of star dust. */
     private static final float TRAIL_SPEED = 0.05f;
     /**
-     * Where the food it ate floats, in the head bone (model pixels): in the belly, below the eyes, in the thin glassy
-     * gap between its inner body (z -4) and its translucent shell (z -4.5), so the shell tints it and nothing hides it.
+     * Where the food it ate floats, in the head bone (model pixels): on its belly, below the eyes, just in front of its
+     * glassy shell (z -4.5). Inside the shell it would be hidden: the translucent body is drawn after the item batch
+     * and its depth covers it.
      */
-    private static final float BELLY_Y = 4.1f, BELLY_Z = -4.26f, BELLY_SIZE = 4.2f;
+    private static final float BELLY_Y = 3.8f, BELLY_Z = -4.62f, BELLY_SIZE = 3.4f;
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new MulaModel());
@@ -77,7 +78,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, 0xF000F0, packedOverlay, renderColor);
     }
 
-    /** The food it ate floats in its belly: drawn first, in the head's space, so its glassy shell covers it. */
+    /** The food it ate floats on its belly, drawn in the head's space so it follows every move of the body. */
     @Override
     public void renderRecursively(MatrixStack poseStack, MulaEntity mula, GeoBone bone, RenderLayer renderType,
                                   VertexConsumerProvider bufferSource, VertexConsumer buffer, boolean isReRender,
@@ -108,9 +109,12 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         poseStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(8f * MathHelper.sin(t * 0.06f)));
         float size = BELLY_SIZE / 16f * plop;
         poseStack.scale(size, size, size);
-        MinecraftClient.getInstance().getItemRenderer().renderItem(food, ModelTransformationMode.FIXED, 0xF000F0,
+        // the raw item model (ItemRenderer centres it), its face turned to the Mula's front (-z)
+        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
+        MinecraftClient.getInstance().getItemRenderer().renderItem(food, ModelTransformationMode.NONE, 0xF000F0,
                 OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId());
         poseStack.pop();
+
     }
 
     /**
@@ -124,7 +128,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         if (stack.isEmpty()) return;
         float p = effects.flyingProgress(partialTick);
         double mx = MathHelper.lerp(partialTick, mula.prevX, mula.getX());
-        double my = MathHelper.lerp(partialTick, mula.prevY, mula.getY()) + mula.getHeight() * 0.5;
+        double my = MathHelper.lerp(partialTick, mula.prevY, mula.getY()) + mula.getHeight() * 0.8;
         double mz = MathHelper.lerp(partialTick, mula.prevZ, mula.getZ());
         double x, y, z;
         float size, spin;
@@ -149,7 +153,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         float ratio = mula.getMotion().visualScaleRatio(partialTick, mula.getScaleFactor());
         if (ratio <= 0.01f) return;
         poseStack.push();
-        poseStack.translate((x - mx) / ratio, (y - my + mula.getHeight() * 0.5) / ratio, (z - mz) / ratio);
+        poseStack.translate((x - mx) / ratio, (y - my + mula.getHeight() * 0.8) / ratio, (z - mz) / ratio);
         poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(spin));
         poseStack.scale(size / ratio, size / ratio, size / ratio);
         MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, 0xF000F0,

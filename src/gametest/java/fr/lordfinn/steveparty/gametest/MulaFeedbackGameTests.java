@@ -49,8 +49,11 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         Item food = foodOf(mula);
         try {
             context.assertTrue(mula.getLastFood().isEmpty(), "nothing eaten yet");
+            double width = mula.getWidth();
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(food, 4));
             mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertTrue(mula.getWidth() > width + 0.01, "its hitbox grows with its hunger at once: "
+                    + width + " -> " + mula.getWidth());
             context.assertTrue(mula.getLastFood().isOf(food), "remembers " + food + ", got " + mula.getLastFood());
             context.assertEquals(mula.getLastFood().getCount(), 1, "one item in its belly");
             context.assertEquals(mula.getFeedCount(), 1, "one meal");
@@ -113,8 +116,10 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         mula.writeNbt(nbt);
         MulaEntity reloaded = ModEntities.MULA_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
         context.assertTrue(reloaded != null, "entity created");
+        nbt.putBoolean("NoGravity", false); // like /summon with any NBT
         reloaded.readNbt(nbt);
         context.assertTrue(reloaded.getLastFood().isOf(foodOf(mula)), "belly saved: " + reloaded.getLastFood());
+        context.assertTrue(reloaded.hasNoGravity(), "a Mula always floats");
         context.complete();
     }
 

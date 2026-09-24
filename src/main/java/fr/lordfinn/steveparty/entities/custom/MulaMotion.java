@@ -60,7 +60,10 @@ public final class MulaMotion {
 	private boolean flying;
 	private int ticksInState;
 	private boolean ticked;
-	private float visualScale = -1, prevVisualScale, visualScaleVelocity;
+	private float visualScale = -1, prevVisualScale, visualScaleVelocity, targetScale;
+	private int shrinkHold;
+	/** Ticks from the burst order to the pop (explode: 8 ticks of blend + 0.92 s), when its size can snap back. */
+	private static final int BURST_HOLD_TICKS = 30;
 
 	public MulaMotion(int seed) {
 		// golden-ratio hashing of the entity id: neighbours get well spread phases
@@ -153,13 +156,24 @@ public final class MulaMotion {
 		look += lookVelocity;
 
 		// visual size: springs up when it grows (fed), follows at once when it shrinks (reset after it bursts)
-		if (visualScale < 0 || scale < visualScale - 0.001f) {
+		if (scale < targetScale - 0.5f) {
+			// burst: it keeps its size until the pop hides it (the explode animation shrinks it to nothing)
+			shrinkHold = BURST_HOLD_TICKS;
+		}
+		if (shrinkHold > 0) {
+			shrinkHold--;
+			if (shrinkHold == 0) {
+				visualScale = scale;
+				visualScaleVelocity = 0;
+			}
+		} else if (visualScale < 0 || scale < targetScale - 0.001f) {
 			visualScale = scale;
 			visualScaleVelocity = 0;
 		} else {
 			visualScaleVelocity = (visualScaleVelocity + (scale - visualScale) * SCALE_SPRING) * SCALE_DAMPING;
 			visualScale += visualScaleVelocity;
 		}
+		targetScale = scale;
 	}
 
 	/** It has just appeared (spawn egg, summon...): its visual size pops in from nothing. */
@@ -200,11 +214,14 @@ public final class MulaMotion {
 		return MathHelper.lerp(partialTick, prevFlare, flare);
 	}
 
-	/** Visual size / real size, to draw the springy size without touching the hitbox (0 before its first tick). */
+	/**
+	 * Size it is drawn at: its size factor (it grows as it eats, like its hitbox), springy (0 before its first tick).
+	 * GeckoLib only applies the scale attribute, so without this the Mula never looked bigger, only its hitbox grew.
+	 */
 	public float visualScaleRatio(float partialTick, float scale) {
 		if (!ticked) return 0f;
-		if (visualScale < 0 || scale <= 0) return 1f;
-		return MathHelper.lerp(partialTick, prevVisualScale, visualScale) / scale;
+		if (visualScale < 0) return scale;
+		return MathHelper.lerp(partialTick, prevVisualScale, visualScale);
 	}
 
 	/** Values of the float layer at render time, in animation-json units (degrees, pixels), written into {@code out}. */
