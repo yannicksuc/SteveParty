@@ -98,7 +98,7 @@ public class ModBlocks {
         for (int i = 0; i < COLORS.length; i++) {
             String color = COLORS[i];
             PLASTIC_FENCES[i] = register(
-                    FenceBlock::new,
+                    PlasticFenceBlock::new,
                     Block.Settings.create()
                             .mapColor(DyeColor.byName(color, DyeColor.WHITE))
                             .solid()

@@ -213,6 +213,7 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
 
     @Override
     protected final boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+        if (!needsSupport(state)) return true;
         Mount mount = state.get(MOUNT);
         if (mount == Mount.POST) return canStandAt(world, pos);
         Direction side = supportSide(state);
@@ -221,6 +222,11 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
         if (mount == Mount.HUNG) return facing(state.get(ROTATION)) != null && SignPosts.isPost(support);
         if (mount == Mount.WALL && facing(state.get(ROTATION)) == null) return false;
         return support.isSideSolid(world, supportPos, side.getOpposite(), SideShapeType.CENTER);
+    }
+
+    /** @return whether this sign falls when what holds it goes (see {@link #supportSide}). */
+    protected boolean needsSupport(BlockState state) {
+        return true;
     }
 
     /** @return whether this sign can stand at {@code pos} (on what is below it). */
