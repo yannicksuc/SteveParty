@@ -25,6 +25,11 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
             addDrop(stud);
         for (Block fence : ModBlocks.PLASTIC_FENCES)
             addDrop(fence);
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            addDrop(ModBlocks.PLASTIC_SLABS[i], slabDrops(ModBlocks.PLASTIC_SLABS[i]));
+            addDrop(ModBlocks.PLASTIC_STAIRS[i]);
+            addDrop(ModBlocks.PLASTIC_WALLS[i]);
+        }
         addDrop(ModBlocks.GOAL_POLE_BASE);
         addDrop(ModBlocks.GOAL_POLE);
         addDrop(ModBlocks.LOOTING_BOX);

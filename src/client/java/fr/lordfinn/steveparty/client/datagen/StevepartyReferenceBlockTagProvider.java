@@ -34,6 +34,16 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
             getOrCreateTagBuilder(BlockTags.FENCES).add(fence);
             getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(fence);
         }
+        // Plastic slabs, stairs and walls: plastic too (taken apart in one hit with the wrench, switchable)
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            getOrCreateTagBuilder(BlockTags.SLABS).add(ModBlocks.PLASTIC_SLABS[i]);
+            getOrCreateTagBuilder(BlockTags.STAIRS).add(ModBlocks.PLASTIC_STAIRS[i]);
+            getOrCreateTagBuilder(BlockTags.WALLS).add(ModBlocks.PLASTIC_WALLS[i]);
+            for (Block shape : new Block[]{ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_STAIRS[i], ModBlocks.PLASTIC_WALLS[i]}) {
+                getOrCreateTagBuilder(Switchables.PLASTIC).add(shape);
+                getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(shape);
+            }
+        }
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,

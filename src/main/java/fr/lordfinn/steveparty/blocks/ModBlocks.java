@@ -110,6 +110,25 @@ public class ModBlocks {
         }
     }
 
+    // Plastic slabs, stairs and walls, like the vanilla stone ones (they do not float: only full plastic pieces do)
+    public static final Block[] PLASTIC_SLABS = new Block[COLORS.length];
+    public static final Block[] PLASTIC_STAIRS = new Block[COLORS.length];
+    public static final Block[] PLASTIC_WALLS = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            final int index = i;
+            String color = COLORS[i];
+            PLASTIC_SLABS[i] = register(SlabBlock::new, Block.Settings.copy(PLASTIC_BLOCKS[i]),
+                    color + "_plastic_slab", true);
+            // Stairs only take their blast resistance and pathfinding from their base block
+            PLASTIC_STAIRS[i] = register(s -> new StairsBlock(PLASTIC_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(PLASTIC_BLOCKS[i]), color + "_plastic_stairs", true);
+            PLASTIC_WALLS[i] = register(WallBlock::new, Block.Settings.copy(PLASTIC_BLOCKS[i]).solid(),
+                    color + "_plastic_wall", true);
+        }
+    }
+
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
     static {

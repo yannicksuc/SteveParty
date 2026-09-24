@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:white_plastic_block",
+  "result": {
+    "count": 1,
+    "id": "steveparty:white_plastic_wall"
+  }
+}
