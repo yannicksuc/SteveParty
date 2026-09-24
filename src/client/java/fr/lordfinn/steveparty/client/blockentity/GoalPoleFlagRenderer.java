@@ -52,6 +52,9 @@ import org.joml.Vector3f;
 public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEntity> {
     /** The flag's sprites in the block atlas: the original red one, and a greyscale one tinted with a dye's colour. */
     public static final Identifier SPRITE = Steveparty.id("block/goal_pole_flag");
+    /** The notch of a segment with its own goal: the pole's white metal, tinted. */
+    private static final Identifier NOTCH_SPRITE = Steveparty.id("block/goal_pole");
+    private static final int NOTCH = 0xFFC83C, NOTCH_MET = 0x5EE05A;
     /** White masks of the flag's shading levels (darkest first): a dyed flag tints each with its wool colour. */
     private static final Identifier[] LEVEL_SPRITES = new Identifier[FlagPalettes.LEVELS];
 
@@ -90,9 +93,13 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
     public void render(GoalPoleBlockEntity entity, float tickDelta, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light, int overlay) {
         BlockState state = entity.getCachedState();
-        if (!state.contains(GoalPoleBlock.FLAG) || !state.get(GoalPoleBlock.FLAG)) return;
+        if (!state.contains(GoalPoleBlock.FLAG)) return;
         World world = entity.getWorld();
         if (world == null) return;
+        // A goal per segment: a notch on each segment, gold, green while its goal is met
+        if (entity.isPerSegment()) drawNotch(vertexConsumers.getBuffer(RenderLayer.getCutout()), matrices.peek(),
+                entity.isGoalMet() ? NOTCH_MET : NOTCH, light);
+        if (!state.get(GoalPoleBlock.FLAG)) return;
 
         BlockPos pos = entity.getPos();
         Vec3d camera = dispatcher.camera != null ? dispatcher.camera.getPos() : Vec3d.ZERO;
@@ -161,6 +168,42 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
             NX[i] = length > 0 ? -tz / length : 0f;
             NZ[i] = length > 0 ? tx / length : -1f;
         }
+    }
+
+    /** A thin band around the rod at mid height, shaded like block faces. */
+    private static void drawNotch(VertexConsumer buffer, MatrixStack.Entry entry, int color, int light) {
+        Sprite sprite = MinecraftClient.getInstance().getBakedModelManager()
+                .getAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).getSprite(NOTCH_SPRITE);
+        float min = 6.1f / 16f, max = 9.9f / 16f, bottom = 7.4f / 16f, top = 8.6f / 16f;
+        float u0 = sprite.getFrameU(0.1f), u1 = sprite.getFrameU(0.3f), v0 = sprite.getFrameV(0.1f), v1 = sprite.getFrameV(0.2f);
+        int z = shaded(color, SHADE_Z), x = shaded(color, SHADE_X), up = shaded(color, 1f);
+        // north, south, west, east, top
+        quad(buffer, entry, max, top, min, min, top, min, min, bottom, min, max, bottom, min, u0, v0, u1, v1, z, light, 0, 0, -1);
+        quad(buffer, entry, min, top, max, max, top, max, max, bottom, max, min, bottom, max, u0, v0, u1, v1, z, light, 0, 0, 1);
+        quad(buffer, entry, min, top, min, min, top, max, min, bottom, max, min, bottom, min, u0, v0, u1, v1, x, light, -1, 0, 0);
+        quad(buffer, entry, max, top, max, max, top, min, max, bottom, min, max, bottom, max, u0, v0, u1, v1, x, light, 1, 0, 0);
+        quad(buffer, entry, min, top, min, max, top, min, max, top, max, min, top, max, u0, v0, u1, v1, up, light, 0, 1, 0);
+    }
+
+    private static void quad(VertexConsumer buffer, MatrixStack.Entry entry, float x0, float y0, float z0, float x1, float y1, float z1,
+                             float x2, float y2, float z2, float x3, float y3, float z3, float u0, float v0, float u1, float v1,
+                             int color, int light, float nx, float ny, float nz) {
+        Matrix4f pose = entry.getPositionMatrix();
+        entry.getNormalMatrix().transform(nx, ny, nz, NORMAL).normalize();
+        corner(buffer, pose, x0, y0, z0, u0, v0, color, light);
+        corner(buffer, pose, x1, y1, z1, u1, v0, color, light);
+        corner(buffer, pose, x2, y2, z2, u1, v1, color, light);
+        corner(buffer, pose, x3, y3, z3, u0, v1, color, light);
+        // And the other winding: the band is seen from outside whatever the order the cutout layer culls
+        corner(buffer, pose, x3, y3, z3, u0, v1, color, light);
+        corner(buffer, pose, x2, y2, z2, u1, v1, color, light);
+        corner(buffer, pose, x1, y1, z1, u1, v0, color, light);
+        corner(buffer, pose, x0, y0, z0, u0, v0, color, light);
+    }
+
+    private static void corner(VertexConsumer buffer, Matrix4f pose, float x, float y, float z, float u, float v, int color, int light) {
+        pose.transformPosition(x, y, z, POSITION);
+        buffer.vertex(POSITION.x, POSITION.y, POSITION.z, color, u, v, OverlayTexture.DEFAULT_UV, light, NORMAL.x, NORMAL.y, NORMAL.z);
     }
 
     /** The cloth, both sides, with one sprite and one colour (times each column's shade). */

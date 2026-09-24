@@ -10,7 +10,8 @@ import net.minecraft.util.math.BlockPos;
 
 import static fr.lordfinn.steveparty.payloads.ModPayloads.GOAL_POLE_PAYLOAD;
 
-public record GoalPolePayload(BlockPos pos, GoalPoleBlockEntity.Comparator comparator, int value) implements CustomPayload {
+/** The goal of a pole segment (and whether each segment has its own goal), to and from the pole screen. */
+public record GoalPolePayload(BlockPos pos, GoalPoleBlockEntity.Comparator comparator, int value, boolean perSegment) implements CustomPayload {
     public static final CustomPayload.Id<GoalPolePayload> ID = new CustomPayload.Id<>(GOAL_POLE_PAYLOAD);
     public static final PacketCodec<ByteBuf, GoalPoleBlockEntity.Comparator> COMPARATOR_CODEC =
             new PacketCodec<>() {
@@ -32,6 +33,7 @@ public record GoalPolePayload(BlockPos pos, GoalPoleBlockEntity.Comparator compa
                     BlockPos.PACKET_CODEC, GoalPolePayload::pos,
                     COMPARATOR_CODEC, GoalPolePayload::comparator,
                     PacketCodecs.INTEGER, GoalPolePayload::value,
+                    PacketCodecs.BOOL, GoalPolePayload::perSegment,
                     GoalPolePayload::new
             );
 

@@ -32,7 +32,9 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -61,9 +63,13 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     /** A player who left the pole for less than this is still "on it" (jumps on the spot are not new landings). */
     private static final long LANDING_GRACE_TICKS = 40;
 
+    /** Sets this segment's goal only (see {@link #applyGoal} for the pole's setting, whole column or per segment). */
     public void update(Comparator comparator, int value) {
-        this.setValue(value);
-        this.setComparator(comparator);
+        this.comparator = comparator;
+        this.value = value;
+        markDirty();
+        sync();
+        recompare();
     }
 
     /**
@@ -115,8 +121,17 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         LESS
     }
 
-    private Comparator comparator = Comparator.EQUAL;
-    private int value = 0;
+    /** 2: goal per column or per segment, "at least 1" by default (1 or missing: every segment had its own goal). */
+    public static final int VERSION = 2;
+    /** New poles: signal once the total reaches 1 (the old default, "equals 0", was met before anyone scored). */
+    private Comparator comparator = Comparator.GREATER_OR_EQUAL;
+    private int value = 1;
+    /** Whether the column's segments each have their own goal (advanced), instead of one goal for the whole pole. */
+    private boolean perSegment = false;
+    /** Loaded from before the column setting: its column decides once whether its goals were all the same. */
+    private boolean legacyGoal = false;
+    /** Placed, not loaded: takes the settings of the column it joins. */
+    private boolean fresh = true;
 
     public GoalPoleBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GOAL_POLE_ENTITY, pos, state);
@@ -135,9 +150,89 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         if (!world.isClient) GoalPoleNetwork.schedule(this);
     }
 
-    /** End of the tick it was loaded or placed in: finds its base and takes its total. */
+    /** End of the tick it was loaded or placed in: joins its column's settings, finds its base, takes its total. */
     void onLoaded() {
+        if (world == null || world.isClient) return;
+        List<GoalPoleBlockEntity> column = column(world, pos);
+        if (fresh) {
+            fresh = false;
+            // A segment added to a pole takes the pole's goal
+            for (GoalPoleBlockEntity other : column) {
+                if (other != this && !other.fresh) {
+                    comparator = other.comparator;
+                    value = other.value;
+                    perSegment = other.perSegment;
+                    markDirty();
+                    break;
+                }
+            }
+        }
+        consolidate(column);
         refreshFromBase();
+    }
+
+    // --- Column ---
+
+    /** The segments of the pole column this position is part of, bottom first. */
+    public static List<GoalPoleBlockEntity> column(World world, BlockPos anySegment) {
+        BlockPos.Mutable cursor = anySegment.mutableCopy();
+        while (!world.isOutOfHeightLimit(cursor.getY() - 1) && world.getBlockState(cursor.down()).getBlock() instanceof GoalPoleBlock) {
+            cursor.move(Direction.DOWN);
+        }
+        List<GoalPoleBlockEntity> segments = new ArrayList<>();
+        while (!world.isOutOfHeightLimit(cursor) && world.getBlockEntity(cursor) instanceof GoalPoleBlockEntity segment) {
+            segments.add(segment);
+            cursor.move(Direction.UP);
+        }
+        return segments;
+    }
+
+    /**
+     * Poles from before the column setting: when all their segments have the same goal, the column has one goal;
+     * otherwise each segment keeps its own (per segment mode). Done once, then saved.
+     */
+    static void consolidate(List<GoalPoleBlockEntity> column) {
+        boolean legacy = false;
+        for (GoalPoleBlockEntity segment : column) legacy |= segment.legacyGoal;
+        if (!legacy) return;
+        boolean allSame = true;
+        GoalPoleBlockEntity first = column.getFirst();
+        for (GoalPoleBlockEntity segment : column) {
+            allSame &= segment.comparator == first.comparator && segment.value == first.value;
+        }
+        for (GoalPoleBlockEntity segment : column) {
+            segment.legacyGoal = false;
+            segment.perSegment = !allSame;
+            segment.markDirty();
+            segment.sync();
+        }
+    }
+
+    /**
+     * The pole's goal from the screen. One goal for the whole pole: every segment gets it. A goal per segment: only
+     * this segment changes (the others keep theirs). The mode is the column's.
+     */
+    public void applyGoal(Comparator comparator, int value, boolean perSegment) {
+        if (world == null || world.isClient) {
+            update(comparator, value);
+            return;
+        }
+        List<GoalPoleBlockEntity> column = column(world, pos);
+        consolidate(column);
+        for (GoalPoleBlockEntity segment : column) {
+            segment.perSegment = perSegment;
+            if (!perSegment || segment == this) {
+                segment.comparator = comparator;
+                segment.value = value;
+            }
+            segment.markDirty();
+            segment.sync();
+            segment.recompare();
+        }
+    }
+
+    public boolean isPerSegment() {
+        return perSegment;
     }
 
     // --- Base ---
@@ -256,8 +351,11 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
+        nbt.putInt("Version", VERSION);
         nbt.putInt("Comparator", comparator.ordinal());
         nbt.putInt("Value", value);
+        nbt.putBoolean("PerSegment", perSegment);
+        if (legacyGoal) nbt.putBoolean("LegacyGoal", true);
         if (flagColor != FlagItem.NO_COLOR) nbt.putInt("FlagColor", flagColor);
         nbt.putLong("Total", total);
         nbt.putBoolean("GoalMet", goalMet);
@@ -267,6 +365,10 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
+        fresh = false;
+        perSegment = nbt.getBoolean("PerSegment");
+        // Saved before the column setting (or not consolidated yet): its column decides when it loads
+        legacyGoal = nbt.getInt("Version") < VERSION || nbt.getBoolean("LegacyGoal");
         if (nbt.contains("Comparator")) {
             int compId = nbt.getInt("Comparator");
             comparator = Comparator.values()[Math.max(0, Math.min(compId, Comparator.values().length - 1))];
@@ -347,7 +449,8 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
     @Override
     public GoalPolePayload getScreenOpeningData(ServerPlayerEntity player) {
-        return new GoalPolePayload(this.getPos(), this.comparator, this.value);
+        if (world != null && !world.isClient) consolidate(column(world, pos));
+        return new GoalPolePayload(this.getPos(), this.comparator, this.value, this.perSegment);
     }
 
     @Override

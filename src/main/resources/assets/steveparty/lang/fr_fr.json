@@ -801,5 +801,10 @@
   "hint.steveparty.goal_pole_base.side.back": "Prise arrière :",
   "hint.steveparty.goal_pole_base.side.right": "Plaque rouge (droite) :",
   "hint.steveparty.goal_pole_base.side.any": "Tout côté :",
-  "hint.steveparty.goal_pole_base.side.front": "Plaque avant :"
+  "hint.steveparty.goal_pole_base.side.front": "Plaque avant :",
+  "gui.steveparty.goal_pole.mode": "But du mât",
+  "gui.steveparty.goal_pole.mode.column": "Un seul but pour tout le mât",
+  "gui.steveparty.goal_pole.mode.column.details": "Tous les segments de ce mât partagent ce but : réglez-le sur n'importe quel segment.",
+  "gui.steveparty.goal_pole.mode.per_segment": "Un but par segment (avancé)",
+  "gui.steveparty.goal_pole.mode.per_segment.details": "Chaque segment a son propre but et son propre signal de comparateur : réglez celui-ci ici, les autres à la clé sur eux. Une encoche sur chaque segment le montre (verte quand il est atteint)."
 }

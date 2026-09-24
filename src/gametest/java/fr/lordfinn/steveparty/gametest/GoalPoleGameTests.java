@@ -717,4 +717,84 @@ public class GoalPoleGameTests implements FabricGameTest {
         removeBase(context);
         context.complete();
     }
+
+    /** A new pole's goal is "at least 1": not reached before the first point. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void newPoleGoalIsAtLeastOne(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
+        context.assertTrue(pole.getComparator() == GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL && pole.getValue() == 1, "at least 1");
+        context.assertTrue(!pole.isGoalMet() && pole.getRedstoneOutput() == 0, "not reached at 0");
+        base.credit("Alex", 1, null);
+        context.assertTrue(pole.isGoalMet() && pole.getRedstoneOutput() == 15, "reached at 1");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** One goal for the whole pole: set on any segment, every segment gets it; a new segment joins it. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void oneGoalForTheWholePole(TestContext context) {
+        placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, false));
+        context.setBlockState(BASE.up(3), pole(false, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up(2)).applyGoal(GoalPoleBlockEntity.Comparator.EQUAL, 3, false);
+        for (int y = 1; y <= 3; y++) {
+            GoalPoleBlockEntity segment = poleEntity(context, BASE.up(y));
+            context.assertTrue(segment.getComparator() == GoalPoleBlockEntity.Comparator.EQUAL && segment.getValue() == 3
+                    && !segment.isPerSegment(), "segment " + y + " has the pole's goal");
+        }
+        context.setBlockState(BASE.up(4), pole(false, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity added = poleEntity(context, BASE.up(4));
+        context.assertTrue(added.getComparator() == GoalPoleBlockEntity.Comparator.EQUAL && added.getValue() == 3, "a new segment takes the pole's goal");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A goal per segment (advanced): only the edited segment changes, and the whole column is in that mode. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aGoalPerSegment(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up(2)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 3, true);
+        GoalPoleBlockEntity low = poleEntity(context, BASE.up()), high = poleEntity(context, BASE.up(2));
+        context.assertTrue(low.getValue() == 1 && high.getValue() == 3, "each segment its own goal");
+        context.assertTrue(low.isPerSegment() && high.isPerSegment(), "the column is in per segment mode");
+        base.credit("Alex", 2, null);
+        context.assertTrue(low.isGoalMet() && !high.isGoalMet(), "2 points: the low segment only");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** Poles saved before the column setting: same goals everywhere become one goal, different goals stay per segment. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void legacyPoleGoalsAreMigrated(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        BlockPos[] columns = {BASE, BASE.east(3)};
+        int[][] values = {{2, 2}, {2, 5}};
+        for (int c = 0; c < 2; c++) {
+            context.setBlockState(columns[c].up(), pole(false, false));
+            context.setBlockState(columns[c].up(2), pole(false, true));
+            for (int s = 0; s < 2; s++) {
+                net.minecraft.nbt.NbtCompound old = new net.minecraft.nbt.NbtCompound();
+                old.putInt("Comparator", GoalPoleBlockEntity.Comparator.EQUAL.ordinal());
+                old.putInt("Value", values[c][s]);
+                poleEntity(context, columns[c].up(s + 1)).read(old, registries);
+            }
+        }
+        GoalPoleNetwork.processPending();
+        context.assertTrue(!poleEntity(context, BASE.up()).isPerSegment() && !poleEntity(context, BASE.up(2)).isPerSegment(),
+                "same old goals: one goal for the pole");
+        context.assertTrue(poleEntity(context, BASE.east(3).up()).isPerSegment() && poleEntity(context, BASE.east(3).up(2)).isPerSegment(),
+                "different old goals: per segment");
+        context.assertTrue(poleEntity(context, BASE.east(3).up(2)).getValue() == 5, "old goals kept");
+        context.assertTrue(poleEntity(context, BASE.up()).createNbt(registries).getInt("Version") == GoalPoleBlockEntity.VERSION, "saved in the new format");
+        context.complete();
+    }
 }

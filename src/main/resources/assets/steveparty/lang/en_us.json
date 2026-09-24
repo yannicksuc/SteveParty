@@ -800,5 +800,10 @@
   "hint.steveparty.goal_pole_base.side.back": "Back plug:",
   "hint.steveparty.goal_pole_base.side.right": "Red plate (right):",
   "hint.steveparty.goal_pole_base.side.any": "Any side:",
-  "hint.steveparty.goal_pole_base.side.front": "Front plate:"
+  "hint.steveparty.goal_pole_base.side.front": "Front plate:",
+  "gui.steveparty.goal_pole.mode": "Goal of the pole",
+  "gui.steveparty.goal_pole.mode.column": "One goal for the whole pole",
+  "gui.steveparty.goal_pole.mode.column.details": "Every segment of this pole shares this goal: set it on any segment.",
+  "gui.steveparty.goal_pole.mode.per_segment": "A goal per segment (advanced)",
+  "gui.steveparty.goal_pole.mode.per_segment.details": "Each segment has its own goal and its own comparator signal: set this one here, the others with the wrench on them. A notch on each segment shows it (green when reached)."
 }
