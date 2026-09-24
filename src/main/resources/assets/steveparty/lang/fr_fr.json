@@ -269,8 +269,6 @@
   "gui.steveparty.trading_stall.mode.click": "Cliquer pour changer de mode",
   "item.steveparty.forged_dice": "Dé forgé",
   "tooltip.steveparty.dice_faces": "Faces : %s",
-  "gui.steveparty.dice_forge.craft": "Forger",
-  "gui.steveparty.dice_forge.stop": "Arrêter",
   "gui.steveparty.dice_forge.start_hint": "Lancer la forge : boucle jusqu'à l'arrêt ou jusqu'à ce qu'un emplacement soit vide",
   "gui.steveparty.dice_forge.stop_hint": "Cliquer pour arrêter la production",
   "gui.steveparty.dice_forge.progress": "Progression : %s %%",
@@ -288,5 +286,10 @@
   "message.steveparty.shop.not_owner_access_denied": "Cette boutique appartient à un autre joueur.",
   "message.steveparty.shop.key_required": "Tenez une clé de commerçant pour ouvrir votre boutique.",
   "gui.steveparty.dice_forge.status.no_face": "Placez au moins une face de dé",
-  "message.steveparty.dice_forge.core_settling": "Le cœur de gravité se met encore en place dans la forge"
+  "message.steveparty.dice_forge.core_settling": "Le cœur de gravité se met encore en place dans la forge",
+  "gui.steveparty.dice_forge.core_hint": "Cliquez sur le noyau pour forger",
+  "gui.steveparty.dice_forge.weight": "Poids %s : %s %% de chances par lancer",
+  "gui.steveparty.dice_forge.blank_hint": "Consommées : une par face sur l'anneau (%s par dé)",
+  "gui.steveparty.dice_forge.blank_slot": "Faces de dé vierges",
+  "gui.steveparty.dice_forge.status.not_enough_blank_faces": "Chaque dé demande %s faces vierges (une par face placée sur l'anneau)"
 }

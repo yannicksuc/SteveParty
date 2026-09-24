@@ -11,7 +11,6 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
@@ -20,8 +19,12 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
  * Renders the gravity (heavy) core seated in the dice forge hole, following the model animation.
  * <p>
  * If the model provides a {@value #CORE_BONE} bone, the core is drawn centered on that bone's pivot and fully
- * driven by the animations. Otherwise it is attached to the {@value #ROOT_BONE} bone: it rests in the plate hole
- * and its fall into the hole during the "core_insert" animation is computed here.
+ * driven by the animations. Otherwise it is attached to the {@value #ROOT_BONE} bone: it rests in the plate hole,
+ * its fall into the hole during the "core_insert" animation is computed here, then it rises to the altitude given
+ * by the star fragments ({@link DiceForgeBlockEntity#getCoreAltitude}).
+ * <p>
+ * The core has no rotation of its own: it turns with the root bone, so the core and the forge ("observatory")
+ * always share the same speed and direction.
  */
 public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
     public static final String CORE_BONE = "core";
@@ -50,10 +53,9 @@ public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
         poseStack.push();
         // The bone transforms are already applied (translated back from its pivot): move to the pivot
         poseStack.translate(bone.getPivotX() / 16f, bone.getPivotY() / 16f, bone.getPivotZ() / 16f);
-        if (!hasCoreBone) poseStack.translate(0, CORE_REST_Y + getFallOffset(animatable, partialTick), 0);
-
-        float ticks = animatable.getWorld() != null ? (animatable.getWorld().getTime() % 360) + partialTick : 0;
-        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(ticks));
+        if (!hasCoreBone) {
+            poseStack.translate(0, getCoreHeight(animatable, partialTick), 0);
+        }
 
         // gravity_core block model: 8x8x8 cube spanning x/z 4..12, y 8..16 → center it on the origin
         poseStack.translate(-0.5f, -0.75f, -0.5f);
@@ -63,6 +65,11 @@ public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
 
         // Give GeckoLib its buffer back (see GeoRenderLayer#renderForBone)
         bufferSource.getBuffer(renderType);
+    }
+
+    /** @return height of the core center above the block (blocks): resting in the hole, falling, or floating up */
+    public static float getCoreHeight(DiceForgeBlockEntity animatable, float partialTick) {
+        return CORE_REST_Y + getFallOffset(animatable, partialTick) + animatable.getCoreAltitude(partialTick);
     }
 
     /** Falling core during the first half of the insertion animation (ease-in, like a heavy object). */

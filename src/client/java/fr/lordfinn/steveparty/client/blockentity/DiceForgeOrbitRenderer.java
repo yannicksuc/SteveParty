@@ -64,8 +64,9 @@ public class DiceForgeOrbitRenderer {
             double z = Math.sin(angle) * radius;
             double y = 0;
 
-            // World-space position
-            double worldY = blockEntity.getPos().getY() + 2.5 + y;
+            // Around the core, which floats higher with more star fragments
+            double orbitY = getOrbitHeight(blockEntity, partialTick) + y;
+            double worldY = blockEntity.getPos().getY() + orbitY;
 
             // Rotation facing inward
             float yaw = (float) Math.toDegrees(Math.atan2(-z, -x)) - 90f;
@@ -76,7 +77,7 @@ public class DiceForgeOrbitRenderer {
             // Render orbiting item
             ItemRenderer itemRenderer = MinecraftClient.getInstance().getItemRenderer();
             poseStack.push();
-            poseStack.translate(0.5 + x, 2.5, 0.5 + z);
+            poseStack.translate(0.5 + x, orbitY, 0.5 + z);
             poseStack.multiply(RotationAxis.NEGATIVE_Y.rotationDegrees(yaw));
             poseStack.scale(scale, scale, scale);
             itemRenderer.renderItem(itemStack, ModelTransformationMode.FIXED,
@@ -99,6 +100,11 @@ public class DiceForgeOrbitRenderer {
         }
 
         return orbitFaces;
+    }
+
+    /** Height of the orbit above the block (blocks): level with the core, which follows the fragments. */
+    public static double getOrbitHeight(DiceForgeBlockEntity blockEntity, float partialTick) {
+        return DiceForgeCoreLayer.getCoreHeight(blockEntity, partialTick);
     }
 
     private void spawnTrailParticle(DiceForgeBlockEntity blockEntity, double x, double y, double z, float chance) {
