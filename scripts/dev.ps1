@@ -23,6 +23,7 @@
   .\scripts\dev.ps1 status
   .\scripts\dev.ps1 tail server
   .\scripts\dev.ps1 stop
+  .\scripts\dev.ps1 client -Port 25581   # join another checkout's dev server
 #>
 [CmdletBinding()]
 param(
@@ -32,7 +33,11 @@ param(
 
     [Parameter(Position = 1)]
     [ValidateSet('server', 'client', 'all')]
-    [string]$Kind = 'all'
+    [string]$Kind = 'all',
+
+    # Dev server port (RCON = port + 10). Default: gradle/dev-server.gradle (25580).
+    # Use it to join another checkout's server, e.g. -Port 25581 for a worktree's server.
+    [int]$Port = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,13 +45,14 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
+$PortArgs = if ($Port -gt 0) { @("-PdevServerPort=$Port") } else { @() }
 $StateDir = Join-Path $RepoRoot '.dev-launch'
 New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
 
 # Single source of truth: gradle/dev-server.gradle
 function Get-DevServerInfo {
     $info = @{}
-    & $Gradlew -q devServerInfo --console=plain | ForEach-Object {
+    & $Gradlew -q devServerInfo --console=plain @PortArgs | ForEach-Object {
         if ($_ -match '^(\w+)=(.*)$') { $info[$Matches[1]] = $Matches[2].Trim() }
     }
     if (-not $info.port) { throw "Couldn't read the dev server settings (./gradlew devServerInfo)." }
@@ -79,7 +85,7 @@ function Start-Kind {
     $task = if ($K -eq 'server') { 'runServer' } else { 'runClientJoin' }
     $log = Get-LogFile $K
     Remove-Item $log, "$log.err" -Force -ErrorAction SilentlyContinue
-    Start-Process -FilePath $Gradlew -ArgumentList $task, '--console=plain' -WorkingDirectory $RepoRoot `
+    Start-Process -FilePath $Gradlew -ArgumentList (@($task, '--console=plain') + $PortArgs) -WorkingDirectory $RepoRoot `
         -RedirectStandardOutput $log -RedirectStandardError "$log.err" -WindowStyle Hidden | Out-Null
     Write-Host "Started $K ($task) -> $log"
     return $true
