@@ -1,18 +1,21 @@
 package fr.lordfinn.steveparty.entities.custom;
 
-import net.minecraft.entity.damage.DamageSource;
-import fr.lordfinn.steveparty.items.custom.TokenItem;
-import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.LumaHoverGoal;
+import fr.lordfinn.steveparty.entities.custom.goals.MulaBodyControl;
 import fr.lordfinn.steveparty.entities.custom.goals.MulaSitGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.TokenItem;
+import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.minecraft.entity.*;
+import net.minecraft.entity.ai.control.BodyControl;
 import net.minecraft.entity.ai.pathing.BirdNavigation;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -23,16 +26,20 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceCache;
@@ -41,19 +48,89 @@ import software.bernie.geckolib.animation.AnimationState;
 
 import java.util.*;
 
-import static net.minecraft.particle.ParticleTypes.WAX_OFF;
-
 public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
+
+	// ------------------------------------------------------------------------------------------ animations
+	// Authored in the art sources (it writes mula.animation.json and the .bbmodel animations).
+	public static final String MAIN_CONTROLLER = "main_controller";
+	public static final String BLINK_CONTROLLER = "blink_controller";
+	/**
+	 * Blend between two animations (ticks), eased in and out. The generator writes the timeline instructions this much
+	 * later than they must happen, because GeckoLib 4.7.1 fires them that early (keep both in sync).
+	 */
+	public static final int MAIN_TRANSITION_TICKS = 8;
+	/** Channels an animation doesn't drive go back to rest over this many ticks (GeckoLib's default 1 snapped). */
+	private static final double BONE_RESET_TICKS = 6;
+
 	protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
 	protected static final RawAnimation FLY_ANIM = RawAnimation.begin().thenLoop("fly");
+	protected static final RawAnimation SIT_ANIM = RawAnimation.begin().thenLoop("sit");
 	protected static final RawAnimation EXPLODE_ANIM = RawAnimation.begin().thenPlay("explode");
 	protected static final RawAnimation CELEBRATE_ANIM = RawAnimation.begin().thenPlay("celebrate");
 	protected static final RawAnimation NO_ANIM = RawAnimation.begin().thenPlay("no");
+	protected static final RawAnimation BLINK_ANIM = RawAnimation.begin().thenPlay("blink");
+	protected static final RawAnimation BLINK_DOUBLE_ANIM = RawAnimation.begin().thenPlay("blink_double");
 
-	private boolean stackWasWrong = false;
-	private boolean justAteCorrectItem = false;
+	/** Length of the triggered animations, in ticks (json length + the blend in). */
+	private static final int EXPLODE_TICKS = 84 + MAIN_TRANSITION_TICKS, CELEBRATE_TICKS = 20 + MAIN_TRANSITION_TICKS,
+			NO_TICKS = 19 + MAIN_TRANSITION_TICKS;
+
+	/**
+	 * The little random "character" animations. Chosen and started by the server (see {@link #tickEmotes}) with
+	 * {@code triggerAnim}, so every player sees the same Mula do the same thing at the same time; one small packet every
+	 * 8 to 25 s per Mula (none when no player is near).
+	 */
+	public enum Emote {
+		LOOK_AROUND("look_around", 2.6f, 3, false, false),
+		HEAD_TILT("head_tilt", 1.9f, 3, false, false),
+		HAPPY_HOP("happy_hop", 1.5f, 2, false, false),
+		WIGGLE("wiggle", 1.3f, 2, false, false),
+		TWIRL("twirl", 1.6f, 2, false, true),
+		FLIP("flip", 1.8f, 1, false, false),
+		YAWN("yawn", 2.8f, 3, true, false),
+		SLEEPY_NOD("sleepy_nod", 3.2f, 2, true, false);
+
+		final String animName;
+		final RawAnimation animation;
+		/** Ticks during which nothing else is started: the animation plus its blend in and out. */
+		final int ticks;
+		final int weight;
+		final boolean whileSitting, whileMoving;
+
+		Emote(String animName, float seconds, int weight, boolean whileSitting, boolean whileMoving) {
+			this.animName = animName;
+			this.animation = RawAnimation.begin().thenPlay(animName);
+			this.ticks = Math.round(seconds * 20) + 2 * MAIN_TRANSITION_TICKS;
+			this.weight = weight;
+			this.whileSitting = whileSitting;
+			this.whileMoving = whileMoving;
+		}
+	}
+
+	private static final Emote[] EMOTES = Emote.values();
+	/** A random animation every 8 to 25 s. */
+	private static final int EMOTE_MIN_TICKS = 160, EMOTE_RANDOM_TICKS = 340;
+	/** Only when a player can see it (blocks). */
+	private static final double EMOTE_AUDIENCE_RANGE = 48;
+
+	/** Server: ticks left before the next random animation (-1: not drawn yet, so every Mula starts at its own time). */
+	private int emoteCooldown = -1;
+	/** Server: ticks left of the triggered animation being played (random, fed, refused, burst); 0 when none. */
+	private int specialAnimTicks = 0;
+	/** Server: the random animation being played, to cut it when the Mula is hit or told to sit. */
+	private @Nullable Emote currentEmote = null;
+	private @Nullable Emote lastEmote = null;
+
+	/** Client: the float layer and the fly / hover state (see {@link MulaMotion}). */
+	private final MulaMotion motion;
+	/** Client: ticks before the next blink (each client blinks on its own: purely cosmetic, never synced). */
+	private int blinkCooldown = 40;
+	/** Client: last age at which the renderer spawned its particles (at most once per tick, only when drawn). */
+	public int lastEffectsAge = -1;
+
+	// ------------------------------------------------------------------------------------------ state
 
 	private static final TrackedData<Integer> VARIANT =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -108,33 +185,15 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		));
 	}
 
-	int tick = 0;
 	@Override
 	public void tick() {
 		super.tick();
 		if (this.getWorld().isClient) {
-			tick++;
-			if (tick % 5 == 0)
-			{
-				double offsetX = (this.random.nextDouble() - 0.5) * 0.9;
-				double offsetY = this.random.nextDouble() * 0.8 + 0.2;
-				double offsetZ = (this.random.nextDouble() - 0.5) * 0.9;
-				this.getWorld()
-						.addParticle( ParticleTypes.WAX_OFF,
-								this.getX() + offsetX,
-								this.getY() + offsetY,
-								this.getZ() + offsetZ,
-								0, 0, 0 );
-				tick = 0;
-			}
+			tickClientAnimation();
 			return;
 		}
 		if (eatCooldown > 0) eatCooldown--;
-
-		if (eatCooldown == 0) {
-			stackWasWrong = false;
-			justAteCorrectItem = false;
-		}
+		tickEmotes();
 	}
 
 	@Override
@@ -152,6 +211,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		super(entityType, world);
 		this.setNoGravity(true);
 		this.moveControl = new SimpleFlyingMoveControl(this, 10f);
+		this.motion = new MulaMotion(this.getId());
 	}
 
 	@Override protected void initGoals() {
@@ -160,6 +220,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.goalSelector.add(0, new MulaSitGoal(this));
 		this.goalSelector.add(0, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
 		this.goalSelector.add(1, new LumaHoverGoal(this, 0.2, 1.5, 6.0)); super.initGoals();
+	}
+
+	/** Turns its body smoothly (vanilla snaps it after 10 ticks without moving). */
+	@Override
+	protected BodyControl createBodyControl() {
+		return new MulaBodyControl(this);
 	}
 
 	public static DefaultAttributeContainer.Builder setAttributes() {
@@ -256,16 +322,13 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			return ActionResult.SUCCESS;
 		}
 
-		// Check cooldown
-		if (eatCooldown > 0) {
-			triggerAnim("main_controller", "no");
-			return ActionResult.SUCCESS;
-		}
-
-		// Check if empty or wrong item
+		// Still chewing, or not its food: shakes its head. Played from the server only: the client used to play it
+		// too, then again when the server's order came back, which restarted it halfway (a visible hiccup).
 		Map<Item, Integer> allowedItems = FEED_ITEMS.get(this.getVariant());
-		if (!isMulaFood(stack)) {
-			triggerAnim("main_controller", "no");
+		if (eatCooldown > 0 || !isMulaFood(stack)) {
+			if (!this.getWorld().isClient) {
+				playSpecial("no", NO_TICKS);
+			}
 			return ActionResult.SUCCESS;
 		}
 
@@ -288,17 +351,24 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 			// Explode if max hunger
 			if (getHunger() >= MAX_HUNGER) {
-				triggerAnim("main_controller", "explode");
+				playSpecial("explode", EXPLODE_TICKS);
 				setHunger(0);
 				dropFragmentStars(64);
 			} else {
-				triggerAnim("main_controller", "celebrate");
+				playSpecial("celebrate", CELEBRATE_TICKS);
 			}
 			// Set cooldown for 1 second (20 ticks)
 			eatCooldown = 20;
 		}
 
 		return ActionResult.SUCCESS;
+	}
+
+	/** Server: plays a triggered animation (replacing a random one) and holds the random ones back meanwhile. */
+	private void playSpecial(String animName, int ticks) {
+		triggerAnim(MAIN_CONTROLLER, animName);
+		currentEmote = null;
+		specialAnimTicks = ticks;
 	}
 
 	/** @return true if this Mula eats this item (depends on its colour). */
@@ -312,6 +382,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.jumping = false;
 		this.navigation.stop();
 		this.setTarget(null);
+		stopEmote();
 	}
 
 	/** Like vanilla wolves: consumes one fragment, 1 in {@value #TAMING_CHANCE} chance, hearts or smoke. */
@@ -326,11 +397,14 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 	}
 
-	private <T extends GeoAnimatable> PlayState predicate(AnimationState<T> state) {
-		if (eatCooldown > 0 && stackWasWrong) return state.setAndContinue(NO_ANIM); // triggered wrong feed
-		if (justAteCorrectItem) return state.setAndContinue(CELEBRATE_ANIM);
-		if (this.getVelocity().lengthSquared() > 0.01) return state.setAndContinue(FLY_ANIM);
-		return state.setAndContinue(IDLE_ANIM);
+	/** Tamed: a puff of star dust with the hearts. */
+	@Override
+	public void handleStatus(byte status) {
+		super.handleStatus(status);
+		if (status == EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES) {
+			sparkleRing(14, 0.09);
+			chime(1.6f);
+		}
 	}
 
 	private void dropFragmentStars(int count) {
@@ -339,6 +413,163 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		for (int i = 0; i < count; i++) {
 			this.dropItem((ServerWorld) this.getWorld(), fragmentItem);
 		}
+	}
+
+	// ------------------------------------------------------------------------------------------ random animations
+
+	/** Server, every tick: a random character animation from time to time, when nothing else is going on. */
+	private void tickEmotes() {
+		if (specialAnimTicks > 0 && --specialAnimTicks == 0) {
+			currentEmote = null;
+		}
+		if (emoteCooldown < 0) {
+			emoteCooldown = EMOTE_MIN_TICKS + this.random.nextInt(EMOTE_RANDOM_TICKS);
+			return;
+		}
+		if (--emoteCooldown > 0) return;
+		emoteCooldown = EMOTE_MIN_TICKS + this.random.nextInt(EMOTE_RANDOM_TICKS);
+		if (!canEmote()) return;
+		boolean sitting = this.isInSittingPose();
+		boolean moving = this.getVelocity().lengthSquared() > 0.05 * 0.05;
+		if (moving && this.random.nextBoolean()) return; // rarer while flying around
+		Emote emote = pickEmote(sitting, moving);
+		if (emote == null) return;
+		triggerAnim(MAIN_CONTROLLER, emote.animName);
+		currentEmote = lastEmote = emote;
+		specialAnimTicks = emote.ticks;
+	}
+
+	/** Never over another triggered animation, while hurt, eating, carried, leashed or used as a board token. */
+	private boolean canEmote() {
+		return this.isAlive() && specialAnimTicks == 0 && eatCooldown == 0 && this.hurtTime == 0
+				&& !this.hasVehicle() && !this.hasPassengers() && !this.isLeashed()
+				&& !((Object) this instanceof TokenizedEntityInterface token && token.steveparty$isTokenized())
+				&& this.getWorld().getClosestPlayer(this, EMOTE_AUDIENCE_RANGE) != null;
+	}
+
+	private @Nullable Emote pickEmote(boolean sitting, boolean moving) {
+		int total = 0;
+		for (Emote e : EMOTES) {
+			if (fits(e, sitting, moving)) total += e.weight;
+		}
+		if (total == 0) return null;
+		for (int attempt = 0; attempt < 2; attempt++) {
+			int roll = this.random.nextInt(total);
+			for (Emote e : EMOTES) {
+				if (!fits(e, sitting, moving)) continue;
+				roll -= e.weight;
+				if (roll < 0) {
+					if (e != lastEmote || attempt == 1) return e; // avoid the same one twice in a row
+					break;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static boolean fits(Emote e, boolean sitting, boolean moving) {
+		if (sitting) return e.whileSitting;
+		if (e.whileSitting) return false;
+		return !moving || e.whileMoving;
+	}
+
+	/** Server: cuts the random animation (the controller then blends back to idle / fly / sit). */
+	private void stopEmote() {
+		if (currentEmote != null && !this.getWorld().isClient) {
+			stopTriggeredAnim(MAIN_CONTROLLER, currentEmote.animName);
+			currentEmote = null;
+			specialAnimTicks = 0;
+		}
+	}
+
+	// ------------------------------------------------------------------------------------------ client animation
+
+	/** Client, every tick: float layer, fly / hover state, blinks. Plain arithmetic, no allocation. */
+	private void tickClientAnimation() {
+		motion.tick(this.isInSittingPose(), this.getX() - this.prevX, this.getY() - this.prevY, this.getZ() - this.prevZ,
+				this.bodyYaw, MathHelper.wrapDegrees(this.bodyYaw - this.prevBodyYaw), this.getScaleFactor());
+
+		if (--blinkCooldown <= 0) {
+			blinkCooldown = 50 + this.random.nextInt(110); // every 2.5 to 8 s
+			if (canBlink()) {
+				triggerAnim(BLINK_CONTROLLER, this.random.nextInt(5) == 0 ? "blink_double" : "blink");
+			}
+		}
+	}
+
+	/** Not when its eyes are already busy: sitting (half-closed, own slow blink) or in a triggered animation. */
+	private boolean canBlink() {
+		if (!this.isAlive() || this.isInSittingPose()) return false;
+		AnimatableManager<?> manager = getAnimatableInstanceCache().getManagerForId(this.getId());
+		AnimationController<?> main = manager == null ? null : manager.getAnimationControllers().get(MAIN_CONTROLLER);
+		return main == null || !main.isPlayingTriggeredAnimation();
+	}
+
+	public MulaMotion getMotion() {
+		return motion;
+	}
+
+	// ------------------------------------------------------------------------------------------ effects (client)
+
+	/** Timeline instructions of the animations ("sparkle_small", "sparkle_ring", "burst", "chime"). */
+	private void onAnimationInstruction(String instructions) {
+		for (String raw : instructions.split(";")) {
+			switch (raw.trim()) {
+				case "sparkle_small" -> sparkleSmall();
+				case "sparkle_ring" -> sparkleRing(10, 0.07);
+				case "burst" -> burst();
+				case "chime" -> chime(1.35f + this.random.nextFloat() * 0.4f);
+				default -> { }
+			}
+		}
+	}
+
+	/** Star dust in the Mula's own colour, lightened so even the black one sparkles. */
+	public ParticleEffect starDust() {
+		return getVariant().getStarDust();
+	}
+
+	private double centerY() {
+		return this.getY() + this.getHeight() * 0.55;
+	}
+
+	private void sparkleSmall() {
+		World world = this.getWorld();
+		for (int i = 0; i < 5; i++) {
+			world.addParticle(ParticleTypes.WAX_OFF, this.getX() + (random.nextDouble() - 0.5) * 0.8,
+					centerY() + random.nextDouble() * 0.5, this.getZ() + (random.nextDouble() - 0.5) * 0.8, 0, 0, 0);
+		}
+		world.addParticle(starDust(), this.getX(), centerY() + 0.3, this.getZ(), 0, 0.02, 0);
+	}
+
+	private void sparkleRing(int count, double speed) {
+		World world = this.getWorld();
+		double y = centerY();
+		for (int i = 0; i < count; i++) {
+			double a = MathHelper.TAU * i / count + random.nextDouble() * 0.3;
+			double cos = Math.cos(a), sin = Math.sin(a);
+			world.addParticle(ParticleTypes.END_ROD, this.getX() + cos * 0.3, y, this.getZ() + sin * 0.3,
+					cos * speed, 0.015, sin * speed);
+			if (i % 2 == 0) {
+				world.addParticle(starDust(), this.getX() + cos * 0.5, y + 0.1, this.getZ() + sin * 0.5, 0, 0, 0);
+			}
+		}
+	}
+
+	private void burst() {
+		World world = this.getWorld();
+		double y = centerY();
+		world.addParticle(ParticleTypes.FLASH, this.getX(), y, this.getZ(), 0, 0, 0);
+		for (int i = 0; i < 24; i++) {
+			double vx = random.nextGaussian() * 0.12, vy = random.nextGaussian() * 0.12 + 0.05, vz = random.nextGaussian() * 0.12;
+			world.addParticle(i % 2 == 0 ? ParticleTypes.END_ROD : ParticleTypes.WAX_OFF, this.getX(), y, this.getZ(), vx, vy, vz);
+			world.addParticle(starDust(), this.getX() + vx * 6, y + vy * 6, this.getZ() + vz * 6, 0, 0, 0);
+		}
+	}
+
+	private void chime(float pitch) {
+		this.getWorld().playSound(this.getX(), centerY(), this.getZ(), SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME,
+				SoundCategory.NEUTRAL, 0.35f, pitch, false);
 	}
 
 	// -------------------
@@ -357,41 +588,38 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	// -------------------
 	@Override
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-		controllers.add(
-				new AnimationController<>(this, "main_controller", this::animationPredicate)
-						.triggerableAnim("explode", EXPLODE_ANIM)
-						.triggerableAnim("celebrate", CELEBRATE_ANIM)
-						.triggerableAnim("no", NO_ANIM)
-						.transitionLength(10)
-		);
-
-		/*controllers.add(new AnimationController<>(this, "explode_controller", state -> PlayState.STOP)
-				.triggerableAnim("explode", EXPLODE_ANIM));
-
-		controllers.add(new AnimationController<>(this, "idle_controller", state -> {
-			if (this.getVelocity().lengthSquared() < 0.01) return state.setAndContinue(IDLE_ANIM);
-			return PlayState.STOP;
-		}));
-
-		controllers.add(new AnimationController<>(this, "fly_controller", state -> {
-			if (this.getVelocity().lengthSquared() > 0.01) return state.setAndContinue(FLY_ANIM);
-			return PlayState.STOP;
-		}));
-
-		controllers.add(new AnimationController<>(this, "interaction_controller", state -> PlayState.STOP)
+		AnimationController<MulaEntity> main = new AnimationController<>(this, MAIN_CONTROLLER, MAIN_TRANSITION_TICKS,
+				this::animationPredicate)
+				.triggerableAnim("explode", EXPLODE_ANIM)
 				.triggerableAnim("celebrate", CELEBRATE_ANIM)
-				.triggerableAnim("no", NO_ANIM));*/
+				.triggerableAnim("no", NO_ANIM)
+				.setCustomInstructionKeyframeHandler(event -> onAnimationInstruction(event.getKeyframeData().getInstructions()));
+		for (Emote emote : EMOTES) {
+			main.triggerableAnim(emote.animName, emote.animation);
+		}
+		// Blends ease in and out (GeckoLib blends linearly: a visible jolt at both ends). Only while blending: the
+		// keyframes themselves are already smooth curves.
+		main.setOverrideEasingTypeFunction(mula -> main.getAnimationState() == AnimationController.State.TRANSITIONING
+				? EasingType.EASE_IN_OUT_SINE : null);
+		controllers.add(main);
+
+		// Eyes only, on top of everything: blinks started on each client (see tickClientAnimation)
+		controllers.add(new AnimationController<>(this, BLINK_CONTROLLER, 1, state -> PlayState.STOP)
+				.triggerableAnim("blink", BLINK_ANIM)
+				.triggerableAnim("blink_double", BLINK_DOUBLE_ANIM));
 	}
 
 	private PlayState animationPredicate(AnimationState<MulaEntity> state) {
-		// No dedicated sit animation yet (see docs/art-requests.md): a sitting Mula idles, even while settling down
 		if (this.isInSittingPose()) {
-			return state.setAndContinue(IDLE_ANIM);
+			return state.setAndContinue(SIT_ANIM);
 		}
-		if (this.getVelocity().lengthSquared() > 0.01) {
-			return state.setAndContinue(FLY_ANIM);
-		}
-		return state.setAndContinue(IDLE_ANIM);
+		// Smoothed speed with hysteresis (MulaMotion): no flicker between fly and idle around a threshold
+		return state.setAndContinue(motion.isFlying() ? FLY_ANIM : IDLE_ANIM);
+	}
+
+	@Override
+	public double getBoneResetTime() {
+		return BONE_RESET_TICKS;
 	}
 
 	@Override
@@ -419,16 +647,27 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		private final int id;
 		private final int color;
 		private final Item fragmentItem;
+		private final DustParticleEffect starDust;
 
 		MulaVariant(int id, int color, Item fragmentItem) {
 			this.id = id;
 			this.color = color;
 			this.fragmentItem = fragmentItem;
+			this.starDust = new DustParticleEffect(lighten(color, id == 5 ? 0.3f : 0.45f), 0.7f);
+		}
+
+		private static int lighten(int rgb, float towardWhite) {
+			int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+			r += (int) ((255 - r) * towardWhite);
+			g += (int) ((255 - g) * towardWhite);
+			b += (int) ((255 - b) * towardWhite);
+			return (r << 16) | (g << 8) | b;
 		}
 
 		public int getId() { return id; }
 		public int getColor() { return color; }
 		public Item getFragmentItem() { return fragmentItem; }
+		public DustParticleEffect getStarDust() { return starDust; }
 
 		public static MulaVariant byId(int id) {
 			for (MulaVariant v : values()) if (v.id == id) return v;
@@ -441,12 +680,15 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 	}
 
-	/** Like wolves, a sitting Mula stands up when it gets hurt. */
+	/** Like wolves, a sitting Mula stands up when it gets hurt; a random animation stops at once. */
 	@Override
 	public boolean damage(ServerWorld world, DamageSource source, float amount) {
 		boolean damaged = super.damage(world, source, amount);
-		if (damaged && this.isSitting()) {
-			this.setSitting(false);
+		if (damaged) {
+			stopEmote();
+			if (this.isSitting()) {
+				this.setSitting(false);
+			}
 		}
 		return damaged;
 	}
