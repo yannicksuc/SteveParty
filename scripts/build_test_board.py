@@ -1,4 +1,10 @@
-"""Builds a small test board on the dev server (RCON 25593) next to LordFinn."""
+"""
+Builds a small test board on a dev server through RCON (port = dev server port + 10, 25593 for port 25583):
+a loop of 26 tiles, 2 start tiles with their tokens (owned by LordFinn), a party controller with a program,
+party bells with lamps, a piggy bank and a podium.
+
+Usage: python scripts/build_test_board.py <x> <y> <z> [rcon port]
+"""
 import socket
 import struct
 import sys
@@ -13,7 +19,7 @@ def pkt(i, t, body):
     return struct.pack('<i', len(data)) + data
 
 
-sock = socket.create_connection(('127.0.0.1', 25593), timeout=10)
+sock = socket.create_connection(('127.0.0.1', int(sys.argv[4]) if len(sys.argv) > 4 else 25593), timeout=10)
 sock.sendall(pkt(1, 3, 'steveparty-dev'))
 sock.recv(4096)
 counter = [10]
@@ -63,6 +69,22 @@ for (x, z), name in zip(starts, names):
     cmd(f"setblock {pos(x, z)} steveparty:tile[tile_type=tile_start]{{Items:[{cartridge('steveparty:tile_behavior_start', loop[0])}]}}")
     cmd(f'summon minecraft:pig {x}.5 {Y}.2 {z}.5 {{Tokenized:1b,TokenOwner:{OWNER},TokenStatus:0,'
         f'CustomName:\'"{name}"\',CustomNameVisible:1b,NoAI:1b,Invulnerable:1b,PersistenceRequired:1b}}')
+
+# Bind the tokens to their start tiles (a token standing still is not detected by the tile)
+import re
+import uuid as uuidlib
+
+
+def to_uuid(ints):
+    return str(uuidlib.UUID(bytes=b''.join(struct.pack('>i', i) for i in ints)))
+
+
+owner_uuid = to_uuid([int(n) for n in re.findall(r'-?\d+', OWNER)])
+for (x, z), name in zip(starts, names):
+    out = cmd(f"data get entity @e[type=pig,name={name},limit=1] UUID")
+    token_uuid = to_uuid([int(n) for n in re.findall(r'-?\d+', out.split(':', 1)[1])][-4:])
+    cmd(f'data modify block {pos(x, z)} Items[0].components merge value '
+        f'{{"steveparty:bound-entity":"{token_uuid}","steveparty:owner":"{owner_uuid}"}}')
 
 # ------------------------------------------------------------------ controller (program: turns + event + repeat x3, coin/star)
 cx, cz = X0 + 4, Z0 + 2
