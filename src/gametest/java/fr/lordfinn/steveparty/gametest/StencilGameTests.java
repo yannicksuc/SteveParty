@@ -349,6 +349,38 @@ public class StencilGameTests implements FabricGameTest {
         context.complete();
     }
 
+    private static double shift(TestContext context, BlockPos pos) {
+        BlockState state = context.getBlockState(pos);
+        return ((AbstractStencilSignBlock) state.getBlock()).boardShift(context.getWorld(), context.getAbsolutePos(pos), state);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void boardsRestAgainstTheirPost(TestContext context) {
+        // Board back at model z 5, fence post front at 6, wall pillar front at 4
+        context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
+        context.setBlockState(SIGN, ModBlocks.WOODEN_PANEL);
+        context.assertTrue(Math.abs(shift(context, SIGN) - 1) < 1e-6, "panel against a fence post: " + shift(context, SIGN));
+        context.setBlockState(SIGN.down(), Blocks.COBBLESTONE_WALL);
+        context.assertTrue(Math.abs(shift(context, SIGN) + 1) < 1e-6, "panel against a wall pillar: " + shift(context, SIGN));
+        // Turned by 45 degrees, the corner of the post comes further
+        context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
+        context.setBlockState(SIGN, ModBlocks.WOODEN_PANEL.getDefaultState().with(AbstractStencilSignBlock.ROTATION, 2));
+        context.assertTrue(Math.abs(shift(context, SIGN) - (3 - 2 * Math.sqrt(2))) < 1e-6, "turned panel against the corner of the post");
+        // Plate back at z 4
+        context.setBlockState(SIGN, ModBlocks.PLASTIC_ROAD_SIGN);
+        context.assertTrue(Math.abs(shift(context, SIGN) - 2) < 1e-6, "plate against a fence post: " + shift(context, SIGN));
+        // Hung on a fence
+        context.setBlockState(SIGN.down(), Blocks.AIR);
+        context.setBlockState(SIGN.north(), Blocks.OAK_FENCE);
+        context.setBlockState(SIGN, ModBlocks.WOODEN_CUTOUT_PANEL.getDefaultState().with(AbstractStencilSignBlock.HUNG, true));
+        context.assertTrue(Math.abs(shift(context, SIGN) - 1) < 1e-6, "hung cut-out panel against the fence post: " + shift(context, SIGN));
+        // Signs without a board on a post do not move
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN, ModBlocks.ROCK_SIGN);
+        context.assertTrue(shift(context, SIGN) == 0, "rock sign does not move");
+        context.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void brushFadesASignThenScrubsIt(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);

@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/fence_side",
   "textures": {
-    "texture": "steveparty:block/plastic_block/pink_plastic_block"
+    "texture": "steveparty:block/plastic_fence/pink_plastic_fence"
   }
 }

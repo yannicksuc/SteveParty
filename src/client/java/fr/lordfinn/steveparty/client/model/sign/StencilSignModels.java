@@ -88,7 +88,7 @@ public final class StencilSignModels {
         @Override
         protected void emit(Output out, BlockState state, Look look, long seed, Supplier<Random> random) {
             out.post(look.post(), random);
-            out.model(base, state, random, wood(look.material()), 0);
+            look.board(out).model(base, state, random, wood(look.material()), 0);
         }
     }
 
@@ -107,8 +107,9 @@ public final class StencilSignModels {
         }
 
         @Override
-        protected void emit(Output out, BlockState state, Look look, long seed, Supplier<Random> random) {
-            out.post(look.post(), random);
+        protected void emit(Output post, BlockState state, Look look, long seed, Supplier<Random> random) {
+            post.post(look.post(), random);
+            Output out = look.board(post);
             Sprite planks = look.material() == null ? oakPlanks : MaterialSprites.wood(SignMaterial.WOOD.resolve(look.material())).planks();
             byte[] shape = look.shape();
             if (StencilShape.isBlank(shape)) shape = StencilShape.full();
@@ -275,9 +276,10 @@ public final class StencilSignModels {
             out.post(look.post(), random);
             PlasticRoadSignBlock.Plate plate = state.contains(PlasticRoadSignBlock.PLATE) ? state.get(PlasticRoadSignBlock.PLATE) : PlasticRoadSignBlock.Plate.ROUND;
             Sprite sprite = plastic[(look.plateColor() == null ? DyeColor.WHITE : look.plateColor()).getId()];
+            Output board = look.board(out);
             Output plateOut = plate.turned()
-                    ? out.with(new Matrix4f().translate(0.5F, 0.5F, 0).rotateZ((float) Math.toRadians(45)).translate(-0.5F, -0.5F, 0))
-                    : out;
+                    ? board.with(new Matrix4f().translate(0.5F, 0.5F, 0).rotateZ((float) Math.toRadians(45)).translate(-0.5F, -0.5F, 0))
+                    : board;
             plate(plateOut, plate.mask(), sprite);
         }
 

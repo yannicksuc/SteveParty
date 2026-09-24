@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/fence_post",
   "textures": {
-    "texture": "steveparty:block/plastic_block/blue_plastic_block"
+    "texture": "steveparty:block/plastic_fence/blue_plastic_fence"
   }
 }
