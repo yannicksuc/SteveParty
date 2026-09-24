@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
+import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.FenceBlock;
 import net.minecraft.client.render.model.BakedModel;
@@ -62,7 +63,7 @@ public class ConnectedPlasticFenceModel implements BakedModel {
         QuadEmitter emitter = context.getEmitter();
         Map<BlockPos, int[]> phases = new HashMap<>();
         int[] masks = new int[6];
-        boolean fence = world.getBlockState(pos).isOf(state.getBlock());
+        boolean fence = fenceAt(world, pos).isOf(state.getBlock());
         for (Direction face : Direction.values()) masks[face.ordinal()] = fence ? mask(world, pos, face, phases) : 0;
         for (Direction cull : CULL_FACES) {
             if (cull != null && context.isFaceCulled(cull)) continue;
@@ -98,8 +99,8 @@ public class ConnectedPlasticFenceModel implements BakedModel {
 
     /** @return whether the fence at {@code pos} and its neighbour on {@code dir} are one piece. */
     private static boolean connected(BlockRenderView world, BlockPos pos, Direction dir, Map<BlockPos, int[]> phases) {
-        BlockState here = world.getBlockState(pos);
-        BlockState there = world.getBlockState(pos.offset(dir));
+        BlockState here = fenceAt(world, pos);
+        BlockState there = fenceAt(world, pos.offset(dir));
         if (!joined(here, there, dir)) return false;
         int axis = dir.getAxis().ordinal();
         int[] phase = phases.computeIfAbsent(pos, p -> phases(world, p));
@@ -111,6 +112,20 @@ public class ConnectedPlasticFenceModel implements BakedModel {
             if (a != axis && otherPhase[a] != phase[a]) return false;
         }
         return true;
+    }
+
+    /**
+     * @return the fence at {@code pos}; for a sign standing on a fence, the post of that fence it draws through its
+     * block (a lone post), so that the post goes on from the fence below without a seam
+     */
+    private static BlockState fenceAt(BlockRenderView world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+        if (state.getBlock() instanceof AbstractStencilSignBlock sign && sign.hangsOnPosts()
+                && state.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST) {
+            BlockState below = world.getBlockState(pos.down());
+            if (below.getBlock() instanceof FenceBlock) return below.getBlock().getDefaultState();
+        }
+        return state;
     }
 
     /** Same fence, stacked, or linked by its bars. */
@@ -137,9 +152,9 @@ public class ConnectedPlasticFenceModel implements BakedModel {
             Direction back = Direction.from(axis, Direction.AxisDirection.NEGATIVE);
             int run = 0;
             BlockPos.Mutable cursor = pos.mutableCopy();
-            BlockState current = world.getBlockState(cursor);
+            BlockState current = fenceAt(world, cursor);
             while (run < MAX_SCAN) {
-                BlockState previous = world.getBlockState(cursor.move(back));
+                BlockState previous = fenceAt(world, cursor.move(back));
                 if (!joined(current, previous, back)) break;
                 current = previous;
                 run++;

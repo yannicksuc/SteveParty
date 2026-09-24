@@ -76,15 +76,9 @@ public class StencilItem extends Item {
         super.appendTooltip(stack, context, tooltip, type);
         byte[] shape = getShape(stack);
         StencilPatterns.Pattern pattern = StencilPatterns.byShape(shape);
+        // The name of the pattern only: the stencil's icon already shows its shape
         if (pattern != null) tooltip.add(pattern.name().copy().formatted(Formatting.GOLD));
-
-        for (int i = 0; i < 16; i++) {
-            StringBuilder line = new StringBuilder();
-            for (int j = 0; j < 16; j++) {
-                line.append((shape[j * 16 + i] == 1) ? "⬛" : "⬜");
-            }
-            tooltip.add(Text.literal(line.toString()));
-        }
+        else if (!StencilShape.isBlank(shape)) tooltip.add(Text.translatable("tooltip.steveparty.stencil.custom").formatted(Formatting.GOLD));
         tooltip.add(Text.translatable("tooltip.steveparty.stencil.usage").formatted(Formatting.GRAY));
     }
 }

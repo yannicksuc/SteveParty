@@ -92,9 +92,14 @@ public abstract class SignModel implements BakedModel {
         boolean standing = !state.contains(AbstractStencilSignBlock.MOUNT)
                 || state.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST;
         BlockState post = standing && SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
+        if (post != null && state.getBlock() instanceof AbstractStencilSignBlock sign && sign.hangsOnPosts()) {
+            // Drawn by the fence's own model, as a post of that fence in this block: it joins the fence below
+            // (connected plastic fences) and is lit like it
+            MinecraftClient.getInstance().getBlockRenderManager().getModel(post).emitBlockQuads(world, post, pos, randomSupplier, context);
+        }
         Look look = world.getBlockEntityRenderData(pos) instanceof StencilCanvasBlockEntity.RenderData data
-                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), post, 0)
-                : new Look(null, null, null, DyeColor.WHITE, false, 0, post, 0);
+                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), null, 0)
+                : new Look(null, null, null, DyeColor.WHITE, false, 0, null, 0);
         // Turned, moved against its post or its wall, or laid on its floor / ceiling (the board shift included)
         Matrix4f transform = state.getBlock() instanceof AbstractStencilSignBlock sign
                 ? sign.modelTransform(world, pos, state) : new Matrix4f();
