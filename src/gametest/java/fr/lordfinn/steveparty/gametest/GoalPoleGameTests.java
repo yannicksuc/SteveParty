@@ -6,6 +6,12 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.FlagItem;
+import fr.lordfinn.steveparty.recipes.FlagDyeRecipe;
+import net.minecraft.item.Items;
+import net.minecraft.recipe.book.CraftingRecipeCategory;
+import net.minecraft.recipe.input.CraftingRecipeInput;
+import net.minecraft.util.DyeColor;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -160,6 +166,147 @@ public class GoalPoleGameTests implements FabricGameTest {
         world.getBlockState(abs).onUse(world, player, top);
         context.assertTrue(world.getBlockState(abs).get(GoalPoleBlock.FACING) == Direction.WEST,
                 "turned to face the player, got " + world.getBlockState(abs).get(GoalPoleBlock.FACING));
+        context.complete();
+    }
+
+    // ------------------------------------------------------------------ flag colour
+
+    private static final BlockPos FLAG_POLE = new BlockPos(2, 2, 2);
+
+    private static BlockHitResult sideHit(TestContext context) {
+        BlockPos abs = context.getAbsolutePos(FLAG_POLE);
+        return new BlockHitResult(Vec3d.ofCenter(abs).add(0, 0, -0.1), Direction.NORTH, abs, false);
+    }
+
+    private static net.minecraft.util.ActionResult use(TestContext context, PlayerEntity player) {
+        BlockPos abs = context.getAbsolutePos(FLAG_POLE);
+        return context.getWorld().getBlockState(abs).onUse(context.getWorld(), player, sideHit(context));
+    }
+
+    private static List<ItemEntity> flagsAround(TestContext context) {
+        BlockPos abs = context.getAbsolutePos(FLAG_POLE);
+        return context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(abs).expand(2), e -> e.getStack().isOf(ModItems.FLAG));
+    }
+
+    /** A dye on the flag colours it and is used up; the same dye again changes nothing and is not used. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void dyeColoursTheFlagOnce(TestContext context) {
+        context.setBlockState(FLAG_POLE, pole(false, true).with(GoalPoleBlock.FLAG, true));
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.BLUE_DYE, 2));
+        context.assertTrue(use(context, player).isAccepted(), "blue dye accepted");
+        GoalPoleBlockEntity pole = poleEntity(context, FLAG_POLE);
+        context.assertTrue(pole.getFlagColor() == FlagItem.dyeColor(DyeColor.BLUE), "flag is blue");
+        context.assertTrue(player.getMainHandStack().getCount() == 1, "one dye used");
+
+        context.assertTrue(!use(context, player).isAccepted(), "same colour: nothing happens");
+        context.assertTrue(player.getMainHandStack().getCount() == 1, "no dye used for the same colour");
+
+        // Without a flag, a dye does nothing either
+        context.setBlockState(FLAG_POLE, pole(false, true));
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.RED_DYE));
+        context.assertTrue(!use(context, player).isAccepted(), "no flag: dye refused");
+        context.assertTrue(player.getMainHandStack().getCount() == 1, "no dye used without a flag");
+
+        // Creative players keep their dye
+        context.setBlockState(FLAG_POLE, pole(false, true).with(GoalPoleBlock.FLAG, true));
+        PlayerEntity creative = context.createMockPlayer(GameMode.CREATIVE);
+        creative.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.LIME_DYE));
+        use(context, creative);
+        context.assertTrue(creative.getMainHandStack().getCount() == 1, "creative keeps the dye");
+        context.complete();
+    }
+
+    /** Shears drop the flag with its colour, and the pole forgets it. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void shearedFlagKeepsItsColour(TestContext context) {
+        context.setBlockState(FLAG_POLE, pole(false, true).with(GoalPoleBlock.FLAG, true));
+        poleEntity(context, FLAG_POLE).setFlagColor(FlagItem.dyeColor(DyeColor.YELLOW));
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SHEARS));
+        use(context, player);
+        context.assertTrue(!context.getBlockState(FLAG_POLE).get(GoalPoleBlock.FLAG), "flag removed");
+        context.assertTrue(poleEntity(context, FLAG_POLE).getFlagColor() == FlagItem.NO_COLOR, "pole forgot the colour");
+        context.waitAndRun(1, () -> {
+            List<ItemEntity> flags = flagsAround(context);
+            context.assertTrue(flags.size() == 1, "one flag dropped, got " + flags.size());
+            context.assertTrue(FlagItem.getColor(flags.getFirst().getStack()) == FlagItem.dyeColor(DyeColor.YELLOW), "dropped flag is yellow");
+            context.complete();
+        });
+    }
+
+    /** Breaking the pole drops the flag with its colour. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void brokenPoleDropsTheColouredFlag(TestContext context) {
+        context.setBlockState(FLAG_POLE, pole(false, true).with(GoalPoleBlock.FLAG, true));
+        poleEntity(context, FLAG_POLE).setFlagColor(FlagItem.dyeColor(DyeColor.PURPLE));
+        context.getWorld().breakBlock(context.getAbsolutePos(FLAG_POLE), true);
+        context.waitAndRun(2, () -> {
+            List<ItemEntity> flags = flagsAround(context);
+            context.assertTrue(flags.size() == 1, "one flag dropped, got " + flags.size());
+            context.assertTrue(FlagItem.getColor(flags.getFirst().getStack()) == FlagItem.dyeColor(DyeColor.PURPLE), "dropped flag is purple");
+            context.complete();
+        });
+    }
+
+    /** Putting a coloured flag back on a pole gives the pole its colour; an undyed flag clears it. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void placedFlagBringsItsColour(TestContext context) {
+        context.setBlockState(FLAG_POLE, pole(false, true));
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        player.setStackInHand(Hand.MAIN_HAND, FlagItem.withColor(new ItemStack(ModItems.FLAG), 0x4A7BC0));
+        use(context, player);
+        context.assertTrue(context.getBlockState(FLAG_POLE).get(GoalPoleBlock.FLAG), "flag placed");
+        context.assertTrue(poleEntity(context, FLAG_POLE).getFlagColor() == 0x4A7BC0, "colour restored");
+        context.assertTrue(player.getMainHandStack().isEmpty(), "flag used");
+
+        // Turning the flag keeps the colour
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.FLAG));
+        player.setYaw(90f);
+        context.getWorld().getBlockState(context.getAbsolutePos(FLAG_POLE)).onUse(context.getWorld(), player,
+                new BlockHitResult(Vec3d.ofCenter(context.getAbsolutePos(FLAG_POLE)), Direction.EAST, context.getAbsolutePos(FLAG_POLE), false));
+        context.assertTrue(poleEntity(context, FLAG_POLE).getFlagColor() == 0x4A7BC0, "colour kept when turning");
+
+        // An undyed flag on a bare pole: the original red
+        context.setBlockState(FLAG_POLE.east(2), pole(false, true));
+        poleEntity(context, FLAG_POLE.east(2)).setFlagColor(0x123456);
+        BlockPos other = context.getAbsolutePos(FLAG_POLE.east(2));
+        context.getWorld().getBlockState(other).onUse(context.getWorld(), player,
+                new BlockHitResult(Vec3d.ofCenter(other), Direction.NORTH, other, false));
+        context.assertTrue(poleEntity(context, FLAG_POLE.east(2)).getFlagColor() == FlagItem.NO_COLOR, "undyed flag: no colour");
+        context.complete();
+    }
+
+    /** The colour is saved with the pole. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void flagColourIsSaved(TestContext context) {
+        context.setBlockState(FLAG_POLE, pole(false, true).with(GoalPoleBlock.FLAG, true));
+        GoalPoleBlockEntity pole = poleEntity(context, FLAG_POLE);
+        pole.setFlagColor(FlagItem.dyeColor(DyeColor.CYAN));
+        var registries = context.getWorld().getRegistryManager();
+        GoalPoleBlockEntity copy = new GoalPoleBlockEntity(pole.getPos(), pole.getCachedState());
+        copy.read(pole.createNbt(registries), registries);
+        context.assertTrue(copy.getFlagColor() == FlagItem.dyeColor(DyeColor.CYAN), "colour read back");
+        context.assertTrue(pole.toInitialChunkDataNbt(registries).getInt("FlagColor") == FlagItem.dyeColor(DyeColor.CYAN), "colour sent to clients");
+        context.complete();
+    }
+
+    /** Flag + dyes in the crafting grid: one dye gives exactly the colour the pole gives, several are mixed. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void craftingDyesTheFlag(TestContext context) {
+        FlagDyeRecipe recipe = new FlagDyeRecipe(CraftingRecipeCategory.MISC);
+        var registries = context.getWorld().getRegistryManager();
+        CraftingRecipeInput one = CraftingRecipeInput.create(2, 1, List.of(new ItemStack(ModItems.FLAG), new ItemStack(Items.GREEN_DYE)));
+        context.assertTrue(recipe.matches(one, context.getWorld()), "flag + dye matches");
+        ItemStack green = recipe.craft(one, registries);
+        context.assertTrue(FlagItem.getColor(green) == FlagItem.dyeColor(DyeColor.GREEN), "green flag");
+        CraftingRecipeInput mixed = CraftingRecipeInput.create(3, 1, List.of(new ItemStack(ModItems.FLAG), new ItemStack(Items.RED_DYE), new ItemStack(Items.YELLOW_DYE)));
+        int mix = FlagItem.getColor(recipe.craft(mixed, registries));
+        context.assertTrue(mix != FlagItem.NO_COLOR && FlagItem.matchingDye(mix) == null, "red + yellow is a mix, got " + Integer.toHexString(mix));
+        CraftingRecipeInput noDye = CraftingRecipeInput.create(1, 1, List.of(new ItemStack(ModItems.FLAG)));
+        context.assertTrue(!recipe.matches(noDye, context.getWorld()), "a flag alone does not match");
+        CraftingRecipeInput twoFlags = CraftingRecipeInput.create(3, 1, List.of(new ItemStack(ModItems.FLAG), new ItemStack(ModItems.FLAG), new ItemStack(Items.RED_DYE)));
+        context.assertTrue(!recipe.matches(twoFlags, context.getWorld()), "two flags do not match");
         context.complete();
     }
 

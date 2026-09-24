@@ -752,5 +752,6 @@
   "block.steveparty.black_plastic_slab": "Black Plastic Slab",
   "block.steveparty.black_plastic_stairs": "Black Plastic Stairs",
   "block.steveparty.black_plastic_wall": "Black Plastic Wall",
-  "item.steveparty.plastic_stick": "Plastic Stick"
+  "item.steveparty.plastic_stick": "Plastic Stick",
+  "tooltip.steveparty.flag.color": "Colour: %s"
 }

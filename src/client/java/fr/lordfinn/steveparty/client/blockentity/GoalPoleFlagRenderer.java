@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.client.flag.FlagWind;
+import fr.lordfinn.steveparty.items.custom.FlagItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -33,9 +34,13 @@ import org.joml.Vector3f;
  * <p>
  * Cost: nothing is allocated per frame (scratch arrays and vectors are reused, render thread only); nearby flags use
  * 12 columns, farther ones 6 then 3, and past {@link #RENDER_DISTANCE} blocks the flag is not drawn.
+ * <p>
+ * A dyed flag uses a greyscale copy of the texture multiplied by its colour; an undyed one the original red texture.
  */
 public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEntity> {
     public static final Identifier TEXTURE = Steveparty.id("textures/block/goal_pole_flag.png");
+    /** Greyscale version of the flag, multiplied by the colour of a dyed flag. */
+    public static final Identifier DYEABLE_TEXTURE = Steveparty.id("textures/block/goal_pole_flag_dyeable.png");
     private static final int RENDER_DISTANCE = 128;
     private static final int COLUMNS_NEAR = 12, COLUMNS_MID = 6, COLUMNS_FAR = 3;
     private static final double NEAR_SQ = 24 * 24, MID_SQ = 56 * 56;
@@ -94,19 +99,23 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
             matrices.translate(-POLE_CENTER / 16f, 0f, -POLE_CENTER / 16f);
         }
         MatrixStack.Entry entry = matrices.peek();
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(TEXTURE));
+        // Dyed: the greyscale flag multiplied by its colour. Undyed: the original red texture, untouched
+        int flagColor = entity.getFlagColor();
+        boolean dyed = flagColor != FlagItem.NO_COLOR;
+        int color = dyed ? 0xFF000000 | flagColor : 0xFFFFFFFF;
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(dyed ? DYEABLE_TEXTURE : TEXTURE));
         for (int i = 0; i < columns; i++) {
             float u0 = U_MAX * i / columns, u1 = U_MAX * (i + 1) / columns;
             // Front (north side, normal -z at rest), counter-clockwise as seen from the north
-            vertex(buffer, entry, i, TOP_Y, u0, 0f, light, 1f);
-            vertex(buffer, entry, i, BOTTOM_Y, u0, V_MAX, light, 1f);
-            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, V_MAX, light, 1f);
-            vertex(buffer, entry, i + 1, TOP_Y, u1, 0f, light, 1f);
+            vertex(buffer, entry, i, TOP_Y, u0, 0f, light, color, 1f);
+            vertex(buffer, entry, i, BOTTOM_Y, u0, V_MAX, light, color, 1f);
+            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, V_MAX, light, color, 1f);
+            vertex(buffer, entry, i + 1, TOP_Y, u1, 0f, light, color, 1f);
             // Back (south side): same texels, reversed winding and normal
-            vertex(buffer, entry, i, TOP_Y, u0, 0f, light, -1f);
-            vertex(buffer, entry, i + 1, TOP_Y, u1, 0f, light, -1f);
-            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, V_MAX, light, -1f);
-            vertex(buffer, entry, i, BOTTOM_Y, u0, V_MAX, light, -1f);
+            vertex(buffer, entry, i, TOP_Y, u0, 0f, light, color, -1f);
+            vertex(buffer, entry, i + 1, TOP_Y, u1, 0f, light, color, -1f);
+            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, V_MAX, light, color, -1f);
+            vertex(buffer, entry, i, BOTTOM_Y, u0, V_MAX, light, color, -1f);
         }
         matrices.pop();
     }
@@ -140,12 +149,12 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
     }
 
     private static void vertex(VertexConsumer buffer, MatrixStack.Entry entry, int column, float y, float u, float v,
-                               int light, float side) {
+                               int light, int color, float side) {
         Matrix4f pose = entry.getPositionMatrix();
         Matrix3f normalMatrix = entry.getNormalMatrix();
         pose.transformPosition(XS[column] / 16f, (y - DROOP[column]) / 16f, ZS[column] / 16f, POSITION);
         normalMatrix.transform(NX[column] * side, 0f, NZ[column] * side, NORMAL).normalize();
-        buffer.vertex(POSITION.x, POSITION.y, POSITION.z, 0xFFFFFFFF, u, v, OverlayTexture.DEFAULT_UV, light,
+        buffer.vertex(POSITION.x, POSITION.y, POSITION.z, color, u, v, OverlayTexture.DEFAULT_UV, light,
                 NORMAL.x, NORMAL.y, NORMAL.z);
     }
 

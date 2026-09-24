@@ -12,6 +12,7 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -21,6 +22,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -95,8 +97,16 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         boolean shears = stack.isOf(Items.SHEARS) && state.get(FLAG);
         boolean flag = stack.getItem() instanceof FlagItem;
         boolean wrench = stack.getItem() instanceof WrenchItem;
+        // A dye on the flag: only when it changes the colour (the colour is synced, so the client knows too)
+        boolean dye = stack.getItem() instanceof DyeItem dyeItem && state.get(FLAG)
+                && world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole
+                && pole.getFlagColor() != FlagItem.dyeColor(dyeItem.getColor());
         // The client predicts the same result as the server (arm swing, no item use behind it)
-        if (world.isClient) return shears || flag || wrench ? ActionResult.SUCCESS : ActionResult.PASS;
+        if (world.isClient) return shears || flag || wrench || dye ? ActionResult.SUCCESS : ActionResult.PASS;
+
+        if (dye) {
+            return handleDyeUse(world, pos, player, stack, ((DyeItem) stack.getItem()).getColor());
+        }
 
         if (shears) {
             return handleShearsUse(world, pos, state, player, stack);
@@ -152,9 +162,23 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         entity.handleFallDamage(fallDistance, 0.0F, world.getDamageSources().fall()); // 0.0F = aucun dégât
     }
 
+    private ActionResult handleDyeUse(World world, BlockPos pos, PlayerEntity player, ItemStack dye, DyeColor color) {
+        if (!(world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole)) return ActionResult.PASS;
+        pole.setFlagColor(FlagItem.dyeColor(color));
+        if (!player.isCreative()) dye.decrement(1);
+        world.playSound(null, pos, SoundEvents.ITEM_DYE_USE, SoundCategory.BLOCKS, 1f, 1f);
+        return ActionResult.SUCCESS;
+    }
+
     private ActionResult handleShearsUse(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack shears) {
+        // The flag keeps its colour as an item; the pole forgets it
+        ItemStack dropped = new ItemStack(ModItems.FLAG);
+        if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole) {
+            dropped = pole.createFlagStack();
+            pole.setFlagColor(FlagItem.NO_COLOR);
+        }
         world.setBlockState(pos, state.with(FLAG, false), 3);
-        ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(ModItems.FLAG));
+        ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), dropped);
         if (!player.isCreative()) shears.damage(1, player, EquipmentSlot.MAINHAND);
         world.playSound(null, pos, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.BLOCKS, 1f, 1f);
         return ActionResult.SUCCESS;
@@ -167,6 +191,8 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     }
 
     private void placeFlag(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack flag, BlockHitResult hit) {
+        // The colour first: the block update then carries it to the clients in the same packet batch
+        if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole) pole.setFlagColor(FlagItem.getColor(flag));
         world.setBlockState(pos, state.with(FLAG, true).with(FACING, flagFacing(hit, player)), 3);
         if (!player.isCreative()) flag.decrement(1);
         world.playSound(null, pos, SoundEvents.BLOCK_WOOL_FALL, SoundCategory.BLOCKS, 1f, 1f);
@@ -215,7 +241,10 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
-            if (state.get(FLAG)) ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(ModItems.FLAG));
+            if (state.get(FLAG)) {
+                ItemStack flag = world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole ? pole.createFlagStack() : new ItemStack(ModItems.FLAG);
+                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), flag);
+            }
             // The poles above are no longer connected to the base (with or without a flag on this one)
             BlockEntity beAbove = world.getBlockEntity(pos.up());
             if (beAbove instanceof GoalPoleBlockEntity poleAbove) {

@@ -4,6 +4,9 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.FlagItem;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
@@ -11,7 +14,12 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.scoreboard.ScoreHolder;
 import net.minecraft.screen.ScreenHandler;
@@ -42,6 +50,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     private boolean baseResolved = false;
     private static final int BASE_RECHECK_TICKS = 20;
     private int redstoneOutput = 0;
+    private int flagColor = FlagItem.NO_COLOR;
     private final Set<UUID> playersOnBlock = new HashSet<>();
 
     public void update(Comparator comparator, int value) {
@@ -152,6 +161,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         super.writeNbt(nbt, registries);
         nbt.putInt("Comparator", comparator.ordinal());
         nbt.putInt("Value", value);
+        if (flagColor != FlagItem.NO_COLOR) nbt.putInt("FlagColor", flagColor);
     }
 
     @Override
@@ -164,6 +174,43 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         if (nbt.contains("Value")) {
             value = nbt.getInt("Value");
         }
+        flagColor = nbt.contains("FlagColor", NbtElement.INT_TYPE) ? nbt.getInt("FlagColor") & 0xFFFFFF : FlagItem.NO_COLOR;
+    }
+
+    // --- Client sync (the flag colour) ---
+    @Override
+    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
+    }
+
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        return createNbt(registries);
+    }
+
+    /** Sends this block entity's data to the players watching it. */
+    private void sync() {
+        if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_LISTENERS);
+    }
+
+    // --- Flag colour ---
+    /** @return the colour of the flag on this pole (0xRRGGBB), or {@link FlagItem#NO_COLOR} for the original red one. */
+    public int getFlagColor() {
+        return flagColor;
+    }
+
+    /** Sets the flag's colour (kept while the flag is turned; the flag item carries it when the flag comes off). */
+    public void setFlagColor(int color) {
+        int normalized = color == FlagItem.NO_COLOR ? FlagItem.NO_COLOR : color & 0xFFFFFF;
+        if (normalized == flagColor) return;
+        flagColor = normalized;
+        markDirty();
+        sync();
+    }
+
+    /** The flag item this pole's flag drops as: same colour. */
+    public ItemStack createFlagStack() {
+        return FlagItem.withColor(new ItemStack(ModItems.FLAG), flagColor);
     }
 
     public void updateComparatorOutput() {
