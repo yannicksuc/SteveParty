@@ -52,8 +52,8 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     /** A reception desk bell (dome and plunger) on the redstone plate of the other redstone blocks. */
     private static final VoxelShape SHAPE = VoxelShapes.union(
             Block.createCuboidShape(0, 0, 0, 16, 2, 16),
-            Block.createCuboidShape(4, 2, 4, 12, 8, 12),
-            Block.createCuboidShape(6, 8, 6, 10, 10, 10)
+            Block.createCuboidShape(4, 2, 4, 12, 6, 12),
+            Block.createCuboidShape(6, 6, 6, 10, 8, 10)
     );
 
     public PartyBellBlock(Settings settings) {
