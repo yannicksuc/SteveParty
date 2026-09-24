@@ -414,7 +414,7 @@
   "block.steveparty.red_plastic_fence": "Barrière en plastique rouge",
   "block.steveparty.black_plastic_fence": "Barrière en plastique noire",
   "tooltip.steveparty.cutout_panel.usage": "Se découpe avec un pochoir et une hache (un dans chaque main)",
-  "tooltip.steveparty.sign_post.usage": "Se pose sur une barrière ou un muret, ou contre son côté",
+  "tooltip.steveparty.sign_post.usage": "Se pose sur ou contre une barrière ou un muret, et à plat sur les murs, sols et plafonds",
   "message.steveparty.token_hint": "Je suis un pion maintenant ! Pour me déplacer, stocke-moi dans un Token.",
   "screen.steveparty.token_spell.title": "Sort de pion",
   "screen.steveparty.token_spell.resize_title": "Sort de redimensionnement",

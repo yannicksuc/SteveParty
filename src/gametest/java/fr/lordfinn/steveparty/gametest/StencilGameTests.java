@@ -311,7 +311,7 @@ public class StencilGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
             useOn(context, player, SIGN, Direction.SOUTH);
             BlockState hung = context.getBlockState(front);
-            context.assertTrue(hung.isOf(sign) && hung.get(AbstractStencilSignBlock.HUNG)
+            context.assertTrue(hung.isOf(sign) && hung.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.HUNG
                     && AbstractStencilSignBlock.hungFacing(hung) == Direction.SOUTH, sign + " hung on the fence, facing south");
             // It falls when its post goes
             context.setBlockState(SIGN, Blocks.AIR);
@@ -331,7 +331,7 @@ public class StencilGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
             useOn(context, player, SIGN, Direction.SOUTH);
             BlockState leaning = context.getBlockState(front);
-            context.assertTrue(leaning.isOf(sign) && !leaning.get(AbstractStencilSignBlock.HUNG)
+            context.assertTrue(leaning.isOf(sign) && leaning.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST
                     && leaning.get(AbstractStencilSignBlock.ROTATION) == 0, sign + " against the wall, facing south");
             context.setBlockState(front, Blocks.AIR);
         }
@@ -355,6 +355,44 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void postSignsGoFlatOnWallsFloorsAndCeilings(TestContext context) {
+        PlayerEntity player = survivalPlayer(context);
+        player.setPosition(Vec3d.of(context.getAbsolutePos(SIGN)).add(0, 0, -6));
+        for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL, ModBlocks.PLASTIC_ROAD_SIGN)) {
+            // Against the south face of a stone block: flat on it, facing south; falls with it
+            context.setBlockState(SIGN, Blocks.STONE);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.SOUTH);
+            BlockState wall = context.getBlockState(SIGN.south());
+            context.assertTrue(wall.isOf(sign) && wall.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.WALL
+                    && AbstractStencilSignBlock.facing(wall.get(AbstractStencilSignBlock.ROTATION)) == Direction.SOUTH, sign + " on the wall: " + wall);
+            context.setBlockState(SIGN, Blocks.AIR);
+            context.expectBlock(Blocks.AIR, SIGN.south());
+            // On the top face: lying on the floor
+            context.setBlockState(SIGN, Blocks.STONE);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.UP);
+            context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.FLOOR,
+                    sign + " on the floor");
+            context.setBlockState(SIGN.up(), Blocks.AIR);
+            // Under it: on the ceiling, falling when the ceiling goes
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.DOWN);
+            context.assertTrue(context.getBlockState(SIGN.down()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.CEILING,
+                    sign + " on the ceiling");
+            context.setBlockState(SIGN, Blocks.AIR);
+            context.expectBlock(Blocks.AIR, SIGN.down());
+        }
+        // Signs standing on the ground do not go flat
+        context.setBlockState(SIGN, Blocks.STONE);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.ROCK_SIGN));
+        useOn(context, player, SIGN, Direction.UP);
+        context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST,
+                "rock sign stands");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void boardsRestAgainstTheirPost(TestContext context) {
         // Board back at model z 5, fence post front at 6, wall pillar front at 4
         context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
@@ -372,7 +410,7 @@ public class StencilGameTests implements FabricGameTest {
         // Hung on a fence
         context.setBlockState(SIGN.down(), Blocks.AIR);
         context.setBlockState(SIGN.north(), Blocks.OAK_FENCE);
-        context.setBlockState(SIGN, ModBlocks.WOODEN_CUTOUT_PANEL.getDefaultState().with(AbstractStencilSignBlock.HUNG, true));
+        context.setBlockState(SIGN, ModBlocks.WOODEN_CUTOUT_PANEL.getDefaultState().with(AbstractStencilSignBlock.MOUNT, AbstractStencilSignBlock.Mount.HUNG));
         context.assertTrue(Math.abs(shift(context, SIGN) - 1) < 1e-6, "hung cut-out panel against the fence post: " + shift(context, SIGN));
         // Signs without a board on a post do not move
         context.setBlockState(SIGN.down(), Blocks.STONE);

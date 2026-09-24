@@ -23,6 +23,7 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.BlockStateComponent;
@@ -86,21 +87,18 @@ public abstract class SignModel implements BakedModel {
     @Override
     public void emitBlockQuads(BlockRenderView world, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context) {
         if (!materials()) return;
-        Direction hung = AbstractStencilSignBlock.hungFacing(state);
         BlockState below = world.getBlockState(pos.down());
-        // A hung sign is drawn around the real post behind it: no post of its own
-        BlockState post = hung == null && SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
-        float shift = state.getBlock() instanceof AbstractStencilSignBlock sign ? (float) sign.boardShift(world, pos, state) : 0;
+        // Only a standing sign has a post of its own: a hung sign is drawn around the real post behind it
+        boolean standing = !state.contains(AbstractStencilSignBlock.MOUNT)
+                || state.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST;
+        BlockState post = standing && SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
         Look look = world.getBlockEntityRenderData(pos) instanceof StencilCanvasBlockEntity.RenderData data
-                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), post, shift)
-                : new Look(null, null, null, DyeColor.WHITE, false, 0, post, shift);
-        Matrix4f turn = new Matrix4f();
-        if (hung != null) turn.translate(-hung.getOffsetX(), 0, -hung.getOffsetZ());
-        if (state.contains(AbstractStencilSignBlock.ROTATION)) {
-            float angle = (float) Math.toRadians(SignShapes.angleDegrees(state.get(AbstractStencilSignBlock.ROTATION)));
-            turn.translate(0.5F, 0, 0.5F).rotateY(angle).translate(-0.5F, 0, -0.5F);
-        }
-        emit(new Output(context.getEmitter(), turn, 0), state, look, pos.asLong(), randomSupplier);
+                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), post, 0)
+                : new Look(null, null, null, DyeColor.WHITE, false, 0, post, 0);
+        // Turned, moved against its post or its wall, or laid on its floor / ceiling (the board shift included)
+        Matrix4f transform = state.getBlock() instanceof AbstractStencilSignBlock sign
+                ? sign.modelTransform(world, pos, state) : new Matrix4f();
+        emit(new Output(context.getEmitter(), transform, 0), state, look, pos.asLong(), randomSupplier);
     }
 
     @Override
@@ -111,7 +109,8 @@ public abstract class SignModel implements BakedModel {
         StencilCanvasComponent canvas = stack.get(ModComponents.STENCIL_CANVAS);
         Identifier material = stack.get(ModComponents.SIGN_MATERIAL);
         DyeColor plate = stack.get(DataComponentTypes.BASE_COLOR);
-        BlockState post = itemPost(block, material, plate);
+        // In the inventory the sign alone, in hand / on the ground / in a frame on the fence it stands on
+        BlockState post = context.itemTransformationMode() == ModelTransformationMode.GUI ? null : itemPost(block, material, plate);
         float shift = 0;
         if (post != null && block instanceof AbstractStencilSignBlock sign && !Float.isNaN(sign.boardBack())) {
             // Items are drawn facing north: the model unturned
@@ -121,7 +120,6 @@ public abstract class SignModel implements BakedModel {
         Look look = new Look(material, plate, canvas == null ? null : canvas.shapeArray(),
                 canvas == null ? DyeColor.WHITE : canvas.color().orElse(null), canvas != null && canvas.glowing(),
                 canvas == null ? 0 : canvas.fade(), post, shift);
-        // Items show the fence under the sign, so that one sees what it stands on
         emit(new Output(context.getEmitter(), new Matrix4f(), 1), state, look, 0L, randomSupplier);
     }
 

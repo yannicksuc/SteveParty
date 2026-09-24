@@ -41,6 +41,11 @@ public class WoodenPanelBlock extends AbstractStencilSignBlock {
     }
 
     @Override
+    public float boardCenterY() {
+        return (float) (BOARD.y1() + BOARD.y2()) / 2;
+    }
+
+    @Override
     public float boardBack() {
         return (float) (BOARD.z2());
     }
@@ -52,6 +57,6 @@ public class WoodenPanelBlock extends AbstractStencilSignBlock {
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return OUTLINE.get(state, boardShift(world, pos, state));
+        return OUTLINE.get(this, world, pos, state);
     }
 }
