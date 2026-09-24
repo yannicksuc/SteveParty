@@ -723,6 +723,12 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private static final String GIVE_BACK_ANIM = "fun_laugh";
     /** Sound keyframe effect of fun_shocked's angry puff. */
     private static final String ANGRY_SOUND_KEYFRAME = "angry";
+    /**
+     * Client: walking (waddle animation) or standing (idle), from the smoothed limb speed with hysteresis so tiny speeds
+     * never make him flicker between the two: starts after 2 ticks above 0.08, stops after 5 ticks below 0.03.
+     */
+    private boolean walking = false;
+    private int walkSwitchTicks = 0;
     /** Box waddle while an unassigned merchant walks around. */
     protected static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("walk");
     /** Upper bound of a little animation's length, in ticks (no wandering meanwhile). */
@@ -730,8 +736,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private static final String BONK_ANIM = "fun_bonk";
     /** Sound keyframe effect of fun_laugh (the other sound keyframes are named "Sound"). */
     private static final String LAUGH_SOUND_KEYFRAME = "laugh";
-    /** fun_bonk: stars circle the dazed head from 16 ticks after the trigger, for 26 ticks. */
-    private static final int BONK_STARS_DELAY = 16, BONK_STARS_TICKS = 26;
+    /** fun_bonk: stars circle the dazed head (after the squish and the rebound): from 23 ticks after the trigger, for 22 ticks. */
+    private static final int BONK_STARS_DELAY = 23, BONK_STARS_TICKS = 22;
     private int bonkStarsTick = -1;
     /** Played when a customer opens the trade screen. */
     private static final String HAPPY_ANIM = "fun_happy";
@@ -830,6 +836,15 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 updateTradesToClient(customer, 0);
             }
         }
+        if (this.getWorld().isClient) {
+            float limbSpeed = this.limbAnimator.getSpeed();
+            boolean switching = walking ? limbSpeed < 0.03F : limbSpeed > 0.08F;
+            walkSwitchTicks = switching ? walkSwitchTicks + 1 : 0;
+            if (walkSwitchTicks >= (walking ? 5 : 2)) {
+                walking = !walking;
+                walkSwitchTicks = 0;
+            }
+        }
         if (this.getWorld().isClient && pendingPlaceSoundTicks >= 0) {
             if (pendingPlaceSoundTicks-- == 0) {
                 Vec3d soundPos = this.getBlockPos().toCenterPos();
@@ -916,7 +931,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             if (current == null || current == CLOSED_ANIM || (current == OPEN_ANIM && !controller.hasAnimationFinished())) {
                 return event.setAndContinue(OPEN_ANIM);
             }
-            return event.setAndContinue(event.isMoving() ? WALK_ANIM : IDLE_ANIM);
+            return event.setAndContinue(walking ? WALK_ANIM : IDLE_ANIM);
         }
         // Hiding: also cuts a random animation short, the Stare controller closes the box
         event.setAnimation(CLOSED_ANIM);
