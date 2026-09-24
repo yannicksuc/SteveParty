@@ -123,8 +123,7 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
     /** Plate in model space (pixels, front facing north), in front of the post. */
     public static final float PLATE_Z = 3, PLATE_DEPTH = 1;
     private static final SignShapes.Box PLATE_BOX = new SignShapes.Box(0, 0, PLATE_Z, 16, 16, PLATE_Z + PLATE_DEPTH);
-    private static final VoxelShape[] SHAPES = SignShapes.rotations(new SignShapes.Box[]{PLATE_BOX}, new SignShapes.Box[]{SignPosts.POST});
-    private static final VoxelShape[] HUNG_SHAPES = SignShapes.hung(SignShapes.rotations(PLATE_BOX));
+    private static final SignShapes.BoardOutline OUTLINE = new SignShapes.BoardOutline(PLATE_BOX);
 
     public PlasticRoadSignBlock(Settings settings) {
         super(settings);
@@ -148,13 +147,18 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
     }
 
     @Override
+    public float boardBack() {
+        return (float) (PLATE_Z + PLATE_DEPTH);
+    }
+
+    @Override
     protected boolean canStandAt(WorldView world, BlockPos pos) {
         return SignPosts.standsOnPost(world, pos);
     }
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return shape(state, SHAPES, HUNG_SHAPES);
+        return OUTLINE.get(state, boardShift(world, pos, state));
     }
 
     @Override

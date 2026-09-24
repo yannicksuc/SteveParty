@@ -20,7 +20,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationPropertyHelper;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.tick.ScheduledTickView;
@@ -68,9 +68,23 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
         return rotation % 4 == 0 ? Direction.fromHorizontal(rotation / 4) : null;
     }
 
-    /** @return {@code standing[rotation]}, or {@code hung[rotation]} for a hung sign. */
-    protected static VoxelShape shape(BlockState state, VoxelShape[] standing, VoxelShape[] hung) {
-        return (hungFacing(state) != null ? hung : standing)[state.get(ROTATION)];
+    /**
+     * @return model z (pixels, front facing north) of the back of this sign's board, which is glued against the post
+     * it stands or hangs on; NaN for a sign without a board on a post
+     */
+    public float boardBack() {
+        return Float.NaN;
+    }
+
+    /**
+     * @return how far (model pixels, towards the back) the board of the sign at {@code pos} is moved to rest right
+     * against its post, whatever post it is (a thin fence, a thick wall, seen square or at an angle)
+     */
+    public double boardShift(BlockView world, BlockPos pos, BlockState state) {
+        float back = boardBack();
+        if (Float.isNaN(back)) return 0;
+        double reach = SignPosts.reach(world, pos, state);
+        return Double.isNaN(reach) ? 0 : 8 - reach - back;
     }
 
     /** @return the kind of block this sign is made of, or null for a sign with a fixed look. */

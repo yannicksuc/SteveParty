@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/fence_inventory",
   "textures": {
-    "texture": "steveparty:block/plastic_block/light_gray_plastic_block"
+    "texture": "steveparty:block/plastic_fence/light_gray_plastic_fence"
   }
 }

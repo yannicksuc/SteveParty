@@ -1,8 +1,12 @@
 package fr.lordfinn.steveparty.blocks.custom.signs;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Outline shapes of the 16-way signs. Their models are drawn in "model space" (pixels, front facing north)
@@ -52,17 +56,34 @@ public final class SignShapes {
     }
 
     /**
-     * @param standing outline of the sign for each rotation, without the post it stands on
-     * @return the same outlines moved onto the post behind: where a sign hung on the side of a post is drawn
+     * Outline of a board on a post: the board turned with the sign and moved back against its post (see
+     * {@link AbstractStencilSignBlock#boardShift}), plus the post of the fence below a standing sign; a hung sign's
+     * board is around the post behind it. Built once for each rotation / side / shift.
      */
-    public static VoxelShape[] hung(VoxelShape[] standing) {
-        VoxelShape[] shapes = new VoxelShape[16];
-        for (int rotation = 0; rotation < 16; rotation++) {
-            Direction facing = AbstractStencilSignBlock.facing(rotation);
-            shapes[rotation] = facing == null ? standing[rotation]
-                    : standing[rotation].offset(-facing.getOffsetX(), 0, -facing.getOffsetZ());
+    public static final class BoardOutline {
+        private final Box[] board;
+        private final Map<Long, VoxelShape> cache = new ConcurrentHashMap<>();
+
+        public BoardOutline(Box... board) {
+            this.board = board;
         }
-        return shapes;
+
+        public VoxelShape get(BlockState state, double shift) {
+            int rotation = state.get(AbstractStencilSignBlock.ROTATION);
+            Direction hung = AbstractStencilSignBlock.hungFacing(state);
+            long key = rotation | (hung == null ? 0L : hung.ordinal() + 1L) << 4 | Math.round(shift * 64) << 8;
+            return cache.computeIfAbsent(key, k -> build(rotation, hung, shift));
+        }
+
+        private VoxelShape build(int rotation, Direction hung, double shift) {
+            Box[] moved = new Box[board.length];
+            for (int i = 0; i < board.length; i++) {
+                Box box = board[i];
+                moved[i] = new Box(box.x1, box.y1, box.z1 + shift, box.x2, box.y2, box.z2 + shift);
+            }
+            if (hung == null) return rotations(moved, new Box[]{SignPosts.POST})[rotation];
+            return rotations(moved)[rotation].offset(-hung.getOffsetX(), 0, -hung.getOffsetZ());
+        }
     }
 
     private static final double SEGMENT = 4.0;

@@ -80,6 +80,9 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
                 matrices.translate(0.5, 0, 0.5);
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(SignShapes.angleDegrees(state.get(AbstractStencilSignBlock.ROTATION))));
                 matrices.translate(-0.5, 0, -0.5);
+                // Moved back with the board, against its post
+                double shift = ((AbstractStencilSignBlock) state.getBlock()).boardShift(entity.getWorld(), entity.getPos(), state);
+                if (shift != 0) matrices.translate(0, 0, shift / 16);
                 for (SymbolLayouts.SymbolQuad quad : quads) drawQuad(matrices.peek(), consumer, quad, argb, symbolLight);
             }
         }

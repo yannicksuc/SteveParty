@@ -64,10 +64,15 @@ public abstract class SignModel implements BakedModel {
 
     /**
      * What to draw: material and plate colour, stencil shape / paint / glow / fade (cut-out panel, rock engraving),
-     * and the post under the sign (null: none).
+     * the post under the sign (null: none) and how far back its board goes to rest against its post (pixels, see
+     * {@link AbstractStencilSignBlock#boardShift}).
      */
     public record Look(@Nullable Identifier material, @Nullable DyeColor plateColor, @Nullable byte[] shape,
-                       @Nullable DyeColor color, boolean glowing, int fade, @Nullable BlockState post) {
+                       @Nullable DyeColor color, boolean glowing, int fade, @Nullable BlockState post, float boardShift) {
+        /** @return {@code out}, moved back so that the board rests against its post. */
+        Output board(Output out) {
+            return boardShift == 0 ? out : out.with(new Matrix4f().translate(0, 0, boardShift / 16F));
+        }
     }
 
     /** Emits the sign's quads through {@code out}. {@code state} is the block's, or the item's block state. */
@@ -85,9 +90,10 @@ public abstract class SignModel implements BakedModel {
         BlockState below = world.getBlockState(pos.down());
         // A hung sign is drawn around the real post behind it: no post of its own
         BlockState post = hung == null && SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
+        float shift = state.getBlock() instanceof AbstractStencilSignBlock sign ? (float) sign.boardShift(world, pos, state) : 0;
         Look look = world.getBlockEntityRenderData(pos) instanceof StencilCanvasBlockEntity.RenderData data
-                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), post)
-                : new Look(null, null, null, DyeColor.WHITE, false, 0, post);
+                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), post, shift)
+                : new Look(null, null, null, DyeColor.WHITE, false, 0, post, shift);
         Matrix4f turn = new Matrix4f();
         if (hung != null) turn.translate(-hung.getOffsetX(), 0, -hung.getOffsetZ());
         if (state.contains(AbstractStencilSignBlock.ROTATION)) {
@@ -105,9 +111,16 @@ public abstract class SignModel implements BakedModel {
         StencilCanvasComponent canvas = stack.get(ModComponents.STENCIL_CANVAS);
         Identifier material = stack.get(ModComponents.SIGN_MATERIAL);
         DyeColor plate = stack.get(DataComponentTypes.BASE_COLOR);
+        BlockState post = itemPost(block, material, plate);
+        float shift = 0;
+        if (post != null && block instanceof AbstractStencilSignBlock sign && !Float.isNaN(sign.boardBack())) {
+            // Items are drawn facing north: the model unturned
+            double reach = SignPosts.reach(SignPosts.postShape(post), 0);
+            if (!Double.isNaN(reach)) shift = (float) (8 - reach - sign.boardBack());
+        }
         Look look = new Look(material, plate, canvas == null ? null : canvas.shapeArray(),
                 canvas == null ? DyeColor.WHITE : canvas.color().orElse(null), canvas != null && canvas.glowing(),
-                canvas == null ? 0 : canvas.fade(), itemPost(block, material, plate));
+                canvas == null ? 0 : canvas.fade(), post, shift);
         // Items show the fence under the sign, so that one sees what it stands on
         emit(new Output(context.getEmitter(), new Matrix4f(), 1), state, look, 0L, randomSupplier);
     }
