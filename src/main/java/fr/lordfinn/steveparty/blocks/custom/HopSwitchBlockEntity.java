@@ -2,11 +2,10 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
-import fr.lordfinn.steveparty.payloads.custom.HopSwitchPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.HopSwitchScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -15,14 +14,14 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import org.apache.commons.lang3.function.TriConsumer;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Objects;
 
 public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+    /** Shortest selectable duration (0.5 s), must match the first step of HopSwitchBlock's duration list. */
+    public static final int MIN_DURATION_TICKS = 10;
     private int durationTicks = 200; // par défaut 10s
     private int modeInt = 0; // persisted as int in NBT
     // Enum to represent the modes
@@ -75,10 +74,6 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implemen
     public HopSwitchBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.HOP_SWITCH_ENTITY, pos, state, 1);
     }
-    @Override
-    public void markDirty() {
-        super.markDirty();
-    }
 
     // -------------------------
     // NBT persistence
@@ -97,39 +92,15 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implemen
         if (nbt.contains("Mode")) modeInt = nbt.getInt("Mode");
     }
 
-    private void forEachDestination(java.util.function.BiConsumer<SwitchyBlock, BlockPos> action) {
-        var world = Objects.requireNonNull(getWorld());
-        List<BlockPos> destinations = getDestinations(0);
-        for (BlockPos destination : destinations) {
-            BlockState state = world.getBlockState(destination);
-            Block block = state.getBlock();
-            if (block instanceof SwitchyBlock switcherBlock) {
-                action.accept(switcherBlock, destination);
-            }
-        }
-    }
-
-    private void forEachDestination(TriConsumer<SwitchyBlock, BlockState, BlockPos> action) {
-        var world = Objects.requireNonNull(getWorld());
-        for (BlockPos destination : getDestinations(0)) {
-            BlockState state = world.getBlockState(destination);
-            Block block = state.getBlock();
-            if (block instanceof SwitchyBlock switcherBlock) {
-                action.accept(switcherBlock, state, destination);
-            }
-        }
-    }
-
+    // Any switchable block among the destinations (tag steveparty:switchable or server config)
     public void switchDestinations() {
-        forEachDestination((switcherBlock, state, pos) ->
-                switcherBlock.trigger(state, getWorld(), pos)
-        );
+        if (!(getWorld() instanceof ServerWorld world)) return;
+        for (BlockPos destination : getDestinations(0)) Switchables.toggle(world, destination);
     }
 
     public void solidifyDestinations(boolean isSolid) {
-        forEachDestination((switcherBlock, state, pos) ->
-                switcherBlock.setSolid(state, getWorld(), pos, isSolid)
-        );
+        if (!(getWorld() instanceof ServerWorld world)) return;
+        for (BlockPos destination : getDestinations(0)) Switchables.setOn(world, destination, isSolid);
     }
 
     @Override
@@ -162,7 +133,7 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implemen
     }
 
     public void setDurationTicks(int durationTicks) {
-        this.durationTicks = Math.max(20, durationTicks); // min = 1 seconde
+        this.durationTicks = Math.max(MIN_DURATION_TICKS, durationTicks); // min = 0.5 seconde (first clock step)
         markDirty();
     }
 

@@ -4,16 +4,17 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.PartyService;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
+import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
+import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.payloads.custom.*;
-import fr.lordfinn.steveparty.persistent_state.ClientBoardSpaceRouters;
 import fr.lordfinn.steveparty.service.TokenData;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.joml.Vector2d;
 
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +24,9 @@ import static fr.lordfinn.steveparty.particles.ModParticles.ARROW_PARTICLE;
 import static fr.lordfinn.steveparty.particles.ModParticles.ENCHANTED_CIRCULAR_PARTICLE;
 
 public class PayloadReceivers {
+    private static final int ENCHANTED_DEFAULT_COLOR = 0xdec253;
+    private static final double ENCHANTED_DEFAULT_ANGULAR_SPEED = 0.1;
+
     public static void initialize() {
 
         // Used to spawn arrow particles from the server
@@ -31,13 +35,6 @@ public class PayloadReceivers {
                 context.player().getWorld().addImportantParticle(ARROW_PARTICLE,
                 payload.position().x, payload.position().y, payload.position().z,
                 payload.velocity().x, payload.velocity().y, payload.velocity().z)));
-
-        ClientPlayNetworking.registerGlobalReceiver(BlockPosesMapPayload.ID,
-                (payload, context) -> context.client().execute(()
-                        -> {
-                    ClientBoardSpaceRouters.update(payload.blockPoses());
-                }
-                ));
 
         ClientPlayNetworking.registerGlobalReceiver(EnchantedCircularParticlePayload.ID,
                 (payload, context) -> context.client().execute(summonEnchanted(context, payload)));
@@ -54,6 +51,7 @@ public class PayloadReceivers {
             BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
             if (tileEntity == null) return;
             ItemStack behaviorItemstack = tileEntity.getActiveCartridgeItemStack();
+            if (behaviorItemstack == null || behaviorItemstack.isEmpty()) return;
             behaviorItemstack.set(ModComponents.COLOR, payload.color());
             MinecraftClient.getInstance().worldRenderer.updateBlock(world, pos, world.getBlockState(pos), world.getBlockState(pos), 3);
         }));
@@ -64,18 +62,31 @@ public class PayloadReceivers {
         {
             FloatingTextRenderer.spawn(payload.text(), payload.pos(), payload.velocity(), payload.duration(), payload.scale(), payload.color(), payload.fadeStart());
         }));
+
+        ClientPlayNetworking.registerGlobalReceiver(SquishAnimationPayload.ID, (payload, context) -> context.client().execute(() ->
+                SquishAnimations.start(context.client().world, payload)));
+
+        // The server accepted a Tokenizer Wand use: open the token spell (size slider), unless another screen is open
+        ClientPlayNetworking.registerGlobalReceiver(OpenTokenSpellPayload.ID, (payload, context) -> context.client().execute(() -> {
+            MinecraftClient client = context.client();
+            if (client.world == null || client.currentScreen != null) return;
+            if (client.world.getEntityById(payload.entityId()) instanceof MobEntity mob) {
+                client.setScreen(new TokenSpellScreen(mob, payload.currentSize(), payload.resize(), payload.currentColor()));
+            }
+        }));
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {
-        for (int i = 0; i < payload.count(); i++) {
-            double randomRadian = Math.random() * 2 * Math.PI;
-            Vector2d vec = new Vector2d(payload.distance() * Math.cos(randomRadian) - payload.distance() * Math.sin(randomRadian),
-                    payload.distance() * Math.sin(randomRadian) + payload.distance() * Math.cos(randomRadian));
-
-            context.player().getWorld().addImportantParticle(ENCHANTED_CIRCULAR_PARTICLE,
-                    payload.position().x + vec.x, payload.position().y, payload.position().z + vec.y,
-                    payload.position().x, payload.position().y, payload.position().z);
-        }
-        return null;
+        return () -> {
+            if (context.player() == null) return;
+            World world = context.player().getWorld();
+            double distance = payload.distance();
+            for (int i = 0; i < payload.count(); i++) {
+                // EnchantedCircularParticle: (x, y, z) = circle center, velocity = (radius, color, angular speed)
+                world.addImportantParticle(ENCHANTED_CIRCULAR_PARTICLE,
+                        payload.position().x, payload.position().y, payload.position().z,
+                        distance, ENCHANTED_DEFAULT_COLOR, ENCHANTED_DEFAULT_ANGULAR_SPEED);
+            }
+        };
     }
 }

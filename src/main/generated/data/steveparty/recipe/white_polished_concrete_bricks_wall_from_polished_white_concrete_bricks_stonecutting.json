@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:polished_white_concrete_bricks",
+  "result": {
+    "count": 1,
+    "id": "steveparty:white_polished_concrete_bricks_wall"
+  }
+}

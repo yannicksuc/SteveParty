@@ -31,6 +31,11 @@ public class ModComponents {
             registerComponent("tile-behavior-component", DestinationsComponent.CODEC);
     public static final ComponentType<BlockOriginComponent> BLOCK_ORIGIN_COMPONENT =
             registerComponent("block-origin-component", BlockOriginComponent.CODEC);
+    /**
+     * Legacy: token selected by the Tokenizer Wand when it could move tokens. No longer written; kept registered so
+     * wands saved by older versions still load (an unknown component would drop the item), and stripped from them
+     * by {@code TokenizerWandItem#inventoryTick}.
+     */
     public static final ComponentType<MobEntityComponent> MOB_ENTITY_COMPONENT =
             registerComponent("mob-entity-component", MobEntityComponent.CODEC);
     public static final ComponentType<EntityDataComponent> ENTITY_DATA_COMPONENT =
@@ -69,6 +74,17 @@ public class ModComponents {
             registerComponent("team-disposition", TeamDisposition.CODEC);
     public static final ComponentType<List<Byte>> STENCIL_PIXELS =
             registerComponent("stencil-pixels", Codec.list(Codec.BYTE));
+    /** Block (planks, rock...) a material sign is made of. */
+    public static final ComponentType<Identifier> SIGN_MATERIAL =
+            registerComponent("sign-material", Identifier.CODEC);
+    /** Symbol painted on a stencil sign, kept by its item. */
+    public static final ComponentType<StencilCanvasComponent> STENCIL_CANVAS =
+            registerComponent("stencil-canvas", StencilCanvasComponent.CODEC);
+    /** Stencils and dyes loaded in a stencil gun. */
+    public static final ComponentType<InventoryComponent> STENCIL_GUN_CONTENTS =
+            registerComponent("stencil-gun-contents", InventoryComponent.CODEC);
+    public static final ComponentType<StencilGunSelection> STENCIL_GUN_SELECTION =
+            registerComponent("stencil-gun-selection", StencilGunSelection.CODEC);
     public static final ComponentType<CarpetColorComponent> CARPET_COLORS =
             registerComponent("carpet-colors", CarpetColorComponent.CODEC);
     public static final ComponentType<UUID> SHOPKEEPER_UUID =
@@ -76,5 +92,6 @@ public class ModComponents {
 
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
+        DiceFacesComponent.initialize();
     }
 }

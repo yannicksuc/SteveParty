@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "III",
+    "SR ",
+    "I  "
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "S": "steveparty:stencil",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "steveparty:stencil_gun",
+    "count": 1
+  }
+}

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.utils.DrawContextUtils;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.payloads.custom.CartridgeSlotScrollPayload;
 import fr.lordfinn.steveparty.payloads.custom.SelectionStatePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeInventoryScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -39,8 +40,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Render the default screen elements
-        renderBackground(context, mouseX, mouseY, delta);
+        // Render the default screen elements (super.render already draws the background)
         super.render(context, mouseX, mouseY, delta);
         for (Slot slot : this.handler.slots) {
             if (slot.hasStack() && slot instanceof CartridgeInventoryScreenHandler.CustomSlot customSlot) {
@@ -159,7 +159,10 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
         // Check if the mouse is over a slot
         Slot slot = this.getSlotAt(mouseX, mouseY);
         if (slot instanceof CartridgeInventoryScreenHandler.CustomSlot customSlot) {
-            customSlot.onScroll(verticalAmount + horizontalAmount); // Call the scroll method
+            double amount = verticalAmount + horizontalAmount;
+            customSlot.onScroll(amount); // Client-side prediction
+            // The server applies the same change (ghost quantities are server-authoritative)
+            ClientPlayNetworking.send(CartridgeSlotScrollPayload.fromScroll(this.handler.syncId, slot.id, amount));
             return true;
         }
 
@@ -176,6 +179,7 @@ public class CartridgeInventoryScreen extends HandledScreen<CartridgeInventorySc
                     int currentState =  InventoryCartridgeItem.getSelectionState(stack);
                     int nextState = (currentState + 1) % 3; // Cycle through 0, 1, 2
                     InventoryCartridgeItem.setSelectionState(stack, nextState);
+                    sendSelectionStateToServer(nextState);
                 }
             }
         }

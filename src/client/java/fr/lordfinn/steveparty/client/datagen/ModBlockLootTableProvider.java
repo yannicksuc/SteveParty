@@ -8,7 +8,6 @@ import net.minecraft.registry.RegistryWrapper;
 
 import java.util.concurrent.CompletableFuture;
 
-import static fr.lordfinn.steveparty.blocks.ModBlocks.SWITCHER_BLOCKS;
 
 public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
 
@@ -20,8 +19,17 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
     public void generate() {
         // Make blocks drop themselves
         addDrop(ModBlocks.HOP_SWITCH);
-        for (Block switcher : SWITCHER_BLOCKS)
-            addDrop(switcher);
+        for (Block plasticBlock : ModBlocks.PLASTIC_BLOCKS)
+            addDrop(plasticBlock);
+        for (Block stud : ModBlocks.PLASTIC_STUDS)
+            addDrop(stud);
+        for (Block fence : ModBlocks.PLASTIC_FENCES)
+            addDrop(fence);
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            addDrop(ModBlocks.PLASTIC_SLABS[i], slabDrops(ModBlocks.PLASTIC_SLABS[i]));
+            addDrop(ModBlocks.PLASTIC_STAIRS[i]);
+            addDrop(ModBlocks.PLASTIC_WALLS[i]);
+        }
         addDrop(ModBlocks.GOAL_POLE_BASE);
         addDrop(ModBlocks.GOAL_POLE);
         addDrop(ModBlocks.LOOTING_BOX);
@@ -29,17 +37,27 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_BLOCKS)
             addDrop(block);
+        // Slabs: a double slab must drop 2 items
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_SLABS)
-            addDrop(block);
+            addDrop(block, slabDrops(block));
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_STAIRS)
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_WALLS)
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS)
-            addDrop(block);
+            addDrop(block, slabDrops(block));
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS)
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS)
             addDrop(block);
+        for (Block[] blocks : new Block[][]{
+                ModBlocks.POLISHED_CONCRETE_BLOCKS, ModBlocks.POLISHED_CONCRETE_BRICKS_BLOCKS,
+                ModBlocks.POLISHED_CONCRETE_STAIRS, ModBlocks.POLISHED_CONCRETE_WALLS,
+                ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS, ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS})
+            for (Block block : blocks)
+                addDrop(block);
+        for (Block[] slabs : new Block[][]{ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS})
+            for (Block block : slabs)
+                addDrop(block, slabDrops(block));
     }
 }

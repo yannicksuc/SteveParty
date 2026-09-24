@@ -37,9 +37,18 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         this.heldStacks = DefaultedList.ofSize(size, ItemStack.EMPTY);
     }
 
+    /** Maps any slot index (e.g. a redstone power level) onto a valid slot, consistently for get/set/remove. */
+    protected int wrapSlot(int slot) {
+        return Math.floorMod(slot, size);
+    }
+
+    /** Called (server and client) whenever the content of a slot actually changed. */
+    protected void onInventoryChanged() {
+    }
+
     @Override
     public ItemStack getStack(int slot) {
-        return this.heldStacks.get(slot % size);
+        return this.heldStacks.get(wrapSlot(slot));
     }
 
     public List<ItemStack> clearToList() {
@@ -49,9 +58,10 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     }
     @Override
     public ItemStack removeStack(int slot, int amount) {
-        ItemStack itemStack = Inventories.splitStack(this.heldStacks, slot, amount);
+        ItemStack itemStack = Inventories.splitStack(this.heldStacks, wrapSlot(slot), amount);
         if (!itemStack.isEmpty()) {
             this.markDirty();
+            this.onInventoryChanged();
         }
 
         return itemStack;
@@ -106,20 +116,30 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     }
     @Override
     public ItemStack removeStack(int slot) {
-        ItemStack itemStack = (ItemStack)this.heldStacks.get(slot);
+        int wrapped = wrapSlot(slot);
+        ItemStack itemStack = (ItemStack)this.heldStacks.get(wrapped);
         if (itemStack.isEmpty()) {
             return ItemStack.EMPTY;
         } else {
-            this.heldStacks.set(slot, ItemStack.EMPTY);
+            this.heldStacks.set(wrapped, ItemStack.EMPTY);
+            this.markDirty();
+            this.onInventoryChanged();
             return itemStack;
         }
     }
     @Override
     public void setStack(int slot, ItemStack stack) {
-        this.heldStacks.set(slot, stack);
+        this.heldStacks.set(wrapSlot(slot), stack);
         stack.capCount(this.getMaxCount(stack));
         this.markDirty();
+        this.onInventoryChanged();
     }
+    /** One cartridge per slot, also for hoppers and other automation (cartridges stack up to 64 in inventories). */
+    @Override
+    public int getMaxCountPerStack() {
+        return 1;
+    }
+
     @Override
     public int size() {
         return this.size;
@@ -151,6 +171,7 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     public void clear() {
         this.heldStacks.clear();
         this.markDirty();
+        this.onInventoryChanged();
     }
 
     @Override
@@ -162,6 +183,8 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
+        // Slots absent from the NBT are empty: without this, a removed cartridge would stay client-side.
+        this.heldStacks.clear();
         try {
             Inventories.readNbt(nbt, this.getHeldStacks(), wrapper);
         } catch (Exception e) {

@@ -34,7 +34,10 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
 
 public class MiniGamePartyStep extends PartyStep {
-    private List<UUID> tokens = new ArrayList<>();
+    // No initializer: it would run after super(nbt) and wipe what fromNbt just read
+    private List<UUID> tokens;
+    private boolean miniGameChosen; // no initializer, see above
+    private UUID rouletteTaskId = null;
 
     public MiniGamePartyStep(List<UUID> tokens) {
         if (tokens == null)
@@ -45,11 +48,15 @@ public class MiniGamePartyStep extends PartyStep {
 
     public MiniGamePartyStep(NbtCompound nbt) {
         super(nbt);
+        if (this.tokens == null)
+            this.tokens = new ArrayList<>();
     }
 
     @Override
     public void start(PartyControllerEntity partyControllerEntity) {
         super.start(partyControllerEntity);
+        cancelRoulette();
+        miniGameChosen = false;
 
         // Step 1: Ensure the world is a ServerWorld
         if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) {
@@ -72,10 +79,19 @@ public class MiniGamePartyStep extends PartyStep {
 
         // Step 5: Assign mini-games to team dispositions
         Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = assignMiniGamesToTeamDispositions(tokensWithOwners, statuses, miniGames, serverWorld);
+        if (miniGamesToTeamDispositions.isEmpty()) {
+            MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
+                    Text.translatableWithFallback("message.steveparty.no_compatible_minigame",
+                            "No mini-game of the catalogue fits the current players, the mini-game is skipped."),
+                    MessageUtils.MessageType.CHAT);
+            partyControllerEntity.nextStep();
+            return;
+        }
 
         // Step 6: Choose a random disposition for the mini-games
         TeamDisposition chosenDisposition = chooseRandomDisposition(miniGamesToTeamDispositions);
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(partyControllerEntity.catalogue, chosenDisposition);
+        partyControllerEntity.markDirty();
 
         // Step 7: Notify players about the chosen disposition
         notifyPlayersAboutChosenDisposition(partyControllerEntity, chosenDisposition, serverWorld.getServer());
@@ -88,6 +104,32 @@ public class MiniGamePartyStep extends PartyStep {
         AtomicInteger iterations = new AtomicInteger(0);
         List<ServerPlayerEntity> players = partyControllerEntity.getInterestedPlayersEntities();
         playIterationEffect(iterations, applicableMiniGames, partyControllerEntity, players);
+    }
+
+    @Override
+    public void resume(PartyControllerEntity partyControllerEntity) {
+        // The roulette was interrupted before a mini-game was chosen: run the selection again.
+        // If a mini-game was already chosen it is kept as is.
+        if (!miniGameChosen)
+            start(partyControllerEntity);
+    }
+
+    @Override
+    public void end(PartyControllerEntity partyControllerEntity) {
+        super.end(partyControllerEntity);
+        cancelRoulette();
+    }
+
+    @Override
+    public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
+        tokens.remove(tokenUUID);
+    }
+
+    private void cancelRoulette() {
+        if (rouletteTaskId != null) {
+            Steveparty.SCHEDULER.cancel(rouletteTaskId);
+            rouletteTaskId = null;
+        }
     }
 
     // Helper Methods
@@ -128,10 +170,16 @@ public class MiniGamePartyStep extends PartyStep {
             finalizeMiniGameSelection(iterations, applicableMiniGames, partyControllerEntity, players);
         } else {
             playSoundToPlayers(players, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.4f, 1);
+            // A new id each time: the scheduler ignores an id that is still registered (the running task's own)
+            rouletteTaskId = UUID.randomUUID();
             Steveparty.SCHEDULER.schedule(
-                    UUID.randomUUID(),
+                    rouletteTaskId,
                     currentIteration,
-                    () -> playIterationEffect(iterations, applicableMiniGames, partyControllerEntity, players)
+                    () -> {
+                        rouletteTaskId = null;
+                        if (isStillActive(partyControllerEntity))
+                            playIterationEffect(iterations, applicableMiniGames, partyControllerEntity, players);
+                    }
             );
         }
     }
@@ -148,6 +196,8 @@ public class MiniGamePartyStep extends PartyStep {
 
         // Store the final selection
         MiniGamesCatalogueItem.setCurrentMiniGamePage(partyControllerEntity.catalogue, chosenMiniGame);
+        miniGameChosen = true;
+        partyControllerEntity.markDirty();
 
         // Play a celebratory sound for selection
         playSoundToPlayers(players, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1f, 1);
@@ -213,7 +263,7 @@ public class MiniGamePartyStep extends PartyStep {
                 miniGamePageStack.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations()
                         .forEach(pos -> {
                             ItemStack book = storage.getTeleportationPadBook(pos);
-                            if (!book.isEmpty()) {
+                            if (book != null && !book.isEmpty()) {
                                 List<TeleportingTarget> targets = book.getOrDefault(TP_TARGETS, List.of());
                                 teleportingTargets.addAll(targets);
                             }
@@ -283,6 +333,7 @@ public class MiniGamePartyStep extends PartyStep {
     @Override
     public void fromNbt(NbtCompound nbt) {
         super.fromNbt(nbt);
+        this.miniGameChosen = nbt.getBoolean("MiniGameChosen");
         if (nbt.contains("Tokens")) {
             if (tokens == null)
                 tokens = new ArrayList<>();
@@ -303,6 +354,8 @@ public class MiniGamePartyStep extends PartyStep {
         }
         if (!tokens.isEmpty())
             nbtCompound.put("Tokens", tokensNbtList);
+        if (miniGameChosen)
+            nbtCompound.putBoolean("MiniGameChosen", true);
         return nbtCompound;
     }
 }

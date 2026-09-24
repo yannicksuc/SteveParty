@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "steveparty:block/plastic_block/green_plastic_block"
+  }
+}

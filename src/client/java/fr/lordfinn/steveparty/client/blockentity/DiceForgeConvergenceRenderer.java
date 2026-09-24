@@ -8,7 +8,10 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
+
+import net.minecraft.world.World;
 
 import java.util.List;
 
@@ -29,12 +32,11 @@ public class DiceForgeConvergenceRenderer {
     public void render(DiceForgeBlockEntity blockEntity, float partialTick,
                        MatrixStack poseStack, VertexConsumerProvider bufferSource,
                        int packedLight, int packedOverlay,
-                       List<DiceForgeOrbitRenderer.OrbitFace> orbitFaces) {
+                       List<DiceForgeOrbitRenderer.OrbitFace> orbitFaces, float coreYaw) {
 
         ItemRenderer itemRenderer = MinecraftClient.getInstance().getItemRenderer();
-        // Ensure 6 faces (duplicate if needed)
-        int faceCount = Math.min(orbitFaces.size(), 6);
-        if (faceCount < 6)
+        // The 6 cube faces cycle through the orbiting faces (a die can have 2 to 12 faces)
+        if (orbitFaces.isEmpty())
             return;
         // Inside render method
         for (int i = 0; i < 6; i++) {
@@ -56,10 +58,11 @@ public class DiceForgeConvergenceRenderer {
             double yOrbitFrame = face.yOrbit;
             double zOrbitFrame = face.zOrbit;
 
-            // Final cube position
-            float xFinal = FACE_POSITIONS[i][0];
+            // Final cube position: a die around the core, turned like the core (rotation about +Y, as GeckoLib does)
+            float cos = MathHelper.cos(coreYaw), sin = MathHelper.sin(coreYaw);
+            float xFinal = FACE_POSITIONS[i][0] * cos + FACE_POSITIONS[i][2] * sin;
             float yFinal = FACE_POSITIONS[i][1];
-            float zFinal = FACE_POSITIONS[i][2];
+            float zFinal = -FACE_POSITIONS[i][0] * sin + FACE_POSITIONS[i][2] * cos;
 
             // Interpolate positions and rotations
             float x = (float)(xOrbitFrame * (1 - progress) + xFinal * progress);
@@ -71,7 +74,9 @@ public class DiceForgeConvergenceRenderer {
             float roll = face.rollOrbit * (1 - progress) + FACE_ROTATIONS[i][2] * progress;
 
             poseStack.push();
-            poseStack.translate(0.5 + x, 2.5 + y, 0.5 + z);
+            poseStack.translate(0.5 + x, DiceForgeOrbitRenderer.getOrbitHeight(blockEntity, partialTick) + y, 0.5 + z);
+            // Takes on the core rotation as the die forms
+            poseStack.multiply(RotationAxis.POSITIVE_Y.rotation(coreYaw * progress));
             poseStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(pitch));
             poseStack.multiply(RotationAxis.NEGATIVE_Y.rotationDegrees(yaw));
             poseStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(roll));
@@ -83,6 +88,33 @@ public class DiceForgeConvergenceRenderer {
             poseStack.pop();
         }
 
+    }
+
+    /**
+     * Draws the formed die: the 6 faces as a cube centered on ({@code x}, {@code y}, {@code z}) (block space), turned
+     * by {@code yaw} (radians, about +Y like the core), at {@code size} (1 = the size the convergence ends at).
+     */
+    public static void renderDie(List<DiceForgeOrbitRenderer.OrbitFace> faces, MatrixStack poseStack,
+                                 VertexConsumerProvider bufferSource, int packedLight, int packedOverlay, World world,
+                                 double x, double y, double z, float yaw, float size) {
+        if (faces.isEmpty() || size <= 0) return;
+        ItemRenderer itemRenderer = MinecraftClient.getInstance().getItemRenderer();
+        for (int i = 0; i < 6; i++) {
+            ItemStack stack = faces.get(i % faces.size()).stack;
+            if (stack.isEmpty()) continue;
+            poseStack.push();
+            poseStack.translate(x, y, z);
+            poseStack.multiply(RotationAxis.POSITIVE_Y.rotation(yaw));
+            poseStack.scale(size, size, size);
+            poseStack.translate(FACE_POSITIONS[i][0], FACE_POSITIONS[i][1], FACE_POSITIONS[i][2]);
+            poseStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(FACE_ROTATIONS[i][0]));
+            poseStack.multiply(RotationAxis.NEGATIVE_Y.rotationDegrees(FACE_ROTATIONS[i][1]));
+            poseStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(FACE_ROTATIONS[i][2]));
+            poseStack.scale(0.8f, 0.8f, 0.8f);
+            itemRenderer.renderItem(stack, ModelTransformationMode.FIXED, packedLight, packedOverlay,
+                    poseStack, bufferSource, world, 0);
+            poseStack.pop();
+        }
     }
 
     private float mapProgress(float rawProgress) {

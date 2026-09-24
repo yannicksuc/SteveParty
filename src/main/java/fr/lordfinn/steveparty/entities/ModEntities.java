@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
+import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.EntityType;
@@ -32,7 +33,7 @@ public class ModEntities {
                     .build(HIDING_TRADER_ENTITY_KEY)
     );
 
-    public static final RegistryKey<EntityType<?>> DIRECTION_DISPLAY_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("dice"));
+    public static final RegistryKey<EntityType<?>> DIRECTION_DISPLAY_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("direction_display"));
     public static final EntityType<DirectionDisplayEntity> DIRECTION_DISPLAY_ENTITY = Registry.register(Registries.ENTITY_TYPE,
             Steveparty.id("direction_display"),
             EntityType.Builder
@@ -49,6 +50,20 @@ public class ModEntities {
                     .dimensions(0.5f, 0.5f)
                     .makeFireImmune()
                     .build(MULA_ENTITY_KEY)
+    );
+
+    /** Hitbox of the dice forge core in the sky: hitting it blows the core up. */
+    public static final RegistryKey<EntityType<?>> FORGE_CORE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("forge_core"));
+    public static final EntityType<ForgeCoreEntity> FORGE_CORE = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("forge_core"),
+            EntityType.Builder
+                    .<ForgeCoreEntity>create(ForgeCoreEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.5f, 0.5f)
+                    .disableSaving()
+                    .disableSummon()
+                    .makeFireImmune()
+                    .maxTrackingRange(10)
+                    .build(FORGE_CORE_KEY)
     );
 
     public static void initialize() {

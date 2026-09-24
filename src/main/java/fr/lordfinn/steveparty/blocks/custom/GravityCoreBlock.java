@@ -1,33 +1,33 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockEntityProvider;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-import java.util.List;
 
 /**
  * GravityCoreBlock
  *
- * Epic block that pulls nearby entities and emits particles in a swirling circular pattern.
+ * Epic block that pulls nearby entities like a small planet ({@link GravityCoreBlockEntity}, same pull as the dice
+ * forge core, with a fixed reach) and emits particles in a swirling circular pattern.
  */
-public class GravityCoreBlock extends Block {
+public class GravityCoreBlock extends Block implements BlockEntityProvider {
 
     // --- Block shape ---
     public static final VoxelShape SHAPE = Block.createCuboidShape(
@@ -129,65 +129,19 @@ public class GravityCoreBlock extends Block {
 
     @Override
     public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        pullNearbyEntities(world, pos);
         playAmbientSounds(world, pos, random);
         scheduleNextTick(world, pos);
     }
 
-    /**
-     * Apply a gravitational pull to all living entities in a 5-block radius.
-     */
-    private void pullNearbyEntities(ServerWorld world, BlockPos pos) {
-        List<Entity> nearbyEntities = getNearbyEntities(world, pos, 5);
-
-        Vec3d center = Vec3d.ofCenter(pos);
-
-        for (Entity entity : nearbyEntities) {
-            if (entity instanceof LivingEntity livingEntity && shouldIgnoreEntity(livingEntity)) continue;
-
-            applyGravitationalPull(entity, center, 0.4);
-        }
+    @Override
+    public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        return new GravityCoreBlockEntity(pos, state);
     }
 
-    /**
-     * Get all living entities within a certain radius of the block.
-     */
-    private List<Entity> getNearbyEntities(ServerWorld world, BlockPos pos, double radius) {
-        return world.getEntitiesByClass(Entity.class, new Box(pos).expand(radius), e -> true);
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        return TickableBlockEntity.getTicker(world);
     }
-
-    /**
-     * Returns true if the entity should be ignored (e.g., wearing Netherite armor).
-     */
-    private boolean shouldIgnoreEntity(LivingEntity entity) {
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (slot.getType() != EquipmentSlot.Type.HUMANOID_ARMOR) continue;
-
-            ItemStack armor = entity.getEquippedStack(slot);
-            if (isNetheriteArmor(armor)) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Returns true if the given item stack is a Netherite armor piece.
-     */
-    private boolean isNetheriteArmor(ItemStack stack) {
-        return stack.getItem() == Items.NETHERITE_HELMET
-                || stack.getItem() == Items.NETHERITE_CHESTPLATE
-                || stack.getItem() == Items.NETHERITE_LEGGINGS
-                || stack.getItem() == Items.NETHERITE_BOOTS;
-    }
-
-    /**
-     * Applies a gravitational pull to a single entity toward the center.
-     */
-    private void applyGravitationalPull(Entity entity, Vec3d center, double strength) {
-        Vec3d pull = center.subtract(entity.getPos()).normalize().multiply(strength);
-        entity.addVelocity(pull.x, pull.y, pull.z);
-        entity.velocityModified = true;
-    }
-
 
     /**
      * Play ambient sounds occasionally to enhance the epic effect.

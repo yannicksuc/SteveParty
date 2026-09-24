@@ -90,7 +90,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
     // --- Cached base access ---
     public GoalPoleBaseBlockEntity getCachedBase() {
-        if (cachedBase == null) updateCachedBase();
+        if (cachedBase == null || cachedBase.isRemoved()) updateCachedBase();
         return cachedBase;
     }
 

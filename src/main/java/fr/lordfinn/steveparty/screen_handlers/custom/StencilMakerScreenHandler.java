@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -28,13 +29,12 @@ public class StencilMakerScreenHandler extends ScreenHandler {
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
-        return null;
+        return ItemStack.EMPTY;
     }
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        if (this.blockEntity.getWorld() == null) return false;
-        return this.blockEntity.getWorld().getBlockEntity(pos) == this.blockEntity;
+        return ScreenHandlerChecks.canUseBlockEntity(this.blockEntity, player);
     }
 
     public StencilMakerBlockEntity getBlockEntity() {

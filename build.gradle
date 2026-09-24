@@ -10,6 +10,14 @@ base {
     archivesName = project.archives_base_name
 }
 
+sourceSets {
+    // In-game automated tests (Fabric GameTest), run on a dedicated server: ./gradlew runGametest
+    gametest {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
 loom {
     splitEnvironmentSourceSets()
 
@@ -17,6 +25,20 @@ loom {
         "steveparty" {
             sourceSet sourceSets.main
             sourceSet sourceSets.client
+        }
+        "steveparty-gametest" {
+            sourceSet sourceSets.gametest
+        }
+    }
+
+    runs {
+        gametest {
+            server()
+            name "Game Test"
+            vmArg "-Dfabric-api.gametest"
+            vmArg "-Dfabric-api.gametest.report-file=${project.layout.buildDirectory.get()}/gametest/junit.xml"
+            runDir "build/gametest"
+            source sourceSets.gametest
         }
     }
 }
@@ -28,6 +50,13 @@ repositories {
         url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
         content {
             includeGroup("software.bernie.geckolib")
+        }
+    }
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content {
+            includeGroup("maven.modrinth")
         }
     }
     // Add repositories to retrieve artifacts from in here.
@@ -44,20 +73,31 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Client-only runtime mods for testing (not bundled)
+    modLocalRuntime "maven.modrinth:sodium:${project.sodium_version}"
+    modLocalRuntime "maven.modrinth:iris:${project.iris_version}"
+    localRuntime "org.anarres:jcpp:1.4.14"
+    localRuntime "io.github.douira:glsl-transformer:2.0.1"
+    localRuntime "org.antlr:antlr4-runtime:4.13.1"
 }
 
 processResources {
     inputs.property "version", project.version
     inputs.property "minecraft_version", project.minecraft_version
     inputs.property "loader_version", project.loader_version
+    inputs.property "geckolib_version", project.geckolib_version
     filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version,
                 "minecraft_version": project.minecraft_version,
-                "loader_version": project.loader_version
+                "loader_version": project.loader_version,
+                "geckolib_version": project.geckolib_version
     }
 }
+
+apply from: 'gradle/dev-server.gradle'
 
 def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
@@ -83,8 +123,9 @@ java {
 }
 
 jar {
-    from("LICENSE") {
-        rename { "${it}_${project.archivesBaseName}" }
+    def archivesName = base.archivesName.get()
+    from("LICENSE.txt") {
+        rename { "${it}_${archivesName}" }
     }
 }
 

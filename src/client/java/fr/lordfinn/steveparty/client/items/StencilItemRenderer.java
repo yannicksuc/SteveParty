@@ -17,14 +17,10 @@ public class StencilItemRenderer implements DynamicItemRenderer {
     public void render(ItemStack stack, ModelTransformationMode mode, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light, int overlay) {
         byte[] shape = StencilItem.getShape(stack);
-        StencilResourceManager.StencilTextures textures = StencilResourceManager.getStencilShape(shape);
-
-        if (textures == null || textures.metalStencil() == null) return;
+        Identifier textureId = StencilResourceManager.getTexture(shape, StencilResourceManager.Kind.METAL);
+        if (textureId == null) return;
 
         matrices.push();
-        matrices.translate(0, 0, 0);
-
-        Identifier textureId = textures.metalStencil();
 
         StencilRenderUtils.renderSymbol(
                 matrices,

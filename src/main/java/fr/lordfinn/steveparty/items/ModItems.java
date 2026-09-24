@@ -2,6 +2,14 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.signs.MaterialSignItems;
+import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
+import fr.lordfinn.steveparty.stencil.StencilPatterns;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BlockStateComponent;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.util.DyeColor;
 import fr.lordfinn.steveparty.items.custom.*;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
@@ -29,26 +37,30 @@ import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
+    /** Enchanting table enchantability of the tokenizer wand (it can only receive steveparty:game_master). */
+    private static final int TOKENIZER_WAND_ENCHANTABILITY = 10;
+
     public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
 
     public static final Item STENCIL = register(StencilItem.class, "stencil");
-    public static final Item WRENCH = register(WrenchItem.class, "wrench");
+    public static final Item STENCIL_GUN = registerUnstackable(StencilGunItem.class, "stencil_gun");
+    public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
     public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop");
-    public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand");
+    public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand", new Item.Settings().maxCount(1).enchantable(TOKENIZER_WAND_ENCHANTABILITY));
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
     public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
     public static final List<Item> DICE_FACES = new ArrayList<>();
     public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
-    public static final Item MINI_GAMES_CATALOGUE = register(MiniGamesCatalogueItem.class,"mini_games_catalogue");
+    public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
     public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
-    public static final Item HERE_WE_GO_BOOK = register(HereWeGoBookItem.class, "here_we_go_book");
-    public static final Item HERE_WE_COME_BOOK = register(HereWeComeBookItem.class, "here_we_come_book");
-    public static final Item SHOPKEEPER_KEY = register(ShopkeeperKeyItem.class, "shopkeeper_key");
+    public static final Item HERE_WE_GO_BOOK = registerUnstackable(HereWeGoBookItem.class, "here_we_go_book");
+    public static final Item HERE_WE_COME_BOOK = registerUnstackable(HereWeComeBookItem.class, "here_we_come_book");
+    public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
     public static final Item FLAG = register(FlagItem.class, "flag");
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
     public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
@@ -59,6 +71,9 @@ public class ModItems {
     public static final Item GREEN_STAR_FRAGMENT = register(Item.class, "green_star_fragment");
     public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
+    public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
+    /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
+    public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(PARTY_CONTROLLER))
@@ -66,9 +81,25 @@ public class ModItems {
             .build();
 
 
+    /**
+     * Registers a stackable item. Items whose state lives in immutable data components (cartridges, stencils,
+     * mini game pages...) may stack: only identical stacks (same components) merge, so no state is lost.
+     */
     public static <T extends Item> T register(Class<T> itemClass, String id) {
+        return register(itemClass, id, new Item.Settings());
+    }
+
+    /**
+     * Registers an item whose per-stack state is edited in place over time (catalogue, books, wrench, wand...):
+     * it must not stack, otherwise editing one item would silently edit the whole stack.
+     */
+    public static <T extends Item> T registerUnstackable(Class<T> itemClass, String id) {
+        return register(itemClass, id, new Item.Settings().maxCount(1));
+    }
+
+    public static <T extends Item> T register(Class<T> itemClass, String id, Item.Settings settings) {
         try {
-            T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(new T.Settings(), id));
+            T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(settings, id));
             Identifier itemID = Steveparty.id(id);
             RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
             Registry.register(Registries.ITEM, key, item);
@@ -83,6 +114,15 @@ public class ModItems {
         RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
         return itemSettings.registryKey(key);
 
+    }
+
+    /** Blocks of a sign material kind, from the tags of the running game (modded blocks included). */
+    private static List<Block> blocksOf(RegistryWrapper.WrapperLookup lookup, SignMaterial kind) {
+        List<Block> blocks = new ArrayList<>();
+        lookup.getOrThrow(RegistryKeys.BLOCK).getOptional(kind.tag())
+                .ifPresent(list -> list.forEach(entry -> blocks.add(entry.value())));
+        if (blocks.isEmpty()) blocks.add(kind.defaultBlock());
+        return blocks;
     }
 
     public static void initialize() {
@@ -132,21 +172,49 @@ public class ModItems {
             itemGroup.add(TRADING_STALL);
             itemGroup.add(CASH_REGISTER);
             itemGroup.add(SHOPKEEPER_KEY);
-            itemGroup.add(OAK_TRAFFIC_SIGN);
-            itemGroup.add(BIRCH_TRAFFIC_SIGN);
-            itemGroup.add(SPRUCE_TRAFFIC_SIGN);
-            itemGroup.add(JUNGLE_TRAFFIC_SIGN);
-            itemGroup.add(ACACIA_TRAFFIC_SIGN);
-            itemGroup.add(DARK_OAK_TRAFFIC_SIGN);
-            itemGroup.add(MANGROVE_TRAFFIC_SIGN);
-            itemGroup.add(CHERRY_TRAFFIC_SIGN);
-            itemGroup.add(CRIMSON_TRAFFIC_SIGN);
-            itemGroup.add(WARPED_TRAFFIC_SIGN);
+            // The 10 fixed-wood traffic signs stay in the game for the worlds that have them, but are no longer
+            // listed: the material traffic sign covers every planks, modded ones included
+            RegistryWrapper.WrapperLookup lookup = itemGroup.getContext().lookup();
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(TRAFFIC_SIGN, planks));
+            }
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_PANEL, planks));
+            }
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_CUTOUT_PANEL, planks));
+            }
+            for (Block rock : blocksOf(lookup, SignMaterial.ROCK)) {
+                itemGroup.add(MaterialSignItems.withMaterial(ROCK_SIGN, rock));
+            }
+            for (PlasticRoadSignBlock.Plate plate : PlasticRoadSignBlock.Plate.values()) {
+                ItemStack sign = MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, plate == PlasticRoadSignBlock.Plate.ROUND ? DyeColor.RED : DyeColor.YELLOW);
+                sign.set(DataComponentTypes.BLOCK_STATE, BlockStateComponent.DEFAULT.with(PlasticRoadSignBlock.PLATE, plate));
+                itemGroup.add(sign);
+            }
+            for (DyeColor color : DyeColor.values()) {
+                itemGroup.add(MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, color));
+            }
             itemGroup.add(STENCIL);
+            for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
+                itemGroup.add(StencilItem.of(pattern));
+            }
+            itemGroup.add(STENCIL_GUN);
             itemGroup.add(STENCIL_MAKER);
             itemGroup.add(HOP_SWITCH);
-            for (Block switcherBlock : ModBlocks.SWITCHER_BLOCKS) {
-                itemGroup.add(switcherBlock);
+            itemGroup.add(PLASTIC_PELLETS);
+            itemGroup.add(PLASTIC_STICK);
+            for (Block plasticBlock : ModBlocks.PLASTIC_BLOCKS) {
+                itemGroup.add(plasticBlock);
+            }
+            for (Block stud : ModBlocks.PLASTIC_STUDS) {
+                itemGroup.add(stud);
+            }
+            for (Block fence : ModBlocks.PLASTIC_FENCES) {
+                itemGroup.add(fence);
+            }
+            for (Block[] shapes : new Block[][]{ModBlocks.PLASTIC_SLABS, ModBlocks.PLASTIC_STAIRS, ModBlocks.PLASTIC_WALLS}) {
+                for (Block shape : shapes) itemGroup.add(shape);
             }
             itemGroup.add(GOAL_POLE_BASE);
             itemGroup.add(GOAL_POLE);
@@ -178,6 +246,15 @@ public class ModItems {
             }
             for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS) {
                 itemGroup.add(block);
+            }
+
+            for (Block[] blocks : new Block[][]{
+                    ModBlocks.POLISHED_CONCRETE_BLOCKS, ModBlocks.POLISHED_CONCRETE_BRICKS_BLOCKS,
+                    ModBlocks.POLISHED_CONCRETE_STAIRS, ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_WALLS,
+                    ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS}) {
+                for (Block block : blocks) {
+                    itemGroup.add(block);
+                }
             }
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);

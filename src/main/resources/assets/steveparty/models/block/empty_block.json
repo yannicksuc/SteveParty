@@ -1,7 +1,7 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "steveparty:block/switcher_block/white_switcher_block"
+    "particle": "steveparty:block/plastic_block/white_plastic_block"
   },
   "elements": []
 }

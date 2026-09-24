@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
+import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookItem;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandlerType;
 
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.HERE_WE_COME_BOOK_SCREEN_HANDLER;
@@ -12,5 +14,10 @@ public class HereWeComeBookScreenHandler extends TeleportationBookScreenHandler 
 
     public HereWeComeBookScreenHandler(int syncId, PlayerInventory playerInventory) {
         super(HERE_WE_COME_BOOK_SCREEN_HANDLER, syncId);
+    }
+
+    @Override
+    public boolean isValidBook(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() instanceof HereWeComeBookItem;
     }
 }

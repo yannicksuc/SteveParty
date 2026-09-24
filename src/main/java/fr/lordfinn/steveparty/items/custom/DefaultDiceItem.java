@@ -50,7 +50,7 @@ public class DefaultDiceItem extends Item {
     }
 
     protected void decrementDiceInHand(PlayerEntity player, Hand hand) {
-        player.getStackInHand(hand).decrement(1);
+        player.getStackInHand(hand).decrementUnlessCreative(1, player);
     }
 
     protected boolean isServerWorld(World world) {

@@ -1,6 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "steveparty:block/switcher_block/orange_switcher_block"
-  }
-}

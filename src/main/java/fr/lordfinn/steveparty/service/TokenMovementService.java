@@ -13,7 +13,9 @@ import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.events.TileUpdatedEvent;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -24,6 +26,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 
 import java.util.ArrayList;
@@ -34,6 +37,8 @@ import java.util.UUID;
 import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 
 public class TokenMovementService {
+
+    private static final double MOVE_SPEED = 0.5;
 
     public TokenMovementService() {
         TileReachedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
@@ -49,6 +54,7 @@ public class TokenMovementService {
         MobEntity chosenToken = getTargetedToken(world, dice, ownerUUID);
         if (chosenToken == null) return ActionResult.PASS;
 
+        // Add small delay so players can appreciate the dice roll value
         SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(chosenToken, rollValue));
         return ActionResult.SUCCESS;
     }
@@ -59,7 +65,6 @@ public class TokenMovementService {
 
         sortTokens(chosenTokens, dice);
 
-        // Add small delay so players can appreciate the dice roll value
         return chosenTokens.getFirst();
     }
 
@@ -70,9 +75,8 @@ public class TokenMovementService {
                 entity -> ((TokenizedEntityInterface) entity).steveparty$isTokenized())) {
 
             TokenizedEntityInterface tokenInterface = (TokenizedEntityInterface) token;
-            UUID tokenOwnerUUID = tokenInterface.steveparty$getTokenOwner();
-            if (tokenOwnerUUID != null
-                    && tokenInterface.steveparty$getNbSteps() == 0
+            // Tokens without owner are eligible too: anyone may move them (see isTokenEligible)
+            if (tokenInterface.steveparty$getNbSteps() == 0
                     && isTokenEligible(tokenInterface, ownerUUID)) {
                 eligibleTokens.add(token);
             }
@@ -82,17 +86,21 @@ public class TokenMovementService {
 
     private boolean isTokenEligible(TokenizedEntityInterface token, UUID ownerUUID) {
         int status = token.steveparty$getStatus();
-        boolean isOwnedByOwner = token.steveparty$getTokenOwner().equals(ownerUUID);
-
-        return (isOwnedByOwner && TokenStatus.canMoveInGame(status)) || !TokenStatus.isInGame(status);
+        UUID tokenOwner = token.steveparty$getTokenOwner();
+        if (TokenStatus.isInGame(status)) {
+            // In game: only the owner (anyone for an ownerless token) can move it, and only when it is its turn
+            return (tokenOwner == null || tokenOwner.equals(ownerUUID)) && TokenStatus.canMoveInGame(status);
+        }
+        // Free play: a dice only moves the tokens of the player who rolled it (ownerless tokens: anyone)
+        return tokenOwner == null || tokenOwner.equals(ownerUUID);
     }
 
     private void sortTokens(List<MobEntity> tokens, DiceEntity dice) {
-        // Sort tokens by distance to dice and then by status (IN_GAME_CAN_MOVE are first and OUT_OF_GAME_xxx are last)
+        // Sort tokens by status (IN_GAME_CAN_MOVE are first and OUT_OF_GAME_xxx are last) and then by distance to dice
         tokens.sort(
                 Comparator
-                        .<MobEntity>comparingInt(token -> TokenStatus.canMoveInGame(((TokenizedEntityInterface) token).steveparty$getStatus())  ? 1 : -1)
-                        .thenComparingDouble(token -> token.getPos().distanceTo(dice.getPos()))
+                        .<MobEntity>comparingInt(token -> TokenStatus.canMoveInGame(((TokenizedEntityInterface) token).steveparty$getStatus()) ? 0 : 1)
+                        .thenComparingDouble(token -> token.getPos().squaredDistanceTo(dice.getPos()))
         );
     }
 
@@ -102,6 +110,7 @@ public class TokenMovementService {
         if (nbSteps == 0) return ActionResult.PASS;
 
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
+        // STOP board spaces keep the token until the board space is updated (TileUpdatedEvent)
         if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos())) {
             moveEntityOnBoard(entity, nbSteps);
             return ActionResult.SUCCESS;
@@ -109,19 +118,39 @@ public class TokenMovementService {
         return ActionResult.PASS;
     }
 
+    /**
+     * Called when a token reached the position it was moving (or teleported) to.
+     * Consumes one step when the board space counts as a step, then fires {@link TileReachedEvent}.
+     */
+    public static void onTokenArrived(MobEntity mob) {
+        if (mob.getWorld().isClient) return;
+        BlockEntity blockEntity = mob.getWorld().getBlockEntity(mob.getBlockPos());
+        if (!(blockEntity instanceof BoardSpaceBlockEntity boardSpace)) return;
+        TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
+        if (token.steveparty$getNbSteps() > 0 //TODO Manage negative Steps (Not urgent)
+                && ABoardSpaceBlock.countsAsStep(mob.getWorld().getBlockState(mob.getBlockPos()).getBlock())) {
+            token.steveparty$setNbSteps(token.steveparty$getNbSteps() - 1);
+        }
+        TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
+    }
+
     public static void moveEntityOnBoard(MobEntity mob, int rollNumber) {
         ((TokenizedEntityInterface) mob).steveparty$setNbSteps(rollNumber);
         if (rollNumber == 0) {
-            MessageUtils.sendToNearby(mob.getServer(), mob.getPos(), 100,
+            MessageUtils.sendToNearby((ServerWorld) mob.getWorld(), mob.getPos(), 100,
                     Text.translatable("message.steveparty.arrived_at_destination", mob.getCustomName() != null ? mob.getCustomName() : mob.getName()),
                     MessageUtils.MessageType.ACTION_BAR);
             return;
         }
         BoardSpaceBlockEntity tileEntity = ABoardSpaceBlock.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
-        if (tileEntity == null) return;
+        if (tileEntity == null) {
+            // Not on the board: it can't move, and must not keep pending steps (it would never be eligible again)
+            ((TokenizedEntityInterface) mob).steveparty$setNbSteps(0);
+            return;
+        }
         //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
 
-        MessageUtils.sendToNearby( mob.getServer(), mob.getPos(), 100,
+        MessageUtils.sendToNearby((ServerWorld) mob.getWorld(), mob.getPos(), 100,
                 Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName() != null ? mob.getCustomName() : mob.getName())
                 , MessageUtils.MessageType.ACTION_BAR);
 
@@ -131,16 +160,47 @@ public class TokenMovementService {
                 .toList();
 
         if (destinations.size() > 1) {
-            if (!mob.getWorld().getPlayers().isEmpty()) {
-                tileEntity.displayDestinations((ServerPlayerEntity) mob.getWorld().getPlayers().get(0), destinations);
-            }
+            // Remove the arrows of a previous display (re-triggered movement) to avoid duplicates
+            tileEntity.hideDestinations();
+            tileEntity.displayDestinations(getDestinationChooser(mob), destinations, mob.getUuid());
         } else if (destinations.size() == 1) {
-            BoardSpaceDestination destination = destinations.get(0); // <-- FIXED
+            BoardSpaceDestination destination = destinations.getFirst();
             moveEntity(mob, destination.position());
+        } else {
+            // Dead end: the movement ends here
+            stopOnCurrentBoardSpace(mob, tileEntity.getPos());
         }
     }
 
+    /** Ends the movement on the given board space: the token "arrives" there on the next tick. */
+    private static void stopOnCurrentBoardSpace(MobEntity mob, BlockPos boardSpacePos) {
+        moveEntityOnBoard(mob, 0);
+        ((TokenizedEntityInterface) mob).steveparty$setTargetPosition(calculateTargetPosition(mob, boardSpacePos), MOVE_SPEED);
+    }
+
+    /**
+     * The player who chooses the direction: the token owner if online in this world, otherwise the nearest player.
+     */
+    private static @Nullable ServerPlayerEntity getDestinationChooser(MobEntity mob) {
+        if (!(mob.getWorld() instanceof ServerWorld world)) return null;
+        UUID ownerUuid = ((TokenizedEntityInterface) mob).steveparty$getTokenOwner();
+        if (ownerUuid != null) {
+            ServerPlayerEntity owner = world.getServer().getPlayerManager().getPlayer(ownerUuid);
+            if (owner != null && owner.getWorld() == world) return owner;
+        }
+        PlayerEntity closest = world.getClosestPlayer(mob, -1);
+        return closest instanceof ServerPlayerEntity serverPlayer ? serverPlayer : null;
+    }
+
     public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, BoardSpaceDestination tileDestination) {
+        moveEntityOnTileToDestination(world, tileOrigin, tileDestination, null);
+    }
+
+    /**
+     * Moves the token waiting on {@code tileOrigin} toward {@code tileDestination}.
+     * @param preferredToken the token the direction was displayed for, if known
+     */
+    public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, BoardSpaceDestination tileDestination, @Nullable UUID preferredToken) {
         if (tileDestination == null || tileOrigin == null) return;
         BoardSpaceBlockEntity tileEntity = ABoardSpaceBlock.getBoardSpaceEntity(world, tileOrigin);
         if (tileEntity == null) return;
@@ -149,12 +209,14 @@ public class TokenMovementService {
         MobEntity mob = null;
         for (MobEntity token : tokens) {
             if (((TokenizedEntityInterface)token).steveparty$getNbSteps() != 0) {
-                mob = token;
-                break;
+                if (preferredToken == null || preferredToken.equals(token.getUuid())) {
+                    mob = token;
+                    break;
+                }
+                if (mob == null) mob = token; // fallback: first waiting token
             }
         }
         if (mob == null) return;
-        ((TokenizedEntityInterface) mob).steveparty$setNbSteps(((TokenizedEntityInterface) mob).steveparty$getNbSteps());
         moveEntity(mob, tileDestination.position());
     }
 
@@ -185,12 +247,16 @@ public class TokenMovementService {
     private static void teleportEntity(MobEntity mob, BlockPos targetPos, Vector3d preciseTargetPos) {
         mob.setPosition(preciseTargetPos.x(), preciseTargetPos.y(), preciseTargetPos.z());
         playSound(mob, targetPos, SoundEvents.ENTITY_ENDERMAN_TELEPORT);
+        // Already there: the arrival (step count + TileReachedEvent) is handled on the next tick, like a normal move
+        if (mob instanceof TokenizedEntityInterface tokenizedEntity) {
+            tokenizedEntity.steveparty$setTargetPosition(preciseTargetPos, MOVE_SPEED);
+        }
     }
 
     private static void moveEntityToTarget(MobEntity mob, Vector3d target) {
         // Set the target position (if applicable to your custom interface)
         if (mob instanceof TokenizedEntityInterface tokenizedEntity) {
-            tokenizedEntity.steveparty$setTargetPosition(target, 0.5);
+            tokenizedEntity.steveparty$setTargetPosition(target, MOVE_SPEED);
         }
 
         // Calculate rotation

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.recipes.TradingStallRecipe;
 import net.minecraft.recipe.PreparedRecipes;
 import net.minecraft.recipe.RecipeEntry;
@@ -25,7 +26,8 @@ public class PreparedRecipesMixin {
         for (RecipeEntry<?> entry : original) {
             if (entry.value() instanceof ShapedRecipe shaped) {
                 // Ici tu peux filtrer sur ton critère (ex: ID de recette spécifique)
-                if (entry.id().getValue().getPath().equals("trading_stall")) {
+                if (entry.id().getValue().getNamespace().equals(Steveparty.MOD_ID)
+                        && entry.id().getValue().getPath().equals("trading_stall")) {
                     ShapedRecipeAccessor acc = (ShapedRecipeAccessor) shaped;
 
                     TradingStallRecipe custom = new TradingStallRecipe(

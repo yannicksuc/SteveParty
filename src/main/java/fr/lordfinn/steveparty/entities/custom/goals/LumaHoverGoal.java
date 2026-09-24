@@ -28,13 +28,14 @@ public class LumaHoverGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        // Idle hovering when untamed or has no owner
-        return !entity.isTamed() || entity.getOwner() == null;
+        // Idle hovering when untamed or has no owner (e.g. offline), unless ordered to sit
+        return !entity.isTamed() || (entity.getOwner() == null && !entity.isSitting());
     }
 
     @Override
     public boolean shouldContinue() {
-        return true;
+        // Yield as soon as the entity has an owner, so FollowOwnerWhileFlyingGoal can run
+        return canStart();
     }
 
     @Override

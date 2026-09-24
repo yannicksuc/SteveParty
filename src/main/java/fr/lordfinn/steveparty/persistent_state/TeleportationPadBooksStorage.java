@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.persistent_state;
 
-import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -18,7 +17,7 @@ public class TeleportationPadBooksStorage extends PersistentState {
             new PersistentState.Type<>(
                     TeleportationPadBooksStorage::new,
                     TeleportationPadBooksStorage::readNbt,
-                    DataFixTypes.LEVEL
+                    null // custom data: must not go through the level data fixer
             );
 
     private final Map<BlockPos, ItemStack> teleportationPads = new HashMap<>();
@@ -34,7 +33,7 @@ public class TeleportationPadBooksStorage extends PersistentState {
     }
 
     public ItemStack getTeleportationPadBook(BlockPos pos) {
-        return teleportationPads.get(pos);
+        return teleportationPads.getOrDefault(pos, ItemStack.EMPTY);
     }
 
     public static TeleportationPadBooksStorage readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
@@ -64,6 +63,7 @@ public class TeleportationPadBooksStorage extends PersistentState {
             NbtCompound padData = new NbtCompound();
             BlockPos pos = entry.getKey();
             ItemStack book = entry.getValue();
+            if (book == null || book.isEmpty()) continue; // empty stacks can't be encoded
 
             // Save BlockPos
             padData.putInt("x", pos.getX());

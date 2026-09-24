@@ -35,7 +35,11 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
 
     public HereWeComeBookScreen(TeleportationBookScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.targets = new ArrayList<>(inventory.player.getMainHandStack().getOrDefault(TP_TARGETS, List.of()));
+        // Deep copy: the targets are edited in place by this screen and must not alias the item's component values
+        this.targets = new ArrayList<>();
+        for (TeleportingTarget target : inventory.player.getMainHandStack().getOrDefault(TP_TARGETS, List.<TeleportingTarget>of())) {
+            this.targets.add(target.copy());
+        }
     }
 
     @Override
@@ -94,7 +98,7 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
             lines.add(Text.translatable("gui.steveparty.group_description").setStyle(Style.EMPTY.withItalic(true)));
             TeleportingTarget.Group[] groups = TeleportingTarget.Group.values();
             int selectedIndex = target.getGroup().ordinal();
-            lines.add(MutableText.of(Text.of(groups[selectedIndex - 1 > 0 ? selectedIndex - 1 : groups.length - 1].name()).getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
+            lines.add(MutableText.of(Text.of(groups[selectedIndex - 1 >= 0 ? selectedIndex - 1 : groups.length - 1].name()).getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
             lines.add(MutableText.of(Text.of("-> "+ groups[selectedIndex].name()).getContent()).setStyle(Style.EMPTY.withBold(true)));
             lines.add(MutableText.of(Text.of(groups[selectedIndex + 1 < groups.length ? selectedIndex + 1 : 0].name()).getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
             lines.add(MutableText.of(Text.of("...").getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
@@ -193,8 +197,10 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
     }
     private void sendUpdateToServer() {
         if (this.client != null && this.client.player instanceof ClientPlayerEntity player) {
-            player.getMainHandStack().set(TP_TARGETS, targets);
-            ClientPlayNetworking.send(new HereWeComeBookPayload(targets));
+            // Immutable snapshot of independent copies: later edits in this screen must not mutate the component
+            List<TeleportingTarget> snapshot = List.copyOf(targets.stream().map(TeleportingTarget::copy).toList());
+            player.getMainHandStack().set(TP_TARGETS, snapshot);
+            ClientPlayNetworking.send(new HereWeComeBookPayload(snapshot));
         }
     }
 

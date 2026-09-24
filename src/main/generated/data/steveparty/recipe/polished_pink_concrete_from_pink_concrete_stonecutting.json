@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "minecraft:pink_concrete",
+  "result": {
+    "count": 1,
+    "id": "steveparty:polished_pink_concrete"
+  }
+}

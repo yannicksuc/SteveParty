@@ -1,0 +1,79 @@
+{
+	"credit": "SteveParty - pebbles behind the rock sign (arriere 4 25%)",
+	"textures": {
+		"side": "minecraft:block/stone",
+		"top": "minecraft:block/smooth_stone",
+		"particle": "minecraft:block/stone"
+	},
+	"elements": [
+		{
+			"from": [
+				10,
+				0,
+				13
+			],
+			"to": [
+				15,
+				9,
+				17
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						1,
+						7,
+						6,
+						16
+					],
+					"texture": "#side"
+				},
+				"south": {
+					"uv": [
+						10,
+						7,
+						15,
+						16
+					],
+					"texture": "#side"
+				},
+				"west": {
+					"uv": [
+						12,
+						7,
+						16,
+						16
+					],
+					"texture": "#side"
+				},
+				"east": {
+					"uv": [
+						0,
+						7,
+						4,
+						16
+					],
+					"texture": "#side"
+				},
+				"up": {
+					"uv": [
+						10,
+						12,
+						15,
+						16
+					],
+					"texture": "#top"
+				},
+				"down": {
+					"uv": [
+						10,
+						0,
+						15,
+						4
+					],
+					"texture": "#top"
+				}
+			},
+			"name": "pebble"
+		}
+	]
+}

@@ -104,7 +104,8 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
 
     private void trigger() {
         if (this.world != null && this.world instanceof ServerWorld) {
-            PartyControllerEntity.getClosestActivePartyControllerEntity(this.pos, RANGE)
+            // "previous" may also bring back a party that reached its END step
+            PartyControllerEntity.getClosestSteppablePartyControllerEntity(this.world, this.pos, RANGE, this.mode == 2)
                     .ifPresentOrElse(partyControllerEntity ->  {
                         world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         switch (this.mode) {

@@ -52,15 +52,14 @@ public class StencilMakerBlock extends BlockWithEntity {
         return SHAPE;
     }
 
+    /** The stencil inside drops however the block goes (mined, blown up, replaced by a command...). */
     @Override
-    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        if (!world.isClient) {
-            StencilMakerBlockEntity blockEntity = (StencilMakerBlockEntity) world.getBlockEntity(pos);
-            if (blockEntity != null) {
-                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, blockEntity.getStencil());
-            }
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.isOf(newState.getBlock()) && world.getBlockEntity(pos) instanceof StencilMakerBlockEntity blockEntity
+                && !blockEntity.getStencil().isEmpty()) {
+            ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, blockEntity.getStencil());
         }
-        return super.onBreak(world, pos, state, player);
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override
@@ -70,18 +69,20 @@ public class StencilMakerBlock extends BlockWithEntity {
         StencilMakerBlockEntity blockEntity = (StencilMakerBlockEntity) world.getBlockEntity(pos);
         if (blockEntity == null) return ActionResult.PASS;
 
-        if (player.isSneaking() && !blockEntity.getStencil().isEmpty()) {
-            if (player instanceof ServerPlayerEntity serverPlayer) {
-                serverPlayer.openHandledScreen(blockEntity);
+        // Empty maker: a stencil in hand goes in
+        if (blockEntity.getStencil().isEmpty()) {
+            if (player.getMainHandStack().getItem() instanceof StencilItem) {
+                blockEntity.swapStencil(player);
+                return ActionResult.SUCCESS;
             }
-            return ActionResult.SUCCESS;
+            return ActionResult.PASS;
         }
-
-        if (player.getMainHandStack().isEmpty() || player.getMainHandStack().getItem() instanceof StencilItem) {
-            blockEntity.swapStencil(player);
-            return ActionResult.SUCCESS;
+        // A stencil inside: sneaking (empty handed) takes it out, otherwise the editor opens (it has a button to take it out)
+        if (player.isSneaking()) {
+            blockEntity.takeOutStencil(player);
+        } else if (player instanceof ServerPlayerEntity serverPlayer) {
+            serverPlayer.openHandledScreen(blockEntity);
         }
-
-        return ActionResult.PASS;
+        return ActionResult.SUCCESS;
     }
 }

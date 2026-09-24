@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_polished_black_concrete": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:polished_black_concrete"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:polished_black_concrete_bricks"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_polished_black_concrete"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:polished_black_concrete_bricks"
+    ]
+  }
+}

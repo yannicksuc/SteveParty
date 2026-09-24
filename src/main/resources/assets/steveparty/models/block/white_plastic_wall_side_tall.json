@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/template_wall_side_tall",
+  "textures": {
+    "wall": "steveparty:block/plastic_block/white_plastic_block"
+  }
+}

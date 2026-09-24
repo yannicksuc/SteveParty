@@ -1,0 +1,16 @@
+{
+  "type": "steveparty:material_shaped",
+  "category": "misc",
+  "pattern": [
+    "PPP",
+    "PPP",
+    "PPP"
+  ],
+  "key": {
+    "P": "#minecraft:planks"
+  },
+  "result": {
+    "id": "steveparty:wooden_panel",
+    "count": 2
+  }
+}

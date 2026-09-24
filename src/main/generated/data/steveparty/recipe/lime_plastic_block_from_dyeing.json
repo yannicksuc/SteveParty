@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "dyed_plastic_block",
+  "key": {
+    "#": [
+      "steveparty:white_plastic_block",
+      "steveparty:orange_plastic_block",
+      "steveparty:magenta_plastic_block",
+      "steveparty:light_blue_plastic_block",
+      "steveparty:yellow_plastic_block",
+      "steveparty:lime_plastic_block",
+      "steveparty:pink_plastic_block",
+      "steveparty:gray_plastic_block",
+      "steveparty:light_gray_plastic_block",
+      "steveparty:cyan_plastic_block",
+      "steveparty:purple_plastic_block",
+      "steveparty:blue_plastic_block",
+      "steveparty:brown_plastic_block",
+      "steveparty:green_plastic_block",
+      "steveparty:red_plastic_block",
+      "steveparty:black_plastic_block"
+    ],
+    "X": "minecraft:lime_dye"
+  },
+  "pattern": [
+    "###",
+    "#X#",
+    "###"
+  ],
+  "result": {
+    "count": 8,
+    "id": "steveparty:lime_plastic_block"
+  }
+}

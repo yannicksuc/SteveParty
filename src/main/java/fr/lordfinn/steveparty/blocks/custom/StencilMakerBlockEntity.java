@@ -58,8 +58,6 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
 
     @Override
     public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        NbtCompound nbt = new NbtCompound();
-        writeNbt(nbt, this.getWorld().getRegistryManager());
         return BlockEntityUpdateS2CPacket.create(this);
     }
 
@@ -103,9 +101,9 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
         stencilIn = false;
     }
 
+    /** Only one stencil goes in: stencils stack, and editing it must not edit the whole stack. */
     private void swapInStencil(PlayerEntity player, ItemStack itemStack) {
-        this.stencil = itemStack.copy();
-        player.getMainHandStack().setCount(0);
+        this.stencil = itemStack.split(1);
         stencilIn = true;
     }
 
@@ -117,9 +115,28 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
         return this.stencil;
     }
 
+    /** Gives the stencil inside to the player (in hand if it is empty, else in the inventory, else dropped). */
+    public void takeOutStencil(PlayerEntity player) {
+        if (stencil.isEmpty()) return;
+        ItemStack taken = stencil.copy();
+        stencil = ItemStack.EMPTY;
+        stencilIn = false;
+        if (player.getMainHandStack().isEmpty()) player.setStackInHand(Hand.MAIN_HAND, taken);
+        else player.getInventory().offerOrDrop(taken);
+        playMetalSound(player.getWorld(), pos);
+        updateListeners();
+    }
+
+    /** Saves the shape drawn in the editor on the stencil inside and shows it to everyone around. */
+    public void setStencilShape(byte[] shape) {
+        if (stencil.isEmpty() || !(stencil.getItem() instanceof StencilItem)) return;
+        StencilItem.setShape(shape, stencil);
+        updateListeners();
+    }
+
     @Override
     public Text getDisplayName() {
-        return Text.translatable("steveparty.block.stencil_maker");
+        return Text.translatable("block.steveparty.stencil_maker");
     }
 
     @Nullable

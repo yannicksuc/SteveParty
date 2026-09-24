@@ -10,11 +10,13 @@ import static fr.lordfinn.steveparty.payloads.ModPayloads.SAVE_STENCIL_PAYLOAD;
 
 public record SaveStencilPayload(byte[] shape, BlockPos pos) implements CustomPayload {
     public static final CustomPayload.Id<SaveStencilPayload> ID = new CustomPayload.Id<>(SAVE_STENCIL_PAYLOAD);
+    /** A stencil is a 16x16 pixel grid. */
+    public static final int SHAPE_SIZE = 256;
 
     public static final PacketCodec<PacketByteBuf, SaveStencilPayload> CODEC = new PacketCodec<>() {
         @Override
         public SaveStencilPayload decode(PacketByteBuf buf) {
-            byte[] shape = buf.readByteArray();
+            byte[] shape = buf.readByteArray(SHAPE_SIZE);
             BlockPos pos = buf.readBlockPos();
             return new SaveStencilPayload(shape, pos);
         }

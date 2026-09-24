@@ -48,10 +48,8 @@ public class PartyData {
      */
     public void fromNbt(NbtCompound nbt) {
         if (nbt.contains("Steps")) {
-            nbt.getList("Steps", 10).forEach(nbtStep -> {
-                if (PartyStepFactory.get((NbtCompound) nbtStep) instanceof PartyStep step)
-                    this.steps.add(step);
-            });
+            // The factory never returns null (unknown steps become placeholders) so the step index stays aligned
+            nbt.getList("Steps", 10).forEach(nbtStep -> this.steps.add(PartyStepFactory.get((NbtCompound) nbtStep)));
         }
         if (nbt.contains("Tokens")) {
             nbt.getList("Tokens", 8).forEach(token -> this.tokens.add(UUID.fromString(token.asString())));
@@ -111,9 +109,7 @@ public class PartyData {
         int stepCount = buf.readInt(); // Read the size of the steps list
         for (int i = 0; i < stepCount; i++) {
             NbtCompound stepNbt = buf.readNbt(); // Read each step as NBT
-            if (stepNbt != null && PartyStepFactory.get(stepNbt) instanceof PartyStep step) {
-                party.steps.add(step);
-            }
+            party.steps.add(stepNbt != null ? PartyStepFactory.get(stepNbt) : new PartyStep());
         }
 
         // Read tokens from the buffer
@@ -128,8 +124,22 @@ public class PartyData {
         return party;
     }
 
+    /**
+     * A party is running while the step index points to a real step, except the END step:
+     * once the END step is reached the party is over and the controller can be booted again.
+     */
     public boolean isStarted() {
-        return stepIndex > -1 && stepIndex < steps.size();
+        return stepIndex > -1 && stepIndex < steps.size()
+                && steps.get(stepIndex).getType() != PartyStepType.END;
+    }
+
+    /**
+     * True when the party reached its END step: it is over (see {@link #isStarted()}), but a step controller
+     * can still bring it back to the previous step.
+     */
+    public boolean isAtEnd() {
+        return stepIndex > -1 && stepIndex < steps.size()
+                && steps.get(stepIndex).getType() == PartyStepType.END;
     }
 
     public List<PartyStep> getSteps() {

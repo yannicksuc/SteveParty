@@ -10,9 +10,12 @@
     "PreparedRecipesMixin",
     "ShapedRecipeAccessor",
     "ShearsItemMixin",
+    "SimpleRegistryAliasMixin",
+    "BubbleColumnBlockMixin",
+    "EntityBubbleColumnMixin",
     "StatusEffectMixin",
     "TokenEntityMixin",
-    "TrackedDataHandlerRegistryMixin",
+    "TokenBaseDimensionsMixin",
     "MixinPistonBlock"
   ],
   "injectors": {

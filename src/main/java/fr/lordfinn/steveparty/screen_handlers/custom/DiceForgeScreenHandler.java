@@ -1,57 +1,118 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
-import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
+import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
+import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.screen.ArrayPropertyDelegate;
+import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import org.jetbrains.annotations.Nullable;
 
+import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FORGE_SCREEN_HANDLER;
 
+/**
+ * Dice forge GUI. Handler slot indices match the forge inventory: 0..11 faces, 12 center (gravity core input,
+ * hidden once the forge is activated: the screen draws the core there as the FORGE button), 13..16 star fragments
+ * (NW, NE, SE, SW), 17 blank faces (left of the core), 18 output (right of the core), then the player inventory.
+ * The FORGE button uses the vanilla button click packet (syncId + canUse, i.e. same forge open and in reach).
+ */
 public class DiceForgeScreenHandler extends ScreenHandler {
-    private final Inventory inventory;
-    private static int INVENTORY_SIZE = 13;
+    public static final int BUTTON_TOGGLE = 0;
+    /** Position (GUI coordinates) of the center slot (the core) and of the slots around it. */
+    public static final int CENTER_X = 80, CENTER_Y = 63;
+    /**
+     * Inner ring, 28 px from the core, one slot every 60 degrees: the blank faces on its left, the forged die on its
+     * right, and the 4 star fragments in between (NW, NE, SE, SW, at 330, 30, 150 and 210 degrees).
+     */
+    public static final int[][] FRAGMENT_POSITIONS = {
+            {CENTER_X - 14, CENTER_Y - 24}, {CENTER_X + 14, CENTER_Y - 24},
+            {CENTER_X + 14, CENTER_Y + 24}, {CENTER_X - 14, CENTER_Y + 24}
+    };
+    public static final int BLANK_X = CENTER_X - 28, BLANK_Y = CENTER_Y;
+    public static final int OUTPUT_X = CENTER_X + 28, OUTPUT_Y = CENTER_Y;
+    /** Outer ring, 54 px from the core, one face every 30 degrees (the squares of the texture sit under them). */
+    public static final int[][] FACE_POSITIONS = {
+            {80, 9},   {53, 16},  {107, 16},
+            {33, 36},  {127, 36}, {26, 63},
+            {134, 63}, {33, 90},  {127, 90},
+            {53, 110}, {107, 110},{80, 117}
+    };
+    private static final int PLAYER_INVENTORY_START = SIZE;
 
-    public DiceForgeScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
+    private final Inventory inventory;
+    private final PropertyDelegate properties;
+
+    public DiceForgeScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory, PropertyDelegate properties) {
         super(DICE_FORGE_SCREEN_HANDLER, syncId);
-        checkSize(inventory, 13); // enforce correct inventory size
+        checkSize(inventory, SIZE);
+        checkDataCount(properties, PROPERTY_COUNT);
         this.inventory = inventory;
+        this.properties = properties;
         inventory.onOpen(playerInventory.player);
 
-        // --- Add the 12 face slots ---
-        int[][] positions = {
-                {80, 9},   {54, 19},  {106, 19},
-                {36, 37},  {124, 37}, {26, 63},
-                {134, 63}, {36, 89},  {124, 89},
-                {54, 107}, {106, 107},{80, 117}
-        };
-
-        for (int i = 0; i < 12; i++) {
-            int x = positions[i][0];
-            int y = positions[i][1];
-            this.addSlot(new Slot(inventory, i, x, y));
+        // --- 12 face slots ---
+        for (int i = 0; i < FACE_SLOTS; i++) {
+            this.addSlot(new ForgeSlot(inventory, i, FACE_POSITIONS[i][0], FACE_POSITIONS[i][1]));
         }
 
-        // --- Add the special Power Star slot (index 12) ---
-        this.addSlot(new Slot(inventory, 12, 80, 63) {
+        // --- Center slot: gravity core input until the forge is activated (then the FORGE button) ---
+        this.addSlot(new ForgeSlot(inventory, CENTER_SLOT, CENTER_X, CENTER_Y) {
+            @Override
+            public int getMaxItemCount(ItemStack stack) {
+                return isGravityCore(stack) ? 1 : super.getMaxItemCount(stack);
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return !isActivated();
+            }
+        });
+
+        // --- 4 star fragment slots around the core ---
+        for (int i = 0; i < FRAGMENT_SLOTS; i++) {
+            this.addSlot(new ForgeSlot(inventory, FIRST_FRAGMENT_SLOT + i, FRAGMENT_POSITIONS[i][0], FRAGMENT_POSITIONS[i][1]));
+        }
+
+        // --- Blank faces (consumed) and output (take only) ---
+        this.addSlot(new ForgeSlot(inventory, BLANK_SLOT, BLANK_X, BLANK_Y));
+        this.addSlot(new Slot(inventory, OUTPUT_SLOT, OUTPUT_X, OUTPUT_Y) {
             @Override
             public boolean canInsert(ItemStack stack) {
-                return stack.isOf(ModItems.POWER_STAR);
+                return false;
             }
         });
 
         // --- Player inventory ---
-        addPlayerSlots(playerInventory, 8, 140); // adjust Y offset to fit under your GUI
+        // Matches the slot cells painted in the texture (rows at y = 143, 161, 179, hotbar at 201)
+        addPlayerSlots(playerInventory, 8, 143);
+        addProperties(properties);
     }
 
+    /** Client constructor. */
     public DiceForgeScreenHandler(int syncId, PlayerInventory playerInventory) {
-        this(syncId, playerInventory, new SimpleInventory(INVENTORY_SIZE));
+        this(syncId, playerInventory, new SimpleInventory(SIZE), new ArrayPropertyDelegate(PROPERTY_COUNT));
     }
 
+    private class ForgeSlot extends Slot {
+        ForgeSlot(Inventory inventory, int index, int x, int y) {
+            super(inventory, index, x, y);
+        }
+
+        @Override
+        public boolean canInsert(ItemStack stack) {
+            return isValidForSlot(inventory, getIndex(), stack, isActivated());
+        }
+    }
 
     private void addPlayerSlots(PlayerInventory playerInventory, int left, int top) {
         // Player inventory (3 rows)
@@ -71,7 +132,18 @@ public class DiceForgeScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return this.inventory.canPlayerUse(player);
+        return ScreenHandlerChecks.canUseInventory(this.inventory, player);
+    }
+
+    /** Server side: the vanilla packet handler already checked the syncId and {@link #canUse}. */
+    @Override
+    public boolean onButtonClick(PlayerEntity player, int id) {
+        if (id != BUTTON_TOGGLE || !canUse(player)) return false;
+        if (inventory instanceof DiceForgeBlockEntity forge) {
+            forge.toggleProduction();
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -82,23 +154,22 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             ItemStack stackInSlot = slot.getStack();
             itemStack = stackInSlot.copy();
 
-            // If it's from block inventory → try to move to player
-            if (index < 13) {
-                if (!this.insertItem(stackInSlot, 13, this.slots.size(), true)) {
+            if (index < PLAYER_INVENTORY_START) {
+                // Forge → player
+                if (!this.insertItem(stackInSlot, PLAYER_INVENTORY_START, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
+            } else if (isGravityCore(stackInSlot) && !isActivated()) {
+                if (!this.insertItem(stackInSlot, CENTER_SLOT, CENTER_SLOT + 1, false)) return ItemStack.EMPTY;
+            } else if (isBlankFace(stackInSlot)) {
+                // Blank faces go to their slot only (put one on the ring by hand to make it a blank side)
+                if (!insertPreferringGhosts(stackInSlot, BLANK_SLOT, BLANK_SLOT + 1)) return ItemStack.EMPTY;
+            } else if (DiceFace.isFace(stackInSlot)) {
+                if (!insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
+            } else if (isStarFragment(stackInSlot)) {
+                if (!insertPreferringGhosts(stackInSlot, FIRST_FRAGMENT_SLOT, FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS)) return ItemStack.EMPTY;
             } else {
-                // From player → try power star slot first
-                if (stackInSlot.isOf(ModItems.POWER_STAR)) {
-                    if (!this.insertItem(stackInSlot, 12, 13, false)) {
-                        return ItemStack.EMPTY;
-                    }
-                } else {
-                    // then try face slots
-                    if (!this.insertItem(stackInSlot, 0, 12, false)) {
-                        return ItemStack.EMPTY;
-                    }
-                }
+                return ItemStack.EMPTY;
             }
 
             if (stackInSlot.isEmpty()) {
@@ -106,9 +177,49 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             } else {
                 slot.markDirty();
             }
+            if (stackInSlot.getCount() == itemStack.getCount()) return ItemStack.EMPTY;
         }
 
         return itemStack;
+    }
+
+    /** Shift-click: fill matching stacks, then empty slots whose ghost is this item, then any empty slot. */
+    private boolean insertPreferringGhosts(ItemStack stack, int start, int end) {
+        int before = stack.getCount();
+        // 1. merge with identical stacks
+        for (int i = start; i < end && !stack.isEmpty(); i++) {
+            Slot slot = this.slots.get(i);
+            ItemStack current = slot.getStack();
+            if (!current.isEmpty() && ItemStack.areItemsAndComponentsEqual(current, stack)) {
+                int max = Math.min(slot.getMaxItemCount(current), current.getMaxCount());
+                int moved = Math.min(stack.getCount(), max - current.getCount());
+                if (moved > 0) {
+                    current.increment(moved);
+                    stack.decrement(moved);
+                    slot.markDirty();
+                }
+            }
+        }
+        // 2. empty slots remembering this item, 3. any empty slot
+        for (int pass = 0; pass < 2 && !stack.isEmpty(); pass++) {
+            for (int i = start; i < end && !stack.isEmpty(); i++) {
+                Slot slot = this.slots.get(i);
+                if (slot.hasStack() || !slot.canInsert(stack)) continue;
+                Item ghost = getGhost(i);
+                if (pass == 0 && ghost != stack.getItem()) continue;
+                if (pass == 1 && ghost != null && ghost != stack.getItem()) continue; // keep other ghosts free
+                slot.setStack(stack.split(Math.min(stack.getCount(), slot.getMaxItemCount(stack))));
+                slot.markDirty();
+            }
+        }
+        // Last resort: slots with a different ghost
+        for (int i = start; i < end && !stack.isEmpty(); i++) {
+            Slot slot = this.slots.get(i);
+            if (slot.hasStack() || !slot.canInsert(stack)) continue;
+            slot.setStack(stack.split(Math.min(stack.getCount(), slot.getMaxItemCount(stack))));
+            slot.markDirty();
+        }
+        return stack.getCount() != before;
     }
 
     @Override
@@ -119,5 +230,47 @@ public class DiceForgeScreenHandler extends ScreenHandler {
 
     public Inventory getInventory() {
         return this.inventory;
+    }
+
+    // ---- synced state (valid on both sides)
+
+    public int getFlags() {
+        return properties.get(PROP_FLAGS);
+    }
+
+    public boolean isActivated() {
+        return (getFlags() & FLAG_ACTIVATED) != 0;
+    }
+
+    public boolean isRunning() {
+        return (getFlags() & FLAG_RUNNING) != 0;
+    }
+
+    public boolean isBlocked() {
+        return (getFlags() & FLAG_BLOCKED) != 0;
+    }
+
+    public boolean isPowered() {
+        return (getFlags() & FLAG_POWERED) != 0;
+    }
+
+    public DiceForgeBlockEntity.Status getStatus() {
+        return DiceForgeBlockEntity.Status.byId(properties.get(PROP_STATUS));
+    }
+
+    /** @return craft progress in [0, 1] */
+    public float getProgress() {
+        int total = properties.get(PROP_CRAFT_TIME);
+        return total <= 0 ? 0f : Math.min(1f, (float) properties.get(PROP_PROGRESS) / total);
+    }
+
+    /** @return the item remembered for this forge slot (ghost), or null. */
+    public @Nullable Item getGhost(int slot) {
+        int layoutIndex = layoutIndex(slot);
+        if (layoutIndex < 0) return null;
+        int rawId = properties.get(PROP_FIRST_GHOST + layoutIndex);
+        if (rawId <= 0) return null;
+        Item item = Registries.ITEM.get(rawId);
+        return item == Items.AIR ? null : item;
     }
 }

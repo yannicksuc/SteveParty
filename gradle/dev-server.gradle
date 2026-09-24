@@ -1,0 +1,108 @@
+// Local multiplayer testing: a ready-to-test dedicated server + a client that joins it directly.
+//
+//   ./gradlew runServer      dedicated server in run-server/ (prepared by prepareDevServer)
+//   ./gradlew runClientJoin  client (run/) that joins localhost as LordFinn
+//   scripts/dev.ps1 up       both in the background, client started once the server is ready
+//
+// Every value lives here; scripts/dev.ps1 reads them through `./gradlew -q devServerInfo`.
+
+// Override per checkout/worktree without editing this file: -PdevServerPort=25581 (RCON = port + 10),
+// or put devServerPort=25581 in that checkout's gradle.properties / ~/.gradle/gradle.properties.
+int devPort = (project.findProperty('devServerPort') ?: '25580') as int // 25565 is taken by CrazyPhone's dev server
+
+ext.devServer = [
+        port        : devPort,
+        rconPort    : devPort + 10,
+        rconPassword: 'steveparty-dev', // loopback-only dev server, not a secret
+        player      : 'LordFinn',
+        runDir      : 'run-server',
+]
+
+loom {
+    runs {
+        server {
+            name "Minecraft Server (dev)"
+            runDir devServer.runDir
+        }
+        clientJoin {
+            client()
+            name "Client (join dev server)"
+            runDir "run"
+            programArgs "--username", devServer.player, "--quickPlayMultiplayer", "localhost:${devServer.port}"
+        }
+    }
+}
+
+/** Sets key=value in a .properties file, keeping every other line (and the user's own edits) as is. */
+static void setProperties(File file, Map<String, Object> values) {
+    List<String> lines = file.exists() ? file.readLines('UTF-8') : []
+    values.each { key, value ->
+        int index = lines.findIndexOf { it.startsWith("${key}=") }
+        if (index >= 0) lines[index] = "${key}=${value}"
+        else lines << "${key}=${value}".toString()
+    }
+    file.parentFile.mkdirs()
+    file.setText(lines.join('\n') + '\n', 'UTF-8')
+}
+
+tasks.register('prepareDevServer') {
+    group = 'steveparty dev'
+    description = 'Prepares run-server/ for testing: eula, offline mode, creative, peaceful, RCON, dev player op, dev-defaults datapack.'
+    doLast {
+        File runDir = file(devServer.runDir)
+        runDir.mkdirs()
+        // Local dev server only: accepts the Minecraft EULA for this test server, like CrazyPhone's dev-launch.
+        new File(runDir, 'eula.txt').setText('eula=true\n', 'UTF-8')
+
+        File properties = new File(runDir, 'server.properties')
+        setProperties(properties, [
+                'server-port'              : devServer.port,
+                // Dev clients use an offline session (--username): online mode would reject them silently
+                'online-mode'              : false,
+                'gamemode'                 : 'creative',
+                'force-gamemode'           : true,
+                'difficulty'               : 'peaceful',
+                'spawn-protection'         : 0,
+                'function-permission-level': 4,
+                // Lets scripts/dev.ps1 stop the server gracefully (save-all flush + stop) instead of killing it
+                'enable-rcon'              : true,
+                'rcon.port'                : devServer.rconPort,
+                'rcon.password'            : devServer.rconPassword,
+                'broadcast-rcon-to-ops'    : false,
+        ])
+
+        // Op the dev player by its OFFLINE uuid (the one a --username dev client joins with): `op <name>` would
+        // resolve the real Mojang account instead, and the dev client would not actually be op.
+        String offlineUuid = UUID.nameUUIDFromBytes("OfflinePlayer:${devServer.player}".getBytes('UTF-8')).toString()
+        File ops = new File(runDir, 'ops.json')
+        List entries = ops.exists() ? (new groovy.json.JsonSlurper().parse(ops) as List) : []
+        entries.removeIf { it.name == devServer.player }
+        entries << [uuid: offlineUuid, name: devServer.player, level: 4, bypassesPlayerLimit: false]
+        ops.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(entries)) + '\n', 'UTF-8')
+
+        // Per-world state (time, weather) is applied by a datapack re-run on every world load
+        String levelName = properties.readLines('UTF-8').find { it.startsWith('level-name=') }?.substring(11)?.trim() ?: 'world'
+        File pack = new File(runDir, "${levelName}/datapacks/steveparty-dev-defaults")
+        new File(pack, 'data/steveparty_dev/function').mkdirs()
+        new File(pack, 'data/minecraft/tags/function').mkdirs()
+        new File(pack, 'pack.mcmeta').setText('{"pack":{"pack_format":57,"description":"SteveParty dev-server defaults - written by gradle/dev-server.gradle, do not edit"}}\n', 'UTF-8')
+        new File(pack, 'data/steveparty_dev/function/defaults.mcfunction').setText([
+                'gamerule doDaylightCycle false',
+                'gamerule doWeatherCycle false',
+                'time set day',
+                'weather clear',
+                "say [dev] creative, peaceful, eternal day, clear weather",
+        ].join('\n') + '\n', 'UTF-8')
+        new File(pack, 'data/minecraft/tags/function/load.json').setText('{"values":["steveparty_dev:defaults"]}\n', 'UTF-8')
+    }
+}
+
+tasks.matching { it.name == 'runServer' }.configureEach { dependsOn 'prepareDevServer' }
+
+tasks.register('devServerInfo') {
+    group = 'steveparty dev'
+    description = 'Prints the dev server settings (used by scripts/dev.ps1).'
+    doLast {
+        devServer.each { key, value -> println "${key}=${value}" }
+    }
+}

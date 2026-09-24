@@ -1,0 +1,38 @@
+{
+  "values": [
+    "minecraft:stone",
+    "minecraft:granite",
+    "minecraft:diorite",
+    "minecraft:andesite",
+    "minecraft:tuff",
+    "minecraft:deepslate",
+    "minecraft:cobblestone",
+    "minecraft:mossy_cobblestone",
+    "minecraft:cobbled_deepslate",
+    "minecraft:smooth_stone",
+    "minecraft:calcite",
+    "minecraft:dripstone_block",
+    "minecraft:sandstone",
+    "minecraft:red_sandstone",
+    "minecraft:smooth_sandstone",
+    "minecraft:smooth_red_sandstone",
+    "minecraft:netherrack",
+    "minecraft:basalt",
+    "minecraft:smooth_basalt",
+    "minecraft:blackstone",
+    "minecraft:end_stone",
+    "minecraft:obsidian",
+    {
+      "id": "#c:stones",
+      "required": false
+    },
+    {
+      "id": "#c:cobblestones",
+      "required": false
+    },
+    {
+      "id": "#c:sandstone_blocks",
+      "required": false
+    }
+  ]
+}

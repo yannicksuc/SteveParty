@@ -30,7 +30,8 @@ public class MixinPistonBlock {
             return;
         }
 
-        if (dir != DOWN)
+        // Only when the piston pushes down (extension), never on retraction
+        if (!extend || dir != DOWN)
             return;
 
         BlockPos front = pos.offset(dir);
@@ -45,7 +46,9 @@ public class MixinPistonBlock {
             if (!vpos.equals(front.offset(dir)))
                 continue;
 
-            boolean noBlockBelow = !(world.getBlockState(vpos).isSolidBlock(world, vpos));
+            // The villager block replaces the villager's own position: only overwrite air/replaceable blocks
+            // (never slabs, snow layers, chests...)
+            boolean noBlockBelow = world.getBlockState(vpos).isReplaceable();
 
             boolean hasAdultVillagerBelow = !villager.isBaby();
 

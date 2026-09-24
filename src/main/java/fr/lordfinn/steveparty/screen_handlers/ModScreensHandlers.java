@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
 import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.*;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
@@ -68,6 +69,11 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
             register("looting_box_screen_handler", LootingBoxScreenHandler::new);
     public static final ScreenHandlerType<DiceForgeScreenHandler> DICE_FORGE_SCREEN_HANDLER = register("dice_forge_screen_handler", DiceForgeScreenHandler::new);
+
+    /** Opening data: the player inventory slot holding the gun. */
+    public static final ExtendedScreenHandlerType<StencilGunScreenHandler, Integer> STENCIL_GUN_SCREEN_HANDLER =
+            Registry.register(Registries.SCREEN_HANDLER, Steveparty.id("stencil_gun_screen_handler"),
+                    new ExtendedScreenHandlerType<>(StencilGunScreenHandler::new, PacketCodecs.VAR_INT.cast()));
 
     private static <T extends ScreenHandler> ScreenHandlerType<T> register(String id, ScreenHandlerType.Factory<T> factory) {
         return (ScreenHandlerType)Registry.register(Registries.SCREEN_HANDLER, Steveparty.id(id), new ScreenHandlerType(factory, FeatureFlags.VANILLA_FEATURES));

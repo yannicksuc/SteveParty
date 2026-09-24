@@ -1,30 +1,31 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.RotationAxis;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
-import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlock.ACTIVATED;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBlockEntity> {
     private final DiceForgeOrbitRenderer orbitRenderer = new DiceForgeOrbitRenderer();
     private final DiceForgeConvergenceRenderer convergenceRenderer = new DiceForgeConvergenceRenderer();
+    private final DiceForgeForgedRenderer forgedRenderer = new DiceForgeForgedRenderer();
+    // Last world tick at which trail particles were spawned, per forge (render thread only)
+    private final Map<DiceForgeBlockEntity, Long> lastParticleTick = new WeakHashMap<>();
 
     public DiceForgeBlockEntityRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
         super(new DefaultedBlockGeoModel<>(Steveparty.id("dice_forge")));
+        // The gravity core sits in the forge hole and follows the animations (core_insert / floating / crafting)
+        addRenderLayer(new DiceForgeCoreLayer(this));
     }
 
     @Override
@@ -33,37 +34,34 @@ public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBloc
                        int packedLight, int packedOverlay) {
         super.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
 
-        if (!blockEntity.getCachedState().get(ACTIVATED)) return;
+        if (!blockEntity.isCoreInPlace()) return;
 
-        renderCore(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
+        // Trail particles are spawned once per game tick (not per frame) so the density is FPS independent
+        boolean spawnParticles = false;
+        if (blockEntity.getWorld() != null) {
+            long time = blockEntity.getWorld().getTime();
+            Long last = lastParticleTick.put(blockEntity, time);
+            spawnParticles = last == null || last != time;
+        }
 
         // Render orbiting faces and collect orbit info
-        var orbitFaces = orbitRenderer.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay, 0.4f );
+        var orbitFaces = orbitRenderer.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay, 0.4f, spawnParticles);
 
-        // Render convergence on top if crafting
+        // The die forms around the core and turns with it (root bone, just animated for this forge by super.render)
+        float coreYaw = getGeoModel().getBone(DiceForgeCoreLayer.ROOT_BONE).map(GeoBone::getRotY).orElse(0f);
         if (blockEntity.isCrafting()) {
             convergenceRenderer.render(blockEntity, partialTick, poseStack, bufferSource,
-                    packedLight, packedOverlay, orbitFaces);
+                    packedLight, packedOverlay, orbitFaces, coreYaw);
         }
+        // Once forged, it falls into the forge
+        forgedRenderer.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay,
+                orbitFaces, coreYaw, spawnParticles);
     }
 
-    private void renderCore(DiceForgeBlockEntity blockEntity, float partialTick,
-                            MatrixStack poseStack, VertexConsumerProvider bufferSource,
-                            int packedLight, int packedOverlay) {
-
-        ItemRenderer itemRenderer = MinecraftClient.getInstance().getItemRenderer();
-        ItemStack gravityCore = new ItemStack(ModBlocks.GRAVITY_CORE);
-
-        poseStack.push();
-        poseStack.translate(0.5, 1.9, 0.5);
-
-        float ticks = blockEntity.getWorld() != null ? blockEntity.getWorld().getTime() + partialTick : 0;
-        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(ticks % 360));
-
-        poseStack.scale(2f, 2f, 2f);
-        itemRenderer.renderItem(gravityCore, ModelTransformationMode.GROUND,
-                packedLight, packedOverlay, poseStack, bufferSource, blockEntity.getWorld(), 0);
-        poseStack.pop();
+    /** The core and the orbiting faces are drawn well above / around the block. */
+    @Override
+    public boolean rendersOutsideBoundingBox(DiceForgeBlockEntity blockEntity) {
+        return true;
     }
 
     @Override

@@ -52,13 +52,16 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
 
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (world.isClient) return SUCCESS;
+        // The decision must be the same on both sides, otherwise the client mispredicts (ghost blocks, missing swings...)
         ItemStack mainHandStack = player.getMainHandStack();
         ItemStack offHandStack = player.getOffHandStack();
-        if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return onUse(state, world, pos, player, hit);
+        // Vanilla then calls onUse (main hand) on both sides
+        if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return PASS_TO_DEFAULT_BLOCK_ACTION;
         if (!(mainHandStack.getItem() instanceof CartridgeContainerOpener) && !(offHandStack.getItem() instanceof CartridgeContainerOpener)) {
+            // Implementations must be client-safe (see ABoardSpaceBlock)
             return onUseWithoutCartridgeContainerOpener(stack, state, world, pos, player, hand, hit);
         }
+        if (world.isClient) return SUCCESS;
         ActionResult.Success success = openScreen(state, world, pos, player);
         if (success != null) return success;
         return FAIL;
@@ -76,10 +79,11 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
 
     protected abstract ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit);
 
+    /** Cartridge containers don't tick by default; subclasses whose block entity needs it opt in. */
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return TickableBlockEntity.getTicker(world);
+        return null;
     }
 
     @Override

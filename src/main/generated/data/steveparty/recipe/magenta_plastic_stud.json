@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "plastic_stud",
+  "ingredients": [
+    "steveparty:magenta_plastic_block"
+  ],
+  "result": {
+    "count": 4,
+    "id": "steveparty:magenta_plastic_stud"
+  }
+}

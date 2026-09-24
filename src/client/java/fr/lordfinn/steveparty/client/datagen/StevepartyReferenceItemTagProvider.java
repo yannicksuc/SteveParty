@@ -24,5 +24,12 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
     protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
         for (Item diceFace : ModItems.DICE_FACES)
             getOrCreateTagBuilder(DICE_FACES_TAG).add(diceFace);
+        for (net.minecraft.block.Block fence : fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_FENCES)
+            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.FENCES).add(fence.asItem());
+        for (int i = 0; i < fr.lordfinn.steveparty.blocks.ModBlocks.COLORS.length; i++) {
+            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.SLABS).add(fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_SLABS[i].asItem());
+            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.STAIRS).add(fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_STAIRS[i].asItem());
+            getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.WALLS).add(fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_WALLS[i].asItem());
+        }
     }
 }

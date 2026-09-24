@@ -1,0 +1,40 @@
+{
+  "variants": {
+    "face=floor,facing=north": {
+      "model": "steveparty:block/magenta_plastic_stud_floor"
+    },
+    "face=ceiling,facing=north": {
+      "model": "steveparty:block/magenta_plastic_stud_ceiling"
+    },
+    "face=wall,facing=north": {
+      "model": "steveparty:block/magenta_plastic_stud_wall_north"
+    },
+    "face=floor,facing=south": {
+      "model": "steveparty:block/magenta_plastic_stud_floor"
+    },
+    "face=ceiling,facing=south": {
+      "model": "steveparty:block/magenta_plastic_stud_ceiling"
+    },
+    "face=wall,facing=south": {
+      "model": "steveparty:block/magenta_plastic_stud_wall_south"
+    },
+    "face=floor,facing=east": {
+      "model": "steveparty:block/magenta_plastic_stud_floor"
+    },
+    "face=ceiling,facing=east": {
+      "model": "steveparty:block/magenta_plastic_stud_ceiling"
+    },
+    "face=wall,facing=east": {
+      "model": "steveparty:block/magenta_plastic_stud_wall_east"
+    },
+    "face=floor,facing=west": {
+      "model": "steveparty:block/magenta_plastic_stud_floor"
+    },
+    "face=ceiling,facing=west": {
+      "model": "steveparty:block/magenta_plastic_stud_ceiling"
+    },
+    "face=wall,facing=west": {
+      "model": "steveparty:block/magenta_plastic_stud_wall_west"
+    }
+  }
+}

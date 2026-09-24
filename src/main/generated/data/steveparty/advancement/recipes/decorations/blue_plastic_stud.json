@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_blue_plastic_block": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:blue_plastic_block"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:blue_plastic_stud"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_blue_plastic_block"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:blue_plastic_stud"
+    ]
+  }
+}

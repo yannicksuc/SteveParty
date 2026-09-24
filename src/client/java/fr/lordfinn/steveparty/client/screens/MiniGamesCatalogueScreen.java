@@ -26,4 +26,10 @@ public class MiniGamesCatalogueScreen extends HandledScreen<MiniGamesCatalogueSc
         int y = (height - backgroundHeight) / 2;
         context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground, TEXTURE, x, y, 0, 0, backgroundWidth, backgroundHeight, 256, 256);
     }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        super.render(context, mouseX, mouseY, delta);
+        this.drawMouseoverTooltip(context, mouseX, mouseY);
+    }
 }

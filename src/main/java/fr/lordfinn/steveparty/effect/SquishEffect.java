@@ -1,167 +1,158 @@
 package fr.lordfinn.steveparty.effect;
 
 import fr.lordfinn.steveparty.StatusEffectExtension;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.payloads.custom.SquishAnimationPayload;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 
+/**
+ * Shrinks an entity into a token.
+ * <ul>
+ *     <li>Exact size: a token whose size was chosen with the Tokenizer Wand spell
+ *     ({@link TokenizedEntityInterface#steveparty$getTokenSize()}, see {@link #squishToSize}) ends with its biggest
+ *     dimension (height, or width if wider than tall) equal to that size, in blocks.</li>
+ *     <li>Otherwise (e.g. {@code /effect}), the coarse amplifier is used: the height becomes {@code 0.1 * amplifier}
+ *     blocks (amplifier 0 = scale 1).</li>
+ * </ul>
+ * The server applies the final scale once, when the effect is applied (hitbox consistent from then on, nothing
+ * sent per tick). The shrink / wobble / spin animation is purely visual and played by the clients over the
+ * effect duration, from a single {@link SquishAnimationPayload}.
+ */
 public class SquishEffect extends StatusEffect implements StatusEffectExtension {
-    private static final double BASE_MAX_HEIGHT = 0; // Base max height for scaling
-    private static final double OSCILLATION_AMPLITUDE = 0.5; // Amplitude of the oscillation
-    private static final double OSCILLATION_FREQUENCY = 0.1; // Frequency of the oscillation
-    private static final double BASE_ROTATION_SPEED = 2; // Base rotation speed
-    private static final double AMPLIFIER_ROTATION_MULTIPLIER = 0.5; // Frequency of the oscillation
-    private static final Map <LivingEntity, Double> maxScaleFactors = new HashMap<>();
-    private static final Map <LivingEntity, Long> maxDurations = new HashMap<>();
-    private static final Map <LivingEntity, Long> startTimestamps = new HashMap<>();
-
+    private static final double SCALE_EPSILON = 1.0E-3;
 
     public SquishEffect() {
         super(StatusEffectCategory.HARMFUL, 0xc150eb);
     }
 
+    /**
+     * Squishes {@code mob} so that its biggest dimension becomes exactly {@code sizeInBlocks} (stored on the token,
+     * so the final tick and later re-squishes keep it). Can be replayed on a token that is already squished or still
+     * squishing (resize): the animation restarts from its current scale. Server side.
+     */
+    public static void squishToSize(MobEntity mob, float sizeInBlocks, int duration) {
+        ((TokenizedEntityInterface) mob).steveparty$setTokenSize(sizeInBlocks);
+        int amplifier = amplifierForSize(sizeInBlocks);
+        StatusEffectInstance instance = new StatusEffectInstance(SQUISHED, duration, amplifier);
+        if (mob.hasStatusEffect(SQUISHED)) {
+            // Still squishing (resized right away): replacing the effect does not call onApplied
+            mob.setStatusEffect(instance, null);
+            startSquish(mob, amplifier, duration);
+        } else {
+            mob.addStatusEffect(instance);
+        }
+    }
+
+    /** Amplifier matching a size (drives the spin speed of the client animation). */
+    public static int amplifierForSize(float sizeInBlocks) {
+        return Math.max(1, Math.round(sizeInBlocks * 10));
+    }
+
+    /**
+     * Scale attribute base value for which the biggest dimension of {@code entity} (standing) is {@code sizeInBlocks}.
+     * Independent of the current scale and of when the hitbox was last recomputed.
+     */
+    public static double scaleForSize(LivingEntity entity, double sizeInBlocks) {
+        float currentScale = entity.getScale();
+        EntityDimensions dimensions = entity.getDimensions(EntityPose.STANDING);
+        double unscaledSize = currentScale > 0 ? Math.max(dimensions.width(), dimensions.height()) / currentScale : 0;
+        if (unscaledSize <= 0) {
+            EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
+            return scaleAttribute == null ? 1 : scaleAttribute.getBaseValue();
+        }
+        return sizeInBlocks / unscaledSize;
+    }
+
+    /** Only the last tick does something: make sure the entity ends at its final scale. */
     @Override
     public boolean canApplyUpdateEffect(int duration, int amplifier) {
-        return true;
+        return duration == 1;
     }
 
     @Override
     public void onApplied(LivingEntity entity, int amplifier) {
         super.onApplied(entity, amplifier);
-        maxDurations.remove(entity);
-        startTimestamps.remove(entity);
-        maxScaleFactors.remove(entity);
         entity.setGlowing(true);
+        StatusEffectInstance instance = entity.getStatusEffect(SQUISHED);
+        int duration = instance == null || instance.isInfinite() ? 0 : instance.getDuration();
+        startSquish(entity, amplifier, duration);
     }
 
-    private double resetScaleFactor(LivingEntity entity, int amplifier) {
-        double height = entity.getHeight();
+    /** Applies the final scale at once and lets the clients play the animation. Server side only. */
+    private static void startSquish(LivingEntity entity, int amplifier, int duration) {
+        if (!(entity.getWorld() instanceof ServerWorld)) return;
         EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
-        double initialHeight = 0;
-        if (scaleAttribute != null) {
-            initialHeight = height / scaleAttribute.getBaseValue();
+        if (scaleAttribute == null) return;
+
+        double startScale = scaleAttribute.getBaseValue();
+        double targetScale = getTargetScale(entity, amplifier, scaleAttribute);
+        scaleAttribute.setBaseValue(targetScale);
+
+        if (duration > 0) {
+            sendAnimation(entity, new SquishAnimationPayload(entity.getId(), (float) startScale, (float) targetScale, duration, amplifier));
         }
-        double maxHeight = BASE_MAX_HEIGHT + (0.1 * amplifier);
-        double scaleFactor = maxHeight / initialHeight;
-        maxScaleFactors.put(entity, amplifier == 0 ? 1 : scaleFactor);
-        maxDurations.put(entity, getCurrentDuration(entity));
-        startTimestamps.put(entity, System.currentTimeMillis());
-        return scaleFactor;
     }
 
-
-    private Long getMaxDuration(LivingEntity entity) {
-        return maxDurations.get(entity);
-    }
-
-    private long getStartTimestamp(LivingEntity entity) {
-        return startTimestamps.get(entity);
-    }
-
-    private long getCurrentDuration(LivingEntity entity) {
-        StatusEffectInstance statusEffectInstance = getStatusEffect(entity);
-        if (statusEffectInstance != null) {
-            return statusEffectInstance.getDuration();
+    /**
+     * Final scale: the token's chosen size if any, else {@code 0.1 * amplifier} blocks high (amplifier 0 keeps the
+     * scale 1). Idempotent: the unscaled size is derived from the current dimensions and scale.
+     */
+    private static double getTargetScale(LivingEntity entity, int amplifier, EntityAttributeInstance scaleAttribute) {
+        if (entity instanceof TokenizedEntityInterface token && token.steveparty$getTokenSize() > 0) {
+            return scaleForSize(entity, token.steveparty$getTokenSize());
         }
-        return -1L;
+        if (amplifier == 0) return 1;
+        // Body height (a token's hitbox also includes its base), computed live from the current scale
+        float currentScale = entity.getScale();
+        double initialHeight = currentScale > 0 ? entity.getDimensions(EntityPose.STANDING).height() / currentScale : 0;
+        if (initialHeight <= 0) return scaleAttribute.getBaseValue();
+        double maxHeight = 0.1 * amplifier;
+        return maxHeight / initialHeight;
     }
 
-    private StatusEffectInstance getStatusEffect(LivingEntity entity) {
-        return entity.getStatusEffect(SQUISHED);
+    private static void sendAnimation(LivingEntity entity, SquishAnimationPayload payload) {
+        for (ServerPlayerEntity player : PlayerLookup.tracking(entity)) {
+            ServerPlayNetworking.send(player, payload);
+        }
+        // A player does not track itself
+        if (entity instanceof ServerPlayerEntity self) {
+            ServerPlayNetworking.send(self, payload);
+        }
     }
 
     @Override
     public boolean applyUpdateEffect(ServerWorld world, LivingEntity entity, int amplifier) {
-        double scaleFactor;
-        if (maxScaleFactors.containsKey(entity))
-            scaleFactor = maxScaleFactors.get(entity);
-        else
-            scaleFactor = resetScaleFactor(entity, amplifier);
-        long duration = getCurrentDuration(entity);
-
-        // Apply a smooth scaling with oscillation over time
-        applyScalingWithOscillation(entity, scaleFactor, duration);
-        applyRotation(entity, amplifier);
-
-        return true;
-    }
-
-    private void applyRotation(LivingEntity entity, int amplifier) {
-        float rotationSpeed = (float) (BASE_ROTATION_SPEED + (amplifier * AMPLIFIER_ROTATION_MULTIPLIER)); // Amplifier increases speed slightly
-
-        // Get the current yaw (horizontal rotation) of the entity
-        float currentYaw = entity.getYaw();
-
-        // Apply the rotation increment
-        float newYaw = (currentYaw + rotationSpeed) % 360; // Ensure the rotation stays within 0-360 degrees
-
-        // Update the entity's yaw and head yaw
-        entity.setYaw(newYaw);
-        entity.setHeadYaw(newYaw);
-
-        // If applicable, set pitch to a consistent value
-        entity.setPitch(0); // Keep pitch neutral, or modify as needed
-
-        // Ensure the rotation is synced with the client
-        if (entity instanceof ServerPlayerEntity) {
-            ((ServerPlayerEntity) entity).networkHandler.sendPacket(new EntityS2CPacket.Rotate(entity.getId(), (byte) (newYaw * 256 / 360), (byte) (entity.getPitch() * 256 / 360), entity.isOnGround()));
-        }
-    }
-
-    private void applyScalingWithOscillation(LivingEntity entity, double targetScale, long duration) {
         EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
-        if (scaleAttribute == null) return;
-        long startTimestamp = getStartTimestamp(entity);
-        long endTimestamp = startTimestamp + getMaxDuration(entity) * 1000L / 20L;
-        long currentTime = System.currentTimeMillis();
-        double currentScale = scaleAttribute.getBaseValue();
-        //Steveparty.LOGGER.info("MAX Duration: " + getMaxDuration(entity));
-        //Steveparty.LOGGER.info("Current scale: " + currentScale + ", Target scale: " + targetScale);
-        //Steveparty.LOGGER.info("Current time: " + currentTime + ", Start timestamp: " + startTimestamp + ", End timestamp: " + endTimestamp);
-        //Steveparty.LOGGER.info("Duration: " + duration);
-
-
-        float progress = (float) (currentTime - startTimestamp) / (endTimestamp - startTimestamp);
-        progress = Math.max(0.0f, Math.min(1.0f, progress));
-        //Steveparty.LOGGER.info("Progress: " + progress);
-
-        // Calculate the oscillating scale factor using a sine function
-
-        double oscillation = 1 + OSCILLATION_AMPLITUDE * Math.sin(OSCILLATION_FREQUENCY * (getMaxDuration(entity) / Math.PI) * duration * (Math.PI * 2));
-        //Steveparty.LOGGER.info("Oscillation: " + oscillation);
-
-        // Calculate the final scale with interpolation and oscillation
-        double easedScale = MathHelper.lerp(
-                MathHelper.clamp(progress, 0.0, 1.0), // Time clamped to ensure interpolation is smooth
-                currentScale,
-                targetScale * oscillation
-        );
-
-        scaleAttribute.setBaseValue(easedScale);
+        if (scaleAttribute != null) {
+            // Normally the scale is already final (set in onApplied): only fix it if it drifted, e.g. an entity
+            // saved mid-squish by an older version of the mod
+            double targetScale = getTargetScale(entity, amplifier, scaleAttribute);
+            if (Math.abs(scaleAttribute.getBaseValue() - targetScale) > SCALE_EPSILON) {
+                scaleAttribute.setBaseValue(targetScale);
+            }
+        }
+        return true;
     }
 
     @Override
     public void steveparty$onRemoved(LivingEntity livingEntity) {
-        EntityAttributeInstance scaleAttribute = livingEntity.getAttributeInstance(EntityAttributes.SCALE);
-        if (scaleAttribute != null && maxScaleFactors.containsKey(livingEntity)) {
-            double maxHeight = maxScaleFactors.remove(livingEntity);
-            scaleAttribute.setBaseValue(maxHeight);
-        }
         livingEntity.setGlowing(false);
         livingEntity.getWorld().playSound(livingEntity, livingEntity.getBlockPos(),
                 SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.converted")),

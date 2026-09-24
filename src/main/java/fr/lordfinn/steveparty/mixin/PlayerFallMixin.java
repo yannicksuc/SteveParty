@@ -11,7 +11,9 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.GameMode;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -25,12 +27,21 @@ public abstract class PlayerFallMixin extends PlayerEntity {
         super(world, pos, yaw, gameProfile);
     }
 
+    /** Minimum fall distance (blocks) to reveal a hiding trader, for a block of hardness 0. */
+    @Unique
+    private static final float BASE_REQUIRED_FALL = 10.0F;
+    /** Extra fall distance (blocks) required per point of hardness of the block under the villager block. */
+    @Unique
+    private static final float REQUIRED_FALL_PER_HARDNESS = 2.0F;
+
     @Inject(method = "tick", at = @At("HEAD"))
     public void onTick(CallbackInfo info) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
 
-        // Vérifie si le joueur est en chute libre
-        if (!player.isOnGround() && player.fallDistance >= 10) {
+        // Vérifie si le joueur est en chute libre (breaking blocks is forbidden in adventure and spectator modes)
+        if (!player.isOnGround() && !player.isSpectator()
+                && player.interactionManager.getGameMode() != GameMode.ADVENTURE
+                && player.fallDistance >= BASE_REQUIRED_FALL) {
             BlockPos blockPos = player.getBlockPos().down();
             BlockState blockState = player.getWorld().getBlockState(blockPos);
 
@@ -41,6 +52,18 @@ public abstract class PlayerFallMixin extends PlayerEntity {
                 BlockState belowState = world.getBlockState(belowPos);
 
                 if (!belowState.isFullCube(world, belowPos))
+                    return;
+
+                // Never break unbreakable blocks (bedrock, barrier, command blocks...) nor blocks the
+                // player is not allowed to modify (spawn protection, world border).
+                float hardness = belowState.getHardness(world, belowPos);
+                if (hardness < 0
+                        || !world.canPlayerModifyAt(player, blockPos)
+                        || !world.canPlayerModifyAt(player, belowPos))
+                    return;
+
+                // The harder the block, the higher the fall: stone 13, deepslate 16, obsidian 110 blocks
+                if (player.fallDistance < steveparty$getRequiredFallDistance(hardness))
                     return;
 
                 // Supprime le bloc actuel et celui en dessous
@@ -72,5 +95,11 @@ public abstract class PlayerFallMixin extends PlayerEntity {
                 world.playSound(null, belowPos, SoundEvents.ENTITY_VILLAGER_CELEBRATE, SoundCategory.BLOCKS, 1.0F, 1.0F);
             }
         }
+    }
+
+    /** requiredFall = 10 + 2 * hardness of the block under the villager block. */
+    @Unique
+    private static float steveparty$getRequiredFallDistance(float hardness) {
+        return BASE_REQUIRED_FALL + REQUIRED_FALL_PER_HARDNESS * hardness;
     }
 }

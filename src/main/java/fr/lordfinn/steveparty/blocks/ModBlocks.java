@@ -2,17 +2,23 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.signs.*;
+import fr.lordfinn.steveparty.items.custom.StencilSignItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
+import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
+import fr.lordfinn.steveparty.registry.RegistryAliases;
 import net.minecraft.block.*;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.RegistryKeys;
 
@@ -33,23 +39,93 @@ public class ModBlocks {
             "brown", "green", "red", "black"
     };
 
-    public static final Block[] SWITCHER_BLOCKS = new Block[16];
+    public static final Block[] PLASTIC_BLOCKS = new Block[COLORS.length];
 
     static {
         for (int i = 0; i < COLORS.length; i++) {
             String color = COLORS[i];
-            String name = color + "_switcher_block";
-
-            SWITCHER_BLOCKS[i] = register(
-                    SwitchyBlock::new,
+            PLASTIC_BLOCKS[i] = register(
+                    PlasticBlock::new,
+                    // Moulded plastic: quicker with a pickaxe but still harvestable by hand, not flammable, floats
                     Block.Settings.create()
-                            .strength(0.4f, 0.4f)
-                            .burnable()
-                            .sounds(BlockSoundGroup.WOOL)
-                            .nonOpaque(),
-                    name,
+                            .mapColor(DyeColor.byName(color, DyeColor.WHITE))
+                            .strength(1.0f, 1.0f)
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD),
+                    color + "_plastic_block",
                     true
             );
+            // Saves from before the rename still know them as "<color>_switcher_block" (blocks and items)
+            RegistryAliases.add(Steveparty.id(color + "_switcher_block"), Steveparty.id(color + "_plastic_block"));
+        }
+    }
+
+    // A switchable block while the hop switch keeps it switched off (no item). Its collision shape is empty but
+    // it counts as solid, so fluids cannot wash it away; explosion-proof and piston-proof so it cannot be used to
+    // get the original block's drops in a way the original block would not allow.
+    public static final Block SWITCHED_OFF_BLOCK = Blocks.register(
+            RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("switched_off_block")),
+            SwitchedOffBlock::new,
+            Block.Settings.create()
+                    .solid()
+                    .nonOpaque()
+                    .strength(1.0f, 3_600_000f)
+                    .sounds(BlockSoundGroup.BAMBOO_WOOD)
+                    .pistonBehavior(PistonBehavior.BLOCK));
+
+    // Plastic studs: 8x8x4 pieces of the plastic block, on the floor, a wall or the ceiling
+    public static final Block[] PLASTIC_STUDS = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            String color = COLORS[i];
+            PLASTIC_STUDS[i] = register(
+                    PlotBlock::new,
+                    Block.Settings.create()
+                            .mapColor(DyeColor.byName(color, DyeColor.WHITE))
+                            .strength(1.0f, 1.0f)
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD)
+                            .nonOpaque(),
+                    color + "_plastic_stud",
+                    true
+            );
+        }
+    }
+
+    // Plastic fences: posts for the plastic road signs (and fences like any other)
+    public static final Block[] PLASTIC_FENCES = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            String color = COLORS[i];
+            PLASTIC_FENCES[i] = register(
+                    PlasticFenceBlock::new,
+                    Block.Settings.create()
+                            .mapColor(DyeColor.byName(color, DyeColor.WHITE))
+                            .solid()
+                            .strength(1.0f, 1.0f)
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD),
+                    color + "_plastic_fence",
+                    true
+            );
+        }
+    }
+
+    // Plastic slabs, stairs and walls, like the vanilla stone ones (they do not float: only full plastic pieces do)
+    public static final Block[] PLASTIC_SLABS = new Block[COLORS.length];
+    public static final Block[] PLASTIC_STAIRS = new Block[COLORS.length];
+    public static final Block[] PLASTIC_WALLS = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            final int index = i;
+            String color = COLORS[i];
+            PLASTIC_SLABS[i] = register(SlabBlock::new, Block.Settings.copy(PLASTIC_BLOCKS[i]),
+                    color + "_plastic_slab", true);
+            // Stairs only take their blast resistance and pathfinding from their base block
+            PLASTIC_STAIRS[i] = register(s -> new StairsBlock(PLASTIC_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(PLASTIC_BLOCKS[i]), color + "_plastic_stairs", true);
+            PLASTIC_WALLS[i] = register(WallBlock::new, Block.Settings.copy(PLASTIC_BLOCKS[i]).solid(),
+                    color + "_plastic_wall", true);
         }
     }
 
@@ -149,6 +225,87 @@ public class ModBlocks {
         }
     }
 
+    // Polished concrete: same pattern as the polished terracotta, in the vanilla concrete colours
+    public static final Block[] POLISHED_CONCRETE_BLOCKS = new Block[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_BRICKS_BLOCKS = new Block[COLORS.length];
+
+    public static final Block[] POLISHED_CONCRETE_STAIRS = new StairsBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_SLABS = new SlabBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_WALLS = new WallBlock[COLORS.length];
+
+    public static final Block[] POLISHED_CONCRETE_BRICKS_STAIRS = new StairsBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_BRICKS_SLABS = new SlabBlock[COLORS.length];
+    public static final Block[] POLISHED_CONCRETE_BRICKS_WALLS = new WallBlock[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            final int index = i;
+            String color = COLORS[i];
+            DyeColor dyeColor = DyeColor.byName(color, DyeColor.WHITE);
+
+            POLISHED_CONCRETE_BLOCKS[i] = register(Block::new,
+                    Block.Settings.create()
+                            .mapColor(dyeColor)
+                            .strength(1.8f, 1.8f)
+                            .sounds(BlockSoundGroup.STONE)
+                            .solid()
+                            .requiresTool(),
+                    "polished_" + color + "_concrete", true);
+
+            POLISHED_CONCRETE_BRICKS_BLOCKS[i] = register(Block::new,
+                    Block.Settings.create()
+                            .mapColor(dyeColor)
+                            .strength(2.0f, 2.5f)
+                            .sounds(BlockSoundGroup.STONE)
+                            .solid()
+                            .requiresTool(),
+                    "polished_" + color + "_concrete_bricks", true);
+
+            // Concrete
+            POLISHED_CONCRETE_STAIRS[i] = register(
+                    (s) -> new StairsBlock(POLISHED_CONCRETE_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(POLISHED_CONCRETE_BLOCKS[index]),
+                    color + "_polished_concrete_stairs",
+                    true
+            );
+
+            POLISHED_CONCRETE_SLABS[i] = register(
+                    SlabBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BLOCKS[i]),
+                    color + "_polished_concrete_slab",
+                    true
+            );
+
+            POLISHED_CONCRETE_WALLS[i] = register(
+                    WallBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BLOCKS[i]),
+                    color + "_polished_concrete_wall",
+                    true
+            );
+
+            // Concrete bricks
+            POLISHED_CONCRETE_BRICKS_STAIRS[i] = register(
+                    (s) -> new StairsBlock(POLISHED_CONCRETE_BRICKS_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(POLISHED_CONCRETE_BRICKS_BLOCKS[index]),
+                    color + "_polished_concrete_bricks_stairs",
+                    true
+            );
+
+            POLISHED_CONCRETE_BRICKS_SLABS[i] = register(
+                    SlabBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BRICKS_BLOCKS[i]),
+                    color + "_polished_concrete_bricks_slab",
+                    true
+            );
+
+            POLISHED_CONCRETE_BRICKS_WALLS[i] = register(
+                    WallBlock::new,
+                    Block.Settings.copy(POLISHED_CONCRETE_BRICKS_BLOCKS[i]),
+                    color + "_polished_concrete_bricks_wall",
+                    true
+            );
+        }
+    }
 
     public static final Block TRADING_STALL = register(TradingStallBlock::new,
             Block.Settings.create()
@@ -242,44 +399,44 @@ public class ModBlocks {
             "hop_switch", true);
 
     public static final Block OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.OAK, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "oak_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "oak_traffic_sign", true, StencilSignItem::new);
 
     public static final Block SPRUCE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.SPRUCE, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.SPRUCE_BROWN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "spruce_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.SPRUCE_BROWN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "spruce_traffic_sign", true, StencilSignItem::new);
 
     public static final Block BIRCH_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.BIRCH, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.PALE_YELLOW).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "birch_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.PALE_YELLOW).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "birch_traffic_sign", true, StencilSignItem::new);
 
     public static final Block JUNGLE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.JUNGLE, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.BROWN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "jungle_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.BROWN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "jungle_traffic_sign", true, StencilSignItem::new);
 
     public static final Block ACACIA_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.ACACIA, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.ORANGE).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "acacia_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.ORANGE).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "acacia_traffic_sign", true, StencilSignItem::new);
 
     public static final Block DARK_OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.DARK_OAK, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "dark_oak_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "dark_oak_traffic_sign", true, StencilSignItem::new);
 
     public static final Block MANGROVE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.MANGROVE, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "mangrove_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "mangrove_traffic_sign", true, StencilSignItem::new);
 
     public static final Block CRIMSON_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CRIMSON, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DARK_CRIMSON).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "crimson_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.DARK_CRIMSON).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "crimson_traffic_sign", true, StencilSignItem::new);
 
     public static final Block WARPED_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.WARPED, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.CYAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "warped_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.CYAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "warped_traffic_sign", true, StencilSignItem::new);
 
     public static final Block CHERRY_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CHERRY, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DULL_PINK).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "cherry_traffic_sign", true);
+            AbstractBlock.Settings.create().mapColor(MapColor.DULL_PINK).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "cherry_traffic_sign", true, StencilSignItem::new);
 
     public static final Block GOAL_POLE_BASE = register(GoalPoleBaseBlock::new,
             Block.Settings.create()
@@ -362,6 +519,36 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.STONE)
                     .requiresTool(),
             "dice_forge", true);
+
+    // ---------------------------------------------------------------- stencil signs
+
+    /** Traffic sign of any planks (the wood is kept by the block entity and the item). */
+    public static final Block TRAFFIC_SIGN = register(MaterialTrafficSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "traffic_sign", true, StencilSignItem::new);
+
+    public static final Block WOODEN_PANEL = register(WoodenPanelBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().dynamicBounds().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "wooden_panel", true, StencilSignItem::new);
+
+    public static final Block WOODEN_CUTOUT_PANEL = register(WoodenCutoutPanelBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().dynamicBounds().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "wooden_cutout_panel", true, StencilSignItem::new);
+
+    public static final Block ROCK_SIGN = register(RockSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY).nonOpaque().requiresTool().strength(1.5F, 6.0F).sounds(BlockSoundGroup.STONE),
+            "rock_sign", true, StencilSignItem::new);
+
+    public static final Block PLASTIC_ROAD_SIGN = register(PlasticRoadSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.WHITE).solid().dynamicBounds().nonOpaque().strength(1.0F, 1.0F).sounds(BlockSoundGroup.BAMBOO_WOOD),
+            "plastic_road_sign", true, StencilSignItem::new);
+
+    /** Paint sprayed through a stencil on a block face (no item: made by stencils and the stencil gun). */
+    public static final Block STENCIL_PAINT = Blocks.register(
+            RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("stencil_paint")),
+            StencilPaintBlock::new,
+            AbstractBlock.Settings.create().replaceable().noCollision().nonOpaque().breakInstantly().dropsNothing()
+                    .pistonBehavior(PistonBehavior.DESTROY).sounds(BlockSoundGroup.WOOL));
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(

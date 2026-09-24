@@ -15,9 +15,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import java.awt.*;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
+import java.util.function.ToIntFunction;
 
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
@@ -48,7 +49,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             }
         }
         super.onDestinationReached(world, pos, token, boardSpaceEntity, partyController);
-        partyController.nextStep();
+        // nextStep() is called by BoardSpaceBlockEntity.onDestinationReached (calling it here too skipped a turn)
     }
 
     private void actionateAllSlots(InventoryComponent cartridgeInventory, Inventory connectedInventory, MobEntity token) {
@@ -56,6 +57,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         if (player == null) return;
 
         for (ItemStack stack : cartridgeInventory.getItems()) {
+            if (stack.isEmpty()) continue;
             handleTransfer(stack, connectedInventory, player);
         }
     }
@@ -75,10 +77,11 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         PlayerEntity player = getPlayerFromToken(token);
         if (player == null) return;
 
-        int cycleIndex = boardSpaceEntity.getCycleIndex();
         List<ItemStack> items = cartridgeInventory.getItems().stream().filter(stack -> !stack.isEmpty()).toList();
 
         if (!items.isEmpty()) {
+            // The cartridge content may have shrunk since the index was stored
+            int cycleIndex = Math.floorMod(boardSpaceEntity.getCycleIndex(), items.size());
             ItemStack cycleStack = items.get(cycleIndex);
             handleTransfer(cycleStack, connectedInventory, player);
 
@@ -88,65 +91,87 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
     }
 
     private PlayerEntity getPlayerFromToken(MobEntity token) {
-        return token.getWorld().getPlayerByUuid(((TokenizedEntityInterface) token).steveparty$getTokenOwner());
-    }
-
-    private void transferItem(ItemStack stack, Inventory sourceInventory, Inventory targetInventory) {
-        for (int i = 0; i < sourceInventory.size(); i++) {
-            ItemStack sourceStack = sourceInventory.getStack(i);
-            if (ItemStack.areItemsEqual(sourceStack, stack)) {
-                int transferableAmount = Math.min(sourceStack.getCount(), stack.getCount());
-                ItemStack toTransfer = new ItemStack(stack.getItem(), transferableAmount);
-                if (insertIntoInventory(toTransfer, targetInventory)) {
-                    sourceStack.decrement(transferableAmount);
-                }
-            }
-        }
+        UUID owner = ((TokenizedEntityInterface) token).steveparty$getTokenOwner();
+        if (owner == null) return null;
+        return token.getWorld().getPlayerByUuid(owner);
     }
 
     private void handleTransfer(ItemStack stack, Inventory connectedInventory, PlayerEntity player) {
         boolean shouldTakeFromPlayer = Boolean.TRUE.equals(stack.get(IS_NEGATIVE));
         if (shouldTakeFromPlayer) {
-            transferItem(stack, player.getInventory(), connectedInventory);
+            // What does not fit in the connected inventory stays in the player's inventory
+            extractMatching(stack, player.getInventory(), toMove -> insertIntoInventory(toMove, connectedInventory));
         } else {
-            transferItem(stack, connectedInventory, player.getInventory());
+            // What does not fit in the player's inventory is dropped at the player's feet
+            extractMatching(stack, connectedInventory, toMove -> {
+                int count = toMove.getCount();
+                player.getInventory().offerOrDrop(toMove);
+                return count;
+            });
+            player.getInventory().markDirty();
         }
     }
 
-    private boolean insertIntoInventory(ItemStack stack, Inventory inventory) {
-        for (int i = 0; i < inventory.size(); i++) {
-            ItemStack existingStack = inventory.getStack(i);
+    /**
+     * Takes, in total, at most {@code template.getCount()} items matching {@code template} (item + components,
+     * the cartridge-only IS_NEGATIVE flag excepted) out of {@code source}, and hands them to {@code sink}.
+     * Only what the sink actually accepted is removed from the source.
+     *
+     * @param sink receives a copy (with the source components) of the items to move, returns how many it accepted
+     * @return the number of items moved
+     */
+    public static int extractMatching(ItemStack template, Inventory source, ToIntFunction<ItemStack> sink) {
+        if (template == null || template.isEmpty()) return 0;
+        ItemStack pattern = template.copyWithCount(1);
+        pattern.remove(IS_NEGATIVE);
+        int remaining = template.getCount();
+        int moved = 0;
+        for (int i = 0; i < source.size() && remaining > 0; i++) {
+            ItemStack sourceStack = source.getStack(i);
+            if (sourceStack.isEmpty() || !ItemStack.areItemsAndComponentsEqual(sourceStack, pattern)) continue;
+            int wanted = Math.min(remaining, sourceStack.getCount());
+            int accepted = Math.min(wanted, sink.applyAsInt(sourceStack.copyWithCount(wanted)));
+            if (accepted <= 0) break; // target is full
+            source.removeStack(i, accepted);
+            remaining -= accepted;
+            moved += accepted;
+            if (accepted < wanted) break; // target is full
+        }
+        if (moved > 0) source.markDirty();
+        return moved;
+    }
 
-            // Fusionner avec un stack existant
-            if (!existingStack.isEmpty() && canCombine(existingStack, stack)) {
-                int transferableAmount = Math.min(stack.getCount(), inventory.getMaxCount(stack) - existingStack.getCount());
-                if (transferableAmount > 0) {
-                    existingStack.increment(transferableAmount);
-                    stack.decrement(transferableAmount);
-                    inventory.markDirty();
-                    if (stack.isEmpty()) {
-                        return true; // Tout a été inséré
-                    }
-                }
+    /**
+     * Inserts as much of {@code stack} as possible into {@code inventory} (merging first, then empty slots).
+     * {@code stack} is decremented by what was inserted.
+     *
+     * @return the number of items inserted
+     */
+    public static int insertIntoInventory(ItemStack stack, Inventory inventory) {
+        int initialCount = stack.getCount();
+        // Fusionner avec un stack existant
+        for (int i = 0; i < inventory.size() && !stack.isEmpty(); i++) {
+            ItemStack existingStack = inventory.getStack(i);
+            if (existingStack.isEmpty() || !ItemStack.areItemsAndComponentsEqual(existingStack, stack) || !inventory.isValid(i, stack)) continue;
+            int max = Math.min(inventory.getMaxCount(stack), existingStack.getMaxCount());
+            int transferableAmount = Math.min(stack.getCount(), max - existingStack.getCount());
+            if (transferableAmount > 0) {
+                existingStack.increment(transferableAmount);
+                stack.decrement(transferableAmount);
             }
         }
 
         // Trouver un slot vide
-        for (int i = 0; i < inventory.size(); i++) {
-            if (inventory.getStack(i).isEmpty()) {
-                inventory.setStack(i, stack.copy());
-                inventory.markDirty();
-                stack.setCount(0);
-                return true;
+        for (int i = 0; i < inventory.size() && !stack.isEmpty(); i++) {
+            if (inventory.getStack(i).isEmpty() && inventory.isValid(i, stack)) {
+                int amount = Math.min(stack.getCount(), inventory.getMaxCount(stack));
+                inventory.setStack(i, stack.split(amount));
             }
         }
 
-        return false; // Pas assez d'espace
-    }
-
-    private boolean canCombine(ItemStack stack1, ItemStack stack2) {
-        return stack1.getItem() == stack2.getItem() &&
-                ItemStack.areItemsEqual(stack1, stack2);
+        int inserted = initialCount - stack.getCount();
+        if (inserted > 0) inventory.markDirty();
+        return inserted;
     }
 
     @Override
