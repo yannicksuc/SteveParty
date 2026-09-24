@@ -651,6 +651,6 @@
   "block.steveparty.red_plastic_fence": "Red Plastic Fence",
   "block.steveparty.black_plastic_fence": "Black Plastic Fence",
   "tooltip.steveparty.cutout_panel.usage": "Cut with a stencil and an axe (one in each hand)",
-  "tooltip.steveparty.sign_post.usage": "Stands on a fence or a wall",
+  "tooltip.steveparty.sign_post.usage": "Stands on a fence or a wall, or hangs on its side",
   "message.steveparty.token_hint": "I'm a token now! To move me, store me in a Token or use the Tokenizer Wand."
 }

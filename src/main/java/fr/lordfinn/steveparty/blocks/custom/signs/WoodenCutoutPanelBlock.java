@@ -20,6 +20,7 @@ public class WoodenCutoutPanelBlock extends AbstractStencilSignBlock {
     public static final float BOARD_X = 0, BOARD_Y = 0, BOARD_Z = 3, BOARD_DEPTH = 2;
     public static final SignShapes.Box BOARD = new SignShapes.Box(BOARD_X, BOARD_Y, BOARD_Z, BOARD_X + 16, BOARD_Y + 16, BOARD_Z + BOARD_DEPTH);
     private static final VoxelShape[] SHAPES = SignShapes.rotations(new SignShapes.Box[]{BOARD}, new SignShapes.Box[]{SignPosts.POST});
+    private static final VoxelShape[] HUNG_SHAPES = SignShapes.hung(SignShapes.rotations(BOARD));
 
     public WoodenCutoutPanelBlock(Settings settings) {
         super(settings);
@@ -41,12 +42,17 @@ public class WoodenCutoutPanelBlock extends AbstractStencilSignBlock {
     }
 
     @Override
-    protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+    public boolean hangsOnPosts() {
+        return true;
+    }
+
+    @Override
+    protected boolean canStandAt(WorldView world, BlockPos pos) {
         return SignPosts.standsOnPost(world, pos);
     }
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPES[state.get(ROTATION)];
+        return shape(state, SHAPES, HUNG_SHAPES);
     }
 }

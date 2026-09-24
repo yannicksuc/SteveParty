@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.signs;
 
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 
@@ -46,6 +47,20 @@ public final class SignShapes {
                 for (Box segment : split(box)) shape = VoxelShapes.union(shape, turned(segment, angle));
             }
             shapes[rotation] = shape.simplify();
+        }
+        return shapes;
+    }
+
+    /**
+     * @param standing outline of the sign for each rotation, without the post it stands on
+     * @return the same outlines moved onto the post behind: where a sign hung on the side of a post is drawn
+     */
+    public static VoxelShape[] hung(VoxelShape[] standing) {
+        VoxelShape[] shapes = new VoxelShape[16];
+        for (int rotation = 0; rotation < 16; rotation++) {
+            Direction facing = AbstractStencilSignBlock.facing(rotation);
+            shapes[rotation] = facing == null ? standing[rotation]
+                    : standing[rotation].offset(-facing.getOffsetX(), 0, -facing.getOffsetZ());
         }
         return shapes;
     }

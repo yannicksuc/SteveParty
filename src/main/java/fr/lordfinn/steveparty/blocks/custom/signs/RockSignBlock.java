@@ -44,9 +44,10 @@ public class RockSignBlock extends AbstractStencilSignBlock {
     }
 
     @Override
-    protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+    protected boolean canStandAt(WorldView world, BlockPos pos) {
         BlockPos below = pos.down();
-        return world.getBlockState(below).isSideSolidFullSquare(world, below, Direction.UP);
+        BlockState ground = world.getBlockState(below);
+        return ground.isSideSolidFullSquare(world, below, Direction.UP) || SignPosts.isPost(ground);
     }
 
     @Override

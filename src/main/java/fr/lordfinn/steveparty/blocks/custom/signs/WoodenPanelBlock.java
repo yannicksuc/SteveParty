@@ -20,6 +20,7 @@ public class WoodenPanelBlock extends AbstractStencilSignBlock {
     // Model space (pixels, front facing north): 24x18 board with a rail at the top and the bottom, in front of the post
     public static final SignShapes.Box BOARD = new SignShapes.Box(-4, 0, 2, 20, 18, 5);
     private static final VoxelShape[] SHAPES = SignShapes.rotations(new SignShapes.Box[]{BOARD}, new SignShapes.Box[]{SignPosts.POST});
+    private static final VoxelShape[] HUNG_SHAPES = SignShapes.hung(SignShapes.rotations(BOARD));
 
     public WoodenPanelBlock(Settings settings) {
         super(settings);
@@ -36,12 +37,17 @@ public class WoodenPanelBlock extends AbstractStencilSignBlock {
     }
 
     @Override
-    protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+    public boolean hangsOnPosts() {
+        return true;
+    }
+
+    @Override
+    protected boolean canStandAt(WorldView world, BlockPos pos) {
         return SignPosts.standsOnPost(world, pos);
     }
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPES[state.get(ROTATION)];
+        return shape(state, SHAPES, HUNG_SHAPES);
     }
 }

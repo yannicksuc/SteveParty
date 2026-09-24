@@ -48,8 +48,8 @@ import java.util.function.Supplier;
  * Chunk-mesh model of a 16-way stencil sign. Vanilla block models can only turn by 90°: this one emits the quads
  * of its JSON model(s) turned by the sign's {@code rotation} (22.5° steps, same turn the traffic sign always had),
  * and re-textured with the sign's material (see {@link MaterialSprites}). Signs standing on a post also draw the
- * post of the fence below them, never turned. Items get the same model, unturned, made of the material written on
- * the stack.
+ * post of the fence below them, never turned; signs hung on the side of a post are drawn around that post, one block
+ * behind. Items get the same model, unturned, made of the material written on the stack.
  * <p>
  * The JSON models are plain Blockbench models: they use oak / stone textures as placeholders, swapped for the
  * material's own textures here (see the subclasses).
@@ -81,12 +81,15 @@ public abstract class SignModel implements BakedModel {
     @Override
     public void emitBlockQuads(BlockRenderView world, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context) {
         if (!materials()) return;
+        Direction hung = AbstractStencilSignBlock.hungFacing(state);
         BlockState below = world.getBlockState(pos.down());
-        BlockState post = SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
+        // A hung sign is drawn around the real post behind it: no post of its own
+        BlockState post = hung == null && SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
         Look look = world.getBlockEntityRenderData(pos) instanceof StencilCanvasBlockEntity.RenderData data
                 ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), post)
                 : new Look(null, null, null, DyeColor.WHITE, false, 0, post);
         Matrix4f turn = new Matrix4f();
+        if (hung != null) turn.translate(-hung.getOffsetX(), 0, -hung.getOffsetZ());
         if (state.contains(AbstractStencilSignBlock.ROTATION)) {
             float angle = (float) Math.toRadians(SignShapes.angleDegrees(state.get(AbstractStencilSignBlock.ROTATION)));
             turn.translate(0.5F, 0, 0.5F).rotateY(angle).translate(-0.5F, 0, -0.5F);
@@ -182,19 +185,33 @@ public abstract class SignModel implements BakedModel {
 
         private void quads(List<BakedQuad> quads, Function<Sprite, Sprite> retexture, int tint) {
             for (BakedQuad quad : quads) {
-                emitter.fromVanilla(quad, solid, null);
+                // Rebuilt from its corners alone, like the quads made here: QuadEmitter.fromVanilla also copies what
+                // the renderer worked out for the unturned quad (the side it faces, its sprite, lighting flags), and
+                // Sodium then left turned faces out when the sign was seen from afar, from the side or the back
+                int[] data = quad.getVertexData();
+                int stride = data.length / 4;
                 Sprite from = quad.getSprite();
                 Sprite to = retexture.apply(from);
-                if (to != null && to != from) {
-                    for (int i = 0; i < 4; i++) {
-                        emitter.uv(i, remap(emitter.u(i), from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU()),
-                                remap(emitter.v(i), from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV()));
-                    }
-                }
-                if (tint != 0 && quad.hasColor()) {
-                    for (int i = 0; i < 4; i++) emitter.color(i, tint);
-                }
+                boolean swap = to != null && to != from;
+                emitter.material(quad.hasShade() ? solid : unshaded);
+                emitter.cullFace(null);
+                emitter.nominalFace(null);
                 emitter.colorIndex(-1);
+                emitter.tag(0);
+                Direction face = quad.getFace();
+                for (int i = 0; i < 4; i++) {
+                    int at = i * stride;
+                    emitter.pos(i, Float.intBitsToFloat(data[at]), Float.intBitsToFloat(data[at + 1]), Float.intBitsToFloat(data[at + 2]));
+                    float u = Float.intBitsToFloat(data[at + 4]), v = Float.intBitsToFloat(data[at + 5]);
+                    if (swap) {
+                        u = remap(u, from.getMinU(), from.getMaxU(), to.getMinU(), to.getMaxU());
+                        v = remap(v, from.getMinV(), from.getMaxV(), to.getMinV(), to.getMaxV());
+                    }
+                    emitter.uv(i, u, v);
+                    emitter.color(i, tint != 0 && quad.hasColor() ? tint : -1);
+                    emitter.normal(i, face.getOffsetX(), face.getOffsetY(), face.getOffsetZ());
+                    emitter.lightmap(i, 0);
+                }
                 emit();
             }
         }

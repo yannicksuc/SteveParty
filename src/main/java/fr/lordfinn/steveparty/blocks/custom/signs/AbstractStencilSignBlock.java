@@ -20,6 +20,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationPropertyHelper;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.tick.ScheduledTickView;
@@ -29,14 +30,47 @@ import org.jetbrains.annotations.Nullable;
  * A free-standing sign taking stencils: 16 orientations like a standing vanilla sign, waterloggable, drawn in the
  * chunk mesh (turned by the client model, see {@code StencilSignModels}) with its symbol drawn by the block entity
  * renderer. Everything painted on it, and what it is made of, is kept by its item when broken.
+ * <p>
+ * Put against the side of a fence or a wall ({@link SignPosts}), a sign faces away from it: signs made to stand on a
+ * post ({@link #hangsOnPosts()}) are then {@link #HUNG} on that post, drawn around it as if they stood on it; the
+ * others stand on the ground in front of it, their back against it.
  */
 public abstract class AbstractStencilSignBlock extends BlockWithEntity implements Waterloggable, StencilCanvasBlock {
     public static final IntProperty ROTATION = Properties.ROTATION;
     public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
+    /** Hung on the post (fence or wall) right behind it instead of standing: see {@link #hungFacing(BlockState)}. */
+    public static final BooleanProperty HUNG = BooleanProperty.of("hung");
 
     protected AbstractStencilSignBlock(Settings settings) {
         super(settings);
-        this.setDefaultState(this.stateManager.getDefaultState().with(ROTATION, 0).with(WATERLOGGED, false));
+        this.setDefaultState(this.stateManager.getDefaultState().with(ROTATION, 0).with(WATERLOGGED, false).with(HUNG, false));
+    }
+
+    /** @return whether this sign is made to stand on a post, so that it can also hang on the side of one. */
+    public boolean hangsOnPosts() {
+        return false;
+    }
+
+    /**
+     * @return the side a hung sign faces (the post it hangs on is right behind it, on the opposite side), null for a
+     * standing sign
+     */
+    public static @Nullable Direction hungFacing(BlockState state) {
+        if (!state.contains(HUNG) || !state.get(HUNG)) return null;
+        return facing(state.get(ROTATION));
+    }
+
+    /**
+     * @return the side a sign with this rotation faces, null between two sides. The inverse of
+     * {@link RotationPropertyHelper#fromDirection}, which {@link RotationPropertyHelper#toDirection} is not
+     */
+    public static @Nullable Direction facing(int rotation) {
+        return rotation % 4 == 0 ? Direction.fromHorizontal(rotation / 4) : null;
+    }
+
+    /** @return {@code standing[rotation]}, or {@code hung[rotation]} for a hung sign. */
+    protected static VoxelShape shape(BlockState state, VoxelShape[] standing, VoxelShape[] hung) {
+        return (hungFacing(state) != null ? hung : standing)[state.get(ROTATION)];
     }
 
     /** @return the kind of block this sign is made of, or null for a sign with a fixed look. */
@@ -56,14 +90,21 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(ROTATION, WATERLOGGED);
+        builder.add(ROTATION, WATERLOGGED, HUNG);
     }
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return this.getDefaultState()
+        BlockState state = this.getDefaultState()
                 .with(ROTATION, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw() + 180.0F))
                 .with(WATERLOGGED, ctx.getWorld().getFluidState(ctx.getBlockPos()).getFluid() == Fluids.WATER);
+        Direction side = ctx.getSide();
+        if (side.getAxis().isHorizontal() && !ctx.canReplaceExisting()
+                && SignPosts.isPost(ctx.getWorld().getBlockState(ctx.getBlockPos().offset(side.getOpposite())))) {
+            // Put against a fence or a wall: facing away from it, hung on it when made for posts
+            state = state.with(ROTATION, RotationPropertyHelper.fromDirection(side)).with(HUNG, hangsOnPosts());
+        }
+        return state;
     }
 
     @Override
@@ -72,14 +113,23 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
     }
 
     @Override
-    protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+    protected final boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+        Direction hung = hungFacing(state);
+        if (hung != null) return SignPosts.isPost(world.getBlockState(pos.offset(hung.getOpposite())));
+        return canStandAt(world, pos);
+    }
+
+    /** @return whether this sign can stand at {@code pos} (on what is below it). */
+    protected boolean canStandAt(WorldView world, BlockPos pos) {
         return world.getBlockState(pos.down()).isSolid();
     }
 
     @Override
     protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
                                                    Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
-        if (direction == Direction.DOWN && !this.canPlaceAt(state, world, pos)) return Blocks.AIR.getDefaultState();
+        Direction hung = hungFacing(state);
+        Direction support = hung != null ? hung.getOpposite() : Direction.DOWN;
+        if (direction == support && !this.canPlaceAt(state, world, pos)) return Blocks.AIR.getDefaultState();
         if (state.get(WATERLOGGED)) tickView.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
         return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
     }

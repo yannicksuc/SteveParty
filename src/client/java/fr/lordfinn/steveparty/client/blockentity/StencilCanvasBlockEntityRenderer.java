@@ -20,6 +20,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationAxis;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -74,6 +75,8 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         } else if (state.getBlock() instanceof AbstractStencilSignBlock) {
             List<SymbolLayouts.SymbolQuad> quads = SymbolLayouts.forSign(state);
             if (!quads.isEmpty()) {
+                Direction hung = AbstractStencilSignBlock.hungFacing(state);
+                if (hung != null) matrices.translate(-hung.getOffsetX(), 0, -hung.getOffsetZ());
                 matrices.translate(0.5, 0, 0.5);
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(SignShapes.angleDegrees(state.get(AbstractStencilSignBlock.ROTATION))));
                 matrices.translate(-0.5, 0, -0.5);
@@ -106,6 +109,12 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(light)
                 .normal(entry, normal.x, normal.y, normal.z);
+    }
+
+    /** A hung sign is drawn one block behind its own block, around the post it hangs on. */
+    @Override
+    public boolean rendersOutsideBoundingBox(T entity) {
+        return AbstractStencilSignBlock.hungFacing(entity.getCachedState()) != null;
     }
 
     @Override
