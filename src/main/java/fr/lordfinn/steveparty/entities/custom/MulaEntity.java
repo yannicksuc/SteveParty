@@ -74,13 +74,13 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	protected static final RawAnimation BLINK_DOUBLE_ANIM = RawAnimation.begin().thenPlay("blink_double");
 
 	/** Length of the triggered animations, in ticks (json length + the blend in). */
-	private static final int EXPLODE_TICKS = 84 + MAIN_TRANSITION_TICKS, CELEBRATE_TICKS = 20 + MAIN_TRANSITION_TICKS,
+	private static final int EXPLODE_TICKS = 84 + MAIN_TRANSITION_TICKS, CELEBRATE_TICKS = 36 + MAIN_TRANSITION_TICKS,
 			NO_TICKS = 19 + MAIN_TRANSITION_TICKS, TAME_JOY_TICKS = 44 + MAIN_TRANSITION_TICKS,
 			SHY_TICKS = 28 + MAIN_TRANSITION_TICKS, OUCH_TICKS = 15 + MAIN_TRANSITION_TICKS,
 			SIT_DOWN_TICKS = 18 + MAIN_TRANSITION_TICKS, STAND_UP_TICKS = 18 + MAIN_TRANSITION_TICKS;
 	/** Feedback of the Mula's features, played by the server when they happen (see playSpecial). */
 	private static final String[] FEATURE_ANIMS = {"tame_joy", "shy", "ouch", "sit_down", "stand_up"};
-	/** After bursting, the food in its belly vanishes with the pop (the pop is ~1.3 s after the order). */
+	/** After bursting, the last food is forgotten with the pop (the pop is ~1.3 s after the order). */
 	private static final int BELLY_CLEAR_TICKS = 26;
 	/** "Just spawned" (it pops in from nothing on the clients) lasts this long. */
 	private static final int FRESH_TICKS = 40;
@@ -136,7 +136,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private @Nullable Emote currentEmote = null;
 	/** Server: the triggered animation being played (null when none or when it is a random one). */
 	private @Nullable String currentSpecial = null;
-	/** Server: ticks before the food in its belly vanishes (after a burst), 0 when nothing is pending. */
+	/** Server: ticks before the last food is forgotten (after a burst), 0 when nothing is pending. */
 	private int bellyClearTicks = 0;
 	/** Server: ticks left of being "just spawned". */
 	private int freshTicks = 0;
@@ -160,10 +160,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Integer> HUNGER =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	/** The last food it ate: floats in its belly (drawn by the clients, nothing else uses it). */
+	/** The last food it ate: the clients show it melting into light and spiralling into the Mula (nothing else uses it). */
 	private static final TrackedData<ItemStack> LAST_FOOD =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
-	/** Counts the meals: when it changes, the clients show the food flying into its mouth. */
+	/** Counts the meals: when it changes, the clients show the food melting into light and spiralling into it. */
 	private static final TrackedData<Integer> FEED_COUNT =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	/** Just spawned: it pops in from nothing on the clients. */
@@ -341,7 +341,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.dataTracker.set(HUNGER, Math.min(hunger, MAX_HUNGER));
 	}
 
-	/** The last food it ate (floats in its belly until it bursts), EMPTY if none. */
+	/** The last food it ate (the item the clients see it absorb), EMPTY if none or after it burst. */
 	public ItemStack getLastFood() {
 		return this.dataTracker.get(LAST_FOOD);
 	}
@@ -415,7 +415,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			message = message.copy().styled(style -> style.withColor(this.getVariant().getColor()));
 			player.sendMessage(message, true);
 
-			// what it ate floats in its belly; the clients see it fly into its mouth
+			// the clients see what it ate melt into light and spiral into it
 			setLastFood(new ItemStack(stack.getItem()));
 			this.dataTracker.set(FEED_COUNT, getFeedCount() + 1);
 			bellyClearTicks = 0;
@@ -515,7 +515,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 	}
 
-	/** Client: a meal (the feed counter changed) shows the food flying into its mouth. Both sides: size. */
+	/** Client: a meal (the feed counter changed) shows the food being absorbed. Both sides: size. */
 	@Override
 	public void onTrackedDataSet(TrackedData<?> data) {
 		super.onTrackedDataSet(data);

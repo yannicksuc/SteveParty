@@ -60,8 +60,12 @@ public final class MulaMotion {
 	private boolean flying;
 	private int ticksInState;
 	private boolean ticked;
-	private float visualScale = -1, prevVisualScale, visualScaleVelocity, targetScale;
-	private int shrinkHold;
+	private float visualScale = -1, prevVisualScale, visualScaleVelocity, shownScale = -1, shownFull;
+	private int shrinkHold, growHold;
+	/** A meal's light reaches its heart this many ticks after it was given (MulaEffects.ABSORB_TICKS). */
+	private static final int GROW_DELAY_TICKS = MulaEffects.ABSORB_TICKS;
+	/** The warm glow spreading from its heart when a meal's light sinks in (1 then fades). */
+	private float absorbGlow, prevAbsorbGlow;
 	/** Ticks from the burst order to the pop (explode: 8 ticks of blend + 0.92 s), when its size can snap back. */
 	private static final int BURST_HOLD_TICKS = 30;
 
@@ -101,6 +105,7 @@ public final class MulaMotion {
 		prevGlowPhase = glowPhase;
 		prevTremblePhase = tremblePhase;
 		prevFlare = flare;
+		prevAbsorbGlow = absorbGlow;
 		prevVisualScale = visualScale < 0 ? scale : visualScale;
 
 		// fly / hover, from the smoothed speed, with hysteresis and a minimum time in each state
@@ -116,7 +121,6 @@ public final class MulaMotion {
 		}
 
 		excitement += ((excited && !sitting ? 1f : 0f) - excitement) * 0.12f;
-		fullness += (full - fullness) * 0.1f;
 
 		int mode = sitting ? SIT : flying ? FLY : IDLE;
 		amplitude += (AMPLITUDE[mode] - amplitude) * MODE_EASE;
@@ -155,36 +159,65 @@ public final class MulaMotion {
 		lookVelocity = (lookVelocity + (lookGoal - look) * SPRING) * DAMPING;
 		look += lookVelocity;
 
-		// visual size: springs up when it grows (fed), follows at once when it shrinks (reset after it bursts)
-		if (scale < targetScale - 0.5f) {
-			// burst: it keeps its size until the pop hides it (the explode animation shrinks it to nothing)
+		// Size and inner lights: a meal shows once its light has sunk in (GROW_DELAY_TICKS, see MulaEffects), then the
+		// size springs up with a gentle overshoot; after a burst they wait for the pop (the explode animation hides it)
+		if (visualScale < 0 || shownScale < 0) {
+			// first tick (or just popped in: the spring grows it from nothing)
+			if (visualScale < 0) visualScale = scale;
+			shownScale = scale;
+			shownFull = full;
+		}
+		if (scale < shownScale - 0.5f && shrinkHold == 0) {
 			shrinkHold = BURST_HOLD_TICKS;
+			growHold = 0;
+		} else if (scale > shownScale + 0.001f && growHold == 0 && shrinkHold == 0) {
+			growHold = GROW_DELAY_TICKS;
 		}
 		if (shrinkHold > 0) {
-			shrinkHold--;
-			if (shrinkHold == 0) {
+			if (--shrinkHold == 0) {
+				shownScale = visualScale = scale;
+				shownFull = full;
+				visualScaleVelocity = 0;
+			}
+		} else if (growHold > 0) {
+			if (--growHold == 0) {
+				shownScale = scale;
+				shownFull = full;
+			}
+		} else {
+			if (scale < shownScale - 0.001f) {
 				visualScale = scale;
 				visualScaleVelocity = 0;
 			}
-		} else if (visualScale < 0 || scale < targetScale - 0.001f) {
-			visualScale = scale;
-			visualScaleVelocity = 0;
-		} else {
-			visualScaleVelocity = (visualScaleVelocity + (scale - visualScale) * SCALE_SPRING) * SCALE_DAMPING;
-			visualScale += visualScaleVelocity;
+			shownScale = scale;
+			shownFull = full;
 		}
-		targetScale = scale;
+		visualScaleVelocity = (visualScaleVelocity + (shownScale - visualScale) * SCALE_SPRING) * SCALE_DAMPING;
+		visualScale += visualScaleVelocity;
+		fullness += (shownFull - fullness) * 0.12f;
+		absorbGlow = Math.max(0f, absorbGlow - 0.025f);
 	}
 
 	/** It has just appeared (spawn egg, summon...): its visual size pops in from nothing. */
 	public void popIn() {
 		visualScale = prevVisualScale = 0.02f;
 		visualScaleVelocity = 0;
+		shownScale = -1;
 	}
 
 	/** A burst of light (glow_rings): the halo swells and brightens, then fades back over ~1.5 s. */
 	public void flare() {
 		flare = 1f;
+	}
+
+	/** A meal's light has sunk in: a warm glow spreads from its heart and fades over 2 s. */
+	public void absorbGlow() {
+		absorbGlow = 1f;
+	}
+
+	/** 0..1, the warm glow of a meal just taken in. */
+	public float absorbGlow(float partialTick) {
+		return MathHelper.lerp(partialTick, prevAbsorbGlow, absorbGlow);
 	}
 
 	public boolean isFlying() {
@@ -246,7 +279,8 @@ public final class MulaMotion {
 		out.scaleXZ = 1 - 0.5f * s;
 		out.handFlutter = 6f * rel * MathHelper.sin(p - 1.4f) * (1f + 1.2f * ex);
 		out.eyeWiden = 1f + 0.15f * ex;
-		out.coreScale = 1f + 0.45f * full + (0.05f + 0.12f * full) * (2f * glow(partialTick) - 1f);
+		out.coreScale = 1f + 0.45f * full + (0.05f + 0.12f * full) * (2f * glow(partialTick) - 1f)
+				+ 0.35f * absorbGlow(partialTick);
 	}
 
 	/** Reusable holder for {@link #layer} (one per renderer, no allocation per frame). */

@@ -41,12 +41,12 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     );
     /** Smoothed speed (blocks/tick) above which the Mula leaves a trail of star dust. */
     private static final float TRAIL_SPEED = 0.05f;
-    /**
-     * Where the food it ate floats, in the head bone (model pixels): on its belly, below the eyes, just in front of its
-     * glassy shell (z -4.5). Inside the shell it would be hidden: the translucent body is drawn after the item batch
-     * and its depth covers it.
-     */
-    private static final float BELLY_Y = 3.8f, BELLY_Z = -4.62f, BELLY_SIZE = 3.4f;
+    /** The soft little star of light its meals become inside it. */
+    private static final Identifier WISP_TEXTURE = Steveparty.id("textures/entity/mula_wisp.png");
+    /** Most inner lights (one per 1/8 of its hunger). */
+    private static final int MAX_WISPS = 8;
+    /** Height of its inner lights, from the body's centre (model pixels): in the belly, under the eyes. */
+    private static final float BELLY_Y = -2.1f;
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new MulaModel());
@@ -73,88 +73,31 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         if (!isReRender) {
             animatable.getEffects().lastRenderAge = animatable.age;
             spawnParticles(animatable);
-            renderFlyingItem(poseStack, animatable, bufferSource, partialTick);
+            renderFloatingItem(poseStack, animatable, bufferSource, partialTick);
         }
         super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer, isReRender, partialTick, 0xF000F0, packedOverlay, renderColor);
     }
 
-    /** The food it ate floats on its belly, drawn in the head's space so it follows every move of the body. */
-    @Override
-    public void renderRecursively(MatrixStack poseStack, MulaEntity mula, GeoBone bone, RenderLayer renderType,
-                                  VertexConsumerProvider bufferSource, VertexConsumer buffer, boolean isReRender,
-                                  float partialTick, int packedLight, int packedOverlay, int renderColor) {
-        if (!isReRender && "head".equals(bone.getName())) {
-            renderBellyItem(poseStack, mula, bone, bufferSource, partialTick);
-        }
-        super.renderRecursively(poseStack, mula, bone, renderType, bufferSource, buffer, isReRender, partialTick,
-                packedLight, packedOverlay, renderColor);
-    }
-
-    private static void renderBellyItem(MatrixStack poseStack, MulaEntity mula, GeoBone head,
-                                        VertexConsumerProvider bufferSource, float partialTick) {
-        ItemStack food = mula.getLastFood();
-        if (food.isEmpty()) return;
-        float plop = mula.getEffects().bellyItemScale(partialTick);
-        if (plop <= 0.01f) return;
-        poseStack.push();
-        // the head's own transform, as GeckoLib applies it
-        RenderUtil.translateMatrixToBone(poseStack, head);
-        RenderUtil.translateToPivotPoint(poseStack, head);
-        RenderUtil.rotateMatrixAroundBone(poseStack, head);
-        RenderUtil.scaleMatrixForBone(poseStack, head);
-        RenderUtil.translateAwayFromPivotPoint(poseStack, head);
-        // it bobs and rocks a little in there, like in jelly
-        float t = mula.age + partialTick;
-        poseStack.translate(0, (BELLY_Y + 0.25f * MathHelper.sin(t * 0.09f)) / 16f, BELLY_Z / 16f);
-        poseStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(8f * MathHelper.sin(t * 0.06f)));
-        float size = BELLY_SIZE / 16f * plop;
-        poseStack.scale(size, size, size);
-        // the raw item model (ItemRenderer centres it), its face turned to the Mula's front (-z)
-        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
-        MinecraftClient.getInstance().getItemRenderer().renderItem(food, ModelTransformationMode.NONE, 0xF000F0,
-                OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId());
-        poseStack.pop();
-
-    }
-
     /**
-     * The food flying from the feeder's hand into its mouth (accelerating, spinning, shrinking: sucked in), or a
-     * refused item spat back at the player in an arc.
+     * The food being absorbed (rising from the hand, turning slowly, shrinking into light) or refused (floating up,
+     * hesitating, sinking back to the hand): its pose comes from MulaEffects.
      */
-    private static void renderFlyingItem(MatrixStack poseStack, MulaEntity mula, VertexConsumerProvider bufferSource,
-                                         float partialTick) {
+    private static void renderFloatingItem(MatrixStack poseStack, MulaEntity mula, VertexConsumerProvider bufferSource,
+                                           float partialTick) {
         MulaEffects effects = mula.getEffects();
-        ItemStack stack = effects.flyingStack();
+        ItemStack stack = effects.itemStack();
         if (stack.isEmpty()) return;
-        float p = effects.flyingProgress(partialTick);
-        double mx = MathHelper.lerp(partialTick, mula.prevX, mula.getX());
-        double my = MathHelper.lerp(partialTick, mula.prevY, mula.getY()) + mula.getHeight() * 0.8;
-        double mz = MathHelper.lerp(partialTick, mula.prevZ, mula.getZ());
-        double x, y, z;
-        float size, spin;
-        if (effects.isFlyingOut()) {
-            // out of the mouth, up and back to the player, shrinking away
-            double e = p;
-            x = MathHelper.lerp(e, mx, effects.flyX());
-            z = MathHelper.lerp(e, mz, effects.flyZ());
-            y = MathHelper.lerp(e, my, effects.flyY()) + Math.sin(e * Math.PI) * 0.6;
-            size = 0.4f * (1f - 0.6f * p);
-            spin = p * 540f;
-        } else {
-            // sucked in: slow start, fast end, a little arc
-            double e = p * p;
-            x = MathHelper.lerp(e, effects.flyX(), mx);
-            z = MathHelper.lerp(e, effects.flyZ(), mz);
-            y = MathHelper.lerp(e, effects.flyY(), my) + Math.sin(p * Math.PI) * 0.35;
-            size = 0.4f * (1f - 0.7f * p);
-            spin = p * 720f;
-        }
-        // the pose stack is at the entity, already scaled by the springy size ratio (scaleModelForRender)
+        effects.updateItemPose(partialTick);
+        float size = effects.itemScale();
+        // the pose stack is at the entity's feet, already scaled by its drawn size (scaleModelForRender)
         float ratio = mula.getMotion().visualScaleRatio(partialTick, mula.getScaleFactor());
-        if (ratio <= 0.01f) return;
+        if (size <= 0.005f || ratio <= 0.01f) return;
+        double mx = MathHelper.lerp(partialTick, mula.prevX, mula.getX());
+        double my = MathHelper.lerp(partialTick, mula.prevY, mula.getY());
+        double mz = MathHelper.lerp(partialTick, mula.prevZ, mula.getZ());
         poseStack.push();
-        poseStack.translate((x - mx) / ratio, (y - my + mula.getHeight() * 0.8) / ratio, (z - mz) / ratio);
-        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(spin));
+        poseStack.translate((effects.itemX() - mx) / ratio, (effects.itemY() - my) / ratio, (effects.itemZ() - mz) / ratio);
+        poseStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(effects.itemSpin()));
         poseStack.scale(size / ratio, size / ratio, size / ratio);
         MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.GROUND, 0xF000F0,
                 OverlayTexture.DEFAULT_UV, poseStack, bufferSource, mula.getWorld(), mula.getId() + 1);
@@ -227,21 +170,103 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 float glow = motion.glow(partialTick);
                 float full = motion.fullness(partialTick);
                 float flare = motion.flareLevel(partialTick);
+                float warm = motion.absorbGlow(partialTick);
                 matrices.push();
-                matrices.translate(bonePos.x, bonePos.y, bonePos.z);
+                // the bone's position is in world units, while this pose stack is scaled by the Mula's drawn size
+                float ratio = motion.visualScaleRatio(partialTick, entity.getScaleFactor());
+                if (ratio <= 0.01f) {
+                    matrices.pop();
+                    return;
+                }
+                matrices.translate(bonePos.x / ratio, bonePos.y / ratio, bonePos.z / ratio);
+                renderInnerLights(matrices, entity, bodyBone.get(), camera, bufferSource, partialTick, full, warm);
                 matrices.multiply(rotation);
-                float size = (0.95f + 0.1f * glow) * (1f + 0.25f * full + 0.35f * flare);
+                float size = (0.95f + 0.1f * glow) * (1f + 0.25f * full + 0.35f * flare + 0.3f * warm);
                 matrices.scale(size, size, size);
                 int tint = entity.getVariant().getGlowColor();
                 // mostly white near the centre of the texture, tinted towards the Mula's colour
                 int r = 170 + (((tint >> 16) & 0xFF) * 85 / 255);
                 int g = 170 + (((tint >> 8) & 0xFF) * 85 / 255);
                 int b = 170 + ((tint & 0xFF) * 85 / 255);
-                int alpha = (int) (255 * MathHelper.clamp(0.7f + 0.2f * glow + 0.1f * full + 0.3f * flare, 0f, 1f));
+                int alpha = (int) (255 * MathHelper.clamp(0.7f + 0.2f * glow + 0.1f * full + 0.3f * flare + 0.25f * warm,
+                        0f, 1f));
                 drawQuad(matrices, bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture)), packedLight,
                         r, g, b, alpha);
                 matrices.pop();
             }
+        }
+
+        /**
+         * What it has eaten, as light inside it: a soft heart glow and one little tinted star per eighth of its hunger,
+         * drifting slowly round inside its body, brighter, bigger and quicker the fuller it is, trembling near the
+         * burst, flaring warm when a meal's light sinks in. Camera-facing and drawn just in front of the body's surface
+         * on the camera's side (the translucent body would hide them inside), within its silhouette, so they read as
+         * glowing through it. They shrink with the body (the burst's pop). Nothing allocated per frame.
+         */
+        private void renderInnerLights(MatrixStack matrices, MulaEntity mula, GeoBone head, Camera camera,
+                                       VertexConsumerProvider bufferSource, float partialTick, float full, float warm) {
+            float lights = full * MAX_WISPS;
+            if (lights < 0.02f && warm < 0.02f) return;
+            float headScale = head.getScaleY();
+            if (headScale < 0.05f) return;
+            // how far the body's surface is towards the camera: the view direction in the body's frame hits the cube
+            double dx = camera.getPos().x - MathHelper.lerp(partialTick, mula.prevX, mula.getX());
+            double dy = camera.getPos().y - (MathHelper.lerp(partialTick, mula.prevY, mula.getY()) + mula.getHeight() * 0.8);
+            double dz = camera.getPos().z - MathHelper.lerp(partialTick, mula.prevZ, mula.getZ());
+            double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (length < 1.0E-3) return;
+            float yaw = MathHelper.lerpAngleDegrees(partialTick, mula.prevBodyYaw, mula.bodyYaw) * MathHelper.RADIANS_PER_DEGREE;
+            double lx = (dx * MathHelper.cos(yaw) + dz * MathHelper.sin(yaw)) / length;
+            double lz = (-dx * MathHelper.sin(yaw) + dz * MathHelper.cos(yaw)) / length;
+            double ly = dy / length;
+            double surface = Math.min(7.0, 4.75 / Math.max(Math.abs(lx), Math.max(Math.abs(ly), Math.abs(lz))));
+            float px = headScale / 16f;
+            float t = mula.age + partialTick;
+            int tint = mula.getVariant().getGlowColor();
+            int r = 90 + (((tint >> 16) & 0xFF) * 165 / 255);
+            int g = 90 + (((tint >> 8) & 0xFF) * 165 / 255);
+            int b = 90 + ((tint & 0xFF) * 165 / 255);
+            VertexConsumer vertices = bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(WISP_TEXTURE));
+            // the pose stack is world-aligned here: step towards the camera up to the surface, then face the camera
+            matrices.push();
+            float step = (float) surface * px;
+            matrices.translate(dx / length * step, dy / length * step, dz / length * step);
+            matrices.multiply(camera.getRotation());
+            MatrixStack.Entry entry = matrices.peek();
+            float z = 0f;
+            // the heart: a soft glow below the eyes, warmer and bigger when a meal has just come in
+            float heart = (1.2f + 1.5f * full + 2.0f * warm) * (0.9f + 0.1f * MathHelper.sin(t * 0.2f)) * px;
+            int heartAlpha = (int) (255 * MathHelper.clamp(0.18f + 0.25f * full + 0.45f * warm, 0f, 0.85f));
+            wisp(vertices, entry, 0, BELLY_Y * px, z, heart, r, g, b, heartAlpha);
+            float tremble = full > 0.7f ? (full - 0.7f) / 0.3f : 0f;
+            int count = Math.min(MAX_WISPS, MathHelper.ceil(lights));
+            for (int i = 0; i < count; i++) {
+                float shown = MathHelper.clamp(lights - i, 0f, 1f);
+                float a = t * (0.035f + 0.05f * full) + i * 2.39996f;
+                float reach = 0.55f + 0.45f * ((i * 0.618f) % 1f);
+                float wx = MathHelper.cos(a) * 2.6f * reach + tremble * 0.3f * MathHelper.sin(t * 2.1f + i);
+                float wy = BELLY_Y + MathHelper.sin(a * 1.3f + i) * 1.0f * reach + tremble * 0.3f * MathHelper.cos(t * 1.9f + i);
+                float half = (0.45f + 0.25f * full) * (0.75f + 0.4f * Math.abs(MathHelper.sin(t * 0.25f + i))) * shown * px;
+                int alpha = (int) (255 * MathHelper.clamp((0.55f + 0.45f * full + 0.3f * warm) * shown, 0f, 1f));
+                wisp(vertices, entry, wx * px, wy * px, z + (i + 1) * 0.002f * px, half, 255, 255, 255, alpha);
+                wisp(vertices, entry, wx * px, wy * px, z + (i + 1) * 0.002f * px + 0.001f * px, half * 2.4f, r, g, b,
+                        alpha / 3);
+            }
+            matrices.pop();
+        }
+
+        private static void wisp(VertexConsumer vertices, MatrixStack.Entry entry, float cx, float cy, float cz,
+                                 float half, int r, int g, int b, int alpha) {
+            vertex(vertices, entry, cx - half, cy - half, cz, 0f, 1f, r, g, b, alpha);
+            vertex(vertices, entry, cx + half, cy - half, cz, 1f, 1f, r, g, b, alpha);
+            vertex(vertices, entry, cx + half, cy + half, cz, 1f, 0f, r, g, b, alpha);
+            vertex(vertices, entry, cx - half, cy + half, cz, 0f, 0f, r, g, b, alpha);
+        }
+
+        private static void vertex(VertexConsumer vertices, MatrixStack.Entry entry, float x, float y, float z, float u,
+                                   float v, int r, int g, int b, int alpha) {
+            vertices.vertex(entry.getPositionMatrix(), x, y, z).color(r, g, b, alpha).texture(u, v)
+                    .overlay(OverlayTexture.DEFAULT_UV).light(0xF000F0).normal(entry, 0.0F, 1.0F, 0.0F);
         }
 
         private void drawQuad(MatrixStack matrices, net.minecraft.client.render.VertexConsumer vertices, int light,
