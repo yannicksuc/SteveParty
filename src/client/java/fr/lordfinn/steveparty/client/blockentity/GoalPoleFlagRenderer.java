@@ -4,8 +4,10 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.client.flag.FlagWind;
+import fr.lordfinn.steveparty.client.flag.ShaderPacks;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -13,9 +15,12 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -36,11 +41,18 @@ import org.joml.Vector3f;
  * 12 columns, farther ones 6 then 3, and past {@link #RENDER_DISTANCE} blocks the flag is not drawn.
  * <p>
  * A dyed flag uses a greyscale copy of the texture multiplied by its colour; an undyed one the original red texture.
+ * <p>
+ * Brightness: the flag is drawn in the cutout <em>block</em> layer, shaded like a block face (the old baked flag): the
+ * shade of each column comes from the direction it faces in the world, so the waves show as a light ripple around
+ * the brightness of the old flag. The entity layers used before add vanilla's entity lighting (at most ~74 % on a
+ * vertical cloth, 50 % facing east/west), which made every flag darker than the old model, wool or banners.
  */
 public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEntity> {
-    public static final Identifier TEXTURE = Steveparty.id("textures/block/goal_pole_flag.png");
-    /** Greyscale version of the flag, multiplied by the colour of a dyed flag. */
-    public static final Identifier DYEABLE_TEXTURE = Steveparty.id("textures/block/goal_pole_flag_dyeable.png");
+    /** The flag's sprites in the block atlas: the original red one, and a greyscale one tinted with a dye's colour. */
+    public static final Identifier SPRITE = Steveparty.id("block/goal_pole_flag");
+    public static final Identifier DYEABLE_SPRITE = Steveparty.id("block/goal_pole_flag_dyeable");
+    /** Vanilla's block face shading: sides facing north/south are drawn at 80 %, east/west at 60 % (up 100 %). */
+    private static final float SHADE_Z = 0.8f, SHADE_X = 0.6f;
     private static final int RENDER_DISTANCE = 128;
     private static final int COLUMNS_NEAR = 12, COLUMNS_MID = 6, COLUMNS_FAR = 3;
     private static final double NEAR_SQ = 24 * 24, MID_SQ = 56 * 56;
@@ -57,6 +69,7 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
     private static final float[] DROOP = new float[COLUMNS_NEAR + 1];
     private static final float[] NX = new float[COLUMNS_NEAR + 1];
     private static final float[] NZ = new float[COLUMNS_NEAR + 1];
+    private static final float[] SHADES = new float[COLUMNS_NEAR + 1];
     private static final Vector3f POSITION = new Vector3f();
     private static final Vector3f NORMAL = new Vector3f();
 
@@ -102,20 +115,25 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         // Dyed: the greyscale flag multiplied by its colour. Undyed: the original red texture, untouched
         int flagColor = entity.getFlagColor();
         boolean dyed = flagColor != FlagItem.NO_COLOR;
-        int color = dyed ? 0xFF000000 | flagColor : 0xFFFFFFFF;
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(dyed ? DYEABLE_TEXTURE : TEXTURE));
+        int color = dyed ? flagColor : 0xFFFFFF;
+        Sprite sprite = MinecraftClient.getInstance().getBakedModelManager()
+                .getAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).getSprite(dyed ? DYEABLE_SPRITE : SPRITE);
+        computeShades(columns, -facingDegrees(state) + swing);
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getCutout());
         for (int i = 0; i < columns; i++) {
-            float u0 = U_MAX * i / columns, u1 = U_MAX * (i + 1) / columns;
+            float u0 = sprite.getFrameU(U_MAX * i / columns), u1 = sprite.getFrameU(U_MAX * (i + 1) / columns);
+            float v0 = sprite.getFrameV(0f), v1 = sprite.getFrameV(V_MAX);
+            int c0 = shaded(color, SHADES[i]), c1 = shaded(color, SHADES[i + 1]);
             // Front (north side, normal -z at rest), counter-clockwise as seen from the north
-            vertex(buffer, entry, i, TOP_Y, u0, 0f, light, color, 1f);
-            vertex(buffer, entry, i, BOTTOM_Y, u0, V_MAX, light, color, 1f);
-            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, V_MAX, light, color, 1f);
-            vertex(buffer, entry, i + 1, TOP_Y, u1, 0f, light, color, 1f);
+            vertex(buffer, entry, i, TOP_Y, u0, v0, light, c0, 1f);
+            vertex(buffer, entry, i, BOTTOM_Y, u0, v1, light, c0, 1f);
+            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, v1, light, c1, 1f);
+            vertex(buffer, entry, i + 1, TOP_Y, u1, v0, light, c1, 1f);
             // Back (south side): same texels, reversed winding and normal
-            vertex(buffer, entry, i, TOP_Y, u0, 0f, light, color, -1f);
-            vertex(buffer, entry, i + 1, TOP_Y, u1, 0f, light, color, -1f);
-            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, V_MAX, light, color, -1f);
-            vertex(buffer, entry, i, BOTTOM_Y, u0, V_MAX, light, color, -1f);
+            vertex(buffer, entry, i, TOP_Y, u0, v0, light, c0, -1f);
+            vertex(buffer, entry, i + 1, TOP_Y, u1, v0, light, c1, -1f);
+            vertex(buffer, entry, i + 1, BOTTOM_Y, u1, v1, light, c1, -1f);
+            vertex(buffer, entry, i, BOTTOM_Y, u0, v1, light, c0, -1f);
         }
         matrices.pop();
     }
@@ -146,6 +164,31 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
             NX[i] = length > 0 ? -tz / length : 0f;
             NZ[i] = length > 0 ? tx / length : -1f;
         }
+    }
+
+    /**
+     * Block-face shade of each column, from the direction its normal faces in the world (the pole's facing plus the
+     * gust swing): 0.8 facing north/south, 0.6 facing east/west, in between for the waves. Both sides of the cloth
+     * face opposite ways along the same axis, so they get the same shade.
+     */
+    private static void computeShades(int columns, float yawDegrees) {
+        if (ShaderPacks.inUse()) {
+            // Shader packs light the cloth themselves (and drop vanilla's face shading on the blocks around it)
+            for (int i = 0; i <= columns; i++) SHADES[i] = 1f;
+            return;
+        }
+        float radians = yawDegrees * MathHelper.RADIANS_PER_DEGREE;
+        float cos = MathHelper.cos(radians), sin = MathHelper.sin(radians);
+        for (int i = 0; i <= columns; i++) {
+            float x = NX[i] * cos + NZ[i] * sin;
+            float z = -NX[i] * sin + NZ[i] * cos;
+            SHADES[i] = SHADE_X * x * x + SHADE_Z * z * z;
+        }
+    }
+
+    private static int shaded(int rgb, float shade) {
+        int r = (int) ((rgb >> 16 & 0xFF) * shade), g = (int) ((rgb >> 8 & 0xFF) * shade), b = (int) ((rgb & 0xFF) * shade);
+        return 0xFF000000 | r << 16 | g << 8 | b;
     }
 
     private static void vertex(VertexConsumer buffer, MatrixStack.Entry entry, int column, float y, float u, float v,
