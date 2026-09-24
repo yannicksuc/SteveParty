@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.model.sign;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.RockSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignPosts;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignShapes;
@@ -23,6 +24,7 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.BlockStateComponent;
@@ -42,6 +44,7 @@ import org.joml.Vector3f;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -64,15 +67,10 @@ public abstract class SignModel implements BakedModel {
 
     /**
      * What to draw: material and plate colour, stencil shape / paint / glow / fade (cut-out panel, rock engraving),
-     * the post under the sign (null: none) and how far back its board goes to rest against its post (pixels, see
-     * {@link AbstractStencilSignBlock#boardShift}).
+     * and the neighbours a rock sign joins ({@link RockSignBlock#joins}).
      */
     public record Look(@Nullable Identifier material, @Nullable DyeColor plateColor, @Nullable byte[] shape,
-                       @Nullable DyeColor color, boolean glowing, int fade, @Nullable BlockState post, float boardShift) {
-        /** @return {@code out}, moved back so that the board rests against its post. */
-        Output board(Output out) {
-            return boardShift == 0 ? out : out.with(new Matrix4f().translate(0, 0, boardShift / 16F));
-        }
+                       @Nullable DyeColor color, boolean glowing, int fade, int joins) {
     }
 
     /** Emits the sign's quads through {@code out}. {@code state} is the block's, or the item's block state. */
@@ -86,21 +84,24 @@ public abstract class SignModel implements BakedModel {
     @Override
     public void emitBlockQuads(BlockRenderView world, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context) {
         if (!materials()) return;
-        Direction hung = AbstractStencilSignBlock.hungFacing(state);
         BlockState below = world.getBlockState(pos.down());
-        // A hung sign is drawn around the real post behind it: no post of its own
-        BlockState post = hung == null && SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
-        float shift = state.getBlock() instanceof AbstractStencilSignBlock sign ? (float) sign.boardShift(world, pos, state) : 0;
-        Look look = world.getBlockEntityRenderData(pos) instanceof StencilCanvasBlockEntity.RenderData data
-                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), post, shift)
-                : new Look(null, null, null, DyeColor.WHITE, false, 0, post, shift);
-        Matrix4f turn = new Matrix4f();
-        if (hung != null) turn.translate(-hung.getOffsetX(), 0, -hung.getOffsetZ());
-        if (state.contains(AbstractStencilSignBlock.ROTATION)) {
-            float angle = (float) Math.toRadians(SignShapes.angleDegrees(state.get(AbstractStencilSignBlock.ROTATION)));
-            turn.translate(0.5F, 0, 0.5F).rotateY(angle).translate(-0.5F, 0, -0.5F);
+        // Only a standing sign has a post of its own: a hung sign is drawn around the real post behind it
+        boolean standing = !state.contains(AbstractStencilSignBlock.MOUNT)
+                || state.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST;
+        BlockState post = standing && SignPosts.isPost(below) ? below.getBlock().getDefaultState() : null;
+        if (post != null && state.getBlock() instanceof AbstractStencilSignBlock sign && sign.hangsOnPosts()) {
+            // Drawn by the fence's own model, as a post of that fence in this block: it joins the fence below
+            // (connected plastic fences) and is lit like it
+            MinecraftClient.getInstance().getBlockRenderManager().getModel(post).emitBlockQuads(world, post, pos, randomSupplier, context);
         }
-        emit(new Output(context.getEmitter(), turn, 0), state, look, pos.asLong(), randomSupplier);
+        int joins = state.getBlock() instanceof RockSignBlock ? RockSignBlock.joins(world, pos, state) : 0;
+        Look look = world.getBlockEntityRenderData(pos) instanceof StencilCanvasBlockEntity.RenderData data
+                ? new Look(data.material(), data.plateColor(), data.shape(), data.color(), data.glowing(), data.fade(), joins)
+                : new Look(null, null, null, DyeColor.WHITE, false, 0, joins);
+        // Turned, moved against its post or its wall, or laid on its floor / ceiling (the board shift included)
+        Matrix4f transform = state.getBlock() instanceof AbstractStencilSignBlock sign
+                ? sign.modelTransform(world, pos, state) : new Matrix4f();
+        emit(new Output(context.getEmitter(), transform), state, look, pos.asLong(), randomSupplier);
     }
 
     @Override
@@ -111,30 +112,11 @@ public abstract class SignModel implements BakedModel {
         StencilCanvasComponent canvas = stack.get(ModComponents.STENCIL_CANVAS);
         Identifier material = stack.get(ModComponents.SIGN_MATERIAL);
         DyeColor plate = stack.get(DataComponentTypes.BASE_COLOR);
-        BlockState post = itemPost(block, material, plate);
-        float shift = 0;
-        if (post != null && block instanceof AbstractStencilSignBlock sign && !Float.isNaN(sign.boardBack())) {
-            // Items are drawn facing north: the model unturned
-            double reach = SignPosts.reach(SignPosts.postShape(post), 0);
-            if (!Double.isNaN(reach)) shift = (float) (8 - reach - sign.boardBack());
-        }
+        // The sign alone, without the fence it stands on
         Look look = new Look(material, plate, canvas == null ? null : canvas.shapeArray(),
                 canvas == null ? DyeColor.WHITE : canvas.color().orElse(null), canvas != null && canvas.glowing(),
-                canvas == null ? 0 : canvas.fade(), post, shift);
-        // Items show the fence under the sign, so that one sees what it stands on
-        emit(new Output(context.getEmitter(), new Matrix4f(), 1), state, look, 0L, randomSupplier);
-    }
-
-    /** Post shown under a sign item: a fence of its wood, or a plastic fence of its colour. */
-    private static @Nullable BlockState itemPost(Block sign, @Nullable Identifier material, @Nullable DyeColor plate) {
-        if (sign == ModBlocks.PLASTIC_ROAD_SIGN) {
-            return ModBlocks.PLASTIC_FENCES[(plate == null ? DyeColor.WHITE : plate).getId()].getDefaultState();
-        }
-        if (sign != ModBlocks.WOODEN_PANEL && sign != ModBlocks.WOODEN_CUTOUT_PANEL) return null;
-        Identifier planks = SignMaterial.WOOD.resolve(material);
-        String path = planks.getPath().endsWith("_planks") ? planks.getPath().substring(0, planks.getPath().length() - 7) : planks.getPath();
-        return Registries.BLOCK.getOptionalValue(Identifier.of(planks.getNamespace(), path + "_fence"))
-                .orElse(Blocks.OAK_FENCE).getDefaultState();
+                canvas == null ? 0 : canvas.fade(), 0);
+        emit(new Output(context.getEmitter(), new Matrix4f()), state, look, 0L, randomSupplier);
     }
 
     private static boolean materials() {
@@ -158,31 +140,16 @@ public abstract class SignModel implements BakedModel {
         private final Matrix4f matrix;
         private final Matrix3f normals;
         private final Vector3f vector = new Vector3f();
-        /** How far below the sign its post is drawn: 0 in the world (the sign's own block), 1 for items. */
-        private final float postDrop;
 
-        Output(QuadEmitter emitter, Matrix4f matrix, float postDrop) {
+        Output(QuadEmitter emitter, Matrix4f matrix) {
             this.emitter = emitter;
             this.matrix = matrix;
             this.normals = matrix.normal(new Matrix3f());
-            this.postDrop = postDrop;
         }
 
         /** @return an output applying {@code local} (block units) before this output's transform. */
         Output with(Matrix4f local) {
-            return new Output(emitter, new Matrix4f(matrix).mul(local), postDrop);
-        }
-
-        /** @return an output that does not turn (the post under a sign). */
-        Output still() {
-            return new Output(emitter, new Matrix4f().translate(0, -postDrop, 0), postDrop);
-        }
-
-        /** Emits the model of the post (the fence below the sign), as it is, unturned. */
-        void post(@Nullable BlockState post, Supplier<Random> random) {
-            if (post == null) return;
-            BakedModel model = MinecraftClient.getInstance().getBlockRenderManager().getModel(post);
-            still().model(model, post, random, Function.identity(), 0);
+            return new Output(emitter, new Matrix4f(matrix).mul(local));
         }
 
         /**
@@ -192,12 +159,19 @@ public abstract class SignModel implements BakedModel {
          * @param tint      ARGB colour of the tinted faces ({@code tintindex} in the JSON), 0 to leave them
          */
         void model(BakedModel model, BlockState state, Supplier<Random> random, Function<Sprite, Sprite> retexture, int tint) {
-            for (Direction face : Direction.values()) quads(model.getQuads(state, face, random.get()), retexture, tint);
-            quads(model.getQuads(state, null, random.get()), retexture, tint);
+            model(model, state, random, retexture, tint, face -> true);
         }
 
-        private void quads(List<BakedQuad> quads, Function<Sprite, Sprite> retexture, int tint) {
+        /** @param keep whether to emit the quads of that face of the model (JSON face, before any transform) */
+        void model(BakedModel model, BlockState state, Supplier<Random> random, Function<Sprite, Sprite> retexture, int tint,
+                   Predicate<Direction> keep) {
+            for (Direction face : Direction.values()) quads(model.getQuads(state, face, random.get()), retexture, tint, keep);
+            quads(model.getQuads(state, null, random.get()), retexture, tint, keep);
+        }
+
+        private void quads(List<BakedQuad> quads, Function<Sprite, Sprite> retexture, int tint, Predicate<Direction> keep) {
             for (BakedQuad quad : quads) {
+                if (!keep.test(quad.getFace())) continue;
                 // Rebuilt from its corners alone, like the quads made here: QuadEmitter.fromVanilla also copies what
                 // the renderer worked out for the unturned quad (the side it faces, its sprite, lighting flags), and
                 // Sodium then left turned faces out when the sign was seen from afar, from the side or the back

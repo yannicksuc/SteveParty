@@ -9,10 +9,16 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +65,28 @@ public class BoardSpaceGameTests implements FabricGameTest {
         assertTile(context, tile, 0, BoardSpaceType.TILE_INVENTORY_INTERACTOR);
         tile.removeStack(0);
         assertTile(context, tile, 0, BoardSpaceType.DEFAULT);
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void placingTileHoldingCartridgeAppliesRole(TestContext context) {
+        // A tile item holding a start cartridge, as made by the creative pick block (block entity data)
+        BlockPos source = new BlockPos(5, 1, 5);
+        context.setBlockState(source, ModBlocks.TILE);
+        BoardSpaceBlockEntity sourceTile = context.getBlockEntity(source);
+        sourceTile.setStack(0, new ItemStack(ModItems.TILE_BEHAVIOR_START));
+        var registries = context.getWorld().getRegistryManager();
+        NbtCompound nbt = sourceTile.createComponentlessNbtWithIdentifyingData(registries);
+        sourceTile.removeFromCopiedStackNbt(nbt);
+        ItemStack item = new ItemStack(ModBlocks.TILE);
+        BlockItem.setBlockEntityData(item, sourceTile.getType(), nbt);
+
+        context.setBlockState(TILE.down(), Blocks.STONE);
+        PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
+        player.setStackInHand(Hand.MAIN_HAND, item); // the placement reads the stack in hand
+        context.useStackOnBlock(player, item, TILE.down(), Direction.UP);
+        BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
+        assertTile(context, tile, 0, BoardSpaceType.TILE_START);
         context.complete();
     }
 

@@ -67,6 +67,8 @@ public class PlasticBlock extends Block {
     /** Speed of a player riding a piece in a bubble column (blocks per tick): the piece's, 1.4 up and 0.6 down. */
     private static final double RIDE_UP_SPEED = (double) COLUMN_UP_BLOCKS / COLUMN_PERIOD;
     private static final double RIDE_DOWN_SPEED = (double) COLUMN_DOWN_BLOCKS / COLUMN_PERIOD;
+    /** Speed of a player riding a piece rising in still water: a block every {@link #RISE_DELAY} ticks. */
+    private static final double RIDE_STILL_SPEED = 1.0 / RISE_DELAY;
     /**
      * A player gliding with a piece is ahead of it or behind it between two of its steps (the piece moves a whole
      * block at a time). Going up, it may be up to RIDE_AHEAD above it or RIDE_INSIDE inside it, and is put RIDE_LEAD
@@ -221,6 +223,8 @@ public class PlasticBlock extends Block {
         boolean up = target.getY() > pos.getY();
         // Its last step: riders are put down on it, not carried on
         boolean last = up ? !canRiseInto(world.getBlockState(target.up())) : !canSinkInto(world.getBlockState(target.down()));
+        // Still water is much slower than a bubble column: riders are carried at the piece's own speed
+        boolean column = getCurrent(world, pos) != Current.NONE;
         // Up: all that the piece would sweep through, and the players gliding ahead of it; down: what stands on it,
         // or bobs (players: glides) just above it
         List<Entity> riders = getRiders(world, pos, top, up ? newTop + RIDE_AHEAD : top + RIDE_BEHIND);
@@ -234,7 +238,7 @@ public class PlasticBlock extends Block {
         world.setBlockState(pos, left, Block.NOTIFY_ALL);
         // The water left behind joins the bubble column at once (vanilla would take 5 ticks, slowing the piece down)
         BubbleColumnBlock.update(world, pos, getCurrentSource(world, pos.down()));
-        double speed = last ? 0 : up ? RIDE_UP_SPEED : -RIDE_DOWN_SPEED;
+        double speed = last ? 0 : !column ? (up ? RIDE_STILL_SPEED : -RIDE_STILL_SPEED) : up ? RIDE_UP_SPEED : -RIDE_DOWN_SPEED;
         for (Entity rider : riders) {
             double feet = rider.getBoundingBox().minY;
             if (rider instanceof ServerPlayerEntity player) {
@@ -347,9 +351,14 @@ public class PlasticBlock extends Block {
         return state;
     }
 
-    /** @return true for anything made of plastic (blocks and studs): it floats and never cuts a bubble column. */
+    /**
+     * @return true for anything made of plastic (blocks, studs, fences and road signs): it floats and never cuts a
+     * bubble column
+     */
     public static boolean isPlastic(BlockState state) {
-        return state.getBlock() instanceof PlasticBlock || state.getBlock() instanceof PlotBlock;
+        return state.getBlock() instanceof PlasticBlock || state.getBlock() instanceof PlotBlock
+                || state.getBlock() instanceof PlasticFenceBlock
+                || state.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
     }
 
     /** @return the state at {@code pos}, looking under any plastic stacked there (bubble columns ignore plastic). */

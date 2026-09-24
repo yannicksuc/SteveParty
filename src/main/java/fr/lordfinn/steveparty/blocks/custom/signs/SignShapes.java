@@ -1,9 +1,14 @@
 package fr.lordfinn.steveparty.blocks.custom.signs;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,11 +61,13 @@ public final class SignShapes {
     }
 
     /**
-     * Outline of a board on a post: the board turned with the sign and moved back against its post (see
-     * {@link AbstractStencilSignBlock#boardShift}), plus the post of the fence below a standing sign; a hung sign's
-     * board is around the post behind it. Built once for each rotation / side / shift.
+     * Outline of a sign with a board, drawn where its model is ({@link AbstractStencilSignBlock#modelTransform}): on
+     * or around its post, flat against a wall, on the floor or the ceiling; plus the post of the fence below a
+     * standing sign. The board is cut in small pieces so that a turned board gets a snug outline. Built once for each
+     * block state and board shift.
      */
     public static final class BoardOutline {
+        private static final double PIECE = 4.0;
         private final Box[] board;
         private final Map<Long, VoxelShape> cache = new ConcurrentHashMap<>();
 
@@ -68,21 +75,44 @@ public final class SignShapes {
             this.board = board;
         }
 
-        public VoxelShape get(BlockState state, double shift) {
-            int rotation = state.get(AbstractStencilSignBlock.ROTATION);
-            Direction hung = AbstractStencilSignBlock.hungFacing(state);
-            long key = rotation | (hung == null ? 0L : hung.ordinal() + 1L) << 4 | Math.round(shift * 64) << 8;
-            return cache.computeIfAbsent(key, k -> build(rotation, hung, shift));
+        public VoxelShape get(AbstractStencilSignBlock sign, BlockView world, BlockPos pos, BlockState state) {
+            long shift = Math.round(sign.boardShift(world, pos, state) * 64);
+            long key = (long) Block.getRawIdFromState(state) << 32 | (shift & 0xFFFFFFFFL);
+            return cache.computeIfAbsent(key, k -> build(sign.modelTransform(world, pos, state),
+                    state.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST));
         }
 
-        private VoxelShape build(int rotation, Direction hung, double shift) {
-            Box[] moved = new Box[board.length];
-            for (int i = 0; i < board.length; i++) {
-                Box box = board[i];
-                moved[i] = new Box(box.x1, box.y1, box.z1 + shift, box.x2, box.y2, box.z2 + shift);
+        private VoxelShape build(Matrix4f transform, boolean post) {
+            VoxelShape shape = post ? VoxelShapes.cuboid(SignPosts.POST.x1 / 16, SignPosts.POST.y1 / 16, SignPosts.POST.z1 / 16,
+                    SignPosts.POST.x2 / 16, SignPosts.POST.y2 / 16, SignPosts.POST.z2 / 16) : VoxelShapes.empty();
+            Vector3f corner = new Vector3f();
+            for (Box box : board) {
+                int nx = Math.max(1, (int) Math.ceil((box.x2 - box.x1) / PIECE));
+                int ny = Math.max(1, (int) Math.ceil((box.y2 - box.y1) / PIECE));
+                for (int i = 0; i < nx; i++) {
+                    for (int j = 0; j < ny; j++) {
+                        double x1 = box.x1 + (box.x2 - box.x1) * i / nx, x2 = box.x1 + (box.x2 - box.x1) * (i + 1) / nx;
+                        double y1 = box.y1 + (box.y2 - box.y1) * j / ny, y2 = box.y1 + (box.y2 - box.y1) * (j + 1) / ny;
+                        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE, minZ = Double.MAX_VALUE;
+                        double maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+                        for (double x : new double[]{x1, x2}) {
+                            for (double y : new double[]{y1, y2}) {
+                                for (double z : new double[]{box.z1, box.z2}) {
+                                    transform.transformPosition(corner.set(x / 16, y / 16, z / 16));
+                                    minX = Math.min(minX, corner.x);
+                                    minY = Math.min(minY, corner.y);
+                                    minZ = Math.min(minZ, corner.z);
+                                    maxX = Math.max(maxX, corner.x);
+                                    maxY = Math.max(maxY, corner.y);
+                                    maxZ = Math.max(maxZ, corner.z);
+                                }
+                            }
+                        }
+                        shape = VoxelShapes.union(shape, VoxelShapes.cuboid(minX, minY, minZ, maxX, maxY, maxZ));
+                    }
+                }
             }
-            if (hung == null) return rotations(moved, new Box[]{SignPosts.POST})[rotation];
-            return rotations(moved)[rotation].offset(-hung.getOffsetX(), 0, -hung.getOffsetZ());
+            return shape.simplify();
         }
     }
 

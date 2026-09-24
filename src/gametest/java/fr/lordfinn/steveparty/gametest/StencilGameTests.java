@@ -311,7 +311,7 @@ public class StencilGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
             useOn(context, player, SIGN, Direction.SOUTH);
             BlockState hung = context.getBlockState(front);
-            context.assertTrue(hung.isOf(sign) && hung.get(AbstractStencilSignBlock.HUNG)
+            context.assertTrue(hung.isOf(sign) && hung.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.HUNG
                     && AbstractStencilSignBlock.hungFacing(hung) == Direction.SOUTH, sign + " hung on the fence, facing south");
             // It falls when its post goes
             context.setBlockState(SIGN, Blocks.AIR);
@@ -331,7 +331,7 @@ public class StencilGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
             useOn(context, player, SIGN, Direction.SOUTH);
             BlockState leaning = context.getBlockState(front);
-            context.assertTrue(leaning.isOf(sign) && !leaning.get(AbstractStencilSignBlock.HUNG)
+            context.assertTrue(leaning.isOf(sign) && leaning.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST
                     && leaning.get(AbstractStencilSignBlock.ROTATION) == 0, sign + " against the wall, facing south");
             context.setBlockState(front, Blocks.AIR);
         }
@@ -355,6 +355,179 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void postSignsGoFlatOnWallsFloorsAndCeilings(TestContext context) {
+        PlayerEntity player = survivalPlayer(context);
+        player.setPosition(Vec3d.of(context.getAbsolutePos(SIGN)).add(0, 0, -6));
+        for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL, ModBlocks.PLASTIC_ROAD_SIGN)) {
+            // Against the south face of a stone block: flat on it, facing south; falls with it
+            context.setBlockState(SIGN, Blocks.STONE);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.SOUTH);
+            BlockState wall = context.getBlockState(SIGN.south());
+            context.assertTrue(wall.isOf(sign) && wall.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.WALL
+                    && AbstractStencilSignBlock.facing(wall.get(AbstractStencilSignBlock.ROTATION)) == Direction.SOUTH, sign + " on the wall: " + wall);
+            context.setBlockState(SIGN, Blocks.AIR);
+            // Plastic needs nothing to hold it (it floats, like the studs); the wooden ones fall
+            if (sign == ModBlocks.PLASTIC_ROAD_SIGN) context.expectBlock(sign, SIGN.south());
+            else context.expectBlock(Blocks.AIR, SIGN.south());
+            context.setBlockState(SIGN.south(), Blocks.AIR);
+            // On the top face: lying on the floor
+            context.setBlockState(SIGN, Blocks.STONE);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.UP);
+            context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.FLOOR,
+                    sign + " on the floor");
+            context.setBlockState(SIGN.up(), Blocks.AIR);
+            // Under it: on the ceiling, falling when the ceiling goes
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.DOWN);
+            context.assertTrue(context.getBlockState(SIGN.down()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.CEILING,
+                    sign + " on the ceiling");
+            context.setBlockState(SIGN, Blocks.AIR);
+            if (sign == ModBlocks.PLASTIC_ROAD_SIGN) context.expectBlock(sign, SIGN.down());
+            else context.expectBlock(Blocks.AIR, SIGN.down());
+            context.setBlockState(SIGN.down(), Blocks.AIR);
+        }
+        // On top of a fence: flat on it; sneaking: standing on it as on a post
+        context.setBlockState(SIGN, Blocks.OAK_FENCE);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.WOODEN_PANEL));
+        useOn(context, player, SIGN, Direction.UP);
+        context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.FLOOR,
+                "flat on the fence");
+        context.setBlockState(SIGN.up(), Blocks.AIR);
+        player.setSneaking(true);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.WOODEN_PANEL));
+        useOn(context, player, SIGN, Direction.UP);
+        context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST,
+                "standing on the fence when sneaking");
+        player.setSneaking(false);
+        context.setBlockState(SIGN.up(), Blocks.AIR);
+        // Signs standing on the ground do not go flat
+        context.setBlockState(SIGN, Blocks.STONE);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.ROCK_SIGN));
+        useOn(context, player, SIGN, Direction.UP);
+        context.assertTrue(context.getBlockState(SIGN.up()).get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST,
+                "rock sign stands");
+        context.complete();
+    }
+
+    // ---------------------------------------------------------------- floating plastic
+
+    private static final int TUBE_X = 3, TUBE_Z = 3, TUBE_BOTTOM = 1, TUBE_TOP = 5;
+
+    /** A glass tube of still water from TUBE_BOTTOM to TUBE_TOP, open above. */
+    private static void waterTube(TestContext context) {
+        for (int y = TUBE_BOTTOM; y <= TUBE_TOP + 1; y++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) context.setBlockState(new BlockPos(TUBE_X + dx, y, TUBE_Z + dz), Blocks.GLASS);
+            }
+        }
+        for (int y = TUBE_BOTTOM; y <= TUBE_TOP; y++) context.setBlockState(new BlockPos(TUBE_X, y, TUBE_Z), Blocks.WATER);
+        context.setBlockState(new BlockPos(TUBE_X, TUBE_TOP + 1, TUBE_Z), Blocks.AIR);
+    }
+
+    private static int risingTicks(int blocks) {
+        return blocks * fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 10;
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void plasticSignsFloatUpAndLieOnTheSurface(TestContext context) {
+        waterTube(context);
+        BlockPos start = new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z);
+        context.setBlockState(start, ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState().with(AbstractStencilSignBlock.WATERLOGGED, true)
+                .with(AbstractStencilSignBlock.MOUNT, AbstractStencilSignBlock.Mount.WALL).with(PlasticRoadSignBlock.PLATE, PlasticRoadSignBlock.Plate.STAR));
+        StencilCanvasBlockEntity sign = at(context, start);
+        sign.setSymbol(pattern("skull"), DyeColor.RED);
+        context.waitAndRun(risingTicks(TUBE_TOP - TUBE_BOTTOM + 1), () -> {
+            BlockPos surface = new BlockPos(TUBE_X, TUBE_TOP + 1, TUBE_Z);
+            BlockState state = context.getBlockState(surface);
+            context.assertTrue(state.isOf(ModBlocks.PLASTIC_ROAD_SIGN), "at the surface: " + state);
+            context.assertTrue(!state.get(AbstractStencilSignBlock.WATERLOGGED)
+                    && state.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.FLOOR, "lying flat on the water");
+            context.assertTrue(state.get(PlasticRoadSignBlock.PLATE) == PlasticRoadSignBlock.Plate.STAR, "still a star");
+            StencilCanvasBlockEntity moved = at(context, surface);
+            context.assertTrue(Arrays.equals(moved.getShape(), pattern("skull")) && moved.getColor() == DyeColor.RED, "symbol kept");
+            for (int y = TUBE_BOTTOM; y <= TUBE_TOP; y++) context.expectBlock(Blocks.WATER, new BlockPos(TUBE_X, y, TUBE_Z));
+            context.complete();
+        });
+    }
+
+    /** Rising in still water, plastic carries a player at its own pace (a block every few ticks), not flung up. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stillWaterDoesNotFlingRiders(TestContext context) {
+        waterTube(context);
+        BlockPos start = new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z);
+        context.setBlockState(start, ModBlocks.PLASTIC_BLOCKS[0]);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        Vec3d feet = Vec3d.ofBottomCenter(context.getAbsolutePos(start.up()));
+        player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 0, 0);
+        context.runAtTick(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 3, () -> {
+            try {
+                context.expectBlock(ModBlocks.PLASTIC_BLOCKS[0], start.up());
+                context.assertTrue(player.getVelocity().y <= 0.3, "carried gently, not flung: " + player.getVelocity().y);
+            } finally {
+                context.getWorld().getServer().getPlayerManager().remove(player);
+            }
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void plasticSignsStopFlatUnderABlockAndChainsHoldThem(TestContext context) {
+        waterTube(context);
+        context.setBlockState(new BlockPos(TUBE_X, TUBE_BOTTOM + 3, TUBE_Z), Blocks.STONE);
+        BlockPos start = new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z);
+        context.setBlockState(start, ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState().with(AbstractStencilSignBlock.WATERLOGGED, true)
+                .with(AbstractStencilSignBlock.MOUNT, AbstractStencilSignBlock.Mount.FLOOR));
+        // A chained one, beside, in its own water
+        BlockPos chained = new BlockPos(1, 2, 1);
+        context.setBlockState(chained.down(), Blocks.CHAIN);
+        context.setBlockState(chained.up(), Blocks.WATER);
+        context.setBlockState(chained, ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState().with(AbstractStencilSignBlock.WATERLOGGED, true)
+                .with(AbstractStencilSignBlock.MOUNT, AbstractStencilSignBlock.Mount.FLOOR));
+        context.waitAndRun(risingTicks(3), () -> {
+            BlockState under = context.getBlockState(new BlockPos(TUBE_X, TUBE_BOTTOM + 2, TUBE_Z));
+            context.assertTrue(under.isOf(ModBlocks.PLASTIC_ROAD_SIGN)
+                    && under.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.CEILING, "flat under the stone: " + under);
+            context.expectBlock(ModBlocks.PLASTIC_ROAD_SIGN, chained);
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void plasticFencesFloatButSignsOnPostsStay(TestContext context) {
+        waterTube(context);
+        context.setBlockState(new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z), ModBlocks.PLASTIC_FENCES[4].getDefaultState().with(net.minecraft.block.FenceBlock.WATERLOGGED, true));
+        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.isPlastic(ModBlocks.PLASTIC_FENCES[4].getDefaultState())
+                && fr.lordfinn.steveparty.blocks.custom.PlasticBlock.isPlastic(ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState()), "made of plastic");
+        // A sign standing on a (stone) wall under water: on its post, it stays
+        BlockPos post = new BlockPos(1, 1, 1);
+        context.setBlockState(post, Blocks.COBBLESTONE_WALL.getDefaultState().with(net.minecraft.block.WallBlock.WATERLOGGED, true));
+        context.setBlockState(post.up(), ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState().with(AbstractStencilSignBlock.WATERLOGGED, true));
+        context.setBlockState(post.up(2), Blocks.WATER);
+        context.waitAndRun(risingTicks(TUBE_TOP - TUBE_BOTTOM + 1), () -> {
+            // Like the plastic block, it stays in the water, its top level with the surface
+            BlockState fence = context.getBlockState(new BlockPos(TUBE_X, TUBE_TOP, TUBE_Z));
+            context.assertTrue(fence.isOf(ModBlocks.PLASTIC_FENCES[4]) && fence.get(net.minecraft.block.FenceBlock.WATERLOGGED), "fence at the surface: " + fence);
+            context.expectBlock(Blocks.AIR, new BlockPos(TUBE_X, TUBE_TOP + 1, TUBE_Z));
+            context.expectBlock(ModBlocks.PLASTIC_ROAD_SIGN, post.up());
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void signsCanBeBumpedInto(TestContext context) {
+        BlockPos abs = context.getAbsolutePos(SIGN);
+        context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
+        for (var sign : List.of(ModBlocks.TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL,
+                ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.ROCK_SIGN)) {
+            context.setBlockState(SIGN, sign);
+            context.assertTrue(!context.getBlockState(SIGN).getCollisionShape(context.getWorld(), abs).isEmpty(), sign + " has a hitbox");
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void boardsRestAgainstTheirPost(TestContext context) {
         // Board back at model z 5, fence post front at 6, wall pillar front at 4
         context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
@@ -372,7 +545,7 @@ public class StencilGameTests implements FabricGameTest {
         // Hung on a fence
         context.setBlockState(SIGN.down(), Blocks.AIR);
         context.setBlockState(SIGN.north(), Blocks.OAK_FENCE);
-        context.setBlockState(SIGN, ModBlocks.WOODEN_CUTOUT_PANEL.getDefaultState().with(AbstractStencilSignBlock.HUNG, true));
+        context.setBlockState(SIGN, ModBlocks.WOODEN_CUTOUT_PANEL.getDefaultState().with(AbstractStencilSignBlock.MOUNT, AbstractStencilSignBlock.Mount.HUNG));
         context.assertTrue(Math.abs(shift(context, SIGN) - 1) < 1e-6, "hung cut-out panel against the fence post: " + shift(context, SIGN));
         // Signs without a board on a post do not move
         context.setBlockState(SIGN.down(), Blocks.STONE);
@@ -439,6 +612,20 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     // ---------------------------------------------------------------- recipes
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void tokensAreMadeOfPlasticPellets(TestContext context) {
+        ItemStack pellets = new ItemStack(ModItems.PLASTIC_PELLETS), empty = ItemStack.EMPTY;
+        ItemStack token = result(context, 3, 3,
+                empty, pellets, empty,
+                empty, pellets, empty,
+                pellets, new ItemStack(Items.SHULKER_BOX), pellets);
+        context.assertTrue(token.isOf(ModItems.TOKEN), "token from plastic pellets and a shulker box: " + token);
+        ItemStack iron = new ItemStack(Items.IRON_INGOT);
+        context.assertTrue(result(context, 3, 3, empty, iron, empty, empty, iron, empty, iron, new ItemStack(Items.SHULKER_BOX), iron).isEmpty(),
+                "no more token from iron");
+        context.complete();
+    }
 
     /** @return what the crafting grid gives (empty if no recipe matches). */
     private static ItemStack result(TestContext context, int width, int height, ItemStack... grid) {
