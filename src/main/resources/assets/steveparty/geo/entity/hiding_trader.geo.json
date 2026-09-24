@@ -38,6 +38,39 @@
 					]
 				},
 				{
+					"name": "torso",
+					"parent": "head",
+					"pivot": [0, 12.5, 0],
+					"cubes": [
+						{
+							"origin": [-3.5, 4.5, -3.5],
+							"size": [7, 8, 7],
+							"uv": {
+								"north": {
+									"uv": [0, 0],
+									"uv_size": [7, 8]
+								},
+								"east": {
+									"uv": [0, 0],
+									"uv_size": [7, 8]
+								},
+								"south": {
+									"uv": [0, 0],
+									"uv_size": [7, 8]
+								},
+								"west": {
+									"uv": [0, 0],
+									"uv_size": [7, 8]
+								},
+								"down": {
+									"uv": [56, 0],
+									"uv_size": [7, 7]
+								}
+							}
+						}
+					]
+				},
+				{
 					"name": "body",
 					"parent": "main",
 					"pivot": [0, 0, 0]
