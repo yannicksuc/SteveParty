@@ -121,14 +121,21 @@ public record StencilLibrary(List<Entry> entries) {
         return new StencilLibrary(list);
     }
 
-    /** @return this library with {@code shape} (added if needed) marked or unmarked as a favourite. */
+    /**
+     * @return this library with {@code shape} (added if needed) marked or unmarked as a favourite; this same
+     * library if nothing changed (a blank shape, a full library)
+     */
     public StencilLibrary toggleFavorite(byte[] shape) {
         StencilLibrary library = with(shape);
         List<Entry> list = new ArrayList<>(library.entries);
+        boolean toggled = false;
         for (int i = 0; i < list.size(); i++) {
             Entry entry = list.get(i);
-            if (entry.is(shape)) list.set(i, new Entry(entry.shape(), !entry.favorite()));
+            if (entry.is(shape)) {
+                list.set(i, new Entry(entry.shape(), !entry.favorite()));
+                toggled = true;
+            }
         }
-        return new StencilLibrary(list);
+        return toggled ? new StencilLibrary(list) : library;
     }
 }

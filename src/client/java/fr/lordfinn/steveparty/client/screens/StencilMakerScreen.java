@@ -120,7 +120,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         addDrawableChild(new IconButton(toolX, toolY += 21, Text.translatable("gui.steveparty.stencil_maker.redo"), ICON_REDO, b -> redo()));
         libraryButton = addDrawableChild(new IconButton(toolX, toolY += 27, Text.empty(), ICON_SAVE, b -> toggleInLibrary()));
         addDrawableChild(new IconButton(toolX, toolY += 21, Text.translatable("gui.steveparty.stencil_maker.take_out"), ICON_TAKE_OUT,
-                b -> send(StencilMakerActionPayload.Action.TAKE_OUT, shape)));
+                b -> takeOut()));
         updateLibraryButton();
     }
 
@@ -337,10 +337,23 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
      */
     @Override
     public void close() {
+        saveIfChanged();
+        super.close();
+    }
+
+    /**
+     * Take out button: the drawing is saved on the stencil first (the server handles both packets in order, and
+     * closes the screen itself, without going through {@link #close()}).
+     */
+    private void takeOut() {
+        saveIfChanged();
+        send(StencilMakerActionPayload.Action.TAKE_OUT, shape);
+    }
+
+    private void saveIfChanged() {
         if (!Arrays.equals(shape, savedShape) && handler.getBlockEntity() != null && !handler.getBlockEntity().getStencil().isEmpty()) {
             save();
         }
-        super.close();
     }
 
     // ---------------------------------------------------------------- drawing
