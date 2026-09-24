@@ -139,6 +139,14 @@ public class VendorLinkPersistentState extends PersistentState {
         }
     }
 
+    /** Forgets everything about a trader (owner and linked blocks): used when the trader dies. */
+    public void forgetVendor(UUID vendorId) {
+        boolean changed = vendorLinks.remove(vendorId) != null;
+        changed |= legacyVendorLinks.remove(vendorId) != null;
+        changed |= vendorOwners.remove(vendorId) != null;
+        if (changed) markDirty();
+    }
+
     /** @return the player owning the trader, or null if no player linked a key to it yet (or before ownership existed). */
     @Nullable
     public UUID getOwner(UUID vendorId) {
