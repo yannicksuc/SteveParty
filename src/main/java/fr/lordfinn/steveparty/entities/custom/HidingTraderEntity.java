@@ -77,7 +77,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private final List<CashRegisterBlockEntity> cashRegisters = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
 
-    protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
+    /** The box flaps flip open one after another and the merchant pops out ("open"), then "idle" loops. */
+    protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenPlay("open").thenLoop("idle");
     protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
 
     private Integer optionalScreenHandlerId = null;
