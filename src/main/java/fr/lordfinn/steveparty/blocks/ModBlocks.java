@@ -43,8 +43,8 @@ public class ModBlocks {
         for (int i = 0; i < COLORS.length; i++) {
             String color = COLORS[i];
             PLASTIC_BLOCKS[i] = register(
-                    Block::new,
-                    // Moulded plastic: quicker with a pickaxe but still harvestable by hand, not flammable
+                    PlasticBlock::new,
+                    // Moulded plastic: quicker with a pickaxe but still harvestable by hand, not flammable, floats
                     Block.Settings.create()
                             .mapColor(DyeColor.byName(color, DyeColor.WHITE))
                             .strength(1.0f, 1.0f)
