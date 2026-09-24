@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.service.TokenMovementService;
@@ -314,9 +315,16 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
                 return super.damage(world, source, amount);
             }
-            // Hitting a token only makes sense while it still has steps to walk: it relaunches a stuck move.
-            // A resting token (e.g. outside a party) just ignores the hit.
-            if (source.getAttacker() instanceof ServerPlayerEntity attacker && this.steveparty$getNbSteps() > 0) {
+            // Hitting a token relaunches a stuck move while it still has steps to walk. Outside a party, a resting
+            // token just reminds the player how tokens are moved.
+            if (source.getAttacker() instanceof ServerPlayerEntity attacker && this.steveparty$getNbSteps() <= 0) {
+                if (!TokenStatus.hasStatus(this.steveparty$getStatus(), TokenStatus.IN_GAME)) {
+                    MessageUtils.sendToPlayer(attacker, Text.translatableWithFallback("message.steveparty.token_hint",
+                            "I'm a token now! To move me, store me in a Token or use the Tokenizer Wand."), MessageUtils.MessageType.ACTION_BAR);
+                }
+                return false;
+            }
+            if (source.getAttacker() instanceof ServerPlayerEntity attacker) {
                 MessageUtils.sendToPlayer(attacker, Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
                 BlockEntity blockEntity = world.getBlockEntity(this.getBlockPos());
                 if (blockEntity instanceof BoardSpaceBlockEntity)
