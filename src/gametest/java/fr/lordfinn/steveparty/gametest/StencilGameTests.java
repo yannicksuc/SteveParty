@@ -452,6 +452,26 @@ public class StencilGameTests implements FabricGameTest {
         });
     }
 
+    /** Rising in still water, plastic carries a player at its own pace (a block every few ticks), not flung up. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stillWaterDoesNotFlingRiders(TestContext context) {
+        waterTube(context);
+        BlockPos start = new BlockPos(TUBE_X, TUBE_BOTTOM, TUBE_Z);
+        context.setBlockState(start, ModBlocks.PLASTIC_BLOCKS[0]);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        Vec3d feet = Vec3d.ofBottomCenter(context.getAbsolutePos(start.up()));
+        player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 0, 0);
+        context.runAtTick(fr.lordfinn.steveparty.blocks.custom.PlasticBlock.RISE_DELAY + 3, () -> {
+            try {
+                context.expectBlock(ModBlocks.PLASTIC_BLOCKS[0], start.up());
+                context.assertTrue(player.getVelocity().y <= 0.3, "carried gently, not flung: " + player.getVelocity().y);
+            } finally {
+                context.getWorld().getServer().getPlayerManager().remove(player);
+            }
+            context.complete();
+        });
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void plasticSignsStopFlatUnderABlockAndChainsHoldThem(TestContext context) {
         waterTube(context);
