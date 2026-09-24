@@ -784,5 +784,7 @@
   "gui.steveparty.goal_pole_base.cycle_hint": "Click: next choice. Shift+click: previous one.",
   "gui.steveparty.goal_pole_base.status": "Total: %s",
   "gui.steveparty.goal_pole_base.status.active": "● counting",
-  "gui.steveparty.goal_pole_base.status.paused": "⏸ paused"
+  "gui.steveparty.goal_pole_base.status.paused": "⏸ paused",
+  "message.steveparty.goal_pole.paused": "⏸ Goal pole base paused: landing not counted",
+  "message.steveparty.goal_pole.unknown_goal": "⚠ Unknown goal on the base: landing not counted"
 }

@@ -32,6 +32,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.math.BlockPos;
@@ -64,9 +65,10 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * objective {@code steveparty_x_y_z} (criterion dummy) for commands: reading it gives the points, and changing it
  * with {@code /scoreboard} changes the points.
  * <p>
- * <b>Where points come from</b> ({@link Source}): a scoreboard criterion ({@code steveparty:landed_on_pole}, landings
- * on any goal pole, was the only source before; any vanilla criterion works), watched through a second objective
- * {@code steveparty_x_y_z.src}: each increase of a followed player's score there is a point.
+ * <b>Where points come from</b> ({@link Source}): landings on its own poles (the default: each board counts its own
+ * landings), or a scoreboard criterion watched through a second objective {@code steveparty_x_y_z.src}: each increase
+ * of a followed player's score there is a point ({@code steveparty:landed_on_pole}, landings on any goal pole, was
+ * the only source before and stays selectable).
  * <p>
  * <b>Redstone</b> ({@link RedstoneMode}): the back port pauses the base, or runs it, or is ignored. Paused, the base
  * counts nothing (increases seen meanwhile are dropped) but keeps its points, its objective and its outputs.
@@ -111,7 +113,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
     // --- Settings ---
     private RedstoneMode redstoneMode = RedstoneMode.PAUSE_WHEN_POWERED;
-    private Source source = Source.CRITERION;
+    /** Landings on its own poles (each base counts its own board); the global criterion stays selectable. */
+    private Source source = Source.LANDINGS_HERE;
     private String criterion = LANDED_ON_POLE_ID;
     private String selector = "@p";
     private OutputMode outputMode = OutputMode.PULSE;
@@ -365,6 +368,17 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
     /** A player landed on one of this base's poles. */
     void onLanding(ServerPlayerEntity player) {
+        // A landing that will not count says why, instead of silently doing nothing
+        boolean countsLandings = source == Source.LANDINGS_HERE
+                || (source == Source.CRITERION && LANDED_ON_POLE_ID.equals(criterion));
+        if (source == Source.CRITERION && sourceInvalid) {
+            player.sendMessage(Text.translatable("message.steveparty.goal_pole.unknown_goal").formatted(Formatting.GOLD), true);
+            return;
+        }
+        if (countsLandings && !isActive()) {
+            player.sendMessage(Text.translatable("message.steveparty.goal_pole.paused").formatted(Formatting.GOLD), true);
+            return;
+        }
         if (source != Source.LANDINGS_HERE || !follows(player)) return;
         credit(player.getNameForScoreboard(), 1, player);
     }

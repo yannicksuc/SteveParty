@@ -654,4 +654,48 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.complete();
         });
     }
+
+    /**
+     * Each base counts the landings on its own poles only (two boards in one world no longer share landings); a base
+     * set to the old global criterion still counts landings on any pole; a paused base counts nothing.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_boards", tickLimit = 60)
+    public void eachBaseCountsLandingsOnItsOwnPoles(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        String name = player.getGameProfile().getName();
+        BlockPos otherBase = BASE.east(3);
+        try {
+            GoalPoleBaseBlockEntity a = placeBase(context, base());
+            context.setBlockState(otherBase, base());
+            context.setBlockState(BASE.up(), pole(true, true));
+            context.setBlockState(otherBase.up(), pole(true, true));
+            GoalPoleNetwork.processPending();
+            GoalPoleBaseBlockEntity b = (GoalPoleBaseBlockEntity) context.getWorld().getBlockEntity(context.getAbsolutePos(otherBase));
+            a.setSelector("@a");
+            b.setSelector("@a");
+            context.assertTrue(a.getSource() == GoalPoleBaseBlockEntity.Source.LANDINGS_HERE, "new bases count their own landings");
+            GoalPoleBlockEntity poleA = poleEntity(context, BASE.up()), poleB = poleEntity(context, otherBase.up());
+
+            GoalPoleNetwork.onLanding(poleA, player);
+            context.assertTrue(a.getPoints(name) == 1 && b.getPoints(name) == 0, "landing on A counts for A only");
+            GoalPoleNetwork.onLanding(poleB, player);
+            context.assertTrue(a.getPoints(name) == 1 && b.getPoints(name) == 1, "landing on B counts for B only");
+
+            // B follows the old global criterion: a landing on A counts for both
+            b.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_POLE_ID);
+            poleA.onPlayerArrive(player, context.getWorld(), poleA.getPos());
+            context.assertTrue(a.getPoints(name) == 2, "A: its own landing, got " + a.getPoints(name));
+            context.assertTrue(b.getPoints(name) == 2, "B: the global criterion counts a landing anywhere, got " + b.getPoints(name));
+
+            // Paused: nothing counted
+            context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+            GoalPoleNetwork.onLanding(poleA, player);
+            context.assertTrue(a.getPoints(name) == 2, "paused: not counted");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+            context.setBlockState(otherBase, Blocks.AIR);
+            removeBase(context);
+        }
+        context.complete();
+    }
 }

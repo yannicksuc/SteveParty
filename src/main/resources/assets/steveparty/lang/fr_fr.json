@@ -785,5 +785,7 @@
   "gui.steveparty.goal_pole_base.cycle_hint": "Clic : choix suivant. Maj+clic : précédent.",
   "gui.steveparty.goal_pole_base.status": "Total : %s",
   "gui.steveparty.goal_pole_base.status.active": "● compte",
-  "gui.steveparty.goal_pole_base.status.paused": "⏸ en pause"
+  "gui.steveparty.goal_pole_base.status.paused": "⏸ en pause",
+  "message.steveparty.goal_pole.paused": "⏸ Socle en pause : arrivée non comptée",
+  "message.steveparty.goal_pole.unknown_goal": "⚠ Objectif inconnu sur le socle : arrivée non comptée"
 }
