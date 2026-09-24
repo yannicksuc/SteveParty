@@ -237,6 +237,14 @@ public final class MulaEffects {
         chime(1.6f);
     }
 
+    /** Reborn where its shooting star landed: a burst of light in its colour, star bits, a chime and a halo flare. */
+    void onReborn() {
+        sparkleRing(18, 0.12);
+        shower(12);
+        chime(1.2f);
+        mula.getMotion().flare();
+    }
+
     /**
      * "No" (not its food, or still taking the last one in): the item held out floats up a little towards it, its motes
      * try to reach the Mula but can't merge and puff away, and the item drifts softly back down to the player's hand.

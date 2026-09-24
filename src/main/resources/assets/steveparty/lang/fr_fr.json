@@ -38,6 +38,8 @@
   "effect.steveparty.squished": "Écrasement",
   "entity.steveparty.dice": "Dé par défaut",
   "entity.steveparty.hiding_trader": "Marchand caché",
+  "entity.steveparty.mula": "Mula",
+  "entity.steveparty.mula_star": "Étoile filante",
   "message.steveparty.steps_remaining_for": "Il reste %d pas pour %s",
   "message.steveparty.arrived_at_destination": "%s est arrivé à destination",
   "message.steveparty.owned_dice_rolled": "%d a été obtenu sur le dé de %s",

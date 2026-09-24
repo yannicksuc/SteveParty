@@ -54,6 +54,21 @@ public class ModEntities {
                     .build(MULA_ENTITY_KEY)
     );
 
+    /** A burst Mula flying away as a shooting star (a show: never saved, its path is a formula). */
+    public static final RegistryKey<EntityType<?>> MULA_STAR_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mula_star"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.MulaStarEntity> MULA_STAR = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("mula_star"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.MulaStarEntity>create(fr.lordfinn.steveparty.entities.custom.MulaStarEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.25f, 0.25f)
+                    .disableSaving()
+                    .disableSummon()
+                    .makeFireImmune()
+                    .maxTrackingRange(16)
+                    .trackingTickInterval(20)
+                    .build(MULA_STAR_KEY)
+    );
+
     /** Hitbox of the dice forge core in the sky: hitting it blows the core up. */
     public static final RegistryKey<EntityType<?>> FORGE_CORE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("forge_core"));
     public static final EntityType<ForgeCoreEntity> FORGE_CORE = Registry.register(Registries.ENTITY_TYPE,

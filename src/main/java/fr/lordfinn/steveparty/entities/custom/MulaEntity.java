@@ -186,6 +186,55 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
 	private int eatCooldown = 0;
+	/** Server: ticks before it flies away as a shooting star (after the pop of its burst), 0 when none. */
+	private int starLaunchTicks = 0;
+	/** From the order to burst to the pop of the explode animation, when it leaves as a shooting star. */
+	private static final int STAR_LAUNCH_TICKS = 32;
+
+	/**
+	 * Server: the pop of its burst: it leaves as a shooting star (MulaStarEntity) on a random arc, and is recorded to be
+	 * reborn where the star lands, 100 to 400 blocks away that way (MulaRebirths), the same Mula (colour, owner, name,
+	 * UUID) with an empty belly. It is removed without dying (no death message, no loot: its 64 fragments are already
+	 * dropped).
+	 */
+	public void burstIntoStar() {
+		if (!(this.getWorld() instanceof ServerWorld world) || this.isRemoved()) return;
+		net.minecraft.util.math.random.Random random = this.getRandom();
+		double angle = random.nextDouble() * MathHelper.TAU;
+		double apex = MulaStarEntity.MIN_APEX + random.nextDouble() * (MulaStarEntity.MAX_APEX - MulaStarEntity.MIN_APEX);
+		double distance = MulaStarEntity.distanceFor(apex);
+		double dirX = Math.cos(angle), dirZ = Math.sin(angle);
+		// what is reborn: the same Mula, standing, free, empty
+		this.detachLeash(true, true);
+		this.stopRiding();
+		this.setSitting(false);
+		this.setInSittingPose(false);
+		this.setHunger(0);
+		this.setLastFood(ItemStack.EMPTY);
+		stopDancing();
+		NbtCompound saved = new NbtCompound();
+		if (!this.saveSelfNbt(saved)) return;
+		int x = MathHelper.floor(this.getX() + dirX * distance), z = MathHelper.floor(this.getZ() + dirZ * distance);
+		MulaRebirths.get(world).add(new MulaRebirths.Entry(this.getUuid(), x, z, this.getY(),
+				world.getTime() + MulaStarEntity.flightTicksFor(distance), saved));
+		MulaStarEntity star = new MulaStarEntity(fr.lordfinn.steveparty.entities.ModEntities.MULA_STAR, world);
+		star.launch(this.getX(), this.getY() + this.getHeight() * CENTER, this.getZ(), this.getVariant(), dirX, dirZ,
+				distance, apex);
+		world.spawnEntity(star);
+		fr.lordfinn.steveparty.Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s",
+				getVariant().name().toLowerCase(Locale.ROOT), x, z, MulaStarEntity.flightTicksFor(distance) / 20);
+		this.discard();
+	}
+
+	/** Server, from MulaRebirths: it comes back where its star landed, popping in (FRESH), the burst forgotten. */
+	public void onReborn() {
+		starLaunchTicks = 0;
+		specialAnimTicks = 0;
+		currentSpecial = null;
+		this.dataTracker.set(FRESH, true);
+		this.freshTicks = FRESH_TICKS;
+	}
+
 	@Override
 	public void tick() {
 		super.tick();
@@ -196,6 +245,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (eatCooldown > 0) eatCooldown--;
 		if (bellyClearTicks > 0 && --bellyClearTicks == 0) setLastFood(ItemStack.EMPTY);
 		if (freshTicks > 0 && --freshTicks == 0) this.dataTracker.set(FRESH, false);
+		if (starLaunchTicks > 0 && --starLaunchTicks == 0) {
+			burstIntoStar();
+			return;
+		}
 		brain.tick();
 		tickEmotes();
 	}
@@ -566,6 +619,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 				setHunger(0);
 				dropFragmentStars(64);
 				bellyClearTicks = BELLY_CLEAR_TICKS;
+				// at the pop it flies away as a shooting star, to be reborn far away
+				starLaunchTicks = STAR_LAUNCH_TICKS;
 			} else {
 				playSpecial("celebrate", CELEBRATE_TICKS);
 			}
@@ -651,6 +706,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		super.handleStatus(status);
 		if (status == EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES) {
 			effects.onTamed();
+		} else if (status == MulaRebirths.REBORN_STATUS) {
+			effects.onReborn();
 		}
 	}
 
