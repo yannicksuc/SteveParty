@@ -754,5 +754,11 @@
   "gui.steveparty.goal_pole.comparator.greater_or_equal": "au moins %s",
   "gui.steveparty.goal_pole.comparator.greater": "supérieur à %s",
   "gui.steveparty.goal_pole.comparator.description": "Total : la somme des scores des joueurs suivis par le socle en dessous",
-  "tooltip.steveparty.flag.color": "Couleur : %s"
+  "tooltip.steveparty.flag.color": "Couleur : %s",
+  "item.steveparty.bandana": "Bandana",
+  "item.steveparty.bandana.color.teal": "Turquoise",
+  "item.steveparty.bandana.color.blue": "Bleu",
+  "item.steveparty.bandana.color.pink": "Rose",
+  "item.steveparty.bandana.color.orange": "Orange",
+  "item.steveparty.bandana.color.yellow": "Jaune"
 }

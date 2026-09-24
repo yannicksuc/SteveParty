@@ -753,5 +753,11 @@
   "block.steveparty.black_plastic_stairs": "Black Plastic Stairs",
   "block.steveparty.black_plastic_wall": "Black Plastic Wall",
   "item.steveparty.plastic_stick": "Plastic Stick",
-  "tooltip.steveparty.flag.color": "Colour: %s"
+  "tooltip.steveparty.flag.color": "Colour: %s",
+  "item.steveparty.bandana": "Bandana",
+  "item.steveparty.bandana.color.teal": "Teal",
+  "item.steveparty.bandana.color.blue": "Blue",
+  "item.steveparty.bandana.color.pink": "Pink",
+  "item.steveparty.bandana.color.orange": "Orange",
+  "item.steveparty.bandana.color.yellow": "Yellow"
 }

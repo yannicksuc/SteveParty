@@ -181,6 +181,9 @@ public class StevepartyClient implements ClientModInitializer {
         }, ModItems.STENCIL_GUN);
 
         // Dyed flag: its own model (greyscale cloth, the stick untinted), the cloth tinted with the flag's colour
+        // Bandana: one icon per colour (0, 0.25, ... 1: teal, blue, pink, orange, yellow)
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.BANDANA, Steveparty.id("bandana_color"),
+                (stack, world, entity, seed) -> fr.lordfinn.steveparty.items.custom.BandanaItem.getColor(stack) / 4f);
         net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.FLAG, Steveparty.id("dyed"),
                 (stack, world, entity, seed) -> FlagItem.getColor(stack) == FlagItem.NO_COLOR ? 0f : 1f);
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {

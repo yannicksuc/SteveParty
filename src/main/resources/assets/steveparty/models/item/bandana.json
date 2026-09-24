@@ -1,0 +1,32 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "steveparty:item/bandana_teal"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "steveparty:bandana_color": 0.25
+      },
+      "model": "steveparty:item/bandana_blue"
+    },
+    {
+      "predicate": {
+        "steveparty:bandana_color": 0.5
+      },
+      "model": "steveparty:item/bandana_pink"
+    },
+    {
+      "predicate": {
+        "steveparty:bandana_color": 0.75
+      },
+      "model": "steveparty:item/bandana_orange"
+    },
+    {
+      "predicate": {
+        "steveparty:bandana_color": 1.0
+      },
+      "model": "steveparty:item/bandana_yellow"
+    }
+  ]
+}

@@ -74,6 +74,8 @@ public class ModItems {
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
     /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
     public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
+    /** The Hiding Trader's bandana (stolen with shears), wearable on the head. */
+    public static final Item BANDANA = register(BandanaItem.class, "bandana", new Item.Settings().maxCount(1));
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(PARTY_CONTROLLER))
@@ -148,6 +150,9 @@ public class ModItems {
 
         // Register items to the custom item group.
         ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
+            for (int color = 0; color < BandanaItem.COLOR_NAMES.length; color++) {
+                itemGroup.add(BandanaItem.create(color));
+            }
             itemGroup.add(SIMPLE_TILE);
             itemGroup.add(TILE);
             itemGroup.add(CHECK_POINT);

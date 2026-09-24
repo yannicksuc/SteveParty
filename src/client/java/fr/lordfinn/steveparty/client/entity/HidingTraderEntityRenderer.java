@@ -14,6 +14,8 @@ import static fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderLayer
 
 
 public class HidingTraderEntityRenderer extends GeoEntityRenderer<HidingTraderEntity> {
+    /** Bald merchant: his bandana was stolen with shears. */
+    private static final Identifier BALD_TEXTURE = Steveparty.id("textures/entity/hiding_trader_bald.png");
     /** Base texture (gold bandana), used until the bandana colour is synced. */
     private static final Identifier BASE_TEXTURE = Steveparty.id("textures/entity/hiding_trader.png");
     /** One texture per bandana colour, in HidingTraderEntity's BandanaColor order (the art sources). */
@@ -32,6 +34,7 @@ public class HidingTraderEntityRenderer extends GeoEntityRenderer<HidingTraderEn
 
     @Override
     public Identifier getTextureLocation(HidingTraderEntity animatable) {
+        if (!animatable.hasBandana()) return BALD_TEXTURE;
         int color = animatable.getBandanaColor();
         return color >= 0 && color < BANDANA_TEXTURES.length ? BANDANA_TEXTURES[color] : BASE_TEXTURE;
     }
