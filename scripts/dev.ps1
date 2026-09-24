@@ -167,14 +167,37 @@ function Send-RconCommands {
     }
 }
 
+# The settings the running server actually started with: prepareDevServer writes them right before runServer.
+function Get-ServerProperties {
+    param([string]$RunDir)
+    $properties = @{}
+    $file = Join-Path (Join-Path $RepoRoot $RunDir) 'server.properties'
+    if (Test-Path $file) {
+        Get-Content $file | ForEach-Object {
+            if ($_ -match '^([\w.-]+)=(.*)$') { $properties[$Matches[1]] = $Matches[2].Trim() }
+        }
+    }
+    return $properties
+}
+
 function Stop-Kind {
     param([string]$K)
     $jvms = @(Find-GameJvm $K)
     if ($jvms.Count -eq 0) { Write-Host "$K is not running."; return }
     if ($K -eq 'server') {
+        # RCON goes to this checkout's running server, whatever -Port says: a wrong -Port would otherwise stop
+        # another checkout's server through its RCON, or miss and kill this one without saving.
         $info = Get-DevServerInfo
-        Write-Host "Stopping the server gracefully (save-all flush, stop)..."
-        if (Send-RconCommands -Port ([int]$info.rconPort) -Password $info.rconPassword -Commands @('save-all flush', 'stop')) {
+        $properties = Get-ServerProperties $info.runDir
+        $serverPort = if ($properties['server-port']) { [int]$properties['server-port'] } else { [int]$info.port }
+        if ($Port -gt 0 -and $serverPort -ne $Port) {
+            Write-Warning "This checkout's server runs on port $serverPort, not $Port`: left running. Stop it with: .\scripts\dev.ps1 stop server"
+            return
+        }
+        $rconPort = if ($properties['rcon.port']) { [int]$properties['rcon.port'] } else { [int]$info.rconPort }
+        $rconPassword = if ($properties['rcon.password']) { $properties['rcon.password'] } else { $info.rconPassword }
+        Write-Host "Stopping the server on port $serverPort gracefully (save-all flush, stop)..."
+        if (Send-RconCommands -Port $rconPort -Password $rconPassword -Commands @('save-all flush', 'stop')) {
             $deadline = (Get-Date).AddSeconds(30)
             while ((Get-Date) -lt $deadline -and @(Find-GameJvm 'server').Count -gt 0) { Start-Sleep -Milliseconds 500 }
             if (@(Find-GameJvm 'server').Count -eq 0) { Write-Host "Server stopped."; return }
