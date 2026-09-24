@@ -13,9 +13,9 @@ import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Plastic fence: made of plastic, it floats like the plastic blocks ({@link PlasticBlock}): under water it rises to
- * the surface (and stays there, dry), bubble columns carry it, magma pulls it down, a chain holds it, and it never
- * cuts a bubble column.
+ * Plastic fence: made of plastic, it floats like the plastic blocks ({@link PlasticBlock}): under water it rises
+ * until its top is level with the surface, bubble columns carry it, magma pulls it down, a chain holds it, and it
+ * never cuts a bubble column.
  */
 public class PlasticFenceBlock extends FenceBlock {
     public PlasticFenceBlock(Settings settings) {
@@ -52,10 +52,9 @@ public class PlasticFenceBlock extends FenceBlock {
             moved = state;
         } else {
             target = pos.up();
-            BlockState above = world.getBlockState(target);
-            if (PlasticBlock.canRiseInto(above)) moved = state;
-            else if (above.isAir()) moved = state.with(WATERLOGGED, false); // floats at the surface
-            else return null; // stopped by the block above
+            // Like the plastic block, it stays in the water: its top level with the surface
+            if (!PlasticBlock.canRiseInto(world.getBlockState(target))) return null;
+            moved = state;
         }
         // Linked to the fences around its new place
         moved = Block.postProcessState(moved, world, target);
