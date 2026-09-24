@@ -11,7 +11,10 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
 import net.minecraft.data.family.BlockFamily;
+import net.minecraft.item.DyeItem;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.book.RecipeCategory;
+import net.minecraft.util.DyeColor;
 import net.minecraft.registry.Registries;
 import net.minecraft.resource.featuretoggle.FeatureFlags;
 import net.minecraft.util.Identifier;
@@ -108,6 +111,35 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .offerTo(recipeExporter, "power_star_from_black_fragments");
 
                 generatePolishedConcrete();
+                generateSwitcherBlocks();
+            }
+
+            // Plastic like the real thing: sugar cane (green polyethylene) is turned into pellets in a furnace,
+            // then pellets are moulded with a dye; the amethyst shard is what makes the block switch.
+            private void generateSwitcherBlocks() {
+                offerSmelting(List.of(Items.SUGAR_CANE), RecipeCategory.MISC, ModItems.PLASTIC_PELLETS, 0.1f, 200, "plastic_pellets");
+                Ingredient anySwitcher = Ingredient.ofItems(ModBlocks.SWITCHER_BLOCKS);
+                for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+                    Block switcher = ModBlocks.SWITCHER_BLOCKS[i];
+                    Item dye = DyeItem.byColor(DyeColor.byName(ModBlocks.COLORS[i], DyeColor.WHITE));
+                    createShapeless(RecipeCategory.BUILDING_BLOCKS, switcher, 4)
+                            .input(ModItems.PLASTIC_PELLETS, 4)
+                            .input(dye)
+                            .input(Items.AMETHYST_SHARD)
+                            .group("switcher_block")
+                            .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
+                            .offerTo(recipeExporter);
+                    // Re-dye 8 switcher blocks of any colour, like the vanilla terracotta
+                    createShaped(RecipeCategory.BUILDING_BLOCKS, switcher, 8)
+                            .pattern("###")
+                            .pattern("#X#")
+                            .pattern("###")
+                            .input('#', anySwitcher)
+                            .input('X', dye)
+                            .group("dyed_switcher_block")
+                            .criterion(hasItem(dye), conditionsFromItem(dye))
+                            .offerTo(recipeExporter, getItemPath(switcher) + "_from_dyeing");
+                }
             }
 
             // Same chain as the vanilla polished stones: concrete -> polished (2x2) -> bricks (2x2),

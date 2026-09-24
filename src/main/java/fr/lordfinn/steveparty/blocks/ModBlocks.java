@@ -43,10 +43,11 @@ public class ModBlocks {
 
             SWITCHER_BLOCKS[i] = register(
                     SwitchyBlock::new,
+                    // Moulded plastic: quicker with a pickaxe but still harvestable by hand, not flammable
                     Block.Settings.create()
-                            .strength(0.4f, 0.4f)
-                            .burnable()
-                            .sounds(BlockSoundGroup.WOOL)
+                            .mapColor(DyeColor.byName(color, DyeColor.WHITE))
+                            .strength(1.0f, 1.0f)
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD)
                             .nonOpaque(),
                     name,
                     true
