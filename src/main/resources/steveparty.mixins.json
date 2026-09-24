@@ -11,6 +11,8 @@
     "ShapedRecipeAccessor",
     "ShearsItemMixin",
     "SimpleRegistryAliasMixin",
+    "BubbleColumnBlockMixin",
+    "EntityBubbleColumnMixin",
     "StatusEffectMixin",
     "TokenEntityMixin",
     "MixinPistonBlock"

@@ -96,7 +96,8 @@ public class ConnectedPlasticModel implements BakedModel {
 
     private static boolean connected(BlockRenderView world, BlockState state, BlockPos pos, Direction dir, Map<BlockPos, int[]> phases) {
         BlockPos other = pos.offset(dir);
-        if (world.getBlockState(pos) != state || world.getBlockState(other) != state) return false;
+        // Same colour, wet or dry
+        if (!world.getBlockState(pos).isOf(state.getBlock()) || !world.getBlockState(other).isOf(state.getBlock())) return false;
         int[] phase = phases.computeIfAbsent(pos, p -> phases(world, state, p));
         int axis = dir.getAxis().ordinal();
         int span = span(axis);
@@ -129,7 +130,7 @@ public class ConnectedPlasticModel implements BakedModel {
             int span = span(axis.ordinal());
             int run = 0;
             BlockPos.Mutable cursor = pos.mutableCopy();
-            while (run < MAX_SCAN && world.getBlockState(cursor.move(back)) == state) run++;
+            while (run < MAX_SCAN && world.getBlockState(cursor.move(back)).isOf(state.getBlock())) run++;
             phase[axis.ordinal()] = run < MAX_SCAN
                     ? run % span
                     : Math.floorMod(axis.choose(pos.getX(), pos.getY(), pos.getZ()), span);
