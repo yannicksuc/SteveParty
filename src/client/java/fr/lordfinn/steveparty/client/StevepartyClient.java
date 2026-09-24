@@ -1,5 +1,14 @@
 package fr.lordfinn.steveparty.client;
 
+import fr.lordfinn.steveparty.client.blockentity.StencilCanvasBlockEntityRenderer;
+import fr.lordfinn.steveparty.client.gui.StencilGunHud;
+import fr.lordfinn.steveparty.client.model.sign.MaterialSprites;
+import fr.lordfinn.steveparty.client.model.sign.StencilSignModelPlugin;
+import fr.lordfinn.steveparty.client.screens.StencilGunScreen;
+import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
+import fr.lordfinn.steveparty.items.custom.StencilGunItem;
+import net.minecraft.block.Block;
+
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -131,6 +140,10 @@ public class StevepartyClient implements ClientModInitializer {
         PayloadReceivers.initialize();
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
+        ModelLoadingPlugin.register(new StencilSignModelPlugin());
+        StencilResourceManager.registerReloadListener();
+        MaterialSprites.registerReloadListener();
+        StencilGunHud.initialize();
         SwitchableClient.initialize();
 
         initScreens();
@@ -152,6 +165,12 @@ public class StevepartyClient implements ClientModInitializer {
 
     private void initItemRenderers() {
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.STENCIL, new StencilItemRenderer());
+        // Paint can of the stencil gun: colour of the selected dye
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+            if (tintIndex != 1) return 0xFFFFFFFF;
+            StencilGunItem.Load load = StencilGunItem.selectedLoad(stack);
+            return load.color() == null ? 0xFF6B6B6B : 0xFF000000 | load.color().getEntityColor();
+        }, ModItems.STENCIL_GUN);
 
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
@@ -181,7 +200,14 @@ public class StevepartyClient implements ClientModInitializer {
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.TRAFFIC_SIGN_ENTITY, TrafficSignBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.TRAFFIC_SIGN_ENTITY, StencilCanvasBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_CANVAS, StencilCanvasBlockEntityRenderer::new);
+        // Stencil signs: turned models with see-through texels (stripped logs, pebbles...)
+        for (Block sign : new Block[]{OAK_TRAFFIC_SIGN, SPRUCE_TRAFFIC_SIGN, BIRCH_TRAFFIC_SIGN, JUNGLE_TRAFFIC_SIGN, ACACIA_TRAFFIC_SIGN,
+                DARK_OAK_TRAFFIC_SIGN, MANGROVE_TRAFFIC_SIGN, CHERRY_TRAFFIC_SIGN, CRIMSON_TRAFFIC_SIGN, WARPED_TRAFFIC_SIGN,
+                ModBlocks.TRAFFIC_SIGN, WOODEN_PANEL, WOODEN_CUTOUT_PANEL, ROCK_SIGN, PLASTIC_ROAD_SIGN}) {
+            BlockRenderLayerMap.INSTANCE.putBlock(sign, RenderLayer.getCutout());
+        }
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_MAKER_ENTITY, StencilMakerBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.LOOTING_BOX_ENTITY, LootingBoxBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.DICE_FORGE_ENTITY, DiceForgeBlockEntityRenderer::new);
@@ -236,6 +262,7 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(HERE_WE_GO_BOOK_SCREEN_HANDLER, HereWeGoBookScreen::new);
         HandledScreens.register(HERE_WE_COME_BOOK_SCREEN_HANDLER, HereWeComeBookScreen::new);
         HandledScreens.register(STENCIL_MAKER_SCREEN_HANDLER, StencilMakerScreen::new);
+        HandledScreens.register(STENCIL_GUN_SCREEN_HANDLER, StencilGunScreen::new);
         HandledScreens.register(TRADING_STALL_SCREEN_HANDLER, TradingStallScreen::new);
         HandledScreens.register(CASH_REGISTER_SCREEN_HANDLER, CashRegisterScreen::new);
         HandledScreens.register(GOAL_POLE_BASE_SCREEN_HANDLER, GoalPoleBaseScreen::new);

@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.signs.*;
+import fr.lordfinn.steveparty.items.custom.StencilSignItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
@@ -360,43 +362,43 @@ public class ModBlocks {
 
     public static final Block OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.OAK, c),
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "oak_traffic_sign", true);
+            "oak_traffic_sign", true, StencilSignItem::new);
 
     public static final Block SPRUCE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.SPRUCE, c),
             AbstractBlock.Settings.create().mapColor(MapColor.SPRUCE_BROWN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "spruce_traffic_sign", true);
+            "spruce_traffic_sign", true, StencilSignItem::new);
 
     public static final Block BIRCH_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.BIRCH, c),
             AbstractBlock.Settings.create().mapColor(MapColor.PALE_YELLOW).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "birch_traffic_sign", true);
+            "birch_traffic_sign", true, StencilSignItem::new);
 
     public static final Block JUNGLE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.JUNGLE, c),
             AbstractBlock.Settings.create().mapColor(MapColor.BROWN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "jungle_traffic_sign", true);
+            "jungle_traffic_sign", true, StencilSignItem::new);
 
     public static final Block ACACIA_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.ACACIA, c),
             AbstractBlock.Settings.create().mapColor(MapColor.ORANGE).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "acacia_traffic_sign", true);
+            "acacia_traffic_sign", true, StencilSignItem::new);
 
     public static final Block DARK_OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.DARK_OAK, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "dark_oak_traffic_sign", true);
+            "dark_oak_traffic_sign", true, StencilSignItem::new);
 
     public static final Block MANGROVE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.MANGROVE, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "mangrove_traffic_sign", true);
+            "mangrove_traffic_sign", true, StencilSignItem::new);
 
     public static final Block CRIMSON_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CRIMSON, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DARK_CRIMSON).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "crimson_traffic_sign", true);
+            "crimson_traffic_sign", true, StencilSignItem::new);
 
     public static final Block WARPED_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.WARPED, c),
             AbstractBlock.Settings.create().mapColor(MapColor.CYAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "warped_traffic_sign", true);
+            "warped_traffic_sign", true, StencilSignItem::new);
 
     public static final Block CHERRY_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CHERRY, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DULL_PINK).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "cherry_traffic_sign", true);
+            "cherry_traffic_sign", true, StencilSignItem::new);
 
     public static final Block GOAL_POLE_BASE = register(GoalPoleBaseBlock::new,
             Block.Settings.create()
@@ -479,6 +481,36 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.STONE)
                     .requiresTool(),
             "dice_forge", true);
+
+    // ---------------------------------------------------------------- stencil signs
+
+    /** Traffic sign of any planks (the wood is kept by the block entity and the item). */
+    public static final Block TRAFFIC_SIGN = register(MaterialTrafficSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "traffic_sign", true, StencilSignItem::new);
+
+    public static final Block WOODEN_PANEL = register(WoodenPanelBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().noCollision().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "wooden_panel", true, StencilSignItem::new);
+
+    public static final Block WOODEN_CUTOUT_PANEL = register(WoodenCutoutPanelBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().noCollision().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "wooden_cutout_panel", true, StencilSignItem::new);
+
+    public static final Block ROCK_SIGN = register(RockSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY).nonOpaque().requiresTool().strength(1.5F, 6.0F).sounds(BlockSoundGroup.STONE),
+            "rock_sign", true, StencilSignItem::new);
+
+    public static final Block PLASTIC_ROAD_SIGN = register(PlasticRoadSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.WHITE).solid().noCollision().nonOpaque().strength(1.0F, 1.0F).sounds(BlockSoundGroup.BAMBOO_WOOD),
+            "plastic_road_sign", true, StencilSignItem::new);
+
+    /** Paint sprayed through a stencil on a block face (no item: made by stencils and the stencil gun). */
+    public static final Block STENCIL_PAINT = Blocks.register(
+            RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("stencil_paint")),
+            StencilPaintBlock::new,
+            AbstractBlock.Settings.create().replaceable().noCollision().nonOpaque().breakInstantly().dropsNothing()
+                    .pistonBehavior(PistonBehavior.DESTROY).sounds(BlockSoundGroup.WOOL));
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(

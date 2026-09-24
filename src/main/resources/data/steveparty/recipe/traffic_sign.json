@@ -1,0 +1,17 @@
+{
+  "type": "steveparty:material_shaped",
+  "category": "misc",
+  "pattern": [
+    "PPP",
+    "PPP",
+    "S S"
+  ],
+  "key": {
+    "P": "#minecraft:planks",
+    "S": "minecraft:stick"
+  },
+  "result": {
+    "id": "steveparty:traffic_sign",
+    "count": 2
+  }
+}

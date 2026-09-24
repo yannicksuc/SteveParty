@@ -1,0 +1,17 @@
+{
+  "type": "steveparty:material_shaped",
+  "category": "misc",
+  "pattern": [
+    "P",
+    "I",
+    "I"
+  ],
+  "key": {
+    "P": "#steveparty:plastic_blocks",
+    "I": "minecraft:iron_ingot"
+  },
+  "result": {
+    "id": "steveparty:plastic_road_sign",
+    "count": 1
+  }
+}

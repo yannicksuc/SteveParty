@@ -11,6 +11,9 @@
     "steveparty:cherry_traffic_sign",
     "steveparty:crimson_traffic_sign",
     "steveparty:warped_traffic_sign",
+    "steveparty:traffic_sign",
+    "steveparty:wooden_panel",
+    "steveparty:wooden_cutout_panel",
     "steveparty:trading_stall"
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "type": "steveparty:material_shaped",
+  "category": "building",
+  "pattern": [
+    " R ",
+    "RRR"
+  ],
+  "key": {
+    "R": "#steveparty:rock_sign_materials"
+  },
+  "result": {
+    "id": "steveparty:rock_sign",
+    "count": 1
+  }
+}
