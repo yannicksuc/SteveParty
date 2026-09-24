@@ -1,168 +1,135 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "base": "steveparty:block/metallic_redstone_plate",
-    "bell": "minecraft:block/gold_block",
-    "lit": "minecraft:block/redstone_block",
-    "particle": "minecraft:block/gold_block"
+    "plate": "steveparty:block/metallic_redstone_plate",
+    "bell": "minecraft:entity/bell/bell_body",
+    "particle": "steveparty:block/metallic_redstone_plate"
   },
   "elements": [
     {
       "from": [
-        1,
         0,
-        1
+        0,
+        0
       ],
       "to": [
-        15,
+        16,
         2,
-        15
+        16
       ],
       "faces": {
         "north": {
-          "texture": "#base"
+          "uv": [
+            8,
+            0,
+            16,
+            1
+          ],
+          "texture": "#plate"
         },
         "east": {
-          "texture": "#base"
+          "uv": [
+            8,
+            1,
+            16,
+            2
+          ],
+          "texture": "#plate"
         },
         "south": {
-          "texture": "#base"
+          "uv": [
+            8,
+            2,
+            16,
+            3
+          ],
+          "texture": "#plate"
         },
         "west": {
-          "texture": "#base"
+          "uv": [
+            8,
+            3,
+            16,
+            4
+          ],
+          "texture": "#plate"
         },
         "up": {
-          "texture": "#base"
+          "uv": [
+            8,
+            8,
+            0,
+            0
+          ],
+          "texture": "#plate"
         },
         "down": {
-          "texture": "#base"
+          "uv": [
+            8,
+            8,
+            0,
+            16
+          ],
+          "texture": "#plate",
+          "cullface": "down"
         }
       }
     },
     {
       "from": [
-        4,
+        5,
         2,
-        4
+        5
       ],
       "to": [
-        12,
-        3,
-        12
-      ],
-      "faces": {
-        "north": {
-          "texture": "#bell"
-        },
-        "east": {
-          "texture": "#bell"
-        },
-        "south": {
-          "texture": "#bell"
-        },
-        "west": {
-          "texture": "#bell"
-        },
-        "up": {
-          "texture": "#bell"
-        },
-        "down": {
-          "texture": "#bell"
-        }
-      }
-    },
-    {
-      "from": [
-        4.5,
-        3,
-        4.5
-      ],
-      "to": [
-        11.5,
-        9,
-        11.5
-      ],
-      "faces": {
-        "north": {
-          "texture": "#bell"
-        },
-        "east": {
-          "texture": "#bell"
-        },
-        "south": {
-          "texture": "#bell"
-        },
-        "west": {
-          "texture": "#bell"
-        },
-        "up": {
-          "texture": "#bell"
-        },
-        "down": {
-          "texture": "#bell"
-        }
-      }
-    },
-    {
-      "from": [
-        6,
-        9,
-        6
-      ],
-      "to": [
-        10,
-        10,
-        10
-      ],
-      "faces": {
-        "north": {
-          "texture": "#bell"
-        },
-        "east": {
-          "texture": "#bell"
-        },
-        "south": {
-          "texture": "#bell"
-        },
-        "west": {
-          "texture": "#bell"
-        },
-        "up": {
-          "texture": "#bell"
-        },
-        "down": {
-          "texture": "#bell"
-        }
-      }
-    },
-    {
-      "from": [
+        11,
         7,
-        10,
-        7
-      ],
-      "to": [
-        9,
-        12,
-        9
+        11
       ],
       "faces": {
+        "up": {
+          "uv": [
+            3,
+            0,
+            6,
+            3
+          ],
+          "texture": "#bell"
+        },
         "north": {
+          "uv": [
+            3,
+            3,
+            6,
+            6.5
+          ],
           "texture": "#bell"
         },
         "east": {
+          "uv": [
+            6,
+            3,
+            9,
+            6.5
+          ],
           "texture": "#bell"
         },
         "south": {
+          "uv": [
+            9,
+            3,
+            12,
+            6.5
+          ],
           "texture": "#bell"
         },
         "west": {
-          "texture": "#bell"
-        },
-        "up": {
-          "texture": "#bell"
-        },
-        "down": {
+          "uv": [
+            0,
+            3,
+            3,
+            6.5
+          ],
           "texture": "#bell"
         }
       }
