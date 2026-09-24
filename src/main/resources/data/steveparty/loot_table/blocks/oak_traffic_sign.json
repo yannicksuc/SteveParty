@@ -7,7 +7,18 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "steveparty:oak_traffic_sign"
+          "name": "steveparty:oak_traffic_sign",
+          "functions": [
+            {
+              "function": "minecraft:copy_components",
+              "source": "block_entity",
+              "include": [
+                "steveparty:sign-material",
+                "steveparty:stencil-canvas",
+                "minecraft:base_color"
+              ]
+            }
+          ]
         }
       ],
       "conditions": [

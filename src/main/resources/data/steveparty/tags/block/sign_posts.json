@@ -1,0 +1,9 @@
+{
+  "values": [
+    "#minecraft:fences",
+    "#minecraft:walls",
+    "#minecraft:logs",
+    "steveparty:wooden_panel",
+    "steveparty:wooden_cutout_panel"
+  ]
+}

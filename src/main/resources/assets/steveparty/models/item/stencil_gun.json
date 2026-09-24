@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:item/handheld",
+	"textures": {
+		"layer0": "steveparty:item/stencil_gun",
+		"layer1": "steveparty:item/stencil_gun_paint"
+	}
+}

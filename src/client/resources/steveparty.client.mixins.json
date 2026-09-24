@@ -9,6 +9,7 @@
     "LivingEntityRendererShouldFlipMixin",
     "LivingEntityRendererSmoothFlipMixin",
     "LivingEntityRendererSquishMixin",
+    "MouseScrollMixin",
     "LivingEntityRenderStateMixin",
     "PlayerEntityModelMixin"
   ],

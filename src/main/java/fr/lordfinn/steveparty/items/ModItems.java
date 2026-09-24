@@ -2,6 +2,14 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.signs.MaterialSignItems;
+import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
+import fr.lordfinn.steveparty.stencil.StencilPatterns;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BlockStateComponent;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.util.DyeColor;
 import fr.lordfinn.steveparty.items.custom.*;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
@@ -35,6 +43,7 @@ public class ModItems {
     public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
 
     public static final Item STENCIL = register(StencilItem.class, "stencil");
+    public static final Item STENCIL_GUN = registerUnstackable(StencilGunItem.class, "stencil_gun");
     public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
@@ -105,6 +114,15 @@ public class ModItems {
 
     }
 
+    /** Blocks of a sign material kind, from the tags of the running game (modded blocks included). */
+    private static List<Block> blocksOf(RegistryWrapper.WrapperLookup lookup, SignMaterial kind) {
+        List<Block> blocks = new ArrayList<>();
+        lookup.getOrThrow(RegistryKeys.BLOCK).getOptional(kind.tag())
+                .ifPresent(list -> list.forEach(entry -> blocks.add(entry.value())));
+        if (blocks.isEmpty()) blocks.add(kind.defaultBlock());
+        return blocks;
+    }
+
     public static void initialize() {
         // Register the group.
         Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
@@ -152,17 +170,34 @@ public class ModItems {
             itemGroup.add(TRADING_STALL);
             itemGroup.add(CASH_REGISTER);
             itemGroup.add(SHOPKEEPER_KEY);
-            itemGroup.add(OAK_TRAFFIC_SIGN);
-            itemGroup.add(BIRCH_TRAFFIC_SIGN);
-            itemGroup.add(SPRUCE_TRAFFIC_SIGN);
-            itemGroup.add(JUNGLE_TRAFFIC_SIGN);
-            itemGroup.add(ACACIA_TRAFFIC_SIGN);
-            itemGroup.add(DARK_OAK_TRAFFIC_SIGN);
-            itemGroup.add(MANGROVE_TRAFFIC_SIGN);
-            itemGroup.add(CHERRY_TRAFFIC_SIGN);
-            itemGroup.add(CRIMSON_TRAFFIC_SIGN);
-            itemGroup.add(WARPED_TRAFFIC_SIGN);
+            // The 10 fixed-wood traffic signs stay in the game for the worlds that have them, but are no longer
+            // listed: the material traffic sign covers every planks, modded ones included
+            RegistryWrapper.WrapperLookup lookup = itemGroup.getContext().lookup();
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(TRAFFIC_SIGN, planks));
+            }
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_PANEL, planks));
+            }
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_CUTOUT_PANEL, planks));
+            }
+            for (Block rock : blocksOf(lookup, SignMaterial.ROCK)) {
+                itemGroup.add(MaterialSignItems.withMaterial(ROCK_SIGN, rock));
+            }
+            for (PlasticRoadSignBlock.Plate plate : PlasticRoadSignBlock.Plate.values()) {
+                ItemStack sign = MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, plate == PlasticRoadSignBlock.Plate.ROUND ? DyeColor.RED : DyeColor.YELLOW);
+                sign.set(DataComponentTypes.BLOCK_STATE, BlockStateComponent.DEFAULT.with(PlasticRoadSignBlock.PLATE, plate));
+                itemGroup.add(sign);
+            }
+            for (DyeColor color : DyeColor.values()) {
+                itemGroup.add(MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, color));
+            }
             itemGroup.add(STENCIL);
+            for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
+                itemGroup.add(StencilItem.of(pattern));
+            }
+            itemGroup.add(STENCIL_GUN);
             itemGroup.add(STENCIL_MAKER);
             itemGroup.add(HOP_SWITCH);
             itemGroup.add(PLASTIC_PELLETS);

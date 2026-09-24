@@ -51,6 +51,7 @@ public class Steveparty implements ModInitializer {
         ModComponents.initialize();
         ModScreensHandlers.initialize();
         ModEffects.initialize();
+        fr.lordfinn.steveparty.loot.RandomStencilPatternLootFunction.initialize();
         ModLootTableModifiers.initialize();
         ModPayloads.initialize();
         SwitchableConfig.initialize();

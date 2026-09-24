@@ -46,7 +46,9 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.GRAVITY_CORE,
                         // requiresTool() blocks that had no mineable tag (unharvestable)
                         ModBlocks.SIMPLE_TILE,
-                        ModBlocks.DICE_FORGE
+                        ModBlocks.DICE_FORGE,
+                        ModBlocks.ROCK_SIGN,
+                        ModBlocks.PLASTIC_ROAD_SIGN
                 );
         for (Block b : ModBlocks.POLISHED_TERRACOTTA_SLABS)
             getOrCreateTagBuilder(BlockTags.SLABS).add(b);
@@ -95,6 +97,9 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.CHERRY_TRAFFIC_SIGN,
                         ModBlocks.CRIMSON_TRAFFIC_SIGN,
                         ModBlocks.WARPED_TRAFFIC_SIGN,
+                        ModBlocks.TRAFFIC_SIGN,
+                        ModBlocks.WOODEN_PANEL,
+                        ModBlocks.WOODEN_CUTOUT_PANEL,
                         ModBlocks.TRADING_STALL
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_STONE_TOOL)

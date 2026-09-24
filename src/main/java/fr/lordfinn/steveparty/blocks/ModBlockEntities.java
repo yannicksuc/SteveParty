@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -66,7 +67,14 @@ public class ModBlockEntities {
     public static final BlockEntityType<TrafficSignBlockEntity> TRAFFIC_SIGN_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "traffic_sign"),
-            FabricBlockEntityTypeBuilder.create(TrafficSignBlockEntity::new, ModBlocks.SPRUCE_TRAFFIC_SIGN, ModBlocks.JUNGLE_TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.DARK_OAK_TRAFFIC_SIGN, ModBlocks.CRIMSON_TRAFFIC_SIGN, ModBlocks.WARPED_TRAFFIC_SIGN, ModBlocks.BIRCH_TRAFFIC_SIGN, ModBlocks.ACACIA_TRAFFIC_SIGN, ModBlocks.MANGROVE_TRAFFIC_SIGN, ModBlocks.CHERRY_TRAFFIC_SIGN).build(null)
+            FabricBlockEntityTypeBuilder.create(TrafficSignBlockEntity::new, ModBlocks.SPRUCE_TRAFFIC_SIGN, ModBlocks.JUNGLE_TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.DARK_OAK_TRAFFIC_SIGN, ModBlocks.CRIMSON_TRAFFIC_SIGN, ModBlocks.WARPED_TRAFFIC_SIGN, ModBlocks.BIRCH_TRAFFIC_SIGN, ModBlocks.ACACIA_TRAFFIC_SIGN, ModBlocks.MANGROVE_TRAFFIC_SIGN, ModBlocks.CHERRY_TRAFFIC_SIGN, ModBlocks.TRAFFIC_SIGN).build(null)
+    );
+    /** Every other block taking stencils: panels, rock signs, plastic road signs, sprayed paint. */
+    public static final BlockEntityType<StencilCanvasBlockEntity> STENCIL_CANVAS = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "stencil_canvas"),
+            FabricBlockEntityTypeBuilder.create(StencilCanvasBlockEntity::new, ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL,
+                    ModBlocks.ROCK_SIGN, ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.STENCIL_PAINT).build(null)
     );
     public static final BlockEntityType<StencilMakerBlockEntity> STENCIL_MAKER_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
