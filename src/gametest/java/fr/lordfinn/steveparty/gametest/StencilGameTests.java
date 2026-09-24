@@ -472,11 +472,25 @@ public class StencilGameTests implements FabricGameTest {
         context.setBlockState(post.up(), ModBlocks.PLASTIC_ROAD_SIGN.getDefaultState().with(AbstractStencilSignBlock.WATERLOGGED, true));
         context.setBlockState(post.up(2), Blocks.WATER);
         context.waitAndRun(risingTicks(TUBE_TOP - TUBE_BOTTOM + 1), () -> {
-            BlockState fence = context.getBlockState(new BlockPos(TUBE_X, TUBE_TOP + 1, TUBE_Z));
-            context.assertTrue(fence.isOf(ModBlocks.PLASTIC_FENCES[4]) && !fence.get(net.minecraft.block.FenceBlock.WATERLOGGED), "fence at the surface: " + fence);
+            // Like the plastic block, it stays in the water, its top level with the surface
+            BlockState fence = context.getBlockState(new BlockPos(TUBE_X, TUBE_TOP, TUBE_Z));
+            context.assertTrue(fence.isOf(ModBlocks.PLASTIC_FENCES[4]) && fence.get(net.minecraft.block.FenceBlock.WATERLOGGED), "fence at the surface: " + fence);
+            context.expectBlock(Blocks.AIR, new BlockPos(TUBE_X, TUBE_TOP + 1, TUBE_Z));
             context.expectBlock(ModBlocks.PLASTIC_ROAD_SIGN, post.up());
             context.complete();
         });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void signsCanBeBumpedInto(TestContext context) {
+        BlockPos abs = context.getAbsolutePos(SIGN);
+        context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
+        for (var sign : List.of(ModBlocks.TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL,
+                ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.ROCK_SIGN)) {
+            context.setBlockState(SIGN, sign);
+            context.assertTrue(!context.getBlockState(SIGN).getCollisionShape(context.getWorld(), abs).isEmpty(), sign + " has a hitbox");
+        }
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
