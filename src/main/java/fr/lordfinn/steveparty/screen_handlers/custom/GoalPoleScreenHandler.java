@@ -14,6 +14,7 @@ public class GoalPoleScreenHandler extends ScreenHandler {
     private GoalPoleBlockEntity.Comparator comparator;
     private int value;
     private boolean perSegment;
+    private boolean flagSteps;
     private BlockPos pos;
 
     // Constructor from BlockEntity (server-side)
@@ -23,6 +24,7 @@ public class GoalPoleScreenHandler extends ScreenHandler {
         this.comparator = entity.getComparator();
         this.value = entity.getValue();
         this.perSegment = entity.isPerSegment();
+        this.flagSteps = entity.isFlagSteps();
         this.pos = entity.getPos();
     }
 
@@ -34,6 +36,7 @@ public class GoalPoleScreenHandler extends ScreenHandler {
         this.comparator = payload.comparator();
         this.value = payload.value();
         this.perSegment = payload.perSegment();
+        this.flagSteps = payload.flagSteps();
     }
 
     // --- Getters / setters ---
@@ -65,6 +68,10 @@ public class GoalPoleScreenHandler extends ScreenHandler {
 
     public boolean isPerSegment() {
         return perSegment;
+    }
+
+    public boolean isFlagSteps() {
+        return flagSteps;
     }
 
     public BlockPos getPos() {

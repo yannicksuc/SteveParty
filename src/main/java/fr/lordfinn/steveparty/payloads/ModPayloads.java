@@ -137,6 +137,7 @@ public class ModPayloads {
                         || !ScreenHandlerChecks.isInReach(player, pos)) return;
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBlockEntity blockEntity) {
                     blockEntity.applyGoal(payload.comparator(), payload.value(), payload.perSegment());
+                    blockEntity.applyFlagSteps(payload.flagSteps());
                 }
             });
         });

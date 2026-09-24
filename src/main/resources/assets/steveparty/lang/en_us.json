@@ -828,5 +828,10 @@
   "gui.steveparty.goal_pole_base.players.selector.details": "A target selector or a player name, as in commands (e.g. @a[team=red], @p, Steve).",
   "message.steveparty.goal_pole.no_party": "⚠ No party running near this base: landing not counted",
   "message.steveparty.goal_pole.not_followed": "⚠ This base does not follow you: landing not counted",
-  "hint.steveparty.goal_pole.players.radius": "within %s blocks"
+  "hint.steveparty.goal_pole.players.radius": "within %s blocks",
+  "gui.steveparty.goal_pole.flag": "Flag",
+  "gui.steveparty.goal_pole.flag.slide": "Flag: slides down when reached",
+  "gui.steveparty.goal_pole.flag.slide.details": "The flag stays up until the goal is reached, then slides down the pole.",
+  "gui.steveparty.goal_pole.flag.steps": "Flag: one notch down per point",
+  "gui.steveparty.goal_pole.flag.steps.details": "The flag goes down a notch for each point: halfway down, halfway to the goal; at the bottom, the goal is reached."
 }

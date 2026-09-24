@@ -44,7 +44,9 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     private Comparator comparator;
     /** Advanced: each segment of the pole has its own goal (notches show them); otherwise one goal for the pole. */
     private boolean perSegment;
-    private int modeY;
+    /** The flags step down one notch per point, instead of sliding down once the goal is met. */
+    private boolean flagSteps;
+    private int modeY, flagY;
     private TextFieldWidget valueField;
     private PartyButton doneButton;
     private boolean openSoundPlayed = false;
@@ -56,6 +58,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         this.backgroundWidth = WIDTH;
         this.comparator = handler.getComparator();
         this.perSegment = handler.isPerSegment();
+        this.flagSteps = handler.isFlagSteps();
     }
 
     @Override
@@ -65,7 +68,8 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         valueY = cmpY + CMP_HEIGHT + 12;
         summaryY = valueY + FIELD_HEIGHT + 7;
         modeY = summaryY + 16;
-        buttonsY = modeY + 26;
+        flagY = modeY + 22;
+        buttonsY = flagY + 26;
         backgroundHeight = buttonsY + 20 + 12;
         super.init();
         // init() runs again on every resize: keep what the player already chose / typed
@@ -108,6 +112,13 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         }));
         mode.setMessage(modeText());
         mode.setTooltip(Tooltip.of(modeTooltip()));
+        PartyButton flag = addDrawableChild(new PartyButton(x + 16, y + flagY, WIDTH - 32, 18, Text.empty(), b -> {
+            flagSteps = !flagSteps;
+            b.setMessage(flagText());
+            b.setTooltip(Tooltip.of(flagTooltip()));
+        }));
+        flag.setMessage(flagText());
+        flag.setTooltip(Tooltip.of(flagTooltip()));
         doneButton = addDrawableChild(new PartyButton(x + 16 + buttonWidth + 8, y + buttonsY, buttonWidth, 20,
                 Text.translatable("gui.steveparty.validate"), b -> submit()).style(PartyButton.Style.PRIMARY));
 
@@ -166,7 +177,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     private void submit() {
         Integer value = parsedValue();
         if (value == null) return;
-        ClientPlayNetworking.send(new GoalPolePayload(handler.getPos(), comparator, value, perSegment));
+        ClientPlayNetworking.send(new GoalPolePayload(handler.getPos(), comparator, value, perSegment, flagSteps));
         close();
     }
 
@@ -201,6 +212,15 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         drawMouseoverTooltip(context, mouseX, mouseY);
+    }
+
+    private Text flagText() {
+        return Text.translatable(KEY + (flagSteps ? "flag.steps" : "flag.slide"));
+    }
+
+    private Text flagTooltip() {
+        return Text.empty().append(Text.translatable(KEY + "flag").formatted(Formatting.GOLD)).append("\n")
+                .append(Text.translatable(KEY + (flagSteps ? "flag.steps.details" : "flag.slide.details")).formatted(Formatting.GRAY));
     }
 
     private Text modeText() {

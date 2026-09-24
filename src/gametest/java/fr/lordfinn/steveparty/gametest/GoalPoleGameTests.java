@@ -974,4 +974,39 @@ public class GoalPoleGameTests implements FabricGameTest {
             context.getWorld().getServer().getPlayerManager().remove(player);
         }
     }
+
+    /**
+     * One notch per point: the flag goes down the share of its goal reached (a setting of the whole pole, saved, sent
+     * to the screen); by default it waits for the goal.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void flagStepsDownOneNotchPerPoint(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, y == 3));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity top = poleEntity(context, BASE.up(3));
+        top.applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 4, false);
+        BlockPos.Mutable scratch = new BlockPos.Mutable();
+        BlockPos flag = context.getAbsolutePos(BASE.up(3));
+        ServerWorld world = context.getWorld();
+        base.credit("Alex", 2, null);
+        context.assertTrue(GoalPoleFlags.drop(world, flag, scratch) == 0f, "default: up until the goal is reached");
+        poleEntity(context, BASE.up()).applyFlagSteps(true);
+        for (int y = 1; y <= 3; y++) context.assertTrue(poleEntity(context, BASE.up(y)).isFlagSteps(), "the whole pole, segment " + y);
+        float half = GoalPoleFlags.drop(world, flag, scratch);
+        context.assertTrue(half == -16f, "2 of 4: halfway down (-16 of -32), got " + half);
+        base.credit("Alex", 1, null);
+        float threeQuarters = GoalPoleFlags.drop(world, flag, scratch);
+        context.assertTrue(threeQuarters == -24f, "3 of 4: -24, got " + threeQuarters);
+        base.credit("Alex", 1, null);
+        context.assertTrue(GoalPoleFlags.drop(world, flag, scratch) == -32f && top.isGoalMet(), "goal reached: at the bottom");
+        context.assertTrue(top.createNbt(registries).getBoolean("FlagSteps") && top.getScreenOpeningData(null).flagSteps(),
+                "saved and sent to the screen");
+        context.setBlockState(BASE.up(4), pole(false, true));
+        GoalPoleNetwork.processPending();
+        context.assertTrue(poleEntity(context, BASE.up(4)).isFlagSteps(), "a new segment takes the pole's setting");
+        removeBase(context);
+        context.complete();
+    }
 }

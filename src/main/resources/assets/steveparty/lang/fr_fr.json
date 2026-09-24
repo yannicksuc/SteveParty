@@ -829,5 +829,10 @@
   "gui.steveparty.goal_pole_base.players.selector.details": "Un sélecteur de cible ou un nom de joueur, comme dans les commandes (ex. @a[team=red], @p, Steve).",
   "message.steveparty.goal_pole.no_party": "⚠ Aucune partie en cours près de ce socle : atterrissage non compté",
   "message.steveparty.goal_pole.not_followed": "⚠ Ce socle ne vous suit pas : atterrissage non compté",
-  "hint.steveparty.goal_pole.players.radius": "à moins de %s blocs"
+  "hint.steveparty.goal_pole.players.radius": "à moins de %s blocs",
+  "gui.steveparty.goal_pole.flag": "Drapeau",
+  "gui.steveparty.goal_pole.flag.slide": "Drapeau : descend au but atteint",
+  "gui.steveparty.goal_pole.flag.slide.details": "Le drapeau reste en haut jusqu'à ce que le but soit atteint, puis descend le long du mât.",
+  "gui.steveparty.goal_pole.flag.steps": "Drapeau : un cran par point",
+  "gui.steveparty.goal_pole.flag.steps.details": "Le drapeau descend d'un cran à chaque point : à mi-hauteur, à mi-chemin du but ; en bas, le but est atteint."
 }

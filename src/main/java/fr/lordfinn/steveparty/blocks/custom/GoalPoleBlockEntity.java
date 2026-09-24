@@ -130,6 +130,8 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     private int value = 1;
     /** Whether the column's segments each have their own goal (advanced), instead of one goal for the whole pole. */
     private boolean perSegment = false;
+    /** How the pole's flags show the progress (a setting of the whole pole). */
+    private boolean flagSteps = false;
     /** Loaded from before the column setting: its column decides once whether its goals were all the same. */
     private boolean legacyGoal = false;
     /** Placed, not loaded: takes the settings of the column it joins. */
@@ -164,6 +166,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
                     comparator = other.comparator;
                     value = other.value;
                     perSegment = other.perSegment;
+                    flagSteps = other.flagSteps;
                     markDirty();
                     break;
                 }
@@ -235,6 +238,39 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
 
     public boolean isPerSegment() {
         return perSegment;
+    }
+
+    /**
+     * How the flags of this pole move: false, a flag slides down once its goal is met; true, it steps down one notch
+     * per point towards its goal (the progress shows on the pole). A setting of the whole pole.
+     */
+    public boolean isFlagSteps() {
+        return flagSteps;
+    }
+
+    /** Sets how the flags move, for the whole pole. */
+    public void applyFlagSteps(boolean steps) {
+        if (world == null || world.isClient) {
+            flagSteps = steps;
+            return;
+        }
+        for (GoalPoleBlockEntity segment : column(world, pos)) {
+            if (segment.flagSteps == steps) continue;
+            segment.flagSteps = steps;
+            segment.markDirty();
+            segment.sync();
+        }
+    }
+
+    /**
+     * Share of the way to this segment's goal, 0 to 1 (1 when met): the total over the number to reach; goals that
+     * are not a number to reach ("less than") are all or nothing.
+     */
+    public float progressFraction() {
+        if (goalMet) return 1f;
+        Long target = displayTarget();
+        if (target == null || target <= 0 || total <= 0) return 0f;
+        return Math.min(1f, (float) total / target);
     }
 
     // --- Base ---
@@ -368,6 +404,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         nbt.putInt("Comparator", comparator.ordinal());
         nbt.putInt("Value", value);
         nbt.putBoolean("PerSegment", perSegment);
+        nbt.putBoolean("FlagSteps", flagSteps);
         if (legacyGoal) nbt.putBoolean("LegacyGoal", true);
         if (flagColor != FlagItem.NO_COLOR) nbt.putInt("FlagColor", flagColor);
         nbt.putLong("Total", total);
@@ -381,6 +418,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         super.readNbt(nbt, registries);
         fresh = false;
         perSegment = nbt.getBoolean("PerSegment");
+        flagSteps = nbt.getBoolean("FlagSteps");
         // Saved before the column setting (or not consolidated yet): its column decides when it loads
         legacyGoal = nbt.getInt("Version") < VERSION || nbt.getBoolean("LegacyGoal");
         if (nbt.contains("Comparator")) {
@@ -466,7 +504,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     @Override
     public GoalPolePayload getScreenOpeningData(ServerPlayerEntity player) {
         if (world != null && !world.isClient) consolidate(column(world, pos));
-        return new GoalPolePayload(this.getPos(), this.comparator, this.value, this.perSegment);
+        return new GoalPolePayload(this.getPos(), this.comparator, this.value, this.perSegment, this.flagSteps);
     }
 
     @Override

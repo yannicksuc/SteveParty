@@ -136,9 +136,10 @@ public class GoalPoleFlagRenderer implements BlockEntityRenderer<GoalPoleBlockEn
         float gust = FlagWind.gust(pos.getX(), pos.getZ(), seconds);
         computeCloth(columns, seconds, phase, speed, gust);
 
-        // Goal met: the flag slides down to the bottom of the pole (on the flags below), and back up afterwards
+        // Goal met: the flag slides down to the bottom of the pole (on the flags below), and back up afterwards; or,
+        // one notch per point, a step down for each point
         boolean met = entity.isGoalMet();
-        float wanted = met ? GoalPoleFlags.restingDrop(world, pos, SCRATCH) : 0f;
+        float wanted = GoalPoleFlags.drop(world, pos, SCRATCH);
         FlagSlide slide = SLIDES.computeIfAbsent(entity, e -> new FlagSlide());
         double changeSecond = (entity.getGoalMetTick() % 2_400_000L) / 20.0;
         float stagger = ((seed >>> 40) & 0xFF) / 255f * 0.3f;
