@@ -42,5 +42,14 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
             addDrop(block);
         for (Block block : ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS)
             addDrop(block);
+        for (Block[] blocks : new Block[][]{
+                ModBlocks.POLISHED_CONCRETE_BLOCKS, ModBlocks.POLISHED_CONCRETE_BRICKS_BLOCKS,
+                ModBlocks.POLISHED_CONCRETE_STAIRS, ModBlocks.POLISHED_CONCRETE_WALLS,
+                ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS, ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS})
+            for (Block block : blocks)
+                addDrop(block);
+        for (Block[] slabs : new Block[][]{ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS})
+            for (Block block : slabs)
+                addDrop(block, slabDrops(block));
     }
 }

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "minecraft:lime_concrete",
+  "result": {
+    "count": 1,
+    "id": "steveparty:lime_polished_concrete_wall"
+  }
+}
