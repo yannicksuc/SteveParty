@@ -45,11 +45,10 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         this.drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
-    /** Frames the selected stencil and dye (from the gun in hand, updated as the player loads it). */
+    /** Frames the selected stencil and dye (from the gun being loaded, updated as the player loads it). */
     private void drawSelection(DrawContext context) {
-        if (client == null || client.player == null) return;
-        ItemStack gun = client.player.getMainHandStack();
-        if (!(gun.getItem() instanceof StencilGunItem)) gun = client.player.getOffHandStack();
+        if (client == null || client.player == null || handler.getGunSlot() < 0) return;
+        ItemStack gun = client.player.getInventory().getStack(handler.getGunSlot());
         if (!(gun.getItem() instanceof StencilGunItem)) return;
         List<ItemStack> contents = StencilGunItem.contents(gun);
         StencilGunSelection selection = StencilGunItem.validSelection(contents, StencilGunItem.selection(gun));
