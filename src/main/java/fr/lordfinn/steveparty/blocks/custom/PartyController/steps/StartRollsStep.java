@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
@@ -79,6 +80,7 @@ public class StartRollsStep extends PartyStep {
             if (diceTarget != null) {
                 rolls.put(((Entity) diceTarget).getUuid(), rollValue);
                 partyControllerEntity.markDirty();
+                partyControllerEntity.ringMoment(PartyMoment.DICE_ROLLED, rollValue);
             }
 
             // Every token currently played by a connected owner has rolled

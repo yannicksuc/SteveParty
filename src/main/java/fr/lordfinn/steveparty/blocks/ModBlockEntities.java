@@ -63,6 +63,21 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "step_controller"),
             FabricBlockEntityTypeBuilder.create(StepControllerBlockEntity::new, ModBlocks.STEP_CONTROLLER).build(null)
     );
+    public static final BlockEntityType<PartyBellBlockEntity> PARTY_BELL_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "party_bell"),
+            FabricBlockEntityTypeBuilder.create(PartyBellBlockEntity::new, ModBlocks.PARTY_BELL).build(null)
+    );
+    public static final BlockEntityType<PodiumBlockEntity> PODIUM_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "podium"),
+            FabricBlockEntityTypeBuilder.create(PodiumBlockEntity::new, ModBlocks.PODIUM).build(null)
+    );
+    public static final BlockEntityType<PiggyBankBlockEntity> PIGGY_BANK_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "piggy_bank"),
+            FabricBlockEntityTypeBuilder.create(PiggyBankBlockEntity::new, ModBlocks.PIGGY_BANK).build(null)
+    );
     public static final BlockEntityType<TrafficSignBlockEntity> TRAFFIC_SIGN_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "traffic_sign"),

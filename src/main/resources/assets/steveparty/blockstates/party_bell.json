@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "steveparty:block/party_bell"
+    },
+    "powered=true": {
+      "model": "steveparty:block/party_bell_on"
+    }
+  }
+}

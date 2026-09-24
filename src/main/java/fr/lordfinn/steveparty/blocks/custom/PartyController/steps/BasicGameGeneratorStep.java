@@ -4,8 +4,10 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.items.custom.PartyCardItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -36,7 +38,7 @@ public class BasicGameGeneratorStep extends PartyStep {
         ServerWorld world = (ServerWorld) partyControllerEntity.getWorld();
         if (world == null) return;
         PartyData partyData = partyControllerEntity.getPartyData();
-        generateSteps(partyData, world);
+        generateSteps(partyData, world, partyControllerEntity.getProgram());
         partyControllerEntity.markDirty();
         scheduleStart(partyControllerEntity, world);
     }
@@ -71,7 +73,7 @@ public class BasicGameGeneratorStep extends PartyStep {
         );
     }
 
-    private void generateSteps(PartyData partyData, ServerWorld world) {
+    private void generateSteps(PartyData partyData, ServerWorld world, List<ItemStack> program) {
         List<UUID> tokens = partyData.getTokens(); // Assuming this method retrieves the list of tokens
         if (tokens.isEmpty()) return;
 
@@ -81,28 +83,69 @@ public class BasicGameGeneratorStep extends PartyStep {
         if (generatorIndex >= 0 && generatorIndex + 1 < steps.size())
             steps.subList(generatorIndex + 1, steps.size()).clear();
 
-        // Add steps for each turn
-        for (int i = 0; i < partyData.getNbTurn(); i++) {
-            // Token turn steps: every registered token gets its turns, even if it is not loaded right now
-            // (an absent token is waited for a while when its turn comes, see TokenTurnPartyStep)
-            for (UUID token : tokens) {
-                UUID owner = null;
-                String name = null;
-                if (world.getEntity(token) instanceof TokenizedEntityInterface tokenEntity) {
-                    owner = tokenEntity.steveparty$getTokenOwner();
-                    Text customName = ((Entity) tokenEntity).getCustomName();
-                    if (customName != null) name = customName.getString();
+        for (ExpandedCard card : expand(program, partyData.getNbTurn())) {
+            switch (card.type()) {
+                case TURNS -> {
+                    // Token turn steps: every registered token gets its turns, even if it is not loaded right now
+                    // (an absent token is waited for a while when its turn comes, see TokenTurnPartyStep)
+                    for (UUID token : tokens) {
+                        UUID owner = null;
+                        String name = null;
+                        if (world.getEntity(token) instanceof TokenizedEntityInterface tokenEntity) {
+                            owner = tokenEntity.steveparty$getTokenOwner();
+                            Text customName = ((Entity) tokenEntity).getCustomName();
+                            if (customName != null) name = customName.getString();
+                        }
+                        TokenTurnPartyStep turn = new TokenTurnPartyStep(token, owner);
+                        turn.setTokenName(name);
+                        partyData.addStep(turn);
+                    }
                 }
-                TokenTurnPartyStep turn = new TokenTurnPartyStep(token, owner);
-                turn.setTokenName(name);
-                partyData.addStep(turn);
+                case MINIGAME -> partyData.addStep(new MiniGamePartyStep(new ArrayList<>(tokens)));
+                case EVENT -> partyData.addStep(EventPartyStep.eventCard(Math.min(card.count(), 15)));
+                case REPEAT -> {
+                    // Already expanded
+                }
             }
-            // Mini-game step
-            partyData.addStep(new MiniGamePartyStep(new ArrayList<>(tokens)));
         }
-
         // Add the end step
         partyData.addStep(new EndPartyStep(new ArrayList<>(tokens)));
-
     }
+
+    /** At most this many cards once the program is expanded (a party of 10 000 steps is a mistake). */
+    public static final int MAX_EXPANDED_CARDS = 2000;
+
+    /**
+     * Expands the party program: the cards in reading order, "repeat" cards replaced by the repetitions they ask
+     * for. A "repeat" card with N cards in its stack plays the cards since the previous "repeat" card (or the start)
+     * N times in all. An empty program is the default party: turns, mini-game, repeated {@code defaultRounds} times.
+     */
+    public static List<ExpandedCard> expand(List<ItemStack> program, int defaultRounds) {
+        List<ExpandedCard> result = new ArrayList<>();
+        List<ExpandedCard> group = new ArrayList<>();
+        boolean any = program.stream().anyMatch(stack -> stack.getItem() instanceof PartyCardItem);
+        if (!any) {
+            for (int i = 0; i < Math.max(1, defaultRounds); i++) {
+                result.add(new ExpandedCard(PartyCardItem.CardType.TURNS, 1));
+                result.add(new ExpandedCard(PartyCardItem.CardType.MINIGAME, 1));
+            }
+            return result;
+        }
+        for (ItemStack stack : program) {
+            if (!(stack.getItem() instanceof PartyCardItem cardItem)) continue;
+            ExpandedCard card = new ExpandedCard(cardItem.getCardType(), stack.getCount());
+            if (card.type() == PartyCardItem.CardType.REPEAT) {
+                for (int i = 1; i < card.count() && result.size() + group.size() <= MAX_EXPANDED_CARDS; i++)
+                    result.addAll(group);
+                group.clear();
+                continue;
+            }
+            result.add(card);
+            group.add(card);
+        }
+        if (result.size() > MAX_EXPANDED_CARDS) result.subList(MAX_EXPANDED_CARDS, result.size()).clear();
+        return result;
+    }
+
+    public record ExpandedCard(PartyCardItem.CardType type, int count) {}
 }

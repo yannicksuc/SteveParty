@@ -18,6 +18,7 @@ public class PartyStepFactory {
         STEPS_TYPES.put(PartyStepType.END, EndPartyStep.class);
         STEPS_TYPES.put(PartyStepType.START_ROLLS, StartRollsStep.class);
         STEPS_TYPES.put(PartyStepType.BASIC_GAME_GENERATOR, BasicGameGeneratorStep.class);
+        STEPS_TYPES.put(PartyStepType.EVENT, EventPartyStep.class);
     }
 
     /**

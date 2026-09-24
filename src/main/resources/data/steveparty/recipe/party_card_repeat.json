@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:paper",
+    "minecraft:paper",
+    "minecraft:clock"
+  ],
+  "result": {
+    "id": "steveparty:party_card_repeat",
+    "count": 4
+  }
+}

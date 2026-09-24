@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenStatus;
@@ -54,6 +55,7 @@ public class TokenMovementService {
         MobEntity chosenToken = getTargetedToken(world, dice, ownerUUID);
         if (chosenToken == null) return ActionResult.PASS;
 
+        PartyControllerEntity.onTokenDiceRolled(world, chosenToken, rollValue);
         // Add small delay so players can appreciate the dice roll value
         SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(chosenToken, rollValue));
         return ActionResult.SUCCESS;
@@ -131,6 +133,8 @@ public class TokenMovementService {
                 && ABoardSpaceBlock.countsAsStep(mob.getWorld().getBlockState(mob.getBlockPos()).getBlock())) {
             token.steveparty$setNbSteps(token.steveparty$getNbSteps() - 1);
         }
+        if (token.steveparty$getNbSteps() == 0 && mob.getWorld() instanceof ServerWorld serverWorld)
+            PartyControllerEntity.onFreeTokenArrived(serverWorld, mob);
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
     }
 

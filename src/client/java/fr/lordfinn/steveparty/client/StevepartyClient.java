@@ -242,6 +242,7 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(GOAL_POLE_SCREEN_HANDLER, GoalPoleScreen::new);
         HandledScreens.register(LOOTING_BOX_SCREEN_HANDLER, LootingBoxScreen::new);
         HandledScreens.register(DICE_FORGE_SCREEN_HANDLER, DiceForgeScreen::new);
+        HandledScreens.register(PARTY_CONTROLLER_SCREEN_HANDLER, PartyControllerScreen::new);
     }
 
     private static void initKeybinds() {

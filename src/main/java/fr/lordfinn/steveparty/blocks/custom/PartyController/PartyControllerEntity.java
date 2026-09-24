@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.*;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -21,7 +22,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
@@ -62,6 +66,27 @@ public class PartyControllerEntity extends BlockEntity {
     private final Set<UUID> tokensToRelease = new LinkedHashSet<>();
     /** Radius around the controller in which the players are told about the party (absent turns, exclusions...). */
     public static final int PARTY_AUDIENCE_RADIUS = 100;
+    /** Last phase given to comparators, to notify them only when it changes. */
+    private int lastPhase = -1;
+    /** Players who won the last mini-game (piggy banks may reward them). */
+    private final List<UUID> lastWinners = new ArrayList<>();
+
+    /** Settings slots (wrench + right-click): the coin and star items, then the party program cards. */
+    public static final int SLOT_COIN = 0;
+    public static final int SLOT_STAR = 1;
+    public static final int PROGRAM_FIRST_SLOT = 2;
+    public static final int PROGRAM_SLOTS = 18;
+    public static final int SETTINGS_SIZE = PROGRAM_FIRST_SLOT + PROGRAM_SLOTS;
+    private static final int SCORE_REFRESH_INTERVAL_TICKS = 20;
+    private final SimpleInventory settings = new SimpleInventory(SETTINGS_SIZE) {
+        @Override
+        public void markDirty() {
+            super.markDirty();
+            PartyControllerEntity.this.markDirty();
+        }
+    };
+    /** Last known coins / stars of each player of the party, kept for the players who went offline. */
+    private final Map<UUID, int[]> cachedScores = new LinkedHashMap<>();
 
     static {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_PARTY_CONTROLLERS.clear());
@@ -162,6 +187,21 @@ public class PartyControllerEntity extends BlockEntity {
             tokensToRelease.forEach(uuid -> releaseNbt.add(NbtString.of(uuid.toString())));
             nbt.put("TokensToRelease", releaseNbt);
         }
+        if (!lastWinners.isEmpty()) {
+            NbtList winnersNbt = new NbtList();
+            lastWinners.forEach(uuid -> winnersNbt.add(NbtString.of(uuid.toString())));
+            nbt.put("LastWinners", winnersNbt);
+        }
+        if (!settings.isEmpty()) {
+            NbtCompound settingsNbt = new NbtCompound();
+            Inventories.writeNbt(settingsNbt, settings.getHeldStacks(), wrapper);
+            nbt.put("PartySettings", settingsNbt);
+        }
+        if (!cachedScores.isEmpty()) {
+            NbtCompound scoresNbt = new NbtCompound();
+            cachedScores.forEach((uuid, score) -> scoresNbt.putIntArray(uuid.toString(), score));
+            nbt.put("Scores", scoresNbt);
+        }
     }
 
     @Override
@@ -190,6 +230,25 @@ public class PartyControllerEntity extends BlockEntity {
             } catch (IllegalArgumentException ignored) {
             }
         });
+        lastWinners.clear();
+        nbt.getList("LastWinners", NbtElement.STRING_TYPE).forEach(element -> {
+            try {
+                lastWinners.add(UUID.fromString(element.asString()));
+            } catch (IllegalArgumentException ignored) {
+            }
+        });
+        settings.getHeldStacks().clear();
+        Inventories.readNbt(nbt.getCompound("PartySettings"), settings.getHeldStacks(), wrapper);
+        cachedScores.clear();
+        NbtCompound scoresNbt = nbt.getCompound("Scores");
+        for (String key : scoresNbt.getKeys()) {
+            int[] score = scoresNbt.getIntArray(key);
+            try {
+                if (score.length == 2) cachedScores.put(UUID.fromString(key), score);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        partyData.setScores(buildScoreBoard());
         resumeDone = false;
     }
 
@@ -202,6 +261,8 @@ public class PartyControllerEntity extends BlockEntity {
     public void serverTick(ServerWorld serverWorld) {
         if (!tokensToRelease.isEmpty() && serverWorld.getTime() % 20 == 0)
             releasePendingTokens(serverWorld);
+        if (partyData.isStarted() && serverWorld.getTime() % SCORE_REFRESH_INTERVAL_TICKS == 0)
+            refreshScores();
         PartyStep currentStep = partyData.getCurrentStep();
         if (resumeDone) {
             // Once resumed (or started), the current step gets ticked (e.g. the countdown of an absent turn)
@@ -242,6 +303,7 @@ public class PartyControllerEntity extends BlockEntity {
             this.world.updateListeners(this.pos, this.getCachedState(), this.getCachedState(), 3);
         }
         super.markDirty();
+        updatePhase();
     }
 
     public void boot() {
@@ -439,14 +501,308 @@ public class PartyControllerEntity extends BlockEntity {
         return partyData;
     }
 
+    // ---------------------------------------------------------------- settings: currency and program
+
+    public SimpleInventory getSettings() {
+        return settings;
+    }
+
+    public ItemStack getCoinTemplate() {
+        return settings.getStack(SLOT_COIN);
+    }
+
+    public ItemStack getStarTemplate() {
+        return settings.getStack(SLOT_STAR);
+    }
+
+    /** @return true if a coin or a star item was chosen: scores are shown and the party ends with a ranking. */
+    public boolean hasCurrency() {
+        return !getCoinTemplate().isEmpty() || !getStarTemplate().isEmpty();
+    }
+
+    /** The cards of the party program, in reading order (copies). Empty: the default party. */
+    public List<ItemStack> getProgram() {
+        List<ItemStack> program = new ArrayList<>();
+        for (int i = PROGRAM_FIRST_SLOT; i < SETTINGS_SIZE; i++) {
+            ItemStack stack = settings.getStack(i);
+            if (!stack.isEmpty()) program.add(stack.copy());
+        }
+        return program;
+    }
+
+    /** Number of items like {@code template} (same item and components) in the player's inventory. */
+    public static int countItems(PlayerEntity player, ItemStack template) {
+        if (template.isEmpty()) return 0;
+        int count = 0;
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            ItemStack stack = player.getInventory().getStack(i);
+            if (!stack.isEmpty() && ItemStack.areItemsAndComponentsEqual(stack, template)) count += stack.getCount();
+        }
+        return count;
+    }
+
+    /** Owner of a token of the party: read on the loaded token, else on its turns. */
+    public @Nullable UUID getTokenOwner(UUID tokenUUID) {
+        if (this.world instanceof ServerWorld serverWorld && serverWorld.getEntity(tokenUUID) instanceof TokenizedEntityInterface token)
+            return token.steveparty$getTokenOwner();
+        for (PartyStep step : partyData.getSteps()) {
+            if (step instanceof TokenTurnPartyStep turn && tokenUUID.equals(turn.getTokenUUID()) && turn.getOwnerUUID() != null)
+                return turn.getOwnerUUID();
+        }
+        return null;
+    }
+
+    /** The players of the party (owners of its tokens), in play order. Ownerless tokens have no score. */
+    public List<UUID> getPlayersInOrder() {
+        List<UUID> players = new ArrayList<>();
+        for (UUID token : partyData.getTokens()) {
+            UUID owner = getTokenOwner(token);
+            if (owner != null && !players.contains(owner)) players.add(owner);
+        }
+        return players;
+    }
+
+    /** Coins and stars of a player: counted in their inventory if online, else the last known ones. */
+    public int[] getScore(UUID playerUUID) {
+        if (this.world instanceof ServerWorld serverWorld) {
+            ServerPlayerEntity player = serverWorld.getServer().getPlayerManager().getPlayer(playerUUID);
+            if (player != null) {
+                int[] score = {countItems(player, getCoinTemplate()), countItems(player, getStarTemplate())};
+                cachedScores.put(playerUUID, score);
+                return score;
+            }
+        }
+        return cachedScores.getOrDefault(playerUUID, new int[]{0, 0});
+    }
+
+    private String playerName(UUID playerUUID) {
+        if (this.world instanceof ServerWorld serverWorld) {
+            MinecraftServer server = serverWorld.getServer();
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerUUID);
+            if (player != null) return player.getName().getString();
+            if (server.getUserCache() != null) {
+                var profile = server.getUserCache().getByUuid(playerUUID);
+                if (profile.isPresent()) return profile.get().getName();
+            }
+        }
+        return playerUUID.toString().substring(0, 8);
+    }
+
+    private PartyData.ScoreBoard buildScoreBoard() {
+        if (!hasCurrency()) return PartyData.ScoreBoard.EMPTY;
+        List<PartyData.ScoreEntry> entries = new ArrayList<>();
+        boolean server = this.world instanceof ServerWorld;
+        for (UUID player : server ? getPlayersInOrder() : List.copyOf(cachedScores.keySet())) {
+            int[] score = server ? getScore(player) : cachedScores.get(player);
+            entries.add(new PartyData.ScoreEntry(player, server ? playerName(player) : "", score[0], score[1]));
+        }
+        return new PartyData.ScoreBoard(itemId(getCoinTemplate()), itemId(getStarTemplate()), entries);
+    }
+
+    private static String itemId(ItemStack stack) {
+        return stack.isEmpty() ? "" : Registries.ITEM.getId(stack.getItem()).toString();
+    }
+
+    /** Recounts the scores; the players following the party get them when they change. */
+    private void refreshScores() {
+        PartyData.ScoreBoard scores = buildScoreBoard();
+        if (scores.equals(partyData.getScores())) return;
+        partyData.setScores(scores);
+        super.markDirty();
+        sendPacketToInterestedPlayers();
+    }
+
+    /** Players sorted by stars, then coins (best first). */
+    public List<PartyData.ScoreEntry> computeRanking() {
+        List<PartyData.ScoreEntry> ranking = new ArrayList<>(buildScoreBoard().entries());
+        ranking.sort(Comparator.comparingInt(PartyData.ScoreEntry::stars).thenComparingInt(PartyData.ScoreEntry::coins).reversed());
+        return ranking;
+    }
+
+    /** End of the party: announces the ranking (if a coin or star item was chosen). */
+    public void announceRanking() {
+        if (!hasCurrency()) return;
+        List<PartyData.ScoreEntry> ranking = computeRanking();
+        if (ranking.isEmpty()) return;
+        List<ServerPlayerEntity> audience = getPartyAudience();
+        MessageUtils.sendToPlayers(audience, Text.translatableWithFallback("message.steveparty.ranking.title", "Ranking")
+                .formatted(Formatting.GOLD, Formatting.BOLD), MessageUtils.MessageType.CHAT);
+        int rank = 0;
+        PartyData.ScoreEntry previous = null;
+        for (int i = 0; i < ranking.size(); i++) {
+            PartyData.ScoreEntry entry = ranking.get(i);
+            // Same stars and coins: same rank
+            if (previous == null || previous.stars() != entry.stars() || previous.coins() != entry.coins()) rank = i + 1;
+            previous = entry;
+            MessageUtils.sendToPlayers(audience, Text.translatableWithFallback("message.steveparty.ranking.line",
+                    "%1$s. %2$s: %3$s stars, %4$s coins", rank, entry.name(), entry.stars(), entry.coins())
+                    .formatted(rank == 1 ? Formatting.YELLOW : Formatting.WHITE), MessageUtils.MessageType.CHAT);
+        }
+        PartyData.ScoreEntry best = ranking.getFirst();
+        List<String> winners = ranking.stream()
+                .filter(entry -> entry.stars() == best.stars() && entry.coins() == best.coins())
+                .map(PartyData.ScoreEntry::name).toList();
+        MessageUtils.sendToPlayers(audience, Text.translatableWithFallback("message.steveparty.ranking.winner",
+                "%s wins the party!", String.join(", ", winners)).styled(style -> style.withColor(0xFFD700).withBold(true)),
+                MessageUtils.MessageType.TITLE);
+    }
+
+    public List<UUID> getLastWinners() {
+        return Collections.unmodifiableList(lastWinners);
+    }
+
+    public void setLastWinners(List<UUID> winners) {
+        lastWinners.clear();
+        lastWinners.addAll(winners);
+        markDirty();
+    }
+
     public void setPartyData(PartyData partyData) {
         this.partyData = partyData;
         markDirty();
     }
 
     public void nextStep() {
+        PartyStep currentStep = partyData.getCurrentStep();
+        int index = partyData.getStepIndex();
         endCurrentStep();
-        startStep(partyData.getStepIndex() + 1);
+        if (currentStep instanceof EventPartyStep event && event.isTransition() && index >= 0) {
+            // Its moments rang: go on with the step it was inserted before (already announced)
+            partyData.getSteps().remove(index);
+            startStep(index);
+            return;
+        }
+        goToStep(index + 1, currentStep);
+    }
+
+    /**
+     * Moves to the step at {@code target} coming from {@code from}, ringing the party bells of the moments of this
+     * transition. If a bell waits at one of them, a transition step is inserted first: it rings the moments one
+     * after the other and waits for the bells.
+     */
+    private void goToStep(int target, @Nullable PartyStep from) {
+        List<PartyStep> steps = partyData.getSteps();
+        PartyStep to = target >= 0 && target < steps.size() ? steps.get(target) : null;
+        List<PartyMoment> moments = new ArrayList<>();
+        List<Integer> values = new ArrayList<>();
+        collectTransitionMoments(from, to, target, moments, values);
+        // The index first: the bells listen to started parties (or parties standing on their end)
+        partyData.setStepIndex(target);
+        if (moments.stream().anyMatch(moment -> PartyBellBlockEntity.hasWaitingBell(this, moment))) {
+            steps.add(target, EventPartyStep.transition(moments, values));
+        } else {
+            for (int i = 0; i < moments.size(); i++)
+                PartyBellBlockEntity.ring(this, moments.get(i), values.get(i));
+        }
+        startStep(target);
+    }
+
+    private void collectTransitionMoments(@Nullable PartyStep from, @Nullable PartyStep to, int target,
+                                          List<PartyMoment> moments, List<Integer> values) {
+        if (from instanceof TokenTurnPartyStep turn) {
+            moments.add(PartyMoment.TURN_END);
+            values.add(partyData.getTokenRank(turn.getTokenUUID()));
+        } else if (from instanceof MiniGamePartyStep miniGame) {
+            moments.add(PartyMoment.MINIGAME_END);
+            values.add(miniGame.getWinners().size());
+        }
+        if (to == null) return;
+        if (from == null && target == 0) {
+            moments.add(PartyMoment.PARTY_START);
+            values.add(partyData.getTokens().size());
+        }
+        if (to instanceof TokenTurnPartyStep turn) {
+            if (partyData.isRoundStart(target)) {
+                moments.add(PartyMoment.ROUND_START);
+                values.add(partyData.getRoundAt(target));
+            }
+            moments.add(PartyMoment.TURN_START);
+            values.add(partyData.getTokenRank(turn.getTokenUUID()));
+        } else if (to.getType() == PartyStepType.END) {
+            moments.add(PartyMoment.PARTY_END);
+            values.add(partyData.getTokens().size());
+        }
+    }
+
+    /**
+     * A party bell in waiting mode received its signal: the step waiting for {@code moment} goes on.
+     *
+     * @return true if a step was waiting for it
+     */
+    public boolean releaseMoment(PartyMoment moment) {
+        PartyStep currentStep = partyData.getCurrentStep();
+        if (currentStep == null || currentStep.getStatus() != PartyStep.Status.IN_PROGRESS) return false;
+        if (!currentStep.onMomentReleased(moment, this)) return false;
+        markDirty();
+        sendPacketToInterestedPlayers();
+        return true;
+    }
+
+    /**
+     * Rings the bells of a moment happening inside a step (dice rolled, mini-game chosen...).
+     *
+     * @return true if a bell waits at this moment (the step must pause until {@link PartyStep#onMomentReleased})
+     */
+    public boolean ringMoment(PartyMoment moment, int value) {
+        boolean waiting = PartyBellBlockEntity.ring(this, moment, value);
+        updatePhase();
+        return waiting;
+    }
+
+    /**
+     * A dice is about to move a token: rings the "dice rolled" bells of its party, or the free play bells around it.
+     */
+    public static void onTokenDiceRolled(ServerWorld world, Entity token, int rollValue) {
+        Optional<PartyControllerEntity> party = getRunningPartyOf(token.getUuid());
+        if (party.isPresent()) party.get().ringMoment(PartyMoment.DICE_ROLLED, rollValue);
+        else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), PartyMoment.DICE_ROLLED, rollValue);
+    }
+
+    /** Free play: a token that is not in a running party finished its movement. */
+    public static void onFreeTokenArrived(ServerWorld world, Entity token) {
+        if (getRunningPartyOf(token.getUuid()).isEmpty())
+            PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), PartyMoment.TURN_END, 1);
+    }
+
+    /** The loaded controller whose running party contains the token, if any. */
+    public static Optional<PartyControllerEntity> getRunningPartyOf(UUID tokenUUID) {
+        return ACTIVE_PARTY_CONTROLLERS.values().stream()
+                .filter(entity -> !entity.isRemoved() && entity.getPartyData().isStarted()
+                        && entity.getPartyData().getTokens().contains(tokenUUID))
+                .findFirst();
+    }
+
+    // ---------------------------------------------------------------- phase (comparator output)
+
+    public static final int PHASE_IDLE = 0;
+    public static final int PHASE_PREPARING = 1;
+    public static final int PHASE_TURN = 2;
+    public static final int PHASE_MINIGAME = 3;
+    public static final int PHASE_WAITING = 4;
+    public static final int PHASE_END = 5;
+
+    /**
+     * Phase read by a comparator: 0 idle, 1 start rolls / preparation, 2 token turn, 3 mini-game,
+     * 4 waiting for a party bell, 5 party over.
+     */
+    public int getPhase() {
+        PartyStep currentStep = partyData.getCurrentStep();
+        if (currentStep == null || (!partyData.isStarted() && !partyData.isAtEnd())) return PHASE_IDLE;
+        if (currentStep.isWaitingForBell()) return PHASE_WAITING;
+        return switch (currentStep.getType()) {
+            case TOKEN_TURN -> PHASE_TURN;
+            case MINI_GAME -> PHASE_MINIGAME;
+            case END -> PHASE_END;
+            default -> PHASE_PREPARING;
+        };
+    }
+
+    private void updatePhase() {
+        if (this.world == null || this.world.isClient) return;
+        int phase = getPhase();
+        if (phase == lastPhase) return;
+        lastPhase = phase;
+        this.world.updateComparators(this.pos, getCachedState().getBlock());
     }
 
     public void restartStep() {
@@ -458,6 +814,10 @@ public class PartyControllerEntity extends BlockEntity {
         PartyStep currentStep = partyData.getCurrentStep();
         boolean leavingEnd = currentStep != null && currentStep.getType() == PartyStepType.END && partyData.getStepIndex() > 0;
         endCurrentStep();
+        if (currentStep instanceof EventPartyStep event && event.isTransition()) {
+            // Not a real step: drop it, then go back to the step before it
+            partyData.getSteps().remove(partyData.getStepIndex());
+        }
         // The END step released the tokens: going back into the game puts them in game again
         // (the step being resumed grants CAN_MOVE as usual)
         if (leavingEnd)

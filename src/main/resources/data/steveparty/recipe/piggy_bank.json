@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " G ",
+    "TCT",
+    "TRT"
+  ],
+  "key": {
+    "G": "minecraft:gold_nugget",
+    "T": "minecraft:pink_terracotta",
+    "C": "minecraft:chest",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "steveparty:piggy_bank"
+  }
+}
