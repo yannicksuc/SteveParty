@@ -40,6 +40,7 @@ import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -653,7 +654,14 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     // rare hints that someone lives inside while it is hidden. They all start and end on the idle / closed pose.
     private static final String IDLE_CONTROLLER = "Idle";
     private static final String STARE_CONTROLLER = "Stare";
-    private static final String[] OPEN_FUN_ANIMS = {"fun_peek", "fun_coucou", "fun_shimmy", "fun_tap", "fun_yawn", "fun_sneeze", "fun_wave"};
+    private static final String[] OPEN_FUN_ANIMS = {"fun_peek", "fun_coucou", "fun_shimmy", "fun_tap", "fun_yawn", "fun_sneeze", "fun_wave",
+            "fun_laugh", "fun_balance", "fun_bonk"};
+    private static final String BONK_ANIM = "fun_bonk";
+    /** Sound keyframe effect of fun_laugh (the other sound keyframes are named "Sound"). */
+    private static final String LAUGH_SOUND_KEYFRAME = "laugh";
+    /** fun_bonk: stars circle the dazed head from 16 ticks after the trigger, for 26 ticks. */
+    private static final int BONK_STARS_DELAY = 16, BONK_STARS_TICKS = 26;
+    private int bonkStarsTick = -1;
     /** Played when a customer opens the trade screen. */
     private static final String HAPPY_ANIM = "fun_happy";
     private static final String[] HIDDEN_FUN_ANIMS = {"hidden_peek", "hidden_hop", "hidden_breath"};
@@ -683,6 +691,12 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         controllers.add(idle
                 .setSoundKeyframeHandler(context -> {
                     if (this.getWorld() == null) return;
+                    if (LAUGH_SOUND_KEYFRAME.equals(context.getKeyframeData().getSound())) {
+                        // fun_laugh: a pitched villager "hah!"
+                        ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), SoundEvents.ENTITY_VILLAGER_CELEBRATE,
+                                SoundCategory.NEUTRAL, 0.6F, 1.15F + this.random.nextFloat() * 0.2F);
+                        return;
+                    }
                     if (!lastHidingState)
                         ClientUtil.getLevel().playSound(ClientUtil.getClientPlayer(), this.getBlockPos(), SoundEvents.ENTITY_PUFFER_FISH_BLOW_UP, SoundCategory.NEUTRAL, 0.5F, 1.5F);
                     lastHidingState = true;
@@ -740,6 +754,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
      * sampled every 10 ticks, the rest is a counter.
      */
     private void tickFunAnimations() {
+        if (bonkStarsTick >= 0) tickBonkStars();
         if (this.age % 10 == 0) {
             boolean hiding = isHiding();
             if (hiding != serverHiding) {
@@ -756,7 +771,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 nextFunAge = this.age + 20;
                 return;
             }
-            triggerAnim(IDLE_CONTROLLER, pickFunAnim(OPEN_FUN_ANIMS));
+            String anim = pickFunAnim(OPEN_FUN_ANIMS);
+            triggerAnim(IDLE_CONTROLLER, anim);
+            if (BONK_ANIM.equals(anim)) bonkStarsTick = 0;
             nextFunAge = this.age + OPEN_FUN_MIN_TICKS + this.random.nextInt(OPEN_FUN_RANGE_TICKS);
         } else {
             if (!settled || this.getWorld().getClosestPlayer(this, HIDDEN_FUN_PLAYER_RANGE) == null) {
@@ -765,6 +782,23 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             }
             triggerAnim(STARE_CONTROLLER, pickFunAnim(HIDDEN_FUN_ANIMS));
             nextFunAge = this.age + HIDDEN_FUN_MIN_TICKS + this.random.nextInt(HIDDEN_FUN_RANGE_TICKS);
+        }
+    }
+
+    /** fun_bonk: a few sparkles circling the dazed head (every other tick, 2 opposite ones). */
+    private void tickBonkStars() {
+        int t = bonkStarsTick++ - BONK_STARS_DELAY;
+        if (t >= BONK_STARS_TICKS || serverHiding) {
+            bonkStarsTick = -1;
+            return;
+        }
+        if (t < 0 || t % 2 != 0 || !(this.getWorld() instanceof ServerWorld serverWorld)) return;
+        double angle = t * 0.45;
+        double headY = this.getY() + 1.75;
+        for (int i = 0; i < 2; i++) {
+            double a = angle + i * Math.PI;
+            serverWorld.spawnParticles(ParticleTypes.WAX_OFF, this.getX() + Math.cos(a) * 0.38, headY, this.getZ() + Math.sin(a) * 0.38,
+                    1, 0, 0, 0, 0);
         }
     }
 
