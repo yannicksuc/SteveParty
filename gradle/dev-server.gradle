@@ -6,9 +6,13 @@
 //
 // Every value lives here; scripts/dev.ps1 reads them through `./gradlew -q devServerInfo`.
 
+// Override per checkout/worktree without editing this file: -PdevServerPort=25581 (RCON = port + 10),
+// or put devServerPort=25581 in that checkout's gradle.properties / ~/.gradle/gradle.properties.
+int devPort = (project.findProperty('devServerPort') ?: '25580') as int // 25565 is taken by CrazyPhone's dev server
+
 ext.devServer = [
-        port        : 25580, // 25565 is taken by CrazyPhone's dev server
-        rconPort    : 25590,
+        port        : devPort,
+        rconPort    : devPort + 10,
         rconPassword: 'steveparty-dev', // loopback-only dev server, not a secret
         player      : 'LordFinn',
         runDir      : 'run-server',
