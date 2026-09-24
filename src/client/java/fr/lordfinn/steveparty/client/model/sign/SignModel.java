@@ -158,7 +158,7 @@ public abstract class SignModel implements BakedModel {
         private final Matrix4f matrix;
         private final Matrix3f normals;
         private final Vector3f vector = new Vector3f();
-        /** How far below the sign its post is drawn: 0 in the world (the sign's own block), 1 for items. */
+        /** How many blocks of fence are drawn below the sign's own block: 0 in the world (the real fence is there), 1 for items. */
         private final float postDrop;
 
         Output(QuadEmitter emitter, Matrix4f matrix, float postDrop) {
@@ -173,16 +173,16 @@ public abstract class SignModel implements BakedModel {
             return new Output(emitter, new Matrix4f(matrix).mul(local), postDrop);
         }
 
-        /** @return an output that does not turn (the post under a sign). */
-        Output still() {
-            return new Output(emitter, new Matrix4f().translate(0, -postDrop, 0), postDrop);
-        }
-
-        /** Emits the model of the post (the fence below the sign), as it is, unturned. */
+        /**
+         * Emits the model of the post (the fence below the sign), as it is, unturned: through the sign's own block,
+         * and for items, the fence below it too.
+         */
         void post(@Nullable BlockState post, Supplier<Random> random) {
             if (post == null) return;
             BakedModel model = MinecraftClient.getInstance().getBlockRenderManager().getModel(post);
-            still().model(model, post, random, Function.identity(), 0);
+            for (int drop = 0; drop <= postDrop; drop++) {
+                new Output(emitter, new Matrix4f().translate(0, -drop, 0), postDrop).model(model, post, random, Function.identity(), 0);
+            }
         }
 
         /**
