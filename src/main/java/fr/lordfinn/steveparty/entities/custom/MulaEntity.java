@@ -245,6 +245,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (eatCooldown > 0) eatCooldown--;
 		if (bellyClearTicks > 0 && --bellyClearTicks == 0) setLastFood(ItemStack.EMPTY);
 		if (freshTicks > 0 && --freshTicks == 0) this.dataTracker.set(FRESH, false);
+		if ((this.age & 3) == 0) keepOutOfBlocks();
 		if (starLaunchTicks > 0 && --starLaunchTicks == 0) {
 			burstIntoStar();
 			return;
@@ -419,12 +420,31 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			for (int i = 0; i < 3; i++) danceOut[i] = MathHelper.lerp(k, i == 0 ? getX() : i == 1 ? getY() : getZ(), danceOut[i]);
 		}
 		double dx = danceOut[0] - this.getX(), dz = danceOut[2] - this.getZ();
+		if (!this.getWorld().isClient && !fitsAt(danceOut[0], danceOut[1], danceOut[2])) {
+			// its place is in a block (a tree by the forge...): a little higher, or it leaves the figure
+			boolean fits = false;
+			for (int i = 1; i <= 6 && !fits; i++) {
+				if (fitsAt(danceOut[0], danceOut[1] + i * 0.5, danceOut[2])) {
+					danceOut[1] += i * 0.5;
+					fits = true;
+				}
+			}
+			if (!fits) {
+				stopDancing();
+				return;
+			}
+		}
 		this.setPosition(danceOut[0], danceOut[1], danceOut[2]);
 		this.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
 		float yaw = !Double.isNaN(danceOut[3]) ? (float) danceOut[3]
 				: dx * dx + dz * dz > 1.0E-5 ? (float) (MathHelper.atan2(dz, dx) * MathHelper.DEGREES_PER_RADIAN) - 90f
 				: this.getYaw();
 		this.setYaw(yaw);
+	}
+
+	private boolean fitsAt(double x, double y, double z) {
+		net.minecraft.util.math.Box box = this.getBoundingBox().offset(x - this.getX(), y - this.getY(), z - this.getZ());
+		return this.getWorld().isSpaceEmpty(this, box);
 	}
 
 	/** Client: a dancer's place comes from the formula, not from the server's position updates (they would lag). */
@@ -459,9 +479,90 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		return nav;
 	}
 
+	// ------------------------------------------------------------------------------------------ safety
+	// It died of falls: it flies, but a no-gravity mob still counts the height it comes down (from the night sky to
+	// its dawn perch, 10 to 18 blocks; pulled down by a lead), and landing dealt fall damage (up to 46 on its 30 health).
+	// It was also a solid box (like a boat): Mulas blocked and shoved each other and could be stood on.
+
+	/** Hurt by nothing of its own flying life: falls, crashes, walls, water, fire, cramming, nor by another Mula. */
+	@Override
+	public boolean isInvulnerableTo(ServerWorld world, DamageSource source) {
+		if (source.getAttacker() instanceof MulaEntity || source.getSource() instanceof MulaEntity) return true;
+		for (net.minecraft.registry.RegistryKey<net.minecraft.entity.damage.DamageType> type : IMMUNE_TO) {
+			if (source.isOf(type)) return true;
+		}
+		return super.isInvulnerableTo(world, source);
+	}
+
+	private static final List<net.minecraft.registry.RegistryKey<net.minecraft.entity.damage.DamageType>> IMMUNE_TO = List.of(
+			net.minecraft.entity.damage.DamageTypes.FALL, net.minecraft.entity.damage.DamageTypes.FLY_INTO_WALL,
+			net.minecraft.entity.damage.DamageTypes.IN_WALL, net.minecraft.entity.damage.DamageTypes.CRAMMING,
+			net.minecraft.entity.damage.DamageTypes.DROWN, net.minecraft.entity.damage.DamageTypes.IN_FIRE,
+			net.minecraft.entity.damage.DamageTypes.ON_FIRE, net.minecraft.entity.damage.DamageTypes.LAVA,
+			net.minecraft.entity.damage.DamageTypes.HOT_FLOOR, net.minecraft.entity.damage.DamageTypes.CAMPFIRE);
+
+	/** It flies: landing is never a fall. */
+	@Override
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
+		return false;
+	}
+
+	@Override
+	protected void fall(double heightDifference, boolean onGround, net.minecraft.block.BlockState state, net.minecraft.util.math.BlockPos landedPosition) {
+		this.fallDistance = 0;
+	}
+
+	/** Not solid: nothing stands on it or is blocked by it (it can still be hit, fed and leashed). */
 	@Override
 	public boolean isCollidable() {
-		return true;
+		return false;
+	}
+
+	/** Mulas pass through each other, without pushing. */
+	@Override
+	public boolean collidesWith(Entity other) {
+		return !(other instanceof MulaEntity) && super.collidesWith(other);
+	}
+
+	@Override
+	public void pushAwayFrom(Entity entity) {
+		if (entity instanceof MulaEntity) return;
+		super.pushAwayFrom(entity);
+	}
+
+	/**
+	 * On a lead: pulled gently towards the holder, like a balloon on a string (the vanilla pull, made for walking mobs,
+	 * flung it down and slammed it into the ground): a pull growing with how far it is, capped, never fast downwards.
+	 */
+	@Override
+	public void applyLeashElasticity(Entity holder, float distance) {
+		double dx = holder.getX() - this.getX(), dy = holder.getY() + holder.getHeight() * 0.5 - this.getY(),
+				dz = holder.getZ() - this.getZ();
+		double length = Math.max(1.0E-3, Math.sqrt(dx * dx + dy * dy + dz * dz));
+		double pull = Math.min(LEASH_PULL_MAX, (distance - LEASH_SLACK) * LEASH_PULL);
+		if (pull <= 0) return;
+		net.minecraft.util.math.Vec3d v = this.getVelocity().add(dx / length * pull, dy / length * pull, dz / length * pull);
+		double speed = v.length();
+		if (speed > LEASH_SPEED_MAX) v = v.multiply(LEASH_SPEED_MAX / speed);
+		if (v.y < -LEASH_DOWN_MAX) v = new net.minecraft.util.math.Vec3d(v.x, -LEASH_DOWN_MAX, v.z);
+		this.setVelocity(v);
+		this.velocityModified = true;
+	}
+
+	/** Lead: slack length, pull per block beyond it, and the caps (blocks/tick). */
+	private static final double LEASH_SLACK = 4, LEASH_PULL = 0.02, LEASH_PULL_MAX = 0.08, LEASH_SPEED_MAX = 0.45,
+			LEASH_DOWN_MAX = 0.12;
+
+	/** Server: it has grown (a meal) or moved on its own into blocks: it gently rises out instead of suffocating. */
+	private void keepOutOfBlocks() {
+		if (this.getWorld().isSpaceEmpty(this)) return;
+		net.minecraft.util.math.Box box = this.getBoundingBox();
+		for (int i = 1; i <= 12; i++) {
+			if (this.getWorld().isSpaceEmpty(this, box.offset(0, i * 0.25, 0))) {
+				this.setPosition(this.getX(), this.getY() + Math.min(i * 0.25, 0.25), this.getZ());
+				return;
+			}
+		}
 	}
 
 	@Override

@@ -112,6 +112,10 @@ public class MulaRebirths extends PersistentState {
         }
         y = Math.min(y, world.getTopYInclusive() - 2);
         mula.refreshPositionAndAngles(entry.x() + 0.5, y, entry.z() + 0.5, mula.getYaw(), 0);
+        // only in free space (leaves, a cave ceiling...): up to 16 blocks higher
+        for (int i = 0; i < 32 && !world.isSpaceEmpty(mula); i++) {
+            mula.refreshPositionAndAngles(mula.getX(), mula.getY() + 0.5, mula.getZ(), mula.getYaw(), 0);
+        }
         mula.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
         mula.onReborn();
         if (world.spawnEntity(mula)) world.sendEntityStatus(mula, REBORN_STATUS);

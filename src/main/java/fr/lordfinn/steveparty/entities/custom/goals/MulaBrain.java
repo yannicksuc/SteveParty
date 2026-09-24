@@ -324,6 +324,9 @@ public final class MulaBrain {
      */
     public void onHurt(@Nullable Entity attacker) {
         Vec3d threat = attacker != null ? attacker.getEyePos() : mula.getPos().add(mula.getRotationVector().multiply(-2));
+        // a far attacker (an arrow from afar...): seen from its direction, 8 blocks away (the raycasts stay short)
+        Vec3d toThreat = threat.subtract(mula.getPos());
+        if (toThreat.lengthSquared() > 8 * 8) threat = mula.getPos().add(toThreat.normalize().multiply(8));
         shyThreat = threat;
         shyTicks = SHY_TICKS;
         shyTarget = hideout(threat);

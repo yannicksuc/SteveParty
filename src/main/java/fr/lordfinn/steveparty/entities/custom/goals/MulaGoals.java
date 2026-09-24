@@ -116,6 +116,11 @@ public final class MulaGoals {
             // a little arc up on the way, like a leap into the dance
             double y = MathHelper.lerp(e, joinY, out[1]) + 0.8 * Math.sin(Math.PI * u);
             double dx = x - mula.getX(), dz = z - mula.getZ();
+            if (!mula.getWorld().isSpaceEmpty(mula, mula.getBoundingBox().offset(x - mula.getX(), y - mula.getY(), z - mula.getZ()))) {
+                // a block on the way: it flies round it (the move control collides) and glides on from there
+                fly(mula, out[0], out[1], out[2], 0.3, true);
+                return;
+            }
             mula.setPosition(x, y, z);
             mula.setVelocity(Vec3d.ZERO);
             if (dx * dx + dz * dz > 1.0E-4) mula.setYaw((float) (MathHelper.atan2(dz, dx) * MathHelper.DEGREES_PER_RADIAN) - 90f);
