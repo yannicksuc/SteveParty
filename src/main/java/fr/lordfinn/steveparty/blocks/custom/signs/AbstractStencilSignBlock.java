@@ -47,7 +47,7 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
 
     /** What holds a sign, and how its board is drawn (see {@link #modelTransform}). */
     public enum Mount implements StringIdentifiable {
-        /** Standing (on the fence or wall below, for the signs made for posts), turned 16 ways. */
+        /** Standing (on the fence or wall below, put there sneaking, for the signs made for posts), turned 16 ways. */
         POST("post"),
         /** Hung on the side of the post (fence or wall) right behind it, drawn around that post. */
         HUNG("hung"),
@@ -196,7 +196,10 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
             // Put against a fence or a wall: facing away from it, hung on it when made for posts
             return state.with(ROTATION, RotationPropertyHelper.fromDirection(side)).with(MOUNT, hangsOnPosts() ? Mount.HUNG : Mount.POST);
         }
-        if (!hangsOnPosts() || (side == Direction.UP && SignPosts.isPost(support))) return state;
+        if (!hangsOnPosts()) return state;
+        // On top of a fence or a wall: flat on it, or standing on it as on a post when sneaking
+        boolean sneaking = ctx.getPlayer() != null && ctx.getPlayer().isSneaking();
+        if (side == Direction.UP && SignPosts.isPost(support) && sneaking) return state;
         if (!support.isSideSolid(ctx.getWorld(), supportPos, side, SideShapeType.CENTER)) return state;
         // Flat against the face clicked
         return switch (side) {
