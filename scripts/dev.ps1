@@ -45,7 +45,8 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
-$PortArgs = if ($Port -gt 0) { @("-PdevServerPort=$Port") } else { @() }
+# @(...) keeps an array: a one-element if result would be unwrapped to a string and splatted char by char
+$PortArgs = @(if ($Port -gt 0) { "-PdevServerPort=$Port" })
 $StateDir = Join-Path $RepoRoot '.dev-launch'
 New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
 
