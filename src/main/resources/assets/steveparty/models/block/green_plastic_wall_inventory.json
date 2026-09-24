@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/wall_inventory",
+  "textures": {
+    "wall": "steveparty:block/plastic_block/green_plastic_block"
+  }
+}

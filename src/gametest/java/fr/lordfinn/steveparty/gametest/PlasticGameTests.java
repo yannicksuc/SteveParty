@@ -85,6 +85,23 @@ public class PlasticGameTests implements FabricGameTest {
         });
     }
 
+    /** Plastic slabs, stairs and walls are plastic (the wrench takes them apart in one hit) and vanilla shapes. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void plasticSlabsStairsAndWalls(TestContext context) {
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            for (Block shape : new Block[]{ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_STAIRS[i], ModBlocks.PLASTIC_WALLS[i]}) {
+                context.assertTrue(shape.getDefaultState().isIn(fr.lordfinn.steveparty.blocks.switchable.Switchables.PLASTIC),
+                        "plastic: " + shape);
+            }
+        }
+        BlockPos pos = new BlockPos(1, 1, 1);
+        context.setBlockState(pos, ModBlocks.PLASTIC_SLABS[0]);
+        context.assertTrue(context.getBlockState(pos).isIn(net.minecraft.registry.tag.BlockTags.SLABS), "a slab");
+        context.setBlockState(pos.east(), ModBlocks.PLASTIC_WALLS[0]);
+        context.assertTrue(context.getBlockState(pos.east()).isIn(net.minecraft.registry.tag.BlockTags.WALLS), "a wall");
+        context.complete();
+    }
+
     /** Studs hold water like other waterloggable blocks. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void studsAreWaterloggable(TestContext context) {

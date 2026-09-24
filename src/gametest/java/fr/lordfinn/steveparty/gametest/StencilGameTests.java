@@ -655,8 +655,11 @@ public class StencilGameTests implements FabricGameTest {
         ItemStack road = result(context, 1, 2, plastic, new ItemStack(ModItems.PLASTIC_PELLETS));
         context.assertTrue(road.isOf(ModBlocks.PLASTIC_ROAD_SIGN.asItem()) && road.get(DataComponentTypes.BASE_COLOR) == DyeColor.RED
                 && road.getCount() == 2, "red road signs");
-        ItemStack fences = result(context, 3, 2, plastic, new ItemStack(ModItems.PLASTIC_PELLETS), plastic,
-                plastic, new ItemStack(ModItems.PLASTIC_PELLETS), plastic);
+        // Plastic sticks from 2 plastic blocks (like wooden sticks), and plastic fences from plastic sticks
+        ItemStack sticks = result(context, 1, 2, plastic, plastic);
+        context.assertTrue(sticks.isOf(ModItems.PLASTIC_STICK) && sticks.getCount() == 4, "4 plastic sticks");
+        ItemStack fences = result(context, 3, 2, plastic, new ItemStack(ModItems.PLASTIC_STICK), plastic,
+                plastic, new ItemStack(ModItems.PLASTIC_STICK), plastic);
         context.assertTrue(fences.isOf(ModBlocks.PLASTIC_FENCES[14].asItem()) && fences.getCount() == 3, "3 red plastic fences");
         context.complete();
     }

@@ -141,6 +141,27 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                             .offerTo(recipeExporter, getItemPath(plasticBlock) + "_from_dyeing");
                 }
                 generatePlasticStuds();
+                generatePlasticShapes();
+            }
+
+            // Slabs, stairs and walls like the vanilla stone ones (crafting table and stonecutter); plastic sticks
+            // from 2 plastic blocks, like wooden sticks from 2 planks
+            private void generatePlasticShapes() {
+                Ingredient anyPlasticBlock = Ingredient.ofItems(ModBlocks.PLASTIC_BLOCKS);
+                createShaped(RecipeCategory.MISC, ModItems.PLASTIC_STICK, 4)
+                        .pattern("#")
+                        .pattern("#")
+                        .input('#', anyPlasticBlock)
+                        .group("plastic_stick")
+                        .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
+                        .offerTo(recipeExporter);
+                for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+                    Block plasticBlock = ModBlocks.PLASTIC_BLOCKS[i];
+                    Block[] shapes = {ModBlocks.PLASTIC_STAIRS[i], ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_WALLS[i]};
+                    generateFamily(new BlockFamily.Builder(plasticBlock)
+                            .stairs(shapes[0]).slab(shapes[1]).wall(shapes[2]).build(), FeatureFlags.VANILLA_FEATURES);
+                    offerStonecuttingVariants(shapes, plasticBlock);
+                }
             }
 
             // A plastic block splits into 4 studs and 4 studs make it back; studs re-dye like plastic blocks
