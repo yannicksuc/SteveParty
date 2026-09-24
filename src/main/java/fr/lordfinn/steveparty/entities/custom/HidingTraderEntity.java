@@ -77,8 +77,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private final List<CashRegisterBlockEntity> cashRegisters = new ArrayList<>();
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
 
-    /** The box flaps flip open one after another and the merchant pops out ("open"), then "idle" loops. */
-    protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenPlay("open").thenLoop("idle");
+    /** The box flaps flip open one after another and the merchant pops out. Followed by IDLE_ANIM. */
+    protected static final RawAnimation OPEN_ANIM = RawAnimation.begin().thenPlay("open");
+    protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
 
     private Integer optionalScreenHandlerId = null;
@@ -678,7 +679,15 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {
         if (!isHiding()) {
-            return event.setAndContinue(IDLE_ANIM);
+            // "open" then "idle" are chained here rather than queued in one RawAnimation: GeckoLib 4 lerps a queued
+            // animation from the pose saved when the FIRST one started (the closed box), which made the box snap back
+            // and re-open at the end of "open". setAnimation() snapshots the current pose (= idle's first frame).
+            AnimationController<HidingTraderEntity> controller = event.getController();
+            RawAnimation current = controller.getCurrentRawAnimation();
+            if (current == IDLE_ANIM || (current == OPEN_ANIM && controller.hasAnimationFinished())) {
+                return event.setAndContinue(IDLE_ANIM);
+            }
+            return event.setAndContinue(OPEN_ANIM);
         }
         event.setAnimation(CLOSED_ANIM);
         return PlayState.STOP;
