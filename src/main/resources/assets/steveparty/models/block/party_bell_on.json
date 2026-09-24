@@ -2,7 +2,7 @@
   "parent": "minecraft:block/block",
   "textures": {
     "plate": "steveparty:block/metallic_redstone_plate",
-    "bell": "minecraft:entity/bell/bell_body",
+    "bell": "steveparty:block/party_bell",
     "particle": "steveparty:block/metallic_redstone_plate"
   },
   "elements": [
@@ -89,46 +89,46 @@
       "faces": {
         "up": {
           "uv": [
+            0,
             4,
-            6.5,
             8,
-            10.5
+            12
           ],
           "texture": "#bell"
         },
         "north": {
           "uv": [
-            2,
-            3.5,
-            6,
-            5.5
+            0,
+            0,
+            8,
+            4
           ],
           "texture": "#bell"
         },
         "east": {
           "uv": [
-            2,
-            3.5,
-            6,
-            5.5
+            0,
+            0,
+            8,
+            4
           ],
           "texture": "#bell"
         },
         "south": {
           "uv": [
-            2,
-            3.5,
-            6,
-            5.5
+            0,
+            0,
+            8,
+            4
           ],
           "texture": "#bell"
         },
         "west": {
           "uv": [
-            2,
-            3.5,
-            6,
-            5.5
+            0,
+            0,
+            8,
+            4
           ],
           "texture": "#bell"
         }
@@ -148,55 +148,55 @@
       "faces": {
         "up": {
           "uv": [
-            3.5,
-            0.5,
-            5.5,
-            2.5
+            8,
+            0,
+            12,
+            4
           ],
           "texture": "#bell"
         },
         "down": {
           "uv": [
-            3.5,
-            0.5,
-            5.5,
-            2.5
+            8,
+            0,
+            12,
+            4
           ],
           "texture": "#bell"
         },
         "north": {
           "uv": [
-            3.5,
-            0.5,
-            5.5,
-            1
+            8,
+            4,
+            12,
+            5
           ],
           "texture": "#bell"
         },
         "east": {
           "uv": [
-            3.5,
-            0.5,
-            5.5,
-            1
+            8,
+            4,
+            12,
+            5
           ],
           "texture": "#bell"
         },
         "south": {
           "uv": [
-            3.5,
-            0.5,
-            5.5,
-            1
+            8,
+            4,
+            12,
+            5
           ],
           "texture": "#bell"
         },
         "west": {
           "uv": [
-            3.5,
-            0.5,
-            5.5,
-            1
+            8,
+            4,
+            12,
+            5
           ],
           "texture": "#bell"
         }
