@@ -66,7 +66,8 @@ public class StencilSignModelPlugin implements ModelLoadingPlugin {
                     BakedModel[] back = new BakedModel[BACK_PEBBLES], front = new BakedModel[FRONT_PEBBLES];
                     for (int i = 0; i < BACK_PEBBLES; i++) back[i] = baker.bake(pebbles("back", i), ctx.settings());
                     for (int i = 0; i < FRONT_PEBBLES; i++) front[i] = baker.bake(pebbles("front", i), ctx.settings());
-                    yield new StencilSignModels.RockSign(original, back, front, blockSprite(sprites, StencilSignModels.ROCK_SIDE));
+                    yield new StencilSignModels.RockSign(original, back, front, blockSprite(sprites, StencilSignModels.ROCK_SIDE),
+                            blockSprite(sprites, StencilSignModels.ROCK_TOP));
                 }
                 case "block/plastic_road_sign", "item/plastic_road_sign" -> {
                     Sprite[] plastic = new Sprite[DyeColor.values().length];

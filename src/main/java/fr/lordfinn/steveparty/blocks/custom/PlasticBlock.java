@@ -347,9 +347,14 @@ public class PlasticBlock extends Block {
         return state;
     }
 
-    /** @return true for anything made of plastic (blocks and studs): it floats and never cuts a bubble column. */
+    /**
+     * @return true for anything made of plastic (blocks, studs, fences and road signs): it floats and never cuts a
+     * bubble column
+     */
     public static boolean isPlastic(BlockState state) {
-        return state.getBlock() instanceof PlasticBlock || state.getBlock() instanceof PlotBlock;
+        return state.getBlock() instanceof PlasticBlock || state.getBlock() instanceof PlotBlock
+                || state.getBlock() instanceof PlasticFenceBlock
+                || state.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
     }
 
     /** @return the state at {@code pos}, looking under any plastic stacked there (bubble columns ignore plastic). */

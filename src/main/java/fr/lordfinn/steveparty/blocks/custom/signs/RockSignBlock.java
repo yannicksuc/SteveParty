@@ -29,6 +29,33 @@ public class RockSignBlock extends AbstractStencilSignBlock {
             new SignShapes.Box(0, 8, 6, 16, 16, 14),
             new SignShapes.Box(2, 16, 8, 14, 19, 14.5));
 
+    /** Joined with the rock sign on the model's +x / -x side (see {@link #joins}). */
+    public static final int JOIN_PLUS_X = 1, JOIN_MINUS_X = 2;
+
+    /**
+     * Rock signs standing side by side, turned the same way and square to the block grid, make one row: their tops
+     * join into one lintel.
+     *
+     * @return which of the sides of this rock's model ({@link #JOIN_PLUS_X}, {@link #JOIN_MINUS_X}) have such a
+     * neighbour
+     */
+    public static int joins(BlockView world, BlockPos pos, BlockState state) {
+        int rotation = state.get(ROTATION);
+        if (facing(rotation) == null || state.get(MOUNT) != Mount.POST) return 0;
+        // The model's +x once turned, like the client model does
+        double angle = Math.toRadians(SignShapes.angleDegrees(rotation));
+        Direction plusX = Direction.getFacing((float) Math.cos(angle), 0, (float) -Math.sin(angle));
+        int joins = 0;
+        if (joinsWith(world.getBlockState(pos.offset(plusX)), state)) joins |= JOIN_PLUS_X;
+        if (joinsWith(world.getBlockState(pos.offset(plusX.getOpposite())), state)) joins |= JOIN_MINUS_X;
+        return joins;
+    }
+
+    private static boolean joinsWith(BlockState other, BlockState state) {
+        return other.getBlock() instanceof RockSignBlock && other.get(ROTATION).equals(state.get(ROTATION))
+                && other.get(MOUNT) == Mount.POST;
+    }
+
     public RockSignBlock(Settings settings) {
         super(settings);
     }
