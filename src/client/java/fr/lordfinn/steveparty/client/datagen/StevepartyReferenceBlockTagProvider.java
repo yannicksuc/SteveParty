@@ -28,6 +28,8 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
             getOrCreateTagBuilder(SWITCHABLE).add(switcher);
         for (Block switcher : SWITCHER_BLOCKS)
             getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(switcher);
+        for (Block stud : ModBlocks.PLASTIC_STUDS)
+            getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(stud);
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,

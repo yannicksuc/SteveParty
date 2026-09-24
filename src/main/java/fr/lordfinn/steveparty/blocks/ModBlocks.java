@@ -55,6 +55,25 @@ public class ModBlocks {
         }
     }
 
+    // Plastic studs: 8x8x4 pieces of the switcher block plastic, on the floor, a wall or the ceiling
+    public static final Block[] PLASTIC_STUDS = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            String color = COLORS[i];
+            PLASTIC_STUDS[i] = register(
+                    PlotBlock::new,
+                    Block.Settings.create()
+                            .mapColor(DyeColor.byName(color, DyeColor.WHITE))
+                            .strength(1.0f, 1.0f)
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD)
+                            .nonOpaque(),
+                    color + "_plastic_stud",
+                    true
+            );
+        }
+    }
+
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
     static {

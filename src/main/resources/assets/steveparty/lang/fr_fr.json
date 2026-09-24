@@ -205,5 +205,21 @@
   "block.steveparty.black_polished_concrete_bricks_stairs": "Escalier en briques de béton poli noir",
   "block.steveparty.black_polished_concrete_bricks_slab": "Dalle en briques de béton poli noir",
   "block.steveparty.black_polished_concrete_bricks_wall": "Muret en briques de béton poli noir",
-  "item.steveparty.plastic_pellets": "Granulés de plastique"
+  "item.steveparty.plastic_pellets": "Granulés de plastique",
+  "block.steveparty.white_plastic_stud": "Plot en plastique blanc",
+  "block.steveparty.light_gray_plastic_stud": "Plot en plastique gris clair",
+  "block.steveparty.gray_plastic_stud": "Plot en plastique gris",
+  "block.steveparty.black_plastic_stud": "Plot en plastique noir",
+  "block.steveparty.brown_plastic_stud": "Plot en plastique marron",
+  "block.steveparty.red_plastic_stud": "Plot en plastique rouge",
+  "block.steveparty.orange_plastic_stud": "Plot en plastique orange",
+  "block.steveparty.yellow_plastic_stud": "Plot en plastique jaune",
+  "block.steveparty.lime_plastic_stud": "Plot en plastique vert clair",
+  "block.steveparty.green_plastic_stud": "Plot en plastique vert",
+  "block.steveparty.cyan_plastic_stud": "Plot en plastique cyan",
+  "block.steveparty.light_blue_plastic_stud": "Plot en plastique bleu clair",
+  "block.steveparty.blue_plastic_stud": "Plot en plastique bleu",
+  "block.steveparty.purple_plastic_stud": "Plot en plastique violet",
+  "block.steveparty.magenta_plastic_stud": "Plot en plastique magenta",
+  "block.steveparty.pink_plastic_stud": "Plot en plastique rose"
 }

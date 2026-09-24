@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "dyed_plastic_stud",
+  "key": {
+    "#": [
+      "steveparty:white_plastic_stud",
+      "steveparty:orange_plastic_stud",
+      "steveparty:magenta_plastic_stud",
+      "steveparty:light_blue_plastic_stud",
+      "steveparty:yellow_plastic_stud",
+      "steveparty:lime_plastic_stud",
+      "steveparty:pink_plastic_stud",
+      "steveparty:gray_plastic_stud",
+      "steveparty:light_gray_plastic_stud",
+      "steveparty:cyan_plastic_stud",
+      "steveparty:purple_plastic_stud",
+      "steveparty:blue_plastic_stud",
+      "steveparty:brown_plastic_stud",
+      "steveparty:green_plastic_stud",
+      "steveparty:red_plastic_stud",
+      "steveparty:black_plastic_stud"
+    ],
+    "X": "minecraft:pink_dye"
+  },
+  "pattern": [
+    "###",
+    "#X#",
+    "###"
+  ],
+  "result": {
+    "count": 8,
+    "id": "steveparty:pink_plastic_stud"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_orange_plastic_stud": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:orange_plastic_stud"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:orange_switcher_block_from_plastic_studs"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_orange_plastic_stud"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:orange_switcher_block_from_plastic_studs"
+    ]
+  }
+}

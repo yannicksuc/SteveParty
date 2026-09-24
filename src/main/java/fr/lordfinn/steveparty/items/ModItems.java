@@ -166,6 +166,9 @@ public class ModItems {
             for (Block switcherBlock : ModBlocks.SWITCHER_BLOCKS) {
                 itemGroup.add(switcherBlock);
             }
+            for (Block stud : ModBlocks.PLASTIC_STUDS) {
+                itemGroup.add(stud);
+            }
             itemGroup.add(GOAL_POLE_BASE);
             itemGroup.add(GOAL_POLE);
             itemGroup.add(FLAG);

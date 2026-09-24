@@ -140,6 +140,38 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                             .criterion(hasItem(dye), conditionsFromItem(dye))
                             .offerTo(recipeExporter, getItemPath(switcher) + "_from_dyeing");
                 }
+                generatePlasticStuds(anySwitcher);
+            }
+
+            // A switcher block splits into 4 studs and 4 studs make it back; studs re-dye like switcher blocks
+            private void generatePlasticStuds(Ingredient anySwitcher) {
+                Ingredient anyStud = Ingredient.ofItems(ModBlocks.PLASTIC_STUDS);
+                for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+                    Block switcher = ModBlocks.SWITCHER_BLOCKS[i];
+                    Block stud = ModBlocks.PLASTIC_STUDS[i];
+                    Item dye = DyeItem.byColor(DyeColor.byName(ModBlocks.COLORS[i], DyeColor.WHITE));
+                    createShapeless(RecipeCategory.DECORATIONS, stud, 4)
+                            .input(switcher)
+                            .group("plastic_stud")
+                            .criterion(hasItem(switcher), conditionsFromItem(switcher))
+                            .offerTo(recipeExporter);
+                    createShaped(RecipeCategory.BUILDING_BLOCKS, switcher)
+                            .pattern("##")
+                            .pattern("##")
+                            .input('#', stud)
+                            .group("switcher_block")
+                            .criterion(hasItem(stud), conditionsFromItem(stud))
+                            .offerTo(recipeExporter, getItemPath(switcher) + "_from_plastic_studs");
+                    createShaped(RecipeCategory.DECORATIONS, stud, 8)
+                            .pattern("###")
+                            .pattern("#X#")
+                            .pattern("###")
+                            .input('#', anyStud)
+                            .input('X', dye)
+                            .group("dyed_plastic_stud")
+                            .criterion(hasItem(dye), conditionsFromItem(dye))
+                            .offerTo(recipeExporter, getItemPath(stud) + "_from_dyeing");
+                }
             }
 
             // Same chain as the vanilla polished stones: concrete -> polished (2x2) -> bricks (2x2),

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "switcher_block",
+  "key": {
+    "#": "steveparty:light_gray_plastic_stud"
+  },
+  "pattern": [
+    "##",
+    "##"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:light_gray_switcher_block"
+  }
+}
