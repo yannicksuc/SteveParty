@@ -17,7 +17,9 @@ public class CartridgeCustomSlot extends Slot {
         if (stack.isEmpty()) {
             return true;
         }
-        return isAllowedItem(stack) && stack.getCount() == 1;
+        // Stacks are accepted: every vanilla insertion path (click, shift-click, hotbar swap) splits
+        // the stack down to getMaxItemCount (1) before calling setStack.
+        return isAllowedItem(stack);
     }
 
     protected boolean isAllowedItem(ItemStack originalStack) {

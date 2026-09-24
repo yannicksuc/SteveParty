@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.criteria.ModScoreboardCriteria;
 import fr.lordfinn.steveparty.data.handler.ModHandler;
 import fr.lordfinn.steveparty.effect.ModEffects;
+import fr.lordfinn.steveparty.loot.ModLootTableModifiers;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.events.ModEvents;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -50,6 +51,7 @@ public class Steveparty implements ModInitializer {
         ModComponents.initialize();
         ModScreensHandlers.initialize();
         ModEffects.initialize();
+        ModLootTableModifiers.initialize();
         ModPayloads.initialize();
         SwitchableConfig.initialize();
         ModEntities.initialize();
@@ -60,6 +62,7 @@ public class Steveparty implements ModInitializer {
         ServerNetworking.initialize();
 
         MoveTokenCommand.initialize();
+        fr.lordfinn.steveparty.commands.PartyCommands.initialize();
         new TokenMovementService();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {

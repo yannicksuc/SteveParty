@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -82,12 +83,19 @@ public class BasicGameGeneratorStep extends PartyStep {
 
         // Add steps for each turn
         for (int i = 0; i < partyData.getNbTurn(); i++) {
-            // Token turn steps
+            // Token turn steps: every registered token gets its turns, even if it is not loaded right now
+            // (an absent token is waited for a while when its turn comes, see TokenTurnPartyStep)
             for (UUID token : tokens) {
-                if (world.getEntity(token) instanceof TokenizedEntityInterface  tokenEntity) {
-                    UUID owner = tokenEntity.steveparty$getTokenOwner();
-                    partyData.addStep(new TokenTurnPartyStep(token, owner));
+                UUID owner = null;
+                String name = null;
+                if (world.getEntity(token) instanceof TokenizedEntityInterface tokenEntity) {
+                    owner = tokenEntity.steveparty$getTokenOwner();
+                    Text customName = ((Entity) tokenEntity).getCustomName();
+                    if (customName != null) name = customName.getString();
                 }
+                TokenTurnPartyStep turn = new TokenTurnPartyStep(token, owner);
+                turn.setTokenName(name);
+                partyData.addStep(turn);
             }
             // Mini-game step
             partyData.addStep(new MiniGamePartyStep(new ArrayList<>(tokens)));

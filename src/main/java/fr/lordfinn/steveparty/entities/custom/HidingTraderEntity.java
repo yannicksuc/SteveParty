@@ -15,6 +15,8 @@ import fr.lordfinn.steveparty.screen_handlers.custom.CustomizableMerchantScreenH
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.LoreComponent;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -32,6 +34,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.MerchantScreenHandler;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -39,7 +42,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -60,6 +65,7 @@ import software.bernie.geckolib.util.ClientUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
@@ -75,9 +81,26 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     protected static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
 
     private Integer optionalScreenHandlerId = null;
+    /** Merchant screen of the current customer: only one player can trade with the trader at a time. */
+    @Nullable
+    private ScreenHandler activeScreenHandler = null;
+    /** Extra reach (on top of the entity interaction range) before the customer is released. */
+    private static final double CUSTOMER_EXTRA_REACH = 4.0D;
+    /** Ticks between two availability checks of the offers (stock, stall lock) while a customer trades. */
+    private static final int OFFER_REFRESH_INTERVAL = 10;
+    private static final int OFFER_AVAILABLE = 0;
+    private static final int OFFER_OUT_OF_STOCK = 1;
+    private static final int OFFER_LOCKED = 2;
+    /** Availability of each offer as last sent to the customer (to only resend on change). */
+    private final List<Integer> sentOfferStates = new ArrayList<>();
     /** Client-side countdown (in ticks) before playing the disguise block place sound, -1 when idle. */
     private int pendingPlaceSoundTicks = -1;
     private BlockState blockState = Blocks.GOLD_BLOCK.getDefaultState();
+    /** First player who linked a Shopkeeper Key to this trader (null until then). Mirrored in {@link VendorLinkPersistentState}. */
+    @Nullable
+    private UUID ownerUuid = null;
+    /** Ticks between two synchronizations of the owner with the persistent link state. */
+    private static final int OWNER_SYNC_INTERVAL = 20;
     private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.STRING);
 
     public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
@@ -92,6 +115,43 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             vendorLinkPersistentState = VendorLinkPersistentState.get(serverWorld.getServer());
         }
         return vendorLinkPersistentState;
+    }
+
+    /**
+     * Keeps the owner saved on the entity and the one of the persistent link state identical: the state wins
+     * (it may have been claimed while the trader was not loaded), else the entity's owner is written to it.
+     */
+    private void syncOwner() {
+        VendorLinkPersistentState linkState = getVendorLinkState();
+        if (linkState == null) return;
+        UUID stateOwner = linkState.getOwner(this.getUuid());
+        if (stateOwner != null) {
+            ownerUuid = stateOwner;
+        } else if (ownerUuid != null) {
+            linkState.setOwner(this.getUuid(), ownerUuid);
+        }
+    }
+
+    /** @return the player owning this trader, or null if no player linked a Shopkeeper Key to it yet. */
+    @Nullable
+    public UUID getOwnerUuid() {
+        if (!this.getWorld().isClient) syncOwner();
+        return ownerUuid;
+    }
+
+    /**
+     * Ownership check done when a player links a Shopkeeper Key to this trader: a trader without owner (new, or
+     * created before ownership existed) is claimed by the player.
+     *
+     * @return true if the player is (now) the owner
+     */
+    public boolean claimOrCheckOwner(PlayerEntity player) {
+        VendorLinkPersistentState linkState = getVendorLinkState();
+        if (linkState == null) return false;
+        syncOwner();
+        boolean owner = linkState.claimOrCheckOwner(this.getUuid(), player.getUuid());
+        if (owner) ownerUuid = player.getUuid();
+        return owner;
     }
 
     @Override
@@ -133,7 +193,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     public void sendOffers(PlayerEntity player, Text name, int levelProgress) {
-        player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
+        OptionalInt opened = player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                         (syncId, playerInventory, playerx) -> new CustomizableMerchantScreenHandler(syncId, playerInventory, this) {
                             @Override
                             public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity clicker) {
@@ -144,9 +204,47 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                                 }
                                 super.onSlotClick(slotIndex, button, actionType, clicker);
                             }
-                        }, name))
-                .ifPresent(id -> optionalScreenHandlerId = id);
+
+                            @Override
+                            public boolean canUse(PlayerEntity player) {
+                                // Closes the screen when the customer dies, leaves or goes out of reach
+                                return super.canUse(player) && HidingTraderEntity.this.isValidCustomer(player);
+                            }
+                        }, name));
+        if (opened.isEmpty()) {
+            releaseCustomer(player);
+            return;
+        }
+        optionalScreenHandlerId = opened.getAsInt();
+        activeScreenHandler = player.currentScreenHandler;
         updateTradesToClient(player, levelProgress);
+    }
+
+    /** True while the player can keep the trader's screen open (alive, same world, within reach). */
+    private boolean isValidCustomer(@Nullable PlayerEntity player) {
+        return player != null && player.isAlive() && !player.isRemoved()
+                && !(player instanceof ServerPlayerEntity serverPlayer && serverPlayer.isDisconnected())
+                && player.getWorld() == this.getWorld() && this.isAlive()
+                && player.canInteractWithEntity(this, CUSTOMER_EXTRA_REACH);
+    }
+
+    /** True if another player currently trades with this trader. */
+    private boolean isBusyFor(PlayerEntity player) {
+        PlayerEntity customer = getCustomer();
+        if (customer == null || customer == player) return false;
+        if (isValidCustomer(customer) && customer.currentScreenHandler == activeScreenHandler) return true;
+        releaseCustomer(customer);
+        return false;
+    }
+
+    /** Frees the trader for other players, closing the customer's merchant screen if still open. */
+    private void releaseCustomer(@Nullable PlayerEntity customer) {
+        ScreenHandler handler = activeScreenHandler;
+        activeScreenHandler = null;
+        this.setCustomer(null);
+        if (customer instanceof ServerPlayerEntity serverPlayer && handler != null && serverPlayer.currentScreenHandler == handler) {
+            serverPlayer.closeHandledScreen();
+        }
     }
 
     /**
@@ -158,7 +256,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (!(handler.getSlot(0).inventory instanceof MerchantInventory merchantInventory)) return true;
         TradeOffer offer = merchantInventory.getTradeOffer();
         if (offer == null || merchantInventory.getStack(2).isEmpty()) return true;
-        if (isStockAvailable(offer.getSellItem())) return true;
+        if (getOfferState(offer) == OFFER_AVAILABLE) return true;
+        refreshOfferAvailability();
         offer.disable();
         merchantInventory.updateOffers();
         PlayerEntity customer = getCustomer();
@@ -173,8 +272,42 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             TradeOfferList tradeOfferList = this.getOffers();
             if (!tradeOfferList.isEmpty()) {
                 this.setCustomer(player);
-                player.sendTradeOffers(optionalScreenHandlerId, tradeOfferList, levelProgress, this.getExperience(), this.isLeveledMerchant(), this.canRefreshTrades());
+                player.sendTradeOffers(optionalScreenHandlerId, createClientOffers(tradeOfferList), levelProgress, this.getExperience(), this.isLeveledMerchant(), this.canRefreshTrades());
             }
+        }
+    }
+
+    /**
+     * Offers as shown to the client: same order and count as the server list (trade selection is index based),
+     * but an offer of a locked stall (ONE_SALE_PER_SIGNAL waiting for a pulse) is shown disabled with a hint
+     * added to the tooltip of its sold item. The server offers are never modified.
+     */
+    private TradeOfferList createClientOffers(TradeOfferList offers) {
+        TradeOfferList clientOffers = new TradeOfferList();
+        sentOfferStates.clear();
+        for (TradeOffer offer : offers) {
+            int state = getOfferState(offer);
+            sentOfferStates.add(state);
+            if (state != OFFER_LOCKED) {
+                clientOffers.add(offer);
+                continue;
+            }
+            ItemStack hintedSellItem = offer.getSellItem().copy();
+            hintedSellItem.apply(DataComponentTypes.LORE, LoreComponent.DEFAULT, lore -> lore.with(
+                    Text.translatableWithFallback("gui.steveparty.trading_stall.credit.waiting", "Waiting for a redstone signal")
+                            .setStyle(Style.EMPTY.withColor(Formatting.RED).withItalic(false))));
+            clientOffers.add(new TradeOffer(offer.getFirstBuyItem(), offer.getSecondBuyItem(), hintedSellItem,
+                    offer.getMaxUses(), offer.getMaxUses(), offer.getMerchantExperience(), offer.getPriceMultiplier()));
+        }
+        return clientOffers;
+    }
+
+    /** A dead trader releases its shop: owner and links are forgotten, the blocks can be claimed again. */
+    @Override
+    public void onDeath(DamageSource damageSource) {
+        super.onDeath(damageSource);
+        if (this.getWorld() instanceof ServerWorld serverWorld) {
+            VendorLinkPersistentState.get(serverWorld.getServer()).forgetVendor(this.getUuid());
         }
     }
 
@@ -196,7 +329,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         storages.clear();
         VendorLinkPersistentState linkState = getVendorLinkState();
         if (linkState == null) return;
-        linkState.getVendorLinks(this.getUuid()).forEach(pos -> {
+        // Only the blocks linked in the trader's own dimension
+        linkState.getVendorLinks(this.getUuid(), world.getRegistryKey()).forEach(pos -> {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof Inventory) {
                 if (blockEntity instanceof TradingStallBlockEntity)
@@ -216,15 +350,35 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 tradeOffers.addAll(stall.getTradeOffers());
             }
         }
-        validateTradeStock();
+        refreshOfferAvailability();
     }
 
-    private void validateTradeStock() {
+    /** Availability of an offer: locked stall first, then missing stock. */
+    private int getOfferState(TradeOffer offer) {
+        if (offer instanceof TradingStallBlockEntity.ExactTradeOffer exactOffer && !exactOffer.isSaleAllowed()) {
+            return OFFER_LOCKED;
+        }
+        return isStockAvailable(offer.getSellItem()) ? OFFER_AVAILABLE : OFFER_OUT_OF_STOCK;
+    }
+
+    /**
+     * Enables the offers that can be bought (stock present, stall unlocked) and disables the others. Offers are
+     * never exhausted by their uses: they are re-enabled as soon as the stock is back or the stall is unlocked.
+     *
+     * @return true if the availability differs from what was last sent to the customer
+     */
+    private boolean refreshOfferAvailability() {
+        List<Integer> states = new ArrayList<>(tradeOffers.size());
         for (TradeOffer offer : tradeOffers) {
-            if (!isStockAvailable(offer.getSellItem())) {
+            int state = getOfferState(offer);
+            states.add(state);
+            if (state == OFFER_AVAILABLE) {
+                if (offer.isDisabled() || offer.getUses() > 0) offer.resetUses();
+            } else if (!offer.isDisabled()) {
                 offer.disable();
             }
         }
+        return !states.equals(sentOfferStates);
     }
 
     private boolean isStockAvailable(ItemStack itemStack) {
@@ -319,6 +473,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             return ActionResult.PASS;
         }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity) {
+            // One customer at a time: never rebuild the offers under another player's screen
+            if (isBusyFor(player)) {
+                player.sendMessage(Text.translatableWithFallback("message.steveparty.trader.busy", "The trader is busy."), true);
+                return ActionResult.SUCCESS;
+            }
             this.fillRecipes();
             if (storages.isEmpty() || tradeOffers.isEmpty())
                 return ActionResult.PASS;
@@ -371,6 +530,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
                     .ifPresent(this::setBlockState);
         }
+        if (nbt.containsUuid("ShopOwner")) {
+            ownerUuid = nbt.getUuid("ShopOwner");
+        }
     }
 
     private static void printWarnForFailDecodeBlockState(String error) {
@@ -383,6 +545,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (blockState != null) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
             result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> nbt.putString("blockState", jsonElement.toString()));
+        }
+        if (ownerUuid != null) {
+            nbt.putUuid("ShopOwner", ownerUuid);
         }
         return super.writeNbt(nbt);
     }
@@ -409,10 +574,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public void trade(TradeOffer offer) {
         // Last line of defense: the result slot click is already guarded, but never keep an offer
-        // enabled once its stock is gone.
-        if (!this.getWorld().isClient && !isStockAvailable(offer.getSellItem())) {
+        // enabled once its stock is gone or its stall is locked.
+        if (!this.getWorld().isClient && getOfferState(offer) != OFFER_AVAILABLE) {
             offer.disable();
-            Steveparty.LOGGER.warn("Trader {} completed a trade without stock for {}", this.getUuid(), offer.getSellItem());
+            Steveparty.LOGGER.warn("Trader {} completed a trade without stock or on a locked stall for {}", this.getUuid(), offer.getSellItem());
         }
         super.trade(offer);
     }
@@ -420,10 +585,21 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     protected void afterUsing(TradeOffer offer) {
         consumeStock(offer.getSellItem());
-        distributeItemStackAcrossCashRegisters(offer.getFirstBuyItem().itemStack().copy());
-        if (offer.getSecondBuyItem().isPresent())
-            distributeItemStackAcrossCashRegisters(offer.getSecondBuyItem().get().itemStack().copy());
-        validateTradeStock();
+        // Deposit the stacks the player really paid with (exact components); fall back to the offer's price
+        List<ItemStack> payment = offer instanceof TradingStallBlockEntity.ExactTradeOffer exactOffer
+                ? exactOffer.takeLastPayment() : List.of();
+        if (payment.isEmpty()) {
+            distributeItemStackAcrossCashRegisters(offer.getDisplayedFirstBuyItem().copy());
+            if (!offer.getDisplayedSecondBuyItem().isEmpty())
+                distributeItemStackAcrossCashRegisters(offer.getDisplayedSecondBuyItem().copy());
+        } else {
+            payment.forEach(this::distributeItemStackAcrossCashRegisters);
+        }
+        // ONE_SALE_PER_SIGNAL: the purchase consumes the stall credit (locked again until the next pulse)
+        if (offer instanceof TradingStallBlockEntity.ExactTradeOffer exactOffer && exactOffer.getStall() != null) {
+            exactOffer.getStall().onSale();
+        }
+        refreshOfferAvailability();
         updateTradesToClient(getCustomer(), 0);
         triggerCashRegisters();
         if (hasPassengers() && getFirstPassenger() instanceof MobEntity passenger) {
@@ -473,6 +649,24 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
+        if (!this.getWorld().isClient && this.age % OWNER_SYNC_INTERVAL == 0) {
+            syncOwner();
+        }
+        if (!this.getWorld().isClient && this.hasCustomer()) {
+            PlayerEntity customer = this.getCustomer();
+            if (!isValidCustomer(customer) || customer.currentScreenHandler != activeScreenHandler) {
+                // Screen closed, customer dead/disconnected/gone to another dimension or out of reach
+                releaseCustomer(customer);
+            } else if (this.age % OFFER_REFRESH_INTERVAL == 0 && refreshOfferAvailability()) {
+                // Stock back/missing or stall (un)locked by redstone while the screen is open
+                if (customer.currentScreenHandler instanceof MerchantScreenHandler handler
+                        && handler.getSlot(0).inventory instanceof MerchantInventory merchantInventory) {
+                    merchantInventory.updateOffers();
+                    handler.sendContentUpdates();
+                }
+                updateTradesToClient(customer, 0);
+            }
+        }
         if (this.getWorld().isClient && pendingPlaceSoundTicks >= 0) {
             if (pendingPlaceSoundTicks-- == 0) {
                 Vec3d soundPos = this.getBlockPos().toCenterPos();

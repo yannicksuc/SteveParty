@@ -8,7 +8,12 @@
     "fabric-gametest": [
       "fr.lordfinn.steveparty.gametest.BoardSpaceGameTests",
       "fr.lordfinn.steveparty.gametest.CoreGameTests",
-      "fr.lordfinn.steveparty.gametest.SwitchableGameTests"
+      "fr.lordfinn.steveparty.gametest.SwitchableGameTests",
+      "fr.lordfinn.steveparty.gametest.DiceForgeGameTests",
+      "fr.lordfinn.steveparty.gametest.GameplayRulesGameTests",
+      "fr.lordfinn.steveparty.gametest.ShopGameTests",
+      "fr.lordfinn.steveparty.gametest.LootAndBrewingGameTests",
+      "fr.lordfinn.steveparty.gametest.DecisionsGameTests"
     ]
   },
   "depends": {

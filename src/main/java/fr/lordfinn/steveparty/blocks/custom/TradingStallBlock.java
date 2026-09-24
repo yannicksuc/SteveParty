@@ -3,8 +3,10 @@ package fr.lordfinn.steveparty.blocks.custom;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
+import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
+import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
 import fr.lordfinn.steveparty.utils.WoolColorsUtils;
@@ -13,6 +15,7 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.type.NbtComponent;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -39,6 +42,8 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.block.WireOrientation;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -107,6 +112,8 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
             BlockEntity blockEntity = world.getBlockEntity(pos);
 
             if (blockEntity instanceof TradingStallBlockEntity) {
+                // Reserved to the shopkeeper (linked key), creative players and operators
+                if (!ShopkeeperKeyItem.canOpenShopBlock(player, world, pos)) return ActionResult.SUCCESS;
                 player.openHandledScreen(new ExtendedScreenHandlerFactory() {
                     @Override
                     public Object getScreenOpeningData(ServerPlayerEntity serverPlayerEntity) {
@@ -177,6 +184,8 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
+            // Really removed (not a color/facing change): a stall placed here later must not inherit the links
+            VendorLinkPersistentState.onShopBlockRemoved(world, pos);
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof TradingStallBlockEntity entity) {
                 TraderStallRegistry.unlinkStallFromAllTraders(pos);
@@ -200,6 +209,24 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new TradingStallBlockEntity(pos, state);
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        // A stall placed next to an already powered block must not count it as a pulse
+        if (!world.isClient && world.getBlockEntity(pos) instanceof TradingStallBlockEntity stall) {
+            stall.initRedstonePower(world.isReceivingRedstonePower(pos));
+        }
+    }
+
+    @Override
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+        // ONE_SALE_PER_SIGNAL: each redstone rising edge grants one sale
+        if (!world.isClient && world.getBlockEntity(pos) instanceof TradingStallBlockEntity stall) {
+            stall.onRedstonePower(world.isReceivingRedstonePower(pos));
+        }
     }
 
     @Override

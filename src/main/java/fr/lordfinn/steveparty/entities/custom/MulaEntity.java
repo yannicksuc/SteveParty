@@ -1,7 +1,11 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import net.minecraft.entity.damage.DamageSource;
+import fr.lordfinn.steveparty.items.custom.TokenItem;
+import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.LumaHoverGoal;
+import fr.lordfinn.steveparty.entities.custom.goals.MulaSitGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.SimpleFlyingMoveControl;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.entity.*;
@@ -141,6 +145,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private static final int MAX_HUNGER = 100;
+	/** 1 chance in TAMING_CHANCE to tame the Mula with each star fragment of its colour. */
+	private static final int TAMING_CHANCE = 3;
 
 	public MulaEntity(EntityType<MulaEntity> entityType, World world) {
 		super(entityType, world);
@@ -149,7 +155,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	@Override protected void initGoals() {
-		// Following the owner has priority; idle hovering only runs (and keeps running) without an owner
+		// Sitting (owner's order) wins; following the owner stops by itself while sitting (cannotFollowOwner);
+		// idle hovering only runs (and keeps running) without an owner
+		this.goalSelector.add(0, new MulaSitGoal(this));
 		this.goalSelector.add(0, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
 		this.goalSelector.add(1, new LumaHoverGoal(this, 0.2, 1.5, 6.0)); super.initGoals();
 	}
@@ -225,6 +233,29 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	public ActionResult interactMob(PlayerEntity player, Hand hand) {
 		ItemStack stack = player.getStackInHand(hand);
 
+		// Tools acting on entities (tokenizer wand, token, name tag, lead) keep working on a Mula
+		if (stack.getItem() instanceof TokenizerWandItem || stack.getItem() instanceof TokenItem
+				|| stack.isOf(Items.NAME_TAG) || stack.isOf(Items.LEAD)) {
+			return ActionResult.PASS;
+		}
+
+		// Taming: sneak + right-click with a star fragment of the Mula's own colour
+		if (player.isSneaking() && !this.isTamed() && stack.isOf(this.getVariant().getFragmentItem())) {
+			if (!this.getWorld().isClient) {
+				tryTame(player, stack);
+			}
+			return ActionResult.SUCCESS;
+		}
+
+		// Sit / stand: the owner right-clicks a tamed Mula with an empty hand or anything it doesn't eat
+		// (its food keeps feeding it; sneak + fragment only tames an untamed Mula, so a tamed one just toggles)
+		if (this.isTamed() && this.isOwner(player) && !isMulaFood(stack)) {
+			if (!this.getWorld().isClient) {
+				toggleSitting();
+			}
+			return ActionResult.SUCCESS;
+		}
+
 		// Check cooldown
 		if (eatCooldown > 0) {
 			triggerAnim("main_controller", "no");
@@ -233,7 +264,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 		// Check if empty or wrong item
 		Map<Item, Integer> allowedItems = FEED_ITEMS.get(this.getVariant());
-		if (stack.isEmpty() || !allowedItems.containsKey(stack.getItem())) {
+		if (!isMulaFood(stack)) {
 			triggerAnim("main_controller", "no");
 			return ActionResult.SUCCESS;
 		}
@@ -268,6 +299,31 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 
 		return ActionResult.SUCCESS;
+	}
+
+	/** @return true if this Mula eats this item (depends on its colour). */
+	public boolean isMulaFood(ItemStack stack) {
+		return !stack.isEmpty() && FEED_ITEMS.getOrDefault(this.getVariant(), Map.of()).containsKey(stack.getItem());
+	}
+
+	/** Owner's order, like vanilla wolves: the state is saved by {@link TameableEntity} ("Sitting"). */
+	public void toggleSitting() {
+		this.setSitting(!this.isSitting());
+		this.jumping = false;
+		this.navigation.stop();
+		this.setTarget(null);
+	}
+
+	/** Like vanilla wolves: consumes one fragment, 1 in {@value #TAMING_CHANCE} chance, hearts or smoke. */
+	private void tryTame(PlayerEntity player, ItemStack stack) {
+		stack.decrementUnlessCreative(1, player);
+		if (this.random.nextInt(TAMING_CHANCE) == 0) {
+			this.setOwner(player);
+			this.navigation.stop();
+			this.getWorld().sendEntityStatus(this, EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES);
+		} else {
+			this.getWorld().sendEntityStatus(this, EntityStatuses.ADD_NEGATIVE_PLAYER_REACTION_PARTICLES);
+		}
 	}
 
 	private <T extends GeoAnimatable> PlayState predicate(AnimationState<T> state) {
@@ -328,6 +384,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private PlayState animationPredicate(AnimationState<MulaEntity> state) {
+		// No dedicated sit animation yet (see docs/art-requests.md): a sitting Mula idles, even while settling down
+		if (this.isInSittingPose()) {
+			return state.setAndContinue(IDLE_ANIM);
+		}
 		if (this.getVelocity().lengthSquared() > 0.01) {
 			return state.setAndContinue(FLY_ANIM);
 		}
@@ -379,5 +439,15 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			if (RANDOM.nextInt(100) == 0) return BLACK;
 			return COMMON_VARIANTS.get(RANDOM.nextInt(COMMON_VARIANTS.size()));
 		}
+	}
+
+	/** Like wolves, a sitting Mula stands up when it gets hurt. */
+	@Override
+	public boolean damage(ServerWorld world, DamageSource source, float amount) {
+		boolean damaged = super.damage(world, source, amount);
+		if (damaged && this.isSitting()) {
+			this.setSitting(false);
+		}
+		return damaged;
 	}
 }

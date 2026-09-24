@@ -8,6 +8,7 @@
     "LivingEntityRendererSetupTransformsMixin",
     "LivingEntityRendererShouldFlipMixin",
     "LivingEntityRendererSmoothFlipMixin",
+    "LivingEntityRendererSquishMixin",
     "LivingEntityRenderStateMixin",
     "PlayerEntityModelMixin"
   ],
