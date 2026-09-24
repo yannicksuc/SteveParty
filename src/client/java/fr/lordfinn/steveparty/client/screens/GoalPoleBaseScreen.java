@@ -5,6 +5,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.OutputMode;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Players;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.RedstoneMode;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.ResetPort;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity.Source;
@@ -39,7 +40,8 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  * Goal pole base settings, in two columns.
  * <ul>
  * <li>Left, <b>points</b>: where they come from (landings on this base's poles, or a scoreboard criterion with
- * presets), and which players count (checked while typing, with what it means underneath).</li>
+ * presets), and which players count, in plain words (the party's players, everyone, the players nearby) or with
+ * an advanced selector (checked while typing, with what it means underneath).</li>
  * <li>Right, <b>redstone</b>: what the back port does (pause / run / nothing), what a comparator reads (a pulse per
  * point, or the progress), which side resets, and a button to reset now.</li>
  * </ul>
@@ -77,16 +79,22 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private record Check(boolean valid, Text meaning) {}
 
     private Source source;
+    private Players players;
+    /** Whether a party controller is near the base (for the party choice's meaning). */
+    private final boolean partyNear;
     private RedstoneMode redstoneMode;
     private OutputMode outputMode;
     private ResetPort resetPort;
     private boolean resetRequested;
 
     private TextFieldWidget selectorField;
+    private TextFieldWidget radiusField;
     private TextFieldWidget goalField;
     private PartyButton presetsButton;
     private PartyButton doneButton;
     private Check selectorCheck = new Check(true, Text.empty());
+    /** The players choice: its meaning, and whether its field (distance, selector) is valid. */
+    private Check playersCheck = new Check(true, Text.empty());
     private Check goalCheck = new Check(true, Text.empty());
     private boolean openSoundPlayed = false;
 
@@ -96,6 +104,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         this.backgroundHeight = HEIGHT;
         NbtCompound settings = handler.getSettings();
         this.source = GoalPoleBaseBlockEntity.readEnum(settings, "Source", Source.values(), Source.LANDINGS_HERE);
+        this.players = GoalPoleBaseBlockEntity.readEnum(settings, "Players", Players.values(), Players.ALL);
+        this.partyNear = settings.getBoolean("PartyNear");
         this.redstoneMode = GoalPoleBaseBlockEntity.readEnum(settings, "RedstoneMode", RedstoneMode.values(), RedstoneMode.PAUSE_WHEN_POWERED);
         this.outputMode = GoalPoleBaseBlockEntity.readEnum(settings, "OutputMode", OutputMode.values(), OutputMode.PULSE);
         this.resetPort = GoalPoleBaseBlockEntity.readEnum(settings, "ResetPort", ResetPort.values(), ResetPort.MARKED_SIDE);
@@ -108,6 +118,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         // init() runs again on every resize: keep what the player already typed / chose
         String selectorText = selectorField != null ? selectorField.getText() : handler.getSelector();
         String goalText = goalField != null ? goalField.getText() : handler.getGoal();
+        String radiusText = radiusField != null ? radiusField.getText() : String.valueOf(handler.getSettings().getInt("Radius"));
 
         // ---- Left: points
         int lx = x + MARGIN;
@@ -119,8 +130,12 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
                 .content(GoalPoleBaseScreen::drawPresetIcon));
         presetsButton.setTooltip(Tooltip.of(Text.translatable(KEY + "presets").formatted(Formatting.GOLD)
                 .append("\n").append(Text.translatable(KEY + "presets.hint").formatted(Formatting.GRAY))));
-        selectorField = createField(lx, y + playersY() + 12, COLUMN - 12, KEY + "selector", selectorText);
+        addDrawableChild(cycle(lx, y + playersY() + 12, COLUMN, "players", Players.values(), () -> players, v -> players = v));
+        selectorField = createField(lx, y + playersFieldY(), COLUMN - 12, KEY + "selector", selectorText);
         selectorField.setPlaceholder(Text.literal("@a").formatted(Formatting.DARK_GRAY));
+        radiusField = createField(lx, y + playersFieldY(), COLUMN - 12, KEY + "players.radius", radiusText);
+        radiusField.setMaxLength(3);
+        radiusField.setTextPredicate(text -> text.chars().allMatch(Character::isDigit));
 
         // ---- Right: redstone
         int rx = x + RIGHT_X;
@@ -140,7 +155,9 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         doneButton = addDrawableChild(new PartyButton(x + MARGIN + buttonWidth + 8, y + BUTTONS_Y, buttonWidth, 20,
                 Text.translatable("gui.steveparty.validate"), b -> submit()).style(PartyButton.Style.PRIMARY));
 
-        setInitialFocus(source == Source.CRITERION ? goalField : selectorField);
+        if (source == Source.CRITERION) setInitialFocus(goalField);
+        else if (players == Players.SELECTOR) setInitialFocus(selectorField);
+        else if (players == Players.RADIUS) setInitialFocus(radiusField);
         refresh();
 
         // Play open sound once when screen opens (init() is called again on resize)
@@ -152,6 +169,15 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     private int playersY() {
         return TOP + 2 * ROW + 18;
+    }
+
+    /** The field under the players choice (distance or selector). */
+    private int playersFieldY() {
+        return playersY() + 12 + ROW;
+    }
+
+    private boolean playersHasField() {
+        return players == Players.SELECTOR || players == Players.RADIUS;
     }
 
     /** A button that cycles through the values of a setting (Shift: backwards), its tooltip explaining the value. */
@@ -208,11 +234,19 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         goalField.visible = criterion;
         goalField.active = criterion;
         presetsButton.visible = criterion;
+        selectorField.visible = selectorField.active = players == Players.SELECTOR;
+        radiusField.visible = radiusField.active = players == Players.RADIUS;
         selectorCheck = checkSelector(selectorField.getText());
+        playersCheck = switch (players) {
+            case SELECTOR -> selectorCheck;
+            case RADIUS -> checkRadius(radiusField.getText());
+            case PARTY -> new Check(true, Text.translatable(KEY + (partyNear ? "players.party.meaning" : "players.party.none")));
+            case ALL -> new Check(true, Text.translatable(KEY + "players.all.meaning"));
+        };
         goalCheck = criterion ? checkGoal(goalField.getText()) : new Check(true, Text.translatable(KEY + "source.landings_here.meaning"));
         for (CycleButton cycle : cycleButtons) cycle.button().setTooltip(Tooltip.of(tooltipText(cycle.name(), cycle.value().get())));
         if (doneButton != null) {
-            boolean valid = selectorCheck.valid() && goalCheck.valid();
+            boolean valid = playersCheck.valid() && goalCheck.valid();
             doneButton.active = valid;
             doneButton.setTooltip(valid ? null : Tooltip.of(Text.translatable(KEY + "invalid")));
         }
@@ -242,6 +276,19 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         };
     }
 
+    /** A distance in blocks, 1 to {@link GoalPoleBaseBlockEntity#MAX_RADIUS}. */
+    static Check checkRadius(String text) {
+        int radius;
+        try {
+            radius = Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            radius = -1;
+        }
+        return radius >= 1 && radius <= GoalPoleBaseBlockEntity.MAX_RADIUS
+                ? new Check(true, Text.translatable(KEY + "players.radius.meaning", radius))
+                : new Check(false, Text.translatable(KEY + "players.radius.invalid", GoalPoleBaseBlockEntity.MAX_RADIUS));
+    }
+
     static Check checkGoal(String goal) {
         if (goal.isEmpty()) return new Check(false, Text.translatable(KEY + "goal.empty"));
         for (String[] preset : PRESETS) {
@@ -265,11 +312,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     private void submit() {
         refresh();
-        if (!selectorCheck.valid() || !goalCheck.valid()) return;
+        if (!playersCheck.valid() || !goalCheck.valid()) return;
         NbtCompound settings = new NbtCompound();
         settings.putString("Source", source.name());
         settings.putString("Criterion", source == Source.CRITERION ? goalField.getText() : handler.getGoal());
         settings.putString("Selector", selectorField.getText());
+        settings.putString("Players", players.name());
+        if (players == Players.RADIUS) settings.putInt("Radius", Integer.parseInt(radiusField.getText()));
         settings.putString("RedstoneMode", redstoneMode.name());
         settings.putString("OutputMode", outputMode.name());
         settings.putString("ResetPort", resetPort.name());
@@ -292,7 +341,10 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         if (source == Source.CRITERION) {
             drawField(context, x + MARGIN, y + TOP + ROW, COLUMN - PRESET_SIZE - 4, goalField, goalCheck);
         }
-        drawField(context, x + MARGIN, y + playersY() + 12, COLUMN, selectorField, selectorCheck);
+        if (playersHasField()) {
+            drawField(context, x + MARGIN, y + playersFieldY(), COLUMN,
+                    players == Players.SELECTOR ? selectorField : radiusField, playersCheck);
+        }
 
         // Redstone reminder: an icon per port, the details in the row's tooltip
         int legendY = y + TOP + 4 * ROW + 2;
@@ -334,8 +386,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             context.drawTextWrapped(textRenderer, Text.translatable(KEY + "source.landings_here.meaning"), MARGIN, TOP + ROW + 3,
                     COLUMN, PartyGui.TEXT_SOFT);
         }
-        context.drawText(textRenderer, Text.translatable(KEY + "selector"), MARGIN, playersY(), PartyGui.TEXT_DARK, false);
-        drawMeaning(context, selectorCheck, MARGIN, playersY() + 12 + FIELD_HEIGHT + 3);
+        context.drawText(textRenderer, Text.translatable(KEY + "players"), MARGIN, playersY(), PartyGui.TEXT_DARK, false);
+        if (playersHasField()) {
+            drawMeaning(context, playersCheck, MARGIN, playersFieldY() + FIELD_HEIGHT + 3);
+        } else {
+            // No field under the choice: room for its meaning on two lines
+            context.drawTextWrapped(textRenderer, playersCheck.meaning(), MARGIN, playersFieldY() + 3, COLUMN, PartyGui.TEXT_SOFT);
+        }
 
         // Status line: total and whether the base counts
         NbtCompound settings = handler.getSettings();
@@ -361,8 +418,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         super.render(context, mouseX, mouseY, delta);
         if (source == Source.CRITERION && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - PRESET_SIZE - 4 - 11, y + TOP + ROW + 6)) {
             context.drawTooltip(textRenderer, goalCheck.meaning(), mouseX, mouseY);
-        } else if (isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - 11, y + playersY() + 12 + 6)) {
-            context.drawTooltip(textRenderer, selectorCheck.meaning(), mouseX, mouseY);
+        } else if (playersHasField() && isOverStatus(mouseX, mouseY, x + MARGIN + COLUMN - 11, y + playersFieldY() + 6)) {
+            context.drawTooltip(textRenderer, playersCheck.meaning(), mouseX, mouseY);
         } else if (legendRowAt(mouseX, mouseY) >= 0) {
             String key = KEY + LEGEND_KEYS[legendRowAt(mouseX, mouseY)];
             context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(Text.empty()
@@ -395,7 +452,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         // Escape closes and Tab moves the focus; while a field is focused, any other key stays in it
         // (e.g. the inventory key must not close the screen)
         if (keyCode != GLFW.GLFW_KEY_ESCAPE && keyCode != GLFW.GLFW_KEY_TAB) {
-            for (TextFieldWidget field : new TextFieldWidget[]{selectorField, goalField}) {
+            for (TextFieldWidget field : new TextFieldWidget[]{selectorField, radiusField, goalField}) {
                 if (field != null && field.isFocused() && field.visible) {
                     field.keyPressed(keyCode, scanCode, modifiers);
                     return true;

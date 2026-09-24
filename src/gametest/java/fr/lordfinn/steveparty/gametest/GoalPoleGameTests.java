@@ -549,7 +549,8 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED, "counts while powered, like before");
         context.assertTrue(base.getResetPort() == GoalPoleBaseBlockEntity.ResetPort.ANY_SIDE, "resets on any side, like before");
         context.assertTrue(base.getSource() == GoalPoleBaseBlockEntity.Source.CRITERION && base.getCriterion().equals("deathCount"), "same criterion");
-        context.assertTrue(base.getSelector().equals("@a"), "same selector");
+        context.assertTrue(base.getSelector().equals("@a") && base.getPlayers() == GoalPoleBaseBlockEntity.Players.SELECTOR,
+                "same selector, as the advanced choice");
         context.assertTrue(base.getPoints("Bob") == 4 && base.getTotal() == 4, "old scores become points, got " + base.getTotal());
         ScoreboardObjective mirror = objective(context);
         context.assertTrue(mirror != null && mirror.getCriterion() == net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, "the objective is now the dummy mirror");
@@ -616,6 +617,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         GoalPoleBaseBlockEntity base;
         try {
             base = placeBase(context, base());
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.SELECTOR, 16);
             base.setSelector(name);
             base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, "dummy");
             var scoreboard = context.getWorld().getScoreboard();
@@ -885,5 +887,91 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.assertTrue(base.getGoalChimes() == chimes + 2, "reached again: a new chime");
         removeBase(context);
         context.complete();
+    }
+
+    /**
+     * Which players a base follows, in plain words: everyone (new bases), the players near the base, an advanced
+     * selector; the party's players when no party is running: nobody.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_modes", tickLimit = 40)
+    public void playersInPlainWords(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        String name = player.getGameProfile().getName();
+        try {
+            GoalPoleBaseBlockEntity base = placeBase(context, base());
+            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.ALL && base.follows(player), "new base: everyone");
+            Vec3d center = Vec3d.ofCenter(context.getAbsolutePos(BASE));
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.RADIUS, 4);
+            player.refreshPositionAndAngles(center.x + 2, center.y, center.z, 0, 0);
+            context.assertTrue(base.follows(player), "2 blocks away: within 4");
+            player.refreshPositionAndAngles(center.x + 20, center.y, center.z, 0, 0);
+            context.assertTrue(!base.follows(player), "20 blocks away: not within 4");
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.RADIUS, 1000);
+            context.assertTrue(base.getRadius() == GoalPoleBaseBlockEntity.MAX_RADIUS, "distance capped");
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.SELECTOR, 16);
+            // (by selector: other tests' mock players may share this player's name)
+            base.setSelector("@a");
+            context.assertTrue(base.follows(player), "advanced: @a");
+            base.setSelector("@a[tag=steveparty_nobody]");
+            context.assertTrue(!base.follows(player), "advanced: a selector without this player");
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
+            context.assertTrue(base.linkedParty() == null && !base.follows(player), "party players without a party: nobody");
+            // Settings from the screen
+            net.minecraft.nbt.NbtCompound settings = base.writeSettings();
+            settings.putString("Players", "RADIUS");
+            settings.putInt("Radius", 7);
+            base.applySettings(settings);
+            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.RADIUS && base.getRadius() == 7, "from the screen");
+            removeBase(context);
+            context.complete();
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+    }
+
+    /**
+     * The party link: placed near a party controller, a base follows the party's players; when that party starts,
+     * its points go back to 0 (a base following everyone keeps its points).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_party", tickLimit = 40)
+    public void partyLinkFollowsThePartyAndResetsAtItsStart(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        BlockPos controllerPos = BASE.east(4);
+        BlockPos otherBase = BASE.west(2);
+        try {
+            context.setBlockState(controllerPos.down(), Blocks.STONE);
+            context.setBlockState(controllerPos, ModBlocks.PARTY_CONTROLLER);
+            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller = context.getBlockEntity(controllerPos);
+            GoalPoleBaseBlockEntity base = placeBase(context, base());
+            base.onPlacedByPlayer();
+            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.PARTY && base.linkedParty() == controller,
+                    "placed near a party controller: the party's players");
+            context.setBlockState(otherBase, base());
+            GoalPoleNetwork.processPending();
+            GoalPoleBaseBlockEntity everyone = (GoalPoleBaseBlockEntity) context.getWorld().getBlockEntity(context.getAbsolutePos(otherBase));
+            context.assertTrue(everyone.getPlayers() == GoalPoleBaseBlockEntity.Players.ALL, "set by a command: everyone");
+
+            context.assertTrue(!base.follows(player), "no party running: nobody");
+            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData data = new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData();
+            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep());
+            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep(new java.util.ArrayList<>()));
+            controller.setPartyData(data);
+            controller.nextStep();
+            context.assertTrue(data.isStarted(), "party running");
+            context.assertTrue(!base.follows(player), "not in the party");
+            controller.addInterestedPlayer(player);
+            context.assertTrue(base.follows(player), "in the party");
+
+            base.credit("Alex", 3, null);
+            everyone.credit("Alex", 3, null);
+            GoalPoleNetwork.onPartyStarted(controller);
+            context.assertTrue(base.getTotal() == 0, "linked base: back to 0 when the party starts");
+            context.assertTrue(everyone.getTotal() == 3, "base following everyone: points kept");
+            context.setBlockState(otherBase, Blocks.AIR);
+            removeBase(context);
+            context.complete();
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
     }
 }

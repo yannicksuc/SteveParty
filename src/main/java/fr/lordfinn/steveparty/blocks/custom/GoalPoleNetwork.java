@@ -105,6 +105,13 @@ public final class GoalPoleNetwork {
         if (base != null && !base.isRemoved()) base.onObjectiveRemoved(objective);
     }
 
+    /** A party started: the bases linked to it (following its players) go back to 0. */
+    public static void onPartyStarted(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller) {
+        for (GoalPoleBaseBlockEntity base : bases()) {
+            if (!base.isRemoved() && base.getWorld() == controller.getWorld()) base.onPartyStarted(controller);
+        }
+    }
+
     /** A player landed on a pole (once per landing): its own base counts it if it counts landings on its poles. */
     public static void onLanding(GoalPoleBlockEntity pole, ServerPlayerEntity player) {
         GoalPoleBaseBlockEntity base = pole.getCachedBase();

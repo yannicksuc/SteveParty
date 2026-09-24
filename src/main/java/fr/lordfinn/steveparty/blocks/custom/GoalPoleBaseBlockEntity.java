@@ -30,6 +30,7 @@ import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -74,10 +75,31 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * <p>
  * <b>Redstone</b> ({@link RedstoneMode}): the back port pauses the base, or runs it, or is ignored. Paused, the base
  * counts nothing (increases seen meanwhile are dropped) but keeps its points, its objective and its outputs.
+ * <p>
+ * <b>Players</b> ({@link Players}): every player, the players near the base, the players of the nearest party (the
+ * party link: the points also go back to 0 when that party starts), or an advanced target selector.
  */
 public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPoleBasePayload> {
-    /** 2: event-driven base (1 or missing: the ticking base, migrated when loaded). */
-    public static final int VERSION = 2;
+    /**
+     * 3: players chosen in plain words ({@link Players}). 2: event-driven base, players by selector only (kept as the
+     * advanced selector). 1 or missing: the ticking base, migrated when loaded.
+     */
+    public static final int VERSION = 3;
+
+    public enum Players {
+        /** The players of the party run by the nearest party controller; the points go back to 0 when it starts. */
+        PARTY,
+        /** Every player. Default of new bases without a party controller nearby. */
+        ALL,
+        /** The players within {@link #radius} blocks of the base when they score. */
+        RADIUS,
+        /** Advanced: a target selector or a player name ({@link #selector}); bases placed before keep theirs. */
+        SELECTOR
+    }
+
+    /** How far a party controller can be from its linked bases (the party's audience). */
+    public static final int PARTY_LINK_RADIUS = PartyControllerEntity.PARTY_AUDIENCE_RADIUS;
+    public static final int MAX_RADIUS = 256;
 
     public enum RedstoneMode {
         /** The back port does nothing: the base always counts. */
@@ -118,7 +140,11 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     /** Landings on its own poles (each base counts its own board); the global criterion stays selectable. */
     private Source source = Source.LANDINGS_HERE;
     private String criterion = LANDED_ON_POLE_ID;
-    private String selector = "@p";
+    private Players players = Players.ALL;
+    private int radius = 16;
+    private String selector = "@a";
+    /** Created now (not loaded from saved data): placed by a player, it picks its players from what is around. */
+    private boolean fresh = true;
     private OutputMode outputMode = OutputMode.PULSE;
     private ResetPort resetPort = ResetPort.MARKED_SIDE;
 
@@ -381,7 +407,13 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             player.sendMessage(Text.translatable("message.steveparty.goal_pole.paused").formatted(Formatting.GOLD), true);
             return;
         }
-        if (source != Source.LANDINGS_HERE || !follows(player)) return;
+        if (source != Source.LANDINGS_HERE) return;
+        if (!follows(player)) {
+            // Not one of the players this base follows: say so (no party running, too far, not in the party...)
+            String why = players == Players.PARTY && runningParty() == null ? "no_party" : "not_followed";
+            player.sendMessage(Text.translatable("message.steveparty.goal_pole." + why).formatted(Formatting.GOLD), true);
+            return;
+        }
         credit(player.getNameForScoreboard(), 1, player);
     }
 
@@ -552,7 +584,58 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
     /** Whether the base follows this player, evaluated now (only when something happens). */
     public boolean follows(ServerPlayerEntity player) {
-        if (world == null || world.getServer() == null || selector.isEmpty()) return false;
+        if (world == null || world.getServer() == null) return false;
+        return switch (players) {
+            case ALL -> true;
+            case RADIUS -> player.getWorld() == world
+                    && player.squaredDistanceTo(Vec3d.ofCenter(pos)) <= (double) radius * radius;
+            case PARTY -> {
+                PartyControllerEntity party = runningParty();
+                yield party != null && party.isParticipant(player);
+            }
+            case SELECTOR -> followsSelector(player);
+        };
+    }
+
+    /** The party this base is linked to: the nearest party controller (running or not) within the link radius. */
+    @Nullable
+    public PartyControllerEntity linkedParty() {
+        if (world == null || world.isClient) return null;
+        PartyControllerEntity best = null;
+        double bestDistance = (double) PARTY_LINK_RADIUS * PARTY_LINK_RADIUS;
+        for (PartyControllerEntity controller : PartyControllerEntity.getActivePartyControllers()) {
+            if (controller.isRemoved() || controller.getWorld() != world) continue;
+            double distance = controller.getPos().getSquaredDistance(pos);
+            if (distance < bestDistance) {
+                best = controller;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    /** The linked party, if it is running. */
+    @Nullable
+    private PartyControllerEntity runningParty() {
+        PartyControllerEntity party = linkedParty();
+        return party != null && party.getPartyData().isStarted() ? party : null;
+    }
+
+    /** A party started: if it is this base's party, its points go back to 0. */
+    void onPartyStarted(PartyControllerEntity controller) {
+        if (players == Players.PARTY && linkedParty() == controller) reset();
+    }
+
+    /** Placed by a player: the party's players when a party controller is near, else every player. */
+    public void onPlacedByPlayer() {
+        if (!fresh) return;
+        fresh = false;
+        players = linkedParty() != null ? Players.PARTY : Players.ALL;
+        markDirty();
+    }
+
+    private boolean followsSelector(ServerPlayerEntity player) {
+        if (selector.isEmpty()) return false;
         EntitySelector entitySelector = getParsedSelector(selector);
         if (entitySelector == null) return selector.equals(player.getGameProfile().getName());
         try {
@@ -568,6 +651,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public Source getSource() { return source; }
     public String getCriterion() { return criterion; }
     public String getSelector() { return selector; }
+    public Players getPlayers() { return players; }
+    public int getRadius() { return radius; }
     public OutputMode getOutputMode() { return outputMode; }
     public ResetPort getResetPort() { return resetPort; }
     public long getTotal() { return total; }
@@ -582,6 +667,14 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         redstoneMode = mode;
         markDirty();
         pushTotal();
+    }
+
+    public void setPlayers(Players players, int radius) {
+        int clamped = Math.clamp(radius, 1, MAX_RADIUS);
+        if (players == this.players && clamped == this.radius) return;
+        this.players = players;
+        this.radius = clamped;
+        markDirty();
     }
 
     public void setSelector(String selector) {
@@ -628,6 +721,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         setRedstoneMode(readEnum(settings, "RedstoneMode", RedstoneMode.values(), redstoneMode));
         String selector = settings.getString("Selector");
         if (selector.length() <= MAX_STRING_LENGTH) setSelector(selector);
+        setPlayers(readEnum(settings, "Players", Players.values(), players), settings.contains("Radius") ? settings.getInt("Radius") : radius);
         String criterion = settings.getString("Criterion");
         if (criterion.length() <= MAX_STRING_LENGTH) setSource(readEnum(settings, "Source", Source.values(), source), criterion);
         setOutputMode(readEnum(settings, "OutputMode", OutputMode.values(), outputMode));
@@ -641,9 +735,12 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         settings.putString("Source", source.name());
         settings.putString("Criterion", criterion);
         settings.putString("Selector", selector);
+        settings.putString("Players", players.name());
+        settings.putInt("Radius", radius);
         settings.putString("OutputMode", outputMode.name());
         settings.putString("ResetPort", resetPort.name());
         settings.putLong("Total", total);
+        settings.putBoolean("PartyNear", linkedParty() != null);
         settings.putBoolean("Active", isActive());
         return settings;
     }
@@ -661,6 +758,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
+        fresh = false;
         this.resetSidePowered = nbt.getBoolean("ResetSidePowered");
         points.clear();
         sourceSeen.clear();
@@ -673,6 +771,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             source = Source.CRITERION;
             criterion = nbt.contains("Goal", NbtElement.STRING_TYPE) ? nbt.getString("Goal") : LANDED_ON_POLE_ID;
             selector = nbt.contains("Selector", NbtElement.STRING_TYPE) ? nbt.getString("Selector") : "@p";
+            // Their selector is kept, as the advanced choice
+            players = Players.SELECTOR;
             legacyScores.clear();
             NbtCompound scores = nbt.getCompound("LastScores");
             for (String key : scores.getKeys()) {
@@ -688,6 +788,9 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         source = readEnum(nbt, "Source", Source.values(), Source.CRITERION);
         criterion = nbt.getString("Criterion");
         selector = nbt.getString("Selector");
+        // Version 2 had only the selector: kept as the advanced choice
+        players = nbt.getInt("Version") < 3 ? Players.SELECTOR : readEnum(nbt, "Players", Players.values(), Players.ALL);
+        radius = nbt.contains("Radius") ? Math.clamp(nbt.getInt("Radius"), 1, MAX_RADIUS) : 16;
         outputMode = readEnum(nbt, "OutputMode", OutputMode.values(), OutputMode.PULSE);
         resetPort = readEnum(nbt, "ResetPort", ResetPort.values(), ResetPort.MARKED_SIDE);
         NbtCompound pointsNbt = nbt.getCompound("Points");
@@ -705,6 +808,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         nbt.putString("Source", source.name());
         nbt.putString("Criterion", criterion);
         nbt.putString("Selector", selector);
+        nbt.putString("Players", players.name());
+        nbt.putInt("Radius", radius);
         nbt.putString("OutputMode", outputMode.name());
         nbt.putString("ResetPort", resetPort.name());
         nbt.putBoolean("ResetSidePowered", resetSidePowered);
@@ -760,6 +865,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
     /** The settings as a list of names (for tests and debugging). */
     public List<String> describe() {
-        return List.of(redstoneMode.name(), source.name(), criterion, selector, outputMode.name(), resetPort.name());
+        return List.of(redstoneMode.name(), source.name(), criterion, players.name(), String.valueOf(radius), selector,
+                outputMode.name(), resetPort.name());
     }
 }

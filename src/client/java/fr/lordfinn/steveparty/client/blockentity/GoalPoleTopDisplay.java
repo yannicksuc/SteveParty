@@ -140,10 +140,19 @@ final class GoalPoleTopDisplay {
         }
         if (base != null) {
             lines.add(Text.translatable(KEY + "players").formatted(Formatting.GRAY).append(" ")
-                    .append(Text.literal(base.getSelector()).formatted(Formatting.WHITE)));
+                    .append(players(base).copy().formatted(Formatting.WHITE)));
             lines.add(points(base));
         }
         return lines;
+    }
+
+    /** Who the base follows, in the words of its screen ("All players", "within 16 blocks", or the selector). */
+    private static Text players(GoalPoleBaseBlockEntity base) {
+        return switch (base.getPlayers()) {
+            case SELECTOR -> Text.literal(base.getSelector());
+            case RADIUS -> Text.translatable(KEY + "players.radius", base.getRadius());
+            default -> Text.translatable("gui.steveparty.goal_pole_base.players." + base.getPlayers().name().toLowerCase(Locale.ROOT));
+        };
     }
 
     /** "Points: LordFinn 2 · Alex 1" (the best few), or "No points yet". */

@@ -55,6 +55,15 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
         return state.with(POWERED, isReceivingPowerFromSouth(ctx.getWorld(), ctx.getBlockPos(), state));
     }
 
+    /** Placed by a player: the base follows the party's players when a party controller is near, else everyone. */
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        if (!world.isClient && placer instanceof PlayerEntity && world.getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity base) {
+            base.onPlacedByPlayer();
+        }
+    }
+
     @Override
     protected MapCodec<GoalPoleBaseBlock> getCodec() {
         return createCodec(GoalPoleBaseBlock::new);
