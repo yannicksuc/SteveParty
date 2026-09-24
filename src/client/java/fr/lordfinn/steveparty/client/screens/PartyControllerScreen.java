@@ -8,15 +8,18 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** Party controller settings: coin and star items, then the party program cards. */
 public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHandler> {
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/party_controller.png");
     private static final int LABEL_COLOR = 0xFFFFFF;
+    private static final int TOOLTIP_WIDTH = 150;
 
     public PartyControllerScreen(PartyControllerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -48,9 +51,12 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         if (slot != null && !slot.hasStack() && slot.id < PartyControllerEntity.SETTINGS_SIZE) {
             String key = slot.id == PartyControllerEntity.SLOT_COIN ? "coin"
                     : slot.id == PartyControllerEntity.SLOT_STAR ? "star" : "program";
-            context.drawTooltip(this.textRenderer, List.of(
-                    Text.translatable("screen.steveparty.party_controller." + key),
-                    Text.translatable("screen.steveparty.party_controller." + key + ".hint").withColor(0xAAAAAA)), mouseX, mouseY);
+            // Long hints are wrapped so the tooltip does not hide the slots
+            List<OrderedText> lines = new ArrayList<>();
+            lines.add(Text.translatable("screen.steveparty.party_controller." + key).asOrderedText());
+            lines.addAll(this.textRenderer.wrapLines(
+                    Text.translatable("screen.steveparty.party_controller." + key + ".hint").withColor(0xAAAAAA), TOOLTIP_WIDTH));
+            context.drawOrderedTooltip(this.textRenderer, lines, mouseX, mouseY);
         }
     }
 }

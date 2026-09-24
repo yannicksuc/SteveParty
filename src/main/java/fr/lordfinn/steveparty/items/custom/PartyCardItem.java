@@ -49,7 +49,9 @@ public class PartyCardItem extends Item {
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         super.appendTooltip(stack, context, tooltip, type);
-        tooltip.add(Text.translatable("item.steveparty.party_card_" + cardType.getName() + ".tooltip", stack.getCount())
-                .formatted(Formatting.GRAY));
+        // Long descriptions are split on "\n" in the translation, so the tooltip stays narrow
+        String description = Text.translatable("item.steveparty.party_card_" + cardType.getName() + ".tooltip", stack.getCount()).getString();
+        for (String line : description.split("\n"))
+            tooltip.add(Text.literal(line).formatted(Formatting.GRAY));
     }
 }
