@@ -59,6 +59,11 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
     /** Not saved: last brush step, so that holding the brush fades step by step. */
     private long lastBrushTick = NEVER_BRUSHED;
     private static final long NEVER_BRUSHED = Long.MIN_VALUE;
+    /**
+     * Not saved, client only: what the block entity renderer worked out to draw this symbol (texture, transform),
+     * dropped whenever the symbol changes.
+     */
+    private @Nullable Object renderCache;
 
     public StencilCanvasBlockEntity(BlockPos pos, BlockState state) {
         this(ModBlockEntities.STENCIL_CANVAS, pos, state);
@@ -108,9 +113,9 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         return true;
     }
 
-    /** Applies a stencil: its shape, painted with {@code color} (null: engraved only). */
+    /** Applies a stencil: its shape, painted with {@code color} (null: engraved only). A blank shape is no symbol. */
     public void setSymbol(@Nullable byte[] shape, @Nullable DyeColor color) {
-        this.shape = shape == null ? null : StencilShape.sanitize(shape);
+        this.shape = symbolShape(shape);
         this.color = color;
         this.fade = 0;
         onChanged();
@@ -141,6 +146,11 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         setSymbol(shape, color);
     }
 
+    /** @return a clean copy of {@code shape}, or null if it is not a symbol (none, invalid or blank). */
+    private static @Nullable byte[] symbolShape(@Nullable byte[] shape) {
+        return StencilShape.isBlank(shape) ? null : StencilShape.sanitize(shape);
+    }
+
     // ---------------------------------------------------------------- what the block is made of
 
     public @Nullable Identifier getMaterial() {
@@ -164,6 +174,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
     // ---------------------------------------------------------------- sync
 
     private void onChanged() {
+        renderCache = null;
         markDirty();
         if (world != null && !world.isClient) {
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
@@ -193,6 +204,14 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         return new RenderData(material, plateColor, shape, color, glowing, fade);
     }
 
+    public @Nullable Object getRenderCache() {
+        return renderCache;
+    }
+
+    public void setRenderCache(@Nullable Object renderCache) {
+        this.renderCache = renderCache;
+    }
+
     // ---------------------------------------------------------------- persistence
 
     @Override
@@ -212,8 +231,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         super.readNbt(nbt, registries);
         Object oldRender = getRenderData();
 
-        shape = nbt.contains(SHAPE_KEY, NbtElement.BYTE_ARRAY_TYPE) && StencilShape.isValid(nbt.getByteArray(SHAPE_KEY))
-                ? StencilShape.sanitize(nbt.getByteArray(SHAPE_KEY)) : null;
+        shape = nbt.contains(SHAPE_KEY, NbtElement.BYTE_ARRAY_TYPE) ? symbolShape(nbt.getByteArray(SHAPE_KEY)) : null;
         // Signs saved before engraving existed have no Engraved flag and default to white paint
         if (nbt.getBoolean(ENGRAVED_KEY)) color = null;
         else color = DyeColor.byName(nbt.getString(COLOR_KEY), DyeColor.WHITE);
@@ -221,6 +239,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         material = nbt.contains(MATERIAL_KEY, NbtElement.STRING_TYPE) ? Identifier.tryParse(nbt.getString(MATERIAL_KEY)) : null;
         plateColor = nbt.contains(PLATE_COLOR_KEY, NbtElement.STRING_TYPE) ? DyeColor.byName(nbt.getString(PLATE_COLOR_KEY), null) : null;
         fade = Math.clamp(nbt.getInt(FADE_KEY), 0, MAX_FADE);
+        renderCache = null;
 
         // Client: what the chunk mesh draws changed, rebuild it
         if (world != null && world.isClient && !sameRender((RenderData) oldRender, (RenderData) getRenderData())) {
@@ -242,7 +261,8 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         if (base != null) plateColor = base;
         StencilCanvasComponent canvas = components.get(ModComponents.STENCIL_CANVAS);
         if (canvas != null) {
-            shape = canvas.shapeArray();
+            // A sign with glow ink but no symbol keeps a blank shape on its item: still no symbol
+            shape = symbolShape(canvas.shapeArray());
             color = canvas.color().orElse(null);
             glowing = canvas.glowing();
             fade = Math.clamp(canvas.fade(), 0, MAX_FADE);

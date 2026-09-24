@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:yellow_polished_concrete_bricks_slab_from_yellow_concrete_stonecutting"
+        "recipe": "steveparty:yellow_polished_concrete_bricks_slab_from_yellow_concrete_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     },
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:yellow_polished_concrete_bricks_slab_from_yellow_concrete_stonecutting"
+      "steveparty:yellow_polished_concrete_bricks_slab_from_yellow_concrete_stonecutting"
     ]
   }
 }

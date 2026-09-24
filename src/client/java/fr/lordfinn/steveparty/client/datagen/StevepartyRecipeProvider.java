@@ -1,18 +1,24 @@
 package fr.lordfinn.steveparty.client.datagen;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.data.server.recipe.CookingRecipeJsonBuilder;
 import net.minecraft.data.server.recipe.RecipeExporter;
 import net.minecraft.data.server.recipe.RecipeGenerator;
+import net.minecraft.data.server.recipe.StonecuttingRecipeJsonBuilder;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
 import net.minecraft.data.family.BlockFamily;
 import net.minecraft.item.DyeItem;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.recipe.SmeltingRecipe;
 import net.minecraft.recipe.book.RecipeCategory;
 import net.minecraft.util.DyeColor;
 import net.minecraft.registry.Registries;
@@ -30,6 +36,42 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
     @Override
     protected RecipeGenerator getRecipeGenerator(RegistryWrapper.WrapperLookup wrapperLookup, RecipeExporter recipeExporter) {
         return new RecipeGenerator(wrapperLookup, recipeExporter) {
+            /**
+             * Full recipe id for a named recipe. A bare name would be parsed in the minecraft namespace: Fabric fixes
+             * the file path, but not the unlock advancement, which would then reward a recipe that doesn't exist.
+             */
+            private static String id(String name) {
+                return Steveparty.id(name).toString();
+            }
+
+            // The vanilla helpers below name their recipes with a bare name: same recipes, namespaced ids
+
+            @Override
+            public void offerStonecuttingRecipe(RecipeCategory category, ItemConvertible output, ItemConvertible input, int count) {
+                StonecuttingRecipeJsonBuilder.createStonecutting(Ingredient.ofItem(input), category, output, count)
+                        .criterion(hasItem(input), conditionsFromItem(input))
+                        .offerTo(exporter, id(convertBetween(output, input) + "_stonecutting"));
+            }
+
+            @Override
+            public void offerReversibleCompactingRecipes(RecipeCategory reverseCategory, ItemConvertible baseItem,
+                                                         RecipeCategory compactingCategory, ItemConvertible compactItem) {
+                offerReversibleCompactingRecipes(reverseCategory, baseItem, compactingCategory, compactItem,
+                        id(getItemPath(compactItem)), null, id(getItemPath(baseItem)), null);
+            }
+
+            @Override
+            public void offerSmelting(List<ItemConvertible> inputs, RecipeCategory category, ItemConvertible output,
+                                      float experience, int cookingTime, String group) {
+                for (ItemConvertible input : inputs) {
+                    CookingRecipeJsonBuilder.create(Ingredient.ofItem(input), category, output, experience, cookingTime,
+                                    RecipeSerializer.SMELTING, SmeltingRecipe::new)
+                            .group(group)
+                            .criterion(hasItem(input), conditionsFromItem(input))
+                            .offerTo(exporter, id(getItemPath(output) + "_from_smelting_" + getItemPath(input)));
+                }
+            }
+
             @Override
             public void generate() {
                 //TagKey<Item> diceTag = StevepartyReferenceItemTagProvider.DICE_FACES_TAG;
@@ -55,7 +97,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .input('Q', Items.QUARTZ)
                         .criterion(hasItem(Items.IRON_INGOT), conditionsFromItem(Items.IRON_INGOT))
                         .criterion(hasItem(Items.QUARTZ), conditionsFromItem(Items.QUARTZ))
-                        .offerTo(recipeExporter, "blank_dice_face_from_crafting");
+                        .offerTo(recipeExporter, id("blank_dice_face_from_crafting"));
 
                 offerReversibleCompactingRecipes(
                         RecipeCategory.MISC,
@@ -104,13 +146,14 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .criterion(hasItem(ModItems.YELLOW_STAR_FRAGMENT), conditionsFromItem(ModItems.YELLOW_STAR_FRAGMENT))
                         .criterion(hasItem(ModItems.RED_STAR_FRAGMENT), conditionsFromItem(ModItems.RED_STAR_FRAGMENT))
                         .criterion(hasItem(ModItems.PURPLE_STAR_FRAGMENT), conditionsFromItem(ModItems.PURPLE_STAR_FRAGMENT))
-                        .offerTo(recipeExporter, "power_star_from_fragments");
+                        .offerTo(recipeExporter, id("power_star_from_fragments"));
                 createShapeless(RecipeCategory.MISC, ModItems.POWER_STAR, 1)
                         .input(ModItems.BLACK_STAR_FRAGMENT, 5)
                         .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
-                        .offerTo(recipeExporter, "power_star_from_black_fragments");
+                        .offerTo(recipeExporter, id("power_star_from_black_fragments"));
 
                 generatePolishedConcrete();
+                generatePolishedTerracotta();
                 generatePlasticBlocks();
             }
 
@@ -138,9 +181,30 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                             .input('X', dye)
                             .group("dyed_plastic_block")
                             .criterion(hasItem(dye), conditionsFromItem(dye))
-                            .offerTo(recipeExporter, getItemPath(plasticBlock) + "_from_dyeing");
+                            .offerTo(recipeExporter, id(getItemPath(plasticBlock) + "_from_dyeing"));
                 }
                 generatePlasticStuds();
+                generatePlasticShapes();
+            }
+
+            // Slabs, stairs and walls like the vanilla stone ones (crafting table and stonecutter); plastic sticks
+            // from 2 plastic blocks, like wooden sticks from 2 planks
+            private void generatePlasticShapes() {
+                Ingredient anyPlasticBlock = Ingredient.ofItems(ModBlocks.PLASTIC_BLOCKS);
+                createShaped(RecipeCategory.MISC, ModItems.PLASTIC_STICK, 4)
+                        .pattern("#")
+                        .pattern("#")
+                        .input('#', anyPlasticBlock)
+                        .group("plastic_stick")
+                        .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
+                        .offerTo(recipeExporter);
+                for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+                    Block plasticBlock = ModBlocks.PLASTIC_BLOCKS[i];
+                    Block[] shapes = {ModBlocks.PLASTIC_STAIRS[i], ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_WALLS[i]};
+                    generateFamily(new BlockFamily.Builder(plasticBlock)
+                            .stairs(shapes[0]).slab(shapes[1]).wall(shapes[2]).build(), FeatureFlags.VANILLA_FEATURES);
+                    offerStonecuttingVariants(shapes, plasticBlock);
+                }
             }
 
             // A plastic block splits into 4 studs and 4 studs make it back; studs re-dye like plastic blocks
@@ -161,7 +225,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                             .input('#', stud)
                             .group("plastic_block")
                             .criterion(hasItem(stud), conditionsFromItem(stud))
-                            .offerTo(recipeExporter, getItemPath(plasticBlock) + "_from_plastic_studs");
+                            .offerTo(recipeExporter, id(getItemPath(plasticBlock) + "_from_plastic_studs"));
                     createShaped(RecipeCategory.DECORATIONS, stud, 8)
                             .pattern("###")
                             .pattern("#X#")
@@ -170,7 +234,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                             .input('X', dye)
                             .group("dyed_plastic_stud")
                             .criterion(hasItem(dye), conditionsFromItem(dye))
-                            .offerTo(recipeExporter, getItemPath(stud) + "_from_dyeing");
+                            .offerTo(recipeExporter, id(getItemPath(stud) + "_from_dyeing"));
                 }
             }
 
@@ -198,6 +262,35 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                     for (Block input : new Block[]{concrete, polished})
                         offerStonecuttingVariants(polishedVariants, input);
                     for (Block input : new Block[]{concrete, polished, bricks})
+                        offerStonecuttingVariants(bricksVariants, input);
+                }
+            }
+
+            // The same chain for the polished terracotta, from the vanilla terracotta of each colour ("default" = plain terracotta)
+            private void generatePolishedTerracotta() {
+                RecipeCategory building = RecipeCategory.BUILDING_BLOCKS;
+                for (int i = 0; i < ModBlocks.COLORS_WITH_DEFAULT.length; i++) {
+                    String color = ModBlocks.COLORS_WITH_DEFAULT[i];
+                    Block terracotta = color.equals("default") ? Blocks.TERRACOTTA
+                            : Registries.BLOCK.get(Identifier.ofVanilla(color + "_terracotta"));
+                    Block polished = ModBlocks.POLISHED_TERRACOTTA_BLOCKS[i];
+                    Block bricks = ModBlocks.POLISHED_TERRACOTTA_BRICKS_BLOCKS[i];
+                    Block[] polishedVariants = {ModBlocks.POLISHED_TERRACOTTA_STAIRS[i], ModBlocks.POLISHED_TERRACOTTA_SLABS[i], ModBlocks.POLISHED_TERRACOTTA_WALLS[i]};
+                    Block[] bricksVariants = {ModBlocks.POLISHED_TERRACOTTA_BRICKS_STAIRS[i], ModBlocks.POLISHED_TERRACOTTA_BRICKS_SLABS[i], ModBlocks.POLISHED_TERRACOTTA_BRICKS_WALLS[i]};
+
+                    offerPolishedStoneRecipe(building, polished, terracotta);
+                    offerPolishedStoneRecipe(building, bricks, polished);
+                    generateFamily(new BlockFamily.Builder(polished)
+                            .stairs(polishedVariants[0]).slab(polishedVariants[1]).wall(polishedVariants[2]).build(), FeatureFlags.VANILLA_FEATURES);
+                    generateFamily(new BlockFamily.Builder(bricks)
+                            .stairs(bricksVariants[0]).slab(bricksVariants[1]).wall(bricksVariants[2]).build(), FeatureFlags.VANILLA_FEATURES);
+
+                    offerStonecuttingRecipe(building, polished, terracotta);
+                    offerStonecuttingRecipe(building, bricks, terracotta);
+                    offerStonecuttingRecipe(building, bricks, polished);
+                    for (Block input : new Block[]{terracotta, polished})
+                        offerStonecuttingVariants(polishedVariants, input);
+                    for (Block input : new Block[]{terracotta, polished, bricks})
                         offerStonecuttingVariants(bricksVariants, input);
                 }
             }

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:yellow_plastic_block",
+  "result": {
+    "count": 1,
+    "id": "steveparty:yellow_plastic_stairs"
+  }
+}

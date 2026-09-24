@@ -47,7 +47,7 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
 
     /** What holds a sign, and how its board is drawn (see {@link #modelTransform}). */
     public enum Mount implements StringIdentifiable {
-        /** Standing (on the fence or wall below, for the signs made for posts), turned 16 ways. */
+        /** Standing (on the fence or wall below, put there sneaking, for the signs made for posts), turned 16 ways. */
         POST("post"),
         /** Hung on the side of the post (fence or wall) right behind it, drawn around that post. */
         HUNG("hung"),
@@ -188,15 +188,18 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
         BlockState state = this.getDefaultState()
                 .with(ROTATION, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw() + 180.0F))
                 .with(WATERLOGGED, ctx.getWorld().getFluidState(ctx.getBlockPos()).getFluid() == Fluids.WATER);
-        if (ctx.canReplaceExisting()) return state;
-        Direction side = ctx.getSide();
+        // Put in place of grass, a snow layer...: as if put on top of the block below it
+        Direction side = ctx.canReplaceExisting() ? Direction.UP : ctx.getSide();
         BlockPos supportPos = ctx.getBlockPos().offset(side.getOpposite());
         BlockState support = ctx.getWorld().getBlockState(supportPos);
         if (side.getAxis().isHorizontal() && SignPosts.isPost(support)) {
             // Put against a fence or a wall: facing away from it, hung on it when made for posts
             return state.with(ROTATION, RotationPropertyHelper.fromDirection(side)).with(MOUNT, hangsOnPosts() ? Mount.HUNG : Mount.POST);
         }
-        if (!hangsOnPosts() || (side == Direction.UP && SignPosts.isPost(support))) return state;
+        if (!hangsOnPosts()) return state;
+        // On top of a fence or a wall: flat on it, or standing on it as on a post when sneaking
+        boolean sneaking = ctx.getPlayer() != null && ctx.getPlayer().isSneaking();
+        if (side == Direction.UP && SignPosts.isPost(support) && sneaking) return state;
         if (!support.isSideSolid(ctx.getWorld(), supportPos, side, SideShapeType.CENTER)) return state;
         // Flat against the face clicked
         return switch (side) {
@@ -213,6 +216,7 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
 
     @Override
     protected final boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+        if (!needsSupport(state)) return true;
         Mount mount = state.get(MOUNT);
         if (mount == Mount.POST) return canStandAt(world, pos);
         Direction side = supportSide(state);
@@ -221,6 +225,19 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
         if (mount == Mount.HUNG) return facing(state.get(ROTATION)) != null && SignPosts.isPost(support);
         if (mount == Mount.WALL && facing(state.get(ROTATION)) == null) return false;
         return support.isSideSolid(world, supportPos, side.getOpposite(), SideShapeType.CENTER);
+    }
+
+    /** @return whether this sign falls when what holds it goes (see {@link #supportSide}). */
+    protected boolean needsSupport(BlockState state) {
+        return true;
+    }
+
+    /**
+     * @return whether the sign ({@code state}, at {@code pos}) is held by the block at {@code support}: it would fall
+     * if that block went away (floating plastic stays put rather than drop it)
+     */
+    public boolean isHeldBy(BlockState state, BlockPos pos, BlockPos support) {
+        return needsSupport(state) && pos.offset(supportSide(state)).equals(support);
     }
 
     /** @return whether this sign can stand at {@code pos} (on what is below it). */

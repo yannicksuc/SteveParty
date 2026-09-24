@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "steveparty:polished_black_terracotta_bricks",
+  "result": {
+    "count": 1,
+    "id": "steveparty:black_polished_terracotta_bricks_stairs"
+  }
+}

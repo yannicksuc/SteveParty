@@ -63,27 +63,27 @@ public class ModPayloads {
 
         ServerPlayNetworking.registerGlobalReceiver(TokenSpellPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> payload.handle(player));
+            runInPacketOrder(player, () -> payload.handle(player));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(CartridgeSlotScrollPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> CartridgeSlotScrollPayload.handle(payload, player));
+            runInPacketOrder(player, () -> CartridgeSlotScrollPayload.handle(payload, player));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> handleHereWeGoBookPayload(player, payload.state()));
+            runInPacketOrder(player, () -> handleHereWeGoBookPayload(player, payload.state()));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeComeBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> handleHereWeComeBookPayload(player, payload.teleportingTargets()));
+            runInPacketOrder(player, () -> handleHereWeComeBookPayload(player, payload.teleportingTargets()));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(SaveStencilPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> {
+            runInPacketOrder(player, () -> {
                 BlockPos pos = payload.pos();
                 byte[] shape = payload.shape();
                 if (shape == null || shape.length != SaveStencilPayload.SHAPE_SIZE) return;
@@ -102,17 +102,17 @@ public class ModPayloads {
         });
         ServerPlayNetworking.registerGlobalReceiver(StencilMakerActionPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> payload.handle(player));
+            runInPacketOrder(player, () -> payload.handle(player));
         });
         ServerPlayNetworking.registerGlobalReceiver(StencilGunScrollPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> payload.handle(player));
+            runInPacketOrder(player, () -> payload.handle(player));
         });
         ServerPlayNetworking.registerGlobalReceiver(GoalPoleBasePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
 
-            // Schedule on server thread
-            player.server.execute(() -> {
+            // In packet order (see runInPacketOrder): the screen closes right after this payload is sent
+            runInPacketOrder(player, () -> {
                 BlockPos pos = payload.pos();
                 if (payload.selector() == null || payload.goal() == null
                         || payload.selector().length() > MAX_GOAL_POLE_STRING_LENGTH
@@ -132,7 +132,7 @@ public class ModPayloads {
 
         ServerPlayNetworking.registerGlobalReceiver(GoalPolePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> {
+            runInPacketOrder(player, () -> {
                 BlockPos pos = payload.pos();
                 if (payload.comparator() == null) return;
                 // The goal pole screen for this block must be open and the block in reach
@@ -146,4 +146,14 @@ public class ModPayloads {
         });
     }
 
+    /**
+     * Runs a C2S payload's action right away when Fabric already calls the receiver on the server thread (it does for
+     * play payloads), so that it is handled in packet order. Deferring it with {@code server.execute} queued it behind
+     * the packets received with it: a screen that sends its settings then closes had its close packet handled first,
+     * and the "screen must be open" check then dropped the settings (the goal pole screens often did not save).
+     */
+    public static void runInPacketOrder(ServerPlayerEntity player, Runnable action) {
+        if (player.server.isOnThread()) action.run();
+        else player.server.execute(action);
+    }
 }

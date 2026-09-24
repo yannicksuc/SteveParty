@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:yellow_plastic_block_from_dyeing"
+        "recipe": "steveparty:yellow_plastic_block_from_dyeing"
       },
       "trigger": "minecraft:recipe_unlocked"
     },
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:yellow_plastic_block_from_dyeing"
+      "steveparty:yellow_plastic_block_from_dyeing"
     ]
   }
 }

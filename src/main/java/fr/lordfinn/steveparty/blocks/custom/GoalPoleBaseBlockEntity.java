@@ -17,6 +17,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.scoreboard.ReadableScoreboardScore;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
@@ -27,6 +28,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
@@ -57,6 +59,11 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     @Nullable private EntitySelector cachedEntitySelector = null;
     /** Whether a reset side was powered at the last neighbor update (rising-edge detection). */
     private boolean resetSidePowered = false;
+    // Per-tick caches shared by the base and the poles above it
+    private long trackedPlayersTick = Long.MIN_VALUE;
+    private long totalScoreTick = Long.MIN_VALUE;
+    private int totalScore = 0;
+    private long nextSetupAttemptTick = Long.MIN_VALUE;
 
     public int getComparatorOutput() {
         return redstoneOutput;
@@ -86,23 +93,38 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         if (Objects.equals(goal, this.goal)) return;
 
         // Remove old objective if it exists
-        if (this.cachedObjective != null && this.world != null && !this.world.isClient) {
-            Scoreboard scoreboard = this.world.getServer().getScoreboard();
-            scoreboard.removeObjective(this.cachedObjective);
-            this.cachedObjective = null;
-        }
+        removeObjective();
 
         this.goal = goal;
+        // The new objective starts from scratch: the scores remembered for the old goal no longer apply
+        this.lastScores.clear();
         markDirty();
 
-        if (!this.world.isClient) {
+        if (this.world != null && !this.world.isClient && isPowered()) {
             setupScoreboard();
         }
     }
 
+    /**
+     * One objective per base. Overworld bases keep their historical name; in the other dimensions the dimension is
+     * part of the name, so that two bases at the same coordinates in two dimensions don't share (and delete) one
+     * objective.
+     */
     private String getObjectiveName() {
-        BlockPos pos = this.getPos();
-        return "steveparty_" + pos.getX() + "_" + pos.getY() + "_" + pos.getZ();
+        return getObjectiveName(this.world, this.getPos());
+    }
+
+    public static String getObjectiveName(@Nullable World world, BlockPos pos) {
+        String coordinates = pos.getX() + "_" + pos.getY() + "_" + pos.getZ();
+        if (world == null || world.getRegistryKey() == World.OVERWORLD) return "steveparty_" + coordinates;
+        Identifier dimension = world.getRegistryKey().getValue();
+        String name = dimension.getNamespace().equals(Identifier.DEFAULT_NAMESPACE) ? dimension.getPath() : dimension.toString();
+        return "steveparty_" + name.replaceAll("[^A-Za-z0-9_.+-]", ".") + "_" + coordinates;
+    }
+
+    private boolean isPowered() {
+        BlockState state = getCachedState();
+        return state.contains(POWERED) && state.get(POWERED);
     }
 
     @Override
@@ -158,7 +180,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
     @Override
     public Text getDisplayName() {
-        return Text.literal("Goal Pole");
+        return Text.translatable("block.steveparty.goal_pole_base");
     }
 
     @Override
@@ -179,25 +201,37 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
         String objectiveName = getObjectiveName();
 
-        ScoreboardObjective objective = scoreboard.getNullableObjective(objectiveName);
-        if (objective == null) {
-            try {
-                Optional<ScoreboardCriterion> criterion = ScoreboardCriterion.getOrCreateStatCriterion(goal);
-                if (criterion.isEmpty()) return;
+        Optional<ScoreboardCriterion> criterion = parseGoal(goal);
+        if (criterion.isEmpty()) return;
 
-                objective = scoreboard.addObjective(
-                        objectiveName,
-                        criterion.get(),
-                        Text.literal("Goal: " + goal),
-                        ScoreboardCriterion.RenderType.INTEGER,
-                        true,
-                        null
-                );
-            } catch (InvalidIdentifierException ignored) {
-                return;
-            }
+        ScoreboardObjective objective = scoreboard.getNullableObjective(objectiveName);
+        if (objective != null && !objective.getCriterion().getName().equals(criterion.get().getName())) {
+            // Left over with another goal (or made by hand under this name): the base owns this name
+            scoreboard.removeObjective(objective);
+            objective = null;
+        }
+        if (objective == null) {
+            objective = scoreboard.addObjective(
+                    objectiveName,
+                    criterion.get(),
+                    Text.literal("Goal: " + goal),
+                    ScoreboardCriterion.RenderType.INTEGER,
+                    true,
+                    null
+            );
         }
         this.cachedObjective = objective;
+        this.totalScoreTick = Long.MIN_VALUE;
+    }
+
+    /** @return the scoreboard criterion of a goal string, empty if it is not a valid criterion. */
+    public static Optional<ScoreboardCriterion> parseGoal(String goal) {
+        if (goal == null || goal.isEmpty()) return Optional.empty();
+        try {
+            return ScoreboardCriterion.getOrCreateStatCriterion(goal);
+        } catch (InvalidIdentifierException e) {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -248,23 +282,63 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         return player != null ? List.of(player) : Collections.emptyList();
     }
 
+    /**
+     * @param forceRefresh re-evaluate the selector, at most once per tick (the base and every pole above it share
+     *                     the result of that tick)
+     */
     public List<ServerPlayerEntity> getTrackedPlayers(boolean forceRefresh) {
         MinecraftServer server = this.world != null ? this.world.getServer() : null;
         if (server == null) return List.of();
 
-        if (forceRefresh || this.cacheSelectedPlayers == null || this.cacheSelectedPlayers.isEmpty()) {
+        long now = this.world.getTime();
+        boolean stale = forceRefresh && now != this.trackedPlayersTick;
+        if (stale || this.cacheSelectedPlayers == null || this.cacheSelectedPlayers.isEmpty()) {
             this.cacheSelectedPlayers = new ArrayList<>(resolveSelector(server, this.selector));
+            this.trackedPlayersTick = now;
         }
         return this.cacheSelectedPlayers;
     }
 
+    /**
+     * Sum of the tracked players' scores, computed at most once per tick. Players without a score count as 0 (no
+     * score is created for them); the sum saturates instead of overflowing.
+     */
+    public int getTrackedTotalScore() {
+        if (this.world == null || this.cachedObjective == null) return 0;
+        long now = this.world.getTime();
+        if (now != this.totalScoreTick) {
+            this.totalScoreTick = now;
+            Scoreboard scoreboard = this.world.getScoreboard();
+            long sum = 0;
+            for (ServerPlayerEntity player : getTrackedPlayers(true)) {
+                ReadableScoreboardScore score = scoreboard.getScore(player, this.cachedObjective);
+                if (score != null) sum += score.getScore();
+            }
+            this.totalScore = (int) Math.clamp(sum, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        }
+        return this.totalScore;
+    }
+
     @Override
     public void tick(World world, BlockPos pos, BlockState state, BlockEntity blockEntity) {
-        if (this.goal.isEmpty() || this.selector.isEmpty()) return;
-        if (this.cachedObjective == null) setupScoreboard();
-        if (this.cachedObjective == null) return;
-        if (!this.world.getBlockState(pos).get(POWERED)) return;
         if (this.world.isClient) return;
+        if (this.goal.isEmpty() || this.selector.isEmpty()) return;
+        // Unpowered = paused: the objective was removed by pauseGoal and must not come back until resumeGoal
+        if (!state.get(POWERED)) return;
+        if (this.cachedObjective != null
+                && world.getScoreboard().getNullableObjective(this.cachedObjective.getName()) != this.cachedObjective) {
+            // Removed from outside (/scoreboard objectives remove): recreated below, the scores start again from 0
+            this.cachedObjective = null;
+        }
+        if (this.cachedObjective == null) {
+            // An invalid goal (unknown criterion) is retried once a second, not every tick
+            if (world.getTime() < this.nextSetupAttemptTick) return;
+            setupScoreboard();
+            if (this.cachedObjective == null) {
+                this.nextSetupAttemptTick = world.getTime() + 20;
+                return;
+            }
+        }
 
         List<ServerPlayerEntity> players = getTrackedPlayers(true);
         if (players.isEmpty()) return;
@@ -273,34 +347,47 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             var scoreboard = player.getServer().getScoreboard();
             var score = scoreboard.getOrCreateScore(player, this.cachedObjective);
 
-            int current = score.getScore();
-            int last = this.lastScores.getOrDefault(player.getUuid(), -1);
-
-            // If we’ve never tracked this player before, initialize baseline
-            if (last == -1) {
-                this.lastScores.put(player.getUuid(), current);
-                markDirty();
-                continue; // don’t pulse yet, wait for actual change
-            }
-
-            if (current > last) {
+            long gained = trackScore(player.getUuid(), score.getScore());
+            if (gained > 0) {
                 pulseRedstone();
-                spawnFloatingText((ServerWorld) this.world,  "+1", pos.toCenterPos().add(0.5).add(Math.random() - 1 ,  Math.random() / 2, Math.random() - 1).toVector3f(), TextColor.fromRgb(0xC90E0E), 50);
-                this.lastScores.put(player.getUuid(), current);
-                markDirty();
+                spawnFloatingText((ServerWorld) this.world, "+" + gained, pos.toCenterPos().add(0.5).add(Math.random() - 1, Math.random() / 2, Math.random() - 1).toVector3f(), TextColor.fromRgb(0xC90E0E), 50);
             }
         }
     }
 
-    public void pauseGoal() {
-        if (this.cachedObjective == null || this.world == null || this.world.isClient) return;
+    /**
+     * Remembers a player's score.
+     * @return how much it went up since last time (0 the first time: that's the baseline, and when it goes down)
+     */
+    public long trackScore(UUID player, int current) {
+        Integer last = this.lastScores.get(player);
+        // Never tracked before: baseline, no pulse yet (-1 is a valid score, not a "missing" marker)
+        if (last == null || current != last) {
+            // Also follow the score down (/scoreboard, another reset): otherwise no pulse until it exceeds the old value
+            this.lastScores.put(player, current);
+            markDirty();
+        }
+        return last == null ? 0 : Math.max(0, (long) current - last);
+    }
 
-        MinecraftServer server = this.world.getServer();
-        if (server == null) return;
-        Scoreboard scoreboard = server.getScoreboard();
-        scoreboard.removeObjective(this.cachedObjective);
+    public void pauseGoal() {
+        if (removeObjective()) markDirty();
+    }
+
+    /**
+     * Removes this base's objective: the cached one, or the one saved under its name (a base paused or broken just
+     * after its chunk loaded has not cached it yet).
+     * @return whether an objective was removed
+     */
+    private boolean removeObjective() {
+        if (this.world == null || this.world.isClient || this.world.getServer() == null) return false;
+        Scoreboard scoreboard = this.world.getServer().getScoreboard();
+        ScoreboardObjective objective = this.cachedObjective != null ? this.cachedObjective
+                : scoreboard.getNullableObjective(getObjectiveName());
         this.cachedObjective = null;
-        markDirty();
+        if (objective == null || scoreboard.getNullableObjective(objective.getName()) != objective) return false;
+        scoreboard.removeObjective(objective);
+        return true;
     }
 
     public void resumeGoal() {
@@ -339,28 +426,23 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     }
 
     public void resetGoal() {
-        if (this.goal.isEmpty() || this.selector.isEmpty()) return;
-        if (this.cachedObjective == null) setupScoreboard();
-        if (this.cachedObjective == null) return;
+        if (this.goal.isEmpty() || this.selector.isEmpty() || this.world == null || this.world.isClient) return;
+        // Paused (unpowered): no objective to clear, the remembered scores are reset and restored as 0 on resume
+        if (this.cachedObjective == null && isPowered()) setupScoreboard();
 
         List<ServerPlayerEntity> players = getTrackedPlayers(true);
         if (players.isEmpty()) return;
 
         for (ServerPlayerEntity player : players) {
-            var scoreboard = player.getServer().getScoreboard();
-            scoreboard.removeScore(player, this.cachedObjective);
+            if (this.cachedObjective != null) player.getServer().getScoreboard().removeScore(player, this.cachedObjective);
             this.lastScores.put(player.getUuid(), 0);
         }
+        this.totalScoreTick = Long.MIN_VALUE;
         markDirty();
-        this.cacheSelectedPlayers = resolveSelector(this.world.getServer(), this.selector);
     }
 
     public void removeGoal() {
-        if (this.cachedObjective != null && this.world != null && !this.world.isClient) {
-            Scoreboard scoreboard = this.world.getServer().getScoreboard();
-            scoreboard.removeObjective(this.cachedObjective);
-            this.cachedObjective = null;
-        }
+        removeObjective();
     }
 
     public void setRedstoneOutput(int value) {

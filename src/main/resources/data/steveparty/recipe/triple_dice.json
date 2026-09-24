@@ -1,7 +1,29 @@
 {
   "type": "minecraft:crafting_shapeless",
   "category": "equipment",
-  "ingredients": ["steveparty:default_dice","steveparty:default_dice","steveparty:default_dice"],
+  "ingredients": [
+    {
+      "fabric:type": "fabric:components",
+      "base": "steveparty:default_dice",
+      "components": {
+        "!steveparty:dice-faces": {}
+      }
+    },
+    {
+      "fabric:type": "fabric:components",
+      "base": "steveparty:default_dice",
+      "components": {
+        "!steveparty:dice-faces": {}
+      }
+    },
+    {
+      "fabric:type": "fabric:components",
+      "base": "steveparty:default_dice",
+      "components": {
+        "!steveparty:dice-faces": {}
+      }
+    }
+  ],
   "result": {
     "id": "steveparty:triple_dice",
     "count": 1

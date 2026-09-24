@@ -30,7 +30,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         super(settings);
     }
 
-    // The wrench takes plastic pieces (plastic blocks, studs) apart in one hit
+    // The wrench takes anything made of plastic (the steveparty:plastic tag) apart in one hit
     @Override
     public float getMiningSpeed(ItemStack stack, BlockState state) {
         if (state.isIn(Switchables.PLASTIC)) return PLASTIC_MINING_SPEED;

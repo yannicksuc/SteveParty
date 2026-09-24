@@ -8,6 +8,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -48,8 +49,10 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
 
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
-        return this.getDefaultState()
+        BlockState state = this.getDefaultState()
                 .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+        // Placed against an already powered back: counting from the start (neighbor updates only see later changes)
+        return state.with(POWERED, isReceivingPowerFromSouth(ctx.getWorld(), ctx.getBlockPos(), state));
     }
 
     @Override
@@ -76,20 +79,19 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack mainHandStack = player.getMainHandStack();
+        // Same result as the server on the client (arm swing, no item use behind the screen)
+        if (world.isClient) return mainHandStack.getItem() instanceof WrenchItem ? ActionResult.SUCCESS : ActionResult.PASS;
 
-        if (!world.isClient) {
-            BlockEntity blockEntity = world.getBlockEntity(pos);
-            if (blockEntity instanceof GoalPoleBaseBlockEntity goalPoleBaseBlockEntity) {
-                if (mainHandStack.getItem() instanceof WrenchItem) {
-                    goalPoleBaseBlockEntity.openScreen((ServerPlayerEntity) player);
-                    return ActionResult.SUCCESS;
-                } else {
-                    // Show action bar message
-                    player.sendMessage(
-                            Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD),
-                            true // action bar
-                    );
-                }
+        if (world.getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity goalPoleBaseBlockEntity) {
+            if (mainHandStack.getItem() instanceof WrenchItem) {
+                goalPoleBaseBlockEntity.openScreen((ServerPlayerEntity) player);
+                return ActionResult.SUCCESS;
+            } else if (!(mainHandStack.getItem() instanceof BlockItem)) {
+                // Show action bar message (not while building on the base, e.g. placing the pole on it)
+                player.sendMessage(
+                        Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD),
+                        true // action bar
+                );
             }
         }
 
@@ -178,7 +180,7 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
 
     @Override
     public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (type == ModBlockEntities.GOAL_POLE_BASE_ENTITY) {
+        if (!world.isClient && type == ModBlockEntities.GOAL_POLE_BASE_ENTITY) {
             return (world1, pos, state1, blockEntity) -> ((GoalPoleBaseBlockEntity) blockEntity).tick(world1, pos, state1, blockEntity);
         }
         return null;

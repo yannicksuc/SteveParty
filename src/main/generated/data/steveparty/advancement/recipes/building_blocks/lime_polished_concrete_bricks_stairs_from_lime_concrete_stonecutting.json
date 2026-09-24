@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:lime_polished_concrete_bricks_stairs_from_lime_concrete_stonecutting"
+        "recipe": "steveparty:lime_polished_concrete_bricks_stairs_from_lime_concrete_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:lime_polished_concrete_bricks_stairs_from_lime_concrete_stonecutting"
+      "steveparty:lime_polished_concrete_bricks_stairs_from_lime_concrete_stonecutting"
     ]
   }
 }

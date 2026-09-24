@@ -72,6 +72,8 @@ public class ModItems {
     public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
+    /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
+    public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(PARTY_CONTROLLER))
@@ -201,6 +203,7 @@ public class ModItems {
             itemGroup.add(STENCIL_MAKER);
             itemGroup.add(HOP_SWITCH);
             itemGroup.add(PLASTIC_PELLETS);
+            itemGroup.add(PLASTIC_STICK);
             for (Block plasticBlock : ModBlocks.PLASTIC_BLOCKS) {
                 itemGroup.add(plasticBlock);
             }
@@ -209,6 +212,9 @@ public class ModItems {
             }
             for (Block fence : ModBlocks.PLASTIC_FENCES) {
                 itemGroup.add(fence);
+            }
+            for (Block[] shapes : new Block[][]{ModBlocks.PLASTIC_SLABS, ModBlocks.PLASTIC_STAIRS, ModBlocks.PLASTIC_WALLS}) {
+                for (Block shape : shapes) itemGroup.add(shape);
             }
             itemGroup.add(GOAL_POLE_BASE);
             itemGroup.add(GOAL_POLE);

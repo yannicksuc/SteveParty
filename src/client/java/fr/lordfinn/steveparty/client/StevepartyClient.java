@@ -6,6 +6,8 @@ import fr.lordfinn.steveparty.client.model.sign.MaterialSprites;
 import fr.lordfinn.steveparty.client.model.sign.StencilSignModelPlugin;
 import fr.lordfinn.steveparty.client.screens.StencilGunScreen;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.items.custom.FlagItem;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import net.minecraft.block.Block;
 
@@ -20,6 +22,7 @@ import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaEntityRenderer;
 import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
 import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
+import fr.lordfinn.steveparty.client.model.BrickShadeModelPlugin;
 import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
@@ -142,6 +145,7 @@ public class StevepartyClient implements ClientModInitializer {
         PayloadReceivers.initialize();
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
+        ModelLoadingPlugin.register(new BrickShadeModelPlugin());
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
         StencilResourceManager.registerReloadListener();
         MaterialSprites.registerReloadListener();
@@ -175,6 +179,14 @@ public class StevepartyClient implements ClientModInitializer {
             StencilGunItem.Load load = StencilGunItem.selectedLoad(stack);
             return load.color() == null ? 0xFF6B6B6B : 0xFF000000 | load.color().getEntityColor();
         }, ModItems.STENCIL_GUN);
+
+        // Dyed flag: its own model (greyscale cloth, the stick untinted), the cloth tinted with the flag's colour
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.FLAG, Steveparty.id("dyed"),
+                (stack, world, entity, seed) -> FlagItem.getColor(stack) == FlagItem.NO_COLOR ? 0f : 1f);
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+            int color = FlagItem.getColor(stack);
+            return tintIndex != 0 || color == FlagItem.NO_COLOR ? 0xFFFFFFFF : 0xFF000000 | color;
+        }, ModItems.FLAG);
 
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
@@ -228,6 +240,8 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.TRADING_STALL, TradingStallBlockEntityRenderer::new);
 
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.GOAL_POLE, RenderLayer.getCutout());
+        // The flag is drawn by the block entity renderer (it ripples in the wind); the baked model is the pole only
+        BlockEntityRendererFactories.register(ModBlockEntities.GOAL_POLE_ENTITY, GoalPoleFlagRenderer::new);
 
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);

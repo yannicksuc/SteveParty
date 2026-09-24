@@ -69,7 +69,7 @@ public class PlotBlock extends WallMountedBlock implements Waterloggable {
     @Override
     protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
         // Also when dry: a stud standing in a bubble column carries the column on above itself
-        world.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+        PlasticBlock.scheduleStep(world, world, pos, this);
     }
 
     @Override
@@ -78,11 +78,11 @@ public class PlotBlock extends WallMountedBlock implements Waterloggable {
     }
 
     @Nullable
-    private static BlockPos step(BlockState state, ServerWorld world, BlockPos pos) {
-        if (!state.get(WATERLOGGED) || PlasticBlock.isChained(world, pos)) return null;
+    private static BlockPos step(BlockState state, ServerWorld world, BlockPos pos, PlasticBlock.Flow flow) {
+        if (!state.get(WATERLOGGED) || PlasticBlock.isHeld(world, pos, flow.current())) return null;
         BlockPos target;
         BlockState moved;
-        if (PlasticBlock.getCurrent(world, pos) == PlasticBlock.Current.DOWN) {
+        if (flow.current() == PlasticBlock.Current.DOWN) {
             target = pos.down();
             if (!PlasticBlock.canSinkInto(world.getBlockState(target))) {
                 turn(state, world, pos, BlockFace.FLOOR); // lies on the magma that pulled it down
@@ -102,7 +102,7 @@ public class PlotBlock extends WallMountedBlock implements Waterloggable {
             }
         }
         // Its water stays behind as a source: no water created or lost; what stands on it rides along
-        return PlasticBlock.moveWithRiders(world, pos, target, moved) ? target : PlasticBlock.retry(world, pos, state);
+        return PlasticBlock.moveWithRiders(world, pos, target, moved, flow) ? target : PlasticBlock.retry(world, pos, state, flow);
     }
 
     /** Turns the stud in place (it keeps its water). */
@@ -120,7 +120,7 @@ public class PlotBlock extends WallMountedBlock implements Waterloggable {
                                                    BlockPos pos, Direction direction, BlockPos neighborPos,
                                                    BlockState neighborState, Random random) {
         if (state.get(WATERLOGGED)) tickView.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
-        tickView.scheduleBlockTick(pos, this, PlasticBlock.getDelay(world, pos));
+        PlasticBlock.scheduleStep(tickView, world, pos, this);
         return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
     }
 

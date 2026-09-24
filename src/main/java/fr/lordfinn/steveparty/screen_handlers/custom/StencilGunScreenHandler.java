@@ -19,6 +19,9 @@ import java.util.List;
  * Loading screen of the stencil gun held by the player: a row of 9 stencil slots, a row of 9 dye slots, and the
  * player inventory. The gun is found again in its inventory slot at every change (never held as a stale copy) and
  * cannot be moved while the screen is open; the screen closes if it goes away.
+ * <p>
+ * Server side, only the very stack the screen was opened on counts as the gun: another gun swapped into that slot
+ * (off-hand swap key, a modified client) must never receive this gun's contents.
  */
 public class StencilGunScreenHandler extends ScreenHandler {
     /** {@link #gunSlot} value of a gun held in the off hand. */
@@ -29,6 +32,8 @@ public class StencilGunScreenHandler extends ScreenHandler {
 
     private final PlayerInventory playerInventory;
     private final int gunSlot;
+    /** The gun stack the screen was opened on (see {@link #gun()}). */
+    private final ItemStack openedGun;
     private final SimpleInventory loaded = new SimpleInventory(StencilGunItem.SIZE);
     private boolean loading;
 
@@ -37,6 +42,8 @@ public class StencilGunScreenHandler extends ScreenHandler {
         super(ModScreensHandlers.STENCIL_GUN_SCREEN_HANDLER, syncId);
         this.playerInventory = playerInventory;
         this.gunSlot = gunSlot;
+        ItemStack found = gunSlot < 0 ? ItemStack.EMPTY : playerInventory.getStack(gunSlot);
+        this.openedGun = found.getItem() instanceof StencilGunItem ? found : ItemStack.EMPTY;
 
         ItemStack gun = gun();
         if (!gun.isEmpty()) {
@@ -64,10 +71,21 @@ public class StencilGunScreenHandler extends ScreenHandler {
         }
     }
 
+    /**
+     * @return the gun being loaded, or EMPTY if it is no longer in its slot. On the server it must be the very stack
+     * the screen was opened on; the client's copy of the slot is replaced by every sync, so it only checks the item.
+     */
     private ItemStack gun() {
         if (gunSlot < 0) return ItemStack.EMPTY;
         ItemStack stack = playerInventory.getStack(gunSlot);
-        return stack.getItem() instanceof StencilGunItem ? stack : ItemStack.EMPTY;
+        if (!(stack.getItem() instanceof StencilGunItem)) return ItemStack.EMPTY;
+        if (!playerInventory.player.getWorld().isClient && stack != openedGun) return ItemStack.EMPTY;
+        return stack;
+    }
+
+    /** @return the slot of the player inventory holding the gun ({@link #OFF_HAND_SLOT} for the off hand). */
+    public int getGunSlot() {
+        return gunSlot;
     }
 
     private void save() {
@@ -88,6 +106,8 @@ public class StencilGunScreenHandler extends ScreenHandler {
     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
         // The gun itself stays where it is (hotbar number keys included)
         if (actionType == SlotActionType.SWAP && button == gunSlot) return;
+        // Gun gone (dropped, swapped away) but the screen not closed yet: its contents can no longer be saved
+        if (gun().isEmpty()) return;
         super.onSlotClick(slotIndex, button, actionType, player);
     }
 

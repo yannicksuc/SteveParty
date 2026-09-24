@@ -11,9 +11,8 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -22,9 +21,8 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -37,7 +35,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
-import static fr.lordfinn.steveparty.sounds.ModSounds.GOAL_POLE_REACH;
 
 public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityProvider {
 
@@ -74,16 +71,15 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock,
                                   @Nullable WireOrientation wireOrientation, boolean notify) {
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
-        updateOnBaseProperty(state, world, pos);
-        updateTopProperty(state, world, pos);
+        // Both properties in one state: two separate updates from the same old state would undo each other
+        BlockState updated = state.with(ON_BASE, isOnBase(world, pos)).with(TOP, isTop(world, pos));
+        if (updated != state) world.setBlockState(pos, updated);
 
-        // Update cache if neighbor below changed
-        if (sourceBlock instanceof GoalPoleBlock || sourceBlock instanceof GoalPoleBaseBlock) {
-            BlockEntity be = world.getBlockEntity(pos);
-            if (be instanceof GoalPoleBlockEntity poleEntity) {
-                poleEntity.updateCachedBase();
-                poleEntity.propagateCachedBaseUpwards();
-            }
+        // Refresh the cached base of this pole and the ones above. Not only when the source is a pole or a base:
+        // the source is the block that was there BEFORE the change, so a base or a pole placed below reports air
+        if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity poleEntity) {
+            poleEntity.updateCachedBase();
+            poleEntity.propagateCachedBaseUpwards();
         }
     }
 
@@ -95,47 +91,34 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         return !(world.getBlockState(pos.up()).getBlock() instanceof GoalPoleBlock);
     }
 
-    private void updateOnBaseProperty(BlockState state, World world, BlockPos pos) {
-        boolean isOnBase = isOnBase(world, pos);
-        if (state.get(ON_BASE) != isOnBase) {
-            world.setBlockState(pos, state.with(ON_BASE, isOnBase));
-        }
-    }
-
-    private void updateTopProperty(BlockState state, World world, BlockPos pos) {
-        boolean isTop = isTop(world, pos);
-        if (state.get(TOP) != isTop) {
-            world.setBlockState(pos, state.with(TOP, isTop));
-        }
-    }
-
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack stack = player.getStackInHand(Hand.MAIN_HAND);
-        if (world.isClient) return ActionResult.PASS;
+        boolean shears = stack.isOf(Items.SHEARS) && state.get(FLAG);
+        boolean flag = stack.getItem() instanceof FlagItem;
+        boolean wrench = stack.getItem() instanceof WrenchItem;
+        // A dye on the flag: only when it changes the colour (the colour is synced, so the client knows too)
+        boolean dye = stack.getItem() instanceof DyeItem dyeItem && state.get(FLAG)
+                && world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole
+                && pole.getFlagColor() != FlagItem.dyeColor(dyeItem.getColor());
+        // The client predicts the same result as the server (arm swing, no item use behind it)
+        if (world.isClient) return shears || flag || wrench || dye ? ActionResult.SUCCESS : ActionResult.PASS;
 
-        if (stack.isOf(Items.SHEARS) && state.get(FLAG)) {
+        if (dye) {
+            return handleDyeUse(world, pos, player, stack, ((DyeItem) stack.getItem()).getColor());
+        }
+
+        if (shears) {
             return handleShearsUse(world, pos, state, player, stack);
         }
 
-        if (stack.getItem() instanceof FlagItem) {
+        if (flag) {
             return handleFlagUse(world, pos, state, player, stack, hit);
         }
 
-        if (stack.getItem() instanceof WrenchItem) {
-            if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity goalPoleBlockEntity) {
-                if (stack.getItem() instanceof WrenchItem) {
-                    // Open the screen
-                    goalPoleBlockEntity.openScreen((ServerPlayerEntity) player);
-                    return ActionResult.SUCCESS;
-                } else {
-                    // Send action bar message if not using wrench
-                    player.sendMessage(
-                            Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD),
-                            true
-                    );
-                }
-            }
+        if (wrench && world.getBlockEntity(pos) instanceof GoalPoleBlockEntity goalPoleBlockEntity) {
+            goalPoleBlockEntity.openScreen((ServerPlayerEntity) player);
+            return ActionResult.SUCCESS;
         }
 
         return ActionResult.PASS;
@@ -143,7 +126,8 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
 
     @Override
     public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (type == ModBlockEntities.GOAL_POLE_ENTITY) {
+        // Server only: the pole computes its comparator output and who stands on it; the client has nothing to tick
+        if (!world.isClient && type == ModBlockEntities.GOAL_POLE_ENTITY) {
             return (world1, pos, state1, blockEntity) -> ((GoalPoleBlockEntity) blockEntity).tick(world1, pos, state1, blockEntity);
         }
         return null;
@@ -178,9 +162,23 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         entity.handleFallDamage(fallDistance, 0.0F, world.getDamageSources().fall()); // 0.0F = aucun dégât
     }
 
+    private ActionResult handleDyeUse(World world, BlockPos pos, PlayerEntity player, ItemStack dye, DyeColor color) {
+        if (!(world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole)) return ActionResult.PASS;
+        pole.setFlagColor(FlagItem.dyeColor(color));
+        if (!player.isCreative()) dye.decrement(1);
+        world.playSound(null, pos, SoundEvents.ITEM_DYE_USE, SoundCategory.BLOCKS, 1f, 1f);
+        return ActionResult.SUCCESS;
+    }
+
     private ActionResult handleShearsUse(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack shears) {
+        // The flag keeps its colour as an item; the pole forgets it
+        ItemStack dropped = new ItemStack(ModItems.FLAG);
+        if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole) {
+            dropped = pole.createFlagStack();
+            pole.setFlagColor(FlagItem.NO_COLOR);
+        }
         world.setBlockState(pos, state.with(FLAG, false), 3);
-        ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(ModItems.FLAG));
+        ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), dropped);
         if (!player.isCreative()) shears.damage(1, player, EquipmentSlot.MAINHAND);
         world.playSound(null, pos, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.BLOCKS, 1f, 1f);
         return ActionResult.SUCCESS;
@@ -188,24 +186,31 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
 
     private ActionResult handleFlagUse(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack flag, BlockHitResult hit) {
         if (!state.get(FLAG)) placeFlag(world, pos, state, player, flag, hit);
-        else rotateFlag(world, pos, state, hit);
+        else rotateFlag(world, pos, state, player, hit);
         return ActionResult.SUCCESS;
     }
 
     private void placeFlag(World world, BlockPos pos, BlockState state, PlayerEntity player, ItemStack flag, BlockHitResult hit) {
-        Direction hitSide = hit.getSide();
-        BlockState newState = (hitSide != Direction.UP && hitSide != Direction.DOWN)
-                ? state.with(FLAG, true).with(FACING, hitSide.rotateYClockwise())
-                : state.with(FLAG, true);
-
-        world.setBlockState(pos, newState, 3);
+        // The colour first: the block update then carries it to the clients in the same packet batch
+        if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole) pole.setFlagColor(FlagItem.getColor(flag));
+        world.setBlockState(pos, state.with(FLAG, true).with(FACING, flagFacing(hit, player)), 3);
         if (!player.isCreative()) flag.decrement(1);
         world.playSound(null, pos, SoundEvents.BLOCK_WOOL_FALL, SoundCategory.BLOCKS, 1f, 1f);
     }
 
-    private void rotateFlag(World world, BlockPos pos, BlockState state, BlockHitResult hit) {
-        world.setBlockState(pos, state.with(FACING, hit.getSide().rotateYClockwise()), 3);
+    private void rotateFlag(World world, BlockPos pos, BlockState state, PlayerEntity player, BlockHitResult hit) {
+        world.setBlockState(pos, state.with(FACING, flagFacing(hit, player)), 3);
         world.playSound(null, pos, SoundEvents.BLOCK_WOOL_STEP, SoundCategory.BLOCKS, 0.8f, 1f);
+    }
+
+    /**
+     * Facing of a flag put on the clicked side. The top and bottom faces (the top of the pole, its ball) have no
+     * horizontal rotation: the side facing the player is used instead (rotating UP/DOWN threw an exception).
+     */
+    public static Direction flagFacing(BlockHitResult hit, PlayerEntity player) {
+        Direction side = hit.getSide();
+        if (side.getAxis() == Direction.Axis.Y) side = player.getHorizontalFacing().getOpposite();
+        return side.rotateYClockwise();
     }
 
     @Override
@@ -235,12 +240,16 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
 
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        if (state.getBlock() != newState.getBlock() && state.get(FLAG)) {
-            ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(ModItems.FLAG));
-            // notify pole above
+        if (state.getBlock() != newState.getBlock()) {
+            if (state.get(FLAG)) {
+                ItemStack flag = world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole ? pole.createFlagStack() : new ItemStack(ModItems.FLAG);
+                ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), flag);
+            }
+            // The poles above are no longer connected to the base (with or without a flag on this one)
             BlockEntity beAbove = world.getBlockEntity(pos.up());
             if (beAbove instanceof GoalPoleBlockEntity poleAbove) {
                 poleAbove.updateCachedBase();
+                poleAbove.propagateCachedBaseUpwards();
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);

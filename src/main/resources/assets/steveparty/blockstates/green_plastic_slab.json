@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "steveparty:block/green_plastic_slab"
+    },
+    "type=double": {
+      "model": "steveparty:block/green_plastic_block"
+    },
+    "type=top": {
+      "model": "steveparty:block/green_plastic_slab_top"
+    }
+  }
+}

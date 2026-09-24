@@ -1,0 +1,7 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "steveparty:item/flag_dyeable",
+    "layer1": "steveparty:item/flag_dyeable_stick"
+  }
+}

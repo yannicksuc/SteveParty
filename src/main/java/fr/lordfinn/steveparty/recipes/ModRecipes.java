@@ -12,6 +12,9 @@ public class ModRecipes {
             Steveparty.id("material_shaped"), new MaterialShapedRecipe.Serializer());
     public static final RecipeSerializer<StencilCopyRecipe> STENCIL_COPY = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_stencil_copy"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(StencilCopyRecipe::new));
+    /** Flag + dyes: a dyed flag (mixed like leather armour). */
+    public static final RecipeSerializer<FlagDyeRecipe> FLAG_DYE = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("crafting_special_flag_dye"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(FlagDyeRecipe::new));
 
     public static void initialize() {
     }

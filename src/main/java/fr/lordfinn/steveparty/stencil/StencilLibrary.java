@@ -16,7 +16,6 @@ import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,8 +46,13 @@ public record StencilLibrary(List<Entry> entries) {
             return StencilShape.sanitize(StencilShape.fromList(shape));
         }
 
+        /** Compared in place: called for every entry, every few seconds, for every stencil carried. */
         boolean is(byte[] other) {
-            return Arrays.equals(StencilShape.fromList(shape), other);
+            if (other == null || other.length != shape.size()) return false;
+            for (int i = 0; i < other.length; i++) {
+                if (shape.get(i) != other[i]) return false;
+            }
+            return true;
         }
     }
 
@@ -121,14 +125,21 @@ public record StencilLibrary(List<Entry> entries) {
         return new StencilLibrary(list);
     }
 
-    /** @return this library with {@code shape} (added if needed) marked or unmarked as a favourite. */
+    /**
+     * @return this library with {@code shape} (added if needed) marked or unmarked as a favourite; this same
+     * library if nothing changed (a blank shape, a full library)
+     */
     public StencilLibrary toggleFavorite(byte[] shape) {
         StencilLibrary library = with(shape);
         List<Entry> list = new ArrayList<>(library.entries);
+        boolean toggled = false;
         for (int i = 0; i < list.size(); i++) {
             Entry entry = list.get(i);
-            if (entry.is(shape)) list.set(i, new Entry(entry.shape(), !entry.favorite()));
+            if (entry.is(shape)) {
+                list.set(i, new Entry(entry.shape(), !entry.favorite()));
+                toggled = true;
+            }
         }
-        return new StencilLibrary(list);
+        return toggled ? new StencilLibrary(list) : library;
     }
 }

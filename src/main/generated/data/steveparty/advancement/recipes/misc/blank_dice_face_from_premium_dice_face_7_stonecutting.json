@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:blank_dice_face_from_premium_dice_face_7_stonecutting"
+        "recipe": "steveparty:blank_dice_face_from_premium_dice_face_7_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:blank_dice_face_from_premium_dice_face_7_stonecutting"
+      "steveparty:blank_dice_face_from_premium_dice_face_7_stonecutting"
     ]
   }
 }

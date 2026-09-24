@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_plastic_blocks": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "#steveparty:plastic_blocks"
+          }
+        ]
+      }
+    },
+    "has_plastic_pellets": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:plastic_pellets"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "steveparty:plastic_road_sign"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_plastic_blocks",
+      "has_plastic_pellets",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:plastic_road_sign"
+    ]
+  }
+}

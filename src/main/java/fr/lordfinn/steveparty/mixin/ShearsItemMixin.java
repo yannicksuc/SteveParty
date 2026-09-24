@@ -26,7 +26,8 @@ import java.util.stream.Stream;
 
 @Mixin(ShearsItem.class)
 public abstract class ShearsItemMixin {
-    // Plastic only: the switchable tag can be extended with any block (datapacks, server config)
+    // Plastic only (Switchables.PLASTIC, spelled out: ShearsItem is loaded during the vanilla bootstrap, before the mod
+    // classes): the switchable tag can be extended with any block (datapacks, server config)
     private static final TagKey<Block> STEVEPARTY$PLASTIC = TagKey.of(RegistryKeys.BLOCK, Identifier.of(Steveparty.MOD_ID, "plastic"));
 
     @Inject(method = "postMine", at = @At("HEAD"), cancellable = true)

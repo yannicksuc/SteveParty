@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:light_blue_plastic_stud_from_dyeing"
+        "recipe": "steveparty:light_blue_plastic_stud_from_dyeing"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:light_blue_plastic_stud_from_dyeing"
+      "steveparty:light_blue_plastic_stud_from_dyeing"
     ]
   }
 }

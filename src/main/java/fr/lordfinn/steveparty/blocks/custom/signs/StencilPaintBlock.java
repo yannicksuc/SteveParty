@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.blocks.custom.signs;
 
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.enums.Orientation;
@@ -32,6 +33,8 @@ import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
 
 /**
  * Paint sprayed through a stencil on the face of a full block (wall, floor or ceiling). It is a thin layer in the
@@ -151,14 +154,18 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
     /**
      * Sprays {@code shape} in {@code color} on the {@code side} face of the block at {@code target}: repaints the
      * paint already there, or adds paint in front of the face if it is a full face with room in front of it.
+     * Nothing is painted (and nothing should be used up) with a blank stencil, or when the same fresh symbol in the
+     * same colour is already there.
      *
      * @param up the player's horizontal facing: the symbol is sprayed the right way up for them
      * @return true if something was painted
      */
     public static boolean spray(World world, BlockPos target, Direction side, byte[] shape, DyeColor color, Direction up) {
+        if (StencilShape.isBlank(shape)) return false;
         BlockState targetState = world.getBlockState(target);
         BlockPos pos;
-        if (targetState.isOf(ModBlocks.STENCIL_PAINT)) {
+        boolean onPaint = targetState.isOf(ModBlocks.STENCIL_PAINT);
+        if (onPaint) {
             pos = target;
         } else {
             if (!targetState.isSideSolidFullSquare(world, target, side)) return false;
@@ -166,11 +173,12 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
         }
         BlockState current = world.getBlockState(pos);
         if (current.isOf(ModBlocks.STENCIL_PAINT)) {
-            if (world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas) {
-                if (!world.isClient) canvas.setSymbol(shape, color);
-                return true;
-            }
-            return false;
+            // In front of the face, but sprayed on another block's face (the floor in front of a wall...): not this one's
+            if (!onPaint && getFacing(current) != side) return false;
+            if (!(world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas)) return false;
+            if (canvas.getColor() == color && canvas.getFade() == 0 && Arrays.equals(canvas.getShape(), StencilShape.sanitize(shape))) return false;
+            if (!world.isClient) canvas.setSymbol(shape, color);
+            return true;
         }
         if (!current.isReplaceable() || !current.getFluidState().isEmpty()) return false;
         // Read from where the player stands: on a ceiling, looking up, the top of the view is behind them
