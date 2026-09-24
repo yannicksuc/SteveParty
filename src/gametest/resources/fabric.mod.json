@@ -18,7 +18,8 @@
       "fr.lordfinn.steveparty.gametest.DecisionsGameTests",
       "fr.lordfinn.steveparty.gametest.StencilGameTests",
       "fr.lordfinn.steveparty.gametest.TokenSpellGameTests",
-      "fr.lordfinn.steveparty.gametest.TokenBaseGameTests"
+      "fr.lordfinn.steveparty.gametest.TokenBaseGameTests",
+      "fr.lordfinn.steveparty.gametest.GoalPoleGameTests"
     ]
   },
   "depends": {
