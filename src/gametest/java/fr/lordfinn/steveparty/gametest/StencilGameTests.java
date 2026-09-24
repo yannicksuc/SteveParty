@@ -14,6 +14,7 @@ import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
+import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilLibrary;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -599,6 +600,7 @@ public class StencilGameTests implements FabricGameTest {
         library = library.without(pattern("coin"));
         context.assertTrue(!library.contains(pattern("coin")), "removed");
         context.assertTrue(StencilLibrary.EMPTY.with(StencilShape.blank()).entries().isEmpty(), "blank stencils are not kept");
+        context.assertTrue(library.toggleFavorite(StencilShape.blank()) == library, "nothing to favourite: same library, nothing synced");
 
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         try {
@@ -766,6 +768,221 @@ public class StencilGameTests implements FabricGameTest {
         StencilCanvasBlockEntity sign = at(context, SIGN);
         context.assertTrue(Arrays.equals(sign.getShape(), pattern("coin")) && sign.getColor() == DyeColor.RED, "red coin sprayed");
         context.assertEquals(StencilGunItem.contents(player.getMainHandStack()).get(StencilGunItem.STENCIL_SLOTS).getCount(), 1, "one red dye used from the gun");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilGunLoaderOnlyFillsTheGunItWasOpenedOn(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            ItemStack gunA = loadedGun();
+            ItemStack gunB = new ItemStack(ModItems.STENCIL_GUN);
+            player.getInventory().selectedSlot = 0;
+            player.setStackInHand(Hand.MAIN_HAND, gunA);
+            player.setStackInHand(Hand.OFF_HAND, gunB);
+            StencilGunScreenHandler handler = new StencilGunScreenHandler(1, player.getInventory(), 0);
+            handler.slots.get(1).setStack(stencil("boo"));
+            context.assertTrue(Arrays.equals(StencilItem.getShape(StencilGunItem.contents(gunA).get(1)), pattern("boo")), "loading fills the gun");
+
+            // The guns swap hands while the loader is open (off-hand swap key, a modified client)
+            player.setStackInHand(Hand.MAIN_HAND, gunB);
+            player.setStackInHand(Hand.OFF_HAND, gunA);
+            handler.slots.get(3).setStack(stencil("key"));
+            handler.onClosed(player);
+            context.assertTrue(StencilGunItem.contents(gunB).stream().allMatch(ItemStack::isEmpty), "the other gun gets nothing: " + StencilGunItem.contents(gunB));
+            context.assertTrue(StencilGunItem.contents(gunA).get(3).isEmpty(), "the gun that went away is not changed either");
+            context.assertTrue(!handler.canUse(player), "the loader closes");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void destroyedStencilGunSpillsItsContents(TestContext context) {
+        ServerWorld world = context.getWorld();
+        Vec3d at = Vec3d.ofCenter(context.getAbsolutePos(new BlockPos(1, 2, 1)));
+        ItemEntity entity = new ItemEntity(world, at.x, at.y, at.z, loadedGun());
+        world.spawnEntity(entity);
+        entity.getStack().getItem().onItemEntityDestroyed(entity);
+        List<ItemEntity> spilled = world.getEntitiesByClass(ItemEntity.class, new net.minecraft.util.math.Box(at, at).expand(2),
+                item -> item != entity);
+        int stencils = spilled.stream().filter(item -> item.getStack().isOf(ModItems.STENCIL)).mapToInt(item -> item.getStack().getCount()).sum();
+        int dyes = spilled.stream().filter(item -> item.getStack().getItem() instanceof net.minecraft.item.DyeItem)
+                .mapToInt(item -> item.getStack().getCount()).sum();
+        context.assertEquals(stencils, 2, "both stencils spilled");
+        context.assertEquals(dyes, 3, "every dye spilled");
+        spilled.forEach(net.minecraft.entity.Entity::discard);
+        entity.discard();
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void blankStencilsPaintNothing(TestContext context) {
+        BlockPos wall = new BlockPos(1, 2, 1);
+        context.setBlockState(wall, Blocks.STONE);
+        ServerWorld world = context.getWorld();
+        context.assertTrue(!StencilPaintBlock.spray(world, context.getAbsolutePos(wall), Direction.SOUTH, StencilShape.blank(), DyeColor.RED, Direction.NORTH),
+                "no invisible paint");
+        context.expectBlock(Blocks.AIR, wall.south());
+        PlayerEntity player = survivalPlayer(context);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.STENCIL));
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.RED_DYE, 2));
+        useOn(context, player, wall, Direction.SOUTH);
+        context.assertEquals(player.getOffHandStack().getCount(), 2, "no dye used on a wall");
+
+        // On a sign: nothing painted, nothing used
+        context.setBlockState(SIGN.east(2).down(), Blocks.STONE);
+        context.setBlockState(SIGN.east(2), ModBlocks.TRAFFIC_SIGN);
+        context.getBlockState(SIGN.east(2)).onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, hit(context, SIGN.east(2), Direction.NORTH));
+        StencilCanvasBlockEntity sign = at(context, SIGN.east(2));
+        context.assertTrue(!sign.hasShape(), "no blank symbol on the sign");
+        context.assertEquals(player.getOffHandStack().getCount(), 2, "no dye used on a sign");
+
+        // A gun whose selected stencil is blank has no stencil
+        ItemStack gun = loadedGun();
+        List<ItemStack> contents = StencilGunItem.contents(gun);
+        contents.set(0, new ItemStack(ModItems.STENCIL));
+        StencilGunItem.setContents(gun, contents);
+        context.assertTrue(StencilGunItem.selectedLoad(gun).shape() == null, "blank stencil in the gun sprays nothing");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void sprayingTheSamePaintAgainUsesNoDye(TestContext context) {
+        BlockPos wall = new BlockPos(1, 2, 1);
+        context.setBlockState(wall, Blocks.STONE);
+        PlayerEntity player = survivalPlayer(context);
+        player.setStackInHand(Hand.MAIN_HAND, stencil("heart"));
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.RED_DYE, 3));
+        useOn(context, player, wall, Direction.SOUTH);
+        context.expectBlock(ModBlocks.STENCIL_PAINT, wall.south());
+        context.assertEquals(player.getOffHandStack().getCount(), 2, "one dye to spray");
+        useOn(context, player, wall, Direction.SOUTH);
+        context.assertEquals(player.getOffHandStack().getCount(), 2, "the same fresh paint again uses nothing");
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.BLUE_DYE, 1));
+        useOn(context, player, wall, Direction.SOUTH);
+        StencilCanvasBlockEntity paint = at(context, wall.south());
+        context.assertTrue(paint.getColor() == DyeColor.BLUE && player.getOffHandStack().isEmpty(), "another colour repaints it");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void sprayingAFaceLeavesOtherFacesPaintAlone(TestContext context) {
+        ServerWorld world = context.getWorld();
+        // Paint on the floor, right in front of the south face of a wall
+        BlockPos floor = new BlockPos(1, 1, 2), wall = new BlockPos(1, 2, 1);
+        context.setBlockState(floor, Blocks.STONE);
+        context.setBlockState(wall, Blocks.STONE);
+        StencilPaintBlock.spray(world, context.getAbsolutePos(floor), Direction.UP, pattern("coin"), DyeColor.YELLOW, Direction.NORTH);
+        context.expectBlock(ModBlocks.STENCIL_PAINT, floor.up());
+        context.assertTrue(!StencilPaintBlock.spray(world, context.getAbsolutePos(wall), Direction.SOUTH, pattern("heart"), DyeColor.RED, Direction.NORTH),
+                "spraying the wall does not repaint the floor");
+        StencilCanvasBlockEntity paint = at(context, floor.up());
+        context.assertTrue(Arrays.equals(paint.getShape(), pattern("coin")) && paint.getColor() == DyeColor.YELLOW, "floor paint unchanged");
+        // Sprayed on the paint itself, it is repainted
+        context.assertTrue(StencilPaintBlock.spray(world, context.getAbsolutePos(floor.up()), Direction.UP, pattern("heart"), DyeColor.RED, Direction.NORTH),
+                "repainted when aimed at");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void glowOnlySignKeepsNoSymbolThroughItsItem(TestContext context) {
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
+        StencilCanvasBlockEntity sign = at(context, SIGN);
+        sign.setGlowing(true);
+        ServerWorld world = context.getWorld();
+        BlockPos abs = context.getAbsolutePos(SIGN);
+        ItemStack drop = net.minecraft.block.Block.getDroppedStacks(world.getBlockState(abs), world, abs, sign).getFirst();
+        BlockPos other = SIGN.east(2);
+        context.setBlockState(other.down(), Blocks.STONE);
+        context.setBlockState(other, ModBlocks.TRAFFIC_SIGN);
+        StencilCanvasBlockEntity placed = at(context, other);
+        placed.readComponents(drop);
+        context.assertTrue(!placed.hasShape() && placed.isGlowing(), "glowing, and still no symbol");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void glowInkOnlyGoesOnPaint(TestContext context) {
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
+        StencilCanvasBlockEntity sign = at(context, SIGN);
+        PlayerEntity player = survivalPlayer(context);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.GLOW_INK_SAC, 3));
+        Runnable use = () -> context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND,
+                hit(context, SIGN, Direction.NORTH));
+        use.run();
+        context.assertTrue(!sign.isGlowing() && player.getMainHandStack().getCount() == 3, "no ink on a bare sign");
+        sign.setSymbol(pattern("coin"), null);
+        use.run();
+        context.assertTrue(!sign.isGlowing() && player.getMainHandStack().getCount() == 3, "no ink on an engraving");
+        sign.setColor(DyeColor.RED);
+        use.run();
+        context.assertTrue(sign.isGlowing() && player.getMainHandStack().getCount() == 2, "the paint glows");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilGunSpraysSignsFromTheOffHand(TestContext context) {
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
+        PlayerEntity player = survivalPlayer(context);
+        ItemStack gun = loadedGun();
+        player.setStackInHand(Hand.OFF_HAND, gun);
+        BlockState state = context.getBlockState(SIGN);
+        // The main hand pass leaves it to the off hand
+        state.onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        state.onUseWithItem(gun, context.getWorld(), player, Hand.OFF_HAND, hit(context, SIGN, Direction.NORTH));
+        StencilCanvasBlockEntity sign = at(context, SIGN);
+        context.assertTrue(Arrays.equals(sign.getShape(), pattern("coin")) && sign.getColor() == DyeColor.RED, "red coin sprayed");
+        context.assertEquals(StencilGunItem.contents(player.getOffHandStack()).get(StencilGunItem.STENCIL_SLOTS).getCount(), 1, "one dye used from the gun");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void signsGoInPlaceOfGrass(TestContext context) {
+        PlayerEntity player = survivalPlayer(context);
+        player.setPosition(Vec3d.of(context.getAbsolutePos(SIGN)).add(0, 0, -6));
+        for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+            context.setBlockState(SIGN.down(), Blocks.DIRT);
+            context.setBlockState(SIGN, Blocks.SHORT_GRASS);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
+            useOn(context, player, SIGN, Direction.NORTH);
+            BlockState placed = context.getBlockState(SIGN);
+            AbstractStencilSignBlock.Mount expected = sign == ModBlocks.TRAFFIC_SIGN ? AbstractStencilSignBlock.Mount.POST : AbstractStencilSignBlock.Mount.FLOOR;
+            context.assertTrue(placed.isOf(sign) && placed.get(AbstractStencilSignBlock.MOUNT) == expected, sign + " in place of grass: " + placed);
+            context.setBlockState(SIGN, Blocks.AIR);
+        }
+        // Sneaking on a fence under a snow layer: standing on it as on a post
+        context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
+        context.setBlockState(SIGN, Blocks.AIR);
+        player.setSneaking(true);
+        context.getWorld().setBlockState(context.getAbsolutePos(SIGN), Blocks.SNOW.getDefaultState(), net.minecraft.block.Block.FORCE_STATE);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModBlocks.WOODEN_PANEL));
+        useOn(context, player, SIGN, Direction.UP);
+        BlockState onPost = context.getBlockState(SIGN);
+        context.assertTrue(onPost.isOf(ModBlocks.WOODEN_PANEL) && onPost.get(AbstractStencilSignBlock.MOUNT) == AbstractStencilSignBlock.Mount.POST,
+                "on the post under the snow: " + onPost);
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void trafficSignOutlineFollowsItsBoard(TestContext context) {
+        BlockPos abs = context.getAbsolutePos(SIGN);
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        for (int rotation : new int[]{0, 4, 2}) {
+            context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN.getDefaultState().with(AbstractStencilSignBlock.ROTATION, rotation));
+            BlockState state = context.getBlockState(SIGN);
+            net.minecraft.util.shape.VoxelShape outline = state.getOutlineShape(context.getWorld(), abs);
+            net.minecraft.util.shape.VoxelShape collision = state.getCollisionShape(context.getWorld(), abs);
+            // The 2 block wide board sticks out of the block, along x facing south / north, along z facing west / east
+            net.minecraft.util.math.Direction.Axis across = rotation == 4 ? net.minecraft.util.math.Direction.Axis.Z : net.minecraft.util.math.Direction.Axis.X;
+            context.assertTrue(outline.getMin(across) < -0.3 && outline.getMax(across) > 1.3, "outline along the board at rotation " + rotation + ": " + outline.getBoundingBox());
+            context.assertTrue(!collision.isEmpty() && collision.getMin(across) >= 0 && collision.getMax(across) <= 1
+                    && collision.getMax(net.minecraft.util.math.Direction.Axis.Y) <= 1, "collision in its own block at rotation " + rotation);
+        }
         context.complete();
     }
 
