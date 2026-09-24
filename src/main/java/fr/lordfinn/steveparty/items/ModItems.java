@@ -207,6 +207,9 @@ public class ModItems {
             for (Block stud : ModBlocks.PLASTIC_STUDS) {
                 itemGroup.add(stud);
             }
+            for (Block fence : ModBlocks.PLASTIC_FENCES) {
+                itemGroup.add(fence);
+            }
             itemGroup.add(GOAL_POLE_BASE);
             itemGroup.add(GOAL_POLE);
             itemGroup.add(FLAG);

@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
+import fr.lordfinn.steveparty.blocks.custom.signs.WoodenCutoutPanelBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.WoodenPanelBlock;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilCanvasComponent;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
@@ -50,6 +52,12 @@ public class StencilSignItem extends BlockItem {
                     .getValue(PlasticRoadSignBlock.PLATE);
             if (plate == null) plate = PlasticRoadSignBlock.Plate.ROUND;
             tooltip.add(Text.translatable("tooltip.steveparty.plastic_road_sign.plate." + plate.asString()).formatted(Formatting.GRAY));
+        }
+        if (getBlock() instanceof WoodenPanelBlock || getBlock() instanceof WoodenCutoutPanelBlock || getBlock() instanceof PlasticRoadSignBlock) {
+            tooltip.add(Text.translatable("tooltip.steveparty.sign_post.usage").formatted(Formatting.DARK_GRAY));
+        }
+        if (getBlock() instanceof WoodenCutoutPanelBlock) {
+            tooltip.add(Text.translatable("tooltip.steveparty.cutout_panel.usage").formatted(Formatting.DARK_GRAY));
         }
         StencilCanvasComponent canvas = stack.get(ModComponents.STENCIL_CANVAS);
         if (canvas != null) {

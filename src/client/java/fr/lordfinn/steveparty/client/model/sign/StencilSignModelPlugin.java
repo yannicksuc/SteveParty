@@ -1,7 +1,6 @@
 package fr.lordfinn.steveparty.client.model.sign;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.Baker;
@@ -23,35 +22,26 @@ import java.util.function.Function;
  * Models, all editable in Blockbench (front of the sign facing north):
  * <ul>
  *     <li>{@code block/<wood>_traffic_sign}, {@code block/traffic_sign_generic} (oak placeholder textures);</li>
- *     <li>{@code block/wooden_panel} (post) + {@code block/wooden_panel_board};</li>
- *     <li>{@code block/wooden_cutout_panel} (post; the board is built from the stencil);</li>
- *     <li>{@code block/rock_sign} (stone; stone / smooth stone placeholders for sides / tops) +
- *     {@code block/rock_sign_pebbles_0..3};</li>
- *     <li>{@code block/plastic_road_sign} (pole) + {@code block/plastic_road_sign_plate_<plate>}
- *     (white plastic placeholder).</li>
+ *     <li>{@code block/wooden_panel}: the board (the post is the fence below);</li>
+ *     <li>{@code block/wooden_cutout_panel}: particles and item display only, the board is built from the stencil;</li>
+ *     <li>{@code block/rock_sign}: the stone standing upright (leant by the code), without its front which is built
+ *     from the engraving; stone / smooth stone placeholders for sides / tops; + {@code block/rock_sign_pebbles_0..3};</li>
+ *     <li>{@code block/plastic_road_sign}: particles and item display only, the plate is built from its shape.</li>
  * </ul>
  */
 public class StencilSignModelPlugin implements ModelLoadingPlugin {
     private static final Set<String> LEGACY_WOODS = Set.of("oak", "spruce", "birch", "jungle", "acacia", "dark_oak",
             "mangrove", "cherry", "crimson", "warped");
-    private static final Identifier PANEL_BOARD = Steveparty.id("block/wooden_panel_board");
     private static final int PEBBLE_SETS = 4;
-    private static final Identifier PLASTIC_PLACEHOLDER = Steveparty.id("block/plastic_block/connected/white_15");
 
     private static Identifier pebbles(int index) {
         return Steveparty.id("block/rock_sign_pebbles_" + index);
     }
 
-    private static Identifier plate(PlasticRoadSignBlock.Plate plate) {
-        return Steveparty.id("block/plastic_road_sign_plate_" + plate.asString());
-    }
-
     @Override
     public void initialize(Context context) {
         List<Identifier> extra = new ArrayList<>();
-        extra.add(PANEL_BOARD);
         for (int i = 0; i < PEBBLE_SETS; i++) extra.add(pebbles(i));
-        for (PlasticRoadSignBlock.Plate plate : PlasticRoadSignBlock.Plate.values()) extra.add(plate(plate));
         context.addModels(extra);
 
         context.modifyModelAfterBake().register((original, ctx) -> {
@@ -67,24 +57,20 @@ public class StencilSignModelPlugin implements ModelLoadingPlugin {
             }
             return switch (path) {
                 case "block/traffic_sign_generic", "item/traffic_sign" -> new StencilSignModels.TrafficSign(original, true);
-                case "block/wooden_panel", "item/wooden_panel" ->
-                        new StencilSignModels.Panel(original, baker.bake(PANEL_BOARD, ctx.settings()));
+                case "block/wooden_panel", "item/wooden_panel" -> new StencilSignModels.Panel(original);
                 case "block/wooden_cutout_panel", "item/wooden_cutout_panel" ->
                         new StencilSignModels.CutoutPanel(original, blockSprite(sprites, StencilSignModels.OAK_PLANKS));
                 case "block/rock_sign", "item/rock_sign" -> {
                     BakedModel[] sets = new BakedModel[PEBBLE_SETS];
                     for (int i = 0; i < PEBBLE_SETS; i++) sets[i] = baker.bake(pebbles(i), ctx.settings());
-                    yield new StencilSignModels.RockSign(original, sets);
+                    yield new StencilSignModels.RockSign(original, sets, blockSprite(sprites, StencilSignModels.ROCK_SIDE));
                 }
                 case "block/plastic_road_sign", "item/plastic_road_sign" -> {
-                    PlasticRoadSignBlock.Plate[] kinds = PlasticRoadSignBlock.Plate.values();
-                    BakedModel[] plates = new BakedModel[kinds.length];
-                    for (PlasticRoadSignBlock.Plate plate : kinds) plates[plate.ordinal()] = baker.bake(plate(plate), ctx.settings());
                     Sprite[] plastic = new Sprite[DyeColor.values().length];
                     for (DyeColor color : DyeColor.values()) {
-                        plastic[color.getId()] = blockSprite(sprites, Steveparty.id("block/plastic_block/connected/" + color.getName() + "_15"));
+                        plastic[color.getId()] = blockSprite(sprites, Steveparty.id("block/plastic_block/" + color.getName() + "_plastic_block"));
                     }
-                    yield new StencilSignModels.PlasticRoadSign(original, plates, plastic, PLASTIC_PLACEHOLDER);
+                    yield new StencilSignModels.PlasticRoadSign(original, plastic);
                 }
                 default -> original;
             };

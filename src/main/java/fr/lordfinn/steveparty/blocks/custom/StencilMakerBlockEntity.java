@@ -115,6 +115,18 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
         return this.stencil;
     }
 
+    /** Gives the stencil inside to the player (in hand if it is empty, else in the inventory, else dropped). */
+    public void takeOutStencil(PlayerEntity player) {
+        if (stencil.isEmpty()) return;
+        ItemStack taken = stencil.copy();
+        stencil = ItemStack.EMPTY;
+        stencilIn = false;
+        if (player.getMainHandStack().isEmpty()) player.setStackInHand(Hand.MAIN_HAND, taken);
+        else player.getInventory().offerOrDrop(taken);
+        playMetalSound(player.getWorld(), pos);
+        updateListeners();
+    }
+
     /** Saves the shape drawn in the editor on the stencil inside and shows it to everyone around. */
     public void setStencilShape(byte[] shape) {
         if (stencil.isEmpty() || !(stencil.getItem() instanceof StencilItem)) return;

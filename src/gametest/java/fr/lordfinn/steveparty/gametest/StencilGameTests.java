@@ -14,7 +14,9 @@ import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
+import fr.lordfinn.steveparty.stencil.StencilLibrary;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
+import net.minecraft.server.network.ServerPlayerEntity;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
@@ -249,6 +251,103 @@ public class StencilGameTests implements FabricGameTest {
         context.complete();
     }
 
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void cutOutPanelsAreCutWithAnAxe(TestContext context) {
+        context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
+        context.setBlockState(SIGN, ModBlocks.WOODEN_CUTOUT_PANEL);
+        PlayerEntity player = survivalPlayer(context);
+        StencilCanvasBlockEntity panel = at(context, SIGN);
+        // A dye does not cut
+        player.setStackInHand(Hand.MAIN_HAND, stencil("power_star"));
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.RED_DYE));
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertTrue(!panel.hasShape(), "not cut with a dye");
+        // Stencil + axe cuts, using the axe
+        player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.IRON_AXE));
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertTrue(Arrays.equals(panel.getShape(), pattern("power_star")), "cut as a star");
+        context.assertEquals(player.getOffHandStack().getDamage(), 1, "axe used");
+        // A wet sponge gives the whole board back
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WET_SPONGE));
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertTrue(!panel.hasShape(), "whole board again");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void postSignsStandOnFencesAndWalls(TestContext context) {
+        BlockPos abs = context.getAbsolutePos(SIGN);
+        for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL, ModBlocks.PLASTIC_ROAD_SIGN)) {
+            context.setBlockState(SIGN.down(), Blocks.STONE);
+            context.assertTrue(!sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " not on stone");
+            context.setBlockState(SIGN.down(), Blocks.SPRUCE_FENCE);
+            context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a fence");
+            context.setBlockState(SIGN.down(), Blocks.COBBLESTONE_WALL);
+            context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a wall");
+            context.setBlockState(SIGN.down(), ModBlocks.PLASTIC_FENCES[3]);
+            context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a plastic fence");
+        }
+        context.assertTrue(ModBlocks.PLASTIC_FENCES[3].getDefaultState().isIn(net.minecraft.registry.tag.BlockTags.FENCES), "plastic fences are fences");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void brushFadesASignThenScrubsIt(TestContext context) {
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN, ModBlocks.ROCK_SIGN);
+        StencilCanvasBlockEntity rock = at(context, SIGN);
+        rock.setSymbol(pattern("skull"), DyeColor.RED);
+        PlayerEntity player = survivalPlayer(context);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.BRUSH));
+        for (int step = 0; step <= StencilCanvasBlockEntity.MAX_FADE; step++) {
+            context.runAtTick(1 + step * (StencilCanvasBlockEntity.BRUSH_INTERVAL + 1), () -> context.getBlockState(SIGN)
+                    .onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH)));
+        }
+        context.runAtTick(2, () -> context.assertTrue(rock.getFade() == 1, "faded once"));
+        context.runAtTick(2 + (StencilCanvasBlockEntity.MAX_FADE + 1) * (StencilCanvasBlockEntity.BRUSH_INTERVAL + 1), () -> {
+            context.assertTrue(!rock.hasShape(), "scrubbed off");
+            context.assertTrue(player.getMainHandStack().getDamage() == StencilCanvasBlockEntity.MAX_FADE + 1, "one brush use per step");
+            context.complete();
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilMakerGivesItsStencilBack(TestContext context) {
+        context.setBlockState(SIGN, ModBlocks.STENCIL_MAKER);
+        PlayerEntity player = survivalPlayer(context);
+        player.setStackInHand(Hand.MAIN_HAND, stencil("key"));
+        StencilMakerBlockEntity maker = at(context, SIGN);
+        maker.swapStencil(player);
+        context.assertTrue(player.getMainHandStack().isEmpty(), "stencil in the maker");
+        maker.takeOutStencil(player);
+        context.assertTrue(maker.getStencil().isEmpty() && Arrays.equals(StencilItem.getShape(player.getMainHandStack()), pattern("key")),
+                "stencil back in hand");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilLibraryLearnsSavesAndFavourites(TestContext context) {
+        StencilLibrary library = StencilLibrary.EMPTY.with(pattern("coin")).with(pattern("coin")).with(pattern("boo"));
+        context.assertEquals(library.entries().size(), 2, "no duplicates");
+        library = library.toggleFavorite(pattern("boo"));
+        context.assertTrue(library.isFavorite(pattern("boo")) && !library.isFavorite(pattern("coin")), "boo is a favourite");
+        library = library.toggleFavorite(pattern("key"));
+        context.assertTrue(library.contains(pattern("key")) && library.isFavorite(pattern("key")), "favouriting adds it");
+        library = library.without(pattern("coin"));
+        context.assertTrue(!library.contains(pattern("coin")), "removed");
+        context.assertTrue(StencilLibrary.EMPTY.with(StencilShape.blank()).entries().isEmpty(), "blank stencils are not kept");
+
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            player.getInventory().insertStack(stencil("crown"));
+            StencilLibrary.learnFromInventory(player);
+            context.assertTrue(StencilLibrary.of(player).contains(pattern("crown")), "found stencils are learnt");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+        context.complete();
+    }
+
     // ---------------------------------------------------------------- recipes
 
     /** @return what the crafting grid gives (empty if no recipe matches). */
@@ -276,8 +375,12 @@ public class StencilGameTests implements FabricGameTest {
                 && Registries.BLOCK.getId(Blocks.GRANITE).equals(rock.get(ModComponents.SIGN_MATERIAL)), "granite rock sign");
 
         ItemStack plastic = new ItemStack(ModBlocks.PLASTIC_BLOCKS[14]); // red
-        ItemStack road = result(context, 1, 3, plastic, new ItemStack(Items.IRON_INGOT), new ItemStack(Items.IRON_INGOT));
-        context.assertTrue(road.isOf(ModBlocks.PLASTIC_ROAD_SIGN.asItem()) && road.get(DataComponentTypes.BASE_COLOR) == DyeColor.RED, "red road sign");
+        ItemStack road = result(context, 1, 2, plastic, new ItemStack(ModItems.PLASTIC_PELLETS));
+        context.assertTrue(road.isOf(ModBlocks.PLASTIC_ROAD_SIGN.asItem()) && road.get(DataComponentTypes.BASE_COLOR) == DyeColor.RED
+                && road.getCount() == 2, "red road signs");
+        ItemStack fences = result(context, 3, 2, plastic, new ItemStack(ModItems.PLASTIC_PELLETS), plastic,
+                plastic, new ItemStack(ModItems.PLASTIC_PELLETS), plastic);
+        context.assertTrue(fences.isOf(ModBlocks.PLASTIC_FENCES[14].asItem()) && fences.getCount() == 3, "3 red plastic fences");
         context.complete();
     }
 
@@ -313,9 +416,21 @@ public class StencilGameTests implements FabricGameTest {
 
         PlayerEntity player = survivalPlayer(context);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.BRUSH));
-        context.getBlockState(paint).onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, hit(context, paint, Direction.SOUTH));
-        context.expectBlock(Blocks.AIR, paint);
-        context.complete();
+        // Held on it, the brush fades it step by step, then scrubs it off
+        for (int step = 0; step <= StencilCanvasBlockEntity.MAX_FADE; step++) {
+            int fade = step;
+            context.runAtTick(1 + step * (StencilCanvasBlockEntity.BRUSH_INTERVAL + 1), () -> {
+                context.getBlockState(paint).onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, hit(context, paint, Direction.SOUTH));
+                if (fade < StencilCanvasBlockEntity.MAX_FADE) {
+                    StencilCanvasBlockEntity faded = at(context, paint);
+                    context.assertEquals(faded.getFade(), fade + 1, "fade step " + (fade + 1));
+                }
+            });
+        }
+        context.runAtTick(2 + (StencilCanvasBlockEntity.MAX_FADE + 1) * (StencilCanvasBlockEntity.BRUSH_INTERVAL + 1), () -> {
+            context.expectBlock(Blocks.AIR, paint);
+            context.complete();
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -361,7 +476,7 @@ public class StencilGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilGunPaintsSignsWithItsOwnDyes(TestContext context) {
-        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN.down(), ModBlocks.PLASTIC_FENCES[0]);
         context.setBlockState(SIGN, ModBlocks.PLASTIC_ROAD_SIGN);
         context.setBlockState(SIGN, context.getBlockState(SIGN).with(PlasticRoadSignBlock.PLATE, PlasticRoadSignBlock.Plate.DIAMOND));
         PlayerEntity player = survivalPlayer(context);

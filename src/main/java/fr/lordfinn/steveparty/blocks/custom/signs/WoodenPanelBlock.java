@@ -1,32 +1,25 @@
 package fr.lordfinn.steveparty.blocks.custom.signs;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.Steveparty;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.ShapeContext;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.WorldView;
 
 /**
- * Big wooden panel set against a wooden post: it stands on a post (fence, wall, log... see the
- * {@code steveparty:sign_posts} tag), carries on the post behind its board and turns in 16 directions.
- * Made of any planks. Stencils engrave or paint the board like a traffic sign.
+ * Big wooden panel on a post: it stands on any fence or wall ({@link SignPosts}), whose post goes on behind the
+ * board without turning, and the board turns in 16 directions. Made of any planks. Stencils engrave or paint its
+ * 16x16 middle like a traffic sign.
  */
 public class WoodenPanelBlock extends AbstractStencilSignBlock {
     public static final MapCodec<WoodenPanelBlock> CODEC = createCodec(WoodenPanelBlock::new);
-    /** What a panel can stand on. */
-    public static final TagKey<Block> SIGN_POSTS = TagKey.of(RegistryKeys.BLOCK, Steveparty.id("sign_posts"));
 
-    // Model space (pixels, front facing north): the post goes on through the block, the board is in front of it
-    public static final SignShapes.Box POST = new SignShapes.Box(6, 0, 6, 10, 16, 10);
-    public static final SignShapes.Box BOARD = new SignShapes.Box(-4, 1, 4, 20, 15, 6);
-    private static final VoxelShape[] SHAPES = SignShapes.rotations(POST, BOARD);
+    // Model space (pixels, front facing north): 24x18 board with a rail at the top and the bottom, in front of the post
+    public static final SignShapes.Box BOARD = new SignShapes.Box(-4, 0, 2, 20, 18, 5);
+    private static final VoxelShape[] SHAPES = SignShapes.rotations(new SignShapes.Box[]{BOARD}, new SignShapes.Box[]{SignPosts.POST});
 
     public WoodenPanelBlock(Settings settings) {
         super(settings);
@@ -44,7 +37,7 @@ public class WoodenPanelBlock extends AbstractStencilSignBlock {
 
     @Override
     protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
-        return world.getBlockState(pos.down()).isIn(SIGN_POSTS);
+        return SignPosts.standsOnPost(world, pos);
     }
 
     @Override

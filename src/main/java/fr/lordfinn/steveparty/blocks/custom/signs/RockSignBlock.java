@@ -11,19 +11,23 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.WorldView;
 
 /**
- * Standing stone, like a small menhir of a dolmen: a slightly leaning stone up to 1.5 blocks high with one or two
+ * Standing stone, like a small menhir of a dolmen: a slightly leaning stone with a 16x16 front and one or two
  * pebbles at its foot (which ones depends on where it stands, the big stone never changes). Made of any rock,
- * modded ones included. Stencils engrave it, or paint it with a dye.
+ * modded ones included. Stencils really engrave it (the engraved pixels are dug in), and a dye paints the engraving.
  */
 public class RockSignBlock extends AbstractStencilSignBlock {
     public static final MapCodec<RockSignBlock> CODEC = createCodec(RockSignBlock::new);
 
-    // Rough outline of the leaning stone (model space, front facing north)
+    /** How much the stone leans back, around the bottom of its back (drawn by the client model). */
+    public static final float TILT_DEGREES = 10;
+    /** The stone in model space (pixels, front facing north) before leaning: its front is the 16x16 engraving. */
+    public static final float FRONT_Z = 5, BACK_Z = 11, HEIGHT = 16;
+
+    // Rough outline of the leaning stone and its top
     private static final VoxelShape[] SHAPES = SignShapes.rotations(
-            new SignShapes.Box(3, 0, 2, 13, 6, 8),
-            new SignShapes.Box(3, 6, 4, 13, 12, 10.5),
-            new SignShapes.Box(3, 12, 6, 13, 18, 13),
-            new SignShapes.Box(4, 18, 8, 12, 21, 14));
+            new SignShapes.Box(0, 0, 5, 16, 8, 12.5),
+            new SignShapes.Box(0, 8, 6, 16, 16, 14),
+            new SignShapes.Box(2, 16, 8, 14, 19, 14.5));
 
     public RockSignBlock(Settings settings) {
         super(settings);

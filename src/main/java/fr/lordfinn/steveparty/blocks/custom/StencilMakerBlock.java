@@ -69,18 +69,20 @@ public class StencilMakerBlock extends BlockWithEntity {
         StencilMakerBlockEntity blockEntity = (StencilMakerBlockEntity) world.getBlockEntity(pos);
         if (blockEntity == null) return ActionResult.PASS;
 
-        if (player.isSneaking() && !blockEntity.getStencil().isEmpty()) {
-            if (player instanceof ServerPlayerEntity serverPlayer) {
-                serverPlayer.openHandledScreen(blockEntity);
+        // Empty maker: a stencil in hand goes in
+        if (blockEntity.getStencil().isEmpty()) {
+            if (player.getMainHandStack().getItem() instanceof StencilItem) {
+                blockEntity.swapStencil(player);
+                return ActionResult.SUCCESS;
             }
-            return ActionResult.SUCCESS;
+            return ActionResult.PASS;
         }
-
-        if (player.getMainHandStack().isEmpty() || player.getMainHandStack().getItem() instanceof StencilItem) {
-            blockEntity.swapStencil(player);
-            return ActionResult.SUCCESS;
+        // A stencil inside: sneaking (empty handed) takes it out, otherwise the editor opens (it has a button to take it out)
+        if (player.isSneaking()) {
+            blockEntity.takeOutStencil(player);
+        } else if (player instanceof ServerPlayerEntity serverPlayer) {
+            serverPlayer.openHandledScreen(blockEntity);
         }
-
-        return ActionResult.PASS;
+        return ActionResult.SUCCESS;
     }
 }

@@ -1,140 +1,9 @@
 {
-	"credit": "SteveParty - metal pole of the plastic road sign (front: north)",
+	"credit": "SteveParty - plastic road sign: the plate is built from its shape, the post is the fence below",
 	"textures": {
-		"pole": "minecraft:block/iron_block",
-		"particle": "minecraft:block/iron_block"
+		"particle": "steveparty:block/plastic_block/white_plastic_block"
 	},
-	"elements": [
-		{
-			"from": [
-				7,
-				0,
-				8
-			],
-			"to": [
-				9,
-				16,
-				10
-			],
-			"faces": {
-				"north": {
-					"uv": [
-						7,
-						0,
-						9,
-						16
-					],
-					"texture": "#pole"
-				},
-				"east": {
-					"uv": [
-						6,
-						0,
-						8,
-						16
-					],
-					"texture": "#pole"
-				},
-				"south": {
-					"uv": [
-						7,
-						0,
-						9,
-						16
-					],
-					"texture": "#pole"
-				},
-				"west": {
-					"uv": [
-						8,
-						0,
-						10,
-						16
-					],
-					"texture": "#pole"
-				},
-				"up": {
-					"uv": [
-						7,
-						8,
-						9,
-						10
-					],
-					"texture": "#pole"
-				},
-				"down": {
-					"uv": [
-						7,
-						6,
-						9,
-						8
-					],
-					"texture": "#pole"
-				}
-			},
-			"name": "pole"
-		},
-		{
-			"from": [
-				7,
-				16,
-				8
-			],
-			"to": [
-				9,
-				24,
-				10
-			],
-			"faces": {
-				"north": {
-					"uv": [
-						7,
-						8,
-						9,
-						16
-					],
-					"texture": "#pole"
-				},
-				"east": {
-					"uv": [
-						6,
-						8,
-						8,
-						16
-					],
-					"texture": "#pole"
-				},
-				"south": {
-					"uv": [
-						7,
-						8,
-						9,
-						16
-					],
-					"texture": "#pole"
-				},
-				"west": {
-					"uv": [
-						8,
-						8,
-						10,
-						16
-					],
-					"texture": "#pole"
-				},
-				"up": {
-					"uv": [
-						7,
-						8,
-						9,
-						10
-					],
-					"texture": "#pole"
-				}
-			},
-			"name": "pole top"
-		}
-	],
+	"elements": [],
 	"display": {
 		"thirdperson_righthand": {
 			"rotation": [
@@ -197,13 +66,13 @@
 		"ground": {
 			"translation": [
 				0,
-				3,
+				4,
 				0
 			],
 			"scale": [
-				0.25,
-				0.25,
-				0.25
+				0.2,
+				0.2,
+				0.2
 			]
 		},
 		"gui": {
@@ -214,13 +83,13 @@
 			],
 			"translation": [
 				0,
-				-5,
+				3.5,
 				0
 			],
 			"scale": [
-				0.55,
-				0.55,
-				0.55
+				0.36,
+				0.36,
+				0.36
 			]
 		},
 		"fixed": {
@@ -229,10 +98,15 @@
 				180,
 				0
 			],
+			"translation": [
+				0,
+				4,
+				0
+			],
 			"scale": [
-				0.5,
-				0.5,
-				0.5
+				0.4,
+				0.4,
+				0.4
 			]
 		}
 	}

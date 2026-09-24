@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/fence_post",
+  "textures": {
+    "texture": "steveparty:block/plastic_block/green_plastic_block"
+  }
+}

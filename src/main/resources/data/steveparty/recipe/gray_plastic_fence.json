@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "plastic_fence",
+  "pattern": [
+    "P#P",
+    "P#P"
+  ],
+  "key": {
+    "P": "steveparty:gray_plastic_block",
+    "#": "steveparty:plastic_pellets"
+  },
+  "result": {
+    "id": "steveparty:gray_plastic_fence",
+    "count": 3
+  }
+}

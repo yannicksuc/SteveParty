@@ -51,6 +51,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(StencilGunScrollPayload.ID, StencilGunScrollPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(StencilMakerActionPayload.ID, StencilMakerActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPolePayload.ID, GoalPolePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
@@ -91,6 +92,10 @@ public class ModPayloads {
                     blockEntity.setStencilShape(shape);
                 }
             });
+        });
+        ServerPlayNetworking.registerGlobalReceiver(StencilMakerActionPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            player.server.execute(() -> payload.handle(player));
         });
         ServerPlayNetworking.registerGlobalReceiver(StencilGunScrollPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
