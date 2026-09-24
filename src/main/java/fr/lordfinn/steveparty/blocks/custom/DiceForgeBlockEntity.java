@@ -125,7 +125,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** Height of the core above the plate once risen, before the fragments lift it (blocks). */
     public static final float CORE_BASE_LIFT = 0.5f;
     /** Height of the core center above the forge block when resting in the plate (blocks). */
-    public static final float CORE_REST_HEIGHT = 1f;
+    public static final float CORE_REST_HEIGHT = 1f + 2f / 16f;
     /** Reach (blocks) and pull (blocks per tick²) of the core at its highest; both grow with its altitude. */
     public static final double PULL_RANGE = 32, PULL_STRENGTH = 0.3;
     /** Radius of the orbit what the core pulls ends up circling on (blocks): within reach to hit it. */

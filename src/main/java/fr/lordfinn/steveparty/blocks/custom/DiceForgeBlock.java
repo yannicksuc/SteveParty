@@ -26,15 +26,16 @@ import org.jetbrains.annotations.Nullable;
 
 public class DiceForgeBlock extends BlockWithEntity {
     public static final MapCodec<DiceForgeBlock> CODEC = Block.createCodec(DiceForgeBlock::new);
+    // 2 px higher than the model's original drawing, like the model itself
     public static final VoxelShape SHAPE = VoxelShapes.union(
-            VoxelShapes.cuboid(0.4375, 0.25, 0.4375, 0.5625, 0.4375, 0.5625),
-            VoxelShapes.cuboid(0.3125, 0.4375, 0.3125, 0.6875, 0.625, 0.6875),
-            VoxelShapes.cuboid(0, 0.625, 0, 1, 0.75, 1),
-            VoxelShapes.cuboid(0, 0.75, 0, 0.25, 0.875, 1),
-            VoxelShapes.cuboid(0.75, 0.75, 0, 1, 0.875, 1),
-            VoxelShapes.cuboid(0.25, 0.75, 0, 0.75, 0.875, 0.25),
-            VoxelShapes.cuboid(0.25, 0.75, 0.75, 0.75, 0.875, 1),
-            VoxelShapes.cuboid(0.46875, 0.0625, 0.46875, 0.53125, 0.25, 0.53125)
+            VoxelShapes.cuboid(0.4375, 0.375, 0.4375, 0.5625, 0.5625, 0.5625),
+            VoxelShapes.cuboid(0.3125, 0.5625, 0.3125, 0.6875, 0.75, 0.6875),
+            VoxelShapes.cuboid(0, 0.75, 0, 1, 0.875, 1),
+            VoxelShapes.cuboid(0, 0.875, 0, 0.25, 1, 1),
+            VoxelShapes.cuboid(0.75, 0.875, 0, 1, 1, 1),
+            VoxelShapes.cuboid(0.25, 0.875, 0, 0.75, 1, 0.25),
+            VoxelShapes.cuboid(0.25, 0.875, 0.75, 0.75, 1, 1),
+            VoxelShapes.cuboid(0.46875, 0.1875, 0.46875, 0.53125, 0.375, 0.53125)
             );
     public static final BooleanProperty ACTIVATED = BooleanProperty.of("activated");
 
