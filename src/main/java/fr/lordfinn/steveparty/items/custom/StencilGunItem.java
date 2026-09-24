@@ -6,10 +6,13 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
+import fr.lordfinn.steveparty.stencil.StencilShape;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.particle.DustParticleEffect;
@@ -70,7 +73,7 @@ public class StencilGunItem extends Item {
         return gun.getOrDefault(ModComponents.STENCIL_GUN_SELECTION, StencilGunSelection.DEFAULT);
     }
 
-    /** What the gun sprays: the selected stencil's shape (null if none) and dye (null: engraved). */
+    /** What the gun sprays: the selected stencil's shape (null if none, or blank) and dye (null: engraved). */
     public record Load(@Nullable byte[] shape, @Nullable DyeColor color, int dyeSlot) {
     }
 
@@ -79,6 +82,8 @@ public class StencilGunItem extends Item {
         StencilGunSelection selection = validSelection(contents, selection(gun));
         ItemStack stencil = selection.stencil() >= 0 ? contents.get(selection.stencil()) : ItemStack.EMPTY;
         byte[] shape = stencil.getItem() instanceof StencilItem ? StencilItem.getShape(stencil) : null;
+        // A blank stencil has nothing to spray: the gun has no stencil
+        if (StencilShape.isBlank(shape)) shape = null;
         DyeColor color = null;
         int dyeSlot = -1;
         if (selection.dye() != StencilGunSelection.ENGRAVE) {
@@ -142,6 +147,16 @@ public class StencilGunItem extends Item {
                 ? new StencilGunSelection(selection.stencil(), step(contents, STENCIL_SLOTS, DYE_SLOTS, selection.dye(), direction, true))
                 : new StencilGunSelection(step(contents, 0, STENCIL_SLOTS, selection.stencil(), direction, false), selection.dye());
         gun.set(ModComponents.STENCIL_GUN_SELECTION, next);
+    }
+
+    /** Burnt in lava, pricked by a cactus...: the loaded stencils and dyes spill out, like a bundle's contents. */
+    @Override
+    public void onItemEntityDestroyed(ItemEntity entity) {
+        ItemStack gun = entity.getStack();
+        if (gun.get(ModComponents.STENCIL_GUN_CONTENTS) == null) return;
+        List<ItemStack> contents = contents(gun);
+        gun.remove(ModComponents.STENCIL_GUN_CONTENTS);
+        ItemUsage.spawnItemContents(entity, contents.stream().filter(stack -> !stack.isEmpty()).toList());
     }
 
     // ---------------------------------------------------------------- use

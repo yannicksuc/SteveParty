@@ -108,9 +108,9 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         return true;
     }
 
-    /** Applies a stencil: its shape, painted with {@code color} (null: engraved only). */
+    /** Applies a stencil: its shape, painted with {@code color} (null: engraved only). A blank shape is no symbol. */
     public void setSymbol(@Nullable byte[] shape, @Nullable DyeColor color) {
-        this.shape = shape == null ? null : StencilShape.sanitize(shape);
+        this.shape = symbolShape(shape);
         this.color = color;
         this.fade = 0;
         onChanged();
@@ -139,6 +139,11 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
     /** Legacy name, kept for the traffic sign code. */
     public void setShape(@Nullable byte[] shape) {
         setSymbol(shape, color);
+    }
+
+    /** @return a clean copy of {@code shape}, or null if it is not a symbol (none, invalid or blank). */
+    private static @Nullable byte[] symbolShape(@Nullable byte[] shape) {
+        return StencilShape.isBlank(shape) ? null : StencilShape.sanitize(shape);
     }
 
     // ---------------------------------------------------------------- what the block is made of
@@ -212,8 +217,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         super.readNbt(nbt, registries);
         Object oldRender = getRenderData();
 
-        shape = nbt.contains(SHAPE_KEY, NbtElement.BYTE_ARRAY_TYPE) && StencilShape.isValid(nbt.getByteArray(SHAPE_KEY))
-                ? StencilShape.sanitize(nbt.getByteArray(SHAPE_KEY)) : null;
+        shape = nbt.contains(SHAPE_KEY, NbtElement.BYTE_ARRAY_TYPE) ? symbolShape(nbt.getByteArray(SHAPE_KEY)) : null;
         // Signs saved before engraving existed have no Engraved flag and default to white paint
         if (nbt.getBoolean(ENGRAVED_KEY)) color = null;
         else color = DyeColor.byName(nbt.getString(COLOR_KEY), DyeColor.WHITE);
@@ -242,7 +246,8 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         if (base != null) plateColor = base;
         StencilCanvasComponent canvas = components.get(ModComponents.STENCIL_CANVAS);
         if (canvas != null) {
-            shape = canvas.shapeArray();
+            // A sign with glow ink but no symbol keeps a blank shape on its item: still no symbol
+            shape = symbolShape(canvas.shapeArray());
             color = canvas.color().orElse(null);
             glowing = canvas.glowing();
             fade = Math.clamp(canvas.fade(), 0, MAX_FADE);
