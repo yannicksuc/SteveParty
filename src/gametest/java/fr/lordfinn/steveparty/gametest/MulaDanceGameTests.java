@@ -91,7 +91,8 @@ public class MulaDanceGameTests implements FabricGameTest {
      * Mulas near a forge are counted as its dancers (distinct slots, the right count, a sitting one left out), then glide
      * onto their place and are moved by the formula.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
+    // its own batch: the forge would also conduct the Mulas of the neighbouring tests
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "mula_forge_dance")
     public void forgeConductsItsDancers(TestContext context) {
         context.setBlockState(FORGE_POS, ModBlocks.DICE_FORGE.getDefaultState());
         List<MulaEntity> dancers = new ArrayList<>();
@@ -117,6 +118,8 @@ public class MulaDanceGameTests implements FabricGameTest {
                 context.assertTrue(mula.squaredDistanceTo(out[0], out[1], out[2]) < 0.5 * 0.5,
                         "moved by the formula: " + mula.getPos() + " vs " + out[0] + ", " + out[1] + ", " + out[2]);
             }
+            dancers.forEach(MulaEntity::discard);
+            sitter.discard();
             context.complete();
         });
     }
