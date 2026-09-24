@@ -443,6 +443,8 @@ public final class MulaGoals {
         private BlockPos perch;
         private final BlockPos.Mutable probe = new BlockPos.Mutable();
         private int t;
+        /** Deepest a perch is looked for below it (blocks): more than its highest night altitude. */
+        private static final int PERCH_SCAN = 24;
 
         public Sky(MulaEntity mula) {
             this.mula = mula;
@@ -471,13 +473,20 @@ public final class MulaGoals {
             return false;
         }
 
-        /** A flower or tuft of grass within 8 blocks, a few random samples. */
+        /**
+         * A flower or tuft of grass within 8 blocks around, a few random samples, looked for down to the ground (it spent
+         * the night 10 to 18 blocks up: a 10-block scan never reached the flowers, and it stayed in the sky all day).
+         */
         private BlockPos findPerch(World world) {
+            return findPerch(world, mula.getBlockPos(), mula.getRandom(), probe);
+        }
+
+        public static BlockPos findPerch(World world, BlockPos from, net.minecraft.util.math.random.Random random,
+                                         BlockPos.Mutable probe) {
             for (int i = 0; i < 8; i++) {
-                probe.set(mula.getBlockX() + mula.getRandom().nextBetween(-8, 8), mula.getBlockY(),
-                        mula.getBlockZ() + mula.getRandom().nextBetween(-8, 8));
+                probe.set(from.getX() + random.nextBetween(-8, 8), from.getY(), from.getZ() + random.nextBetween(-8, 8));
                 if (!world.isChunkLoaded(probe)) continue;
-                for (int dy = 0; dy < 10; dy++) {
+                for (int dy = 0; dy < PERCH_SCAN; dy++) {
                     BlockState state = world.getBlockState(probe);
                     if (state.isIn(BlockTags.FLOWERS) || state.isOf(net.minecraft.block.Blocks.SHORT_GRASS)) {
                         return probe.toImmutable();

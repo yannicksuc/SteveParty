@@ -96,6 +96,37 @@ public class MulaBehaviourGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** In the morning it finds the flowers to perch on from its night altitude (it used to look only 10 blocks down). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void dawnPerchIsFoundFromTheNightSky(TestContext context) {
+        // on the roof of the test area (it has a barrier ceiling): room for 18 blocks of sky above; removed afterwards
+        net.minecraft.server.world.ServerWorld world = context.getWorld();
+        BlockPos base = context.getAbsolutePos(new BlockPos(0, 10, 0));
+        List<BlockPos> placed = new ArrayList<>();
+        for (int x = 0; x < 5; x++) {
+            for (int z = 0; z < 5; z++) {
+                BlockPos ground = base.add(x, 0, z);
+                world.setBlockState(ground, net.minecraft.block.Blocks.GRASS_BLOCK.getDefaultState());
+                world.setBlockState(ground.up(), net.minecraft.block.Blocks.POPPY.getDefaultState());
+                placed.add(ground);
+            }
+        }
+        BlockPos high = base.add(2, 1 + 18, 2);
+        net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(7);
+        BlockPos.Mutable probe = new BlockPos.Mutable();
+        BlockPos found = null;
+        for (int attempt = 0; attempt < 40 && found == null; attempt++) {
+            found = fr.lordfinn.steveparty.entities.custom.goals.MulaGoals.Sky.findPerch(world, high, random, probe);
+        }
+        boolean flower = found != null && world.getBlockState(found).isOf(net.minecraft.block.Blocks.POPPY);
+        for (BlockPos p : placed) {
+            world.setBlockState(p.up(), net.minecraft.block.Blocks.AIR.getDefaultState());
+            world.setBlockState(p, net.minecraft.block.Blocks.AIR.getDefaultState());
+        }
+        context.assertTrue(flower, "a flower found 18 blocks below: " + found);
+        context.complete();
+    }
+
     /**
      * The hitbox is the model's body cube at every size (it was 2 model pixels lower and smaller than the model, and
      * the gap grew with its size), with the eyes at the model's eyes.
