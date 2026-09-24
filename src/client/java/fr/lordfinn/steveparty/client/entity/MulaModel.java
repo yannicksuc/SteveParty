@@ -49,6 +49,11 @@ public class MulaModel extends DefaultedEntityGeoModel<MulaEntity> {
         hand = processor.getBone("left_hand3");
         if (hand != null) hand.setRotZ(hand.getRotZ() - flutter);
 
+        // eyelids follow the eyes: hidden while they are open, coming down from the top as they close, covering them
+        // entirely once they are shut (sleeping, blinking) so no eye white shows
+        lid(processor.getBone("lid_left"), processor.getBone("eye_left"));
+        lid(processor.getBone("lid_right"), processor.getBone("eye_right"));
+
         // wide eyes when a player holds its food (on top of whatever the eyes are doing)
         if (layer.eyeWiden != 1f) {
             widen(processor.getBone("eye_left"), layer.eyeWiden);
@@ -61,6 +66,16 @@ public class MulaModel extends DefaultedEntityGeoModel<MulaEntity> {
             core.setScaleY(layer.coreScale);
             core.setScaleZ(layer.coreScale);
         }
+    }
+
+    /** Eye scale y at or below which the lid covers the whole eye, and at or above which it is hidden. */
+    private static final float SHUT = 0.12f, OPEN = 0.6f;
+
+    private static void lid(GeoBone lid, GeoBone eye) {
+        if (lid == null || eye == null) return;
+        float closed = MathHelper.clamp((OPEN - eye.getScaleY()) / (OPEN - SHUT), 0f, 1f);
+        lid.setHidden(closed < 0.02f);
+        lid.setScaleY(Math.max(0.02f, closed));
     }
 
     private static void widen(GeoBone eye, float factor) {
