@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.client.model.sign.StencilSignModelPlugin;
 import fr.lordfinn.steveparty.client.screens.StencilGunScreen;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.flag.FlagPalettes;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import net.minecraft.block.Block;
@@ -150,6 +151,7 @@ public class StevepartyClient implements ClientModInitializer {
         StencilResourceManager.registerReloadListener();
         MaterialSprites.registerReloadListener();
         MobTextureColors.registerReloadListener();
+        FlagPalettes.registerReloadListener();
         StencilGunHud.initialize();
         SwitchableClient.initialize();
         fr.lordfinn.steveparty.client.token.TokenBaseRenderer.initialize();
@@ -180,12 +182,14 @@ public class StevepartyClient implements ClientModInitializer {
             return load.color() == null ? 0xFF6B6B6B : 0xFF000000 | load.color().getEntityColor();
         }, ModItems.STENCIL_GUN);
 
-        // Dyed flag: its own model (greyscale cloth, the stick untinted), the cloth tinted with the flag's colour
+        // Dyed flag: its own model, one white layer per shading level (and the stick, untinted), each level tinted
+        // with the colour of the dye's wool (FlagPalettes)
         net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.FLAG, Steveparty.id("dyed"),
                 (stack, world, entity, seed) -> FlagItem.getColor(stack) == FlagItem.NO_COLOR ? 0f : 1f);
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
             int color = FlagItem.getColor(stack);
-            return tintIndex != 0 || color == FlagItem.NO_COLOR ? 0xFFFFFFFF : 0xFF000000 | color;
+            if (color == FlagItem.NO_COLOR || tintIndex < 0 || tintIndex >= FlagPalettes.LEVELS) return 0xFFFFFFFF;
+            return 0xFF000000 | FlagPalettes.ramp(color)[tintIndex];
         }, ModItems.FLAG);
 
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());

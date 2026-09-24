@@ -313,6 +313,57 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** What the crafting grid gives (empty if no recipe matches). */
+    private static ItemStack craft(TestContext context, int width, int height, ItemStack... grid) {
+        CraftingRecipeInput input = CraftingRecipeInput.create(width, height, List.of(grid));
+        return context.getWorld().getServer().getRecipeManager()
+                .getFirstMatch(net.minecraft.recipe.RecipeType.CRAFTING, input, context.getWorld())
+                .map(entry -> entry.value().craft(input, context.getWorld().getRegistryManager())).orElse(ItemStack.EMPTY);
+    }
+
+    private static ItemStack flagFromWool(TestContext context, net.minecraft.item.Item a, net.minecraft.item.Item b, net.minecraft.item.Item c) {
+        return craft(context, 2, 2, new ItemStack(a), ItemStack.EMPTY, new ItemStack(b), new ItemStack(c));
+    }
+
+    /** Three wools of one colour: a flag of that dye. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void woolOfOneColourGivesThatFlag(TestContext context) {
+        ItemStack flag = flagFromWool(context, Items.ORANGE_WOOL, Items.ORANGE_WOOL, Items.ORANGE_WOOL);
+        context.assertTrue(flag.isOf(ModItems.FLAG), "a flag");
+        context.assertTrue(FlagItem.getColor(flag) == FlagItem.dyeColor(DyeColor.ORANGE), "orange, got " + Integer.toHexString(FlagItem.getColor(flag)));
+        context.complete();
+    }
+
+    /** Wools of several colours are mixed like dyes on leather armour. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void mixedWoolsMixTheirColours(TestContext context) {
+        ItemStack flag = flagFromWool(context, Items.WHITE_WOOL, Items.WHITE_WOOL, Items.BLUE_WOOL);
+        int expected = FlagItem.mix(FlagItem.NO_COLOR, List.of((net.minecraft.item.DyeItem) Items.WHITE_DYE,
+                (net.minecraft.item.DyeItem) Items.WHITE_DYE, (net.minecraft.item.DyeItem) Items.BLUE_DYE));
+        context.assertTrue(FlagItem.getColor(flag) == expected, "white, white and blue mixed, got " + Integer.toHexString(FlagItem.getColor(flag)));
+        context.assertTrue(FlagItem.matchingDye(expected) == null, "a mix, not a dye colour");
+        context.complete();
+    }
+
+    /** Red wool gives the classic goal-flag red (the undyed flag). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void redWoolGivesTheClassicFlag(TestContext context) {
+        ItemStack flag = flagFromWool(context, Items.RED_WOOL, Items.RED_WOOL, Items.RED_WOOL);
+        context.assertTrue(flag.isOf(ModItems.FLAG) && FlagItem.getColor(flag) == FlagItem.NO_COLOR, "the classic red flag");
+        context.complete();
+    }
+
+    /** Dyeing a flag made of wool mixes the dye with the wool's colour (not with the classic red). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void dyeingAWoolFlagMixesWithItsColour(TestContext context) {
+        ItemStack orange = flagFromWool(context, Items.ORANGE_WOOL, Items.ORANGE_WOOL, Items.ORANGE_WOOL);
+        ItemStack dyed = craft(context, 2, 1, orange, new ItemStack(Items.BLUE_DYE));
+        int expected = FlagItem.mix(FlagItem.dyeColor(DyeColor.ORANGE), List.of((net.minecraft.item.DyeItem) Items.BLUE_DYE));
+        context.assertTrue(FlagItem.getColor(dyed) == expected, "orange + blue, got " + Integer.toHexString(FlagItem.getColor(dyed)));
+        context.assertTrue(expected != FlagItem.dyeColor(DyeColor.BLUE), "not simply blue");
+        context.complete();
+    }
+
     // ------------------------------------------------------------------ landing reward
 
     /** The "1up" golden heart never takes absorption away. */
