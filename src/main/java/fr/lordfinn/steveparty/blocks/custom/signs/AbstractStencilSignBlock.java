@@ -188,8 +188,8 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
         BlockState state = this.getDefaultState()
                 .with(ROTATION, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw() + 180.0F))
                 .with(WATERLOGGED, ctx.getWorld().getFluidState(ctx.getBlockPos()).getFluid() == Fluids.WATER);
-        if (ctx.canReplaceExisting()) return state;
-        Direction side = ctx.getSide();
+        // Put in place of grass, a snow layer...: as if put on top of the block below it
+        Direction side = ctx.canReplaceExisting() ? Direction.UP : ctx.getSide();
         BlockPos supportPos = ctx.getBlockPos().offset(side.getOpposite());
         BlockState support = ctx.getWorld().getBlockState(supportPos);
         if (side.getAxis().isHorizontal() && SignPosts.isPost(support)) {
