@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -111,6 +112,11 @@ public class ModBlockEntities {
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "looting_box_entity"),
             FabricBlockEntityTypeBuilder.create(LootingBoxBlockEntity::new, ModBlocks.LOOTING_BOX).build(null)
+    );
+    public static final BlockEntityType<VillagerBlockEntity> VILLAGER_BLOCK_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "villager_block"),
+            FabricBlockEntityTypeBuilder.create(VillagerBlockEntity::new, ModBlocks.VILLAGER_BLOCK).build(null)
     );
     public static final BlockEntityType<GravityCoreBlockEntity> GRAVITY_CORE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,

@@ -374,10 +374,11 @@ public class ModBlocks {
 
     public static final Block VILLAGER_BLOCK = register(VillagerBlock::new,
             Block.Settings.create()
-                    .strength(0.5f)
+                    // No tool needed (no requiresTool: it drops by hand), but breaking it takes a moment (1.5 s by
+                    // hand), long enough for it to plead and cry (see VillagerBlock#onBlockBreakStart)
+                    .strength(1.0f)
                     .nonOpaque()  // Fully transparent/visible (for entity-like behavior)
-                    .sounds(BlockSoundGroup.WOOL)  // Soft sound to match its potential villager theme
-                    .breakInstantly(),  // Breaks instantly, emphasizing its decorative nature
+                    .sounds(BlockSoundGroup.WOOL),  // (its own villager sounds: VillagerBlock#getSoundGroup)
             "villager_block", true);
 
     public static final Block CASH_REGISTER = register(CashRegisterBlock::new,

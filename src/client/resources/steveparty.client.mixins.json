@@ -4,6 +4,8 @@
   "package": "fr.lordfinn.steveparty.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ClientPlayerInteractionManagerVillagerPunchMixin",
+    "FallingBlockEntityRendererVillagerMixin",
     "GameRendererFovMixin",
     "HeldItemRendererTokenSpellMixin",
     "ItemRendererWandOrbitMixin",
@@ -17,7 +19,8 @@
     "PlayerEntityModelMixin",
     "TokenBaseLivingEntityRendererMixin",
     "TokenBaseRenderStateMixin",
-    "WindowBackgroundDevMixin"
+    "WindowBackgroundDevMixin",
+    "WorldRendererBreakingAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

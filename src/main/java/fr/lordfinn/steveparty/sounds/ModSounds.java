@@ -39,6 +39,41 @@ public class ModSounds {
     public static final SoundEvent TOKEN_SPELL_CANCEL = register("token_spell.cancel");
     /** The flare flying from the wand. */
     public static final SoundEvent TOKEN_SPELL_FLARE = register("token_spell.flare");
+
+    // Villager block reactions: vanilla villager voices (and a few other vanilla sounds) re-pitched and layered in
+    // assets/steveparty/sounds.json, cartoonish; played by the clients (VillagerReactionEffects).
+    public static final SoundEvent VILLAGER_BLOCK_HMM = register("villager_block.hmm");
+    public static final SoundEvent VILLAGER_BLOCK_YES = register("villager_block.yes");
+    public static final SoundEvent VILLAGER_BLOCK_NO = register("villager_block.no");
+    public static final SoundEvent VILLAGER_BLOCK_GRUMBLE = register("villager_block.grumble");
+    public static final SoundEvent VILLAGER_BLOCK_GIGGLE = register("villager_block.giggle");
+    public static final SoundEvent VILLAGER_BLOCK_OUCH = register("villager_block.ouch");
+    public static final SoundEvent VILLAGER_BLOCK_FAINT = register("villager_block.faint");
+    public static final SoundEvent VILLAGER_BLOCK_GASP = register("villager_block.gasp");
+    public static final SoundEvent VILLAGER_BLOCK_SNORE = register("villager_block.snore");
+    public static final SoundEvent VILLAGER_BLOCK_YAWN = register("villager_block.yawn");
+    public static final SoundEvent VILLAGER_BLOCK_SNEEZE = register("villager_block.sneeze");
+    public static final SoundEvent VILLAGER_BLOCK_WHISTLE = register("villager_block.whistle");
+    public static final SoundEvent VILLAGER_BLOCK_MUNCH = register("villager_block.munch");
+    public static final SoundEvent VILLAGER_BLOCK_BOING = register("villager_block.boing");
+    public static final SoundEvent VILLAGER_BLOCK_DELIGHTED = register("villager_block.delighted");
+    public static final SoundEvent VILLAGER_BLOCK_PURR = register("villager_block.purr");
+    public static final SoundEvent VILLAGER_BLOCK_WHISPER = register("villager_block.whisper");
+    public static final SoundEvent VILLAGER_BLOCK_CHEER = register("villager_block.cheer");
+    public static final SoundEvent VILLAGER_BLOCK_SOB = register("villager_block.sob");
+    public static final SoundEvent VILLAGER_BLOCK_FLOP = register("villager_block.flop");
+    public static final SoundEvent VILLAGER_BLOCK_HICCUP = register("villager_block.hiccup");
+    public static final SoundEvent VILLAGER_BLOCK_SHIVER = register("villager_block.shiver");
+    public static final SoundEvent VILLAGER_BLOCK_POOF = register("villager_block.poof");
+    public static final SoundEvent VILLAGER_BLOCK_BLEH = register("villager_block.bleh");
+    public static final SoundEvent VILLAGER_BLOCK_SNIFF = register("villager_block.sniff");
+    public static final SoundEvent VILLAGER_BLOCK_JACKPOT = register("villager_block.jackpot");
+    /** Being broken: whimpers, then the farewell and a ghostly sigh when it breaks. */
+    public static final SoundEvent VILLAGER_BLOCK_WHIMPER = register("villager_block.whimper");
+    public static final SoundEvent VILLAGER_BLOCK_FAREWELL = register("villager_block.farewell");
+    public static final SoundEvent VILLAGER_BLOCK_SIGH = register("villager_block.sigh");
+    /** Pulled out by a sticky piston: back to being a villager. */
+    public static final SoundEvent VILLAGER_BLOCK_FREED = register("villager_block.freed");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

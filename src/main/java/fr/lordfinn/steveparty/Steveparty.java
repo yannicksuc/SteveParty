@@ -48,6 +48,7 @@ public class Steveparty implements ModInitializer {
         ModBlocks.initialize();
         ModItems.initialize();
         ModBlockEntities.initialize();
+        fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.initialize();
         ModComponents.initialize();
         ModScreensHandlers.initialize();
         ModEffects.initialize();
@@ -67,6 +68,7 @@ public class Steveparty implements ModInitializer {
 
         MoveTokenCommand.initialize();
         fr.lordfinn.steveparty.commands.MulaCommand.initialize();
+        fr.lordfinn.steveparty.commands.VillagerBlockCommand.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaRebirths.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaLift.initialize();
         fr.lordfinn.steveparty.items.custom.TokenizerFlare.initialize();

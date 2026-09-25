@@ -36,6 +36,7 @@ public class ModPayloads {
     public static final Identifier FLOATING_TEXT_PAYLOAD = Steveparty.id("floating-text-payload");
     public static final Identifier CARTRIDGE_SLOT_SCROLL_PAYLOAD = Steveparty.id("cartridge-slot-scroll-payload");
     public static final Identifier SWITCHABLE_BLOCKS_PAYLOAD = Steveparty.id("switchable-blocks-payload");
+    public static final Identifier VILLAGER_BLOCK_PUNCH_PAYLOAD = Steveparty.id("villager-block-punch");
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
@@ -58,6 +59,13 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(SquishAnimationPayload.ID, SquishAnimationPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(OpenTokenSpellPayload.ID, OpenTokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(VillagerBlockPunchPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () ->
+                    fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.onPunchRequest(player, payload.pos()));
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(TokenSpellPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
