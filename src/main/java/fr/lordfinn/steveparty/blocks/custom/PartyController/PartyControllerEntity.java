@@ -263,6 +263,8 @@ public class PartyControllerEntity extends BlockEntity {
         sendStartGameInfos();
         nextStep();
         markDirty();
+        // Goal pole bases linked to this party start again from 0
+        fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork.onPartyStarted(this);
     }
 
     private void setTokensStatus(ServerWorld serverWorld) {

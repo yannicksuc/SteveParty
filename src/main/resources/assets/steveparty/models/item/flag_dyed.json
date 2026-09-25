@@ -1,7 +1,10 @@
 {
   "parent": "item/handheld",
   "textures": {
-    "layer0": "steveparty:item/flag_dyeable",
-    "layer1": "steveparty:item/flag_dyeable_stick"
+    "layer0": "steveparty:item/flag_level_0",
+    "layer1": "steveparty:item/flag_level_1",
+    "layer2": "steveparty:item/flag_level_2",
+    "layer3": "steveparty:item/flag_level_3",
+    "layer4": "steveparty:item/flag_stick"
   }
 }

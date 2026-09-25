@@ -78,8 +78,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         // Refresh the cached base of this pole and the ones above. Not only when the source is a pole or a base:
         // the source is the block that was there BEFORE the change, so a base or a pole placed below reports air
         if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity poleEntity) {
-            poleEntity.updateCachedBase();
-            poleEntity.propagateCachedBaseUpwards();
+            poleEntity.refreshFromBase();
         }
     }
 
@@ -124,14 +123,6 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         return ActionResult.PASS;
     }
 
-    @Override
-    public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        // Server only: the pole computes its comparator output and who stands on it; the client has nothing to tick
-        if (!world.isClient && type == ModBlockEntities.GOAL_POLE_ENTITY) {
-            return (world1, pos, state1, blockEntity) -> ((GoalPoleBlockEntity) blockEntity).tick(world1, pos, state1, blockEntity);
-        }
-        return null;
-    }
     @Override
     public boolean hasComparatorOutput(BlockState state) {
         return true;
@@ -248,8 +239,8 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
             // The poles above are no longer connected to the base (with or without a flag on this one)
             BlockEntity beAbove = world.getBlockEntity(pos.up());
             if (beAbove instanceof GoalPoleBlockEntity poleAbove) {
-                poleAbove.updateCachedBase();
-                poleAbove.propagateCachedBaseUpwards();
+                // At the end of the tick: the column is not in its new state yet
+                GoalPoleNetwork.schedule(poleAbove);
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);

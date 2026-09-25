@@ -12,6 +12,9 @@ public class ModRecipes {
             Steveparty.id("material_shaped"), new MaterialShapedRecipe.Serializer());
     public static final RecipeSerializer<StencilCopyRecipe> STENCIL_COPY = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_stencil_copy"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(StencilCopyRecipe::new));
+    /** The flag from 3 wools: the wool's colour is the flag's (mixed when the wools differ). */
+    public static final FlagFromWoolRecipe.Serializer FLAG_FROM_WOOL = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("flag_from_wool"), new FlagFromWoolRecipe.Serializer());
     /** Flag + dyes: a dyed flag (mixed like leather armour). */
     public static final RecipeSerializer<FlagDyeRecipe> FLAG_DYE = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_flag_dye"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(FlagDyeRecipe::new));

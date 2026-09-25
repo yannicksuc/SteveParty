@@ -1,6 +1,10 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleFlags;
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
+import net.minecraft.text.Text;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
@@ -310,6 +314,57 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** What the crafting grid gives (empty if no recipe matches). */
+    private static ItemStack craft(TestContext context, int width, int height, ItemStack... grid) {
+        CraftingRecipeInput input = CraftingRecipeInput.create(width, height, List.of(grid));
+        return context.getWorld().getServer().getRecipeManager()
+                .getFirstMatch(net.minecraft.recipe.RecipeType.CRAFTING, input, context.getWorld())
+                .map(entry -> entry.value().craft(input, context.getWorld().getRegistryManager())).orElse(ItemStack.EMPTY);
+    }
+
+    private static ItemStack flagFromWool(TestContext context, net.minecraft.item.Item a, net.minecraft.item.Item b, net.minecraft.item.Item c) {
+        return craft(context, 2, 2, new ItemStack(a), ItemStack.EMPTY, new ItemStack(b), new ItemStack(c));
+    }
+
+    /** Three wools of one colour: a flag of that dye. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void woolOfOneColourGivesThatFlag(TestContext context) {
+        ItemStack flag = flagFromWool(context, Items.ORANGE_WOOL, Items.ORANGE_WOOL, Items.ORANGE_WOOL);
+        context.assertTrue(flag.isOf(ModItems.FLAG), "a flag");
+        context.assertTrue(FlagItem.getColor(flag) == FlagItem.dyeColor(DyeColor.ORANGE), "orange, got " + Integer.toHexString(FlagItem.getColor(flag)));
+        context.complete();
+    }
+
+    /** Wools of several colours are mixed like dyes on leather armour. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void mixedWoolsMixTheirColours(TestContext context) {
+        ItemStack flag = flagFromWool(context, Items.WHITE_WOOL, Items.WHITE_WOOL, Items.BLUE_WOOL);
+        int expected = FlagItem.mix(FlagItem.NO_COLOR, List.of((net.minecraft.item.DyeItem) Items.WHITE_DYE,
+                (net.minecraft.item.DyeItem) Items.WHITE_DYE, (net.minecraft.item.DyeItem) Items.BLUE_DYE));
+        context.assertTrue(FlagItem.getColor(flag) == expected, "white, white and blue mixed, got " + Integer.toHexString(FlagItem.getColor(flag)));
+        context.assertTrue(FlagItem.matchingDye(expected) == null, "a mix, not a dye colour");
+        context.complete();
+    }
+
+    /** Red wool gives the classic goal-flag red (the undyed flag). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void redWoolGivesTheClassicFlag(TestContext context) {
+        ItemStack flag = flagFromWool(context, Items.RED_WOOL, Items.RED_WOOL, Items.RED_WOOL);
+        context.assertTrue(flag.isOf(ModItems.FLAG) && FlagItem.getColor(flag) == FlagItem.NO_COLOR, "the classic red flag");
+        context.complete();
+    }
+
+    /** Dyeing a flag made of wool mixes the dye with the wool's colour (not with the classic red). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void dyeingAWoolFlagMixesWithItsColour(TestContext context) {
+        ItemStack orange = flagFromWool(context, Items.ORANGE_WOOL, Items.ORANGE_WOOL, Items.ORANGE_WOOL);
+        ItemStack dyed = craft(context, 2, 1, orange, new ItemStack(Items.BLUE_DYE));
+        int expected = FlagItem.mix(FlagItem.dyeColor(DyeColor.ORANGE), List.of((net.minecraft.item.DyeItem) Items.BLUE_DYE));
+        context.assertTrue(FlagItem.getColor(dyed) == expected, "orange + blue, got " + Integer.toHexString(FlagItem.getColor(dyed)));
+        context.assertTrue(expected != FlagItem.dyeColor(DyeColor.BLUE), "not simply blue");
+        context.complete();
+    }
+
     // ------------------------------------------------------------------ landing reward
 
     /** The "1up" golden heart never takes absorption away. */
@@ -330,65 +385,181 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    // ------------------------------------------------------------------ scoreboard
+    // ------------------------------------------------------------------ scoreboard (event driven)
 
-    /** Remembered scores follow the score down too, and -1 is a score like any other. */
+    /** Places a base (and runs its end-of-tick setup now, so the test can use it right away). */
+    private static GoalPoleBaseBlockEntity placeBase(TestContext context, BlockState state) {
+        context.setBlockState(BASE, state);
+        GoalPoleNetwork.processPending();
+        return baseEntity(context);
+    }
+
+    private static ScoreboardObjective sourceObjective(TestContext context) {
+        return context.getWorld().getScoreboard().getNullableObjective(baseEntity(context).getSourceObjectiveName());
+    }
+
+    private static int mirrorScore(TestContext context, String holder) {
+        var score = context.getWorld().getScoreboard().getScore(net.minecraft.scoreboard.ScoreHolder.fromName(holder), objective(context));
+        return score == null ? 0 : score.getScore();
+    }
+
+    /** Neither the base nor the pole ticks: they only work when something happens. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void rememberedScoresFollowTheScoreDown(TestContext context) {
-        context.setBlockState(BASE, base());
-        GoalPoleBaseBlockEntity base = baseEntity(context);
-        UUID player = UUID.randomUUID();
-        context.assertTrue(base.trackScore(player, 3) == 0, "first score is the baseline");
-        context.assertTrue(base.trackScore(player, 5) == 2, "gained 2");
-        context.assertTrue(base.trackScore(player, 0) == 0, "reset from outside: no pulse");
-        context.assertTrue(base.trackScore(player, 1) == 1, "counts again right after a reset (was blocked until > 5)");
-        UUID other = UUID.randomUUID();
-        context.assertTrue(base.trackScore(other, -1) == 0, "baseline -1");
-        context.assertTrue(base.trackScore(other, 0) == 1, "-1 is a real score, not 'never seen'");
+    public void basesAndPolesDoNotTick(TestContext context) {
+        ServerWorld world = context.getWorld();
+        context.assertTrue(base().getBlockEntityTicker(world, ModBlockEntities.GOAL_POLE_BASE_ENTITY) == null, "base has no ticker");
+        context.assertTrue(pole(true, true).getBlockEntityTicker(world, ModBlockEntities.GOAL_POLE_ENTITY) == null, "pole has no ticker");
+        context.complete();
+    }
+
+    /** A new base counts as soon as it is placed; a signal at its back pauses it (points and objective kept). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void newBaseCountsAndPausesWhenPowered(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "new base: the signal pauses");
+        context.assertTrue(base.isActive(), "counts when placed");
+        context.assertTrue(base.credit("Alex", 2, null), "point counted");
+        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+        context.assertTrue(!base.isActive(), "paused by the signal at the back");
+        context.assertTrue(!base.credit("Alex", 5, null), "nothing counted while paused");
+        context.assertTrue(base.getTotal() == 2, "points kept, got " + base.getTotal());
+        context.assertTrue(objective(context) != null && mirrorScore(context, "Alex") == 2, "objective kept while paused");
+        context.setBlockState(BASE.south(), Blocks.AIR);
+        context.assertTrue(base.credit("Alex", 1, null) && base.getTotal() == 3, "counts again");
+        removeBase(context);
+        context.assertTrue(objective(context) == null, "objective removed with the base");
+        context.complete();
+    }
+
+    /** Run-when-powered counts only with a signal at the back; ignore counts always. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void redstoneModesDecideWhenTheBaseCounts(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED);
+        context.assertTrue(!base.isActive(), "run mode: idle without a signal");
+        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.isActive(), "run mode: counts with a signal");
+        base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.IGNORE);
+        context.assertTrue(base.isActive(), "ignore: counts with a signal");
+        context.setBlockState(BASE.south(), Blocks.AIR);
+        context.assertTrue(base.isActive(), "ignore: counts without a signal");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** Points are mirrored in the scoreboard, and a command changing the mirror changes the points. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void pointsAreMirroredInTheScoreboard(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        ScoreboardObjective mirror = objective(context);
+        context.assertTrue(mirror != null && mirror.getCriterion() == net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, "dummy mirror");
+        base.credit("Alex", 2, null);
+        context.assertTrue(mirrorScore(context, "Alex") == 2, "mirrored");
+        var scoreboard = context.getWorld().getScoreboard();
+        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Alex"), mirror).setScore(7);
+        context.assertTrue(base.getPoints("Alex") == 7 && base.getTotal() == 7, "command sets the points, got " + base.getTotal());
+        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Sam"), mirror).setScore(1);
+        context.assertTrue(base.getTotal() == 8, "another holder added by a command");
+        scoreboard.removeScore(net.minecraft.scoreboard.ScoreHolder.fromName("Alex"), mirror);
+        context.assertTrue(base.getTotal() == 1, "removed score = 0 points, got " + base.getTotal());
+        removeBase(context);
+        context.complete();
+    }
+
+    /** The poles above get the total pushed at once: no waiting for a tick. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void polesFollowTheTotalAtOnce(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity low = poleEntity(context, BASE.up()), high = poleEntity(context, BASE.up(2));
+        low.update(GoalPoleBlockEntity.Comparator.EQUAL, 3);
+        high.update(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2);
+        base.credit("Alex", 2, null);
+        context.assertTrue(low.getRedstoneOutput() == 0 && high.getRedstoneOutput() == 15, "2 points: only >= 2 is on");
+        base.credit("Alex", 1, null);
+        context.assertTrue(low.getRedstoneOutput() == 15 && low.isGoalMet(), "3 points: = 3 is on");
+        context.assertTrue(low.getTotal() == 3 && high.getTotal() == 3, "poles know the total");
+        base.credit("Alex", 1, null);
+        context.assertTrue(low.getRedstoneOutput() == 0 && high.getRedstoneOutput() == 15, "4 points: = 3 is off again");
+        removeBase(context);
+        context.assertTrue(poleEntity(context, BASE.up()).getRedstoneOutput() == 0, "no base: no signal");
+        context.complete();
+    }
+
+    /** Reset: the marked port (right side seen from the front) and not the others; legacy bases: any side. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void resetPortClearsThePoints(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        base.credit("Alex", 2, null);
+        base.credit("Sam", 3, null);
+        BlockPos other = BASE.offset(Direction.EAST);
+        context.setBlockState(other, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 5, "another side does not reset");
+        context.setBlockState(other, Blocks.AIR);
+        BlockPos marked = BASE.offset(GoalPoleBaseBlockEntity.resetSide(context.getBlockState(BASE)));
+        context.setBlockState(marked, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Sam") == 0, "the marked port resets everything");
+        context.setBlockState(marked, Blocks.AIR);
+        base.credit("Alex", 1, null);
+        base.setResetPort(GoalPoleBaseBlockEntity.ResetPort.ANY_SIDE);
+        context.setBlockState(other, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 0, "any side resets in the legacy mode");
+        context.setBlockState(other, Blocks.AIR);
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A criterion source: the source objective exists, and an unknown criterion is flagged without errors. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void criterionSourceObjective(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, "deathCount");
+        context.assertTrue(sourceObjective(context) != null && sourceObjective(context).getCriterion().getName().equals("deathCount"), "deathCount source");
+        base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, "not a criterion!");
+        context.assertTrue(sourceObjective(context) == null && base.isSourceInvalid(), "unknown criterion: no source, flagged");
+        base.setSource(GoalPoleBaseBlockEntity.Source.LANDINGS_HERE, "");
+        context.assertTrue(sourceObjective(context) == null && !base.isSourceInvalid(), "landings: no source objective");
+        context.assertTrue(objective(context) != null, "the mirror stays");
         removeBase(context);
         context.complete();
     }
 
     /**
-     * Unpowered = paused: the objective is removed and must stay removed (the tick used to recreate it at once),
-     * then comes back when the back is powered again.
+     * A base saved before the rewrite: it counted while powered, reset on any side, and its objective counted the
+     * criterion. It keeps working the same way, and the objective's scores become its points.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void pausedBaseDoesNotRecreateItsObjective(TestContext context) {
-        context.setBlockState(BASE, base());
-        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(context.getBlockState(BASE).get(GoalPoleBaseBlock.POWERED), "powered from the back");
-        context.assertTrue(objective(context) != null, "objective while counting");
-        context.setBlockState(BASE.south(), Blocks.AIR);
-        context.assertTrue(!context.getBlockState(BASE).get(GoalPoleBaseBlock.POWERED), "unpowered");
-        context.assertTrue(objective(context) == null, "objective removed by the pause");
-        context.waitAndRun(30, () -> {
-            context.assertTrue(objective(context) == null, "still no objective while paused");
-            context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
-            context.assertTrue(objective(context) != null, "objective back on resume");
-            removeBase(context);
-            context.assertTrue(objective(context) == null, "objective removed with the base");
-            context.complete();
-        });
-    }
-
-    /** Changing the goal changes the objective's criterion; an unknown goal is ignored without errors. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void goalChangesTheObjectiveCriterion(TestContext context) {
-        context.setBlockState(BASE, base());
-        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void legacyBaseIsMigrated(TestContext context) {
+        var scoreboard = context.getWorld().getScoreboard();
+        String name = GoalPoleBaseBlockEntity.getObjectiveName(context.getWorld(), context.getAbsolutePos(BASE));
+        ScoreboardObjective old = scoreboard.addObjective(name, net.minecraft.scoreboard.ScoreboardCriterion.getOrCreateStatCriterion("deathCount").orElseThrow(),
+                Text.literal("old"), net.minecraft.scoreboard.ScoreboardCriterion.RenderType.INTEGER, true, null);
+        scoreboard.getOrCreateScore(net.minecraft.scoreboard.ScoreHolder.fromName("Bob"), old).setScore(4);
+        net.minecraft.nbt.NbtCompound legacy = new net.minecraft.nbt.NbtCompound();
+        legacy.putString("Selector", "@a");
+        legacy.putString("Goal", "deathCount");
+        legacy.putBoolean("ResetSidePowered", false);
+        legacy.put("LastScores", new net.minecraft.nbt.NbtCompound());
+        context.setBlockState(BASE, base().with(GoalPoleBaseBlock.POWERED, true));
         GoalPoleBaseBlockEntity base = baseEntity(context);
-        base.setGoal("dummy");
-        context.assertTrue(objective(context) != null && objective(context).getCriterion().getName().equals("dummy"), "dummy objective");
-        base.setGoal("not a criterion!");
-        context.assertTrue(objective(context) == null, "no objective for an unknown goal");
-        context.waitAndRun(30, () -> {
-            context.assertTrue(objective(context) == null, "still none, and no error while retrying");
-            base.setGoal("deathCount");
-            context.assertTrue(objective(context) != null && objective(context).getCriterion().getName().equals("deathCount"), "deathCount objective");
-            removeBase(context);
-            context.complete();
-        });
+        base.read(legacy, context.getWorld().getRegistryManager());
+        GoalPoleNetwork.processPending();
+        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED, "counts while powered, like before");
+        context.assertTrue(base.getResetPort() == GoalPoleBaseBlockEntity.ResetPort.ANY_SIDE, "resets on any side, like before");
+        context.assertTrue(base.getSource() == GoalPoleBaseBlockEntity.Source.CRITERION && base.getCriterion().equals("deathCount"), "same criterion");
+        context.assertTrue(base.getSelector().equals("@a") && base.getPlayers() == GoalPoleBaseBlockEntity.Players.SELECTOR,
+                "same selector, as the advanced choice");
+        context.assertTrue(base.getPoints("Bob") == 4 && base.getTotal() == 4, "old scores become points, got " + base.getTotal());
+        ScoreboardObjective mirror = objective(context);
+        context.assertTrue(mirror != null && mirror.getCriterion() == net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, "the objective is now the dummy mirror");
+        context.assertTrue(mirrorScore(context, "Bob") == 4, "mirror keeps the score");
+        context.assertTrue(sourceObjective(context) != null, "source objective created");
+        var saved = base.createNbt(context.getWorld().getRegistryManager());
+        context.assertTrue(saved.getInt("Version") == GoalPoleBaseBlockEntity.VERSION, "saved in the new format");
+        removeBase(context);
+        context.complete();
     }
 
     /** Two bases at the same coordinates in two dimensions get two objectives (overworld names are unchanged). */
@@ -435,39 +606,407 @@ public class GoalPoleGameTests implements FabricGameTest {
     }
 
     /**
-     * End to end: a pole above a counting base lights its comparator output when the tracked player's score matches.
-     * Uses a server player joined to the server: in its own batch so that no other test runs alongside.
+     * With a real player: a criterion source counts each increase of the followed player's score (not decreases,
+     * not while paused), and a landing is recognised once (standing on the pole or jumping on the spot is not a new
+     * landing). In its own batch so that no other test runs alongside.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player", tickLimit = 100)
-    public void poleOutputFollowsTheTrackedScore(TestContext context) {
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player", tickLimit = 120)
+    public void criterionIncreasesAndLandingsWithAPlayer(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        String name = player.getGameProfile().getName();
+        GoalPoleBaseBlockEntity base;
         try {
-            context.setBlockState(BASE, base());
+            base = placeBase(context, base());
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.SELECTOR, 16);
+            base.setSelector(name);
+            base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, "dummy");
+            var scoreboard = context.getWorld().getScoreboard();
+            ScoreboardObjective src = sourceObjective(context);
+            scoreboard.getOrCreateScore(player, src).setScore(2);
+            context.assertTrue(base.getPoints(name) == 2, "+2 counted, got " + base.getPoints(name));
+            scoreboard.getOrCreateScore(player, src).setScore(5);
+            context.assertTrue(base.getPoints(name) == 5, "+3 counted");
+            scoreboard.getOrCreateScore(player, src).setScore(1);
+            context.assertTrue(base.getPoints(name) == 5, "a decrease is not taken off");
+            scoreboard.getOrCreateScore(player, src).setScore(3);
+            context.assertTrue(base.getPoints(name) == 7, "+2 from the new low, got " + base.getPoints(name));
             context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+            scoreboard.getOrCreateScore(player, src).setScore(10);
+            context.assertTrue(base.getPoints(name) == 7, "paused: not counted");
+            context.setBlockState(BASE.south(), Blocks.AIR);
+            base.setSelector("SomeoneElse");
+            scoreboard.getOrCreateScore(player, src).setScore(11);
+            context.assertTrue(base.getPoints(name) == 7, "a player the base does not follow does not count");
+
             context.setBlockState(BASE.up(), pole(true, true));
-            GoalPoleBaseBlockEntity base = baseEntity(context);
-            base.update(player.getGameProfile().getName(), "dummy");
+            GoalPoleNetwork.processPending();
             GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
-            pole.update(GoalPoleBlockEntity.Comparator.EQUAL, 3);
-            ScoreboardObjective objective = objective(context);
-            context.assertTrue(objective != null, "objective");
-            context.getWorld().getScoreboard().getOrCreateScore(player, objective).setScore(3);
+            context.assertTrue(pole.onPlayerTouch(player), "first touch: a landing");
+            context.assertTrue(!pole.onPlayerTouch(player), "still standing: not a new landing");
         } catch (RuntimeException e) {
             context.getWorld().getServer().getPlayerManager().remove(player);
             throw e;
         }
-        context.waitAndRun(3, () -> {
-            GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
-            boolean on = pole.getRedstoneOutput() == 15;
-            context.getWorld().getScoreboard().getOrCreateScore(player, objective(context)).setScore(4);
-            context.waitAndRun(3, () -> {
-                boolean off = poleEntity(context, BASE.up()).getRedstoneOutput() == 0;
-                context.getWorld().getServer().getPlayerManager().remove(player);
-                removeBase(context);
-                context.assertTrue(on, "signal when the total equals 3");
-                context.assertTrue(off, "no signal at 4");
-                context.complete();
-            });
+        GoalPoleBaseBlockEntity finalBase = base;
+        context.waitAndRun(45, () -> {
+            boolean again = poleEntity(context, BASE.up()).onPlayerTouch(player);
+            context.getWorld().getServer().getPlayerManager().remove(player);
+            removeBase(context);
+            context.assertTrue(again, "back after 2 s away: a new landing");
+            context.assertTrue(finalBase.isRemoved(), "base removed");
+            context.complete();
         });
+    }
+
+    /**
+     * Each base counts the landings on its own poles only (two boards in one world no longer share landings); a base
+     * set to the old global criterion still counts landings on any pole; a paused base counts nothing.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_boards", tickLimit = 60)
+    public void eachBaseCountsLandingsOnItsOwnPoles(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        String name = player.getGameProfile().getName();
+        BlockPos otherBase = BASE.east(3);
+        try {
+            GoalPoleBaseBlockEntity a = placeBase(context, base());
+            context.setBlockState(otherBase, base());
+            context.setBlockState(BASE.up(), pole(true, true));
+            context.setBlockState(otherBase.up(), pole(true, true));
+            GoalPoleNetwork.processPending();
+            GoalPoleBaseBlockEntity b = (GoalPoleBaseBlockEntity) context.getWorld().getBlockEntity(context.getAbsolutePos(otherBase));
+            a.setSelector("@a");
+            b.setSelector("@a");
+            context.assertTrue(a.getSource() == GoalPoleBaseBlockEntity.Source.LANDINGS_HERE, "new bases count their own landings");
+            GoalPoleBlockEntity poleA = poleEntity(context, BASE.up()), poleB = poleEntity(context, otherBase.up());
+
+            GoalPoleNetwork.onLanding(poleA, player);
+            context.assertTrue(a.getPoints(name) == 1 && b.getPoints(name) == 0, "landing on A counts for A only");
+            GoalPoleNetwork.onLanding(poleB, player);
+            context.assertTrue(a.getPoints(name) == 1 && b.getPoints(name) == 1, "landing on B counts for B only");
+
+            // B follows the old global criterion: a landing on A counts for both
+            b.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_POLE_ID);
+            poleA.onPlayerArrive(player, context.getWorld(), poleA.getPos());
+            context.assertTrue(a.getPoints(name) == 2, "A: its own landing, got " + a.getPoints(name));
+            context.assertTrue(b.getPoints(name) == 2, "B: the global criterion counts a landing anywhere, got " + b.getPoints(name));
+
+            // Paused: nothing counted
+            context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+            GoalPoleNetwork.onLanding(poleA, player);
+            context.assertTrue(a.getPoints(name) == 2, "paused: not counted");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+            context.setBlockState(otherBase, Blocks.AIR);
+            removeBase(context);
+        }
+        context.complete();
+    }
+
+    /** The base's comparator: a pulse per point by default, or the progress towards the pole's goal (0 to 15). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void baseComparatorGivesPulsesOrProgress(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up()).update(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 4);
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getComparatorOutput() == 15, "pulse mode: 15 right after a point");
+        base.setOutputMode(GoalPoleBaseBlockEntity.OutputMode.PROGRESS);
+        context.assertTrue(base.getComparatorOutput() == 3, "1 of 4: 15 * 1 / 4 = 3, got " + base.getComparatorOutput());
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getComparatorOutput() == 7, "2 of 4: 7, got " + base.getComparatorOutput());
+        base.credit("Alex", 2, null);
+        context.assertTrue(base.getComparatorOutput() == 15, "goal met: 15");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A new pole's goal is "at least 1": not reached before the first point. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void newPoleGoalIsAtLeastOne(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
+        context.assertTrue(pole.getComparator() == GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL && pole.getValue() == 1, "at least 1");
+        context.assertTrue(!pole.isGoalMet() && pole.getRedstoneOutput() == 0, "not reached at 0");
+        base.credit("Alex", 1, null);
+        context.assertTrue(pole.isGoalMet() && pole.getRedstoneOutput() == 15, "reached at 1");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** One goal for the whole pole: set on any segment, every segment gets it; a new segment joins it. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void oneGoalForTheWholePole(TestContext context) {
+        placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, false));
+        context.setBlockState(BASE.up(3), pole(false, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up(2)).applyGoal(GoalPoleBlockEntity.Comparator.EQUAL, 3, false);
+        for (int y = 1; y <= 3; y++) {
+            GoalPoleBlockEntity segment = poleEntity(context, BASE.up(y));
+            context.assertTrue(segment.getComparator() == GoalPoleBlockEntity.Comparator.EQUAL && segment.getValue() == 3
+                    && !segment.isPerSegment(), "segment " + y + " has the pole's goal");
+        }
+        context.setBlockState(BASE.up(4), pole(false, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity added = poleEntity(context, BASE.up(4));
+        context.assertTrue(added.getComparator() == GoalPoleBlockEntity.Comparator.EQUAL && added.getValue() == 3, "a new segment takes the pole's goal");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A goal per segment (advanced): only the edited segment changes, and the whole column is in that mode. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aGoalPerSegment(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up(2)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 3, true);
+        GoalPoleBlockEntity low = poleEntity(context, BASE.up()), high = poleEntity(context, BASE.up(2));
+        context.assertTrue(low.getValue() == 1 && high.getValue() == 3, "each segment its own goal");
+        context.assertTrue(low.isPerSegment() && high.isPerSegment(), "the column is in per segment mode");
+        base.credit("Alex", 2, null);
+        context.assertTrue(low.isGoalMet() && !high.isGoalMet(), "2 points: the low segment only");
+        removeBase(context);
+        context.complete();
+    }
+
+    /** Poles saved before the column setting: same goals everywhere become one goal, different goals stay per segment. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void legacyPoleGoalsAreMigrated(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        BlockPos[] columns = {BASE, BASE.east(3)};
+        int[][] values = {{2, 2}, {2, 5}};
+        for (int c = 0; c < 2; c++) {
+            context.setBlockState(columns[c].up(), pole(false, false));
+            context.setBlockState(columns[c].up(2), pole(false, true));
+            for (int s = 0; s < 2; s++) {
+                net.minecraft.nbt.NbtCompound old = new net.minecraft.nbt.NbtCompound();
+                old.putInt("Comparator", GoalPoleBlockEntity.Comparator.EQUAL.ordinal());
+                old.putInt("Value", values[c][s]);
+                poleEntity(context, columns[c].up(s + 1)).read(old, registries);
+            }
+        }
+        GoalPoleNetwork.processPending();
+        context.assertTrue(!poleEntity(context, BASE.up()).isPerSegment() && !poleEntity(context, BASE.up(2)).isPerSegment(),
+                "same old goals: one goal for the pole");
+        context.assertTrue(poleEntity(context, BASE.east(3).up()).isPerSegment() && poleEntity(context, BASE.east(3).up(2)).isPerSegment(),
+                "different old goals: per segment");
+        context.assertTrue(poleEntity(context, BASE.east(3).up(2)).getValue() == 5, "old goals kept");
+        context.assertTrue(poleEntity(context, BASE.up()).createNbt(registries).getInt("Version") == GoalPoleBlockEntity.VERSION, "saved in the new format");
+        context.complete();
+    }
+
+    /** The progress above the ball needs to know whether a base is under the pole: synced, and saved. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void polesKnowWhetherABaseIsUnderThem(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, false));
+        context.setBlockState(BASE.up(2), pole(false, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity top = poleEntity(context, BASE.up(2));
+        context.assertTrue(top.isLinked() && top.toInitialChunkDataNbt(registries).getBoolean("Linked"), "linked to the base");
+        base.credit("Alex", 3, null);
+        context.assertTrue(base.getPointsView().get("Alex") == 3 && top.getTotal() == 3, "points and total");
+        context.assertTrue(base.toInitialChunkDataNbt(registries).getCompound("Points").getInt("Alex") == 3,
+                "the points are sent to clients (wrench details)");
+        removeBase(context);
+        GoalPoleNetwork.processPending();
+        context.assertTrue(!top.isLinked() && top.getTotal() == 0, "no base any more");
+        context.complete();
+    }
+
+    /**
+     * Flags of met goals rest at the bottom of the pole, stacked (11 pixels high, 1 apart), each on the flag below it
+     * wherever that one is; a flag never rests above its own place.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void metFlagsRestStackedAtTheBottom(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 1, true);
+        poleEntity(context, BASE.up(2)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2, true);
+        poleEntity(context, BASE.up(3)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 3, true);
+        base.credit("Alex", 3, null);
+        BlockPos.Mutable scratch = new BlockPos.Mutable();
+        ServerWorld world = context.getWorld();
+        float low = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up()), scratch);
+        float middle = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(2)), scratch);
+        float high = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(3)), scratch);
+        context.assertTrue(low == 0f && middle == -4f && high == -8f, "stacked: 0, -4, -8 pixels, got " + low + ", " + middle + ", " + high);
+        // Only the top flag down: it rests on the middle flag, which stays at its place
+        base.reset();
+        poleEntity(context, BASE.up(3)).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 0, true);
+        context.assertTrue(poleEntity(context, BASE.up(3)).isGoalMet() && !poleEntity(context, BASE.up(2)).isGoalMet(), "only the top met");
+        high = GoalPoleFlags.restingDrop(world, context.getAbsolutePos(BASE.up(3)), scratch);
+        context.assertTrue(high == -4f, "on the middle flag at its place: -4, got " + high);
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A flag alone at the top of a tall pole slides all the way down to the bottom segment. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aLoneFlagSlidesToTheBottom(TestContext context) {
+        placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, y == 3));
+        GoalPoleNetwork.processPending();
+        float drop = GoalPoleFlags.restingDrop(context.getWorld(), context.getAbsolutePos(BASE.up(3)), new BlockPos.Mutable());
+        context.assertTrue(drop == -32f, "two segments down: -32 pixels, got " + drop);
+        removeBase(context);
+        context.complete();
+    }
+
+    /** Reaching the goal is sent to clients (met, and when), and rings one chime for the whole pole. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void reachingTheGoalIsSyncedAndRingsOnce(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, true));
+        GoalPoleNetwork.processPending();
+        poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2, false);
+        int chimes = base.getGoalChimes();
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getGoalChimes() == chimes, "not reached: no chime");
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getGoalChimes() == chimes + 1, "reached: one chime for three segments");
+        GoalPoleBlockEntity top = poleEntity(context, BASE.up(3));
+        var nbt = top.toInitialChunkDataNbt(registries);
+        context.assertTrue(nbt.getBoolean("GoalMet") && nbt.getLong("GoalMetTick") == context.getWorld().getTime(),
+                "met, and when, sent to clients");
+        base.credit("Alex", 1, null);
+        context.assertTrue(base.getGoalChimes() == chimes + 1, "still met: no new chime");
+        base.reset();
+        context.assertTrue(!top.isGoalMet() && !top.toInitialChunkDataNbt(registries).getBoolean("GoalMet"), "reset: not met");
+        base.credit("Alex", 2, null);
+        context.assertTrue(base.getGoalChimes() == chimes + 2, "reached again: a new chime");
+        removeBase(context);
+        context.complete();
+    }
+
+    /**
+     * Which players a base follows, in plain words: everyone (new bases), the players near the base, an advanced
+     * selector; the party's players when no party is running: nobody.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_modes", tickLimit = 40)
+    public void playersInPlainWords(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        String name = player.getGameProfile().getName();
+        try {
+            GoalPoleBaseBlockEntity base = placeBase(context, base());
+            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.ALL && base.follows(player), "new base: everyone");
+            Vec3d center = Vec3d.ofCenter(context.getAbsolutePos(BASE));
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.RADIUS, 4);
+            player.refreshPositionAndAngles(center.x + 2, center.y, center.z, 0, 0);
+            context.assertTrue(base.follows(player), "2 blocks away: within 4");
+            player.refreshPositionAndAngles(center.x + 20, center.y, center.z, 0, 0);
+            context.assertTrue(!base.follows(player), "20 blocks away: not within 4");
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.RADIUS, 1000);
+            context.assertTrue(base.getRadius() == GoalPoleBaseBlockEntity.MAX_RADIUS, "distance capped");
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.SELECTOR, 16);
+            // (by selector: other tests' mock players may share this player's name)
+            base.setSelector("@a");
+            context.assertTrue(base.follows(player), "advanced: @a");
+            base.setSelector("@a[tag=steveparty_nobody]");
+            context.assertTrue(!base.follows(player), "advanced: a selector without this player");
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
+            context.assertTrue(base.linkedParty() == null && !base.follows(player), "party players without a party: nobody");
+            // Settings from the screen
+            net.minecraft.nbt.NbtCompound settings = base.writeSettings();
+            settings.putString("Players", "RADIUS");
+            settings.putInt("Radius", 7);
+            base.applySettings(settings);
+            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.RADIUS && base.getRadius() == 7, "from the screen");
+            removeBase(context);
+            context.complete();
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+    }
+
+    /**
+     * The party link: placed near a party controller, a base follows the party's players; when that party starts,
+     * its points go back to 0 (a base following everyone keeps its points).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_party", tickLimit = 40)
+    public void partyLinkFollowsThePartyAndResetsAtItsStart(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        BlockPos controllerPos = BASE.east(4);
+        BlockPos otherBase = BASE.west(2);
+        try {
+            context.setBlockState(controllerPos.down(), Blocks.STONE);
+            context.setBlockState(controllerPos, ModBlocks.PARTY_CONTROLLER);
+            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller = context.getBlockEntity(controllerPos);
+            GoalPoleBaseBlockEntity base = placeBase(context, base());
+            base.onPlacedByPlayer();
+            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.PARTY && base.linkedParty() == controller,
+                    "placed near a party controller: the party's players");
+            context.setBlockState(otherBase, base());
+            GoalPoleNetwork.processPending();
+            GoalPoleBaseBlockEntity everyone = (GoalPoleBaseBlockEntity) context.getWorld().getBlockEntity(context.getAbsolutePos(otherBase));
+            context.assertTrue(everyone.getPlayers() == GoalPoleBaseBlockEntity.Players.ALL, "set by a command: everyone");
+
+            context.assertTrue(!base.follows(player), "no party running: nobody");
+            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData data = new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData();
+            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep());
+            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep(new java.util.ArrayList<>()));
+            controller.setPartyData(data);
+            controller.nextStep();
+            context.assertTrue(data.isStarted(), "party running");
+            context.assertTrue(!base.follows(player), "not in the party");
+            controller.addInterestedPlayer(player);
+            context.assertTrue(base.follows(player), "in the party");
+
+            base.credit("Alex", 3, null);
+            everyone.credit("Alex", 3, null);
+            GoalPoleNetwork.onPartyStarted(controller);
+            context.assertTrue(base.getTotal() == 0, "linked base: back to 0 when the party starts");
+            context.assertTrue(everyone.getTotal() == 3, "base following everyone: points kept");
+            context.setBlockState(otherBase, Blocks.AIR);
+            removeBase(context);
+            context.complete();
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+    }
+
+    /**
+     * One notch per point: the flag goes down the share of its goal reached (a setting of the whole pole, saved, sent
+     * to the screen); by default it waits for the goal.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void flagStepsDownOneNotchPerPoint(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, y == 3));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity top = poleEntity(context, BASE.up(3));
+        top.applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 4, false);
+        BlockPos.Mutable scratch = new BlockPos.Mutable();
+        BlockPos flag = context.getAbsolutePos(BASE.up(3));
+        ServerWorld world = context.getWorld();
+        base.credit("Alex", 2, null);
+        context.assertTrue(GoalPoleFlags.drop(world, flag, scratch) == 0f, "default: up until the goal is reached");
+        poleEntity(context, BASE.up()).applyFlagSteps(true);
+        for (int y = 1; y <= 3; y++) context.assertTrue(poleEntity(context, BASE.up(y)).isFlagSteps(), "the whole pole, segment " + y);
+        float half = GoalPoleFlags.drop(world, flag, scratch);
+        context.assertTrue(half == -16f, "2 of 4: halfway down (-16 of -32), got " + half);
+        base.credit("Alex", 1, null);
+        float threeQuarters = GoalPoleFlags.drop(world, flag, scratch);
+        context.assertTrue(threeQuarters == -24f, "3 of 4: -24, got " + threeQuarters);
+        base.credit("Alex", 1, null);
+        context.assertTrue(GoalPoleFlags.drop(world, flag, scratch) == -32f && top.isGoalMet(), "goal reached: at the bottom");
+        context.assertTrue(top.createNbt(registries).getBoolean("FlagSteps") && top.getScreenOpeningData(null).flagSteps(),
+                "saved and sent to the screen");
+        context.setBlockState(BASE.up(4), pole(false, true));
+        GoalPoleNetwork.processPending();
+        context.assertTrue(poleEntity(context, BASE.up(4)).isFlagSteps(), "a new segment takes the pole's setting");
+        removeBase(context);
+        context.complete();
     }
 }

@@ -36,8 +36,6 @@ public class ModPayloads {
     public static final Identifier FLOATING_TEXT_PAYLOAD = Steveparty.id("floating-text-payload");
     public static final Identifier CARTRIDGE_SLOT_SCROLL_PAYLOAD = Steveparty.id("cartridge-slot-scroll-payload");
     public static final Identifier SWITCHABLE_BLOCKS_PAYLOAD = Steveparty.id("switchable-blocks-payload");
-    /** Max length accepted for the goal pole base selector / goal strings. */
-    private static final int MAX_GOAL_POLE_STRING_LENGTH = 256;
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
@@ -114,9 +112,7 @@ public class ModPayloads {
             // In packet order (see runInPacketOrder): the screen closes right after this payload is sent
             runInPacketOrder(player, () -> {
                 BlockPos pos = payload.pos();
-                if (payload.selector() == null || payload.goal() == null
-                        || payload.selector().length() > MAX_GOAL_POLE_STRING_LENGTH
-                        || payload.goal().length() > MAX_GOAL_POLE_STRING_LENGTH) return;
+                if (payload.settings() == null) return;
                 // The goal pole base screen for this block must be open and the block in reach
                 if (!(player.currentScreenHandler instanceof GoalPoleBaseScreenHandler handler)
                         || !pos.equals(handler.getPos())
@@ -124,8 +120,8 @@ public class ModPayloads {
 
                 // Check the BlockEntity type
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity blockEntity) {
-                    // Update the BlockEntity fields
-                    blockEntity.update(payload.selector(), payload.goal());
+                    // Each setting is checked by the base (known values, string lengths)
+                    blockEntity.applySettings(payload.settings());
                 }
             });
         });
@@ -140,7 +136,8 @@ public class ModPayloads {
                         || !pos.equals(handler.getPos())
                         || !ScreenHandlerChecks.isInReach(player, pos)) return;
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBlockEntity blockEntity) {
-                    blockEntity.update(payload.comparator(), payload.value());
+                    blockEntity.applyGoal(payload.comparator(), payload.value(), payload.perSegment());
+                    blockEntity.applyFlagSteps(payload.flagSteps());
                 }
             });
         });
