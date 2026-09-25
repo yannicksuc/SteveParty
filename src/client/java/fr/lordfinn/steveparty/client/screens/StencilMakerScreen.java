@@ -19,6 +19,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
@@ -58,6 +59,8 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     /** Library thumbnails: 16x16 at one screen pixel per stencil pixel, in cells of this size. */
     private static final int CELL = 20;
     private static final int TOOL_WIDTH = 104;
+    /** Width of the help lines under the title, inside the frame's border. */
+    private static final int HELP_WIDTH = FRAME - 40;
     private static final long SOUND_INTERVAL_MS = 45;
 
     private int stencilX, stencilY; // Position of the stencil
@@ -446,7 +449,11 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         // No inventory here: only the title and how to draw, inside the frame
         context.drawCenteredTextWithShadow(textRenderer, this.title, FRAME / 2, 28, 0xFFFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.translatable("gui.steveparty.stencil_maker.help_draw"), FRAME / 2, 42, 0xFFE0E0E0);
+        // Wrapped inside the frame: on one line it ran over the library and the tools
+        List<OrderedText> help = textRenderer.wrapLines(Text.translatable("gui.steveparty.stencil_maker.help_draw"), HELP_WIDTH);
+        for (int i = 0; i < Math.min(2, help.size()); i++) {
+            context.drawCenteredTextWithShadow(textRenderer, help.get(i), FRAME / 2, 40 + i * 10, 0xFFE0E0E0);
+        }
     }
 
     @Override

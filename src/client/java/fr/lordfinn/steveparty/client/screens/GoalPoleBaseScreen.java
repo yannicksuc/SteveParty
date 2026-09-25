@@ -189,13 +189,27 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             refresh();
         });
         button.content((context, textRenderer, centerX, centerY, color) -> {
-            Text label = valueText(name, getter.get());
-            String shown = textRenderer.trimToWidth(label.getString(), width - 8);
+            String shown = fit(textRenderer, valueText(name, getter.get()).getString(), width - 8, true);
             context.drawText(textRenderer, shown, centerX - textRenderer.getWidth(shown) / 2, centerY - 4, color, false);
         });
         button.setTooltip(Tooltip.of(tooltipText(name, getter.get())));
         cycleButtons.add(new CycleButton(button, name, () -> getter.get()));
         return button;
+    }
+
+    /**
+     * The text as it fits in {@code width}: when it is too long, only the value after "Setting: " if allowed (the
+     * setting's name is in the tooltip), else cut with an ellipsis (the full text is in the tooltip too).
+     */
+    static String fit(TextRenderer textRenderer, String text, int width, boolean dropPrefix) {
+        if (textRenderer.getWidth(text) <= width) return text;
+        int colon = text.indexOf(':');
+        if (dropPrefix && colon > 0 && colon < text.length() - 1) {
+            String value = text.substring(colon + 1).strip();
+            if (textRenderer.getWidth(value) <= width) return value;
+            text = value;
+        }
+        return textRenderer.trimToWidth(text, width - textRenderer.getWidth("…")).stripTrailing() + "…";
     }
 
     private record CycleButton(PartyButton button, String name, java.util.function.Supplier<Enum<?>> value) {}
@@ -359,7 +373,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             context.fill(iconX - 1, iconY - 1, iconX + 13, iconY + 11, 0xFF3A3A3A);
             context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, LEGEND_ICONS[i],
                     iconX + (12 - uv[2] * 2) / 2, iconY + (10 - uv[3] * 2) / 2, uv[0], uv[1], uv[2] * 2, uv[3] * 2, uv[2], uv[3], 16, 16);
-            String line = textRenderer.trimToWidth(Text.translatable(KEY + LEGEND_KEYS[i]).getString(), COLUMN - 16);
+            String line = fit(textRenderer, Text.translatable(KEY + LEGEND_KEYS[i]).getString(), COLUMN - 16, false);
             context.drawText(textRenderer, line, x + RIGHT_X + 16, rowY + 3, PartyGui.TEXT_DARK, false);
         }
     }
@@ -405,11 +419,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
 
     /** What the field means, under it (trimmed to the column; the full text is in the tooltip of the status icon). */
     private void drawMeaning(DrawContext context, Check check, int x, int y) {
-        Text meaning = check.meaning();
-        String shown = textRenderer.trimToWidth(meaning.getString(), COLUMN);
-        if (!shown.equals(meaning.getString())) {
-            shown = textRenderer.trimToWidth(meaning.getString(), COLUMN - textRenderer.getWidth("...")) + "...";
-        }
+        String shown = fit(textRenderer, check.meaning().getString(), COLUMN, false);
         context.drawText(textRenderer, shown, x, y, check.valid() ? PartyGui.TEXT_SOFT : PartyGui.TEXT_ERROR, false);
     }
 
