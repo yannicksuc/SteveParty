@@ -292,7 +292,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
                 objective = null;
             }
             if (objective == null) {
-                objective = scoreboard.addObjective(name, ScoreboardCriterion.DUMMY, Text.literal("Goal pole " + name.substring("steveparty_".length())),
+                objective = scoreboard.addObjective(name, ScoreboardCriterion.DUMMY, Text.translatable("scoreboard.steveparty.goal_pole", name.substring("steveparty_".length())),
                         ScoreboardCriterion.RenderType.INTEGER, true, null);
                 for (Map.Entry<String, Integer> entry : points.entrySet()) {
                     scoreboard.getOrCreateScore(ScoreHolder.fromName(entry.getKey()), objective).setScore(entry.getValue());
@@ -316,7 +316,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
                 sourceSeen.clear();
             }
             if (src == null && wanted.isPresent()) {
-                src = scoreboard.addObjective(sourceName, wanted.get(), Text.literal("Goal pole source " + criterion),
+                src = scoreboard.addObjective(sourceName, wanted.get(), Text.translatable("scoreboard.steveparty.goal_pole_source", criterion),
                         ScoreboardCriterion.RenderType.INTEGER, true, null);
             }
             sourceObjective = src;

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
@@ -22,9 +23,15 @@ public final class MulaDances {
     /** Within this distance of the core's axis (blocks) a dancer leaps up, to this height above the core at its middle. */
     public static final double HOP_RADIUS = 1.4, HOP_HEIGHT = 1.5;
 
-    public static final String[] NAMES = {
-            "Carousel of Stars", "Rose Window", "Infinity", "Lissajous Lace", "Starlit Staircase",
-            "Planets and Moons", "Sunflower Bloom", "Braided Comet", "Moonlight Waltz", "Heartbeat Nova"};
+    /** Id of each dance; its name is the lang key {@code mula.dance.<id>} (see {@link #name}). */
+    public static final String[] IDS = {
+            "carousel_of_stars", "rose_window", "infinity", "lissajous_lace", "starlit_staircase",
+            "planets_and_moons", "sunflower_bloom", "braided_comet", "moonlight_waltz", "heartbeat_nova"};
+
+    /** The translated name of a dance, e.g. "Carousel of Stars". */
+    public static Text name(int dance) {
+        return Text.translatable("mula.dance." + IDS[Math.floorMod(dance, COUNT)]);
+    }
 
     /**
      * Expression of each dance (the looping animation the dancers play): 0 twirl (arms up, happy squint, spins),

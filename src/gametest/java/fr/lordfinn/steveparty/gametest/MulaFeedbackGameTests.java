@@ -205,7 +205,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Potions: minutes x (level x 2) per effect; Strength II for 3:00 gives 12. */
+    /** Potions: minutes x (level x 2) per effect; a Strength II lasting 3:00 would give 12. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void potionValueFormula(TestContext context) {
         context.assertEquals(MulaFood.potionValue(List.of(new StatusEffectInstance(StatusEffects.STRENGTH, 3600, 1))), 12,

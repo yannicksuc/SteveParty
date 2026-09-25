@@ -33,9 +33,10 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
 /**
- * Plastic road sign: a round, square, diamond, star or heart plate of one of the 16 plastic colours on top of any
- * fence or wall ({@link SignPosts}, plastic fences included), turning in 16 directions. Every plate fills the 16x16
- * pixel grid (the diamond is the square turned by 45°). Stencils paint on the plate. The wrench changes the plate.
+ * Plastic road sign: one of 6 plates (round, square, diamond, triangle, star or heart) of one of the 16 plastic
+ * colours on top of any fence or wall ({@link SignPosts}, plastic fences included), turning in 16 directions. Every
+ * plate spans the 16x16 pixel grid (the diamond is the square turned by 45°). Stencils paint on the plate. The wrench
+ * changes the plate.
  * <p>
  * Made of plastic: unless it is on a post (standing on a fence or a wall, or hung on its side), it floats like the
  * plastic studs ({@link PlasticBlock}). Under water it rises, lies flat on the surface, is pressed flat under a block

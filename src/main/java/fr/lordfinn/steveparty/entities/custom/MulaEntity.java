@@ -384,8 +384,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	/**
-	 * Satiety at which it bursts. Foods give their nutrition (1 to 8, steak 8), potions minutes x (level x 2): 5 to 40
-	 * meals, or a couple of long strong potions.
+	 * Satiety at which it bursts. Foods give their nutrition (1 to 10, rabbit stew 10), potions minutes x (level x 2):
+	 * 4 to 40 meals, or a couple of long potions.
 	 */
 	public static final int MAX_HUNGER = 40;
 	/** Star fragments a Mula drops when it bursts from food: 64, a black one only one (a rare, powerful fragment). */
@@ -824,15 +824,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 		if (!player.getWorld().isClient) {
 			boolean potion = stack.isOf(Items.POTION);
-			String how = potion ? " (" + MulaFood.potionFormula(stack.getOrDefault(
-					net.minecraft.component.DataComponentTypes.POTION_CONTENTS,
-					net.minecraft.component.type.PotionContentsComponent.DEFAULT).getEffects()) + ")" : "";
-			Text message = Text.literal(String.format(
-					"Feed level: %d/%d - %s: +%d%s",
-					getHunger(), MAX_HUNGER,
-					stack.getName().getString(),
-					hungerValue, how
-			));
+			Text message = potion
+					? Text.translatable("message.steveparty.mula.feed.potion", getHunger(), MAX_HUNGER, stack.getName(),
+							hungerValue, MulaFood.potionFormula(stack.getOrDefault(
+									net.minecraft.component.DataComponentTypes.POTION_CONTENTS,
+									net.minecraft.component.type.PotionContentsComponent.DEFAULT).getEffects()))
+					: Text.translatable("message.steveparty.mula.feed", getHunger(), MAX_HUNGER, stack.getName(), hungerValue);
 			message = message.copy().styled(style -> style.withColor(this.getVariant().getColor()));
 			player.sendMessage(message, true);
 

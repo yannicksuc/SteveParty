@@ -428,7 +428,7 @@ public final class MulaBrain {
         return 2.6;                                        // shy, but within reach to be fed
     }
 
-    /** Height a wild Mula rises to at night: 8 to 20 blocks above the ground, below the build limit. */
+    /** Height a wild Mula rises to at night: 10 to 18 blocks above the ground, below the build limit. */
     public static double nightAltitude(double groundY, int topY, int seed) {
         double above = 10 + Math.floorMod(seed * 7, 9);
         return Math.min(groundY + above, topY - 2);

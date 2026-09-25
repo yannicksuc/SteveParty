@@ -86,6 +86,10 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
         context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE, startX + MINUS_OFFSET_X, startY, MINUS_ICON_X, hoverMinus ? MINUS_ICON_Y + LINE_SPACING : MINUS_ICON_Y, SQUARE_ICONS_SIZE, SQUARE_ICONS_SIZE, 256, 256);
     }
 
+    private static MutableText groupName(TeleportingTarget.Group group) {
+        return Text.translatable("gui.steveparty.group." + group.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
     private void drawTooltipRow(DrawContext context, TeleportingTarget target, int startX, int startY, int index, int mouseX, int mouseY) {
 
         boolean hoverCapacity = isMouseOver(mouseX, mouseY, startX + TEXT_CAPACITY_OFFSET_X, startY, TEXT_INPUT_WIDTH, TEXT_INPUT_HEIGHT);
@@ -98,10 +102,10 @@ public class HereWeComeBookScreen extends TeleportationBookScreen {
             lines.add(Text.translatable("gui.steveparty.group_description").setStyle(Style.EMPTY.withItalic(true)));
             TeleportingTarget.Group[] groups = TeleportingTarget.Group.values();
             int selectedIndex = target.getGroup().ordinal();
-            lines.add(MutableText.of(Text.of(groups[selectedIndex - 1 >= 0 ? selectedIndex - 1 : groups.length - 1].name()).getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
-            lines.add(MutableText.of(Text.of("-> "+ groups[selectedIndex].name()).getContent()).setStyle(Style.EMPTY.withBold(true)));
-            lines.add(MutableText.of(Text.of(groups[selectedIndex + 1 < groups.length ? selectedIndex + 1 : 0].name()).getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
-            lines.add(MutableText.of(Text.of("...").getContent()).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
+            lines.add(groupName(groups[selectedIndex - 1 >= 0 ? selectedIndex - 1 : groups.length - 1]).formatted(Formatting.GRAY));
+            lines.add(Text.literal("-> ").append(groupName(groups[selectedIndex])).formatted(Formatting.BOLD));
+            lines.add(groupName(groups[selectedIndex + 1 < groups.length ? selectedIndex + 1 : 0]).formatted(Formatting.GRAY));
+            lines.add(Text.literal("...").formatted(Formatting.GRAY));
             context.drawTooltip(textRenderer, lines, mouseX -x, mouseY-y);
         }
 

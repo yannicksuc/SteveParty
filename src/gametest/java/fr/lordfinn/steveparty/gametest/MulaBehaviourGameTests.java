@@ -83,12 +83,12 @@ public class MulaBehaviourGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** At night it rises 8 to 20 blocks above the ground, never above the build limit. */
+    /** At night it rises 10 to 18 blocks above the ground, never above the build limit. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void nightAltitudeIsBounded(TestContext context) {
         for (int seed = 0; seed < 50; seed++) {
             double y = MulaBrain.nightAltitude(64, 320, seed);
-            context.assertTrue(y >= 64 + 8 && y <= 64 + 20, "8 to 20 blocks above the ground: " + y);
+            context.assertTrue(y >= 64 + 10 && y <= 64 + 18, "10 to 18 blocks above the ground: " + y);
             context.assertTrue(MulaBrain.nightAltitude(315, 320, seed) <= 318, "below the build limit");
         }
         context.assertTrue(MulaBrain.isMorning(0) && MulaBrain.isMorning(23500) && !MulaBrain.isMorning(6000)

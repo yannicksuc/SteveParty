@@ -31,7 +31,7 @@ public class MulaDanceGameTests implements FabricGameTest {
                     for (double t = dt; t < MulaDances.DANCE_TICKS / 20.0; t += dt) {
                         MulaDances.offset(dance, slot, count, t, out);
                         double r = Math.sqrt(out[0] * out[0] + out[2] * out[2]);
-                        String where = MulaDances.NAMES[dance] + " " + slot + "/" + count + " at " + t + " s";
+                        String where = MulaDances.IDS[dance] + " " + slot + "/" + count + " at " + t + " s";
                         context.assertTrue(r <= 3.6, "stays within 3.6 blocks: " + r + ", " + where);
                         context.assertTrue(out[1] >= -1.0 && out[1] <= 2.6, "height in [-1, 2.6]: " + out[1] + ", " + where);
                         context.assertTrue(r >= 0.6 || out[1] >= 0.4, "over the core, not through it: " + where);
@@ -82,7 +82,7 @@ public class MulaDanceGameTests implements FabricGameTest {
         context.assertTrue(seen.size() == MulaDances.COUNT, "all ten dances in ten periods: " + seen);
         context.assertTrue(MulaDances.danceAt(1000, forge) != MulaDances.danceAt(1000, forge.east()),
                 "neighbouring forges dance different dances");
-        context.assertTrue(MulaDances.NAMES.length == MulaDances.COUNT && MulaDances.STYLE.length == MulaDances.COUNT,
+        context.assertTrue(MulaDances.IDS.length == MulaDances.COUNT && MulaDances.STYLE.length == MulaDances.COUNT,
                 "a name and an expression per dance");
         context.complete();
     }

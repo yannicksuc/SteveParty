@@ -42,19 +42,19 @@ public final class MulaCommand {
                 .then(literal("ephemeride")
                         .then(literal("start").executes(context -> {
                             fr.lordfinn.steveparty.entities.custom.MulaEphemeride.start(context.getSource().getWorld());
-                            context.getSource().sendFeedback(() -> Text.literal("An ephemeride begins (it lasts while it is night)"), true);
+                            context.getSource().sendFeedback(() -> Text.translatable("command.steveparty.mula.ephemeride_started"), true);
                             return 1;
                         }))
                         .then(literal("nearest").executes(context -> {
                             var site = fr.lordfinn.steveparty.entities.custom.MulaSpawnSites.get(context.getSource().getWorld())
                                     .nearest(net.minecraft.util.math.BlockPos.ofFloored(context.getSource().getPosition()), true);
                             if (site.isEmpty()) {
-                                context.getSource().sendError(Text.literal("No Mula spawn site yet"));
+                                context.getSource().sendError(Text.translatable("command.steveparty.mula.no_spawn_site"));
                                 return 0;
                             }
                             var s = site.get();
-                            context.getSource().sendFeedback(() -> Text.literal("Nearest Mula spawn site: " + s.pos.getX() + " "
-                                    + s.pos.getZ() + (s.spawned ? " (they came)" : " (waiting)")), false);
+                            context.getSource().sendFeedback(() -> Text.translatable(s.spawned ? "command.steveparty.mula.nearest_site.came"
+                                    : "command.steveparty.mula.nearest_site.waiting", s.pos.getX(), s.pos.getZ()), false);
                             return 1;
                         })))
                 .then(argument("mulas", EntityArgumentType.entities())
@@ -66,7 +66,7 @@ public final class MulaCommand {
                                 .executes(context -> {
                                     String animation = StringArgumentType.getString(context, "animation");
                                     if (!MulaEntity.animationNames().contains(animation)) {
-                                        context.getSource().sendError(Text.literal("Unknown Mula animation: " + animation));
+                                        context.getSource().sendError(Text.translatable("command.steveparty.mula.unknown_animation", animation));
                                         return 0;
                                     }
                                     int count = 0;
