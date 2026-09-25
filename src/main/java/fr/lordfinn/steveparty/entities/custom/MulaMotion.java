@@ -13,8 +13,9 @@ import net.minecraft.util.math.MathHelper;
  * each Mula starts at its own phase so they never bob in sync.
  * <p>
  * Readable states on top of it: how full it is (the core swells and glows faster, the halo grows, and near bursting it
- * trembles), and the excitement when a player close by holds its food (it turns to face them, eyes wide, bobbing and
- * flapping faster).
+ * trembles, but only while it is on edge: a player very close or a meal just taken, see {@link MulaEntity#isShaking};
+ * the rest of the time a big Mula stays calm and only its glow and leaking twinkles tell it is nearly full), and the
+ * excitement when a player close by holds its food (it turns to face them, eyes wide, bobbing and flapping faster).
  * <p>
  * Keep the constants in sync with {@code the art sources} (Motion), which renders the previews.
  */
@@ -39,8 +40,10 @@ public final class MulaMotion {
 	private static final float SCALE_SPRING = 0.24f, SCALE_DAMPING = 0.64f;
 	/** The phase is kept below this (the sway runs at half the bob frequency: 4 pi is a whole cycle of both). */
 	private static final float PHASE_WRAP = (float) (4 * Math.PI);
-	/** Fullness above which the Mula trembles, more and more until it bursts. */
-	private static final float TREMBLE_FROM = 0.7f;
+	/** Fullness above which the Mula trembles (while on edge), more and more until it bursts. */
+	public static final float TREMBLE_FROM = 0.7f;
+	/** Share of the way to "on edge" / "calm" covered each tick: the tremble fades in over ~0.3 s, out over ~1 s. */
+	private static final float SHAKE_IN = 0.18f, SHAKE_OUT = 0.07f;
 	/** Most the Mula turns to face a player holding its food (degrees). */
 	private static final float MAX_LOOK = 70f;
 
@@ -55,6 +58,8 @@ public final class MulaMotion {
 	private float fullness, prevFullness;
 	private float glowPhase, prevGlowPhase;
 	private float tremblePhase, prevTremblePhase;
+	/** 0..1, how much it lets its tremble show: eased towards 1 while on edge, towards 0 when calm (no popping). */
+	private float shake, prevShake;
 	private float flare, prevFlare;
 	private float speed;
 	private boolean flying;
@@ -89,9 +94,10 @@ public final class MulaMotion {
 	 * @param full       how full it is, 0..1 (hunger / max)
 	 * @param excited    a player close by holds its food
 	 * @param lookTarget where that player is, relative to the body yaw (degrees)
+	 * @param shaking    on edge (synced from the server): a player very close, or a meal just taken
 	 */
 	public void tick(boolean sitting, double dx, double dy, double dz, float bodyYaw, float yawDelta, float scale,
-					 float full, boolean excited, float lookTarget) {
+					 float full, boolean excited, float lookTarget, boolean shaking) {
 		ticked = true;
 		prevPhase = phase;
 		prevAmplitude = amplitude;
@@ -104,6 +110,7 @@ public final class MulaMotion {
 		prevFullness = fullness;
 		prevGlowPhase = glowPhase;
 		prevTremblePhase = tremblePhase;
+		prevShake = shake;
 		prevFlare = flare;
 		prevAbsorbGlow = absorbGlow;
 		prevVisualScale = visualScale < 0 ? scale : visualScale;
@@ -143,6 +150,8 @@ public final class MulaMotion {
 			tremblePhase -= MathHelper.TAU;
 			prevTremblePhase -= MathHelper.TAU;
 		}
+		shake += ((shaking ? 1f : 0f) - shake) * (shaking ? SHAKE_IN : SHAKE_OUT);
+		if (!shaking && shake < 0.002f) shake = 0f;
 		flare = Math.max(0f, flare - 0.03f);
 
 		// lean into the flight (forward speed), back when climbing; bank into turns; springs overshoot a little
@@ -247,6 +256,16 @@ public final class MulaMotion {
 		return MathHelper.lerp(partialTick, prevFullness, fullness);
 	}
 
+	/**
+	 * 0..1, how hard it trembles right now: grows from {@link #TREMBLE_FROM} to bursting, times how much it is on edge
+	 * (eased, so the tremble fades in and out). 0 for a calm Mula, however full.
+	 */
+	public float tremble(float partialTick) {
+		float full = fullness(partialTick);
+		if (full <= TREMBLE_FROM) return 0f;
+		return Math.min(1f, (full - TREMBLE_FROM) / (1f - TREMBLE_FROM)) * MathHelper.lerp(partialTick, prevShake, shake);
+	}
+
 	/** 0..1, the glow_rings flare. */
 	public float flareLevel(float partialTick) {
 		return MathHelper.lerp(partialTick, prevFlare, flare);
@@ -272,7 +291,7 @@ public final class MulaMotion {
 		float full = fullness(partialTick);
 		float rel = amp / AMPLITUDE[IDLE];
 		float s = sq * MathHelper.sin(p - 0.5f);
-		float tremble = full > TREMBLE_FROM ? 2.2f * (full - TREMBLE_FROM) / (1f - TREMBLE_FROM) : 0f;
+		float tremble = 2.2f * tremble(partialTick);
 		float tp = MathHelper.lerp(partialTick, prevTremblePhase, tremblePhase);
 		out.posY = amp * MathHelper.sin(p);
 		out.posX = 0.35f * amp * MathHelper.sin(0.5f * p + swayOffset) + 0.25f * tremble * MathHelper.sin(tp * 1.3f);

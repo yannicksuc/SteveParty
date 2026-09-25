@@ -37,6 +37,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
@@ -89,6 +90,17 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private static final int BELLY_CLEAR_TICKS = 26;
 	/** "Just spawned" (it pops in from nothing on the clients) lasts this long. */
 	private static final int FRESH_TICKS = 40;
+	/**
+	 * A nearly full Mula trembles only while it is on edge (see {@link #isShaking}): when a player is within this many
+	 * blocks of its body (from the edge of its hitbox, so the same arm's length for a small or a swollen one: well
+	 * inside the 3 blocks you can feed it from, you really have to come up to it)...
+	 */
+	public static final double SHAKE_NEAR = 2.0;
+	/**
+	 * ...or for this long after a meal: the meal's light sinks in (MulaEffects.ABSORB_TICKS, when it grows), then it
+	 * trembles for 2.5 s more.
+	 */
+	public static final int SHAKE_AFTER_MEAL_TICKS = MulaEffects.ABSORB_TICKS + 50;
 
 	/**
 	 * The little random "character" animations. Chosen and started by the server (see {@link #tickEmotes}) with
@@ -184,6 +196,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	/** Just spawned: it pops in from nothing on the clients. */
 	private static final TrackedData<Boolean> FRESH =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	/** Nearly full and on edge (a player very close, a meal just taken): the clients let it tremble (MulaMotion). */
+	private static final TrackedData<Boolean> SHAKING =
+			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	/** Server: ticks left of the tremble after a meal. */
+	private int shakeTicks = 0;
 
 	private int eatCooldown = 0;
 	/** Carrying its lead holder up into the night sky (MulaLift): it twinkles, happy. */
@@ -361,6 +378,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (eatCooldown > 0) eatCooldown--;
 		if (bellyClearTicks > 0 && --bellyClearTicks == 0) setLastFood(ItemStack.EMPTY);
 		if (freshTicks > 0 && --freshTicks == 0) this.dataTracker.set(FRESH, false);
+		if (shakeTicks > 0) shakeTicks--;
+		if ((this.age & 1) == 0) updateShaking();
 		if ((this.age & 3) == 0) keepOutOfBlocks();
 		if (coreBurstTicks > 0 && --coreBurstTicks == 0) {
 			// its forge's core blew up: it bursts too (no fragments: the core's blast is not a meal)
@@ -702,6 +721,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		builder.add(LAST_FOOD, ItemStack.EMPTY);
 		builder.add(FEED_COUNT, 0);
 		builder.add(FRESH, false);
+		builder.add(SHAKING, false);
 		builder.add(RESTING, false);
 		builder.add(DANCE, -1);
 		builder.add(CARRYING, false);
@@ -772,6 +792,31 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		return this.dataTracker.get(FEED_COUNT);
 	}
 
+	/**
+	 * Nearly full (past {@link MulaMotion#TREMBLE_FROM}) and on edge: a player (not a spectator) within
+	 * {@link #SHAKE_NEAR} blocks of its body, or a meal taken less than {@link #SHAKE_AFTER_MEAL_TICKS} ago. Only then
+	 * do the clients let it tremble; the rest of the time a big Mula stays calm (its trembling all the time was
+	 * unsettling). Synced, so every player sees the same.
+	 */
+	public boolean isShaking() {
+		return this.dataTracker.get(SHAKING);
+	}
+
+	/** Server: refreshes {@link #isShaking} (sent to the clients only when it changes). */
+	private void updateShaking() {
+		boolean shaking = (float) getHunger() / MAX_HUNGER > MulaMotion.TREMBLE_FROM
+				&& (shakeTicks > 0 || isPlayerVeryClose());
+		if (shaking != isShaking()) this.dataTracker.set(SHAKING, shaking);
+	}
+
+	private boolean isPlayerVeryClose() {
+		Box near = this.getBoundingBox().expand(SHAKE_NEAR);
+		for (PlayerEntity player : this.getWorld().getPlayers()) {
+			if (player.isAlive() && !player.isSpectator() && near.intersects(player.getBoundingBox())) return true;
+		}
+		return false;
+	}
+
 	/** Just spawned (the first 2 seconds): it pops in on the clients. */
 	public boolean isFresh() {
 		return this.dataTracker.get(FRESH);
@@ -837,6 +882,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			setLastFood(stack.copyWithCount(1));
 			this.dataTracker.set(FEED_COUNT, getFeedCount() + 1);
 			bellyClearTicks = 0;
+			shakeTicks = SHAKE_AFTER_MEAL_TICKS;
 			if (potion) {
 				// like drinking it: the empty bottle goes back to the player
 				player.setStackInHand(hand, net.minecraft.item.ItemUsage.exchangeStack(stack, player,
@@ -858,6 +904,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			}
 			// Set cooldown for 1 second (20 ticks)
 			eatCooldown = 20;
+			updateShaking();
 		}
 
 		return ActionResult.SUCCESS;
@@ -1095,7 +1142,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		effects.tick(this.serverX, this.serverY, this.serverZ);
 		motion.tick(this.isInSittingPose(), this.getX() - this.prevX, this.getY() - this.prevY, this.getZ() - this.prevZ,
 				this.bodyYaw, MathHelper.wrapDegrees(this.bodyYaw - this.prevBodyYaw), this.getScaleFactor(),
-				(float) this.getHunger() / MAX_HUNGER, excited, excitedYaw);
+				(float) this.getHunger() / MAX_HUNGER, excited, excitedYaw, isShaking());
 
 		if (--blinkCooldown <= 0) {
 			blinkCooldown = 50 + this.random.nextInt(110); // every 2.5 to 8 s
