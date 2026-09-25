@@ -33,6 +33,8 @@ public class MulaStarEntity extends Entity {
 
     /** Arc heights (blocks above the start) and the distances they give. */
     public static final double MIN_APEX = 25, MAX_APEX = 90, MIN_DISTANCE = 100, MAX_DISTANCE = 400;
+    /** Black Mulas, more fearful and full of magic, fly much farther: 500 to 2000 blocks. */
+    public static final double BLACK_MIN_DISTANCE = 500, BLACK_MAX_DISTANCE = 2000;
     private static final MulaSparkleEffect WHITE_TWINKLE = new MulaSparkleEffect(0xFFFFFF, 1.4f, MulaSparkleEffect.TWINKLE);
 
     private double startX, startY, startZ;
@@ -54,9 +56,16 @@ public class MulaStarEntity extends Entity {
         return MIN_DISTANCE + (MAX_DISTANCE - MIN_DISTANCE) * u;
     }
 
-    /** Flight time (ticks): about 4 s for the nearest rebirth, 8 s for the farthest. */
+    /** The same for a Mula of this colour (black ones go 500 to 2000 blocks). */
+    public static double distanceFor(double apex, MulaEntity.MulaVariant variant) {
+        if (variant != MulaEntity.MulaVariant.BLACK) return distanceFor(apex);
+        double u = MathHelper.clamp((apex - MIN_APEX) / (MAX_APEX - MIN_APEX), 0, 1);
+        return BLACK_MIN_DISTANCE + (BLACK_MAX_DISTANCE - BLACK_MIN_DISTANCE) * u;
+    }
+
+    /** Flight time (ticks): about 4 s for the nearest rebirth, 8 s at 400 blocks, 10.5 s at most (black ones fly faster). */
     public static int flightTicksFor(double distance) {
-        return (int) (60 + distance / 4);
+        return (int) (60 + Math.min(distance, 600) / 4);
     }
 
     /** Server: sets its path (before it is spawned). */

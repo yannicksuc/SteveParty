@@ -148,4 +148,51 @@ public class MulaRebirthGameTests implements FabricGameTest {
             context.complete();
         });
     }
+
+    /** Black Mulas: one fragment when they burst from food (the others still 64), and a star 500-2000 blocks away. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void blackMulasDropOneFragmentAndFlyFarther(TestContext context) {
+        context.assertTrue(MulaStarEntity.distanceFor(MulaStarEntity.MIN_APEX, MulaEntity.MulaVariant.BLACK) == 500
+                && MulaStarEntity.distanceFor(MulaStarEntity.MAX_APEX, MulaEntity.MulaVariant.BLACK) == 2000, "black: 500-2000");
+        context.assertTrue(MulaStarEntity.distanceFor(MulaStarEntity.MIN_APEX, MulaEntity.MulaVariant.BLUE) == 100
+                && MulaStarEntity.distanceFor(MulaStarEntity.MAX_APEX, MulaEntity.MulaVariant.RED) == 400, "others: 100-400");
+        ServerWorld world = context.getWorld();
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        MulaEntity black = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        black.setVariant(MulaEntity.MulaVariant.BLACK);
+        black.setHunger(MulaEntity.MAX_HUNGER - 1);
+        black.setAiDisabled(true);
+        MulaEntity blue = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(6, 3, 6));
+        blue.setVariant(MulaEntity.MulaVariant.BLUE);
+        blue.setHunger(MulaEntity.MAX_HUNGER - 1);
+        blue.setAiDisabled(true);
+        try {
+            player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.COOKED_BEEF, 4));
+            black.interactMob(player, net.minecraft.util.Hand.MAIN_HAND);
+            player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.COD, 4));
+            blue.interactMob(player, net.minecraft.util.Hand.MAIN_HAND);
+        } finally {
+            world.getServer().getPlayerManager().remove(player);
+        }
+        UUID id = black.getUuid();
+        context.runAtTick(60, () -> {
+            int blackCount = 0, blueCount = 0;
+            for (var item : world.getEntitiesByClass(net.minecraft.entity.ItemEntity.class, new Box(context.getAbsolutePos(new BlockPos(3, 3, 3))).expand(12), e -> true)) {
+                if (item.getStack().isOf(fr.lordfinn.steveparty.items.ModItems.BLACK_STAR_FRAGMENT)) blackCount += item.getStack().getCount();
+                if (item.getStack().isOf(fr.lordfinn.steveparty.items.ModItems.BLUE_STAR_FRAGMENT)) blueCount += item.getStack().getCount();
+                item.discard();
+            }
+            context.assertTrue(blackCount == 1, "a black burst drops exactly 1 fragment: " + blackCount);
+            context.assertTrue(blueCount == 64, "the others still 64: " + blueCount);
+            MulaRebirths.Entry e = MulaRebirths.get(world).entries().stream().filter(x -> x.id().equals(id)).findFirst().orElse(null);
+            context.assertTrue(e != null, "black rebirth recorded");
+            double d = Math.hypot(e.x() + 0.5 - (context.getAbsolutePos(new BlockPos(1, 3, 1)).getX() + 0.5),
+                    e.z() + 0.5 - (context.getAbsolutePos(new BlockPos(1, 3, 1)).getZ() + 0.5));
+            context.assertTrue(d >= 495 && d <= 2005, "black reborn 500-2000 blocks away: " + d);
+            MulaRebirths.get(world).entries().forEach(x -> { if (x.id().equals(id) || x.id().equals(blue.getUuid())) MulaRebirths.get(world).remove(x.id()); });
+            world.getEntitiesByClass(MulaStarEntity.class, new Box(context.getAbsolutePos(new BlockPos(3, 3, 3))).expand(40), x -> true).forEach(Entity::discard);
+            context.complete();
+        });
+    }
 }

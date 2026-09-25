@@ -309,7 +309,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		} else {
 			double angle = Double.isNaN(starAngle) ? random.nextDouble() * MathHelper.TAU : starAngle;
 			apex = MulaStarEntity.MIN_APEX + random.nextDouble() * (MulaStarEntity.MAX_APEX - MulaStarEntity.MIN_APEX);
-			distance = MulaStarEntity.distanceFor(apex);
+			distance = MulaStarEntity.distanceFor(apex, getVariant());
 			dirX = Math.cos(angle);
 			dirZ = Math.sin(angle);
 			x = MathHelper.floor(this.getX() + dirX * distance);
@@ -388,6 +388,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	 * meals, or a couple of long strong potions.
 	 */
 	public static final int MAX_HUNGER = 40;
+	/** Star fragments a Mula drops when it bursts from food: 64, a black one only one (a rare, powerful fragment). */
+	public static final int BURST_FRAGMENTS = 64, BLACK_BURST_FRAGMENTS = 1;
+
+	public static int fragmentsOnBurst(MulaVariant variant) {
+		return variant == MulaVariant.BLACK ? BLACK_BURST_FRAGMENTS : BURST_FRAGMENTS;
+	}
 	/**
 	 * Size of its body cube (9 model pixels) at scale 1: its hitbox (width and height). The model is drawn with the
 	 * bottom of that cube on its feet (MulaModel), so the hitbox is exactly what is seen, at every size.
@@ -846,7 +852,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			if (getHunger() >= MAX_HUNGER) {
 				playSpecial("explode", EXPLODE_TICKS);
 				setHunger(0);
-				dropFragmentStars(64);
+				dropFragmentStars(fragmentsOnBurst(getVariant()));
 				bellyClearTicks = BELLY_CLEAR_TICKS;
 				// at the pop it flies away as a shooting star, to be reborn far away
 				starLaunchTicks = STAR_LAUNCH_TICKS;
