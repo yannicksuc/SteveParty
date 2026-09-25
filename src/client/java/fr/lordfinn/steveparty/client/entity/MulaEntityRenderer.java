@@ -45,8 +45,14 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     private static final Identifier WISP_TEXTURE = Steveparty.id("textures/entity/mula_wisp.png");
     /** Most inner lights (one per 1/8 of its hunger). */
     private static final int MAX_WISPS = 8;
-    /** Height of its inner lights, from the body's centre (model pixels): in the belly, under the eyes. */
-    private static final float BELLY_Y = -2.1f;
+    /**
+     * Height of its inner lights, from the "head" bone's pivot (model pixels). That pivot is the centre of the body
+     * cube (geo: pivot y 6.53, cube 2..11), and it follows the bob, the animations and the drawn size: 0 keeps them in
+     * the middle of the body at every size and in every pose (they used to sit 2.1 px lower, in the bottom half).
+     */
+    private static final float LIGHTS_Y = 0f;
+    /** How far the inner lights wander from the centre (model pixels), sideways and up / down (the body is 8 wide). */
+    private static final float LIGHTS_REACH_X = 2.6f, LIGHTS_REACH_Y = 1.6f;
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new MulaModel());
@@ -201,10 +207,10 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
 
         /**
          * What it has eaten, as light inside it: a soft heart glow and one little tinted star per eighth of its hunger,
-         * drifting slowly round inside its body, brighter, bigger and quicker the fuller it is, trembling near the
-         * burst, flaring warm when a meal's light sinks in. Camera-facing and drawn just in front of the body's surface
-         * on the camera's side (the translucent body would hide them inside), within its silhouette, so they read as
-         * glowing through it. They shrink with the body (the burst's pop). Nothing allocated per frame.
+         * drifting slowly round the middle of its body, brighter, bigger and quicker the fuller it is, trembling near
+         * the burst while it is on edge, flaring warm when a meal's light sinks in. Camera-facing and drawn just in
+         * front of the body's surface on the camera's side (the translucent body would hide them inside), within its
+         * silhouette, so they read as glowing through it. They shrink with the body (the burst's pop). Nothing allocated per frame.
          */
         private void renderInnerLights(MatrixStack matrices, MulaEntity mula, GeoBone head, Camera camera,
                                        VertexConsumerProvider bufferSource, float partialTick, float full, float warm) {
@@ -237,18 +243,20 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             matrices.multiply(camera.getRotation());
             MatrixStack.Entry entry = matrices.peek();
             float z = 0f;
-            // the heart: a soft glow below the eyes, warmer and bigger when a meal has just come in
+            // the heart: a soft glow in the middle of its body, warmer and bigger when a meal has just come in
             float heart = (1.2f + 1.5f * full + 2.0f * warm) * (0.9f + 0.1f * MathHelper.sin(t * 0.2f)) * px;
             int heartAlpha = (int) (255 * MathHelper.clamp(0.18f + 0.25f * full + 0.45f * warm, 0f, 0.85f));
-            wisp(vertices, entry, 0, BELLY_Y * px, z, heart, r, g, b, heartAlpha);
-            float tremble = full > 0.7f ? (full - 0.7f) / 0.3f : 0f;
+            wisp(vertices, entry, 0, LIGHTS_Y * px, z, heart, r, g, b, heartAlpha);
+            // only while it is on edge (a player very close, a meal just taken): a calm full Mula's lights just drift
+            float tremble = mula.getMotion().tremble(partialTick);
             int count = Math.min(MAX_WISPS, MathHelper.ceil(lights));
             for (int i = 0; i < count; i++) {
                 float shown = MathHelper.clamp(lights - i, 0f, 1f);
                 float a = t * (0.035f + 0.05f * full) + i * 2.39996f;
                 float reach = 0.55f + 0.45f * ((i * 0.618f) % 1f);
-                float wx = MathHelper.cos(a) * 2.6f * reach + tremble * 0.3f * MathHelper.sin(t * 2.1f + i);
-                float wy = BELLY_Y + MathHelper.sin(a * 1.3f + i) * 1.0f * reach + tremble * 0.3f * MathHelper.cos(t * 1.9f + i);
+                float wx = MathHelper.cos(a) * LIGHTS_REACH_X * reach + tremble * 0.3f * MathHelper.sin(t * 2.1f + i);
+                float wy = LIGHTS_Y + MathHelper.sin(a * 1.3f + i) * LIGHTS_REACH_Y * reach
+                        + tremble * 0.3f * MathHelper.cos(t * 1.9f + i);
                 float half = (0.45f + 0.25f * full) * (0.75f + 0.4f * Math.abs(MathHelper.sin(t * 0.25f + i))) * shown * px;
                 int alpha = (int) (255 * MathHelper.clamp((0.55f + 0.45f * full + 0.3f * warm) * shown, 0f, 1f));
                 wisp(vertices, entry, wx * px, wy * px, z + (i + 1) * 0.002f * px, half, 255, 255, 255, alpha);
