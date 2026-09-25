@@ -15,6 +15,27 @@
       },
       {
         "model": "steveparty:block/red_star_fragments_block_v4"
+      },
+      {
+        "model": "steveparty:block/red_star_fragments_block_v5"
+      },
+      {
+        "model": "steveparty:block/red_star_fragments_block_v6"
+      },
+      {
+        "model": "steveparty:block/red_star_fragments_block_v7"
+      },
+      {
+        "model": "steveparty:block/red_star_fragments_block_v8"
+      },
+      {
+        "model": "steveparty:block/red_star_fragments_block_v9"
+      },
+      {
+        "model": "steveparty:block/red_star_fragments_block_v10"
+      },
+      {
+        "model": "steveparty:block/red_star_fragments_block_v11"
       }
     ]
   }

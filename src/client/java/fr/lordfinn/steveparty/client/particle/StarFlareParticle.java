@@ -11,29 +11,28 @@ import net.minecraft.client.particle.SpriteProvider;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Vector3f;
 
 /**
- * Solar eruption of a star fragments block: a round flame blob bursts out of a face, follows an arc of circle around the
- * block's centre (a prominence hugging the star's limb), stretches along its path while drifting outwards, breaks up
- * into wisps and fades. Full bright; the quad is stretched along the velocity and turned towards the camera.
- * Sprites: 8 frames per colour (the art sources), motion towards +u.
+ * Crescent slash of a star fragments block, in the spirit of vanilla's sweep attack particle: pixel-art crescent frames
+ * (appear, full crescent, tail wears off, breaks into pixels, sparks) drawn on a 2x2-block quad lying in a plane through
+ * the block's centre, so the crescent traces an arc of circle around the block starting from an exposed face.
+ * Camera independent (double sided), full bright, translucent particle sheet (fine with Iris).
+ * Sprites: 32x32 per frame, 16 px per block (the art sources); the arc starts on the
+ * sprite's +u axis (mapped to the face normal) and turns towards +v (mapped to the roll tangent).
  */
 public class StarFlareParticle extends SpriteBillboardParticle {
-    private static final int FRAMES_PER_COLOUR = 8;
+    private static final int FRAMES_PER_COLOUR = 6;
     private static final int SPRITE_COUNT = 6 * FRAMES_PER_COLOUR;
-    private static final float SIZE = 0.5f;         // blob diameter in blocks
-    private static final float MAX_STRETCH = 1.1f;  // extra length at the most stretched
-    private static final float OUTWARD = 0.35f;     // radius gained over the life (the flame leaves the star)
+    private static final float SPRITE_ARC_RADIUS = 12.5f / 16f; // arc radius drawn in the sprite, in blocks at scale 1
 
     private final SpriteProvider sprites;
     private final int colour;
     private final double cx, cy, cz;
-    private final Vec3d normal, tangent;
-    private final float radius, sweep;
+    private final float ux, uy, uz, vx, vy, vz;               // quad half axes (face normal, tangent), scaled
 
     protected StarFlareParticle(ClientWorld world, double x, double y, double z, StarFlareEffect effect,
                                 SpriteProvider sprites) {
@@ -43,29 +42,25 @@ public class StarFlareParticle extends SpriteBillboardParticle {
         this.cx = x;
         this.cy = y;
         this.cz = z;
-        this.normal = Vec3d.of(Direction.byId(effect.face()).getVector());
-        this.tangent = Vec3d.of(Direction.byId(effect.tangent()).getVector());
-        this.radius = effect.radius();
-        this.sweep = effect.sweep();
-        this.maxAge = Math.max(4, effect.life());
+        Direction face = Direction.byId(effect.face());
+        Vec3d n = Vec3d.of(face.getVector());
+        Vec3d a = Vec3d.of((face.getAxis() == Direction.Axis.Y ? Direction.EAST : Direction.UP).getVector());
+        Vec3d b = n.crossProduct(a);
+        float c = MathHelper.cos(effect.roll()), s = MathHelper.sin(effect.roll());
+        Vec3d t = a.multiply(c).add(b.multiply(s));
+        float half = effect.radius() / SPRITE_ARC_RADIUS;            // the sprite's arc lands on the wanted radius
+        this.ux = (float) n.x * half;
+        this.uy = (float) n.y * half;
+        this.uz = (float) n.z * half;
+        this.vx = (float) t.x * half;
+        this.vy = (float) t.y * half;
+        this.vz = (float) t.z * half;
+        this.maxAge = Math.max(6, effect.life());
         this.collidesWithWorld = false;
         this.gravityStrength = 0f;
         this.velocityX = this.velocityY = this.velocityZ = 0;
-        Vec3d p = arc(0f);
-        setPos(p.x, p.y, p.z);
-        this.prevPosX = p.x;
-        this.prevPosY = p.y;
-        this.prevPosZ = p.z;
         updateSprite();
-    }
-
-    /** Life fraction 0..1 -> position on the arc. */
-    private Vec3d arc(float s) {
-        float theta = sweep * (1f - (1f - s) * (1f - s));          // bursts out fast, slows down along the limb
-        float r = radius + OUTWARD * s * s;
-        double c = MathHelper.cos(theta) * r, n = MathHelper.sin(theta) * r;
-        return new Vec3d(cx + normal.x * c + tangent.x * n, cy + normal.y * c + tangent.y * n,
-                cz + normal.z * c + tangent.z * n);
+        setBoundingBox(new Box(x - half, y - half, z - half, x + half, y + half, z + half));
     }
 
     private void updateSprite() {
@@ -75,52 +70,32 @@ public class StarFlareParticle extends SpriteBillboardParticle {
 
     @Override
     public void tick() {
-        this.prevPosX = this.x;
-        this.prevPosY = this.y;
-        this.prevPosZ = this.z;
         if (this.age++ >= this.maxAge) {
             markDead();
             return;
         }
-        Vec3d p = arc(Math.min(1f, (float) age / maxAge));
-        setPos(p.x, p.y, p.z);
-        float s = (float) age / maxAge;
-        this.alpha = s < 0.7f ? 1f : Math.max(0f, 1f - (s - 0.7f) / 0.3f);
         updateSprite();
     }
 
     @Override
     public void buildGeometry(VertexConsumer vc, Camera camera, float tickDelta) {
-        float s = MathHelper.clamp((age + tickDelta) / maxAge, 0f, 1f);
-        Vec3d pos = arc(s);
-        Vec3d dir = arc(Math.min(1f, s + 0.02f)).subtract(arc(Math.max(0f, s - 0.02f)));
-        if (dir.lengthSquared() < 1e-8) dir = tangent;
-        dir = dir.normalize();
         Vec3d cam = camera.getPos();
-        Vec3d toCam = cam.subtract(pos);
-        Vec3d side = dir.crossProduct(toCam);
-        if (side.lengthSquared() < 1e-8) side = normal.crossProduct(dir);
-        side = side.normalize();
-
-        float stretch = MathHelper.clamp((s - 0.2f) / 0.5f, 0f, 1f);  // round at first, then drawn out
-        float half = SIZE * (0.6f + 0.4f * Math.min(1f, s * 4f)) / 2f;
-        float halfLen = half * (1f + MAX_STRETCH * stretch);
-        float halfWid = half * (1f - 0.25f * stretch);
-
-        float px = (float) (pos.x - cam.x), py = (float) (pos.y - cam.y), pz = (float) (pos.z - cam.z);
-        Vector3f d = new Vector3f((float) dir.x, (float) dir.y, (float) dir.z).mul(halfLen);
-        Vector3f w = new Vector3f((float) side.x, (float) side.y, (float) side.z).mul(halfWid);
+        float ox = (float) (cx - cam.x), oy = (float) (cy - cam.y), oz = (float) (cz - cam.z);
         float u0 = getMinU(), u1 = getMaxU(), v0 = getMinV(), v1 = getMaxV();
         int light = getBrightness(tickDelta);
-        // tail (-d) at u0, head (+d) at u1; both windings so culling never hides it
-        vertex(vc, px - d.x - w.x, py - d.y - w.y, pz - d.z - w.z, u0, v1, light);
-        vertex(vc, px - d.x + w.x, py - d.y + w.y, pz - d.z + w.z, u0, v0, light);
-        vertex(vc, px + d.x + w.x, py + d.y + w.y, pz + d.z + w.z, u1, v0, light);
-        vertex(vc, px + d.x - w.x, py + d.y - w.y, pz + d.z - w.z, u1, v1, light);
-        vertex(vc, px + d.x - w.x, py + d.y - w.y, pz + d.z - w.z, u1, v1, light);
-        vertex(vc, px + d.x + w.x, py + d.y + w.y, pz + d.z + w.z, u1, v0, light);
-        vertex(vc, px - d.x + w.x, py - d.y + w.y, pz - d.z + w.z, u0, v0, light);
-        vertex(vc, px - d.x - w.x, py - d.y - w.y, pz - d.z - w.z, u0, v1, light);
+        // corners: texture u runs along the face normal, v along the tangent
+        float ax = ox - ux - vx, ay = oy - uy - vy, az = oz - uz - vz;   // (u0, v0)
+        float bx = ox + ux - vx, by = oy + uy - vy, bz = oz + uz - vz;   // (u1, v0)
+        float cx2 = ox + ux + vx, cy2 = oy + uy + vy, cz2 = oz + uz + vz; // (u1, v1)
+        float dx = ox - ux + vx, dy = oy - uy + vy, dz = oz - uz + vz;   // (u0, v1)
+        vertex(vc, ax, ay, az, u0, v0, light);
+        vertex(vc, bx, by, bz, u1, v0, light);
+        vertex(vc, cx2, cy2, cz2, u1, v1, light);
+        vertex(vc, dx, dy, dz, u0, v1, light);
+        vertex(vc, dx, dy, dz, u0, v1, light);                          // back side
+        vertex(vc, cx2, cy2, cz2, u1, v1, light);
+        vertex(vc, bx, by, bz, u1, v0, light);
+        vertex(vc, ax, ay, az, u0, v0, light);
     }
 
     private void vertex(VertexConsumer vc, float x, float y, float z, float u, float v, int light) {
