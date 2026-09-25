@@ -115,6 +115,8 @@ public class TeleportationPadBlock extends BlockWithEntity {
         if (book == null || book.isEmpty()) return;  // Ensure the pad is not empty
         if (!(book.getItem() instanceof HereWeGoBookItem)) return;
         if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
+        // Just teleported here (e.g. back onto this pad by a « last used » book): wait until he steps off
+        if (TeleportationPadArrivals.isJustArrived(serverPlayer)) return;
 
         // onEntityCollision fires every tick of contact: only handle one pending teleport per player
         UUID taskId = getTeleportTaskId(player);
@@ -161,6 +163,7 @@ public class TeleportationPadBlock extends BlockWithEntity {
         Vec3d landing = SafeLanding.findLandingPos(world, player, target);
         player.teleport(world, landing.x, landing.y, landing.z, Set.of(), player.getYaw(), player.getPitch(), false);
         player.fallDistance = 0;
+        TeleportationPadArrivals.markArrived(player, landing);
     }
 
     private void teleportPlayer(ServerPlayerEntity player, BlockPos pos, UUID taskId) {

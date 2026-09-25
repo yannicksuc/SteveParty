@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.TeleportationPadBlockEntity;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
+import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
@@ -132,6 +133,66 @@ public class TeleportBooksGameTests implements FabricGameTest {
                 disconnect(context, player);
             }
             context.complete();
+        });
+    }
+
+    // ------------------------------------------------------------------ "just arrived" guard
+
+    /**
+     * « Last used » brings the player back onto a pad that has a « Here we go » book: he stays there until he steps
+     * off (no immediate bounce), then that pad works again.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void playerSentBackOntoAPadIsNotBouncedUntilHeStepsOff(TestContext context) {
+        BlockPos lastUsedPad = new BlockPos(1, 1, 1);
+        BlockPos previousPad = new BlockPos(5, 1, 5);
+        BlockPos previousPadTarget = new BlockPos(1, 1, 5);
+        context.setBlockState(previousPadTarget, Blocks.STONE);
+        placePad(context, previousPad, hereWeGo(HereWeGoBookItem.State.TP_REGISTERED_POS, context.getAbsolutePos(previousPadTarget)));
+        placePad(context, lastUsedPad, hereWeGo(HereWeGoBookItem.State.TP_BACK_LAST_USED_TP_PAD));
+
+        ServerPlayerEntity player = playerAt(context, lastUsedPad, 0.25);
+        // He used the previous pad before
+        TeleportationPadStorageManager.getTeleportationHistoryStorage(context.getWorld())
+                .addTeleportation(player.getUuid(), context.getAbsolutePos(previousPad), context.getAbsolutePos(previousPadTarget));
+        stepOn(context, lastUsedPad, player);
+
+        context.waitAndRun(TELEPORT_DELAY + 2, () -> {
+            try {
+                assertFeetAt(context, player, previousPad, 0.25, "back on the previous pad");
+                // Touching the pad he just landed on (every tick) doesn't send him away
+                for (int i = 0; i < 3; i++) stepOn(context, previousPad, player);
+            } catch (RuntimeException e) {
+                disconnect(context, player);
+                throw e;
+            }
+            context.waitAndRun(TELEPORT_DELAY + 2, () -> {
+                try {
+                    assertFeetAt(context, player, previousPad, 0.25, "still on the previous pad");
+                    // Steps off, then back on: the pad teleports him again
+                    moveTo(context, player, previousPad.north(2), 0);
+                } catch (RuntimeException e) {
+                    disconnect(context, player);
+                    throw e;
+                }
+                context.waitAndRun(2, () -> {
+                    try {
+                        moveTo(context, player, previousPad, 0.25);
+                        stepOn(context, previousPad, player);
+                    } catch (RuntimeException e) {
+                        disconnect(context, player);
+                        throw e;
+                    }
+                    context.waitAndRun(TELEPORT_DELAY + 2, () -> {
+                        try {
+                            assertFeetAt(context, player, previousPadTarget, 1.0, "sent by the previous pad once he came back on it");
+                        } finally {
+                            disconnect(context, player);
+                        }
+                        context.complete();
+                    });
+                });
+            });
         });
     }
 }
