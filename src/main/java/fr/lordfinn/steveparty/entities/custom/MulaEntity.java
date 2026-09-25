@@ -824,15 +824,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 		if (!player.getWorld().isClient) {
 			boolean potion = stack.isOf(Items.POTION);
-			String how = potion ? " (" + MulaFood.potionFormula(stack.getOrDefault(
-					net.minecraft.component.DataComponentTypes.POTION_CONTENTS,
-					net.minecraft.component.type.PotionContentsComponent.DEFAULT).getEffects()) + ")" : "";
-			Text message = Text.literal(String.format(
-					"Feed level: %d/%d - %s: +%d%s",
-					getHunger(), MAX_HUNGER,
-					stack.getName().getString(),
-					hungerValue, how
-			));
+			Text message = potion
+					? Text.translatable("message.steveparty.mula.feed.potion", getHunger(), MAX_HUNGER, stack.getName(),
+							hungerValue, MulaFood.potionFormula(stack.getOrDefault(
+									net.minecraft.component.DataComponentTypes.POTION_CONTENTS,
+									net.minecraft.component.type.PotionContentsComponent.DEFAULT).getEffects()))
+					: Text.translatable("message.steveparty.mula.feed", getHunger(), MAX_HUNGER, stack.getName(), hungerValue);
 			message = message.copy().styled(style -> style.withColor(this.getVariant().getColor()));
 			player.sendMessage(message, true);
 

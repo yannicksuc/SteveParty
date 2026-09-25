@@ -37,13 +37,13 @@ public class MoveTokenCommand {
                                             MobEntity mob = getNearestMobWithCustomName(source, tokenName);
 
                                             if (mob == null) {
-                                                source.sendError(Text.of("Aucun mob trouvé avec le nom spécifié : " + tokenName));
+                                                source.sendError(Text.translatable("command.steveparty.move_token.not_found", tokenName));
                                                 return 0; // Échec
                                             }
 
                                             // Appel de la méthode du service
                                             TokenMovementService.moveEntityOnBoard(mob, rollNumber);
-                                            source.sendFeedback(() -> Text.literal("Déplacement du token '" + tokenName + "' de " + rollNumber + " cases."), false);
+                                            source.sendFeedback(() -> Text.translatable("command.steveparty.move_token.moved", tokenName, rollNumber), false);
                                             return 1; // Succès
                                         })
                                 )

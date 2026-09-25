@@ -47,7 +47,7 @@ public class TokenItem extends Item {
         super.appendTooltip(stack, context, tooltip, type);
         EntityDataComponent dataComponent = stack.get(ENTITY_DATA_COMPONENT);
         if (dataComponent != null) {
-            tooltip.add(Text.literal("Use on block to summon it.").formatted(Formatting.GRAY));
+            tooltip.add(Text.translatable("tooltip.steveparty.token.summon").formatted(Formatting.GRAY));
         }
     }
 
@@ -82,7 +82,7 @@ public class TokenItem extends Item {
                     user.setStackInHand(hand, clearTokenData(stack));
                     playSound(world, merchant.getBlockPos(), 1.5F);
 
-                    MessageUtils.sendToPlayer((ServerPlayerEntity) user, "Entity has been summoned and attached to the merchant!", MessageUtils.MessageType.ACTION_BAR);
+                    MessageUtils.sendToPlayer((ServerPlayerEntity) user, Text.translatable("message.steveparty.token.summoned_on_trader"), MessageUtils.MessageType.ACTION_BAR);
                     return ActionResult.SUCCESS;
                 }
             } else if (stack.get(ENTITY_DATA_COMPONENT) == null && merchant.hasPassengers()) {
@@ -93,7 +93,7 @@ public class TokenItem extends Item {
                     handleTokenization(stack, user, mobEntity, hand);
                     merchant.setInvisible(false);
 
-                    MessageUtils.sendToPlayer((ServerPlayerEntity) user, "Entity has been captured from the merchant!", MessageUtils.MessageType.ACTION_BAR);
+                    MessageUtils.sendToPlayer((ServerPlayerEntity) user, Text.translatable("message.steveparty.token.captured_from_trader"), MessageUtils.MessageType.ACTION_BAR);
                     return ActionResult.SUCCESS;
                 }
             }
@@ -128,13 +128,13 @@ public class TokenItem extends Item {
         stack.set(ModComponents.ENTITY_DATA_COMPONENT, dataComponent);
 
         Text customName = entity.getCustomName() != null ? entity.getCustomName() : entity.getName();
-        stack.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Token of ").append(customName));
+        stack.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.steveparty.token.of", customName));
 
         user.setStackInHand(hand, stack);
         entity.remove(Entity.RemovalReason.DISCARDED);
         playSound(user.getWorld(), user.getBlockPos(), 1.0F);
 
-        MessageUtils.sendToPlayer((ServerPlayerEntity) user, "The token has been captured!", MessageUtils.MessageType.ACTION_BAR);
+        MessageUtils.sendToPlayer((ServerPlayerEntity) user, Text.translatable("message.steveparty.token.captured"), MessageUtils.MessageType.ACTION_BAR);
     }
 
     private NbtCompound createEntityData(LivingEntity entity) {
@@ -176,7 +176,7 @@ public class TokenItem extends Item {
             player.setStackInHand(hand, clearTokenData(stack));
             playSound(world, blockPos, 1.5F);
 
-            MessageUtils.sendToPlayer((ServerPlayerEntity) player, "The token has been summoned!", MessageUtils.MessageType.ACTION_BAR);
+            MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.token.summoned"), MessageUtils.MessageType.ACTION_BAR);
             return ActionResult.SUCCESS;
         }
         return ActionResult.FAIL;

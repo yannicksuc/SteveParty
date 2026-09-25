@@ -50,7 +50,7 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         DestinationsComponent newComponent = super.addOrRemoveDestination(component, clickedPos, player, stack, serverWorld);
         if (!updateStackAtPos(newComponent, originComponent.origin(), serverWorld)) { //Try to update the tileBehavior at the registered Pos If no destination remove the bind from the wrench
             removeBinding(originComponent.origin(), stack, serverWorld);
-            MessageUtils.sendToPlayer((ServerPlayerEntity) player, "The board space has changed and no longer matches the stored configuration in the wrench. It has been automatically unbound.", MessageUtils.MessageType.CHAT);
+            MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.wrench.auto_unbound"), MessageUtils.MessageType.CHAT);
             return null;
         }
         displayLinks(serverWorld, originComponent);
@@ -82,10 +82,8 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         boardSpaceEntity.markDirty();
 
         // Message utilisateur
-        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal(
-                "The wrench is now bound to a new board space at position X: " + clickedPos.getX() +
-                        ", Y: " + clickedPos.getY() + ", Z: " + clickedPos.getZ() + "."
-        ), MessageUtils.MessageType.ACTION_BAR);
+        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.wrench.bound",
+                clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()), MessageUtils.MessageType.ACTION_BAR);
 
         displayLinks(serverWorld, originComponent);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
@@ -97,7 +95,8 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         removeBinding(clickedPos, stack, serverWorld);
         // Remove the override (instead of forcing it to false) so the default glint behaviour applies again
         stack.remove(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
-        MessageUtils.sendToPlayer(player, Text.literal("The wrench is no longer bound to the board space behavior stored at position X: "+ clickedPos.getX()+", Y: "+ clickedPos.getY()+", Z: "+ clickedPos.getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
+        MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.wrench.unbound",
+                clickedPos.getX(), clickedPos.getY(), clickedPos.getZ()), MessageUtils.MessageType.ACTION_BAR);
         serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
     }
 
@@ -136,9 +135,11 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
                 boardSpaceEntity.setActiveCartridgeItemStack(newBehaviorItem);
                 boardSpaceEntity.markDirty();
                 boardSpaceStoredBehavior = newBehaviorItem;
-                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal("New space behavior stored at position X: "+boardSpaceEntity.getPos().getX()+", Y: "+boardSpaceEntity.getPos().getY()+", Z: "+boardSpaceEntity.getPos().getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
+                BlockPos spacePos = boardSpaceEntity.getPos();
+                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.wrench.cartridge_stored",
+                        spacePos.getX(), spacePos.getY(), spacePos.getZ()), MessageUtils.MessageType.ACTION_BAR);
             } else {
-                MessageUtils.sendToPlayer((ServerPlayerEntity) player, "No behavior is assigned to this board space, and it can't be filled from your off-hand.", MessageUtils.MessageType.CHAT);
+                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.wrench.no_cartridge"), MessageUtils.MessageType.CHAT);
                 return null;
             }
         }

@@ -267,7 +267,7 @@ public class PartyData {
             Map.Entry<TokenizedEntityInterface, PlayerEntity> entry = iterator.next();
             Text name = entry.getValue() != null
                     ? entry.getValue().getName()
-                    : Text.literal("Disconnected User").styled(style -> style.withColor(Formatting.GRAY));
+                    : Text.translatable("message.steveparty.disconnected_player").styled(style -> style.withColor(Formatting.GRAY));
             MutableText participantText = Text.translatable(
                     "message.steveparty.played_by",
                     ((Entity) entry.getKey()).getCustomName(),

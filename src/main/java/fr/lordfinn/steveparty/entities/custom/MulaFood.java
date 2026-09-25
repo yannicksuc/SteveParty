@@ -7,6 +7,8 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -113,15 +115,17 @@ public final class MulaFood {
         return total;
     }
 
-    /** "Minutes x (level x 2)" spelled out for the feedback message, e.g. "3 min x (2 x 2)". */
-    public static String potionFormula(Iterable<StatusEffectInstance> effects) {
-        StringBuilder text = new StringBuilder();
+    /** "Minutes x (level x 2)" spelled out for the feedback message, e.g. "8 min x (1 x 2)". */
+    public static Text potionFormula(Iterable<StatusEffectInstance> effects) {
+        MutableText text = Text.empty();
+        boolean first = true;
         for (StatusEffectInstance effect : effects) {
             int minutes = effect.getEffectType().value().isInstant() ? 1 : Math.max(1, effect.getDuration() / 1200);
-            if (!text.isEmpty()) text.append(" + ");
-            text.append(minutes).append(" min x (").append(effect.getAmplifier() + 1).append(" x 2)");
+            if (!first) text.append(" + ");
+            text.append(Text.translatable("message.steveparty.mula.feed.potion_term", minutes, effect.getAmplifier() + 1));
+            first = false;
         }
-        return text.toString();
+        return text;
     }
 
     /** The Mula colour closest to a liquid colour (RGB): dark ones are black's, otherwise the nearest hue. */
