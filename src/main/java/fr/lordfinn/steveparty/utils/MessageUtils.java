@@ -10,6 +10,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
@@ -113,25 +114,34 @@ public class MessageUtils {
 
 
     public static int getColorFromText(Text text) {
-        // If the text is null, return white
-        if (text == null) {
-            return Color.WHITE.getRGB();
-        }
+        Integer color = findColor(text);
+        return color != null ? color : Color.WHITE.getRGB();
+    }
 
-        // Iterate over all parts of the text and check for a color
+    /**
+     * First colour found in the text: its siblings, then its own style, then the texts passed as arguments of a
+     * translatable text (e.g. "Token of %s" with the coloured owner name). Null if none.
+     */
+    private static Integer findColor(Text text) {
+        if (text == null) return null;
         for (Text component : text.getSiblings()) {
-            // Check the color of the current component's style
             Style style = component.getStyle();
             if (style.getColor() != null && style.getColor().getRgb() != -1) {
                 return style.getColor().getRgb();
             }
         }
-
-        // If no color found, return white
         if (text.getStyle().getColor() != null && text.getStyle().getColor().getRgb() != -1) {
             return text.getStyle().getColor().getRgb();
         }
-        return Color.WHITE.getRGB();
+        if (text.getContent() instanceof TranslatableTextContent translatable) {
+            for (Object arg : translatable.getArgs()) {
+                if (arg instanceof Text argText) {
+                    Integer color = findColor(argText);
+                    if (color != null) return color;
+                }
+            }
+        }
+        return null;
     }
 
     public static void sendToPlayers(List<PlayerEntity> owners, MutableText translatable, MessageType messageType) {

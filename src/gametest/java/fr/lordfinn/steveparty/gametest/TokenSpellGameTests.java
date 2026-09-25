@@ -382,4 +382,13 @@ public class TokenSpellGameTests implements FabricGameTest {
         context.assertEquals(DominantColorPicker.pickFromPixels(pixels(0x00FFFFFF, 10), new Random(1)), DominantColorPicker.NO_COLOR, "nothing opaque");
         context.complete();
     }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void storedTokenItemTakesTheOwnerNameColour(TestContext context) {
+        // The Token item is named "Token of %s" with the coloured name as argument: its icon is tinted with it
+        net.minecraft.text.Text name = net.minecraft.text.Text.translatable("item.steveparty.token.of",
+                net.minecraft.text.Text.literal("LordFinn").withColor(BLUE));
+        context.assertEquals(getColorFromText(name) & 0xFFFFFF, BLUE, "colour read from the translation argument");
+        context.complete();
+    }
 }
