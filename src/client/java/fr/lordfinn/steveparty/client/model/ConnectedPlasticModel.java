@@ -1,14 +1,9 @@
 package fr.lordfinn.steveparty.client.model;
 
-import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.blocks.custom.PlasticBlock;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.json.ModelOverrideList;
@@ -20,9 +15,7 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -31,25 +24,13 @@ import java.util.function.Supplier;
  * only merge when they are aligned on the other two axes too, so a piece never outgrows its 4x2x4 box (it can
  * still wrap around another block, hence the inner corner sprites). Where pieces start is worked out by
  * {@link PieceLayout}. A double plastic slab (drawn with this model) is the full block of its colour and merges with
- * those blocks; a half slab never joins a piece.
+ * those blocks. The slabs, stairs and walls of the colour ({@link ConnectedPlasticShapeModel}) join the piece where
+ * their faces are flush with the block's along a whole edge (see {@link PlasticConnections}).
  * <p>
  * Each face picks one of 47 sprites from which of its 4 edges are connected (bit 1 up, 2 right, 4 down, 8 left,
  * in the texture orientation of vanilla block faces) and which inner corners it must close (bits 16 to 128).
  */
 public class ConnectedPlasticModel implements BakedModel {
-    /** The full plastic block of each plastic slab's colour: a double slab is that block. */
-    private static final Map<Block, Block> FULL_BLOCK_OF_SLAB = new IdentityHashMap<>();
-
-    static {
-        for (int i = 0; i < ModBlocks.COLORS.length; i++) FULL_BLOCK_OF_SLAB.put(ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_BLOCKS[i]);
-    }
-
-    private static final PieceLayout.Lookup LOOKUP = BlockRenderView::getBlockState;
-    private static final PieceLayout.Joiner JOINER = (here, there, dir) -> {
-        Block piece = pieceOf(here);
-        return piece != null && pieceOf(there) == piece;
-    };
-
     // Texture up / left of each face, following the vanilla block face UVs
     private static final Direction[] TEXTURE_UP = new Direction[6];
     private static final Direction[] TEXTURE_LEFT = new Direction[6];
@@ -94,25 +75,13 @@ public class ConnectedPlasticModel implements BakedModel {
     @Override
     public void emitBlockQuads(BlockRenderView world, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context) {
         QuadEmitter emitter = context.getEmitter();
-        Block piece = pieceOf(state);
-        PieceLayout layout = PieceLayout.begin(world, pos, LOOKUP, JOINER);
+        PieceLayout layout = PieceLayout.begin(world, pos, PlasticConnections.LOOKUP, PlasticConnections.JOINER);
         try {
             for (Direction face : Direction.values()) {
                 if (context.isFaceCulled(face)) continue;
-                Direction up = TEXTURE_UP[face.ordinal()];
-                Direction left = TEXTURE_LEFT[face.ordinal()];
-                Direction right = left.getOpposite();
-                Direction down = up.getOpposite();
-                boolean u = connected(world, layout, piece, pos, up);
-                boolean r = connected(world, layout, piece, pos, right);
-                boolean d = connected(world, layout, piece, pos, down);
-                boolean l = connected(world, layout, piece, pos, left);
-                int mask = (u ? UP : 0) | (r ? RIGHT : 0) | (d ? DOWN : 0) | (l ? LEFT : 0);
-                // Inner corners: both sides belong to the piece but the diagonal block does not
-                if (u && l && !connected(world, layout, piece, pos.offset(up), left)) mask |= INNER_UP_LEFT;
-                if (u && r && !connected(world, layout, piece, pos.offset(up), right)) mask |= INNER_UP_RIGHT;
-                if (d && r && !connected(world, layout, piece, pos.offset(down), right)) mask |= INNER_DOWN_RIGHT;
-                if (d && l && !connected(world, layout, piece, pos.offset(down), left)) mask |= INNER_DOWN_LEFT;
+                float plane = face.getDirection() == Direction.AxisDirection.POSITIVE ? 1 : 0;
+                int mask = mask(world, layout, pos, face, plane, TEXTURE_UP[face.ordinal()], TEXTURE_LEFT[face.ordinal()],
+                        PlasticConnections.FULL_SPAN, PlasticConnections.FULL_SPAN, true, true, true, true);
                 emitter.square(face, 0, 0, 1, 1, 0);
                 emitter.cullFace(face);
                 emitter.spriteBake(sprites[mask], MutableQuadView.BAKE_LOCK_UV);
@@ -125,22 +94,34 @@ public class ConnectedPlasticModel implements BakedModel {
     }
 
     /**
-     * @return the full plastic block a block counts as in a piece: a plastic block itself, the block of its colour
-     * for a double plastic slab, null for anything else (half slabs included)
+     * Sprite mask of a face (or part of one) of the block at {@code pos}, whose texture top and left look to
+     * {@code up} and {@code left}; {@code verticalSpan} / {@code horizontalSpan} are the bits (see
+     * {@link PlasticConnections#joined}) the face covers along its left / right edges and along its top / bottom
+     * edges, and each {@code at...} flag says whether that edge of the face lies on the edge of the block.
      */
-    @Nullable
-    private static Block pieceOf(BlockState state) {
-        Block block = state.getBlock();
-        if (block instanceof PlasticBlock) return block;
-        Block full = FULL_BLOCK_OF_SLAB.get(block);
-        return full != null && state.get(SlabBlock.TYPE) == SlabType.DOUBLE ? full : null;
+    static int mask(BlockRenderView world, PieceLayout layout, BlockPos pos, Direction face, float plane,
+                    Direction up, Direction left, int verticalSpan, int horizontalSpan,
+                    boolean atUp, boolean atRight, boolean atDown, boolean atLeft) {
+        Direction right = left.getOpposite();
+        Direction down = up.getOpposite();
+        boolean u = atUp && PlasticConnections.joined(world, layout, pos, face, plane, up, horizontalSpan);
+        boolean r = atRight && PlasticConnections.joined(world, layout, pos, face, plane, right, verticalSpan);
+        boolean d = atDown && PlasticConnections.joined(world, layout, pos, face, plane, down, horizontalSpan);
+        boolean l = atLeft && PlasticConnections.joined(world, layout, pos, face, plane, left, verticalSpan);
+        int mask = (u ? UP : 0) | (r ? RIGHT : 0) | (d ? DOWN : 0) | (l ? LEFT : 0);
+        // Inner corners: both sides belong to the piece but the diagonal block does not
+        if (u && l && !cornerJoined(world, layout, pos.offset(up), face, plane, left, down)) mask |= INNER_UP_LEFT;
+        if (u && r && !cornerJoined(world, layout, pos.offset(up), face, plane, right, down)) mask |= INNER_UP_RIGHT;
+        if (d && r && !cornerJoined(world, layout, pos.offset(down), face, plane, right, up)) mask |= INNER_DOWN_RIGHT;
+        if (d && l && !cornerJoined(world, layout, pos.offset(down), face, plane, left, up)) mask |= INNER_DOWN_LEFT;
+        return mask;
     }
 
-    /** @return whether the block at {@code pos} and its neighbour on {@code dir} are both {@code piece} and one piece. */
-    private static boolean connected(BlockRenderView world, PieceLayout layout, @Nullable Block piece, BlockPos pos, Direction dir) {
-        // Same colour, wet or dry
-        if (piece == null || pieceOf(world.getBlockState(pos)) != piece || pieceOf(world.getBlockState(pos.offset(dir))) != piece) return false;
-        return layout.samePiece(pos, dir);
+    /** @return whether the face of {@code pos} goes on across {@code edge} at its end next to side {@code near}. */
+    private static boolean cornerJoined(BlockRenderView world, PieceLayout layout, BlockPos pos, Direction face, float plane,
+                                        Direction edge, Direction near) {
+        int bit = near.getDirection() == Direction.AxisDirection.POSITIVE ? 1 << 15 : 1;
+        return PlasticConnections.joined(world, layout, pos, face, plane, edge, bit);
     }
 
     /** Sprite index of a face: which edges are connected, plus the inner corners (a valid mask has 47 values). */
