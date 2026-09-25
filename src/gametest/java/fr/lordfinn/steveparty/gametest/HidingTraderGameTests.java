@@ -152,23 +152,16 @@ public class HidingTraderGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void heStaysHiddenFromASneakingPlayer(TestContext context) {
-        floor(context);
-        HidingTraderEntity trader = trader(context);
-        ServerPlayerEntity player = playerNear(context, trader);
-        player.setSneaking(true);
-        context.waitAndRun(3, () -> checks(context, player, () ->
-                context.assertTrue(trader.isHidden(), "closed: a sneaking player doesn't make him come out")));
-    }
-
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aSneakingBandanaWearerMakesHimComeOut(TestContext context) {
-        floor(context);
-        HidingTraderEntity trader = trader(context);
-        ServerPlayerEntity wearer = playerNear(context, trader);
-        wearer.equipStack(EquipmentSlot.HEAD, BandanaItem.create(1));
-        wearer.setSneaking(true);
-        context.waitAndRun(3, () -> checks(context, wearer, () ->
-                context.assertFalse(trader.isHidden(), "open: with a Bandana, sneaking doesn't matter")));
+        // Checked on the rule itself: a neighbouring test's player within 15 blocks would open a real trader
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        checks(context, player, () -> {
+            player.changeGameMode(GameMode.SURVIVAL);
+            context.assertTrue(HidingTraderEntity.drawsHimOut(player), "a player standing makes him come out");
+            player.setSneaking(true);
+            context.assertFalse(HidingTraderEntity.drawsHimOut(player), "a sneaking player doesn't");
+            player.equipStack(EquipmentSlot.HEAD, BandanaItem.create(1));
+            context.assertTrue(HidingTraderEntity.drawsHimOut(player), "a sneaking Bandana wearer does");
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
