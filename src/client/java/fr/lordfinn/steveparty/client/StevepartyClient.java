@@ -198,6 +198,8 @@ public class StevepartyClient implements ClientModInitializer {
 
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
+        // The Mula egg is drawn (textures/item/mula_spawn_egg.png): no spawn-egg tint over it
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
 
