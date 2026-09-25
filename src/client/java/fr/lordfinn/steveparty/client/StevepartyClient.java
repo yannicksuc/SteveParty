@@ -237,6 +237,16 @@ public class StevepartyClient implements ClientModInitializer {
         }
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_MAKER_ENTITY, StencilMakerBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.LOOTING_BOX_ENTITY, LootingBoxBlockEntityRenderer::new);
+        // The villager block is drawn alive (reactions, looking around) by its renderer, not as a baked block
+        BlockEntityRendererFactories.register(ModBlockEntities.VILLAGER_BLOCK_ENTITY, fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer::new);
+        // It cries while it is being broken: the breaking progress of any player, as the world renderer knows it
+        fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity.miningStageProbe = pos -> {
+            var renderer = net.minecraft.client.MinecraftClient.getInstance().worldRenderer;
+            if (renderer == null) return -1;
+            var infos = ((fr.lordfinn.steveparty.client.mixin.WorldRendererBreakingAccessor) renderer)
+                    .steveparty$getBlockBreakingProgressions().get(pos.asLong());
+            return infos == null || infos.isEmpty() ? -1 : infos.last().getStage();
+        };
         BlockEntityRendererFactories.register(ModBlockEntities.DICE_FORGE_ENTITY, DiceForgeBlockEntityRenderer::new);
 
         BlockRenderLayerMap.INSTANCE.putBlock(BLUE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());

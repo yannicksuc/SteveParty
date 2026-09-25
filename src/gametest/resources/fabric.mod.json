@@ -35,7 +35,9 @@
       "fr.lordfinn.steveparty.gametest.HidingTraderGameTests",
       "fr.lordfinn.steveparty.gametest.TeleportBooksGameTests",
       "fr.lordfinn.steveparty.gametest.LangGameTests",
-      "fr.lordfinn.steveparty.gametest.StarFragmentsBlockGameTests"
+      "fr.lordfinn.steveparty.gametest.StarFragmentsBlockGameTests",
+      "fr.lordfinn.steveparty.gametest.VillagerBlockGameTests",
+      "fr.lordfinn.steveparty.gametest.VillagerBlockSoulGameTests"
     ]
   },
   "depends": {
