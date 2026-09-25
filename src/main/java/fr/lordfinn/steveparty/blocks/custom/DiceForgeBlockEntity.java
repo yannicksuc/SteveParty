@@ -675,7 +675,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> around = world.getEntitiesByClass(
                 fr.lordfinn.steveparty.entities.custom.MulaEntity.class,
                 new net.minecraft.util.math.Box(pos).expand(r, fr.lordfinn.steveparty.entities.custom.MulaHome.ABOVE, r),
-                m -> m.isAlive() && !m.isBursting() && !m.isLedByOwner()
+                m -> m.isAlive() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
                         && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= r * r);
         if (around.isEmpty()) return;
         java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> dancers = new java.util.ArrayList<>();

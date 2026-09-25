@@ -131,6 +131,60 @@ public final class MulaGoals {
         private int joinTicks;
     }
 
+    // ------------------------------------------------------------------------------------------ on a lead at night
+
+    /**
+     * On a lead at night: it wants the sky, but stays tethered. Carrying its holder (MulaLift): it floats above them,
+     * spread with the others round the leads, gently bobbing; not enough lift, or tied to a fence: it hovers a little
+     * above the holder or the knot, tugging upwards within the lead's slack (the lead never has to pull it hard).
+     */
+    public static final class Tethered extends Goal {
+        private final MulaEntity mula;
+        private int t;
+
+        public Tethered(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE));
+        }
+
+        @Override
+        public boolean canStart() {
+            return mula.isLeashed() && mula.getLeashHolder() != null && mula.getWorld().isNight() && !mula.isSitting();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void start() {
+            mula.getNavigation().stop();
+        }
+
+        @Override
+        public void stop() {
+            mula.setCarrying(false);
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            t++;
+            var holder = mula.getLeashHolder();
+            if (holder == null) return;
+            double a = mula.getId() * 2.39996 + t * 0.01;
+            double r = mula.isCarrying() ? 1.0 + (mula.getId() % 3) * 0.45 : 0.7;
+            double up = mula.isCarrying() ? 3.4 + (mula.getId() % 2) * 0.5 : 2.6;
+            double y = holder.getY() + holder.getHeight() * 0.5 + up + 0.25 * Math.sin(t * 0.06 + mula.getId());
+            fly(mula, holder.getX() + Math.cos(a) * r, y, holder.getZ() + Math.sin(a) * r, 0.25, false);
+        }
+    }
+
     // ------------------------------------------------------------------------------------------ 6. shy after a hit
 
     /**
@@ -458,7 +512,7 @@ public final class MulaGoals {
 
         @Override
         public boolean canStart() {
-            if (mula.isTamed() || !mula.getMulaBrain().isActive()) return false;
+            if (mula.isTamed() || mula.isLeashed() || !mula.getMulaBrain().isActive()) return false;
             if ((mula.age + mula.getId()) % MulaBrain.NEIGHBOUR_TICKS != 0) return false; // looked at once a second
             World world = mula.getWorld();
             BlockPos home = mula.homeForge();

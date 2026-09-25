@@ -196,6 +196,17 @@ public final class MulaEffects {
         if (time % 160 == 80) shower(6);
     }
 
+    /** Client, every tick while it carries its holder into the night sky: a sparkling trail, twinkling happily. */
+    void carryTick() {
+        if (!visible()) return;
+        long time = mula.getWorld().getTime();
+        if ((time & 1) == 0) {
+            mula.getWorld().addParticle((time & 2) == 0 ? mula.getVariant().getTwinkle() : WHITE_TWINKLE,
+                    mula.prevX, mula.prevY + mula.getHeight() * MulaEntity.CENTER, mula.prevZ, 0, -0.02, 0);
+        }
+        if (time % 40 == 0) mula.getMotion().flare();
+    }
+
     /** Timeline instructions of the animations. */
     void instruction(String instructions) {
         for (String raw : instructions.split(";")) {

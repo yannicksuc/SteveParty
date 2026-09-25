@@ -186,6 +186,17 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
 	private int eatCooldown = 0;
+	/** Carrying its lead holder up into the night sky (MulaLift): it twinkles, happy. */
+	private static final TrackedData<Boolean> CARRYING =
+			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+
+	public boolean isCarrying() {
+		return this.dataTracker.get(CARRYING);
+	}
+
+	public void setCarrying(boolean carrying) {
+		if (carrying != isCarrying()) this.dataTracker.set(CARRYING, carrying);
+	}
 	/** Server: ticks before it flies away as a shooting star (after the pop of its burst), 0 when none. */
 	private int starLaunchTicks = 0;
 	/** From the order to burst to the pop of the explode animation, when it leaves as a shooting star. */
@@ -247,7 +258,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			return;
 		}
 		double dx = this.getX() - (homeForge.getX() + 0.5), dz = this.getZ() - (homeForge.getZ() + 0.5);
-		if (isTamed() && ledByOwner && dx * dx + dz * dz > MulaHome.RELEASE_DISTANCE * MulaHome.RELEASE_DISTANCE) clearHome();
+		if ((isTamed() && ledByOwner || isLeashed()) && dx * dx + dz * dz > MulaHome.RELEASE_DISTANCE * MulaHome.RELEASE_DISTANCE) clearHome();
 	}
 
 	/**
@@ -405,6 +416,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		// player (MulaBrain#isActive) the new behaviours don't start.
 		this.goalSelector.add(0, new MulaSitGoal(this));
 		this.goalSelector.add(1, new MulaGoals.Shy(this));
+		this.goalSelector.add(1, new MulaGoals.Tethered(this));
 		this.goalSelector.add(2, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
 		this.goalSelector.add(3, new MulaGoals.Dance(this));
 		this.goalSelector.add(4, new MulaGoals.OrbitOwner(this));
@@ -686,6 +698,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		builder.add(FRESH, false);
 		builder.add(RESTING, false);
 		builder.add(DANCE, -1);
+		builder.add(CARRYING, false);
 		builder.add(DANCE_FORGE, java.util.Optional.empty());
 	}
 
@@ -1060,6 +1073,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private int lastSeenDance = -1;
 
 	private void tickClientAnimation() {
+		if (isCarrying()) effects.carryTick();
 		if (isDanceLocked()) {
 			followDance();
 			effects.danceTick();

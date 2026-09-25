@@ -70,7 +70,7 @@ public class SimpleFlyingMoveControl extends MoveControl {
     private void keepHome() {
         if (!(entity instanceof fr.lordfinn.steveparty.entities.custom.MulaEntity mula)) return;
         BlockPos home = mula.homeForge();
-        if (home == null || mula.isLedByOwner()) return;
+        if (home == null || mula.isLedByOwner() || mula.isLeashed()) return; // led by its owner or on a lead: theirs
         target[0] = targetX;
         target[1] = targetY;
         target[2] = targetZ;
