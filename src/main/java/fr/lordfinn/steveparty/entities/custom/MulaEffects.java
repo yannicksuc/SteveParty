@@ -145,7 +145,8 @@ public final class MulaEffects {
             return;
         }
         double cx = mula.getX(), cy = centerY(), cz = mula.getZ();
-        float size = mula.getScaleFactor();
+        // (its hunger size, times a token's scale: the effects around a small token stay small)
+        float size = mula.getScaleFactor() * mula.getScale();
 
         if (orbitTicks > 0) {
             // three little lights circling round it, leaving short trails
@@ -390,7 +391,7 @@ public final class MulaEffects {
      */
     private void motePoint(double u, int k, double cx, double cy, double cz) {
         double e = u * u * (3 - 2 * u);
-        double size = mula.getScaleFactor();
+        double size = mula.getScaleFactor() * mula.getScale();
         double sx = MathHelper.lerp(e, meltX, cx), sy = MathHelper.lerp(e, meltY, cy), sz = MathHelper.lerp(e, meltZ, cz);
         double radius = (0.25 + 0.35 * size) * Math.sin(Math.PI * Math.min(1, u * 1.15)) * (1 - 0.35 * u);
         double a = moteSeed + k * MathHelper.TAU / MOTES + u * 2.5 * Math.PI;
@@ -617,7 +618,7 @@ public final class MulaEffects {
     private void shimmer() {
         if (!visible()) return;
         World world = mula.getWorld();
-        double r = 0.18 * mula.getScaleFactor() + 0.1;
+        double r = (0.18 * mula.getScaleFactor() + 0.1) * mula.getScale();
         for (int i = 0; i < 9; i++) {
             double a = mula.getRandom().nextDouble() * MathHelper.TAU;
             world.addParticle(i % 3 == 0 ? WHITE_TWINKLE : mula.getVariant().getTwinkle(), mula.getX() + Math.cos(a) * r,

@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.MulaEffects;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaMotion;
+import fr.lordfinn.steveparty.client.squish.SquishAnimations;
+import fr.lordfinn.steveparty.client.utils.ShaderPacks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.entity.EntityRendererFactory;
@@ -64,12 +66,32 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         return TEXTURES.getOrDefault(entity.getVariant(), Steveparty.id("textures/entity/mula.png"));
     }
 
+    /**
+     * The size the model is drawn at, relative to its hitbox: its springy visual size (it swells with a little boing
+     * when fed), and the token spell's transformation while it plays (GeckoLib renderers are not living entity
+     * renderers: the squish animation does not reach them by itself). The pose stack of the render layers is scaled
+     * by it; the token's own scale (scale attribute) is not in that stack.
+     */
+    private static float drawnRatio(MulaEntity mula, float partialTick) {
+        return mula.getMotion().visualScaleRatio(partialTick, mula.getScaleFactor()) * SquishAnimations.scaleMultiplier(mula, partialTick);
+    }
+
+    /**
+     * Glows (halo, inner lights). Without a shader pack: vanilla's translucent emissive layer, unchanged. With one,
+     * that layer (writing no depth) is covered by the clouds, which the pack composites later: the same layer writing
+     * depth instead ({@link GlowRenderLayer}), so the glows stay in front, like the body. Neither is outlined by the
+     * glowing effect: only the body is.
+     */
+    private static RenderLayer glowLayer(Identifier texture) {
+        return ShaderPacks.inUse() ? GlowRenderLayer.of(texture) : RenderLayer.getEntityTranslucentEmissive(texture, false);
+    }
+
     /** Draws the springy visual size (it swells with a little boing when fed), the hitbox keeps the real one. */
     @Override
     public void scaleModelForRender(float widthScale, float heightScale, MatrixStack poseStack, MulaEntity mula,
                                     BakedGeoModel model, boolean isReRender, float partialTick, int packedLight,
                                     int packedOverlay) {
-        float ratio = mula.getMotion().visualScaleRatio(partialTick, mula.getScaleFactor());
+        float ratio = drawnRatio(mula, partialTick);
         super.scaleModelForRender(widthScale * ratio, heightScale * ratio, poseStack, mula, model, isReRender,
                 partialTick, packedLight, packedOverlay);
     }
@@ -96,7 +118,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         effects.updateItemPose(partialTick);
         float size = effects.itemScale();
         // the pose stack is at the entity's feet, already scaled by its drawn size (scaleModelForRender)
-        float ratio = mula.getMotion().visualScaleRatio(partialTick, mula.getScaleFactor());
+        float ratio = drawnRatio(mula, partialTick);
         if (size <= 0.005f || ratio <= 0.01f) return;
         double mx = MathHelper.lerp(partialTick, mula.prevX, mula.getX());
         double my = MathHelper.lerp(partialTick, mula.prevY, mula.getY());
@@ -182,7 +204,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 float warm = motion.absorbGlow(partialTick);
                 matrices.push();
                 // the bone's position is in world units, while this pose stack is scaled by the Mula's drawn size
-                float ratio = motion.visualScaleRatio(partialTick, entity.getScaleFactor());
+                float ratio = drawnRatio(entity, partialTick);
                 if (ratio <= 0.01f) {
                     matrices.pop();
                     return;
@@ -190,7 +212,8 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 matrices.translate(bonePos.x / ratio, bonePos.y / ratio, bonePos.z / ratio);
                 renderInnerLights(matrices, entity, bodyBone.get(), camera, bufferSource, partialTick, full, warm);
                 matrices.multiply(rotation);
-                float size = (0.95f + 0.1f * glow) * (1f + 0.25f * full + 0.35f * flare + 0.3f * warm);
+                // (times the token's scale: a small token has a small halo, a big one a big halo)
+                float size = (0.95f + 0.1f * glow) * (1f + 0.25f * full + 0.35f * flare + 0.3f * warm) * entity.getScale();
                 matrices.scale(size, size, size);
                 int tint = entity.getVariant().getHaloColor();
                 // bright, clearly in the Mula's colour (the texture keeps a white-hot centre)
@@ -199,8 +222,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 int b = 100 + ((tint & 0xFF) * 155 / 255);
                 int alpha = (int) (255 * MathHelper.clamp(0.7f + 0.2f * glow + 0.1f * full + 0.3f * flare + 0.25f * warm,
                         0f, 1f));
-                drawQuad(matrices, bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture)), packedLight,
-                        r, g, b, alpha);
+                drawQuad(matrices, bufferSource.getBuffer(glowLayer(texture)), packedLight, r, g, b, alpha);
                 matrices.pop();
             }
         }
@@ -229,13 +251,13 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             double lz = (-dx * MathHelper.sin(yaw) + dz * MathHelper.cos(yaw)) / length;
             double ly = dy / length;
             double surface = Math.min(7.0, 4.75 / Math.max(Math.abs(lx), Math.max(Math.abs(ly), Math.abs(lz))));
-            float px = headScale / 16f;
+            float px = headScale / 16f * mula.getScale();
             float t = mula.age + partialTick;
             int tint = mula.getVariant().getGlowColor();
             int r = 90 + (((tint >> 16) & 0xFF) * 165 / 255);
             int g = 90 + (((tint >> 8) & 0xFF) * 165 / 255);
             int b = 90 + ((tint & 0xFF) * 165 / 255);
-            VertexConsumer vertices = bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(WISP_TEXTURE));
+            VertexConsumer vertices = bufferSource.getBuffer(glowLayer(WISP_TEXTURE));
             // the pose stack is world-aligned here: step towards the camera up to the surface, then face the camera
             matrices.push();
             float step = (float) surface * px;
