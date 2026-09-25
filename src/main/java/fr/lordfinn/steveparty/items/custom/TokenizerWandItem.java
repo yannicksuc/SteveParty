@@ -112,8 +112,8 @@ public class TokenizerWandItem extends Item {
     }
 
     /**
-     * Using the wand in the air (not on a mob): while the button is held, a homing flare of magic flies from the wand
-     * to the nearest mob the spell could take (see {@link TokenizerFlare}); reaching it opens the spell on it.
+     * Using the wand in the air (not on a mob): while the button is held, a flare of magic flies straight from the
+     * wand where the player looks (see {@link TokenizerFlare}); hitting a mob the spell could take opens the spell on it.
      */
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
