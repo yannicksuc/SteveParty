@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.client.squish;
 import fr.lordfinn.steveparty.client.access.SquishStretchState;
 import fr.lordfinn.steveparty.particles.KamekShapeEffect;
 import fr.lordfinn.steveparty.payloads.custom.SquishAnimationPayload;
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.sound.SoundCategory;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
@@ -124,6 +126,28 @@ public final class SquishAnimations {
                             (random.nextDouble() - 0.5) * 0.35, (random.nextDouble() - 0.2) * 0.3, (random.nextDouble() - 0.5) * 0.35);
                 }
             }
+            playPulseSounds(world, entity, animation, age, pulseTick);
+        }
+    }
+
+    /**
+     * A jelly boing with bubbles as each growth pulse starts (higher and higher when the creature grows, lower and
+     * lower when it shrinks), and a sparkle tail as it settles. Played by every client showing the animation, at the
+     * creature: everyone around hears it.
+     */
+    private static void playPulseSounds(ClientWorld world, Entity entity, Animation animation, long age, int pulseTick) {
+        if (age % pulseTick == 1 && age / pulseTick < PULSES) {
+            int pulse = (int) (age / pulseTick);
+            boolean grows = animation.targetScale >= animation.startScale;
+            float pitch = grows ? 0.9F + 0.2F * pulse : 1.3F - 0.2F * pulse;
+            world.playSound(entity.getX(), entity.getY(), entity.getZ(), ModSounds.TOKEN_SPELL_BOING, SoundCategory.NEUTRAL,
+                    1.0F, pitch, false);
+            world.playSound(entity.getX(), entity.getY(), entity.getZ(), ModSounds.TOKEN_SPELL_BUBBLE, SoundCategory.NEUTRAL,
+                    1.0F, pitch, false);
+        }
+        if (age == animation.duration - 3) {
+            world.playSound(entity.getX(), entity.getY(), entity.getZ(), ModSounds.TOKEN_SPELL_SPARKLE_TAIL, SoundCategory.NEUTRAL,
+                    1.0F, 1.0F, false);
         }
     }
 

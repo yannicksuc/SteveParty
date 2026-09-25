@@ -69,6 +69,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.commands.MulaCommand.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaRebirths.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaLift.initialize();
+        fr.lordfinn.steveparty.items.custom.TokenizerFlare.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaEphemeride.initialize();
         fr.lordfinn.steveparty.commands.PartyCommands.initialize();
         new TokenMovementService();

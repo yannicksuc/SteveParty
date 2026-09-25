@@ -6,6 +6,9 @@ import fr.lordfinn.steveparty.client.tokenspell.TokenSpellHand;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.particles.KamekShapeEffect;
 import fr.lordfinn.steveparty.payloads.custom.TokenSpellPayload;
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -68,7 +71,7 @@ public class TokenSpellScreen extends Screen {
      * Beyond this distance (blocks) the spell is cast at once, before the mob gets out of reach (the server accepts
      * up to {@link TokenizerWandItem#MAX_SPELL_DISTANCE}).
      */
-    private static final double AUTO_CAST_DISTANCE = 10;
+    private static final double AUTO_CAST_DISTANCE = 30;
     /** Radius of the ground circle around the mob, per block of token size. */
     private static final double WORLD_RADIUS_PER_BLOCK = 0.6;
     /** How fast the camera catches up with a moving mob (1/s: about 95 % of the way in 0.75 s). */
@@ -98,6 +101,9 @@ public class TokenSpellScreen extends Screen {
     private float roundness = 0.5F;
     /** Until a circle is drawn, the default circle is only a faint guide; its opacity (0..1). */
     private boolean guide = true;
+    /** The spell was sent (closing then is not a cancel). */
+    private boolean cast;
+    private float lastTwinkleLength;
     private long lastCameraNanos;
     private float guideFade;
     /** Until this tick, the hint says the last stroke was not a loop. */
@@ -179,11 +185,16 @@ public class TokenSpellScreen extends Screen {
         }
         switch (phase) {
             case CHARGING -> {
+                if (ticks == 1) {
+                    playSound(ModSounds.TOKEN_SPELL_CHARGE, 1.0F);
+                    playSound(ModSounds.TOKEN_SPELL_CHARGE_SWEEP, 1.0F);
+                }
                 chargeParticles();
                 // Charging never blocks a stroke: it can already be traced
                 if (dragging) {
                     wandTrail();
                     strokeShapes();
+                    if (ticks % 3 == 0) drawingTwinkle();
                 }
                 if (phaseTicks >= CHARGE_TICKS) setPhase(Phase.DRAWING);
             }
@@ -193,6 +204,7 @@ public class TokenSpellScreen extends Screen {
                 if (dragging) {
                     wandTrail();
                     strokeShapes();
+                    if (ticks % 3 == 0) drawingTwinkle();
                 } else if (!guide && !morphing() && ticks % 4 == 0) {
                     emitAlongCircle(1, SPARKLE);
                 }
@@ -222,6 +234,9 @@ public class TokenSpellScreen extends Screen {
             morphTicks = -1;
             // The circle locks: a burst of shapes out of it, all the bigger as the drawing was round
             burstFromCircle(10 + Math.round(roundness * 22));
+            // Heard by the caster now; the others hear it from the server when the spell lands
+            playSound(ModSounds.TOKEN_SPELL_CAST, 1.0F);
+            playSound(ModSounds.TOKEN_SPELL_CAST_WHOOSH, 1.0F);
         }
     }
 
@@ -247,6 +262,7 @@ public class TokenSpellScreen extends Screen {
         if (ClientPlayNetworking.canSend(TokenSpellPayload.ID)) {
             ClientPlayNetworking.send(new TokenSpellPayload(mob.getId(), size, color));
         }
+        cast = true;
         close();
     }
 
@@ -254,6 +270,28 @@ public class TokenSpellScreen extends Screen {
     public void removed() {
         super.removed();
         TokenSpellHand.clear();
+        if (!cast) playSound(ModSounds.TOKEN_SPELL_CANCEL, 1.0F);
+    }
+
+    // ------------------------------------------------------------------ sounds
+
+    /** Pentatonic steps: the drawing twinkles stay musical whatever the stroke's speed. */
+    private static final float[] TWINKLE_PITCHES = {1.0F, 1.122F, 1.26F, 1.498F, 1.682F, 2.0F};
+
+    /** The caster's own spell sounds, at their ears (the ones others hear are played by the server). */
+    private void playSound(SoundEvent sound, float pitch) {
+        if (client == null || client.player == null || client.world == null) return;
+        client.world.playSound(client.player.getX(), client.player.getEyeY(), client.player.getZ(), sound,
+                SoundCategory.PLAYERS, 1.0F, pitch, false);
+    }
+
+    /** Drawing: a twinkle every few ticks while the stroke moves, higher as it goes faster. Silent when still. */
+    private void drawingTwinkle() {
+        float speed = strokeLength - lastTwinkleLength;
+        lastTwinkleLength = strokeLength;
+        if (speed < 2) return;
+        int step = MathHelper.clamp((int) (speed / 12), 0, TWINKLE_PITCHES.length - 1);
+        playSound(ModSounds.TOKEN_SPELL_DRAW, TWINKLE_PITCHES[step]);
     }
 
     // ------------------------------------------------------------------ world particles
@@ -376,6 +414,7 @@ public class TokenSpellScreen extends Screen {
         stroke.clear();
         morphTicks = -1;
         strokeLength = 0;
+        lastTwinkleLength = 0;
         traceTo(x, y);
     }
 
@@ -471,11 +510,14 @@ public class TokenSpellScreen extends Screen {
         stroke.clear();
         shownRadius = radiusFor(size);
         if (client != null && client.world != null) emitAlongCircle(6, SPARKLE);
+        playSound(ModSounds.TOKEN_SPELL_SNAP, 1.0F);
+        playSound(ModSounds.TOKEN_SPELL_SNAP_SPARKLE, 1.0F);
     }
 
     private void failStroke() {
         stroke.clear();
         failedUntil = ticks + 40;
+        playSound(ModSounds.TOKEN_SPELL_FIZZLE, 1.0F);
     }
 
     private boolean morphing() {

@@ -38,5 +38,154 @@
     "sounds": [
       "steveparty:goal_pole_reach"
     ]
+  },
+  "token_spell.charge": {
+    "subtitle": "subtitles.steveparty.token_spell.charge",
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_block.resonate",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "token_spell.charge_sweep": {
+    "sounds": [
+      {
+        "name": "minecraft:block.enchantment_table.use",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "token_spell.draw": {
+    "subtitle": "subtitles.steveparty.token_spell.draw",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.chime",
+        "type": "event",
+        "volume": 0.22,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:block.amethyst_block.chime",
+        "type": "event",
+        "volume": 0.3
+      }
+    ]
+  },
+  "token_spell.snap": {
+    "subtitle": "subtitles.steveparty.token_spell.snap",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.bell",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "token_spell.snap_sparkle": {
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_block.chime",
+        "type": "event",
+        "volume": 0.55,
+        "pitch": 1.8
+      }
+    ]
+  },
+  "token_spell.cast": {
+    "subtitle": "subtitles.steveparty.token_spell.cast",
+    "sounds": [
+      {
+        "name": "minecraft:entity.illusioner.cast_spell",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "token_spell.cast_whoosh": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.wind_charge.throw",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.3
+      }
+    ]
+  },
+  "token_spell.boing": {
+    "subtitle": "subtitles.steveparty.token_spell.boing",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.jump_small",
+        "type": "event",
+        "volume": 0.6
+      }
+    ]
+  },
+  "token_spell.bubble": {
+    "sounds": [
+      {
+        "name": "minecraft:block.bubble_column.bubble_pop",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "token_spell.sparkle_tail": {
+    "subtitle": "subtitles.steveparty.token_spell.sparkle_tail",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.chime",
+        "type": "event",
+        "volume": 0.3,
+        "pitch": 2.0
+      },
+      {
+        "name": "minecraft:block.amethyst_block.chime",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.9
+      }
+    ]
+  },
+  "token_spell.fizzle": {
+    "subtitle": "subtitles.steveparty.token_spell.fizzle",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "volume": 0.2,
+        "pitch": 1.9
+      }
+    ]
+  },
+  "token_spell.cancel": {
+    "subtitle": "subtitles.steveparty.token_spell.cancel",
+    "sounds": [
+      {
+        "name": "minecraft:entity.puffer_fish.blow_out",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "token_spell.flare": {
+    "subtitle": "subtitles.steveparty.token_spell.flare",
+    "sounds": [
+      {
+        "name": "minecraft:entity.allay.item_thrown",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.5
+      }
+    ]
   }
 }

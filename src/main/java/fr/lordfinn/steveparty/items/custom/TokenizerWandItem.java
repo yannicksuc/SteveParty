@@ -28,13 +28,13 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.item.consume.UseAction;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -111,7 +111,48 @@ public class TokenizerWandItem extends Item {
         return ActionResult.SUCCESS;
     }
 
-    private static void openSpell(ServerPlayerEntity player, MobEntity mob) {
+    /**
+     * Using the wand in the air (not on a mob): while the button is held, a homing flare of magic flies from the wand
+     * to the nearest mob the spell could take (see {@link TokenizerFlare}); reaching it opens the spell on it.
+     */
+    @Override
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        if (user.getItemCooldownManager().isCoolingDown(user.getStackInHand(hand))) return ActionResult.PASS;
+        user.setCurrentHand(hand);
+        if (user instanceof ServerPlayerEntity player) TokenizerFlare.start(player, user.getStackInHand(hand));
+        return ActionResult.CONSUME;
+    }
+
+    @Override
+    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
+        return 72000;
+    }
+
+    @Override
+    public UseAction getUseAction(ItemStack stack) {
+        return UseAction.NONE;
+    }
+
+    @Override
+    public void usageTick(World world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
+        if (user instanceof ServerPlayerEntity player) TokenizerFlare.tick(player, stack);
+    }
+
+    @Override
+    public boolean onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+        if (user instanceof ServerPlayerEntity player) TokenizerFlare.fizzle(player);
+        return false;
+    }
+
+    /** A mob the spell can take: alive, not a boss, and not someone else's token (unless allowed). */
+    public static boolean isSpellTarget(PlayerEntity user, ItemStack wand, MobEntity mob) {
+        if (!mob.isAlive()) return false;
+        TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
+        if (token.steveparty$isTokenized()) return canControlToken(user, wand, mob);
+        return !isBoss(mob);
+    }
+
+    static void openSpell(ServerPlayerEntity player, MobEntity mob) {
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         boolean resize = token.steveparty$isTokenized();
         float size = resize ? currentTokenSize(mob) : DEFAULT_TOKEN_SIZE;
@@ -177,6 +218,7 @@ public class TokenizerWandItem extends Item {
         }
         player.getItemCooldownManager().set(wand, SPELL_COOLDOWN);
         playCastBurst(player, mob);
+        playCastSounds(player, mob);
         return resize ? SpellResult.RESIZED : SpellResult.TOKENIZED;
     }
 
@@ -257,13 +299,20 @@ public class TokenizerWandItem extends Item {
         mob.setCustomName(Text.literal(base.getString()).withColor(color));
     }
 
-    private static void playSpellEffects(MobEntity mob) {
-        mob.getWorld().playSound(null, mob.getBlockPos(),
-                SoundEvent.of(Identifier.ofVanilla("entity.illusioner.cast_spell")),
+    /**
+     * The spell's zap (at the caster) and whoosh (at the mob), for the players around. Not for the caster: their
+     * client already played them when the circle locked.
+     */
+    private static void playCastSounds(ServerPlayerEntity player, MobEntity mob) {
+        World world = player.getWorld();
+        world.playSound(player, player.getX(), player.getEyeY(), player.getZ(), ModSounds.TOKEN_SPELL_CAST,
                 SoundCategory.PLAYERS, 1.0F, 1.0F);
-        mob.getWorld().playSound(null, mob.getBlockPos(),
-                SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.cure")),
-                SoundCategory.PLAYERS, 0.2F, 2.0F);
+        world.playSound(player, mob.getX(), mob.getY() + mob.getHeight() / 2, mob.getZ(), ModSounds.TOKEN_SPELL_CAST_WHOOSH,
+                SoundCategory.PLAYERS, 1.0F, 1.0F);
+    }
+
+    private static void playSpellEffects(MobEntity mob) {
+        // (the transformation's boings and sparkles are played by every client with the squish animation)
         if (mob.getWorld() instanceof ServerWorld world) {
             // Kamek-style puff as the spell hits: coloured shapes bursting out of the mob, and sparkles
             double y = mob.getY() + mob.getHeight() / 2;

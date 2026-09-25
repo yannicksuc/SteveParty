@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.components.MobEntityComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.TokenizerFlare;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem.SpellResult;
 import fr.lordfinn.steveparty.utils.DominantColorPicker;
@@ -247,6 +248,45 @@ public class TokenSpellGameTests implements FabricGameTest {
             SpellResult result = TokenizerWandItem.castSpell(player, cow.getId(), 0.75F, BLUE);
             context.assertTrue(result == SpellResult.TOKENIZED, "tokenized from 20 blocks: " + result);
             context.assertTrue(token(cow).steveparty$getTokenSize() == 0.75F, "size stored");
+        } finally {
+            disconnect(context, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * The homing flare's target: the mob the spell could take that is near and closest to where the player looks,
+     * never a boss, never one out of range.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void flareGoesToTheMobInFrontOfThePlayer(TestContext context) {
+        ServerPlayerEntity player = wandHolder(context);
+        try {
+            // The player looks towards +z (yaw 0)
+            Vec3d eye = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() + 0.5));
+            player.refreshPositionAndAngles(eye.x, eye.y, eye.z, 0, 0);
+            ItemStack wand = player.getMainHandStack();
+            context.assertTrue(TokenizerFlare.chooseTarget(player, wand) == null, "nothing around: no target");
+
+            PigEntity behind = context.spawnMob(EntityType.PIG, MOB_POS.add(0, 0, -3));
+            PigEntity aside = context.spawnMob(EntityType.PIG, MOB_POS.add(3, 0, 0));
+            PigEntity ahead = context.spawnMob(EntityType.PIG, MOB_POS.add(0, 0, 5));
+            WitherEntity boss = context.spawnMob(EntityType.WITHER, MOB_POS.add(0, 0, 2));
+            for (MobEntity mob : new MobEntity[]{behind, aside, ahead, boss}) mob.setAiDisabled(true);
+            try {
+                MobEntity target = TokenizerFlare.chooseTarget(player, wand);
+                context.assertTrue(target == ahead, "the pig in front, though farther: " + target);
+
+                ahead.discard();
+                context.assertTrue(TokenizerFlare.chooseTarget(player, wand) == aside, "then the one aside, before the one behind");
+            } finally {
+                boss.discard();
+            }
+
+            // Out of range: nothing
+            Vec3d far = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - TokenizerFlare.RANGE - 10));
+            player.refreshPositionAndAngles(far.x, far.y, far.z, 180, 0);
+            context.assertTrue(TokenizerFlare.chooseTarget(player, wand) == null, "out of range: no target");
         } finally {
             disconnect(context, player);
         }
