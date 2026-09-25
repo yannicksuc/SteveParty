@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.payloads.custom.StencilGunScrollPayload;
-import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -33,8 +32,10 @@ import java.util.List;
 public final class StencilGunHud {
     private static final KeyBinding MODE_KEY = KeyBindingHelper.registerKeyBinding(
             new KeyBinding("key.steveparty.stencil_gun_mode", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.steveparty"));
-    private static final int PIXEL = 2;
+    private static final int PIXEL = 1;
     private static final int BOX = 16 * PIXEL + 4;
+    /** The key hint is only a reminder: drawn see-through. */
+    private static final int HINT_COLOR = 0x88DDDDDD;
     private static final int ACTIVE = 0xFFFFD83D;
     private static final int INACTIVE = 0xFF555555;
 
@@ -43,7 +44,7 @@ public final class StencilGunHud {
 
     /** What the HUD shows of a gun, worked out again only when its contents or selection change. */
     private record Shown(InventoryComponent contentsComponent, StencilGunSelection selectionComponent, List<ItemStack> contents,
-                         StencilGunSelection selection, StencilGunItem.Load load, Text stencilName) {
+                         StencilGunSelection selection, StencilGunItem.Load load) {
     }
 
     private static Shown shown;
@@ -91,10 +92,7 @@ public final class StencilGunHud {
         List<ItemStack> contents = StencilGunItem.contents(gun);
         StencilGunSelection selection = StencilGunItem.validSelection(contents, StencilGunItem.selection(gun));
         StencilGunItem.Load load = StencilGunItem.selectedLoad(gun);
-        StencilPatterns.Pattern pattern = load.shape() == null ? null : StencilPatterns.byShape(load.shape());
-        Text stencilName = load.shape() == null ? Text.translatable("tooltip.steveparty.stencil_gun.no_stencil")
-                : pattern != null ? pattern.name() : Text.translatable("tooltip.steveparty.stencil.custom");
-        shown = new Shown(contentsComponent, selectionComponent, contents, selection, load, stencilName);
+        shown = new Shown(contentsComponent, selectionComponent, contents, selection, load);
         return shown;
     }
 
@@ -107,7 +105,8 @@ public final class StencilGunHud {
         StencilGunItem.Load load = shown.load();
 
         int width = context.getScaledWindowWidth();
-        int y = context.getScaledWindowHeight() - 59 - BOX - 12;
+        // Just above the health / hunger rows
+        int y = context.getScaledWindowHeight() - 50 - BOX;
         int stencilX = width / 2 - BOX - 4;
         int colorX = width / 2 + 4;
 
@@ -133,20 +132,21 @@ public final class StencilGunHud {
         if (dye.getItem() instanceof DyeItem) {
             context.getMatrices().push();
             context.getMatrices().translate(colorX + 2, y + 2, 0);
-            context.getMatrices().scale(2, 2, 1);
             context.drawItem(dye, 0, 0);
             context.getMatrices().pop();
-            context.drawText(client.textRenderer, Text.literal("×" + dye.getCount()), colorX + BOX - 14, y + BOX - 9, 0xFFFFFFFF, true);
+            context.drawStackOverlay(client.textRenderer, dye, colorX + 2, y + 2);
         } else {
             Text engrave = Text.translatable("hud.steveparty.stencil_gun.engrave");
-            context.drawCenteredTextWithShadow(client.textRenderer, engrave, colorX + BOX / 2, y + BOX / 2 - 4, 0xFFBBBBBB);
+            context.getMatrices().push();
+            context.getMatrices().translate(colorX + BOX / 2F, y + BOX / 2F - 2, 0);
+            context.getMatrices().scale(0.5F, 0.5F, 1);
+            context.drawCenteredTextWithShadow(client.textRenderer, engrave, 0, 0, 0xFFBBBBBB);
+            context.getMatrices().pop();
         }
 
-        // Names and hint
-        Text stencilName = shown.stencilName();
+        // Hint (no stencil name: the preview says it)
         Text hint = Text.translatable(colorMode ? "hud.steveparty.stencil_gun.hint_color" : "hud.steveparty.stencil_gun.hint_stencil",
                 MODE_KEY.getBoundKeyLocalizedText());
-        context.drawCenteredTextWithShadow(client.textRenderer, stencilName, stencilX + BOX / 2, y + BOX + 2, 0xFFFFFFFF);
-        context.drawCenteredTextWithShadow(client.textRenderer, hint, width / 2, y - 11, 0xFFDDDDDD);
+        context.drawCenteredTextWithShadow(client.textRenderer, hint, width / 2, y - 10, HINT_COLOR);
     }
 }
