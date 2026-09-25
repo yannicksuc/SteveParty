@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StartTileBehavior;
+import fr.lordfinn.steveparty.persistent_state.ShopProtection;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
@@ -48,6 +49,7 @@ public class ModEvents {
         );
 
         HopSwitchBlock.registerUseBlockCallback();
+        ShopProtection.register();
     }
 
     /**

@@ -579,6 +579,7 @@
   "message.steveparty.shopkeeper_key.not_owner": "This trader belongs to another player.",
   "message.steveparty.shop.not_owner_access_denied": "This shop belongs to another player.",
   "message.steveparty.shop.key_required": "Hold a Shopkeeper Key to open your shop.",
+  "message.steveparty.shop.protected_block": "This block belongs to another player's shop.",
   "gui.steveparty.dice_forge.status.no_face": "Place at least one dice face",
   "message.steveparty.dice_forge.core_settling": "The gravity core is still settling into the forge",
   "gui.steveparty.dice_forge.core_hint": "Click the core to forge",
