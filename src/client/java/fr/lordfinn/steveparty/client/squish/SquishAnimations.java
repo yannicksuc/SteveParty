@@ -90,6 +90,21 @@ public final class SquishAnimations {
         }
     }
 
+    /**
+     * For renderers that are not living entity renderers (GeckoLib's, e.g. the Mula): the size the transformation
+     * currently draws {@code entity} at, relative to its final size (1 when it is not transforming). Uniform: the
+     * jelly squash and stretch is left out, so camera-facing effects drawn with it stay round.
+     */
+    public static float scaleMultiplier(Entity entity, float tickDelta) {
+        if (ANIMATIONS.isEmpty()) return 1;
+        Animation animation = ANIMATIONS.get(entity.getId());
+        if (animation == null || animation.targetScale <= 0) return 1;
+        float elapsed = (entity.getWorld().getTime() - animation.startTime) + tickDelta;
+        if (elapsed < 0 || elapsed >= animation.duration) return 1;
+        float scale = MathHelper.lerp(growth(elapsed / animation.duration), animation.startScale, animation.targetScale);
+        return Math.max(0.05F, scale / animation.targetScale);
+    }
+
     /** Kamek's magic around the transforming creatures: a swirl of shapes and a sprinkle of sparkles. */
     public static void tick(ClientWorld world) {
         if (world == null || ANIMATIONS.isEmpty()) return;
