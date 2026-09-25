@@ -12,6 +12,7 @@
       "fr.lordfinn.steveparty.gametest.PlasticGameTests",
       "fr.lordfinn.steveparty.gametest.GravityGameTests",
       "fr.lordfinn.steveparty.gametest.DiceForgeGameTests",
+      "fr.lordfinn.steveparty.gametest.DiceGameTests",
       "fr.lordfinn.steveparty.gametest.GameplayRulesGameTests",
       "fr.lordfinn.steveparty.gametest.ShopGameTests",
       "fr.lordfinn.steveparty.gametest.LootAndBrewingGameTests",

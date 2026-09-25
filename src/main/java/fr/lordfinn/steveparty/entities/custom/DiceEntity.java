@@ -28,6 +28,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -36,6 +37,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -359,6 +361,11 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        // /kill, the void, /damage with generic_kill...: damage that ignores invulnerability removes the dice
+        if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            killDice();
+            return true;
+        }
         if (source.getAttacker() instanceof ServerPlayerEntity player) {
             if (player.isSneaking()) {
                 explode(player);
@@ -368,6 +375,21 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             world.playSound(null, this.getPos().x, this.getPos().y, this.getPos().z, SoundEvents.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 1.0f, 1.0F);
         }
         return false;
+    }
+
+    /**
+     * /kill (and any other generic kill) removes the dice at once: a dice has no health to lose, and dying would
+     * play the living entity death animation. Like an explosion, an Infinity dice goes back to its online owner.
+     */
+    @Override
+    public void kill(ServerWorld world) {
+        killDice();
+    }
+
+    private void killDice() {
+        if (this.isRemoved()) return;
+        giveBackDice(null, RemovalReason.KILLED);
+        this.emitGameEvent(GameEvent.ENTITY_DIE);
     }
 
     private void explode(ServerPlayerEntity player) {
@@ -385,6 +407,10 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
      * otherwise to the player who exploded it (anyone may explode a dice).
      */
     private void giveBackDice(@Nullable ServerPlayerEntity player) {
+        giveBackDice(player, RemovalReason.DISCARDED);
+    }
+
+    private void giveBackDice(@Nullable ServerPlayerEntity player, RemovalReason reason) {
         ItemStack diceItem = getItemReference();
         if (hasInfinity()) {
             ServerPlayerEntity recipient = getOnlineOwner();
@@ -392,7 +418,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             if (recipient != null)
                 recipient.getInventory().offerOrDrop(diceItem);
         }
-        this.remove(RemovalReason.DISCARDED);
+        this.remove(reason);
     }
 
     @Nullable
