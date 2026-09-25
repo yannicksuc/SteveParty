@@ -680,17 +680,12 @@ public class TokenSpellScreen extends Screen {
     /**
      * When the screen opens, the cursor (put at the screen centre by vanilla) jumps to where the spell's shape starts
      * ({@link SpellShape#startPoint}: for the token spell, the guide circle's edge on the side of the hand holding the
-     * wand), so the wand already points there, ready to trace. Not when the player is already drawing (a press held
-     * since the wand was used): their cursor stays. Once, as soon as the guide's place (on the mob) is known. GLFW
-     * only moves the cursor of a focused window.
+     * wand), so the wand already points there, ready to trace. Also when the press that used the wand is still held
+     * (the screen opens on that press): its stroke then restarts from there. Once, as soon as the guide's place (on the
+     * mob) is known. GLFW only moves the cursor of a focused window.
      */
     private void placeCursorAtShapeStart() {
         if (cursorPlaced || !centered || client == null || client.player == null || width <= 0 || height <= 0) return;
-        if (dragging) {
-            // Already drawing with the press that used the wand: the player's cursor stays
-            cursorPlaced = true;
-            return;
-        }
         var window = client.getWindow();
         long handle = window.getHandle();
         // Only once the cursor is a free pointer (vanilla switches it from captured to normal and recentres it)
@@ -708,6 +703,9 @@ public class TokenSpellScreen extends Screen {
         } else if (Math.abs(actualX[0] - cursorTargetX) < 1.5 && Math.abs(actualY[0] - cursorTargetY) < 1.5) {
             logCursor("placed", actualX[0], actualY[0]);
             cursorPlaced = true;
+            // The press that used the wand is still held: its stroke starts from the shape's start, not the centre
+            if (dragging) startStroke(drawButton, (float) (cursorTargetX * window.getScaledWidth() / window.getWidth()),
+                    (float) (cursorTargetY * window.getScaledHeight() / window.getHeight()));
             return;
         } else if ((Math.abs(actualX[0] - cursorLastX) > 3 || Math.abs(actualY[0] - cursorLastY) > 3)
                 // (back at the window's centre: vanilla recentred it after our try, not the player)
