@@ -17,7 +17,7 @@ import net.minecraft.world.World;
  * the same colour are hidden (TranslucentBlock#isSideInvisible), no ambient-occlusion darkening and no camera
  * collision. The glass-like settings (no suffocation, no vision blocking, no spawning) are in ModBlocks.
  * <p>
- * Now and then a solar eruption bursts out of an exposed face and arcs around the block (display only).
+ * Now and then a pixel-art crescent slash traces an arc of circle around the block from an exposed face (display only).
  */
 public class StarFragmentsBlock extends TransparentBlock {
     public static final MapCodec<StarFragmentsBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -64,18 +64,11 @@ public class StarFragmentsBlock extends TransparentBlock {
         if (random.nextFloat() >= chance) return;
 
         Direction face = exposed[random.nextInt(count)];
-        Direction tangent = perpendicular(face, random);
-        float radius = MathHelper.nextFloat(random, 0.62f, 0.8f);
-        float sweep = MathHelper.nextFloat(random, 1.0f, 2.0f);        // 60..115 degrees around the block
-        int life = MathHelper.nextInt(random, 22, 32);                  // 1.1..1.6 s
-        world.addParticle(new StarFlareEffect(colour, face.getId(), tangent.getId(), radius, sweep, life),
+        float roll = random.nextFloat() * MathHelper.TAU;                // any plane through the face normal
+        float radius = MathHelper.nextFloat(random, 0.6f, 0.9f);
+        float sweep = MathHelper.nextFloat(random, 1.57f, 3.14f);        // 90..180 degrees around the block
+        int life = MathHelper.nextInt(random, 16, 24);                   // 0.8..1.2 s
+        world.addParticle(new StarFlareEffect(colour, face.getId(), roll, radius, sweep, life),
                 pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 0, 0, 0);
-    }
-
-    private static Direction perpendicular(Direction face, Random random) {
-        Direction[] options = new Direction[4];
-        int n = 0;
-        for (Direction d : Direction.values()) if (d.getAxis() != face.getAxis()) options[n++] = d;
-        return options[random.nextInt(n)];
     }
 }
