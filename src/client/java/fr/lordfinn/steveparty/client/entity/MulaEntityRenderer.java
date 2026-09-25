@@ -192,11 +192,11 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 matrices.multiply(rotation);
                 float size = (0.95f + 0.1f * glow) * (1f + 0.25f * full + 0.35f * flare + 0.3f * warm);
                 matrices.scale(size, size, size);
-                int tint = entity.getVariant().getGlowColor();
-                // mostly white near the centre of the texture, tinted towards the Mula's colour
-                int r = 170 + (((tint >> 16) & 0xFF) * 85 / 255);
-                int g = 170 + (((tint >> 8) & 0xFF) * 85 / 255);
-                int b = 170 + ((tint & 0xFF) * 85 / 255);
+                int tint = entity.getVariant().getHaloColor();
+                // bright, clearly in the Mula's colour (the texture keeps a white-hot centre)
+                int r = 100 + (((tint >> 16) & 0xFF) * 155 / 255);
+                int g = 100 + (((tint >> 8) & 0xFF) * 155 / 255);
+                int b = 100 + ((tint & 0xFF) * 155 / 255);
                 int alpha = (int) (255 * MathHelper.clamp(0.7f + 0.2f * glow + 0.1f * full + 0.3f * flare + 0.25f * warm,
                         0f, 1f));
                 drawQuad(matrices, bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture)), packedLight,

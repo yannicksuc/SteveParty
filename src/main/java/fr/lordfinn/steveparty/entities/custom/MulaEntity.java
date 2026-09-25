@@ -1265,8 +1265,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			this.color = color;
 			this.fragmentItem = fragmentItem;
 			this.starDust = new DustParticleEffect(lighten(color, id == 5 ? 0.3f : 0.45f), 0.7f);
-			// the black one glows a deep violet: a black light would not show
-			this.glowColor = id == 5 ? 0xB59CFF : lighten(color, 0.5f);
+			// the black one glows white: a black light would not show
+			this.glowColor = id == 5 ? 0xFFFFFF : lighten(color, 0.5f);
 			this.twinkle = new MulaSparkleEffect(glowColor, 1f, MulaSparkleEffect.TWINKLE);
 		}
 
@@ -1282,8 +1282,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		public int getColor() { return color; }
 		public Item getFragmentItem() { return fragmentItem; }
 		public DustParticleEffect getStarDust() { return starDust; }
-		/** Colour of its halo and of its twinkles. */
+		/** Colour of its twinkles, inner lights and tooltip (its colour, lightened; white for the black one). */
 		public int getGlowColor() { return glowColor; }
+
+		/** Colour of its halo: its own colour, only a little lightened so each Mula shines in its colour; white for the black one. */
+		public int getHaloColor() { return id == 5 ? 0xFFFFFF : lighten(color, 0.2f); }
 		public MulaSparkleEffect getTwinkle() { return twinkle; }
 
 		public static MulaVariant byId(int id) {

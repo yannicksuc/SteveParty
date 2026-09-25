@@ -61,6 +61,10 @@ public final class MulaMotion {
 	/** 0..1, how much it lets its tremble show: eased towards 1 while on edge, towards 0 when calm (no popping). */
 	private float shake, prevShake;
 	private float flare, prevFlare;
+	/** What the flare / meal glow ease towards: set at once by a burst, a beat or a meal, then fading. */
+	private float flareTarget, absorbTarget;
+	/** How fast the halo follows its target each tick: a soft swell instead of a flash. */
+	private static final float HALO_EASE = 0.18f;
 	private float speed;
 	private boolean flying;
 	private int ticksInState;
@@ -152,7 +156,8 @@ public final class MulaMotion {
 		}
 		shake += ((shaking ? 1f : 0f) - shake) * (shaking ? SHAKE_IN : SHAKE_OUT);
 		if (!shaking && shake < 0.002f) shake = 0f;
-		flare = Math.max(0f, flare - 0.03f);
+		flareTarget = Math.max(0f, flareTarget - 0.03f);
+		flare += (flareTarget - flare) * HALO_EASE;
 
 		// lean into the flight (forward speed), back when climbing; bank into turns; springs overshoot a little
 		float yawRad = bodyYaw * MathHelper.RADIANS_PER_DEGREE;
@@ -204,7 +209,8 @@ public final class MulaMotion {
 		visualScaleVelocity = (visualScaleVelocity + (shownScale - visualScale) * SCALE_SPRING) * SCALE_DAMPING;
 		visualScale += visualScaleVelocity;
 		fullness += (shownFull - fullness) * 0.12f;
-		absorbGlow = Math.max(0f, absorbGlow - 0.025f);
+		absorbTarget = Math.max(0f, absorbTarget - 0.025f);
+		absorbGlow += (absorbTarget - absorbGlow) * HALO_EASE;
 	}
 
 	/** It has just appeared (spawn egg, summon...): its visual size pops in from nothing. */
@@ -216,17 +222,17 @@ public final class MulaMotion {
 
 	/** A burst of light (glow_rings): the halo swells and brightens, then fades back over ~1.5 s. */
 	public void flare() {
-		flare = 1f;
+		flareTarget = 1f;
 	}
 
 	/** A beat of a dance: the halo pulses (a little less than a flare). */
 	public void beat() {
-		flare = Math.max(flare, 0.55f);
+		flareTarget = Math.max(flareTarget, 0.55f);
 	}
 
 	/** A meal's light has sunk in: a warm glow spreads from its heart and fades over 2 s. */
 	public void absorbGlow() {
-		absorbGlow = 1f;
+		absorbTarget = 1f;
 	}
 
 	/** 0..1, the warm glow of a meal just taken in. */
