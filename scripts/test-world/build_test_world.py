@@ -7,9 +7,9 @@ Writes <run-server>/world/datapacks/steveparty-test/, then in game (or through `
     /function steveparty_test:welcome      (with the player online: kit, day, clear weather, tp to the board)
 
 The area (x 1936..2095, z 1952..2079, floor y=99, everything built at y=100), far from the demo board:
-  - the board (west): a loop of 30 tiles spaced 4 blocks apart (2 block gap, tiles are 2 blocks wide), each one turned
+  - the board (west): a start zone of 4 start tiles (a token each) feeding the loop through an entry tile, a loop of 30 tiles spaced 4 blocks apart (2 block gap, tiles are 2 blocks wide), each one turned
     toward the next tile of the path, with diagonal sides, and a shortcut: the fork tile has two destinations (the
-    main route east, or the shortcut straight south through the middle, which rejoins the loop further on);
+    main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 emeralds and one is a stop trap driven by a router + lever);
   - the stations (east), one per 20x20 plot: dice, shops, goal pole, plastic, signs, building blocks, misc,
     chests holding one of every item, and the Mulas' glass enclosure around an activated Dice Forge.
 """
@@ -193,65 +193,94 @@ def color(c):
     return ',"steveparty:color":%d' % c
 
 
-def inventory_cartridge(destinations, chest, negative):
-    ghost = '{id:"minecraft:emerald",count:3%s}' % (',components:{"steveparty:is-negative":true}' if negative else '')
+def inventory_cartridge(destinations, chest, negative, count=3, slot=0):
+    ghost = '{id:"minecraft:emerald",count:%d%s}' % (count, ',components:{"steveparty:is-negative":true}' if negative else '')
     extra = (',"steveparty:inventory-cartridge":{items:[%s]},"steveparty:inventory-pos":[I;%d,%d,%d]'
              ',"steveparty:selection-state":1' % (ghost, *chest)) + color(BAD if negative else GOOD)
-    return cartridge(0, 'inventory_cartridge', destinations, extra)
+    return cartridge(slot, 'inventory_cartridge', destinations, extra)
+
+
+# Start zone, west of the loop: 4 start tiles round an entry tile that leads into the loop (on P0, heading north)
+ENTRY = (X0 - 4, Z0)
+STARTS = [((X0 - 4, Z0 - 4), 'Pion rouge', 'red', 'pig'),         # north of the entry: faces south
+          ((X0 - 8, Z0 - 4), 'Pion bleu', 'aqua', 'sheep'),       # north-west: faces south-east
+          ((X0 - 8, Z0 + 4), 'Pion vert', 'green', 'cow'),        # south-west: faces north-east
+          ((X0 - 4, Z0 + 4), 'Pion jaune', 'yellow', 'chicken')]  # south of the entry: faces north
+SHORTCUT_CHEST = (1986, Y, 1992)
+TRAP_ROUTER = (1975, Y, 1990)
 
 
 def board():
     loop, fork, merge, shortcut = board_layout()
     owner = int_array(offline_uuid(PLAYER))
-    starts = {0: CHEST_W, 17: CHEST_E}
     blue = {2: CHEST_W, 18: CHEST_E, 27: CHEST_W}
     red = {7: CHEST_W, 21: CHEST_E}
     simple, check_point, routed = 3, 12, 16
     router = (loop[routed][0] + 4, Y, loop[routed][1])
+    trap = 2   # index of the shortcut tile that is a stop tile while its router is powered
 
-    cmds = ['# Board: loop of %d tiles + %d shortcut tiles' % (len(loop), len(shortcut))]
+    cmds = ['# Board: start zone of %d tiles, loop of %d tiles + %d dangerous shortcut tiles'
+            % (len(STARTS) + 1, len(loop), len(shortcut))]
     emeralds = ','.join('{Slot:%db,id:"minecraft:emerald",count:64}' % s for s in range(9))
-    for chest in (CHEST_W, CHEST_E):
+    for chest, name in ((CHEST_W, 'Coffre des cases bleues/rouges'), (CHEST_E, 'Coffre des cases bleues/rouges'),
+                        (SHORTCUT_CHEST, 'Coffre du raccourci dangereux')):
         cmds.append('setblock %d %d %d minecraft:chest[facing=south]{CustomName:%s,Items:[%s]}'
-                    % (*chest, jtext('Coffre des cases bleues/rouges'), emeralds))
+                    % (*chest, jtext(name), emeralds))
 
-    def place(pos, nxt_list, i=None, tint=WHITE):
-        nxt = nxt_list[0]
-        rot = ROTATION[direction_between(pos, nxt)]
-        block, state = 'tile', 'default'
-        if i is not None and i in starts:
-            state, items = 'tile_start', cartridge(0, 'tile_behavior_start', nxt_list, color(WHITE))
-        elif i is not None and (i in blue or i in red):
-            negative = i in red
-            state = 'tile_inventory_interactor'
-            items = inventory_cartridge(nxt_list, (red if negative else blue)[i], negative)
-        elif i == routed:
-            # Router off (power 0): slot 0, a default tile; router powered (lever): slot 15, a stop tile
-            items = cartridge(0, 'board_space_behavior', nxt_list, color(WHITE)) + ',' + \
-                cartridge(15, 'board_space_behavior_stop', nxt_list, color(DYE_RGB['orange']))
-        else:
-            items = cartridge(0, 'board_space_behavior', nxt_list, color(tint))
-            if i == simple:
-                block = 'simple_tile'
-        if i == check_point:
-            return 'setblock %d %d %d steveparty:check_point[tile_type=default]{Items:[%s]}' % (pos[0], Y, pos[1], items)
+    # The dangerous shortcut is marked on the ground: red polished concrete, lined with magma
+    sx = shortcut[0][0]
+    z_from, z_to = shortcut[0][1] - 2, shortcut[-1][1] + 2
+    cmds += ['fill %d 99 %d %d 99 %d steveparty:polished_red_concrete' % (sx - 2, z_from, sx + 2, z_to),
+             'fill %d 99 %d %d 99 %d minecraft:magma_block' % (sx - 3, z_from, sx - 3, z_to),
+             'fill %d 99 %d %d 99 %d minecraft:magma_block' % (sx + 3, z_from, sx + 3, z_to)]
+
+    def tile(pos, nxt_list, state, items, block='tile'):
+        rot = ROTATION[direction_between(pos, nxt_list[0])]
         return 'setblock %d %d %d steveparty:%s[tile_type=%s,rotation_8=%d]{Items:[%s]}' % (
             pos[0], Y, pos[1], block, state, rot, items)
+
+    def place(pos, nxt_list, i):
+        if i in blue or i in red:
+            negative = i in red
+            return tile(pos, nxt_list, 'tile_inventory_interactor',
+                        inventory_cartridge(nxt_list, (red if negative else blue)[i], negative))
+        if i == routed:
+            # Router off (power 0): slot 0, a default tile; router powered (lever): slot 15, a stop tile
+            return tile(pos, nxt_list, 'default', cartridge(0, 'board_space_behavior', nxt_list, color(WHITE)) + ',' +
+                        cartridge(15, 'board_space_behavior_stop', nxt_list, color(DYE_RGB['orange'])))
+        items = cartridge(0, 'board_space_behavior', nxt_list, color(WHITE))
+        if i == check_point:
+            return 'setblock %d %d %d steveparty:check_point[tile_type=default]{Items:[%s]}' % (pos[0], Y, pos[1], items)
+        return tile(pos, nxt_list, 'default', items, 'simple_tile' if i == simple else 'tile')
+
+    # Start zone
+    cmds.append(tile(ENTRY, [loop[0]], 'default', cartridge(0, 'board_space_behavior', [loop[0]], color(WHITE))))
+    for pos, _, _, _ in STARTS:
+        cmds.append(tile(pos, [ENTRY], 'tile_start', cartridge(0, 'tile_behavior_start', [ENTRY], color(WHITE))))
 
     for i, pos in enumerate(loop):
         nxt = [loop[(i + 1) % len(loop)]]
         if i == fork:
             nxt.append(shortcut[0])   # first destination: the main route (east); second: the shortcut (south)
         cmds.append(place(pos, nxt, i))
-    for j, pos in enumerate(shortcut):
-        nxt = shortcut[j + 1] if j + 1 < len(shortcut) else loop[merge]
-        cmds.append(place(pos, [nxt], None, SHORTCUT_COLOR))
 
-    # Router driving the stop tile (placed empty, then given its cartridge: the data merge marks it dirty and routes)
-    cmds += ['setblock %d %d %d minecraft:stone' % (router[0], Y - 1, router[2]),
-             'setblock %d %d %d steveparty:board_space_redstone_router' % router,
-             'data merge block %d %d %d {Items:[%s]}' % (*router, cartridge(0, 'board_space_behavior', [loop[routed]])),
-             'setblock %d %d %d minecraft:lever[face=floor,facing=east]' % (router[0] + 1, Y, router[2])]
+    # Shortcut: every tile loses emeralds (red, 5 at a time), and one is a trap: a stop tile while its lever is on
+    for j, pos in enumerate(shortcut):
+        nxt = [shortcut[j + 1] if j + 1 < len(shortcut) else loop[merge]]
+        if j == trap:
+            cmds.append(tile(pos, nxt, 'board_space_stop',
+                             inventory_cartridge(nxt, SHORTCUT_CHEST, True, 5) + ',' +
+                             cartridge(15, 'board_space_behavior_stop', nxt, color(BAD))))
+        else:
+            cmds.append(tile(pos, nxt, 'tile_inventory_interactor', inventory_cartridge(nxt, SHORTCUT_CHEST, True, 5)))
+
+    # Routers (placed empty, then given their cartridge: the data merge marks them dirty and routes)
+    for r, target, powered, lever_dx in ((router, loop[routed], 'false', 1), (TRAP_ROUTER, shortcut[trap], 'true', -1)):
+        cmds += ['setblock %d %d %d minecraft:stone' % (r[0], Y - 1, r[2]),
+                 'setblock %d %d %d steveparty:board_space_redstone_router' % r,
+                 'data merge block %d %d %d {Items:[%s]}' % (*r, cartridge(0, 'board_space_behavior', [target])),
+                 'setblock %d %d %d minecraft:lever[face=floor,facing=east,powered=%s]'
+                 % (r[0] + lever_dx, Y, r[2], powered)]
 
     cmds += [
         'setblock %d %d %d steveparty:party_controller[facing=south]' % CONTROLLER,
@@ -260,8 +289,7 @@ def board():
         'setblock %d %d %d minecraft:lever[face=floor,facing=south]' % (STEP_CONTROLLER[0] + 1, Y, STEP_CONTROLLER[2]),
     ]
 
-    for i, (name, col, mob) in zip(sorted(starts), [('Pion rouge', 'red', 'pig'), ('Pion bleu', 'aqua', 'sheep')]):
-        x, z = loop[i]
+    for (x, z), name, col, mob in STARTS:
         cmds.append(('summon minecraft:%s %.1f %d %.1f {Tokenized:1b,TokenOwner:%s,PersistenceRequired:1b,'
                      'CustomNameVisible:1b,CustomName:%s}') % (mob, x + 0.5, Y, z + 0.5, owner, jtext(name, col)))
 
@@ -269,11 +297,15 @@ def board():
     cz = (min(p[1] for p in loop) + max(p[1] for p in loop)) / 2 + 0.5
     cmds += [
         label(cx, Y + 8, cz, 'PLATEAU', 'gold', 4),
-        label(loop[0][0] + 0.5, Y + 2.5, loop[0][1] + 0.5, 'Départ 1', 'yellow', 1),
-        label(loop[17][0] + 0.5, Y + 2.5, loop[17][1] + 0.5, 'Départ 2', 'yellow', 1),
-        label(loop[fork][0] + 0.5, Y + 2.5, loop[fork][1] + 0.5, 'Embranchement : tout droit ou raccourci (sud)', 'green', 1),
-        label(loop[merge][0] + 0.5, Y + 2.5, loop[merge][1] + 0.5, 'Fin du raccourci', 'green', 1),
-        label(shortcut[3][0] + 0.5, Y + 2.5, shortcut[3][1] + 0.5, 'Raccourci', 'green', 1),
+        label(ENTRY[0] - 1.5, Y + 3.5, ENTRY[1] + 0.5, 'ZONE DE DÉPART (4 pions)', 'yellow', 1.5),
+        label(loop[fork][0] + 0.5, Y + 2.5, loop[fork][1] + 0.5,
+              'Embranchement : tout droit, ou raccourci dangereux (sud)', 'red', 1),
+        label(loop[merge][0] + 0.5, Y + 2.5, loop[merge][1] + 0.5, 'Fin du raccourci', 'red', 1),
+        label(shortcut[4][0] + 0.5, Y + 3, shortcut[4][1] + 0.5, 'Raccourci dangereux', 'red', 1.5),
+        label(shortcut[4][0] + 0.5, Y + 2.2, shortcut[4][1] + 0.5, '-5 émeraudes par case + un piège stop', 'red', 0.7, False),
+        label(shortcut[trap][0] + 0.5, Y + 2.2, shortcut[trap][1] + 0.5, 'Piège : stop tant que le levier est allumé',
+              'dark_red', 0.7, False),
+        label(TRAP_ROUTER[0] + 0.5, Y + 1.8, TRAP_ROUTER[2] + 0.5, 'Routeur du piège + levier', 'white', 0.7, False),
         label(loop[routed][0] + 0.5, Y + 2.5, loop[routed][1] + 0.5, 'Case stop si le routeur est alimenté', 'gold', 0.8),
         label(router[0] + 0.5, Y + 1.8, router[2] + 0.5, 'Routeur + levier', 'white', 0.7, False),
         label(loop[check_point][0] + 0.5, Y + 2, loop[check_point][1] + 0.5, 'Point de passage', 'light_purple', 0.8),
@@ -597,11 +629,9 @@ def chests_station(x0=2035, z0=2020):
 # ---------------------------------------------------------------------------------------------------- welcome
 
 def welcome(loop):
-    sx, sz = loop[0]
-    px, pz = sx + 0.5, sz + 4.5
-    bx = sum(p[0] for p in loop) / len(loop)
-    bz = sum(p[1] for p in loop) / len(loop)
-    yaw = -math.degrees(math.atan2(bx - px, bz - pz))
+    # West of the start zone, looking east at it (and the board behind it)
+    px, pz = ENTRY[0] - 11.5, ENTRY[1] + 0.5
+    yaw = -90.0
     kit = ['steveparty:default_dice', 'steveparty:double_dice', 'steveparty:triple_dice',
            'steveparty:default_dice[steveparty:dice-faces=[{kind:"premium",value:10},{kind:"normal",value:5},'
            '{kind:"cursed",value:2}],item_name=\'"Dé forgé"\']',
@@ -610,8 +640,8 @@ def welcome(loop):
            'steveparty:tile 8', 'steveparty:simple_tile 4', 'steveparty:check_point 2', 'steveparty:mini_games_catalogue']
     return (['time set day', 'weather clear']
             + ['give %s %s' % (PLAYER, k) for k in kit]
-            + ['tp %s %.1f %d %.1f %.1f 25' % (PLAYER, px, Y, pz, yaw),
-               'tellraw %s {"text":"[test] Monde de test prêt : plateau ici (levier du Party Controller = lancer la partie), '
+            + ['tp %s %.1f %d %.1f %.1f 20' % (PLAYER, px, Y, pz, yaw),
+               'tellraw %s {"text":"[test] Monde de test prêt : zone de départ ici (4 pions), plateau derrière (levier du Party Controller = lancer la partie, raccourci dangereux au milieu), '
                'stations à l\'est (dés, boutique, goal pole, plastique, panneaux, blocs, divers, coffres, Mulas).",'
                '"color":"gold"}' % PLAYER])
 
