@@ -98,6 +98,26 @@ public class TokenSpellGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- bounds
 
+    /** A llama token goes into an empty Token: the llama's own interaction (its chest screen, mounting) doesn't win. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aLlamaTokenCanBeStoredInAToken(TestContext context) {
+        net.minecraft.entity.passive.LlamaEntity llama = spawn(context, EntityType.LLAMA);
+        llama.setTame(true);
+        ServerPlayerEntity player = wandHolder(context);
+        try {
+            context.assertTrue(TokenizerWandItem.castSpell(player, llama.getId(), 1F, BLUE) == SpellResult.TOKENIZED, "tokenized");
+            player.setStackInHand(Hand.MAIN_HAND, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.TOKEN));
+            ActionResult result = player.interact(llama, Hand.MAIN_HAND);
+            context.assertTrue(result.isAccepted(), "the Token takes the click: " + result);
+            context.assertTrue(!player.hasVehicle(), "not riding the llama");
+            context.assertTrue(player.getMainHandStack().get(fr.lordfinn.steveparty.components.ModComponents.ENTITY_DATA_COMPONENT) != null,
+                    "the llama is stored in the Token");
+        } finally {
+            disconnect(context, player);
+        }
+        context.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void tokenSizeAndColourAreSanitized(TestContext context) {
         context.assertTrue(TokenizerWandItem.clampTokenSize(50F) == TokenizerWandItem.MAX_TOKEN_SIZE, "too big clamped");
