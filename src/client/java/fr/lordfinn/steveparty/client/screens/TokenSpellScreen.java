@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
+import fr.lordfinn.steveparty.client.tokenspell.SpellShape;
 import fr.lordfinn.steveparty.client.tokenspell.TokenSpellHand;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import fr.lordfinn.steveparty.particles.KamekShapeEffect;
@@ -18,6 +19,7 @@ import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Arm;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -105,6 +107,10 @@ public class TokenSpellScreen extends Screen {
     private boolean cast;
     private float lastTwinkleLength;
     private long lastCameraNanos;
+    /** The shape this spell draws, and where its drawing starts. */
+    private static final SpellShape SHAPE = SpellShape.TOKEN_CIRCLE;
+    /** The cursor was put at the shape's start (once, when the screen opens). */
+    private boolean cursorPlaced;
     private float guideFade;
     /** Until this tick, the hint says the last stroke was not a loop. */
     private int failedUntil = -1;
@@ -667,10 +673,32 @@ public class TokenSpellScreen extends Screen {
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
     }
 
+    /**
+     * When the screen opens, the cursor (put at the screen centre by vanilla) jumps to where the spell's shape starts
+     * ({@link SpellShape#startPoint}: for the token spell, the guide circle's edge on the side of the hand holding the
+     * wand), so the wand already points there, ready to trace. Not when the player is already drawing (a press held
+     * since the wand was used): their cursor stays. Once, as soon as the guide's place (on the mob) is known. GLFW
+     * only moves the cursor of a focused window.
+     */
+    private void placeCursorAtShapeStart() {
+        if (cursorPlaced || !centered || client == null || client.player == null || width <= 0 || height <= 0) return;
+        cursorPlaced = true;
+        if (dragging) return;
+        PlayerEntity player = client.player;
+        boolean mainHand = player.getMainHandStack().getItem() instanceof TokenizerWandItem;
+        boolean rightHanded = (player.getMainArm() == Arm.RIGHT) == mainHand;
+        float[] start = SHAPE.startPoint(centerX, centerY, radiusFor(TokenizerWandItem.DEFAULT_TOKEN_SIZE), rightHanded);
+        var window = client.getWindow();
+        GLFW.glfwSetCursorPos(window.getHandle(),
+                MathHelper.clamp(start[0], 2, width - 2) * (double) window.getWidth() / width,
+                MathHelper.clamp(start[1], 2, height - 2) * (double) window.getHeight() / height);
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         followMobWithCamera();
         followMob(delta);
+        placeCursorAtShapeStart();
         // Follows the cursor every frame while the button is held (vanilla only sends drag events to a focused window)
         if (dragging) {
             traceTo(mouseX, mouseY);
