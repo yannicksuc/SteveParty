@@ -187,6 +187,24 @@ public final class MulaEffects {
         }
     }
 
+    /**
+     * Client, every tick while it is a board token (a still pawn): nothing plays, nothing sparkles. What was running is
+     * dropped, and the watchers keep up so nothing fires late (a poof for the board moves, a chime...) when it comes
+     * back to life.
+     */
+    void pawnTick(double serverX, double serverY, double serverZ) {
+        first = false;
+        itemAge = -1;
+        orbitTicks = cometTicks = 0;
+        arpeggioNotes = 0;
+        nextVoiceAge = -1;
+        lastName = mula.getCustomName();
+        wasLeashed = mula.isLeashed();
+        lastServerX = serverX;
+        lastServerY = serverY;
+        lastServerZ = serverZ;
+    }
+
     // ------------------------------------------------------------------------------------------ events
 
     /**
@@ -645,6 +663,7 @@ public final class MulaEffects {
     }
 
     private void sound(SoundEvent sound, float volume, float pitch) {
+        if (mula.isSilent()) return; // Silent tag, and board tokens (silenced while they are one)
         mula.getWorld().playSound(mula.getX(), centerY(), mula.getZ(), sound, SoundCategory.NEUTRAL, volume, pitch, false);
     }
 }

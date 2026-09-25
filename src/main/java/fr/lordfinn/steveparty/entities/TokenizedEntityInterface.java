@@ -37,4 +37,10 @@ public interface TokenizedEntityInterface {
     int steveparty$getTokenColor();
 
     void steveparty$setTokenColor(int color);
+
+    /**
+     * Age at which this side first ticked it as a token (a pawn: its idle animations stay frozen on that frame), -1
+     * when it is not a token. Not saved nor synced.
+     */
+    int steveparty$getPawnAge();
 }

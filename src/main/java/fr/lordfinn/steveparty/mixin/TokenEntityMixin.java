@@ -15,6 +15,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTable;
@@ -35,6 +36,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -73,6 +75,11 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     private boolean steveparty$preTokenInvulnerable = false;
     @Unique
     private boolean steveparty$preTokenCustomNameVisible = false;
+    @Unique
+    private boolean steveparty$preTokenSilent = false;
+    /** Age at which this side first ticked it as a token (its idle animations stay frozen on that frame), -1 = none. */
+    @Unique
+    private int steveparty$pawnAge = -1;
 
     @Shadow
     @Final
@@ -124,24 +131,36 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
                 this.steveparty$preTokenAiDisabled = mob.isAiDisabled();
                 this.steveparty$preTokenInvulnerable = mob.isInvulnerable();
                 this.steveparty$preTokenCustomNameVisible = mob.isCustomNameVisible();
+                this.steveparty$preTokenSilent = mob.isSilent();
                 this.steveparty$hasPreTokenState = true;
             }
+            // A static pawn: no AI at all (goals, brain, look / move controls), silent, not led nor in love
             mob.setAiDisabled(true);
             mob.clearGoalsAndTasks();
             mob.setTarget(null);
+            mob.getNavigation().stop();
+            mob.setJumping(false);
             mob.setInvulnerable(true);
             mob.setCustomNameVisible(true);
+            mob.setSilent(true);
+            if (!mob.getWorld().isClient && mob.isLeashed()) mob.detachLeash(true, true);
+            if (mob instanceof AnimalEntity animal) animal.resetLoveTicks();
+            this.headYaw = this.bodyYaw = this.getYaw();
+            this.setPitch(0);
         } else if (wasTokenized) {
             // Only on a real token -> mob transition: never touch regular mobs
             if (this.steveparty$hasPreTokenState) {
                 mob.setAiDisabled(this.steveparty$preTokenAiDisabled);
                 mob.setInvulnerable(this.steveparty$preTokenInvulnerable);
                 mob.setCustomNameVisible(this.steveparty$preTokenCustomNameVisible);
+                mob.setSilent(this.steveparty$preTokenSilent);
             } else {
                 // Token saved before the pre-token state was recorded: previous behavior
                 mob.setAiDisabled(false);
                 mob.setInvulnerable(false);
                 mob.setCustomNameVisible(false);
+                // recorded from the mob itself when it was loaded (tokens were not silenced back then)
+                mob.setSilent(this.steveparty$preTokenSilent);
             }
             this.steveparty$hasPreTokenState = false;
             this.targetPosition = null;
@@ -200,6 +219,9 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             this.steveparty$preTokenAiDisabled = preTokenState.getBoolean("NoAI");
             this.steveparty$preTokenInvulnerable = preTokenState.getBoolean("Invulnerable");
             this.steveparty$preTokenCustomNameVisible = preTokenState.getBoolean("CustomNameVisible");
+            // Tokens saved before tokens were silenced: the mob's own flag is still the pre-token one
+            this.steveparty$preTokenSilent = preTokenState.contains("Silent", NbtElement.NUMBER_TYPE)
+                    ? preTokenState.getBoolean("Silent") : this.steveparty$preTokenSilent;
             this.steveparty$hasPreTokenState = true;
         } else {
             this.steveparty$hasPreTokenState = false;
@@ -251,6 +273,7 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             preTokenState.putBoolean("NoAI", this.steveparty$preTokenAiDisabled);
             preTokenState.putBoolean("Invulnerable", this.steveparty$preTokenInvulnerable);
             preTokenState.putBoolean("CustomNameVisible", this.steveparty$preTokenCustomNameVisible);
+            preTokenState.putBoolean("Silent", this.steveparty$preTokenSilent);
             nbt.put("PreTokenState", preTokenState);
         }
         if (this.targetPosition != null) {
@@ -295,6 +318,15 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
      */
     @Inject(method = "tick", at = @At("TAIL"))
     private void onTick(CallbackInfo ci) {
+        if (this.steveparty$isTokenized()) {
+            // A pawn: head and body always face where it goes (the board sets its yaw), no idle look around
+            this.bodyYaw = this.getYaw();
+            this.headYaw = this.getYaw();
+            if (this.getPitch() != 0) this.setPitch(0);
+            if (this.steveparty$pawnAge < 0) this.steveparty$pawnAge = this.age;
+        } else if (this.steveparty$pawnAge >= 0) {
+            this.steveparty$pawnAge = -1;
+        }
         if (this.getWorld().isClient)  return;
         if (this.targetPosition != null) {
             Vec3d currentPosition = this.getPos();
@@ -354,6 +386,22 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     public boolean forEachGiftedItem(ServerWorld world, RegistryKey<LootTable> lootTableKey, BiConsumer<ServerWorld, ItemStack> lootConsumer) {
         if (this.steveparty$isTokenized()) return false;
         return super.forEachGiftedItem(world, lootTableKey, lootConsumer);
+    }
+
+    public int steveparty$getPawnAge() {
+        return this.steveparty$pawnAge;
+    }
+
+    /** A pawn stays on its base: players and mobs bumping into it do not push it around. */
+    @Override
+    public boolean isPushable() {
+        return !this.steveparty$isTokenized() && super.isPushable();
+    }
+
+    /** No lead on a pawn (it would be dragged off the board). */
+    @Inject(method = "canBeLeashed", at = @At("HEAD"), cancellable = true)
+    private void steveparty$noLeashOnTokens(CallbackInfoReturnable<Boolean> cir) {
+        if (this.steveparty$isTokenized()) cir.setReturnValue(false);
     }
 
     @Override
