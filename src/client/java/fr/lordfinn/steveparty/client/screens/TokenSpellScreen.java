@@ -76,6 +76,9 @@ public class TokenSpellScreen extends Screen {
     private int phaseTicks;
     private boolean dragging;
     private float shownRadius = -1;
+    /** Centre of the circle: where the mob is drawn on the screen (followed smoothly). */
+    private float centerX, centerY;
+    private boolean centered;
     private Arm wandArm = Arm.RIGHT;
     /** Kamek shapes and sparkles drawn on the screen (GUI coordinates). */
     private final List<GuiShape> shapes = new ArrayList<>();
@@ -114,6 +117,9 @@ public class TokenSpellScreen extends Screen {
 
     @Override
     protected void init() {
+        centered = false;
+        centerX = width / 2F;
+        centerY = height / 2F;
         PlayerEntity player = client != null ? client.player : null;
         if (player != null) {
             boolean mainHand = player.getMainHandStack().getItem() instanceof TokenizerWandItem
@@ -243,7 +249,9 @@ public class TokenSpellScreen extends Screen {
         double baseOffset = Math.max(0, mob.getHeight() - body.height());
         double height = baseOffset + body.height() * ratio;
         double radius = body.width() * ratio / 2 + 0.25;
-        KamekShapeEffect sparkle = KamekShapeEffect.sparkle(1.0F, 0F, 5, color == NO_COLOR ? HEIGHT_MARK_COLOR : color);
+        // Lightened: dark token colours (a cow's brown) would read as black specks
+        KamekShapeEffect sparkle = KamekShapeEffect.sparkle(1.0F, 0F, 5,
+                lerpColor(color == NO_COLOR ? HEIGHT_MARK_COLOR : color, 0xFFFFFF, 0.45F));
         for (int i = 0; i < 4; i++) {
             double angle = -ticks * 0.15 + i * Math.PI / 2;
             client.world.addParticle(sparkle, mob.getX() + Math.cos(angle) * radius, mob.getY() + height + 0.05,
@@ -338,9 +346,27 @@ public class TokenSpellScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
+    /** The circle is centred on the mob, wherever it is drawn on the screen. */
+    private void followMob(float delta) {
+        Vec3d center = mob.getLerpedPos(delta).add(0, mob.getHeight() / 2, 0);
+        float[] screen = TokenSpellHand.worldToScreen(center);
+        float x = screen == null ? width / 2F : (screen[0] + 1) * width / 2F;
+        float y = screen == null ? height / 2F : (screen[1] + 1) * height / 2F;
+        x = MathHelper.clamp(x, 0, width);
+        y = MathHelper.clamp(y, 0, height);
+        if (!centered) {
+            centerX = x;
+            centerY = y;
+            centered = true;
+        } else {
+            centerX = MathHelper.lerp(0.3F, centerX, x);
+            centerY = MathHelper.lerp(0.3F, centerY, y);
+        }
+    }
+
     /** The circle's edge goes through the cursor: its radius gives the size. */
     private void drawTo(double mouseX, double mouseY) {
-        float radius = (float) Math.hypot(mouseX - width / 2.0, mouseY - height / 2.0);
+        float radius = (float) Math.hypot(mouseX - centerX, mouseY - centerY);
         float previous = size;
         size = snap(radius / maxRadius() * MAX_TOKEN_SIZE);
         if (size != previous && client != null && client.world != null) {
@@ -382,9 +408,9 @@ public class TokenSpellScreen extends Screen {
     // ------------------------------------------------------------------ screen shapes
 
     private float[] pointOnCircle(double towardsX, double towardsY, float radius) {
-        double dx = towardsX - width / 2.0, dy = towardsY - height / 2.0;
+        double dx = towardsX - centerX, dy = towardsY - centerY;
         double length = Math.max(1.0E-3, Math.hypot(dx, dy));
-        return new float[]{(float) (width / 2.0 + dx / length * radius), (float) (height / 2.0 + dy / length * radius),
+        return new float[]{(float) (centerX + dx / length * radius), (float) (centerY + dy / length * radius),
                 (float) (dx / length), (float) (dy / length)};
     }
 
@@ -409,7 +435,7 @@ public class TokenSpellScreen extends Screen {
         float radius = radiusFor(size);
         for (int i = 0; i < count; i++) {
             double angle = random.nextDouble() * MathHelper.TAU;
-            addShape(pointOnCircle(width / 2.0 + Math.cos(angle), height / 2.0 + Math.sin(angle), radius), 0.8F,
+            addShape(pointOnCircle(centerX + Math.cos(angle), centerY + Math.sin(angle), radius), 0.8F,
                     sprite < 0 ? random.nextInt(SPARKLE) : sprite);
         }
     }
@@ -420,7 +446,7 @@ public class TokenSpellScreen extends Screen {
         float radius = radiusFor(size);
         for (int i = 0; i < count; i++) {
             double angle = i * MathHelper.TAU / count + random.nextDouble() * 0.2;
-            addShape(pointOnCircle(width / 2.0 + Math.cos(angle), height / 2.0 + Math.sin(angle), radius), 3.0F,
+            addShape(pointOnCircle(centerX + Math.cos(angle), centerY + Math.sin(angle), radius), 3.0F,
                     i % 3 == 0 ? SPARKLE : random.nextInt(SPARKLE));
         }
     }
@@ -432,10 +458,10 @@ public class TokenSpellScreen extends Screen {
         for (int i = 0; i < 3; i++) {
             double angle = random.nextDouble() * MathHelper.TAU;
             double from = radius + 50 + random.nextDouble() * 40;
-            float x = (float) (width / 2.0 + Math.cos(angle) * from), y = (float) (height / 2.0 + Math.sin(angle) * from);
+            float x = (float) (centerX + Math.cos(angle) * from), y = (float) (centerY + Math.sin(angle) * from);
             int life = 10 + random.nextInt(4);
-            float targetX = (float) (width / 2.0 + Math.cos(angle + 0.6) * radius);
-            float targetY = (float) (height / 2.0 + Math.sin(angle + 0.6) * radius);
+            float targetX = (float) (centerX + Math.cos(angle + 0.6) * radius);
+            float targetY = (float) (centerY + Math.sin(angle + 0.6) * radius);
             addShape(x, y, (targetX - x) / life, (targetY - y) / life, life, i == 0 ? SPARKLE : random.nextInt(SPARKLE));
         }
     }
@@ -463,6 +489,7 @@ public class TokenSpellScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        followMob(delta);
         // Follows the cursor every frame while the button is held (vanilla only sends drag events to a focused window)
         if (dragging) drawTo(mouseX, mouseY);
         float press = phase == Phase.VALIDATING ? 1 : dragging ? 0.7F : 0;
@@ -492,7 +519,7 @@ public class TokenSpellScreen extends Screen {
                 radius = shownRadius;
             }
         }
-        drawMagicCircle(context, width / 2F, height / 2F, Math.max(0, radius), time, flash, phase == Phase.VALIDATING ? 2 : 1);
+        drawMagicCircle(context, centerX, centerY, Math.max(0, radius), time, flash, phase == Phase.VALIDATING ? 2 : 1);
         if (phase == Phase.DRAWING && dragging) {
             float[] handle = pointOnCircle(mouseX, mouseY, radius);
             drawSprite(context, SPARKLE, handle[0], handle[1], 0xFFFFFF, 255);

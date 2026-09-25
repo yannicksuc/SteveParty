@@ -123,6 +123,22 @@ public final class TokenSpellHand {
         return camera.getPos().add(direction.multiply(distance));
     }
 
+    /**
+     * Where a world position is drawn on the screen: {x, y} from -1 (left / top edge) to 1 (right / bottom edge), or
+     * null when it is behind the camera. The inverse of {@link #screenInWorld}.
+     */
+    public static float[] worldToScreen(Vec3d position) {
+        Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
+        Vec3d d = position.subtract(camera.getPos());
+        Vector3f forward = camera.getHorizontalPlane(), up = camera.getVerticalPlane(), left = camera.getDiagonalPlane();
+        double depth = d.x * forward.x() + d.y * forward.y() + d.z * forward.z();
+        if (depth < 0.05) return null;
+        double right = -(d.x * left.x() + d.y * left.y() + d.z * left.z());
+        double above = d.x * up.x() + d.y * up.y() + d.z * up.z();
+        float tanHalfHeight = halfHeight(1);
+        return new float[]{(float) (right / depth / (tanHalfHeight * aspect())), (float) (-above / depth / tanHalfHeight)};
+    }
+
     private static float restScreenX() {
         return REST_X / (halfHeight(ITEM_DEPTH) * aspect());
     }
