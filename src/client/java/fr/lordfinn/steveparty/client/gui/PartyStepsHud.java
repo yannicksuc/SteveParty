@@ -69,7 +69,8 @@ public class PartyStepsHud implements HudRenderCallback {
     }
 
     public static void updateSteps(PartyData partyData) {
-        data = partyData;
+        // A party that is over (END step) or gone (empty data sent when the controller is broken): nothing to show
+        data = partyData != null && partyData.isStarted() ? partyData : new PartyData();
     }
 
     public static void clearData() {
@@ -78,7 +79,8 @@ public class PartyStepsHud implements HudRenderCallback {
 
     @Override
     public void onHudRender(DrawContext drawContext, RenderTickCounter renderTickCounter) {
-        if (canDisplay)
+        // F1 hides the HUD
+        if (canDisplay && !MinecraftClient.getInstance().options.hudHidden)
             drawHud(drawContext);
     }
 
