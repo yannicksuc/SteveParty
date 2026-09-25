@@ -38,6 +38,25 @@ public final class MulaCommand {
     private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("mula")
                 .requires(source -> source.hasPermissionLevel(2))
+                // /mula ephemeride start: a night of shooting stars now; nearest: the nearest Mula spawn site
+                .then(literal("ephemeride")
+                        .then(literal("start").executes(context -> {
+                            fr.lordfinn.steveparty.entities.custom.MulaEphemeride.start(context.getSource().getWorld());
+                            context.getSource().sendFeedback(() -> Text.literal("An ephemeride begins (it lasts while it is night)"), true);
+                            return 1;
+                        }))
+                        .then(literal("nearest").executes(context -> {
+                            var site = fr.lordfinn.steveparty.entities.custom.MulaSpawnSites.get(context.getSource().getWorld())
+                                    .nearest(net.minecraft.util.math.BlockPos.ofFloored(context.getSource().getPosition()), true);
+                            if (site.isEmpty()) {
+                                context.getSource().sendError(Text.literal("No Mula spawn site yet"));
+                                return 0;
+                            }
+                            var s = site.get();
+                            context.getSource().sendFeedback(() -> Text.literal("Nearest Mula spawn site: " + s.pos.getX() + " "
+                                    + s.pos.getZ() + (s.spawned ? " (they came)" : " (waiting)")), false);
+                            return 1;
+                        })))
                 .then(argument("mulas", EntityArgumentType.entities())
                         .then(literal("play").then(argument("animation", StringArgumentType.word())
                                 .suggests((context, builder) -> {

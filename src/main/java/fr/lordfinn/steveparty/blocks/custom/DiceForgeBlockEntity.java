@@ -645,6 +645,14 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         return MAX_CORE_ALTITUDE * countAltitudeFragments(inventory) / MAX_ALTITUDE_FRAGMENTS;
     }
 
+    /**
+     * The forge at its highest level: core in, lifted to its maximum ({@value #MAX_ALTITUDE_FRAGMENTS} fragments, 4
+     * full stacks, or black fragments which count as infinite). Such a forge guarantees an ephemeride at full moon.
+     */
+    public boolean isMaxLevel() {
+        return isActivated() && getTargetAltitude(this) >= MAX_CORE_ALTITUDE;
+    }
+
     private void updateCoreAltitude() {
         prevCoreAltitude = coreAltitude;
         // The core rises out of the plate once the insertion animation is over
