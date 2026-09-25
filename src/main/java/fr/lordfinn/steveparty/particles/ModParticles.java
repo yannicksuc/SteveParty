@@ -21,6 +21,9 @@ public class ModParticles {
     /** The Tokenizer Wand's Kamek-style magic: coloured circles, triangles and squares. */
     public static final ParticleType<KamekShapeEffect> KAMEK_SHAPE =
             FabricParticleTypes.complex(KamekShapeEffect.CODEC, KamekShapeEffect.PACKET_CODEC);
+    /** Star fragments blocks' solar eruptions: a flame blob arcing around the block (client display only). */
+    public static final ParticleType<StarFlareEffect> STAR_FLARE =
+            FabricParticleTypes.complex(StarFlareEffect.CODEC, StarFlareEffect.PACKET_CODEC);
 
     public static void initialize() {
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("here"),
@@ -32,5 +35,6 @@ public class ModParticles {
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("forge_beam"), FORGE_BEAM);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("mula_sparkle"), MULA_SPARKLE);
         Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("kamek_shape"), KAMEK_SHAPE);
+        Registry.register(Registries.PARTICLE_TYPE, Steveparty.id("star_flare"), STAR_FLARE);
     }
 }

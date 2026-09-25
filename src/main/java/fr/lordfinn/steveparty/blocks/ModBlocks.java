@@ -471,47 +471,36 @@ public class ModBlocks {
                     .requiresTool(),
             "looting_box", true);
 
-    public static final Block BLUE_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    /** Glowing translucent crystal built like glass: see-through, lets light pass, never suffocates or blocks vision. */
+    private static Block.Settings starFragmentsSettings() {
+        return Block.Settings.create()
+                .strength(0.5f)
+                .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                .luminance(state -> 15)
+                .nonOpaque()
+                .allowsSpawning((state, world, pos, type) -> false)
+                .solidBlock((state, world, pos) -> false)
+                .suffocates((state, world, pos) -> false)
+                .blockVision((state, world, pos) -> false);
+    }
+
+    public static final Block BLUE_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.BLUE, s), starFragmentsSettings(),
             "blue_star_fragments_block", true);
-    public static final Block GREEN_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block GREEN_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.GREEN, s), starFragmentsSettings(),
             "green_star_fragments_block", true);
-    public static final Block RED_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block RED_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.RED, s), starFragmentsSettings(),
             "red_star_fragments_block", true);
-    public static final Block YELLOW_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block YELLOW_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.YELLOW, s), starFragmentsSettings(),
             "yellow_star_fragments_block", true);
-    public static final Block PURPLE_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block PURPLE_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.PURPLE, s), starFragmentsSettings(),
             "purple_star_fragments_block", true);
-    public static final Block BLACK_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block BLACK_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.BLACK, s), starFragmentsSettings(),
             "black_star_fragments_block", true);
 
     public static final Block GRAVITY_CORE = register(GravityCoreBlock::new,
