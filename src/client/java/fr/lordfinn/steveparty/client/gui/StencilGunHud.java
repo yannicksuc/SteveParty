@@ -105,8 +105,9 @@ public final class StencilGunHud {
         StencilGunItem.Load load = shown.load();
 
         int width = context.getScaledWindowWidth();
-        // Just above the health / hunger rows
-        int y = context.getScaledWindowHeight() - 50 - BOX;
+        // Right above the hotbar, or above the health / hunger rows when they are shown (survival, adventure)
+        boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
+        int y = context.getScaledWindowHeight() - (statusBars ? 50 : 26) - BOX;
         int stencilX = width / 2 - BOX - 4;
         int colorX = width / 2 + 4;
 
