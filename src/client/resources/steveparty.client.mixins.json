@@ -6,6 +6,7 @@
   "client": [
     "GameRendererFovMixin",
     "HeldItemRendererTokenSpellMixin",
+    "ItemRendererWandOrbitMixin",
     "LivingEntityRendererSetupTransformsMixin",
     "LivingEntityRendererShouldFlipMixin",
     "LivingEntityRendererSmoothFlipMixin",
