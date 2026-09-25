@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "fabric:type": "minecraft:crafting_shaped",
   "pattern": [
-    "PP ",
-    "LR ",
-    "PP "
+    "RR",
+    "LL",
+    "PP"
   ],
   "key": {
     "P": "steveparty:plastic_pellets",
