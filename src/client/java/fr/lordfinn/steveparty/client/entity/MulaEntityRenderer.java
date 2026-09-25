@@ -123,6 +123,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
      * Minimal, fewer on Decreased).
      */
     private static void spawnParticles(MulaEntity mula) {
+        if (mula.isToken()) return; // a board token is a still pawn: no ambient sparkles
         if (mula.age == mula.lastEffectsAge) return;
         mula.lastEffectsAge = mula.age;
         ParticlesMode mode = MinecraftClient.getInstance().options.getParticles().getValue();
@@ -230,7 +231,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             double ly = dy / length;
             double surface = Math.min(7.0, 4.75 / Math.max(Math.abs(lx), Math.max(Math.abs(ly), Math.abs(lz))));
             float px = headScale / 16f;
-            float t = mula.age + partialTick;
+            float t = mula.animationAge(partialTick);
             int tint = mula.getVariant().getGlowColor();
             int r = 90 + (((tint >> 16) & 0xFF) * 165 / 255);
             int g = 90 + (((tint >> 8) & 0xFF) * 165 / 255);

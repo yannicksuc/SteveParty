@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.mixin;
 import fr.lordfinn.steveparty.client.token.TokenBaseRenderState;
 import fr.lordfinn.steveparty.client.token.TokenBaseRenderer;
 import fr.lordfinn.steveparty.entities.TokenBase;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
@@ -37,6 +38,13 @@ public abstract class TokenBaseLivingEntityRendererMixin {
         if (TokenBase.isToken(entity)) {
             tokenState.steveparty$setTokenBase(true, TokenBaseRenderer.colorOf(entity), TokenBase.BASE_HEIGHT,
                     TokenBaseRenderer.radiusFor(entity.getWidth()));
+            // A still pawn: head in line with the body, legs at rest while the board slides it, and every idle
+            // animation driven by time (tails, wings, tentacles, floating...) frozen on the frame it became a token
+            state.yawDegrees = 0.0F;
+            state.pitch = 0.0F;
+            state.limbAmplitudeMultiplier = 0.0F;
+            int pawnAge = ((TokenizedEntityInterface) entity).steveparty$getPawnAge();
+            if (pawnAge >= 0) state.age = pawnAge;
         } else {
             tokenState.steveparty$setTokenBase(false, 0, 0.0F, 0.0F);
         }

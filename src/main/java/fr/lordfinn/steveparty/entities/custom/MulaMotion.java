@@ -213,6 +213,35 @@ public final class MulaMotion {
 		absorbGlow += (absorbTarget - absorbGlow) * HALO_EASE;
 	}
 
+	/**
+	 * Every client tick while it is a board token, instead of {@link #tick}: a still pawn. The float layer (bob, sway,
+	 * lean, bank, look, tremble), the heartbeat and the flares rest at once and stay still; it is drawn at its size.
+	 * Back to life, {@link #tick} eases the float in again from rest.
+	 */
+	public void tickPawn(float scale, float full) {
+		ticked = true;
+		amplitude = prevAmplitude = 0f;
+		squash = prevSquash = 0f;
+		sway = prevSway = 0f;
+		prevPhase = phase;
+		lean = prevLean = leanVelocity = 0f;
+		bank = prevBank = bankVelocity = 0f;
+		look = prevLook = lookVelocity = 0f;
+		excitement = prevExcitement = 0f;
+		prevGlowPhase = glowPhase;
+		prevTremblePhase = tremblePhase;
+		shake = prevShake = 0f;
+		flare = prevFlare = flareTarget = 0f;
+		absorbGlow = prevAbsorbGlow = absorbTarget = 0f;
+		speed = 0f;
+		flying = false;
+		ticksInState = 0;
+		fullness = prevFullness = shownFull = full;
+		visualScale = prevVisualScale = shownScale = scale;
+		visualScaleVelocity = 0f;
+		shrinkHold = growHold = 0;
+	}
+
 	/** It has just appeared (spawn egg, summon...): its visual size pops in from nothing. */
 	public void popIn() {
 		visualScale = prevVisualScale = 0.02f;

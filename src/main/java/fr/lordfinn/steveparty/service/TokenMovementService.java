@@ -259,18 +259,23 @@ public class TokenMovementService {
             tokenizedEntity.steveparty$setTargetPosition(target, MOVE_SPEED);
         }
 
-        // Calculate rotation
+        // A pawn faces where it goes: body and head together, level (a straight up / down move keeps its facing)
         double deltaX = target.x() - mob.getX();
         double deltaZ = target.z() - mob.getZ();
-        float yaw = (float) (Math.atan2(deltaZ, deltaX) * (180 / Math.PI)) - 90; // Convert radians to degrees
-        mob.setYaw(yaw);
-
-        // Optionally update pitch for vertical rotation
         double deltaY = target.y() - mob.getY();
-        double horizontalDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-        float pitch = (float) -(Math.atan2(deltaY, horizontalDistance) * (180 / Math.PI)); // Convert radians to degrees
-        mob.setPitch(pitch);
+        if (deltaX * deltaX + deltaZ * deltaZ > 1.0E-6) {
+            float yaw = (float) (Math.atan2(deltaZ, deltaX) * (180 / Math.PI)) - 90; // Convert radians to degrees
+            faceYaw(mob, yaw);
+        }
+        mob.setPitch(0);
         mob.setVelocity(deltaX, deltaY, deltaZ);
+    }
+
+    /** Turns a token (body and head) to {@code yaw}, degrees. */
+    public static void faceYaw(MobEntity mob, float yaw) {
+        mob.setYaw(yaw);
+        mob.setBodyYaw(yaw);
+        mob.setHeadYaw(yaw);
     }
 
     private static void playSound(MobEntity mob, BlockPos targetPos, SoundEvent soundEvent) {

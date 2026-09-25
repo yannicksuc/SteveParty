@@ -683,7 +683,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> around = world.getEntitiesByClass(
                 fr.lordfinn.steveparty.entities.custom.MulaEntity.class,
                 new net.minecraft.util.math.Box(pos).expand(r, fr.lordfinn.steveparty.entities.custom.MulaHome.ABOVE, r),
-                m -> m.isAlive() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
+                m -> m.isAlive() && !m.isToken() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
                         && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= r * r);
         if (around.isEmpty()) return;
         java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> dancers = new java.util.ArrayList<>();
@@ -710,7 +710,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> mulas = world.getEntitiesByClass(
                 fr.lordfinn.steveparty.entities.custom.MulaEntity.class,
                 new net.minecraft.util.math.Box(pos).expand(r, fr.lordfinn.steveparty.entities.custom.MulaHome.ABOVE + 2, r),
-                m -> m.isAlive() && pos.equals(m.homeForge()) && !m.isBursting());
+                m -> m.isAlive() && !m.isToken() && pos.equals(m.homeForge()) && !m.isBursting());
         if (mulas.isEmpty()) return;
         mulas.sort(java.util.Comparator.comparingDouble(m -> m.squaredDistanceTo(center)));
         int n = mulas.size();

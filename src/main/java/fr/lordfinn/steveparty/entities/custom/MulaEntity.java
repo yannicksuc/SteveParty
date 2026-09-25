@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.goals.FollowOwnerWhileFlyingGoal;
 import fr.lordfinn.steveparty.entities.custom.goals.LumaHoverGoal;
@@ -59,6 +60,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	// Authored in the art sources (it writes mula.animation.json and the .bbmodel animations).
 	public static final String MAIN_CONTROLLER = "main_controller";
 	public static final String BLINK_CONTROLLER = "blink_controller";
+	private static final String[] CONTROLLERS = {MAIN_CONTROLLER, BLINK_CONTROLLER};
 	/**
 	 * Blend between two animations (ticks), eased in and out. The generator writes the timeline instructions this much
 	 * later than they must happen, because GeckoLib 4.7.1 fires them that early (keep both in sync).
@@ -285,6 +287,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	 * already bursting.
 	 */
 	public void burstFromCore(int delay, double angle) {
+		if (isToken()) return; // a board pawn stays on the board
 		if (this.isRemoved() || isBursting()) return;
 		homeForge = null;
 		stopDancing();
@@ -372,7 +375,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	public void tick() {
 		super.tick();
 		if (this.getWorld().isClient) {
-			tickClientAnimation();
+			if (isToken()) {
+				tickClientAsToken();
+			} else {
+				tickClientAnimation();
+			}
 			return;
 		}
 		if (eatCooldown > 0) eatCooldown--;
@@ -390,9 +397,34 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			burstIntoStar();
 			return;
 		}
+		if (isToken()) {
+			tickAsToken();
+			return;
+		}
 		if ((this.age + this.getId()) % 20 == 3) checkHome();
 		brain.tick();
 		tickEmotes();
+	}
+
+	/** @return true while it is a board token: a static pawn, with none of its life (see {@link #tickAsToken}). */
+	public boolean isToken() {
+		return TokenBase.isToken(this);
+	}
+
+	/**
+	 * Server, every tick while it is a board token: no brain, home, dance, random animation nor trembling (its goals are
+	 * cleared and its AI is off, see TokenEntityMixin). Only clears what was going on when it became one.
+	 */
+	private void tickAsToken() {
+		if (specialAnimTicks > 0 || currentEmote != null || currentSpecial != null) {
+			specialAnimTicks = 0;
+			currentEmote = null;
+			currentSpecial = null;
+			stopTriggeredAnim(MAIN_CONTROLLER, null);
+		}
+		if (isDancing()) stopDancing();
+		if (isShaking()) this.dataTracker.set(SHAKING, false);
+		if (isResting()) setResting(false);
 	}
 
 	@Override
@@ -475,6 +507,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	/** Server, from the Dice Forge conducting (once a second): its place in the dance. */
 	public void assignDance(net.minecraft.util.math.BlockPos forge, int slot, int count) {
+		if (isToken()) return; // a board pawn does not dance
 		int current = this.dataTracker.get(DANCE);
 		boolean sameForge = forge.equals(this.dataTracker.get(DANCE_FORGE).orElse(null));
 		int locked = sameForge && current >= 0 ? current & 0x100 : 0;
@@ -827,6 +860,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	// -------------------
 	@Override
 	public ActionResult interactMob(PlayerEntity player, Hand hand) {
+		// A board token is a static pawn: not fed, tamed nor sat down (the items acting on entities still work)
+		if (isToken()) return ActionResult.PASS;
 		ItemStack stack = player.getStackInHand(hand);
 
 		// Tools acting on entities (tokenizer wand, token, name tag, lead) keep working on a Mula
@@ -1078,7 +1113,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		return this.isAlive() && specialAnimTicks == 0 && eatCooldown == 0 && this.hurtTime == 0
 				&& !brain.isShy() && !brain.isPlaying() && !isDancing()
 				&& !this.hasVehicle() && !this.hasPassengers() && !this.isLeashed()
-				&& !((Object) this instanceof TokenizedEntityInterface token && token.steveparty$isTokenized())
+				&& !isToken()
 				&& this.getWorld().getClosestPlayer(this, EMOTE_AUDIENCE_RANGE) != null;
 	}
 
@@ -1152,6 +1187,32 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 	}
 
+	/**
+	 * Client, every tick while it is a board token: a still pawn. No float layer (MulaMotion rests), no effects nor voice,
+	 * no blink, no look at food; a triggered animation still running when it became one is cut (the model then settles
+	 * in its rest pose, see animationPredicate).
+	 */
+	private void tickClientAsToken() {
+		excited = false;
+		effects.pawnTick(this.serverX, this.serverY, this.serverZ);
+		motion.tickPawn(this.getScaleFactor(), (float) this.getHunger() / MAX_HUNGER);
+		AnimatableManager<?> manager = getAnimatableInstanceCache().getManagerForId(this.getId());
+		if (manager == null) return;
+		for (String controller : CONTROLLERS) {
+			AnimationController<?> c = manager.getAnimationControllers().get(controller);
+			if (c != null && c.isPlayingTriggeredAnimation()) stopTriggeredAnim(controller, null);
+		}
+	}
+
+	/**
+	 * Age its time-driven looks (drifting inner lights...) are drawn at: frozen on the frame it became a board token
+	 * (a still pawn), its age otherwise.
+	 */
+	public float animationAge(float partialTick) {
+		int pawnAge = ((TokenizedEntityInterface) this).steveparty$getPawnAge();
+		return pawnAge >= 0 ? pawnAge : this.age + partialTick;
+	}
+
 	/** Not when its eyes are already busy: sitting (half-closed, own slow blink) or in a triggered animation. */
 	private boolean canBlink() {
 		if (!this.isAlive() || this.isInSittingPose() || this.isResting()) return false;
@@ -1216,6 +1277,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private PlayState animationPredicate(AnimationState<MulaEntity> state) {
+		// a board token: no animation at all, the model settles in its rest pose (a still pawn)
+		if (isToken()) return PlayState.STOP;
 		if (isDanceLocked()) {
 			return state.setAndContinue(DANCE_ANIMS[MulaDances.STYLE[Math.max(0, currentDance())]]);
 		}

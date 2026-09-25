@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
+import fr.lordfinn.steveparty.entities.TokenBase;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.DataResult;
@@ -517,6 +519,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
+        // A board token is a still pawn: no trade, no bandana (the items acting on entities still work)
+        if (TokenBase.isToken(this)) return ActionResult.PASS;
         if (player.getMainHandStack().getItem() instanceof TokenItem || player.getStackInHand(hand).isOf(Items.LEAD) || player.getStackInHand(hand).isOf(ModItems.SHOPKEEPER_KEY)) {
             return ActionResult.PASS;
         }
@@ -818,7 +822,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             syncOwner();
             refreshAssigned();
         }
-        if (!this.getWorld().isClient) {
+        if (!this.getWorld().isClient && !TokenBase.isToken(this)) {
             tickFunAnimations();
         }
         if (!this.getWorld().isClient && this.hasCustomer()) {
@@ -920,6 +924,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {
+        // A board token: no animation at all (a random one is cut too), the model rests in its default pose
+        if (TokenBase.isToken(this)) return PlayState.STOP;
         AnimationController<HidingTraderEntity> controller = event.getController();
         if (!hidden) {
             // A little random animation: let it play, "idle" resumes after it (it ends on idle's first frame)
@@ -939,6 +945,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     private PlayState closedAnimController(AnimationState<HidingTraderEntity> event) {
+        if (TokenBase.isToken(this)) return PlayState.STOP;
         AnimationController<HidingTraderEntity> controller = event.getController();
         if (hidden) {
             if (controller.isPlayingTriggeredAnimation()) return PlayState.CONTINUE;
@@ -1007,6 +1014,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
      * his bandana was stolen.
      */
     private boolean computeHiding() {
+        // A board token is a still pawn: out of his box, whoever is around
+        if (TokenBase.isToken(this)) return false;
         World world = this.getWorld();
         if (world == null || isLeashed() || isTheftHidden()) return true;
         return world.getClosestPlayer(this.getX(), this.getY(), this.getZ(), OPEN_RANGE,
