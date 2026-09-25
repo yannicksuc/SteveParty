@@ -125,3 +125,7 @@ run-server/
 
 # Mula preview videos (the art sources, rendered locally)
 the art sources/
+
+# Local-only dev mods
+dev-mods/
+__pycache__/

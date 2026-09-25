@@ -87,6 +87,8 @@ dependencies {
     modLocalRuntime "maven.modrinth:architectury-api:14.0.4+fabric"
     modLocalRuntime "maven.modrinth:cloth-config:16.0.143+fabric"
     modLocalRuntime "me.shedaniel.cloth:basic-math:0.6.1"
+    // Local-only dev mods (not in git)
+    modLocalRuntime fileTree(dir: 'dev-mods', include: '*.jar')
     localRuntime "org.anarres:jcpp:1.4.14"
     localRuntime "io.github.douira:glsl-transformer:2.0.1"
     localRuntime "org.antlr:antlr4-runtime:4.13.1"
