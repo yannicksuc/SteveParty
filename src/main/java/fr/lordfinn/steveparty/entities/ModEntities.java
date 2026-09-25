@@ -21,6 +21,9 @@ public class ModEntities {
             EntityType.Builder
                     .create(DiceEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1f)
+                    // The dice keeps moving (thrown, then springing around its target): synced every tick so the
+                    // client does not draw it blocks behind its real position (see DiceEntity#updateTrackedPositionAndAngles)
+                    .trackingTickInterval(1)
                     .build(DICE_ENTITY_KEY)
     );
 

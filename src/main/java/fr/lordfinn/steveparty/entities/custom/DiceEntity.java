@@ -209,6 +209,18 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         super.tick();
     }
 
+    /**
+     * Client side: a living entity eases towards each synced position over 3 ticks, on top of the tracking
+     * interval. For a dice that keeps moving this drew it (and its client hitbox) blocks behind its real, server
+     * position.
+     * The dice is synced every tick, so it reaches each position within one tick (the frame interpolation keeps
+     * the movement smooth).
+     */
+    @Override
+    public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps) {
+        super.updateTrackedPositionAndAngles(x, y, z, yaw, pitch, Math.min(interpolationSteps, 1));
+    }
+
     public void findTarget(Class<? extends LivingEntity> clazz) {
         if (this.getWorld() instanceof ServerWorld world) {
             LivingEntity closestEntity = findClosestEntityInRange(world, clazz, 20);

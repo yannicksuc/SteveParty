@@ -59,6 +59,13 @@ public class DiceGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void diceIsSyncedEveryTick(TestContext context) {
+        // A moving dice synced every 3 ticks (+3 ticks of client easing) was drawn blocks behind its position
+        context.assertTrue(ModEntities.DICE_ENTITY.getTrackTickInterval() == 1, "dice tracking interval");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void genericDamageDoesNotRemoveDice(TestContext context) {
         DiceEntity dice = spawnDice(context);
         ServerWorld world = context.getWorld();
