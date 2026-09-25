@@ -29,7 +29,8 @@
       "fr.lordfinn.steveparty.gametest.TokenBaseGameTests",
       "fr.lordfinn.steveparty.gametest.RecipeGameTests",
       "fr.lordfinn.steveparty.gametest.GoalPoleGameTests",
-      "fr.lordfinn.steveparty.gametest.HidingTraderGameTests"
+      "fr.lordfinn.steveparty.gametest.HidingTraderGameTests",
+      "fr.lordfinn.steveparty.gametest.TeleportBooksGameTests"
     ]
   },
   "depends": {

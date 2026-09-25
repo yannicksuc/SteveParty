@@ -37,6 +37,16 @@ public class TeamDisposition {
         }
     }
 
+    /** The smaller team (empty in free for all). */
+    public Set<UUID> getTeamA() {
+        return java.util.Collections.unmodifiableSet(teamA);
+    }
+
+    /** The bigger team (everyone in free for all). */
+    public Set<UUID> getTeamB() {
+        return java.util.Collections.unmodifiableSet(teamB);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof TeamDisposition other)) return false;
