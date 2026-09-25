@@ -1,28 +1,33 @@
 package fr.lordfinn.steveparty.client.squish;
 
+import fr.lordfinn.steveparty.client.access.SquishStretchState;
+import fr.lordfinn.steveparty.particles.KamekShapeEffect;
 import fr.lordfinn.steveparty.payloads.custom.SquishAnimationPayload;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.random.Random;
 
 /**
- * Client-only squish (tokenization) animation. The server applies the final scale once and sends a single
- * {@link SquishAnimationPayload}; the rendered scale, spin and wobble are then interpolated here every frame with
- * the tick delta, so the animation is smooth whatever the TPS / FPS, and costs nothing on the network.
+ * Client-only squish (tokenization) animation: the transformation of the Tokenizer Wand's spell, in the style of
+ * Kamek's growth spell. The server applies the final scale once and sends a single {@link SquishAnimationPayload};
+ * here the creature reaches its new size in a few jelly pulses (each step overshoots, then squashes and stretches
+ * back into shape) while Kamek's shapes and sparkles swirl around it. Interpolated every frame with the tick delta,
+ * so it is smooth whatever the TPS / FPS, and costs nothing on the network.
  * <p>
  * Render thread only. No allocation per frame: one {@link Animation} per squish, looked up by entity id.
  */
 public final class SquishAnimations {
-    /** Relative amplitude of the wobble (the envelope brings it back to 0 at the start and at the end). */
-    private static final float OSCILLATION_AMPLITUDE = 0.3F;
-    /** Wobble speed in radians per tick (about one wobble every 7 ticks, like the former server animation). */
-    private static final float OSCILLATION_SPEED = 0.87F;
-    /** Spin speed in degrees per tick, as the former server rotation: base + amplifier * multiplier. */
-    private static final float BASE_ROTATION_SPEED = 2.0F;
-    private static final float AMPLIFIER_ROTATION_MULTIPLIER = 0.5F;
+    /** Number of growth pulses: the size changes by steps, like a creature swelling under the spell. */
+    private static final int PULSES = 3;
+    /** Squash and stretch amplitude (vertical stretch; the width compensates to keep the volume). */
+    private static final float STRETCH_AMPLITUDE = 0.28F;
+    /** Jelly wobble speed, in radians per tick. */
+    private static final float STRETCH_SPEED = 1.3F;
 
     private static final Int2ObjectMap<Animation> ANIMATIONS = new Int2ObjectOpenHashMap<>();
 
@@ -38,15 +43,22 @@ public final class SquishAnimations {
             ANIMATIONS.remove(payload.entityId());
             return;
         }
-        float rotationSpeed = BASE_ROTATION_SPEED + payload.amplifier() * AMPLIFIER_ROTATION_MULTIPLIER;
-        // Whole turns only: the entity ends facing the direction it really has (no snap at the end)
-        float turns = Math.max(1, Math.round(rotationSpeed * payload.duration() / 360.0F));
-        ANIMATIONS.put(payload.entityId(), new Animation(now, payload.duration(),
-                payload.startScale(), payload.targetScale(), turns * 360.0F));
+        ANIMATIONS.put(payload.entityId(), new Animation(now, payload.duration(), payload.startScale(), payload.targetScale()));
     }
 
     public static void clear() {
         ANIMATIONS.clear();
+    }
+
+    /** Scale progress (0..1) of the stepped, overshooting growth. */
+    private static float growth(float progress) {
+        float stepped = progress * PULSES;
+        int step = Math.min(PULSES - 1, (int) stepped);
+        float local = MathHelper.clamp(stepped - step, 0, 1);
+        // Each pulse: ease out with an overshoot (back easing), so it swells a little too much then settles
+        float c1 = 1.9F, c3 = c1 + 1;
+        float back = 1 + c3 * (float) Math.pow(local - 1, 3) + c1 * (float) Math.pow(local - 1, 2);
+        return (step + back) / PULSES;
     }
 
     /** Applies the current animation frame of {@code entity}, if any, to its render state. */
@@ -62,23 +74,60 @@ public final class SquishAnimations {
         }
         float progress = elapsed / animation.duration;
 
-        // Shrink (ease out) from the initial scale to the final one, with a wobble fading in and out
-        float eased = 1.0F - (1.0F - progress) * (1.0F - progress) * (1.0F - progress);
-        float scale = MathHelper.lerp(eased, animation.startScale, animation.targetScale);
-        float wobble = 1.0F + OSCILLATION_AMPLITUDE * MathHelper.sin(MathHelper.PI * progress)
-                * MathHelper.sin(elapsed * OSCILLATION_SPEED);
+        float scale = MathHelper.lerp(growth(progress), animation.startScale, animation.targetScale);
         // The entity already has its final scale: render it relatively to that one
         if (animation.targetScale > 0) {
-            state.baseScale *= scale * wobble / animation.targetScale;
+            state.baseScale *= Math.max(0.05F, scale / animation.targetScale);
         }
-
-        // Spin (smoothstep: accelerates then slows down), head aligned with the body, neutral pitch
-        float spinProgress = progress * progress * (3.0F - 2.0F * progress);
-        state.bodyYaw += animation.totalSpin * spinProgress;
-        state.pitch = 0.0F;
+        // Jelly: squash and stretch, strongest right after each pulse, fading at the end
+        float pulseLocal = progress * PULSES - (int) (progress * PULSES);
+        float envelope = (1 - progress * 0.6F) * (0.35F + 0.65F * (1 - pulseLocal));
+        float stretch = 1 + STRETCH_AMPLITUDE * envelope * MathHelper.sin(elapsed * STRETCH_SPEED);
+        if (state instanceof SquishStretchState stretchState) {
+            stretchState.steveparty$setStretch(stretch);
+        }
     }
 
-    private record Animation(long startTime, int duration, float startScale, float targetScale, float totalSpin) {
+    /** Kamek's magic around the transforming creatures: a swirl of shapes and a sprinkle of sparkles. */
+    public static void tick(ClientWorld world) {
+        if (world == null || ANIMATIONS.isEmpty()) return;
+        long now = world.getTime();
+        Random random = world.random;
+        for (Int2ObjectMap.Entry<Animation> entry : ANIMATIONS.int2ObjectEntrySet()) {
+            Animation animation = entry.getValue();
+            if (animation.isOver(now)) continue;
+            Entity entity = world.getEntityById(entry.getIntKey());
+            if (entity == null) continue;
+            long age = now - animation.startTime;
+            float progress = (float) age / animation.duration;
+            double width = Math.max(0.4, entity.getWidth());
+            double height = Math.max(0.4, entity.getHeight());
+            // Two shape streams spiralling up around the creature
+            for (int arm = 0; arm < 2; arm++) {
+                double angle = age * 0.55 + arm * Math.PI;
+                double radius = width * 0.7 + 0.3;
+                double y = entity.getY() + height * ((age * 0.08 + arm * 0.5) % 1.0);
+                world.addParticle(KamekShapeEffect.shape(0.9F, 0.8F, 10), entity.getX() + Math.cos(angle) * radius, y,
+                        entity.getZ() + Math.sin(angle) * radius, -Math.sin(angle) * 0.04, 0.02, Math.cos(angle) * 0.04);
+            }
+            // Sparkles sprinkled from above, like Kamek sprinkling his spell on a creature
+            if (random.nextFloat() < 0.8F) {
+                world.addParticle(KamekShapeEffect.sparkle(1.0F, 0.95F, 14, KamekShapeEffect.RANDOM_COLOR),
+                        entity.getX() + (random.nextDouble() - 0.5) * width * 1.6, entity.getY() + height + 0.4,
+                        entity.getZ() + (random.nextDouble() - 0.5) * width * 1.6, 0, -0.06, 0);
+            }
+            // A burst on each growth pulse
+            int pulseTick = Math.max(1, animation.duration / PULSES);
+            if (age > 0 && age % pulseTick == 0 && progress < 1) {
+                for (int i = 0; i < 8; i++) {
+                    world.addParticle(KamekShapeEffect.shape(1.0F, 0.82F, 0), entity.getX(), entity.getY() + height / 2, entity.getZ(),
+                            (random.nextDouble() - 0.5) * 0.35, (random.nextDouble() - 0.2) * 0.3, (random.nextDouble() - 0.5) * 0.35);
+                }
+            }
+        }
+    }
+
+    private record Animation(long startTime, int duration, float startScale, float targetScale) {
         boolean isOver(long now) {
             return now < startTime || now - startTime >= duration;
         }

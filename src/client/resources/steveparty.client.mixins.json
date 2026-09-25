@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "GameRendererFovMixin",
+    "HeldItemRendererTokenSpellMixin",
     "LivingEntityRendererSetupTransformsMixin",
     "LivingEntityRendererShouldFlipMixin",
     "LivingEntityRendererSmoothFlipMixin",
