@@ -1002,14 +1002,15 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     /**
-     * Closed as a block when no player is within {@link #OPEN_RANGE} (spectators don't count; sneaking or wearing a
-     * Bandana doesn't matter: he still comes out, he just ignores Bandana wearers), when leashed, or for a while after
+     * Closed as a block when no player is within {@link #OPEN_RANGE} (spectators and sneaking players don't count;
+     * a Bandana wearer makes him come out even while sneaking, he just ignores him), when leashed, or for a while after
      * his bandana was stolen.
      */
     private boolean computeHiding() {
         World world = this.getWorld();
         if (world == null || isLeashed() || isTheftHidden()) return true;
-        return world.getClosestPlayer(this.getX(), this.getY(), this.getZ(), OPEN_RANGE, player -> !player.isSpectator()) == null;
+        return world.getClosestPlayer(this.getX(), this.getY(), this.getZ(), OPEN_RANGE,
+                player -> !player.isSpectator() && (!player.isSneaking() || (player instanceof PlayerEntity p && wearsBandana(p)))) == null;
     }
 
     /** @return whether he is closed as a block (state of the last tick). */

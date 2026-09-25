@@ -29,6 +29,8 @@ loom {
             name "Client (join dev server)"
             runDir "run"
             programArgs "--username", devServer.player, "--quickPlayMultiplayer", "localhost:${devServer.port}"
+            // Started in the background: don't grab the mouse until the window really has the focus (MouseBackgroundDevMixin)
+            vmArg "-Dsteveparty.dev.backgroundClient=true"
         }
     }
 }

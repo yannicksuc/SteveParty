@@ -151,13 +151,24 @@ public class HidingTraderGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aSneakingPlayerMakesHimComeOut(TestContext context) {
+    public void heStaysHiddenFromASneakingPlayer(TestContext context) {
         floor(context);
         HidingTraderEntity trader = trader(context);
         ServerPlayerEntity player = playerNear(context, trader);
         player.setSneaking(true);
         context.waitAndRun(3, () -> checks(context, player, () ->
-                context.assertFalse(trader.isHidden(), "open: sneaking no longer matters")));
+                context.assertTrue(trader.isHidden(), "closed: a sneaking player doesn't make him come out")));
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aSneakingBandanaWearerMakesHimComeOut(TestContext context) {
+        floor(context);
+        HidingTraderEntity trader = trader(context);
+        ServerPlayerEntity wearer = playerNear(context, trader);
+        wearer.equipStack(EquipmentSlot.HEAD, BandanaItem.create(1));
+        wearer.setSneaking(true);
+        context.waitAndRun(3, () -> checks(context, wearer, () ->
+                context.assertFalse(trader.isHidden(), "open: with a Bandana, sneaking doesn't matter")));
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)

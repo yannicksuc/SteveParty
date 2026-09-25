@@ -10,6 +10,7 @@
     "LivingEntityRendererSmoothFlipMixin",
     "LivingEntityRendererSquishMixin",
     "ModelPartAccessor",
+    "MouseBackgroundDevMixin",
     "MouseScrollMixin",
     "LivingEntityRenderStateMixin",
     "PlayerEntityModelMixin",
