@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_board_space_behavior": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:board_space_behavior"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:inventory_cartridge"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_board_space_behavior"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:inventory_cartridge"
+    ]
+  }
+}

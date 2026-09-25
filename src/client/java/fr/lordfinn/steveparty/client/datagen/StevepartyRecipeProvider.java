@@ -20,6 +20,7 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.SmeltingRecipe;
 import net.minecraft.recipe.book.RecipeCategory;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.util.DyeColor;
 import net.minecraft.registry.Registries;
 import net.minecraft.resource.featuretoggle.FeatureFlags;
@@ -155,6 +156,115 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 generatePolishedConcrete();
                 generatePolishedTerracotta();
                 generatePlasticBlocks();
+                generateSurvivalRecipes();
+            }
+
+            /**
+             * Items that used to be creative-only. The villager block has no recipe on purpose: it is made by pushing
+             * a villager down with a piston.
+             */
+            private void generateSurvivalRecipes() {
+                // End-game: the forge needs a power star and netherite, its gravity core a heavy core (trial vaults)
+                // wrapped in black star fragments, the fragments that also weigh the core down in the forge
+                createShaped(RecipeCategory.DECORATIONS, ModBlocks.DICE_FORGE)
+                        .pattern(" P ")
+                        .pattern("OBO")
+                        .pattern("ONO")
+                        .input('P', ModItems.POWER_STAR)
+                        .input('O', Items.OBSIDIAN)
+                        .input('B', Items.BLAST_FURNACE)
+                        .input('N', Items.NETHERITE_INGOT)
+                        .criterion(hasItem(ModItems.POWER_STAR), conditionsFromItem(ModItems.POWER_STAR))
+                        .offerTo(recipeExporter);
+                createShaped(RecipeCategory.DECORATIONS, ModBlocks.GRAVITY_CORE)
+                        .pattern("CFC")
+                        .pattern("FHF")
+                        .pattern("CFC")
+                        .input('C', Items.CRYING_OBSIDIAN)
+                        .input('F', ModItems.BLACK_STAR_FRAGMENT)
+                        .input('H', Items.HEAVY_CORE)
+                        .criterion(hasItem(Items.HEAVY_CORE), conditionsFromItem(Items.HEAVY_CORE))
+                        .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
+                        .offerTo(recipeExporter);
+
+                // Shop: a register of gold and iron (buttons for keys, a chest for the drawer), and the shopkeeper's
+                // key, a gold key with a star fragment of any colour for its bow
+                createShaped(RecipeCategory.DECORATIONS, ModBlocks.CASH_REGISTER)
+                        .pattern("BBB")
+                        .pattern("GCG")
+                        .pattern("III")
+                        .input('B', Items.STONE_BUTTON)
+                        .input('G', Items.GOLD_INGOT)
+                        .input('C', Items.CHEST)
+                        .input('I', Items.IRON_INGOT)
+                        .criterion(hasItem(ModBlocks.TRADING_STALL), conditionsFromItem(ModBlocks.TRADING_STALL))
+                        .criterion(hasItem(Items.GOLD_INGOT), conditionsFromItem(Items.GOLD_INGOT))
+                        .offerTo(recipeExporter);
+                createShaped(RecipeCategory.TOOLS, ModItems.SHOPKEEPER_KEY)
+                        .pattern("F")
+                        .pattern("G")
+                        .pattern("N")
+                        .input('F', Ingredient.ofItems(ModItems.BLUE_STAR_FRAGMENT, ModItems.PURPLE_STAR_FRAGMENT,
+                                ModItems.RED_STAR_FRAGMENT, ModItems.YELLOW_STAR_FRAGMENT, ModItems.GREEN_STAR_FRAGMENT,
+                                ModItems.BLACK_STAR_FRAGMENT))
+                        .input('G', Items.GOLD_INGOT)
+                        .input('N', Items.GOLD_NUGGET)
+                        .criterion(hasItem(ModBlocks.TRADING_STALL), conditionsFromItem(ModBlocks.TRADING_STALL))
+                        .criterion(hasItem(ModBlocks.CASH_REGISTER), conditionsFromItem(ModBlocks.CASH_REGISTER))
+                        .offerTo(recipeExporter);
+
+                // Teleportation books: an ender pearl bound in a book, with a compass to go somewhere, a lead to
+                // bring the others along
+                createShapeless(RecipeCategory.TOOLS, ModItems.HERE_WE_GO_BOOK)
+                        .input(Items.BOOK)
+                        .input(Items.ENDER_PEARL)
+                        .input(Items.COMPASS)
+                        .criterion(hasItem(Items.ENDER_PEARL), conditionsFromItem(Items.ENDER_PEARL))
+                        .offerTo(recipeExporter);
+                createShapeless(RecipeCategory.TOOLS, ModItems.HERE_WE_COME_BOOK)
+                        .input(Items.BOOK)
+                        .input(Items.ENDER_PEARL)
+                        .input(Items.LEAD)
+                        .criterion(hasItem(Items.ENDER_PEARL), conditionsFromItem(Items.ENDER_PEARL))
+                        .offerTo(recipeExporter);
+
+                createShapeless(RecipeCategory.COMBAT, ModItems.TRIPLE_JUMP_SHOES)
+                        .input(Items.LEATHER_BOOTS)
+                        .input(Items.RABBIT_FOOT)
+                        .input(Items.SLIME_BALL, 2)
+                        .criterion(hasItem(Items.RABBIT_FOOT), conditionsFromItem(Items.RABBIT_FOOT))
+                        .offerTo(recipeExporter);
+
+                // Special cartridges: a plain cartridge given its role (green to start, red to pause, a chest for the inventory)
+                offerCartridge(ModItems.TILE_BEHAVIOR_START, Items.LIME_DYE);
+                offerCartridge(ModItems.BOARD_SPACE_BEHAVIOR_STOP, Items.RED_DYE);
+                offerCartridge(ModItems.INVENTORY_CARTRIDGE, Items.CHEST);
+
+                // A single-cartridge tile: the tile's carpets on one pressure plate, without its chest
+                createShaped(RecipeCategory.REDSTONE, ModBlocks.SIMPLE_TILE)
+                        .pattern("WWW")
+                        .pattern(" P ")
+                        .input('W', ItemTags.WOOL_CARPETS)
+                        .input('P', Items.LIGHT_WEIGHTED_PRESSURE_PLATE)
+                        .criterion(hasItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE))
+                        .criterion(hasItem(ModBlocks.TILE), conditionsFromItem(ModBlocks.TILE))
+                        .offerTo(recipeExporter);
+
+                // A page for the catalogue: paper dyed like the page
+                createShapeless(RecipeCategory.MISC, ModItems.MINI_GAME_PAGE)
+                        .input(Items.PAPER)
+                        .input(Items.CYAN_DYE)
+                        .criterion(hasItem(ModItems.MINI_GAMES_CATALOGUE), conditionsFromItem(ModItems.MINI_GAMES_CATALOGUE))
+                        .offerTo(recipeExporter);
+            }
+
+            private void offerCartridge(Item cartridge, Item role) {
+                createShapeless(RecipeCategory.MISC, cartridge)
+                        .input(ModItems.BOARD_SPACE_BEHAVIOR)
+                        .input(role)
+                        .group("cartridge")
+                        .criterion(hasItem(ModItems.BOARD_SPACE_BEHAVIOR), conditionsFromItem(ModItems.BOARD_SPACE_BEHAVIOR))
+                        .offerTo(recipeExporter);
             }
 
             // Plastic like the real thing: sugar cane (green polyethylene) is turned into pellets in a furnace,

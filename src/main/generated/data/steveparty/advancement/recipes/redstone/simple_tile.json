@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_light_weighted_pressure_plate": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:light_weighted_pressure_plate"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:simple_tile"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_tile": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:tile"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_light_weighted_pressure_plate",
+      "has_tile"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:simple_tile"
+    ]
+  }
+}

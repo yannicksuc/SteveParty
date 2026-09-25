@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": "minecraft:blast_furnace",
+    "N": "minecraft:netherite_ingot",
+    "O": "minecraft:obsidian",
+    "P": "steveparty:power_star"
+  },
+  "pattern": [
+    " P ",
+    "OBO",
+    "ONO"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:dice_forge"
+  }
+}

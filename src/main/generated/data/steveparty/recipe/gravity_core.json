@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": "minecraft:crying_obsidian",
+    "F": "steveparty:black_star_fragment",
+    "H": "minecraft:heavy_core"
+  },
+  "pattern": [
+    "CFC",
+    "FHF",
+    "CFC"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:gravity_core"
+  }
+}

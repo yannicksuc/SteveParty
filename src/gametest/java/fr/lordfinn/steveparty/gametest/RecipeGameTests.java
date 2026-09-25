@@ -13,13 +13,23 @@ import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.ServerRecipeManager;
+import net.minecraft.block.Block;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.loot.LootTable;
+import net.minecraft.recipe.display.RecipeDisplay;
+import net.minecraft.recipe.display.SlotDisplayContexts;
 import net.minecraft.recipe.input.CraftingRecipeInput;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.context.ContextParameterMap;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -50,6 +60,98 @@ public class RecipeGameTests implements FabricGameTest {
             if (!recipe.id().getValue().getNamespace().equals(Steveparty.MOD_ID) || recipe.value().isIgnoredInRecipeBook()) continue;
             context.assertTrue(unlocked.contains(recipe.id()), "no advancement unlocks " + recipe.id().getValue());
         }
+        context.complete();
+    }
+
+    /**
+     * Items obtained in survival without a recipe, and how. Anything else must be the result of a recipe: an item
+     * missing from both was only obtainable in creative.
+     */
+    private static final Map<String, String> OTHER_SURVIVAL_ROUTES = Map.ofEntries(
+            Map.entry("blue_star_fragment", "dropped by the blue Mula"),
+            Map.entry("purple_star_fragment", "dropped by the purple Mula"),
+            Map.entry("red_star_fragment", "dropped by the red Mula"),
+            Map.entry("yellow_star_fragment", "dropped by the yellow Mula"),
+            Map.entry("green_star_fragment", "dropped by the green Mula"),
+            Map.entry("black_star_fragment", "dropped by the black Mula"),
+            Map.entry("bandana", "shorn off a Hiding Trader"),
+            Map.entry("villager_block", "a villager pushed down by a piston"),
+            Map.entry("mula_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            // The 10 fixed-wood traffic signs are kept for the worlds that have them: the material traffic sign replaced them
+            Map.entry("oak_traffic_sign", "legacy"), Map.entry("spruce_traffic_sign", "legacy"),
+            Map.entry("birch_traffic_sign", "legacy"), Map.entry("jungle_traffic_sign", "legacy"),
+            Map.entry("acacia_traffic_sign", "legacy"), Map.entry("dark_oak_traffic_sign", "legacy"),
+            Map.entry("mangrove_traffic_sign", "legacy"), Map.entry("crimson_traffic_sign", "legacy"),
+            Map.entry("warped_traffic_sign", "legacy"), Map.entry("cherry_traffic_sign", "legacy"));
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void everyItemHasASurvivalRoute(TestContext context) {
+        ContextParameterMap displayContext = SlotDisplayContexts.createParameters(context.getWorld());
+        Set<Item> crafted = new HashSet<>();
+        for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {
+            for (RecipeDisplay display : recipe.value().getDisplays()) {
+                display.result().getStacks(displayContext).forEach(stack -> crafted.add(stack.getItem()));
+            }
+        }
+        List<String> missing = new ArrayList<>();
+        List<String> notMinable = new ArrayList<>();
+        for (Item item : Registries.ITEM) {
+            String path = Registries.ITEM.getId(item).getPath();
+            if (!Registries.ITEM.getId(item).getNamespace().equals(Steveparty.MOD_ID)) continue;
+            if (!crafted.contains(item) && !OTHER_SURVIVAL_ROUTES.containsKey(path)) missing.add(path);
+            // A placed block must give something back when mined
+            if (item instanceof BlockItem blockItem) {
+                Block block = blockItem.getBlock();
+                boolean dropsSomething = block.getLootTableKey()
+                        .map(key -> context.getWorld().getServer().getReloadableRegistries().getLootTable(key) != LootTable.EMPTY)
+                        .orElse(false);
+                if (!dropsSomething) notMinable.add(path);
+            }
+        }
+        context.assertTrue(missing.isEmpty(), "creative-only items: " + missing);
+        context.assertTrue(notMinable.isEmpty(), "blocks without a loot table: " + notMinable);
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void formerlyCreativeOnlyItemsAreCraftable(TestContext context) {
+        ItemStack e = ItemStack.EMPTY;
+        ItemStack obsidian = new ItemStack(Items.OBSIDIAN);
+        ItemStack forge = result(context, 3, 3,
+                e, new ItemStack(ModItems.POWER_STAR), e,
+                obsidian, new ItemStack(Items.BLAST_FURNACE), obsidian,
+                obsidian, new ItemStack(Items.NETHERITE_INGOT), obsidian);
+        context.assertTrue(forge.isOf(ModBlocks.DICE_FORGE.asItem()), "dice forge, got " + forge);
+
+        ItemStack c = new ItemStack(Items.CRYING_OBSIDIAN);
+        ItemStack f = new ItemStack(ModItems.BLACK_STAR_FRAGMENT);
+        ItemStack core = result(context, 3, 3, c, f, c, f, new ItemStack(Items.HEAVY_CORE), f, c, f, c);
+        context.assertTrue(core.isOf(ModBlocks.GRAVITY_CORE.asItem()), "gravity core, got " + core);
+
+        // Any star fragment colour makes the key
+        ItemStack key = result(context, 1, 3, new ItemStack(ModItems.GREEN_STAR_FRAGMENT),
+                new ItemStack(Items.GOLD_INGOT), new ItemStack(Items.GOLD_NUGGET));
+        context.assertTrue(key.isOf(ModItems.SHOPKEEPER_KEY), "shopkeeper key, got " + key);
+
+        ItemStack shoes = result(context, 2, 2, new ItemStack(Items.SLIME_BALL), new ItemStack(Items.LEATHER_BOOTS),
+                new ItemStack(Items.RABBIT_FOOT), new ItemStack(Items.SLIME_BALL));
+        context.assertTrue(shoes.isOf(ModItems.TRIPLE_JUMP_SHOES), "triple jump shoes, got " + shoes);
+
+        ItemStack cartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.LIME_DYE)).isOf(ModItems.TILE_BEHAVIOR_START), "start cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.RED_DYE)).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "pause cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CHEST)).isOf(ModItems.INVENTORY_CARTRIDGE), "inventory cartridge");
+
+        ItemStack carpet = new ItemStack(Items.RED_CARPET);
+        ItemStack tile = result(context, 3, 2, carpet, new ItemStack(Items.BLUE_CARPET), carpet,
+                e, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), e);
+        context.assertTrue(tile.isOf(ModBlocks.SIMPLE_TILE.asItem()), "simple tile, got " + tile);
+
+        ItemStack book = new ItemStack(Items.BOOK);
+        ItemStack pearl = new ItemStack(Items.ENDER_PEARL);
+        context.assertTrue(result(context, 3, 1, book, pearl, new ItemStack(Items.COMPASS)).isOf(ModItems.HERE_WE_GO_BOOK), "here we go book");
+        context.assertTrue(result(context, 3, 1, pearl, new ItemStack(Items.LEAD), book).isOf(ModItems.HERE_WE_COME_BOOK), "here we come book");
+        context.assertTrue(result(context, 2, 1, new ItemStack(Items.PAPER), new ItemStack(Items.CYAN_DYE)).isOf(ModItems.MINI_GAME_PAGE), "mini game page");
         context.complete();
     }
 
