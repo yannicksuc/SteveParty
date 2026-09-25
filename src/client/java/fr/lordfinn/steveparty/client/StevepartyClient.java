@@ -30,11 +30,11 @@ import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.ForgeBeamParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
+import fr.lordfinn.steveparty.client.particle.KamekShapeParticle;
 import fr.lordfinn.steveparty.client.particle.MulaSparkleParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
-import fr.lordfinn.steveparty.client.tokenspell.TokenSpellPreview;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
@@ -276,6 +276,7 @@ public class StevepartyClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.ENCHANTED_CIRCULAR_PARTICLE, EnchantedCircularParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.FORGE_BEAM, ForgeBeamParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.MULA_SPARKLE, MulaSparkleParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.KAMEK_SHAPE, KamekShapeParticle.Factory::new);
     }
 
     private static void initScreens() {
@@ -321,7 +322,6 @@ public class StevepartyClient implements ClientModInitializer {
         FloatingTextRenderer.clear();
         GoalPoleFlipTracker.clear();
         SquishAnimations.clear();
-        TokenSpellPreview.clear();
     }
 
     private static boolean lastPressed = false;
@@ -329,6 +329,7 @@ public class StevepartyClient implements ClientModInitializer {
     public static void tick() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
+        if (!client.isPaused()) SquishAnimations.tick(client.world);
 
         long window = client.getWindow().getHandle();
         // Raw GLFW read (key bindings are not dispatched while a screen is open)

@@ -20,7 +20,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.particle.ParticleTypes;
+import fr.lordfinn.steveparty.particles.KamekShapeEffect;
+import net.minecraft.util.Arm;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -64,8 +66,13 @@ public class TokenizerWandItem extends Item {
     /** Slider / rounding step of the token size, in blocks. */
     public static final float TOKEN_SIZE_STEP = 0.05F;
     public static final int NO_COLOR = -1;
-    /** Duration of the squish animation (and of the levitation of a new token), in ticks. */
+    /** Duration of the levitation of a new token, in ticks. */
     public static final int SQUISH_DURATION = 130;
+    /**
+     * Duration of the spell's transformation (the squish effect): the token grows / shrinks to its size in a few
+     * jelly pulses, played by the clients (the hitbox gets its final size at once, server side).
+     */
+    public static final int TRANSFORM_DURATION = 40;
     /** Ticks during which the wand can't cast again (anti-spam of the C2S payload). */
     public static final int SPELL_COOLDOWN = 10;
     /** Extra reach beyond the player's entity interaction range: the spell screen does not pause the game. */
@@ -166,6 +173,7 @@ public class TokenizerWandItem extends Item {
             tokenizeEntity(mob, player, size, color);
         }
         player.getItemCooldownManager().set(wand, SPELL_COOLDOWN);
+        playCastBurst(player, mob);
         return resize ? SpellResult.RESIZED : SpellResult.TOKENIZED;
     }
 
@@ -220,7 +228,7 @@ public class TokenizerWandItem extends Item {
         } else if (mob.getCustomName() == null) {
             mob.setCustomName(user.getDisplayName());
         }
-        SquishEffect.squishToSize(mob, size, SQUISH_DURATION);
+        SquishEffect.squishToSize(mob, size, TRANSFORM_DURATION);
         mob.addStatusEffect(new StatusEffectInstance(LEVITATION, SQUISH_DURATION, 1));
         playSpellEffects(mob);
     }
@@ -232,7 +240,7 @@ public class TokenizerWandItem extends Item {
             applyColor(mob, null, color);
         }
         // No levitation: a token standing on a board space stays there
-        SquishEffect.squishToSize(mob, size, SQUISH_DURATION);
+        SquishEffect.squishToSize(mob, size, TRANSFORM_DURATION);
         playSpellEffects(mob);
     }
 
@@ -254,8 +262,44 @@ public class TokenizerWandItem extends Item {
                 SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.cure")),
                 SoundCategory.PLAYERS, 0.2F, 2.0F);
         if (mob.getWorld() instanceof ServerWorld world) {
-            world.spawnParticles(ParticleTypes.WAX_OFF, mob.getX(), mob.getY() + mob.getHeight() / 2, mob.getZ(),
-                    20, 0.3, 0.3, 0.3, 0.5);
+            // Kamek-style puff as the spell hits: coloured shapes bursting out of the mob, and sparkles
+            double y = mob.getY() + mob.getHeight() / 2;
+            world.spawnParticles(KamekShapeEffect.shape(1.4F, 0.82F, 0), mob.getX(), y, mob.getZ(),
+                    24, 0.25, 0.3, 0.25, 0.25);
+            world.spawnParticles(KamekShapeEffect.sparkle(1.3F, 0.9F, 0, 0xFFFFFF), mob.getX(), y, mob.getZ(),
+                    14, 0.45, 0.5, 0.45, 0.02);
+        }
+    }
+
+    /**
+     * Kamek-style spell: a stream of coloured shapes flies from the caster's wand to the mob. Each shape gets its own
+     * speed and dies when it reaches the mob, so the stream stretches along the way. Particles only, no gameplay
+     * effect. Sent to the other players around: the caster's own client already played it (validation phase of the
+     * spell screen), from where the wand really is in first person.
+     */
+    private static void playCastBurst(ServerPlayerEntity player, MobEntity mob) {
+        if (!(player.getWorld() instanceof ServerWorld world)) return;
+        boolean mainHand = player.getMainHandStack().getItem() instanceof TokenizerWandItem;
+        boolean rightHanded = (player.getMainArm() == Arm.RIGHT) == mainHand;
+        float yaw = player.getYaw() * MathHelper.RADIANS_PER_DEGREE;
+        double side = rightHanded ? 1 : -1;
+        Vec3d look = player.getRotationVector();
+        // About where the wand's tip is: in front of the player, on the side of the hand, below the eyes
+        Vec3d from = player.getEyePos().add(look.multiply(0.5))
+                .add(-MathHelper.cos(yaw) * 0.35 * side, -0.25, -MathHelper.sin(yaw) * 0.35 * side);
+        Vec3d to = new Vec3d(mob.getX(), mob.getY() + mob.getHeight() / 2, mob.getZ());
+        Vec3d path = to.subtract(from);
+        var random = player.getRandom();
+        for (int i = 0; i < 16; i++) {
+            int life = 6 + random.nextInt(12);
+            Vec3d velocity = path.multiply(1.0 / life).add((random.nextDouble() - 0.5) * 0.06,
+                    (random.nextDouble() - 0.5) * 0.06, (random.nextDouble() - 0.5) * 0.06);
+            for (ServerPlayerEntity viewer : world.getPlayers()) {
+                if (viewer == player || viewer.squaredDistanceTo(from) > 48 * 48) continue;
+                // count 0: the "delta" is the exact velocity of the particle
+                world.spawnParticles(viewer, KamekShapeEffect.shape(1.0F, 1.0F, life), false, from.x, from.y, from.z, 0,
+                        velocity.x, velocity.y, velocity.z, 1.0);
+            }
         }
     }
 
