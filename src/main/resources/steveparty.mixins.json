@@ -16,6 +16,7 @@
     "StatusEffectMixin",
     "TokenEntityMixin",
     "TokenBaseDimensionsMixin",
+    "TokenTurtleMixin",
     "MixinPistonBlock",
     "ServerScoreboardMixin",
     "HopperBlockEntityMixin",

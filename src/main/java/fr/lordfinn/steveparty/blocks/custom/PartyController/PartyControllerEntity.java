@@ -642,6 +642,19 @@ public class PartyControllerEntity extends BlockEntity {
         markDirty();
     }
 
+    /**
+     * The controller block is broken / replaced: the connected interested players (in any dimension) get an empty
+     * party so their steps HUD is cleared.
+     */
+    public void onControllerRemoved() {
+        if (!(this.world instanceof ServerWorld serverWorld)) return;
+        for (UUID playerUUID : interestedPlayers) {
+            ServerPlayerEntity player = serverWorld.getServer().getPlayerManager().getPlayer(playerUUID);
+            if (player != null)
+                this.sendClearPacketToPlayer(player);
+        }
+    }
+
     // Clear the interestedPlayers list
     public void clearInterestedPlayers() {
         if (this.world == null) return;

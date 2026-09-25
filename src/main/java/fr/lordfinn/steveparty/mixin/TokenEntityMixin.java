@@ -16,8 +16,11 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootTable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -35,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 
@@ -339,6 +343,17 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             // Apply the movement with the new velocity
             this.move(MovementType.SELF, newVelocity);
         }
+    }
+
+    /**
+     * A token is a game piece: it does not produce items on its own. Blocks the periodic "gifts" of the living
+     * mobs (chicken eggs, armadillo scutes...); their timers still reset, so nothing is stored up for later.
+     * Player actions (brushing, shearing...) and death loot are not affected.
+     */
+    @Override
+    public boolean forEachGiftedItem(ServerWorld world, RegistryKey<LootTable> lootTableKey, BiConsumer<ServerWorld, ItemStack> lootConsumer) {
+        if (this.steveparty$isTokenized()) return false;
+        return super.forEachGiftedItem(world, lootTableKey, lootConsumer);
     }
 
     @Override
