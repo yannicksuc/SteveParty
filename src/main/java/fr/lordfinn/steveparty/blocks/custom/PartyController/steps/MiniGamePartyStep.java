@@ -16,6 +16,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.server.MinecraftServer;
@@ -25,6 +26,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
 import java.util.List;
@@ -38,11 +40,20 @@ public class MiniGamePartyStep extends PartyStep {
     private List<UUID> tokens;
     private boolean miniGameChosen; // no initializer, see above
     private UUID rouletteTaskId = null;
+    /**
+     * Where each player was sent by a « Here we go » book (mini-game mode) during this mini-game: the pad of the
+     * « Here we come » book and the index of the condition he fills. No initializer, see above.
+     */
+    private Map<UUID, Destination> destinations;
+
+    /** A place taken by a player in the current mini-game: condition {@code targetIndex} of the book on {@code pad}. */
+    public record Destination(BlockPos pad, int targetIndex) {}
 
     public MiniGamePartyStep(List<UUID> tokens) {
         if (tokens == null)
             tokens = new ArrayList<>();
         this.tokens = tokens;
+        this.destinations = new HashMap<>();
         setType(PartyStepType.MINI_GAME);
     }
 
@@ -50,6 +61,8 @@ public class MiniGamePartyStep extends PartyStep {
         super(nbt);
         if (this.tokens == null)
             this.tokens = new ArrayList<>();
+        if (this.destinations == null)
+            this.destinations = new HashMap<>();
     }
 
     @Override
@@ -57,6 +70,7 @@ public class MiniGamePartyStep extends PartyStep {
         super.start(partyControllerEntity);
         cancelRoulette();
         miniGameChosen = false;
+        destinations.clear();
 
         // Step 1: Ensure the world is a ServerWorld
         if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) {
@@ -123,6 +137,16 @@ public class MiniGamePartyStep extends PartyStep {
     @Override
     public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
         tokens.remove(tokenUUID);
+    }
+
+    /** @return true once the roulette chose the mini-game (the « Here we go » books can send players to it). */
+    public boolean isMiniGameChosen() {
+        return miniGameChosen;
+    }
+
+    /** Places taken by the players in the current mini-game (live view). */
+    public Map<UUID, Destination> getDestinations() {
+        return destinations;
     }
 
     private void cancelRoulette() {
@@ -334,6 +358,18 @@ public class MiniGamePartyStep extends PartyStep {
     public void fromNbt(NbtCompound nbt) {
         super.fromNbt(nbt);
         this.miniGameChosen = nbt.getBoolean("MiniGameChosen");
+        if (destinations == null)
+            destinations = new HashMap<>();
+        destinations.clear();
+        nbt.getList("Destinations", NbtElement.COMPOUND_TYPE).forEach(element -> {
+            NbtCompound entry = (NbtCompound) element;
+            try {
+                destinations.put(UUID.fromString(entry.getString("Player")),
+                        new Destination(BlockPos.fromLong(entry.getLong("Pad")), entry.getInt("Target")));
+            } catch (IllegalArgumentException ignored) {
+                // corrupted entry
+            }
+        });
         if (nbt.contains("Tokens")) {
             if (tokens == null)
                 tokens = new ArrayList<>();
@@ -356,6 +392,17 @@ public class MiniGamePartyStep extends PartyStep {
             nbtCompound.put("Tokens", tokensNbtList);
         if (miniGameChosen)
             nbtCompound.putBoolean("MiniGameChosen", true);
+        if (destinations != null && !destinations.isEmpty()) {
+            NbtList destinationsNbt = new NbtList();
+            destinations.forEach((player, destination) -> {
+                NbtCompound entry = new NbtCompound();
+                entry.putString("Player", player.toString());
+                entry.putLong("Pad", destination.pad().asLong());
+                entry.putInt("Target", destination.targetIndex());
+                destinationsNbt.add(entry);
+            });
+            nbtCompound.put("Destinations", destinationsNbt);
+        }
         return nbtCompound;
     }
 }

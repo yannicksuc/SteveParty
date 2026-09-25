@@ -1,25 +1,40 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.TeleportationPadBlockEntity;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT;
 import static fr.lordfinn.steveparty.components.ModComponents.STATE;
+import static fr.lordfinn.steveparty.components.ModComponents.TP_TARGETS;
 
 public class TeleportBooksGameTests implements FabricGameTest {
     /** The pad waits 10 ticks before teleporting. */
@@ -134,6 +149,175 @@ public class TeleportBooksGameTests implements FabricGameTest {
             }
             context.complete();
         });
+    }
+
+    // ------------------------------------------------------------------ mini-game mode
+
+    private static final BlockPos CONTROLLER_POS = new BlockPos(7, 1, 7);
+    private static final String MINI_GAME_BATCH = "teleport_books_mini_game";
+
+    /** Removes the controller: a started party left in the world would be found by other tests. */
+    static void endParty(TestContext context) {
+        context.removeBlock(CONTROLLER_POS);
+    }
+
+    /** A party controller whose current step is a mini-game step ({@code chosen}: the roulette picked the mini-game). */
+    static PartyControllerEntity placeMiniGameParty(TestContext context, boolean chosen, @Nullable ItemStack page,
+                                                    @Nullable TeamDisposition disposition) {
+        context.setBlockState(CONTROLLER_POS.down(), Blocks.STONE);
+        context.setBlockState(CONTROLLER_POS, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER_POS);
+        NbtCompound stepNbt = new NbtCompound();
+        stepNbt.putString("Status", PartyStep.Status.IN_PROGRESS.name());
+        stepNbt.putString("Type", PartyStepType.MINI_GAME.name());
+        if (chosen) stepNbt.putBoolean("MiniGameChosen", true);
+        PartyData data = new PartyData();
+        data.addStep(new MiniGamePartyStep(stepNbt));
+        data.setStepIndex(0);
+        controller.setPartyData(data);
+        ItemStack catalogue = new ItemStack(ModItems.MINI_GAMES_CATALOGUE);
+        if (page != null) MiniGamesCatalogueItem.setCurrentMiniGamePage(catalogue, page);
+        if (disposition != null) MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, disposition);
+        controller.catalogue = catalogue;
+        return controller;
+    }
+
+    static ItemStack hereWeCome(TeleportingTarget... targets) {
+        ItemStack book = new ItemStack(ModItems.HERE_WE_COME_BOOK);
+        book.set(TP_TARGETS, List.of(targets));
+        return book;
+    }
+
+    static ItemStack miniGamePage(TestContext context, BlockPos... relativePads) {
+        ItemStack page = new ItemStack(ModItems.MINI_GAME_PAGE);
+        List<BlockPos> destinations = new ArrayList<>();
+        for (BlockPos pad : relativePads) destinations.add(context.getAbsolutePos(pad));
+        page.set(DESTINATIONS_COMPONENT, new DestinationsComponent(destinations, ""));
+        return page;
+    }
+
+    static PlayerEntity mockPlayerAt(TestContext context, BlockPos relativePos) {
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        BlockPos abs = context.getAbsolutePos(relativePos);
+        player.setPosition(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5);
+        return player;
+    }
+
+    static String failureKey(HereWeGoBookItem.Destination destination) {
+        if (destination.failure() == null || !(destination.failure().getContent() instanceof TranslatableTextContent content))
+            return null;
+        return content.getKey();
+    }
+
+    /** A fresh book (mini-game mode, the default) sends the players of the current mini-game to its pads. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = MINI_GAME_BATCH)
+    public void freshBookSendsThePlayerToTheCurrentMiniGame(TestContext context) {
+        BlockPos startPad = new BlockPos(1, 1, 1);
+        BlockPos arenaPad = new BlockPos(5, 1, 2);
+        placePad(context, arenaPad, hereWeCome(new TeleportingTarget(TeleportingTarget.Group.EVERYONE, 0, 0)));
+        placePad(context, startPad, new ItemStack(ModItems.HERE_WE_GO_BOOK)); // no state: default mode
+        ServerPlayerEntity player = playerAt(context, startPad, 0.25);
+        placeMiniGameParty(context, true, miniGamePage(context, arenaPad),
+                new TeamDisposition(new HashSet<>(), new HashSet<>(Set.of(player.getUuid()))));
+        stepOn(context, startPad, player);
+        context.waitAndRun(TELEPORT_DELAY + 2, () -> {
+            try {
+                assertFeetAt(context, player, arenaPad, 0.25, "on the pad of the mini-game");
+            } finally {
+                disconnect(context, player);
+                endParty(context);
+            }
+            context.complete();
+        });
+    }
+
+    /** Teams, capacities, fill priorities and spectators of the « Here we come » books. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = MINI_GAME_BATCH)
+    public void miniGameBooksDispatchPlayersByGroupCapacityAndPriority(TestContext context) {
+        try {
+            BlockPos teamAPad = new BlockPos(1, 1, 5);
+            BlockPos teamBFirstPad = new BlockPos(3, 1, 5);
+            BlockPos teamBSecondPad = new BlockPos(5, 1, 5);
+            BlockPos spectatorsPad = new BlockPos(5, 1, 1);
+            // Team A conditions have more room than team B's: they are swapped (team A of a disposition is the smaller one)
+            placePad(context, teamAPad, hereWeCome(new TeleportingTarget(TeleportingTarget.Group.PLAYER_TEAM_B, 1, 0)));
+            placePad(context, teamBFirstPad, hereWeCome(new TeleportingTarget(TeleportingTarget.Group.PLAYER_TEAM_A, 1, 5)));
+            placePad(context, teamBSecondPad, hereWeCome(new TeleportingTarget(TeleportingTarget.Group.PLAYER_TEAM_A, 0, 0)));
+            placePad(context, spectatorsPad, hereWeCome(new TeleportingTarget(TeleportingTarget.Group.SPECTATORS, 0, 0)));
+
+            BlockPos standing = new BlockPos(1, 1, 1);
+            PlayerEntity alone = mockPlayerAt(context, standing);
+            PlayerEntity first = mockPlayerAt(context, standing);
+            PlayerEntity second = mockPlayerAt(context, standing);
+            PlayerEntity third = mockPlayerAt(context, standing);
+            PlayerEntity spectator = mockPlayerAt(context, standing);
+            placeMiniGameParty(context, true, miniGamePage(context, teamAPad, teamBFirstPad, teamBSecondPad, spectatorsPad),
+                    new TeamDisposition(new HashSet<>(Set.of(alone.getUuid())),
+                            new HashSet<>(Set.of(first.getUuid(), second.getUuid(), third.getUuid()))));
+            ItemStack book = new ItemStack(ModItems.HERE_WE_GO_BOOK);
+
+            context.assertEquals(HereWeGoBookItem.getTpPos(book, alone), context.getAbsolutePos(teamAPad), "team A (smaller)");
+            context.assertEquals(HereWeGoBookItem.getTpPos(book, first), context.getAbsolutePos(teamBFirstPad), "team B: higher priority first");
+            context.assertEquals(HereWeGoBookItem.getTpPos(book, second), context.getAbsolutePos(teamBSecondPad), "team B: first place full");
+            context.assertEquals(HereWeGoBookItem.getTpPos(book, third), context.getAbsolutePos(teamBSecondPad), "team B: no limit");
+            context.assertEquals(HereWeGoBookItem.getTpPos(book, spectator), context.getAbsolutePos(spectatorsPad), "spectator");
+            context.assertEquals(HereWeGoBookItem.getTpPos(book, first), context.getAbsolutePos(teamBFirstPad), "same place when coming back");
+        } finally {
+            endParty(context);
+        }
+        context.complete();
+    }
+
+    /** No room left for a player: no teleport, and he is told why. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = MINI_GAME_BATCH)
+    public void miniGameWithoutRoomForThePlayerSaysSo(TestContext context) {
+        try {
+            BlockPos pad = new BlockPos(5, 1, 5);
+            placePad(context, pad, hereWeCome(new TeleportingTarget(TeleportingTarget.Group.PLAYERS, 1, 0)));
+            PlayerEntity first = mockPlayerAt(context, new BlockPos(1, 1, 1));
+            PlayerEntity second = mockPlayerAt(context, new BlockPos(1, 1, 1));
+            PlayerEntity spectator = mockPlayerAt(context, new BlockPos(1, 1, 1));
+            placeMiniGameParty(context, true, miniGamePage(context, pad),
+                    new TeamDisposition(new HashSet<>(), new HashSet<>(Set.of(first.getUuid(), second.getUuid()))));
+            ItemStack book = new ItemStack(ModItems.HERE_WE_GO_BOOK);
+            context.assertEquals(HereWeGoBookItem.getTpPos(book, first), context.getAbsolutePos(pad), "first player");
+            HereWeGoBookItem.Destination full = HereWeGoBookItem.getDestination(book, second);
+            context.assertTrue(full.pos() == null, "capacity reached");
+            context.assertEquals(failureKey(full), "message.steveparty.here_we_go.no_room", "message");
+            context.assertEquals(failureKey(HereWeGoBookItem.getDestination(book, spectator)), "message.steveparty.here_we_go.no_room",
+                    "spectators don't fill a « players » condition");
+        } finally {
+            endParty(context);
+        }
+        context.complete();
+    }
+
+    /** No mini-game running (or not chosen yet): no teleport, a message instead of nothing. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = MINI_GAME_BATCH)
+    public void noMiniGameInProgressIsExplained(TestContext context) {
+        try {
+            BlockPos pad = new BlockPos(5, 1, 5);
+            placePad(context, pad, hereWeCome(new TeleportingTarget(TeleportingTarget.Group.EVERYONE, 0, 0)));
+            PlayerEntity player = mockPlayerAt(context, new BlockPos(1, 1, 1));
+            ItemStack book = new ItemStack(ModItems.HERE_WE_GO_BOOK);
+
+            // Roulette still running
+            PartyControllerEntity controller = placeMiniGameParty(context, false, miniGamePage(context, pad), null);
+            context.assertEquals(failureKey(HereWeGoBookItem.getDestination(book, player)),
+                    "message.steveparty.here_we_go.minigame_not_chosen", "not chosen yet");
+
+            // Another step of the party
+            PartyData data = new PartyData();
+            data.addStep(new PartyStep());
+            data.setStepIndex(0);
+            controller.setPartyData(data);
+            HereWeGoBookItem.Destination destination = HereWeGoBookItem.getDestination(book, player);
+            context.assertTrue(destination.pos() == null, "no destination");
+            context.assertEquals(failureKey(destination), "message.steveparty.here_we_go.no_minigame", "no mini-game");
+        } finally {
+            endParty(context);
+        }
+        context.complete();
     }
 
     // ------------------------------------------------------------------ "just arrived" guard
