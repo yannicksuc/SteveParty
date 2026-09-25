@@ -212,11 +212,12 @@ public class TokenSpellGameTests implements FabricGameTest {
             context.assertTrue(TokenizerWandItem.castSpell(player, player.getId(), 0.5F, BLUE) == SpellResult.INVALID_TARGET, "not a mob");
             context.assertTrue(TokenizerWandItem.castSpell(player, -12345, 0.5F, BLUE) == SpellResult.INVALID_TARGET, "unknown entity");
 
-            // Out of reach (the spell screen does not pause the game)
-            Vec3d far = context.getAbsolute(new Vec3d(MOB_POS.getX() + 20.5, MOB_POS.getY(), MOB_POS.getZ()));
+            // Out of reach beyond MAX_SPELL_DISTANCE (the spell screen does not pause the game)
             Vec3d near = player.getPos();
-            player.refreshPositionAndAngles(far.x, far.y, far.z, 0, 0);
+            Vec3d tooFar = context.getAbsolute(new Vec3d(MOB_POS.getX() + TokenizerWandItem.MAX_SPELL_DISTANCE + 8.5, MOB_POS.getY(), MOB_POS.getZ()));
+            player.refreshPositionAndAngles(tooFar.x, tooFar.y, tooFar.z, 0, 0);
             context.assertTrue(TokenizerWandItem.castSpell(player, pig.getId(), 0.5F, BLUE) == SpellResult.OUT_OF_REACH, "out of reach");
+            context.assertTrue(!token(pig).steveparty$isTokenized(), "too far: nothing happened");
             player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
 
             // No wand in hand
@@ -230,6 +231,24 @@ public class TokenSpellGameTests implements FabricGameTest {
         } finally {
             disconnect(context, player);
             wither.discard();
+        }
+        context.complete();
+    }
+
+    /** A mob that wandered off while the circle was drawn still gets the spell (the client casts it at once). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void spellStillReachesAMobThatWanderedOff(TestContext context) {
+        CowEntity cow = spawn(context, EntityType.COW);
+        ServerPlayerEntity player = wandHolder(context);
+        try {
+            Vec3d far = context.getAbsolute(new Vec3d(MOB_POS.getX() + 20.5, MOB_POS.getY(), MOB_POS.getZ()));
+            player.refreshPositionAndAngles(far.x, far.y, far.z, 0, 0);
+            context.assertTrue(player.squaredDistanceTo(cow) > 10 * 10, "farther than the old limit");
+            SpellResult result = TokenizerWandItem.castSpell(player, cow.getId(), 0.75F, BLUE);
+            context.assertTrue(result == SpellResult.TOKENIZED, "tokenized from 20 blocks: " + result);
+            context.assertTrue(token(cow).steveparty$getTokenSize() == 0.75F, "size stored");
+        } finally {
+            disconnect(context, player);
         }
         context.complete();
     }

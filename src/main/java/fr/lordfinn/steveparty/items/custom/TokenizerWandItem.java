@@ -75,8 +75,11 @@ public class TokenizerWandItem extends Item {
     public static final int TRANSFORM_DURATION = 40;
     /** Ticks during which the wand can't cast again (anti-spam of the C2S payload). */
     public static final int SPELL_COOLDOWN = 10;
-    /** Extra reach beyond the player's entity interaction range: the spell screen does not pause the game. */
-    private static final double SPELL_EXTRA_REACH = 1.0;
+    /**
+     * Farthest a spell can reach, in blocks. Generous: the spell screen does not pause the game, and when the mob
+     * wanders off while the circle is being drawn the spell is cast anyway (the client casts it right away).
+     */
+    public static final double MAX_SPELL_DISTANCE = 32.0;
 
     public enum SpellResult {
         TOKENIZED, RESIZED, NO_WAND, COOLDOWN, INVALID_TARGET, OUT_OF_REACH, BOSS, NOT_ALLOWED;
@@ -152,7 +155,7 @@ public class TokenizerWandItem extends Item {
         if (player.getItemCooldownManager().isCoolingDown(wand)) return SpellResult.COOLDOWN;
         Entity entity = player.getWorld().getEntityById(entityId);
         if (!(entity instanceof MobEntity mob) || !mob.isAlive()) return SpellResult.INVALID_TARGET;
-        if (!player.canInteractWithEntity(mob, SPELL_EXTRA_REACH)) {
+        if (mob.getWorld() != player.getWorld() || player.squaredDistanceTo(mob) > MAX_SPELL_DISTANCE * MAX_SPELL_DISTANCE) {
             MessageUtils.sendToPlayer(player, Text.translatableWithFallback("message.steveparty.token_spell_out_of_reach",
                     "The spell fizzles: the mob is out of reach."), MessageUtils.MessageType.ACTION_BAR);
             return SpellResult.OUT_OF_REACH;
