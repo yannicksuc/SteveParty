@@ -67,6 +67,22 @@ public class SwitchableGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** The stored state is read back from saved/synced data once the registries are frozen (clients were kicked). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void switchedOffStateSurvivesASaveAndReload(TestContext context) {
+        BlockState stud = ModBlocks.PLASTIC_STUDS[5].getDefaultState();
+        context.setBlockState(POS, stud);
+        BlockPos abs = context.getAbsolutePos(POS);
+        ServerWorld world = context.getWorld();
+        Switchables.switchOff(world, abs);
+        SwitchedOffBlockEntity be = (SwitchedOffBlockEntity) world.getBlockEntity(abs);
+        NbtCompound nbt = be.createNbt(world.getRegistryManager());
+        SwitchedOffBlockEntity copy = new SwitchedOffBlockEntity(abs, be.getCachedState());
+        copy.read(nbt, world.getRegistryManager());
+        context.assertTrue(copy.getStoredState() == stud, "stored state read back: " + copy.getStoredState());
+        context.complete();
+    }
+
     /** Switching off twice must not wrap the placeholder in another placeholder. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void switchingOffTwiceDoesNotNest(TestContext context) {
