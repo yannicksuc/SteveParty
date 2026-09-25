@@ -769,16 +769,17 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			return ActionResult.PASS;
 		}
 
-		// Taming: sneak + right-click with a star fragment of the Mula's own colour
-		if (player.isSneaking() && !this.isTamed() && stack.isOf(this.getVariant().getFragmentItem())) {
+		// Taming: right-click an untamed Mula with a star fragment of its own colour (1 fragment, 1 chance in
+		// TAMING_CHANCE), like a bone on a wolf. On a tamed Mula a fragment is not used: see below.
+		if (!this.isTamed() && stack.isOf(this.getVariant().getFragmentItem())) {
 			if (!this.getWorld().isClient) {
 				tryTame(player, stack);
 			}
 			return ActionResult.SUCCESS;
 		}
 
-		// Sit / stand: the owner right-clicks a tamed Mula with an empty hand or anything it doesn't eat
-		// (its food keeps feeding it; sneak + fragment only tames an untamed Mula, so a tamed one just toggles)
+		// Sit / stand: the owner right-clicks a tamed Mula with an empty hand or anything it doesn't eat (a fragment
+		// included: it is not used up); its food keeps feeding it. Anyone else gets the "no".
 		if (this.isTamed() && this.isOwner(player) && !isMulaFood(stack)) {
 			if (!this.getWorld().isClient) {
 				toggleSitting();

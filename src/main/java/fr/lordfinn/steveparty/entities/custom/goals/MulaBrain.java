@@ -156,7 +156,7 @@ public final class MulaBrain {
     }
 
     private boolean isNice(ItemStack stack) {
-        return !stack.isEmpty() && (isStarFragment(stack.getItem()) || mula.isMulaFood(stack));
+        return !stack.isEmpty() && (stack.isOf(mula.getVariant().getFragmentItem()) || mula.isMulaFood(stack));
     }
 
     public static boolean isStarFragment(Item item) {

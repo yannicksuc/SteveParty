@@ -240,4 +240,39 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         }
         context.complete();
     }
+
+    /** Seeds count as food (the one non-edible exception): of its colour, a melon slice's worth; else refused. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void seedsOfItsColourGiveAMelonSlice(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        mula.setVariant(MulaEntity.MulaVariant.GREEN);
+        mula.setAiDisabled(true);
+        int melon = Items.MELON_SLICE.getComponents().get(net.minecraft.component.DataComponentTypes.FOOD).nutrition();
+        context.assertEquals(MulaFood.seedValue(), melon, "a seed is worth a melon slice");
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        player.changeGameMode(GameMode.SURVIVAL);
+        try {
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WHEAT_SEEDS, 4));
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.getHunger(), melon, "wheat seeds: green, a melon slice's worth");
+            context.assertEquals(player.getMainHandStack().getCount(), 3, "one seed eaten");
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.PUMPKIN_SEEDS, 4));
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.getHunger(), melon, "pumpkin seeds (yellow): refused");
+            context.assertEquals(player.getMainHandStack().getCount(), 4, "nothing used");
+            context.assertTrue(MulaFood.value(MulaEntity.MulaVariant.BLACK, new ItemStack(Items.MELON_SEEDS)) == melon
+                    && MulaFood.value(MulaEntity.MulaVariant.YELLOW, new ItemStack(Items.PUMPKIN_SEEDS)) == melon
+                    && MulaFood.value(MulaEntity.MulaVariant.RED, new ItemStack(Items.BEETROOT_SEEDS)) == melon
+                    && MulaFood.value(MulaEntity.MulaVariant.RED, new ItemStack(Items.PITCHER_POD)) == melon
+                    && MulaFood.value(MulaEntity.MulaVariant.GREEN, new ItemStack(Items.TORCHFLOWER_SEEDS)) == melon,
+                    "each seed to the colour it looks like");
+            // dried kelp looks black: the black Mula's, not the green one's
+            context.assertTrue(MulaFood.value(MulaEntity.MulaVariant.BLACK, new ItemStack(Items.DRIED_KELP)) > 0
+                    && MulaFood.value(MulaEntity.MulaVariant.GREEN, new ItemStack(Items.DRIED_KELP)) == 0, "dried kelp is black");
+        } finally {
+            disconnect(context, player);
+            mula.discard();
+        }
+        context.complete();
+    }
 }

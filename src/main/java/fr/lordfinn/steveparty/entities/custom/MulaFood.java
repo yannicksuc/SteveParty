@@ -13,38 +13,74 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * What a Mula eats: something both of ITS COLOUR and EDIBLE.
+ * What a Mula eats: something both of ITS COLOUR and EDIBLE (or a seed of its colour).
  * <ul>
  *   <li><b>Food</b> (an item with the vanilla {@code food} component) listed for its colour below; the satiety it gives
  *   is the food's nutrition (the hunger points it gives a player).</li>
  *   <li><b>Potions</b> (drinkable ones) whose liquid colour is closest to the Mula's colour; they give, summed over
  *   their effects: {@code minutes x (level x 2)}, each resulting minute counting as 1 point (Strength II for 3:00 =
  *   3 x (2 x 2) = 12). Instant effects count as one minute. The empty bottle goes back to the player.</li>
+ *   <li><b>Seeds</b> (not edible for a player, the one exception): each gives what a melon slice gives (read from its
+ *   food component).</li>
  * </ul>
  * Anything else (a dye, an ore, a potion of another colour, water...) is gently refused.
  * <p>
  * "Its colour" for foods (vanilla food items, grouped by what they look like):
  * blue = the cold-sea fish (cod, tropical fish); red = apple, sweet berries, salmon, raw beef and mutton;
- * green = dried kelp, melon slice, poisonous potato; yellow = golden apples and carrot, honey, baked potato, bread,
- * glow berries; purple = chorus fruit, beetroot and its soup; black = the dark foods (cookie, mushroom and rabbit
- * stews, steak, cooked mutton).
+ * green = melon slice, poisonous potato; yellow = golden apples and carrot, honey, baked potato, bread, glow berries;
+ * purple = chorus fruit, beetroot and its soup; black = the dark foods (dried kelp, cookie, mushroom and rabbit stews,
+ * steak, cooked mutton).
+ * <p>
+ * Seeds, by what they look like: green = wheat seeds, torchflower seeds (green and olive); black = melon seeds (almost
+ * black); yellow = pumpkin seeds (pale cream); red = beetroot seeds (tan, nearer red than purple), pitcher pod
+ * (reddish brown).
  */
 public final class MulaFood {
     private MulaFood() {
     }
 
     private static final Map<MulaEntity.MulaVariant, Set<Item>> FOODS = new EnumMap<>(MulaEntity.MulaVariant.class);
+    private static final Map<Item, MulaEntity.MulaVariant> SEEDS = new java.util.HashMap<>();
 
     static {
         FOODS.put(MulaEntity.MulaVariant.BLUE, Set.of(Items.COD, Items.COOKED_COD, Items.TROPICAL_FISH));
         FOODS.put(MulaEntity.MulaVariant.RED, Set.of(Items.APPLE, Items.SWEET_BERRIES, Items.SALMON, Items.COOKED_SALMON,
                 Items.BEEF, Items.MUTTON));
-        FOODS.put(MulaEntity.MulaVariant.GREEN, Set.of(Items.DRIED_KELP, Items.MELON_SLICE, Items.POISONOUS_POTATO));
+        FOODS.put(MulaEntity.MulaVariant.GREEN, Set.of(Items.MELON_SLICE, Items.POISONOUS_POTATO));
         FOODS.put(MulaEntity.MulaVariant.YELLOW, Set.of(Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE,
                 Items.GOLDEN_CARROT, Items.HONEY_BOTTLE, Items.BAKED_POTATO, Items.BREAD, Items.GLOW_BERRIES));
         FOODS.put(MulaEntity.MulaVariant.PURPLE, Set.of(Items.CHORUS_FRUIT, Items.BEETROOT, Items.BEETROOT_SOUP));
-        FOODS.put(MulaEntity.MulaVariant.BLACK, Set.of(Items.COOKIE, Items.MUSHROOM_STEW, Items.RABBIT_STEW,
-                Items.COOKED_BEEF, Items.COOKED_MUTTON));
+        FOODS.put(MulaEntity.MulaVariant.BLACK, Set.of(Items.DRIED_KELP, Items.COOKIE, Items.MUSHROOM_STEW,
+                Items.RABBIT_STEW, Items.COOKED_BEEF, Items.COOKED_MUTTON));
+        SEEDS.put(Items.WHEAT_SEEDS, MulaEntity.MulaVariant.GREEN);
+        SEEDS.put(Items.TORCHFLOWER_SEEDS, MulaEntity.MulaVariant.GREEN);
+        SEEDS.put(Items.MELON_SEEDS, MulaEntity.MulaVariant.BLACK);
+        SEEDS.put(Items.PUMPKIN_SEEDS, MulaEntity.MulaVariant.YELLOW);
+        SEEDS.put(Items.BEETROOT_SEEDS, MulaEntity.MulaVariant.RED);
+        SEEDS.put(Items.PITCHER_POD, MulaEntity.MulaVariant.RED);
+    }
+
+    /** The seeds of this colour (for tests and the test scene). */
+    public static Set<Item> seedsOf(MulaEntity.MulaVariant variant) {
+        Set<Item> seeds = new java.util.HashSet<>();
+        SEEDS.forEach((item, v) -> {
+            if (v == variant) seeds.add(item);
+        });
+        return seeds;
+    }
+
+    /** What a seed gives: a melon slice's nutrition. */
+    public static int seedValue() {
+        FoodComponent melon = Items.MELON_SLICE.getComponents().get(DataComponentTypes.FOOD);
+        return melon == null ? 2 : Math.max(1, melon.nutrition());
+    }
+
+    /** The colour of Mula that eats this (food, seed or potion), or null if none does (for the tooltip). */
+    public static @org.jetbrains.annotations.Nullable MulaEntity.MulaVariant eatenBy(ItemStack stack) {
+        for (MulaEntity.MulaVariant v : MulaEntity.MulaVariant.values()) {
+            if (value(v, stack) > 0) return v;
+        }
+        return null;
     }
 
     /** The foods of this colour (for tests, the tooltip and the test scene). */
@@ -60,6 +96,8 @@ public final class MulaFood {
             if (potion == null || colourOf(potion.getColor()) != variant) return 0;
             return potionValue(potion.getEffects());
         }
+        MulaEntity.MulaVariant seed = SEEDS.get(stack.getItem());
+        if (seed != null) return seed == variant ? seedValue() : 0;
         FoodComponent food = stack.get(DataComponentTypes.FOOD);
         if (food == null || !FOODS.get(variant).contains(stack.getItem())) return 0;
         return Math.max(1, food.nutrition());
