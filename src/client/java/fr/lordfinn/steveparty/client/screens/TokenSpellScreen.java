@@ -110,8 +110,6 @@ public class TokenSpellScreen extends Screen {
     private long lastCameraNanos;
     /** The shape this spell draws, and where its drawing starts. */
     private static final SpellShape SHAPE = SpellShape.TOKEN_CIRCLE;
-    /** Guide opacity while a stroke is traced over it (relative to its normal ~35-50 %: about 20-25 %). */
-    private static final float GUIDE_WHILE_DRAWING = 0.55F;
     /** The cursor was put at the shape's start (once, when the screen opens), retried for a few frames. */
     private boolean cursorPlaced;
     private static final int CURSOR_ATTEMPTS = 10;
@@ -785,9 +783,9 @@ public class TokenSpellScreen extends Screen {
             }
         }
         // The default circle is only a guide to trace over: a faint ghost from the start (charging included, and when
-        // the press that used the wand already draws), fainter while a stroke is traced over it, gone once the stroke
-        // has become the circle
-        float guideTarget = !guide ? 0 : dragging ? GUIDE_WHILE_DRAWING : 1;
+        // the press that used the wand already draws), just as visible while a stroke is traced over it, gone once the
+        // stroke has become the circle
+        float guideTarget = guide ? 1 : 0;
         guideFade = guideFade < guideTarget ? Math.min(guideTarget, guideFade + 0.08F) : Math.max(guideTarget, guideFade - 0.12F);
         if (guideFade > 0.01F && phase != Phase.VALIDATING) {
             drawGuide(context, centerX, centerY, Math.max(0, guideRadius), time, guideFade);

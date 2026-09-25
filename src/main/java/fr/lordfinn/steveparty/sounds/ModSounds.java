@@ -37,7 +37,7 @@ public class ModSounds {
     public static final SoundEvent TOKEN_SPELL_FIZZLE = register("token_spell.fizzle");
     /** Cancelled: a soft poof. */
     public static final SoundEvent TOKEN_SPELL_CANCEL = register("token_spell.cancel");
-    /** The homing flare flying from the wand. */
+    /** The flare flying from the wand. */
     public static final SoundEvent TOKEN_SPELL_FLARE = register("token_spell.flare");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {

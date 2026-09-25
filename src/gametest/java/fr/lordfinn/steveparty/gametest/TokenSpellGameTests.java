@@ -17,6 +17,12 @@ import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.CowEntity;
+import net.minecraft.entity.passive.HorseEntity;
+import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.village.VillagerProfession;
+import net.minecraft.util.ActionResult;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.item.ItemStack;
@@ -255,42 +261,77 @@ public class TokenSpellGameTests implements FabricGameTest {
     }
 
     /**
-     * The homing flare's target: the mob the spell could take that is near and closest to where the player looks,
-     * never a boss, never one out of range.
+     * The flare flies straight: it stops on the first mob or block on its way, and only a mob the spell could take
+     * opens the spell; nothing behind, nothing through a wall, never a boss.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void flareGoesToTheMobInFrontOfThePlayer(TestContext context) {
+    public void flareFliesStraightToTheFirstMobOnItsWay(TestContext context) {
         ServerPlayerEntity player = wandHolder(context);
         try {
-            // The player looks towards +z (yaw 0)
-            Vec3d eye = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() + 0.5));
-            player.refreshPositionAndAngles(eye.x, eye.y, eye.z, 0, 0);
             ItemStack wand = player.getMainHandStack();
-            context.assertTrue(TokenizerFlare.chooseTarget(player, wand) == null, "nothing around: no target");
+            // Level with the mobs' bodies, towards +z; a short stretch of the flight (the other tests' areas are further)
+            Vec3d from = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY() + 0.4, MOB_POS.getZ() + 0.5));
+            Vec3d to = from.add(0, 0, 4.4);
+            TokenizerFlare.Hit hit = TokenizerFlare.trace(player.getServerWorld(), player, wand, from, to);
+            context.assertTrue(hit.mob() == null && !hit.stops(), "nothing on the way: " + hit);
 
-            PigEntity behind = context.spawnMob(EntityType.PIG, MOB_POS.add(0, 0, -3));
-            PigEntity aside = context.spawnMob(EntityType.PIG, MOB_POS.add(3, 0, 0));
-            PigEntity ahead = context.spawnMob(EntityType.PIG, MOB_POS.add(0, 0, 5));
-            WitherEntity boss = context.spawnMob(EntityType.WITHER, MOB_POS.add(0, 0, 2));
-            for (MobEntity mob : new MobEntity[]{behind, aside, ahead, boss}) mob.setAiDisabled(true);
+            PigEntity behind = spawnAt(context, EntityType.PIG, MOB_POS.add(0, 0, -3));
+            hit = TokenizerFlare.trace(player.getServerWorld(), player, wand, from, to);
+            context.assertTrue(hit.mob() == null && !hit.stops(), "a mob behind is not on the way");
+
+            PigEntity ahead = spawnAt(context, EntityType.PIG, MOB_POS.add(0, 0, 4));
+            hit = TokenizerFlare.trace(player.getServerWorld(), player, wand, from, to);
+            context.assertTrue(hit.mob() == ahead, "the pig straight ahead: " + hit.mob());
+
+            WitherEntity boss = spawnAt(context, EntityType.WITHER, MOB_POS.add(0, 0, 2));
             try {
-                MobEntity target = TokenizerFlare.chooseTarget(player, wand);
-                context.assertTrue(target == ahead, "the pig in front, though farther: " + target);
-
-                ahead.discard();
-                context.assertTrue(TokenizerFlare.chooseTarget(player, wand) == aside, "then the one aside, before the one behind");
+                hit = TokenizerFlare.trace(player.getServerWorld(), player, wand, from, to);
+                context.assertTrue(hit.mob() == null && hit.stops(), "a boss on the way stops the flare, no spell");
             } finally {
                 boss.discard();
             }
 
-            // Out of range: nothing
-            Vec3d far = context.getAbsolute(new Vec3d(MOB_POS.getX() + 0.5, MOB_POS.getY(), MOB_POS.getZ() - TokenizerFlare.RANGE - 10));
-            player.refreshPositionAndAngles(far.x, far.y, far.z, 180, 0);
-            context.assertTrue(TokenizerFlare.chooseTarget(player, wand) == null, "out of range: no target");
+            context.setBlockState(MOB_POS.add(0, 0, 2), net.minecraft.block.Blocks.STONE);
+            hit = TokenizerFlare.trace(player.getServerWorld(), player, wand, from, to);
+            context.assertTrue(hit.mob() == null && hit.stops(), "a wall stops the flare");
+            behind.discard();
         } finally {
             disconnect(context, player);
         }
         context.complete();
+    }
+
+    /** With the wand in hand, the wand wins over the mob's own interaction: no trades, no riding, no sitting. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void wandWinsOverMobInteractions(TestContext context) {
+        ServerPlayerEntity player = wandHolder(context);
+        try {
+            VillagerEntity villager = spawnAt(context, EntityType.VILLAGER, MOB_POS);
+            villager.setVillagerData(villager.getVillagerData().withProfession(VillagerProfession.FARMER));
+            ActionResult result = player.interact(villager, Hand.MAIN_HAND);
+            context.assertTrue(result.isAccepted(), "the wand's spell takes the click: " + result);
+            context.assertTrue(villager.getCustomer() == null, "no trade opened");
+
+            HorseEntity horse = spawnAt(context, EntityType.HORSE, MOB_POS.add(2, 0, 0));
+            player.interact(horse, Hand.MAIN_HAND);
+            context.assertTrue(!player.hasVehicle(), "not riding the horse");
+
+            MulaEntity mula = spawnAt(context, ModEntities.MULA_ENTITY, MOB_POS.add(-2, 0, 0));
+            mula.setOwner(player);
+            mula.setTamed(true, false);
+            boolean sitting = mula.isSitting();
+            player.interact(mula, Hand.MAIN_HAND);
+            context.assertTrue(mula.isSitting() == sitting, "the Mula did not sit / stand up");
+        } finally {
+            disconnect(context, player);
+        }
+        context.complete();
+    }
+
+    private static <T extends MobEntity> T spawnAt(TestContext context, EntityType<T> type, BlockPos pos) {
+        T mob = context.spawnMob(type, pos);
+        mob.setAiDisabled(true);
+        return mob;
     }
 
     // ---------------------------------------------------------------- resize

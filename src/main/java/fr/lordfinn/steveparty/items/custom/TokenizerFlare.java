@@ -3,72 +3,90 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.particles.KamekShapeEffect;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.util.Arm;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.util.Arm;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
 
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The Tokenizer Wand's homing flare: holding the use button in the air, a small comet of Kamek magic flies from the
- * wand and curves towards the nearest mob the spell could take (within {@link #RANGE} blocks, in sight, the one
- * closest to where the player looks preferred). Reaching it while the button is still held opens the spell on it
- * (the held press then goes on drawing on the client); released early, or without a target, it fizzles out.
+ * The Tokenizer Wand's flare: holding the use button in the air, a small comet of Kamek magic flies from the wand in a
+ * straight line, along where the player looks, up to {@link #RANGE} blocks. If it hits a mob the spell could take,
+ * the spell opens on it (the held press then goes on drawing on the client); if it hits a block, another mob, or
+ * reaches its range, or if the button is released before, it fizzles out.
  * <p>
- * Server side: the server picks the target and moves the flare; everyone around sees it as particles.
+ * Server side and authoritative: the server moves the flare and tests what it hits; everyone around sees it as
+ * particles.
  */
 public final class TokenizerFlare {
-    /** Search range, in blocks (the spell reaches {@link TokenizerWandItem#MAX_SPELL_DISTANCE}). */
+    /** Range, in blocks (the spell reaches {@link TokenizerWandItem#MAX_SPELL_DISTANCE}). */
     public static final double RANGE = 32;
-    /** Angle penalty of the target choice: a mob right behind costs this many blocks more than one straight ahead. */
-    private static final double LOOK_WEIGHT = 8;
-    private static final double START_SPEED = 0.45, MAX_SPEED = 1.3, ACCELERATION = 0.06, STEERING = 0.3;
-    /** Without a target, the flare flies this long, then fizzles. */
-    private static final int LONELY_TICKS = 8;
-    private static final int MAX_TICKS = 60;
+    /** Blocks per tick: the whole range in about a second. */
+    private static final double SPEED = 1.6;
 
     private static final Map<UUID, Flare> FLARES = new HashMap<>();
 
     private static final class Flare {
-        Vec3d position, velocity;
-        final MobEntity target;
-        int age;
+        Vec3d position;
+        final Vec3d direction;
+        double travelled;
 
-        Flare(Vec3d position, Vec3d velocity, MobEntity target) {
+        Flare(Vec3d position, Vec3d direction) {
             this.position = position;
-            this.velocity = velocity;
-            this.target = target;
+            this.direction = direction;
         }
+    }
+
+    /** What a stretch of the flare's flight hits first. */
+    public record Hit(MobEntity mob, Vec3d at, boolean stops) {
+        static final Hit NOTHING = new Hit(null, null, false);
     }
 
     private TokenizerFlare() {
     }
 
+    /** A player's flare is forgotten when they leave. */
+    public static void initialize() {
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> FLARES.remove(handler.player.getUuid()));
+    }
+
     /**
-     * The mob the flare goes to: among the mobs the spell could take within {@link #RANGE} blocks and in sight, the
-     * one with the best score (distance, plus a penalty growing as it is away from where the player looks), or null.
+     * What the flare hits flying from {@code from} to {@code to}: the first mob whose hitbox the segment crosses (if
+     * the spell could take it, {@link Hit#mob} is set; any mob stops it), or the first block (stops it), whichever
+     * comes first; else nothing.
      */
-    public static MobEntity chooseTarget(ServerPlayerEntity player, ItemStack wand) {
-        Vec3d eye = player.getEyePos();
-        Vec3d look = player.getRotationVector();
-        List<MobEntity> mobs = player.getWorld().getEntitiesByClass(MobEntity.class, player.getBoundingBox().expand(RANGE),
-                mob -> mob.squaredDistanceTo(eye) <= RANGE * RANGE && TokenizerWandItem.isSpellTarget(player, wand, mob)
-                        && player.canSee(mob));
-        return mobs.stream().min(Comparator.comparingDouble(mob -> {
-            Vec3d to = mob.getPos().add(0, mob.getHeight() / 2, 0).subtract(eye);
-            double distance = to.length();
-            double facing = distance < 1.0E-3 ? 1 : look.dotProduct(to.multiply(1 / distance));
-            return distance + LOOK_WEIGHT * (1 - facing);
-        })).orElse(null);
+    public static Hit trace(World world, ServerPlayerEntity player, ItemStack wand, Vec3d from, Vec3d to) {
+        BlockHitResult block = world.raycast(new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER,
+                RaycastContext.FluidHandling.NONE, player));
+        Vec3d end = block.getType() == HitResult.Type.MISS ? to : block.getPos();
+        MobEntity nearest = null;
+        Vec3d nearestAt = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (MobEntity mob : world.getEntitiesByClass(MobEntity.class, new Box(from, end).expand(1), MobEntity::isAlive)) {
+            Optional<Vec3d> at = mob.getBoundingBox().expand(0.2).raycast(from, end);
+            if (at.isPresent() && from.squaredDistanceTo(at.get()) < nearestDistance) {
+                nearestDistance = from.squaredDistanceTo(at.get());
+                nearest = mob;
+                nearestAt = at.get();
+            }
+        }
+        if (nearest != null) {
+            return new Hit(TokenizerWandItem.isSpellTarget(player, wand, nearest) ? nearest : null, nearestAt, true);
+        }
+        return block.getType() == HitResult.Type.MISS ? Hit.NOTHING : new Hit(null, end, true);
     }
 
     /** About where the wand's tip is: in front of the player, on the side of the hand, below the eyes. */
@@ -81,49 +99,35 @@ public final class TokenizerFlare {
     }
 
     public static void start(ServerPlayerEntity player, ItemStack wand) {
-        MobEntity target = chooseTarget(player, wand);
         Vec3d tip = wandTip(player);
-        FLARES.put(player.getUuid(), new Flare(tip, player.getRotationVector().multiply(START_SPEED), target));
+        // Straight where the player looks: aimed at what the crosshair points at, from the wand's tip
+        Vec3d aim = player.getEyePos().add(player.getRotationVector().multiply(RANGE));
+        FLARES.put(player.getUuid(), new Flare(tip, aim.subtract(tip).normalize()));
         player.getWorld().playSound(null, tip.x, tip.y, tip.z, ModSounds.TOKEN_SPELL_FLARE, SoundCategory.PLAYERS, 1.0F, 1.0F);
     }
 
-    /** Every tick while the button is held: the flare homes in, and opens the spell when it reaches its mob. */
+    /** Every tick while the button is held: the flare flies on, and opens the spell on the mob it hits. */
     public static void tick(ServerPlayerEntity player, ItemStack wand) {
         Flare flare = FLARES.get(player.getUuid());
         if (flare == null || !(player.getWorld() instanceof ServerWorld world)) return;
-        flare.age++;
-        MobEntity target = flare.target;
-        if (target == null || !target.isAlive() || target.getWorld() != world) {
-            if (flare.age >= LONELY_TICKS) {
-                fizzle(player);
-                return;
-            }
-        } else {
-            Vec3d center = target.getPos().add(0, target.getHeight() / 2, 0);
-            Vec3d to = center.subtract(flare.position);
-            double distance = to.length();
-            if (distance < Math.max(0.6, target.getWidth() / 2 + 0.3)) {
-                FLARES.remove(player.getUuid());
-                burst(world, center);
-                player.stopUsingItem();
-                TokenizerWandItem.openSpell(player, target);
-                return;
-            }
-            // Curves towards the mob, faster and faster
-            double speed = Math.min(MAX_SPEED, flare.velocity.length() + ACCELERATION);
-            Vec3d wanted = to.multiply(Math.min(speed, distance) / distance);
-            flare.velocity = flare.velocity.lerp(wanted, STEERING);
-        }
-        if (flare.age > MAX_TICKS) {
+        double step = Math.min(SPEED, RANGE - flare.travelled);
+        Vec3d next = flare.position.add(flare.direction.multiply(step));
+        Hit hit = trace(world, player, wand, flare.position, next);
+        Vec3d reached = hit.stops() ? hit.at() : next;
+        trail(world, flare.position, reached);
+        flare.travelled += flare.position.distanceTo(reached);
+        flare.position = reached;
+        if (hit.mob() != null) {
+            FLARES.remove(player.getUuid());
+            burst(world, reached);
+            player.stopUsingItem();
+            TokenizerWandItem.openSpell(player, hit.mob());
+        } else if (hit.stops() || flare.travelled >= RANGE - 1.0E-3) {
             fizzle(player);
-            return;
         }
-        Vec3d previous = flare.position;
-        flare.position = flare.position.add(flare.velocity);
-        trail(world, previous, flare.position);
     }
 
-    /** Released early (or nothing to reach): the flare fizzles out in sparkles. */
+    /** Released early, or it hit nothing it could take: the flare fizzles out in sparkles. */
     public static void fizzle(ServerPlayerEntity player) {
         Flare flare = FLARES.remove(player.getUuid());
         if (flare == null || !(player.getWorld() instanceof ServerWorld world)) return;
@@ -144,10 +148,5 @@ public final class TokenizerFlare {
 
     private static void burst(ServerWorld world, Vec3d at) {
         world.spawnParticles(KamekShapeEffect.shape(1.1F, 0.8F, 0), at.x, at.y, at.z, 12, 0.2, 0.2, 0.2, 0.2);
-    }
-
-    /** A player's flare is forgotten when they leave. */
-    public static void initialize() {
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> FLARES.remove(handler.player.getUuid()));
     }
 }
