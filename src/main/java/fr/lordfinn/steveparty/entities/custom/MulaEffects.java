@@ -200,14 +200,26 @@ public final class MulaEffects {
     void instruction(String instructions) {
         for (String raw : instructions.split(";")) {
             switch (raw.trim()) {
-                case "sparkle_small" -> sparkleSmall();
-                case "sparkle_ring" -> sparkleRing(10, 0.07);
+                case "sparkle_small" -> {
+                    sparkleSmall();
+                    accent();
+                }
+                case "sparkle_ring" -> {
+                    sparkleRing(10, 0.07);
+                    accent();
+                }
                 case "burst" -> burst();
                 case "chime" -> chime(1.35f + mula.getRandom().nextFloat() * 0.4f);
                 case "orbit" -> orbitTicks = ORBIT_TICKS;
                 case "comet" -> cometTicks = COMET_TICKS;
-                case "shower" -> shower(22);
-                case "ring" -> ring();
+                case "shower" -> {
+                    shower(22);
+                    accent();
+                }
+                case "ring" -> {
+                    ring();
+                    accent();
+                }
                 case "glow" -> mula.getMotion().flare();
                 case "z" -> sleepyZ();
                 case "refuse" -> refuse();
@@ -229,12 +241,19 @@ public final class MulaEffects {
         if (food.isEmpty()) return;
         startItem(food, false);
         chime(1.9f, 0.2f);
+        allay(SoundEvents.ENTITY_ALLAY_ITEM_TAKEN, 0.35f, 1.2f);
     }
 
     /** Tamed (the vanilla hearts status): a ring of twinkles and a chime with the hearts. */
     void onTamed() {
         sparkleRing(14, 0.09);
         chime(1.6f);
+        allay(SoundEvents.ENTITY_ALLAY_ITEM_GIVEN, 0.45f, 1.5f);
+    }
+
+    /** Taming failed (the vanilla smoke status): a soft, low little voice. */
+    void onTameFailed() {
+        allay(SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, 0.3f, 0.7f);
     }
 
     /** Reborn where its shooting star landed: a burst of light in its colour, star bits, a chime and a halo flare. */
@@ -242,6 +261,7 @@ public final class MulaEffects {
         sparkleRing(18, 0.12);
         shower(12);
         chime(1.2f);
+        allay(SoundEvents.ENTITY_ALLAY_ITEM_GIVEN, 0.45f, 1.1f);
         mula.getMotion().flare();
     }
 
@@ -250,6 +270,7 @@ public final class MulaEffects {
      * try to reach the Mula but can't merge and puff away, and the item drifts softly back down to the player's hand.
      */
     private void refuse() {
+        allay(SoundEvents.ENTITY_ALLAY_ITEM_THROWN, 0.3f, 0.75f);
         PlayerEntity player = mula.getWorld().getClosestPlayer(mula, 8);
         ItemStack held = player == null ? ItemStack.EMPTY : player.getMainHandStack();
         if (held.isEmpty()) {
@@ -498,6 +519,7 @@ public final class MulaEffects {
 
     /** Full: the burst, now with a shower of star bits and a firework twinkle. */
     private void burst() {
+        allay(SoundEvents.ENTITY_ALLAY_HURT, 0.4f, 1.7f);
         World world = mula.getWorld();
         Random random = mula.getRandom();
         double y = centerY();
@@ -542,6 +564,25 @@ public final class MulaEffects {
             world.addParticle(i % 3 == 0 ? WHITE_TWINKLE : mula.getVariant().getTwinkle(), mula.getX() + Math.cos(a) * r,
                     centerY() + jitter(r), mula.getZ() + Math.sin(a) * r, 0, 0.025, 0);
         }
+    }
+
+    /** Last age an Allay sound was played by this Mula: at most one every ALLAY_GAP ticks (no din in a flock). */
+    private int lastAllayAge = -100;
+    private static final int ALLAY_GAP = 8;
+
+    /**
+     * Allay voices are for its actions only (eating, refusing, taming, burst, rebirth, the accent of a character
+     * animation), everyday life keeps the star chimes. In its own voice (MulaEntity#voice), throttled.
+     */
+    void allay(SoundEvent sound, float volume, float pitch) {
+        if (mula.age - lastAllayAge < ALLAY_GAP) return;
+        lastAllayAge = mula.age;
+        sound(sound, volume, pitch * mula.voice());
+    }
+
+    /** The accent of a character animation: one soft Allay note. */
+    private void accent() {
+        if (visible()) allay(SoundEvents.ENTITY_ALLAY_AMBIENT_WITH_ITEM, 0.18f, 1.3f);
     }
 
     private void sound(SoundEvent sound, float volume, float pitch) {

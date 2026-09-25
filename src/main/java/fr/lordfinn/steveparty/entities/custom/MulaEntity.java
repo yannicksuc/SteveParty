@@ -324,6 +324,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		MulaStarEntity star = new MulaStarEntity(fr.lordfinn.steveparty.entities.ModEntities.MULA_STAR, world);
 		star.launch(this.getX(), startY, this.getZ(), this.getVariant(), dirX, dirZ, distance, apex, endY - startY);
 		world.spawnEntity(star);
+		world.playSound(null, this.getX(), startY, this.getZ(), net.minecraft.sound.SoundEvents.ENTITY_ALLAY_ITEM_THROWN,
+				net.minecraft.sound.SoundCategory.NEUTRAL, 0.6f, 1.5f * voice());
 		fr.lordfinn.steveparty.Steveparty.LOGGER.info("A {} Mula burst into a shooting star: reborn at {} {} in {} s{}",
 				getVariant().name().toLowerCase(Locale.ROOT), x, z, flight / 20, atForge ? " (at its forge)" : "");
 		this.discard();
@@ -880,6 +882,31 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		return MulaFood.value(this.getVariant(), stack) > 0;
 	}
 
+	/** Its own voice: a pitch factor 0.92 to 1.08 from its UUID (each Mula sounds a little different). */
+	public float voice() {
+		return 0.92f + Math.floorMod(this.getUuid().hashCode(), 17) / 100f;
+	}
+
+	@Override
+	protected @Nullable net.minecraft.sound.SoundEvent getHurtSound(DamageSource source) {
+		return net.minecraft.sound.SoundEvents.ENTITY_ALLAY_HURT;
+	}
+
+	@Override
+	protected @Nullable net.minecraft.sound.SoundEvent getDeathSound() {
+		return net.minecraft.sound.SoundEvents.ENTITY_ALLAY_DEATH;
+	}
+
+	@Override
+	protected float getSoundVolume() {
+		return 0.6f;
+	}
+
+	@Override
+	public float getSoundPitch() {
+		return voice() * (1f + (this.random.nextFloat() - 0.5f) * 0.1f);
+	}
+
 	/** Owner's order, like vanilla wolves: the state is saved by {@link TameableEntity} ("Sitting"). */
 	public void toggleSitting() {
 		this.setSitting(!this.isSitting());
@@ -887,7 +914,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.navigation.stop();
 		this.setTarget(null);
 		stopEmote();
-		// an "okay" nod settling into its rest, or a stretch and a hop back up
+		// an "okay" nod settling into its rest, or a stretch and a hop back up, with a soft Allay voice
+		this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(),
+				net.minecraft.sound.SoundEvents.ENTITY_ALLAY_AMBIENT_WITH_ITEM, net.minecraft.sound.SoundCategory.NEUTRAL,
+				0.3f, (this.isSitting() ? 0.85f : 1.25f) * voice());
 		if (this.isSitting()) {
 			playSpecial("sit_down", SIT_DOWN_TICKS);
 		} else {
@@ -920,6 +950,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		super.handleStatus(status);
 		if (status == EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES) {
 			effects.onTamed();
+		} else if (status == EntityStatuses.ADD_NEGATIVE_PLAYER_REACTION_PARTICLES) {
+			effects.onTameFailed();
 		} else if (status == MulaRebirths.REBORN_STATUS) {
 			effects.onReborn();
 		}
