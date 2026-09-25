@@ -25,6 +25,6 @@ public class HeldItemRendererTokenSpellMixin {
                                                    VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
         if (!TokenSpellHand.isActive() || !(item.getItem() instanceof TokenizerWandItem)) return;
         Arm arm = hand == Hand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
-        TokenSpellHand.apply(matrices, arm);
+        TokenSpellHand.apply(matrices, arm, item);
     }
 }

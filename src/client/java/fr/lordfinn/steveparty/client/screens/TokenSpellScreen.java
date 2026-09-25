@@ -15,7 +15,6 @@ import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.util.Arm;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -106,7 +105,6 @@ public class TokenSpellScreen extends Screen {
     /** Centre of the circle: where the mob is drawn on the screen (followed smoothly). */
     private float centerX, centerY;
     private boolean centered;
-    private Arm wandArm = Arm.RIGHT;
     /** Kamek shapes and sparkles drawn on the screen (GUI coordinates). */
     private final List<GuiShape> shapes = new ArrayList<>();
 
@@ -141,12 +139,6 @@ public class TokenSpellScreen extends Screen {
         centered = false;
         centerX = width / 2F;
         centerY = height / 2F;
-        PlayerEntity player = client != null ? client.player : null;
-        if (player != null) {
-            boolean mainHand = player.getMainHandStack().getItem() instanceof TokenizerWandItem
-                    || !(player.getOffHandStack().getItem() instanceof TokenizerWandItem);
-            wandArm = mainHand ? player.getMainArm() : player.getMainArm().getOpposite();
-        }
         // The button that used the wand on the mob may still be held: that same press already draws (released, it
         // casts), no need to click again. Only when the screen first opens (init also runs on a resize).
         if (phase == Phase.CHARGING && phaseTicks == 0 && !dragging && client != null) {
@@ -273,7 +265,7 @@ public class TokenSpellScreen extends Screen {
     /** Charging: shapes gather into the wand's tip, and around the mob. */
     private void chargeParticles() {
         Random random = client.world.random;
-        Vec3d tip = TokenSpellHand.tipInWorld(0.7, wandArm);
+        Vec3d tip = TokenSpellHand.tipInWorld(0.7);
         for (int i = 0; i < 2; i++) {
             Vec3d offset = new Vec3d(random.nextDouble() - 0.5, random.nextDouble() - 0.5, random.nextDouble() - 0.5).multiply(0.35);
             int life = 7;
@@ -329,7 +321,7 @@ public class TokenSpellScreen extends Screen {
     /** Drawing: shapes trail from the wand's tip. */
     private void wandTrail() {
         Random random = client.world.random;
-        Vec3d tip = TokenSpellHand.tipInWorld(0.7, wandArm);
+        Vec3d tip = TokenSpellHand.tipInWorld(0.7);
         // A steady stream while the button is held: two shapes and a sparkle per tick
         for (int i = 0; i < 3; i++) {
             KamekShapeEffect effect = i == 2 ? KamekShapeEffect.sparkle(0.14F, 0.9F, 0, KamekShapeEffect.RANDOM_COLOR)
@@ -342,7 +334,7 @@ public class TokenSpellScreen extends Screen {
     /** Validation: Kamek's stream of shapes, from the wand's tip to the mob. Each dies as it reaches the mob. */
     private void shapeStream() {
         Random random = client.world.random;
-        Vec3d tip = TokenSpellHand.tipInWorld(0.7, wandArm);
+        Vec3d tip = TokenSpellHand.tipInWorld(0.7);
         Vec3d path = mobCenter().subtract(tip);
         for (int i = 0; i < 3; i++) {
             int life = 6 + random.nextInt(5);
@@ -410,7 +402,10 @@ public class TokenSpellScreen extends Screen {
 
     /** Adds the cursor to the stroke. */
     private void traceTo(float x, float y) {
-        if (!dragging) return;
+        // A minimized window reports the cursor at infinity: those points are dropped, the others kept on screen
+        if (!dragging || !Float.isFinite(x) || !Float.isFinite(y) || width <= 0 || height <= 0) return;
+        x = MathHelper.clamp(x, 0, width);
+        y = MathHelper.clamp(y, 0, height);
         if (!stroke.isEmpty()) {
             float[] last = stroke.getLast();
             float step = (float) Math.hypot(x - last[0], y - last[1]);
@@ -783,13 +778,17 @@ public class TokenSpellScreen extends Screen {
      * A freehand stroke in the same brush as the magic circle: soft glow, Kamek's four colours flowing along it, and
      * sparkles twinkling on it.
      */
+    private int strokeQuads;
+
     private void drawStroke(DrawContext context, List<float[]> points, float time) {
         int[] colors = KamekShapeEffect.COLORS;
         float length = 0, nextSparkle = 20;
         for (int i = 1; i < points.size(); i++) {
             float[] a = points.get(i - 1), b = points.get(i);
             float segment = (float) Math.hypot(b[0] - a[0], b[1] - a[1]);
-            int steps = Math.max(1, (int) segment);
+            if (!Float.isFinite(segment)) continue;
+            // (one dot per pixel, but never thousands for a single segment)
+            int steps = MathHelper.clamp((int) segment, 1, 512);
             for (int s = 0; s < steps; s++) {
                 float f = (float) s / steps;
                 int x = Math.round(MathHelper.lerp(f, a[0], b[0]));
@@ -801,8 +800,12 @@ public class TokenSpellScreen extends Screen {
                 int rgb = lerpColor(colors[index], colors[(index + 1) % colors.length], blend);
                 context.fill(x - 1, y - 1, x + 2, y + 2, 0x26000000 | rgb);
                 context.fill(x, y, x + 1, y + 1, 0xF0000000 | rgb);
+                // A long stroke is thousands of quads: flush them regularly (one huge batch overflowed the GUI's
+                // vertex buffer and crashed the game)
+                if (++strokeQuads % 2048 == 0) context.draw();
             }
             length += segment;
+            if (length - nextSparkle > 400) nextSparkle = length - 400;
             while (length >= nextSparkle) {
                 float twinkle = 0.5F + 0.5F * MathHelper.sin(time * 0.6F + nextSparkle * 0.1F);
                 drawSprite(context, SPARKLE, b[0], b[1], (int) nextSparkle % 80 < 40 ? 0xFFFFFF : colors[(int) (nextSparkle / 40) % colors.length],
@@ -868,10 +871,17 @@ public class TokenSpellScreen extends Screen {
         }
 
         if (ticks < failedUntil) {
-            int alpha = (int) (255 * MathHelper.clamp((failedUntil - ticks) / 10F, 0.1F, 1));
-            context.drawCenteredTextWithShadow(textRenderer,
-                    Text.translatableWithFallback("screen.steveparty.token_spell.not_a_circle", "That's not a circle: try again"),
-                    width / 2, y0 + textRenderer.fontHeight * scale + 6, (alpha << 24) | 0xF0EAFF);
+            // Well below the title (its letters wave by up to 2 pixels), on a small dark plate so it reads on the sky
+            float fade = MathHelper.clamp((failedUntil - ticks) / 10F, 0, 1);
+            if (fade > 0.05F) {
+                Text message = Text.translatableWithFallback("screen.steveparty.token_spell.not_a_circle", "That's not a circle: try again");
+                int messageWidth = textRenderer.getWidth(message);
+                int messageY = y0 + textRenderer.fontHeight * scale + 9;
+                int left = (width - messageWidth) / 2;
+                context.fill(left - 4, messageY - 3, left + messageWidth + 4, messageY + textRenderer.fontHeight + 2,
+                        ((int) (0x90 * fade) << 24) | 0x1E1530);
+                context.drawText(textRenderer, message, left, messageY, ((int) (255 * fade) << 24) | 0xFFFFFF, false);
+            }
         }
     }
 
