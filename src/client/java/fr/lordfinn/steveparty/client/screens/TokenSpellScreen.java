@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.RenderLayer;
@@ -109,8 +110,13 @@ public class TokenSpellScreen extends Screen {
     private long lastCameraNanos;
     /** The shape this spell draws, and where its drawing starts. */
     private static final SpellShape SHAPE = SpellShape.TOKEN_CIRCLE;
-    /** The cursor was put at the shape's start (once, when the screen opens). */
+    /** Guide opacity while a stroke is traced over it (relative to its normal ~35-50 %: about 20-25 %). */
+    private static final float GUIDE_WHILE_DRAWING = 0.55F;
+    /** The cursor was put at the shape's start (once, when the screen opens), retried for a few frames. */
     private boolean cursorPlaced;
+    private static final int CURSOR_ATTEMPTS = 10;
+    private int cursorAttempts;
+    private double cursorTargetX, cursorTargetY, cursorLastX, cursorLastY;
     private float guideFade;
     /** Until this tick, the hint says the last stroke was not a loop. */
     private int failedUntil = -1;
@@ -682,16 +688,55 @@ public class TokenSpellScreen extends Screen {
      */
     private void placeCursorAtShapeStart() {
         if (cursorPlaced || !centered || client == null || client.player == null || width <= 0 || height <= 0) return;
-        cursorPlaced = true;
-        if (dragging) return;
-        PlayerEntity player = client.player;
-        boolean mainHand = player.getMainHandStack().getItem() instanceof TokenizerWandItem;
-        boolean rightHanded = (player.getMainArm() == Arm.RIGHT) == mainHand;
-        float[] start = SHAPE.startPoint(centerX, centerY, radiusFor(TokenizerWandItem.DEFAULT_TOKEN_SIZE), rightHanded);
+        if (dragging) {
+            // Already drawing with the press that used the wand: the player's cursor stays
+            cursorPlaced = true;
+            return;
+        }
         var window = client.getWindow();
-        GLFW.glfwSetCursorPos(window.getHandle(),
-                MathHelper.clamp(start[0], 2, width - 2) * (double) window.getWidth() / width,
-                MathHelper.clamp(start[1], 2, height - 2) * (double) window.getHeight() / height);
+        long handle = window.getHandle();
+        // Only once the cursor is a free pointer (vanilla switches it from captured to normal and recentres it)
+        if (GLFW.glfwGetInputMode(handle, GLFW.GLFW_CURSOR) != GLFW.GLFW_CURSOR_NORMAL) return;
+        double[] actualX = new double[1], actualY = new double[1];
+        GLFW.glfwGetCursorPos(handle, actualX, actualY);
+        if (cursorAttempts == 0) {
+            PlayerEntity player = client.player;
+            boolean mainHand = player.getMainHandStack().getItem() instanceof TokenizerWandItem;
+            boolean rightHanded = (player.getMainArm() == Arm.RIGHT) == mainHand;
+            float[] start = SHAPE.startPoint(centerX, centerY, radiusFor(TokenizerWandItem.DEFAULT_TOKEN_SIZE), rightHanded);
+            // GUI coordinates to GLFW cursor coordinates, like vanilla's Mouse does the other way round
+            cursorTargetX = MathHelper.clamp(start[0], 2, width - 2) * (double) window.getWidth() / window.getScaledWidth();
+            cursorTargetY = MathHelper.clamp(start[1], 2, height - 2) * (double) window.getHeight() / window.getScaledHeight();
+        } else if (Math.abs(actualX[0] - cursorTargetX) < 1.5 && Math.abs(actualY[0] - cursorTargetY) < 1.5) {
+            logCursor("placed", actualX[0], actualY[0]);
+            cursorPlaced = true;
+            return;
+        } else if ((Math.abs(actualX[0] - cursorLastX) > 3 || Math.abs(actualY[0] - cursorLastY) > 3)
+                // (back at the window's centre: vanilla recentred it after our try, not the player)
+                && (Math.abs(actualX[0] - window.getWidth() / 2.0) > 2 || Math.abs(actualY[0] - window.getHeight() / 2.0) > 2)) {
+            // Moved by the player since the last try: their cursor wins
+            logCursor("moved by the player", actualX[0], actualY[0]);
+            cursorPlaced = true;
+            return;
+        }
+        if (cursorAttempts >= CURSOR_ATTEMPTS) {
+            logCursor("gave up", actualX[0], actualY[0]);
+            cursorPlaced = true;
+            return;
+        }
+        cursorAttempts++;
+        GLFW.glfwSetCursorPos(handle, cursorTargetX, cursorTargetY);
+        GLFW.glfwGetCursorPos(handle, actualX, actualY);
+        cursorLastX = actualX[0];
+        cursorLastY = actualY[0];
+    }
+
+    /** Dev only: where the cursor was asked to go and where it is, to check the start position from the log. */
+    private void logCursor(String outcome, double actualX, double actualY) {
+        if (!FabricLoader.getInstance().isDevelopmentEnvironment()) return;
+        Steveparty.LOGGER.info("[token spell] cursor start {} after {} tries: target ({}, {}), actual ({}, {}), window {}x{}, gui {}x{}",
+                outcome, cursorAttempts, Math.round(cursorTargetX), Math.round(cursorTargetY), Math.round(actualX), Math.round(actualY),
+                client.getWindow().getWidth(), client.getWindow().getHeight(), width, height);
     }
 
     @Override
@@ -739,9 +784,12 @@ public class TokenSpellScreen extends Screen {
                 radius = shownRadius;
             }
         }
-        // The default circle is only a guide to trace over: a faint ghost, fading out as soon as the player draws
-        guideFade = guide && !dragging ? Math.min(1, guideFade + 0.08F) : Math.max(0, guideFade - 0.12F);
-        if (guide && guideFade > 0.01F && phase != Phase.VALIDATING) {
+        // The default circle is only a guide to trace over: a faint ghost from the start (charging included, and when
+        // the press that used the wand already draws), fainter while a stroke is traced over it, gone once the stroke
+        // has become the circle
+        float guideTarget = !guide ? 0 : dragging ? GUIDE_WHILE_DRAWING : 1;
+        guideFade = guideFade < guideTarget ? Math.min(guideTarget, guideFade + 0.08F) : Math.max(guideTarget, guideFade - 0.12F);
+        if (guideFade > 0.01F && phase != Phase.VALIDATING) {
             drawGuide(context, centerX, centerY, Math.max(0, guideRadius), time, guideFade);
         }
         if (dragging) {

@@ -20,15 +20,17 @@ import org.joml.Vector3f;
 /**
  * Kamek's little shapes orbiting the Tokenizer Wand's jewel whenever it is held: a square, a circle, a triangle and
  * a second circle, in the four spell colours, full bright, slowly turning around the jewel with a little bob and a
- * gentle pulse. Drawn with the held item itself (first and third person), so they never lag behind; never on item
- * icons, dropped items or item frames. No allocation per frame. Render thread only.
+ * gentle pulse. Drawn with the held item itself (first and third person) into the same buffers, as opaque cut-outs
+ * like the wand: so they never lag behind, and shader packs draw them with the hand, in front of the sky and clouds
+ * (a translucent layer was drawn behind the clouds with Iris). Never on item icons, dropped items or item frames.
+ * No allocation per frame. Render thread only.
  */
 public final class WandOrbit {
     private static final RenderLayer[] LAYERS = {
-            RenderLayer.getEntityTranslucentEmissive(texture("kamek_square")),
-            RenderLayer.getEntityTranslucentEmissive(texture("kamek_circle")),
-            RenderLayer.getEntityTranslucentEmissive(texture("kamek_triangle")),
-            RenderLayer.getEntityTranslucentEmissive(texture("kamek_circle"))};
+            RenderLayer.getEntityCutoutNoCull(texture("kamek_square")),
+            RenderLayer.getEntityCutoutNoCull(texture("kamek_circle")),
+            RenderLayer.getEntityCutoutNoCull(texture("kamek_triangle")),
+            RenderLayer.getEntityCutoutNoCull(texture("kamek_circle"))};
     private static final int SHAPES = LAYERS.length;
     /** Centre of the wand's jewel, in model space (model pixels / 16: x 8, y 29, z 8). */
     private static final float JEWEL_X = 0.5F, JEWEL_Y = 29F / 16F, JEWEL_Z = 0.5F;
@@ -81,23 +83,24 @@ public final class WandOrbit {
             matrix.transformPosition(JEWEL_X + MathHelper.cos(angle) * RADIUS, JEWEL_Y + bob,
                     JEWEL_Z + MathHelper.sin(angle) * RADIUS, POINT);
             int color = KamekShapeEffect.COLORS[i % KamekShapeEffect.COLORS.length];
-            int alpha = (int) (170 + 85 * (0.5F + 0.5F * MathHelper.sin(time * 2.3F + i * 2.1F)));
-            quad(vertexConsumers.getBuffer(LAYERS[i]), POINT, color, alpha);
+            // A gentle pulse of size (the shapes are drawn as opaque cut-outs, like the wand itself)
+            float pulse = 0.85F + 0.15F * MathHelper.sin(time * 2.3F + i * 2.1F);
+            quad(vertexConsumers.getBuffer(LAYERS[i]), POINT, color, pulse);
         }
         matrices.pop();
     }
 
-    private static void quad(VertexConsumer buffer, Vector3f center, int rgb, int alpha) {
+    private static void quad(VertexConsumer buffer, Vector3f center, int rgb, float scale) {
         int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-        corner(buffer, center, -1, -1, r, g, b, alpha, 0, 1);
-        corner(buffer, center, 1, -1, r, g, b, alpha, 1, 1);
-        corner(buffer, center, 1, 1, r, g, b, alpha, 1, 0);
-        corner(buffer, center, -1, 1, r, g, b, alpha, 0, 0);
+        corner(buffer, center, -scale, -scale, r, g, b, 0, 1);
+        corner(buffer, center, scale, -scale, r, g, b, 1, 1);
+        corner(buffer, center, scale, scale, r, g, b, 1, 0);
+        corner(buffer, center, -scale, scale, r, g, b, 0, 0);
     }
 
-    private static void corner(VertexConsumer buffer, Vector3f center, int sx, int sy, int r, int g, int b, int a, float u, float v) {
+    private static void corner(VertexConsumer buffer, Vector3f center, float sx, float sy, int r, int g, int b, float u, float v) {
         buffer.vertex(center.x() + RIGHT.x() * sx + UP.x() * sy, center.y() + RIGHT.y() * sx + UP.y() * sy,
                         center.z() + RIGHT.z() * sx + UP.z() * sy)
-                .color(r, g, b, a).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(FULL_BRIGHT).normal(0, 1, 0);
+                .color(r, g, b, 255).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(FULL_BRIGHT).normal(0, 1, 0);
     }
 }
