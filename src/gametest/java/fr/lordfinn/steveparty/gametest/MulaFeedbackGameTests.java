@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaFood;
+import fr.lordfinn.steveparty.entities.custom.MulaMotion;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -274,5 +275,79 @@ public class MulaFeedbackGameTests implements FabricGameTest {
             mula.discard();
         }
         context.complete();
+    }
+
+    /** Puts the player {@code dx} blocks from the Mula's centre, level with it. */
+    private static void placeBeside(ServerPlayerEntity player, MulaEntity mula, double dx) {
+        player.refreshPositionAndAngles(mula.getX() + dx, mula.getY(), mula.getZ(), 0, 0);
+    }
+
+    /** A step of a test with a mock player, disconnected if the step fails (or after the {@code last} one). */
+    private static void step(TestContext context, ServerPlayerEntity player, long tick, boolean last, Runnable check) {
+        context.runAtTick(tick, () -> {
+            try {
+                check.run();
+            } catch (RuntimeException e) {
+                disconnect(context, player);
+                throw e;
+            }
+            if (last) {
+                disconnect(context, player);
+                context.complete();
+            }
+        });
+    }
+
+    /**
+     * A nearly full Mula no longer trembles all the time: only while a player is very close (within SHAKE_NEAR of its
+     * body) or for SHAKE_AFTER_MEAL_TICKS after a meal; a Mula that is not nearly full never does.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void nearlyFullMulaShakesOnlyWhenApproachedOrJustFed(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        mula.setAiDisabled(true);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        player.changeGameMode(GameMode.SURVIVAL);
+        // a small meal (a seed), so it is nearly full before and after it, still one meal away from the burst
+        mula.setVariant(MulaEntity.MulaVariant.GREEN);
+        Item food = Items.WHEAT_SEEDS;
+        int value = MulaFood.value(mula.getVariant(), new ItemStack(food));
+        int nearlyFull = MulaEntity.MAX_HUNGER - 1 - value;
+        if (value <= 0 || (float) (nearlyFull - value) / MulaEntity.MAX_HUNGER <= MulaMotion.TREMBLE_FROM) {
+            disconnect(context, player);
+            throw new AssertionError("unexpected seed value: " + value);
+        }
+        mula.setHunger(nearlyFull);
+        placeBeside(player, mula, 12);
+        step(context, player, 5, false, () -> {
+            context.assertFalse(mula.isShaking(), "nearly full, nobody around: calm");
+            placeBeside(player, mula, 1.2);
+        });
+        step(context, player, 9, false, () -> {
+            context.assertTrue(mula.isShaking(), "a player right beside it: it trembles (" + player.distanceTo(mula) + ")");
+            placeBeside(player, mula, mula.getWidth() / 2 + MulaEntity.SHAKE_NEAR + 1.5);
+        });
+        step(context, player, 13, false, () -> {
+            context.assertFalse(mula.isShaking(), "the player stepped back (" + player.distanceTo(mula) + "): calm again");
+            mula.setHunger(10);
+            placeBeside(player, mula, 1.2);
+        });
+        step(context, player, 17, false, () -> {
+            context.assertFalse(mula.isShaking(), "not nearly full: never trembles, even up close");
+            // nearly full already before the meal, and a player well away: only the meal can make it tremble
+            mula.setHunger(nearlyFull - value);
+            placeBeside(player, mula, 12);
+        });
+        step(context, player, 21, false, () -> {
+            context.assertFalse(mula.isShaking(), "nearly full, nobody around, before the meal: calm");
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(food, 1));
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.getHunger(), nearlyFull, "fed");
+            context.assertTrue(mula.isShaking(), "a meal just taken: it trembles at once, even with nobody close");
+        });
+        step(context, player, 21 + MulaEntity.SHAKE_AFTER_MEAL_TICKS - 6, false,
+                () -> context.assertTrue(mula.isShaking(), "still trembling a little after the meal"));
+        step(context, player, 21 + MulaEntity.SHAKE_AFTER_MEAL_TICKS + 4, true,
+                () -> context.assertFalse(mula.isShaking(), "calm again a few seconds after the meal"));
     }
 }
