@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
 import fr.lordfinn.steveparty.persistent_state.TeleportationHistoryStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
+import fr.lordfinn.steveparty.utils.SafeLanding;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -25,12 +26,14 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import java.util.UUID;
 
 public class TeleportationPadBlock extends BlockWithEntity {
@@ -149,6 +152,17 @@ public class TeleportationPadBlock extends BlockWithEntity {
         );
     }
 
+    /**
+     * Teleports the player standing on the top of the block at {@code target} (or the nearest free space above it),
+     * never inside it.
+     */
+    public static void teleportOnto(ServerPlayerEntity player, BlockPos target) {
+        ServerWorld world = player.getServerWorld();
+        Vec3d landing = SafeLanding.findLandingPos(world, player, target);
+        player.teleport(world, landing.x, landing.y, landing.z, Set.of(), player.getYaw(), player.getPitch(), false);
+        player.fallDistance = 0;
+    }
+
     private void teleportPlayer(ServerPlayerEntity player, BlockPos pos, UUID taskId) {
         Steveparty.SCHEDULER.schedule(
                 taskId,
@@ -157,7 +171,7 @@ public class TeleportationPadBlock extends BlockWithEntity {
                     if (player.isRemoved()) return;
                     // Teleport the player after the tick is done
                     playTeleportationSound(player.getWorld(), pos);
-                    player.teleport(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, true);
+                    teleportOnto(player, pos);
                 }
         );
     }
