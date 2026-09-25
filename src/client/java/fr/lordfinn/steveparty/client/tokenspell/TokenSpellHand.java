@@ -24,8 +24,8 @@ public final class TokenSpellHand {
     /** Share of the way from the resting position to the cursor the hand travels (1: the tip reaches the cursor). */
     private static final float FOLLOW = 0.55F;
     private static final float SMOOTHING = 14F;
-    /** The hand does not follow the cursor closer to the screen centre than this (screen x, 0 = centre, 1 = edge). */
-    private static final float MIN_SIDE = 0.3F;
+    /** Lean of the resting wand towards the screen centre (radians from vertical, mirrored for the left arm). */
+    private static final float REST_LEAN = -0.3F;
 
     private static boolean active;
     private static float x, y, press;
@@ -67,35 +67,47 @@ public final class TokenSpellHand {
         return active;
     }
 
-    /** Cursor x as the hand follows it: kept on the hand's side of the screen, so the wand never hides the mob. */
-    private static float sideX(float side) {
-        return side > 0 ? Math.max(x, MIN_SIDE) : Math.min(x, -MIN_SIDE);
+    /**
+     * Pose of the hand for the current cursor, in view space at the depth of the held item: {hand x, hand y, roll}.
+     * The hand follows the cursor part of the way but always stays on screen (so the wand is always visible, across
+     * the whole screen); the rest is done by the wrist: the wand rolls so that its tip points at the cursor.
+     */
+    private static float[] pose(float side) {
+        float halfHeight = halfHeight(ITEM_DEPTH);
+        float halfWidth = halfHeight * aspect();
+        float cursorX = x * halfWidth, cursorY = -y * halfHeight;
+        float restX = side * REST_X;
+        float handX = restX + (cursorX - restX) * FOLLOW;
+        float handY = REST_Y + (cursorY - (REST_Y + TIP_HEIGHT)) * FOLLOW;
+        // On screen: the grip never leaves the lower part of the view, the wand above it stays in sight
+        // (the wand's head sticks out on the outer side: the hand stops sooner towards that edge)
+        handX = side > 0 ? MathHelper.clamp(handX, -halfWidth * 0.8F, halfWidth * 0.62F)
+                : MathHelper.clamp(handX, -halfWidth * 0.62F, halfWidth * 0.8F);
+        handY = MathHelper.clamp(handY, -halfHeight * 0.95F, halfHeight * 0.1F);
+        // Direction from the grip to the cursor, as an angle from "straight up" (positive: to the right)
+        float toCursor = (float) Math.atan2(cursorX - handX, Math.max(0.02F, cursorY - handY + TIP_HEIGHT * 0.5F));
+        // The resting wand already leans a little towards the screen centre
+        float roll = MathHelper.clamp(toCursor - side * REST_LEAN, -1.9F, 1.9F);
+        return new float[]{handX, handY, roll};
     }
 
-    /** Moves and tilts the held wand towards the cursor (inside the item's own matrix push). */
+    /** Moves the held wand with the cursor and rolls it so its tip points at it (inside the item's own matrix push). */
     public static void apply(MatrixStack matrices, Arm arm) {
         if (!active) return;
         float side = arm == Arm.RIGHT ? 1 : -1;
-        float halfHeight = halfHeight(ITEM_DEPTH);
-        float halfWidth = halfHeight * aspect();
-        // Where the cursor is, at the depth of the held item
-        float cursorX = sideX(side) * halfWidth, cursorY = -y * halfHeight;
-        float restX = side * REST_X, restTipY = REST_Y + TIP_HEIGHT;
-        float dx = (cursorX - restX) * FOLLOW;
-        float dy = (cursorY - restTipY) * FOLLOW;
+        float[] pose = pose(side);
+        float restX = side * REST_X;
         // Small circles while drawing: the wand scribbles
         float time = (System.nanoTime() % 1_000_000_000_000L) / 1.0E9F;
-        float scribble = press * 0.012F;
-        dx += MathHelper.sin(time * 22) * scribble;
-        dy += MathHelper.cos(time * 22) * scribble;
+        float scribble = press * 0.01F;
+        float handX = pose[0] + MathHelper.sin(time * 22) * scribble;
+        float handY = pose[1] + MathHelper.cos(time * 22) * scribble;
 
         // Rotations around the hand, not around the camera
-        matrices.translate(restX + dx, REST_Y + dy, -ITEM_DEPTH - press * 0.08F);
-        // Leans towards the cursor: sideways (roll) and forward (pitch)
-        float lean = MathHelper.clamp((cursorX - restX) * 0.9F, -1.1F, 1.1F);
-        float reach = MathHelper.clamp((cursorY - restTipY) * 0.9F, -0.8F, 0.8F);
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotation(-lean * 0.55F));
-        matrices.multiply(RotationAxis.POSITIVE_X.rotation(-reach * 0.35F - press * 0.25F));
+        matrices.translate(handX, handY, -ITEM_DEPTH - press * 0.04F);
+        // Wrist: roll in the screen plane (positive Z turns to the left), a slight forward tilt when pressing
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotation(-pose[2]));
+        matrices.multiply(RotationAxis.POSITIVE_X.rotation(-press * 0.12F));
         matrices.translate(-restX, -REST_Y, ITEM_DEPTH);
     }
 
@@ -105,8 +117,12 @@ public final class TokenSpellHand {
      */
     public static Vec3d tipInWorld(double distance, Arm arm) {
         float side = arm == Arm.RIGHT ? 1 : -1;
-        float restX = side * restScreenX(), restY = restScreenY();
-        return screenInWorld(restX + (sideX(side) - restX) * FOLLOW, restY + (y - restY) * FOLLOW, distance);
+        float[] pose = pose(side);
+        float direction = pose[2] + side * REST_LEAN;
+        float tipX = pose[0] + MathHelper.sin(direction) * TIP_HEIGHT;
+        float tipY = pose[1] + MathHelper.cos(direction) * TIP_HEIGHT;
+        float halfHeight = halfHeight(ITEM_DEPTH);
+        return screenInWorld(tipX / (halfHeight * aspect()), -tipY / halfHeight, distance);
     }
 
     /** World position just in front of the camera, on the line of sight through a point of the screen (-1..1). */
