@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_iron_ingot": {
+    "has_plastic_pellets": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:iron_ingot"
+            "items": "steveparty:plastic_pellets"
           }
         ]
       }
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "has_iron_ingot",
+      "has_plastic_pellets",
       "has_paper",
       "has_the_recipe"
     ]

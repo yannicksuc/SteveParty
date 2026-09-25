@@ -2,13 +2,14 @@
   "type": "minecraft:crafting_shaped",
   "fabric:type": "minecraft:crafting_shaped",
   "pattern": [
-    "II ",
     "PP ",
-    "II "
+    "LR ",
+    "PP "
   ],
   "key": {
-    "I":"minecraft:iron_ingot",
-    "P":"minecraft:paper"
+    "P": "steveparty:plastic_pellets",
+    "L": "minecraft:paper",
+    "R": "minecraft:redstone"
   },
   "result": {
     "id": "steveparty:board_space_behavior"
