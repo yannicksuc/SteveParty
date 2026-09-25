@@ -78,7 +78,7 @@ public class TokenSpellScreen extends Screen {
     /** Radius of the ground circle around the mob, per block of token size. */
     private static final double WORLD_RADIUS_PER_BLOCK = 0.6;
     /** How fast the camera catches up with a moving mob (1/s: about 95 % of the way in 0.75 s). */
-    private static final float CAMERA_FOLLOW_SPEED = 4F;
+    private static final float CAMERA_FOLLOW_SPEED = 11F;
 
     private enum Phase { CHARGING, DRAWING, VALIDATING }
 
@@ -112,6 +112,9 @@ public class TokenSpellScreen extends Screen {
     private static final SpellShape SHAPE = SpellShape.TOKEN_CIRCLE;
     /** The cursor was put at the shape's start (once, when the screen opens), retried for a few frames. */
     private boolean cursorPlaced;
+    /** Just jumped: mouse positions far from the jump point are stale (still the centre) until one arrives near it. */
+    private boolean awaitingJump;
+    private float jumpX, jumpY;
     private static final int CURSOR_ATTEMPTS = 10;
     private int cursorAttempts;
     private double cursorTargetX, cursorTargetY, cursorLastX, cursorLastY;
@@ -453,6 +456,12 @@ public class TokenSpellScreen extends Screen {
     private void traceTo(float x, float y) {
         // A minimized window reports the cursor at infinity: those points are dropped, the others kept on screen
         if (!dragging || !Float.isFinite(x) || !Float.isFinite(y) || width <= 0 || height <= 0) return;
+        // While the cursor jumps to the shape's start, the old (centre) positions still come in: not a line to draw
+        if (!cursorPlaced) return;
+        if (awaitingJump) {
+            if (Math.hypot(x - jumpX, y - jumpY) > 4) return;
+            awaitingJump = false;
+        }
         x = MathHelper.clamp(x, 0, width);
         y = MathHelper.clamp(y, 0, height);
         if (!stroke.isEmpty()) {
@@ -539,13 +548,14 @@ public class TokenSpellScreen extends Screen {
      * (exponential smoothing on real time, so the same at any frame rate; no snapping). The mouse stays free: it only
      * moves the cursor on the screen.
      */
-    private void followMobWithCamera() {
+    private void followMobWithCamera(float delta) {
         long now = System.nanoTime();
         float dt = lastCameraNanos == 0 ? 0 : Math.min(0.1F, (now - lastCameraNanos) / 1.0E9F);
         lastCameraNanos = now;
         PlayerEntity player = client != null ? client.player : null;
         if (player == null || dt <= 0) return;
-        Vec3d to = new Vec3d(mob.getX(), mob.getY() + mob.getHeight() / 2, mob.getZ()).subtract(player.getEyePos());
+        // The mob's drawn position (between ticks), not its 20 Hz one: a tight follow must not stutter
+        Vec3d to = mob.getLerpedPos(delta).add(0, mob.getHeight() / 2, 0).subtract(player.getCameraPosVec(delta));
         double horizontal = Math.sqrt(to.x * to.x + to.z * to.z);
         if (horizontal < 1.0E-3 && Math.abs(to.y) < 1.0E-3) return;
         float targetYaw = (float) (MathHelper.atan2(to.z, to.x) * MathHelper.DEGREES_PER_RADIAN) - 90;
@@ -704,8 +714,10 @@ public class TokenSpellScreen extends Screen {
             logCursor("placed", actualX[0], actualY[0]);
             cursorPlaced = true;
             // The press that used the wand is still held: its stroke starts from the shape's start, not the centre
-            if (dragging) startStroke(drawButton, (float) (cursorTargetX * window.getScaledWidth() / window.getWidth()),
-                    (float) (cursorTargetY * window.getScaledHeight() / window.getHeight()));
+            jumpX = (float) (cursorTargetX * window.getScaledWidth() / window.getWidth());
+            jumpY = (float) (cursorTargetY * window.getScaledHeight() / window.getHeight());
+            if (dragging) startStroke(drawButton, jumpX, jumpY);
+            awaitingJump = true;
             return;
         } else if ((Math.abs(actualX[0] - cursorLastX) > 3 || Math.abs(actualY[0] - cursorLastY) > 3)
                 // (back at the window's centre: vanilla recentred it after our try, not the player)
@@ -737,7 +749,7 @@ public class TokenSpellScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        followMobWithCamera();
+        followMobWithCamera(delta);
         followMob(delta);
         placeCursorAtShapeStart();
         // Follows the cursor every frame while the button is held (vanilla only sends drag events to a focused window)
