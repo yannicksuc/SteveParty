@@ -124,13 +124,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         PROGRESS
     }
 
-    public enum ResetPort {
-        /** A rising signal on the marked reset port only (right side seen from the front). */
-        MARKED_SIDE,
-        /** A rising signal on any side but the back (bases placed before the marked port existed). */
-        ANY_SIDE
-    }
-
     /** Command-block permission level: enough for selectors, not more. */
     private static final int SELECTOR_PERMISSION_LEVEL = 2;
     public static final int MAX_STRING_LENGTH = 256;
@@ -146,7 +139,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     /** Created now (not loaded from saved data): placed by a player, it picks its players from what is around. */
     private boolean fresh = true;
     private OutputMode outputMode = OutputMode.PULSE;
-    private ResetPort resetPort = ResetPort.MARKED_SIDE;
 
     // --- State ---
     /** Points per score holder (player name). */
@@ -542,11 +534,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         redstoneOutput = value;
     }
 
-    /** @return the side of the reset port (right side, seen from the front of the base). */
-    public static Direction resetSide(BlockState state) {
-        return state.get(GoalPoleBaseBlock.FACING).rotateYCounterclockwise();
-    }
-
     /**
      * Updates the reset input's power.
      * @return true only on a rising edge (unpowered to powered), i.e. when the points must be reset
@@ -654,7 +641,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public Players getPlayers() { return players; }
     public int getRadius() { return radius; }
     public OutputMode getOutputMode() { return outputMode; }
-    public ResetPort getResetPort() { return resetPort; }
     public long getTotal() { return total; }
     public int getPoints(String holder) { return points.getOrDefault(holder, 0); }
     /** Points per player (read only; synced to clients for the wrench details). */
@@ -710,12 +696,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         pushTotal();
     }
 
-    public void setResetPort(ResetPort port) {
-        if (port == resetPort) return;
-        resetPort = port;
-        markDirty();
-    }
-
     /** Settings from the screen ({@link #writeSettings}), each value checked. */
     public void applySettings(NbtCompound settings) {
         setRedstoneMode(readEnum(settings, "RedstoneMode", RedstoneMode.values(), redstoneMode));
@@ -725,7 +705,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         String criterion = settings.getString("Criterion");
         if (criterion.length() <= MAX_STRING_LENGTH) setSource(readEnum(settings, "Source", Source.values(), source), criterion);
         setOutputMode(readEnum(settings, "OutputMode", OutputMode.values(), outputMode));
-        setResetPort(readEnum(settings, "ResetPort", ResetPort.values(), resetPort));
         if (settings.getBoolean("Reset")) reset();
     }
 
@@ -738,7 +717,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         settings.putString("Players", players.name());
         settings.putInt("Radius", radius);
         settings.putString("OutputMode", outputMode.name());
-        settings.putString("ResetPort", resetPort.name());
         settings.putLong("Total", total);
         settings.putBoolean("PartyNear", linkedParty() != null);
         settings.putBoolean("Active", isActive());
@@ -766,7 +744,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             // The ticking base: counted while powered at the back, reset by any other side, criterion objective
             legacy = true;
             redstoneMode = RedstoneMode.RUN_WHEN_POWERED;
-            resetPort = ResetPort.ANY_SIDE;
             outputMode = OutputMode.PULSE;
             source = Source.CRITERION;
             criterion = nbt.contains("Goal", NbtElement.STRING_TYPE) ? nbt.getString("Goal") : LANDED_ON_POLE_ID;
@@ -792,7 +769,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         players = nbt.getInt("Version") < 3 ? Players.SELECTOR : readEnum(nbt, "Players", Players.values(), Players.ALL);
         radius = nbt.contains("Radius") ? Math.clamp(nbt.getInt("Radius"), 1, MAX_RADIUS) : 16;
         outputMode = readEnum(nbt, "OutputMode", OutputMode.values(), OutputMode.PULSE);
-        resetPort = readEnum(nbt, "ResetPort", ResetPort.values(), ResetPort.MARKED_SIDE);
+        // "ResetPort" (a marked reset side, removed) is ignored: a pulse on any side but the back resets
         NbtCompound pointsNbt = nbt.getCompound("Points");
         for (String key : pointsNbt.getKeys()) points.put(key, pointsNbt.getInt(key));
         NbtCompound seenNbt = nbt.getCompound("SourceSeen");
@@ -811,7 +788,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         nbt.putString("Players", players.name());
         nbt.putInt("Radius", radius);
         nbt.putString("OutputMode", outputMode.name());
-        nbt.putString("ResetPort", resetPort.name());
         nbt.putBoolean("ResetSidePowered", resetSidePowered);
         NbtCompound pointsNbt = new NbtCompound();
         points.forEach(pointsNbt::putInt);
@@ -869,6 +845,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     /** The settings as a list of names (for tests and debugging). */
     public List<String> describe() {
         return List.of(redstoneMode.name(), source.name(), criterion, players.name(), String.valueOf(radius), selector,
-                outputMode.name(), resetPort.name());
+                outputMode.name());
     }
 }

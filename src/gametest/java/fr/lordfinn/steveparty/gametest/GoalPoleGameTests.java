@@ -488,25 +488,62 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Reset: the marked port (right side seen from the front) and not the others; legacy bases: any side. */
+    /** Reset: a pulse on any side but the back puts the points back to 0; a signal at the back never does. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void resetPortClearsThePoints(TestContext context) {
+    public void pulseOnASideResetsThePoints(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
         base.credit("Alex", 2, null);
         base.credit("Sam", 3, null);
-        BlockPos other = BASE.offset(Direction.EAST);
-        context.setBlockState(other, Blocks.REDSTONE_BLOCK);
-        context.assertTrue(base.getTotal() == 5, "another side does not reset");
-        context.setBlockState(other, Blocks.AIR);
-        BlockPos marked = BASE.offset(GoalPoleBaseBlockEntity.resetSide(context.getBlockState(BASE)));
-        context.setBlockState(marked, Blocks.REDSTONE_BLOCK);
-        context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Sam") == 0, "the marked port resets everything");
-        context.setBlockState(marked, Blocks.AIR);
-        base.credit("Alex", 1, null);
-        base.setResetPort(GoalPoleBaseBlockEntity.ResetPort.ANY_SIDE);
-        context.setBlockState(other, Blocks.REDSTONE_BLOCK);
-        context.assertTrue(base.getTotal() == 0, "any side resets in the legacy mode");
-        context.setBlockState(other, Blocks.AIR);
+        // Back (south, the base faces north): pauses the base, the points stay, even on later neighbor updates
+        BlockPos back = BASE.offset(Direction.SOUTH);
+        context.setBlockState(back, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(context.getBlockState(BASE).get(GoalPoleBaseBlock.POWERED), "the back signal reaches the base");
+        context.setBlockState(BASE.offset(Direction.WEST), Blocks.STONE);
+        context.assertTrue(base.getTotal() == 5, "a signal at the back does not reset, got " + base.getTotal());
+        context.setBlockState(BASE.offset(Direction.WEST), Blocks.AIR);
+        context.setBlockState(back, Blocks.AIR);
+        context.assertTrue(base.getTotal() == 5, "nor does its end");
+        // Every other side resets: left, right, front
+        for (Direction side : new Direction[]{Direction.EAST, Direction.WEST, Direction.NORTH}) {
+            base.credit("Alex", 1, null);
+            context.assertTrue(base.getTotal() > 0, "points before the pulse");
+            BlockPos pos = BASE.offset(side);
+            context.setBlockState(pos, Blocks.REDSTONE_BLOCK);
+            context.assertTrue(base.getTotal() == 0 && mirrorScore(context, "Sam") == 0, "a pulse on the " + side + " side resets everything");
+            context.setBlockState(pos, Blocks.AIR);
+        }
+        // Only the rising edge: a signal that stays does not reset the points scored after it
+        BlockPos east = BASE.offset(Direction.EAST);
+        context.setBlockState(east, Blocks.REDSTONE_BLOCK);
+        base.credit("Alex", 2, null);
+        context.setBlockState(BASE.offset(Direction.WEST), Blocks.STONE);
+        context.assertTrue(base.getTotal() == 2, "a steady signal resets once, got " + base.getTotal());
+        context.setBlockState(BASE.offset(Direction.WEST), Blocks.AIR);
+        context.setBlockState(east, Blocks.AIR);
+        removeBase(context);
+        context.complete();
+    }
+
+    /** A base saved with the removed "ResetPort" setting loads fine and resets on any side but the back. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void oldResetPortSettingIsIgnored(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        var registries = context.getWorld().getRegistryManager();
+        net.minecraft.nbt.NbtCompound saved = base.createNbt(registries);
+        saved.putString("ResetPort", "MARKED_SIDE");
+        net.minecraft.nbt.NbtCompound points = new net.minecraft.nbt.NbtCompound();
+        points.putInt("Alex", 3);
+        saved.put("Points", points);
+        base.read(saved, registries);
+        context.assertTrue(base.getTotal() == 3, "points loaded, got " + base.getTotal());
+        context.assertFalse(base.createNbt(registries).contains("ResetPort"), "the setting is not saved any more");
+        net.minecraft.nbt.NbtCompound settings = base.writeSettings();
+        settings.putString("ResetPort", "MARKED_SIDE");
+        base.applySettings(settings);
+        BlockPos west = BASE.offset(Direction.WEST);
+        context.setBlockState(west, Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.getTotal() == 0, "the left side (not the old marked one) resets");
+        context.setBlockState(west, Blocks.AIR);
         removeBase(context);
         context.complete();
     }
@@ -547,7 +584,6 @@ public class GoalPoleGameTests implements FabricGameTest {
         base.read(legacy, context.getWorld().getRegistryManager());
         GoalPoleNetwork.processPending();
         context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED, "counts while powered, like before");
-        context.assertTrue(base.getResetPort() == GoalPoleBaseBlockEntity.ResetPort.ANY_SIDE, "resets on any side, like before");
         context.assertTrue(base.getSource() == GoalPoleBaseBlockEntity.Source.CRITERION && base.getCriterion().equals("deathCount"), "same criterion");
         context.assertTrue(base.getSelector().equals("@a") && base.getPlayers() == GoalPoleBaseBlockEntity.Players.SELECTOR,
                 "same selector, as the advanced choice");

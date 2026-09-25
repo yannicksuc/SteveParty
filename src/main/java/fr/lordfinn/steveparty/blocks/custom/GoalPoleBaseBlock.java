@@ -131,21 +131,16 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             return;
         }
 
-        // Reset port: the marked side (or, for bases placed before it existed, any side but the back).
+        // Reset: a pulse on any side but the back puts the points back to 0.
         // Only on the rising edge, not on every neighbor update while it stays powered.
         Direction back = state.get(FACING).getOpposite();
         boolean resetPowered = false;
-        if (goalPoleBaseBlockEntity.getResetPort() == GoalPoleBaseBlockEntity.ResetPort.MARKED_SIDE) {
-            Direction side = GoalPoleBaseBlockEntity.resetSide(state);
-            resetPowered = world.getEmittedRedstonePower(pos.offset(side), side) > 0;
-        } else {
-            for (Direction dir : Direction.values()) {
-                if (dir == back) continue;
-                // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
-                if (world.getEmittedRedstonePower(pos.offset(dir), dir) > 0) {
-                    resetPowered = true;
-                    break;
-                }
+        for (Direction dir : Direction.values()) {
+            if (dir == back) continue;
+            // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
+            if (world.getEmittedRedstonePower(pos.offset(dir), dir) > 0) {
+                resetPowered = true;
+                break;
             }
         }
         if (goalPoleBaseBlockEntity.updateResetSidePower(resetPowered)) {

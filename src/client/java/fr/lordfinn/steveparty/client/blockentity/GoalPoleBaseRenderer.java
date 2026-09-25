@@ -17,8 +17,8 @@ import net.minecraft.util.math.Vec3d;
 import java.util.Locale;
 
 /**
- * With a wrench in hand, near a goal pole base, looking at it or at its pole: a small panel, on the side facing the player, telling what each port
- * does (the back plug, the red reset plate, the comparator plate) and whether the base counts. Nothing is drawn
+ * With a wrench in hand, near a goal pole base, looking at it or at its pole: a small panel, on the side facing the player, telling what the
+ * redstone does (the back plug, a pulse on any other side, a comparator reading the base) and whether the base counts. Nothing is drawn
  * otherwise.
  */
 public class GoalPoleBaseRenderer implements BlockEntityRenderer<GoalPoleBaseBlockEntity> {
@@ -58,9 +58,9 @@ public class GoalPoleBaseRenderer implements BlockEntityRenderer<GoalPoleBaseBlo
         Text back = Text.translatable(KEY + "side.back").formatted(Formatting.GRAY).append(" ")
                 .append(Text.translatable(KEY + "back." + mode).formatted(Formatting.WHITE)).append(" ")
                 .append(Text.translatable(KEY + (powered ? "powered" : "unpowered")).formatted(Formatting.GRAY));
-        Text reset = Text.translatable(KEY + (base.getResetPort() == GoalPoleBaseBlockEntity.ResetPort.MARKED_SIDE ? "side.right" : "side.any"))
-                .formatted(Formatting.RED).append(" ").append(Text.translatable(KEY + "reset").formatted(Formatting.WHITE));
-        Text output = Text.translatable(KEY + "side.front").formatted(Formatting.GRAY).append(" ")
+        Text reset = Text.translatable(KEY + "side.other").formatted(Formatting.GRAY).append(" ")
+                .append(Text.translatable(KEY + "reset").formatted(Formatting.WHITE));
+        Text output = Text.translatable(KEY + "side.comparator").formatted(Formatting.GRAY).append(" ")
                 .append(Text.translatable(KEY + "output." + base.getOutputMode().name().toLowerCase(Locale.ROOT)).formatted(Formatting.WHITE));
         Text status = Text.translatable(KEY + (base.isActive() ? "counting" : "paused"), base.getTotal())
                 .formatted(base.isActive() ? Formatting.GREEN : Formatting.GOLD);
