@@ -20,8 +20,9 @@ import java.util.Set;
  *   <li><b>Food</b> (an item with the vanilla {@code food} component) listed for its colour below; the satiety it gives
  *   is the food's nutrition (the hunger points it gives a player).</li>
  *   <li><b>Potions</b> (drinkable ones) whose liquid colour is closest to the Mula's colour; they give, summed over
- *   their effects: {@code minutes x (level x 2)}, each resulting minute counting as 1 point (Strength II for 3:00 =
- *   3 x (2 x 2) = 12). Instant effects count as one minute. The empty bottle goes back to the player.</li>
+ *   their effects: {@code minutes x (level x 2)}, each resulting minute counting as 1 point, whole minutes, at least one
+ *   (Strength II, 1:30 = 1 x (2 x 2) = 4; long Strength, 8:00 = 8 x (1 x 2) = 16). Instant effects count as one
+ *   minute. The empty bottle goes back to the player.</li>
  *   <li><b>Seeds</b> (not edible for a player, the one exception): each gives what a melon slice gives (read from its
  *   food component).</li>
  * </ul>

@@ -384,8 +384,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	/**
-	 * Satiety at which it bursts. Foods give their nutrition (1 to 8, steak 8), potions minutes x (level x 2): 5 to 40
-	 * meals, or a couple of long strong potions.
+	 * Satiety at which it bursts. Foods give their nutrition (1 to 10, rabbit stew 10), potions minutes x (level x 2):
+	 * 4 to 40 meals, or a couple of long potions.
 	 */
 	public static final int MAX_HUNGER = 40;
 	/** Star fragments a Mula drops when it bursts from food: 64, a black one only one (a rare, powerful fragment). */
