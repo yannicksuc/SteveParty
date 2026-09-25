@@ -831,9 +831,12 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         return createNbt(registries);
     }
 
-    /** Sends the base's data to the players watching it (settings, total: shown when holding the wrench). */
+    /**
+     * Sends the base's data to the players watching it (settings, total, points: shown with the wrench), once at the
+     * end of the tick however many changes.
+     */
     void sync() {
-        if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_LISTENERS);
+        if (world != null && !world.isClient) GoalPoleNetwork.requestSync(this);
     }
 
     @Override

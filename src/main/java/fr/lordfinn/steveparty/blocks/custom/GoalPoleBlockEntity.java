@@ -328,6 +328,9 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         boolean met = base != null && compare(comparator, (int) Math.clamp(newTotal, Integer.MIN_VALUE, Integer.MAX_VALUE), value);
         int output = met ? 15 : 0;
         boolean changed = newTotal != total || met != goalMet || linked != (base != null);
+        // Clients see the total only above the top segment and on flags going down point by point: other segments
+        // send nothing when only the total changed
+        boolean shown = met != goalMet || linked != (base != null) || (newTotal != total && (isTop() || flagSteps));
         boolean justMet = met && !goalMet;
         total = newTotal;
         linked = base != null;
@@ -339,10 +342,8 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
             redstoneOutput = output;
             world.updateComparators(pos, getCachedState().getBlock());
         }
-        if (changed) {
-            markDirty();
-            sync();
-        }
+        if (changed) markDirty();
+        if (shown) sync();
         return justMet;
     }
 
@@ -449,9 +450,14 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         return createNbt(registries);
     }
 
-    /** Sends this block entity's data to the players watching it. */
+    private boolean isTop() {
+        BlockState state = getCachedState();
+        return state.contains(GoalPoleBlock.TOP) && state.get(GoalPoleBlock.TOP);
+    }
+
+    /** Sends this block entity's data to the players watching it, once at the end of the tick however many changes. */
     private void sync() {
-        if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_LISTENERS);
+        if (world != null && !world.isClient) GoalPoleNetwork.requestSync(this);
     }
 
     // --- Flag colour ---

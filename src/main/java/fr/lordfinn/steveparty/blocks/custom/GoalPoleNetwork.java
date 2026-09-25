@@ -28,11 +28,16 @@ public final class GoalPoleNetwork {
     private static final Set<GoalPoleBaseBlockEntity> BASES = new LinkedHashSet<>();
     private static final Map<String, GoalPoleBaseBlockEntity> BY_OBJECTIVE = new HashMap<>();
     private static final ArrayDeque<BlockEntity> PENDING = new ArrayDeque<>();
+    /** Bases and poles whose data changed this tick: sent to the players watching them once, at the end of the tick. */
+    private static final Set<BlockEntity> TO_SYNC = new LinkedHashSet<>();
 
     private GoalPoleNetwork() {}
 
     public static void initialize() {
-        ServerTickEvents.END_SERVER_TICK.register(server -> processPending());
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            processPending();
+            flushSyncs();
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> clear());
     }
 
@@ -76,10 +81,26 @@ public final class GoalPoleNetwork {
         }
     }
 
+    static void requestSync(BlockEntity entity) {
+        TO_SYNC.add(entity);
+    }
+
+    /** Sends the block entities that changed this tick to the players watching them (one update each). */
+    public static void flushSyncs() {
+        if (TO_SYNC.isEmpty()) return;
+        for (BlockEntity entity : TO_SYNC) {
+            if (entity.isRemoved() || entity.getWorld() == null) continue;
+            var state = entity.getCachedState();
+            entity.getWorld().updateListeners(entity.getPos(), state, state, net.minecraft.block.Block.NOTIFY_LISTENERS);
+        }
+        TO_SYNC.clear();
+    }
+
     private static void clear() {
         BASES.clear();
         BY_OBJECTIVE.clear();
         PENDING.clear();
+        TO_SYNC.clear();
     }
 
     // ------------------------------------------------------------------ events
