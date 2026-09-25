@@ -29,8 +29,7 @@ import java.util.List;
  * bottom (rows 8-15). Standard entity render layer, so it is lit, fogged, outlined and shader (Iris) friendly.
  * <p>
  * Vanilla living entities: {@code TokenBaseLivingEntityRendererMixin}. GeckoLib entities (Mula...): the GeckoLib
- * pre-render event registered by {@link #initialize()}. Render thread only, no allocation per frame. The mob model
- * is shifted horizontally so that the base is centred between its lowest limbs (see {@link TokenFootAnchor}).
+ * pre-render event registered by {@link #initialize()}. Render thread only, no allocation per frame.
  */
 public final class TokenBaseRenderer {
     public static final Identifier TEXTURE = Steveparty.id("textures/entity/token_base.png");
