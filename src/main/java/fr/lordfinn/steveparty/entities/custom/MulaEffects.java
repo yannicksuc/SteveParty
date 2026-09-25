@@ -54,6 +54,13 @@ public final class MulaEffects {
     public int lastRenderAge = -100;
 
     private int orbitTicks, cometTicks;
+    /** Age of its next little everyday sound (a twinkle, a chirp...), rolled at random. */
+    private int nextVoiceAge = -1;
+    /** Notes of a twinkle arpeggio still to play (pitch, then one every 2 ticks); 0 when none. */
+    private int arpeggioNotes, arpeggioStep;
+    private float arpeggioPitch;
+    /** Everyday sounds every 2.5 to 7 s (awake) or 8 to 16 s (resting): it twinkles softly. */
+    private static final int VOICE_MIN = 50, VOICE_RANGE = 90, RESTING_VOICE_MIN = 160, RESTING_VOICE_RANGE = 160;
 
     /** The item being absorbed or refused; age -1 when none. Poses are kept in fields: nothing allocated per frame. */
     private ItemStack itemStack = ItemStack.EMPTY;
@@ -167,6 +174,8 @@ public final class MulaEffects {
             }
             world.addParticle(mula.starDust(), cx, cy, cz, 0, 0, 0);
         }
+
+        tickVoice(random, cx, cy, cz, size);
 
         // so full it leaks light: a twinkle now and then, more and more often until it bursts
         float full = mula.getMotion().fullness(1f);
@@ -554,6 +563,45 @@ public final class MulaEffects {
         for (int i = 0; i < 4; i++) {
             world.addParticle(mula.getVariant().getTwinkle(), x + random.nextGaussian() * 0.25,
                     y + random.nextGaussian() * 0.25, z + random.nextGaussian() * 0.25, 0, 0.01, 0);
+        }
+    }
+
+    /**
+     * Its everyday voice, Luma-like and never twice the same in a row: a single twinkle, a little rising or falling
+     * arpeggio of chimes, a soft high chirp, or a bubbly pop, with a twinkle of light. Resting, only rare soft twinkles.
+     */
+    private void tickVoice(Random random, double cx, double cy, double cz, float size) {
+        if (arpeggioNotes > 0 && --arpeggioStep <= 0) {
+            chime(arpeggioPitch, 0.22f);
+            arpeggioPitch += arpeggioPitch > 1.6f ? -0.12f : 0.12f;
+            arpeggioNotes--;
+            arpeggioStep = 2;
+        }
+        if (mula.isSilent()) return;
+        boolean resting = mula.isResting();
+        if (nextVoiceAge < 0) nextVoiceAge = mula.age + random.nextInt(VOICE_RANGE);
+        if (mula.age < nextVoiceAge) return;
+        nextVoiceAge = mula.age + (resting ? RESTING_VOICE_MIN + random.nextInt(RESTING_VOICE_RANGE)
+                : VOICE_MIN + random.nextInt(VOICE_RANGE));
+        double a = random.nextDouble() * MathHelper.TAU;
+        double r = 0.35 * size;
+        mula.getWorld().addParticle(mula.getVariant().getTwinkle(), cx + Math.cos(a) * r, cy + 0.15 * size,
+                cz + Math.sin(a) * r, 0, 0.01, 0);
+        if (resting) {
+            chime(1.7f + random.nextFloat() * 0.3f, 0.12f);
+            return;
+        }
+        switch (random.nextInt(6)) {
+            case 0, 1 -> chime(1.5f + random.nextFloat() * 0.5f, 0.2f);
+            case 2 -> {
+                // a little arpeggio, up from low or down from high
+                arpeggioPitch = random.nextBoolean() ? 1.2f : 1.9f;
+                arpeggioNotes = 3;
+                arpeggioStep = 0;
+            }
+            case 3 -> allay(SoundEvents.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, 0.12f, 1.6f + random.nextFloat() * 0.3f);
+            case 4 -> sound(SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, 0.25f, 1.5f + random.nextFloat() * 0.4f);
+            default -> sound(SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 0.15f, 1.4f + random.nextFloat() * 0.6f);
         }
     }
 
