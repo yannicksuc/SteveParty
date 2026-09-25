@@ -51,14 +51,10 @@ public class HidingTraderEntityRenderLayer extends GeoRenderLayer<HidingTraderEn
         BakedModel blockModel = MinecraftClient.getInstance().getBlockRenderManager().getModel(blockState);
         // Buffers are resolved lazily, once per face direction, for this call only
         java.util.Arrays.fill(faceConsumers, null);
-        renderRecursively(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(), blockState, blockModel);
-    }
-
-    private void renderRecursively(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
-        poseStack.push();
-        RenderUtil.prepMatrixForBone(poseStack, bone);
-        this.renderCubesOfBone(poseStack, bone, buffer, packedLight, renderColor, blockState, blockModel);
-        poseStack.pop();
+        // GeckoLib calls this with the pose stack already transformed for this bone (position, pivot, rotation,
+        // scale), children bones get their own call: applying the bone transform again here would double the
+        // flap rotations and every animated offset of the box.
+        renderCubesOfBone(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(), blockState, blockModel);
     }
 
     private void renderCubesOfBone(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {

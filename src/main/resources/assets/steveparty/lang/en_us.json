@@ -833,5 +833,11 @@
   "gui.steveparty.goal_pole.flag.slide": "Flag: slides down when reached",
   "gui.steveparty.goal_pole.flag.slide.details": "The flag stays up until the goal is reached, then slides down the pole.",
   "gui.steveparty.goal_pole.flag.steps": "Flag: one notch down per point",
-  "gui.steveparty.goal_pole.flag.steps.details": "The flag goes down a notch for each point: halfway down, halfway to the goal; at the bottom, the goal is reached."
+  "gui.steveparty.goal_pole.flag.steps.details": "The flag goes down a notch for each point: halfway down, halfway to the goal; at the bottom, the goal is reached.",
+  "item.steveparty.bandana": "Bandana",
+  "item.steveparty.bandana.color.teal": "Teal",
+  "item.steveparty.bandana.color.blue": "Blue",
+  "item.steveparty.bandana.color.pink": "Pink",
+  "item.steveparty.bandana.color.orange": "Orange",
+  "item.steveparty.bandana.color.yellow": "Yellow"
 }

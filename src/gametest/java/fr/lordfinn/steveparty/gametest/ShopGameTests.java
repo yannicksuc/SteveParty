@@ -18,6 +18,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -31,6 +32,7 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
@@ -439,6 +441,45 @@ public class ShopGameTests implements FabricGameTest {
         ItemStack key = new ItemStack(ModItems.SHOPKEEPER_KEY);
         key.set(ModComponents.SHOPKEEPER_UUID, vendor);
         return key;
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void hidingTraderBandanaColorIsRandomSavedAndNeverRerolled(TestContext context) {
+        ServerWorld world = context.getWorld();
+        // Summoned (initialize): a colour is picked
+        HidingTraderEntity summoned = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        summoned.initialize(world, world.getLocalDifficulty(summoned.getBlockPos()), SpawnReason.COMMAND, null);
+        int color = summoned.getBandanaColor();
+        context.assertTrue(color >= 0 && color < HidingTraderEntity.BANDANA_COLORS, "colour 0-4 after spawn, got " + color);
+        // Saved, then loaded many times: always the same colour
+        NbtCompound saved = summoned.writeNbt(new NbtCompound());
+        context.assertEquals(saved.getInt(HidingTraderEntity.BANDANA_COLOR_NBT), color, "colour saved");
+        for (int i = 0; i < 20; i++) {
+            HidingTraderEntity loaded = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+            loaded.readNbt(saved);
+            context.assertEquals(loaded.getBandanaColor(), color, "colour kept on reload " + i);
+            loaded.initialize(world, world.getLocalDifficulty(loaded.getBlockPos()), SpawnReason.LOAD, null);
+            context.assertEquals(loaded.getBandanaColor(), color, "colour not re-rolled by initialize " + i);
+        }
+        // Summon with NBT: the given colour is used
+        NbtCompound given = new NbtCompound();
+        given.putInt(HidingTraderEntity.BANDANA_COLOR_NBT, 3);
+        HidingTraderEntity fromNbt = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        fromNbt.readNbt(given);
+        context.assertEquals(fromNbt.getBandanaColor(), 3, "BandanaColor from NBT");
+        // Trader saved before bandanas existed: gets one when loaded
+        NbtCompound legacy = summoned.writeNbt(new NbtCompound());
+        legacy.remove(HidingTraderEntity.BANDANA_COLOR_NBT);
+        HidingTraderEntity old = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+        old.readNbt(legacy);
+        context.assertTrue(old.getBandanaColor() >= 0 && old.getBandanaColor() < HidingTraderEntity.BANDANA_COLORS, "legacy trader gets a colour");
+        // Spawned from code without initialize() nor NBT (villager block fall): picked on its first tick
+        HidingTraderEntity spawned = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(1, 1, 1));
+        context.waitAndRun(2, () -> {
+            int c = spawned.getBandanaColor();
+            context.assertTrue(c >= 0 && c < HidingTraderEntity.BANDANA_COLORS, "colour picked on the first tick, got " + c);
+            context.complete();
+        });
     }
 
     private static RegistryEntry<Enchantment> sharpness(TestContext context) {

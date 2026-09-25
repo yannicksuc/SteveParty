@@ -834,5 +834,11 @@
   "gui.steveparty.goal_pole.flag.slide": "Drapeau : descend au but atteint",
   "gui.steveparty.goal_pole.flag.slide.details": "Le drapeau reste en haut jusqu'à ce que le but soit atteint, puis descend le long du mât.",
   "gui.steveparty.goal_pole.flag.steps": "Drapeau : un cran par point",
-  "gui.steveparty.goal_pole.flag.steps.details": "Le drapeau descend d'un cran à chaque point : à mi-hauteur, à mi-chemin du but ; en bas, le but est atteint."
+  "gui.steveparty.goal_pole.flag.steps.details": "Le drapeau descend d'un cran à chaque point : à mi-hauteur, à mi-chemin du but ; en bas, le but est atteint.",
+  "item.steveparty.bandana": "Bandana",
+  "item.steveparty.bandana.color.teal": "Turquoise",
+  "item.steveparty.bandana.color.blue": "Bleu",
+  "item.steveparty.bandana.color.pink": "Rose",
+  "item.steveparty.bandana.color.orange": "Orange",
+  "item.steveparty.bandana.color.yellow": "Jaune"
 }

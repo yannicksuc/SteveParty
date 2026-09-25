@@ -52,6 +52,9 @@ public class ModComponents {
             registerComponent("owner", Codec.STRING);
     public static final ComponentType<Integer> COLOR =
             registerComponent("color", Codec.INT);
+    /** Colour of a Bandana item (0-4: teal, blue, pink, orange, yellow, like the Hiding Trader's BandanaColor). */
+    public static final ComponentType<Integer> BANDANA_COLOR =
+            registerComponent("bandana-color", Codec.intRange(0, 4));
     public static final ComponentType<ItemStack> SOCKETED_STORY =
             registerComponent("socketed-story", ItemStack.CODEC);
     public static final ComponentType<ItemStack> CATALOGUE =
