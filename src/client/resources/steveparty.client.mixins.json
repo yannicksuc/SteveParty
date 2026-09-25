@@ -9,11 +9,13 @@
     "LivingEntityRendererShouldFlipMixin",
     "LivingEntityRendererSmoothFlipMixin",
     "LivingEntityRendererSquishMixin",
+    "ModelPartAccessor",
     "MouseScrollMixin",
     "LivingEntityRenderStateMixin",
     "PlayerEntityModelMixin",
     "TokenBaseLivingEntityRendererMixin",
-    "TokenBaseRenderStateMixin"
+    "TokenBaseRenderStateMixin",
+    "TokenGeoEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
