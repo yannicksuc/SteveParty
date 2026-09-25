@@ -53,6 +53,11 @@ repositories {
         }
     }
     maven {
+        name = 'Shedaniel'
+        url = 'https://maven.shedaniel.me/'
+        content { includeGroup 'me.shedaniel.cloth' }
+    }
+    maven {
         name = 'Modrinth'
         url = 'https://api.modrinth.com/maven'
         content {
@@ -81,6 +86,7 @@ dependencies {
     modLocalRuntime "maven.modrinth:rei:17.0.807+fabric"
     modLocalRuntime "maven.modrinth:architectury-api:14.0.4+fabric"
     modLocalRuntime "maven.modrinth:cloth-config:16.0.143+fabric"
+    modLocalRuntime "me.shedaniel.cloth:basic-math:0.6.1"
     localRuntime "org.anarres:jcpp:1.4.14"
     localRuntime "io.github.douira:glsl-transformer:2.0.1"
     localRuntime "org.antlr:antlr4-runtime:4.13.1"
