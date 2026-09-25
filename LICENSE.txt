@@ -1,2 +1,9 @@
-Copyright (c) 2024 
+Copyright (c) 2024-2026 LordFinn
 All rights reserved.
+
+Unless stated otherwise, this software and its assets (code, textures, models, sounds, texts) are protected by
+copyright. No permission is granted to copy, modify, merge, publish, distribute, sublicense or sell them, in whole or in
+part, without the copyright holder's prior written permission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.

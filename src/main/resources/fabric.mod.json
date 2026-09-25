@@ -4,7 +4,7 @@
   "version": "${version}",
   "name": "SteveParty",
   "description": "",
-  "authors": [],
+  "authors": ["LordFinn"],
   "contact": {},
   "license": "All-Rights-Reserved",
   "icon": "assets/steveparty/icon.png",
