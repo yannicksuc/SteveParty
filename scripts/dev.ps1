@@ -37,7 +37,11 @@ param(
 
     # Dev server port (RCON = port + 10). Default: gradle/dev-server.gradle (25580).
     # Use it to join another checkout's server, e.g. -Port 25581 for a worktree's server.
-    [int]$Port = 0
+    [int]$Port = 0,
+
+    # Let the client window come to the front. By default a started client is windowed and sent behind the other
+    # windows as soon as it opens, so tests running in the background don't disturb whoever uses the PC.
+    [switch]$Foreground
 )
 
 $ErrorActionPreference = 'Stop'
@@ -90,6 +94,47 @@ function Start-Kind {
         -RedirectStandardOutput $log -RedirectStandardError "$log.err" -WindowStyle Hidden | Out-Null
     Write-Host "Started $K ($task) -> $log"
     return $true
+}
+
+Add-Type -Namespace DevLaunch -Name Win32 -MemberDefinition @'
+[DllImport("user32.dll")] public static extern System.IntPtr GetForegroundWindow();
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(System.IntPtr hWnd);
+[DllImport("user32.dll")] public static extern bool SetWindowPos(System.IntPtr hWnd, System.IntPtr after, int x, int y, int cx, int cy, uint flags);
+'@
+
+# Windowed (never fullscreen) client: the run dir's options.txt is read at start-up.
+function Set-WindowedClient {
+    $options = Join-Path $RepoRoot 'run\options.txt'
+    if (Test-Path $options) {
+        $lines = Get-Content $options
+        if ($lines -match '^fullscreen:true') { ($lines -replace '^fullscreen:true', 'fullscreen:false') | Set-Content $options }
+    }
+}
+
+# Waits for the client's window, then puts it behind every other window and gives the focus back.
+function Send-ClientToBack {
+    param([System.IntPtr]$PreviousForeground, [int]$TimeoutSeconds = 300)
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        foreach ($id in @(Find-GameJvm 'client')) {
+            $handle = (Get-Process -Id $id -ErrorAction SilentlyContinue).MainWindowHandle
+            if ($handle -and $handle -ne [System.IntPtr]::Zero) {
+                # HWND_BOTTOM, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+                [DevLaunch.Win32]::SetWindowPos($handle, [System.IntPtr]1, 0, 0, 0, 0, 0x13) | Out-Null
+                if ($PreviousForeground -ne [System.IntPtr]::Zero) { [DevLaunch.Win32]::SetForegroundWindow($PreviousForeground) | Out-Null }
+                Write-Host "Client window sent to the back (use -Foreground to keep it in front)."
+                return
+            }
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    Write-Warning "The client window didn't show up within $TimeoutSeconds s."
+}
+
+function Start-Client {
+    Set-WindowedClient
+    $previous = [DevLaunch.Win32]::GetForegroundWindow()
+    if ((Start-Kind 'client') -and -not $Foreground) { Send-ClientToBack $previous }
 }
 
 function Wait-ServerReady {
@@ -237,13 +282,13 @@ switch ($Command) {
         $alreadyUp = @(Find-GameJvm 'server').Count -gt 0
         if (-not $alreadyUp) { Start-Kind 'server' | Out-Null }
         if ($alreadyUp -or (Wait-ServerReady)) {
-            Start-Kind 'client' | Out-Null
+            Start-Client
             Write-Host "The client joins localhost:$($info.port) as $($info.player) (op, creative)."
             Write-Host "Stop everything with: .\scripts\dev.ps1 stop"
         }
     }
     'server' { Start-Kind 'server' | Out-Null }
-    'client' { Start-Kind 'client' | Out-Null }
+    'client' { Start-Client }
     'status' { Show-Status }
     'stop' {
         # Client first, so it doesn't sit on a "connection lost" screen while the server saves
