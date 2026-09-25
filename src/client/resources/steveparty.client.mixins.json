@@ -9,12 +9,14 @@
     "LivingEntityRendererShouldFlipMixin",
     "LivingEntityRendererSmoothFlipMixin",
     "LivingEntityRendererSquishMixin",
+    "ModelPartAccessor",
     "MouseBackgroundDevMixin",
     "MouseScrollMixin",
     "LivingEntityRenderStateMixin",
     "PlayerEntityModelMixin",
     "TokenBaseLivingEntityRendererMixin",
     "TokenBaseRenderStateMixin",
+    "TokenGeoEntityRendererMixin",
     "WindowBackgroundDevMixin"
   ],
   "injectors": {
