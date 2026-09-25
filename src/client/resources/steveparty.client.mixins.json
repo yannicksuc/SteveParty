@@ -14,7 +14,8 @@
     "LivingEntityRenderStateMixin",
     "PlayerEntityModelMixin",
     "TokenBaseLivingEntityRendererMixin",
-    "TokenBaseRenderStateMixin"
+    "TokenBaseRenderStateMixin",
+    "WindowBackgroundDevMixin"
   ],
   "injectors": {
     "defaultRequire": 1

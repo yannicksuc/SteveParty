@@ -99,7 +99,6 @@ function Start-Kind {
 Add-Type -Namespace DevLaunch -Name Win32 -MemberDefinition @'
 [DllImport("user32.dll")] public static extern System.IntPtr GetForegroundWindow();
 [DllImport("user32.dll")] public static extern bool SetForegroundWindow(System.IntPtr hWnd);
-[DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, System.UIntPtr extra);
 [DllImport("user32.dll")] public static extern bool SetWindowPos(System.IntPtr hWnd, System.IntPtr after, int x, int y, int cx, int cy, uint flags);
 '@
 
@@ -122,10 +121,8 @@ function Send-ClientToBack {
             if ($handle -and $handle -ne [System.IntPtr]::Zero) {
                 # HWND_BOTTOM, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
                 [DevLaunch.Win32]::SetWindowPos($handle, [System.IntPtr]1, 0, 0, 0, 0, 0x13) | Out-Null
-                if ($PreviousForeground -ne [System.IntPtr]::Zero) {
-                    # Windows only lets the last input's owner change the foreground window: a harmless Alt tap first
-                    [DevLaunch.Win32]::keybd_event(0x12, 0, 0, [System.UIntPtr]::Zero)
-                    [DevLaunch.Win32]::keybd_event(0x12, 0, 2, [System.UIntPtr]::Zero)
+                # The window opened without the focus (WindowBackgroundDevMixin): give it back only if it took it anyway
+                if ($PreviousForeground -ne [System.IntPtr]::Zero -and [DevLaunch.Win32]::GetForegroundWindow() -eq $handle) {
                     [DevLaunch.Win32]::SetForegroundWindow($PreviousForeground) | Out-Null
                 }
                 Write-Host "Client window sent to the back (use -Foreground to keep it in front)."
