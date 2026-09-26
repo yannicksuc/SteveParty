@@ -167,15 +167,15 @@ public final class TileStampTextures {
             "  #  #  # # #  ",
             "###  #  ### #  ",
     };
-    /** A raised hand, on the 16x16 face (too small for the word). */
+    /** A raised hand, on the 16x16 face (too small for the word), red all around it. */
     private static final String[] STOP_HAND = {
-            "   # #  ",
-            " # # # #",
-            " # # # #",
-            " #######",
-            "########",
-            " ###### ",
-            "  ####  ",
+            "   #  ",
+            " # # #",
+            " # # #",
+            " #####",
+            "######",
+            " #####",
+            "  ### ",
     };
 
     /**
@@ -203,7 +203,7 @@ public final class TileStampTextures {
                 }
             }
             String[] glyph = small ? STOP_HAND : STOP_TEXT;
-            int glyphX = (side - glyph[0].length() + 1) / 2, glyphY = small ? 5 : (side - glyph.length) / 2;
+            int glyphX = (side - glyph[0].length() + 1) / 2, glyphY = small ? 4 :(side - glyph.length) / 2;
             for (int j = 0; j < glyph.length; j++) {
                 for (int i = 0; i < glyph[j].length(); i++) {
                     if (glyph[j].charAt(i) == '#') argb[(glyphY + j) * side + glyphX + i] = 0xFFFFFFFF;
