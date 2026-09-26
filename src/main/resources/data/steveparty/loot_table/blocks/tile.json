@@ -6,7 +6,14 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "steveparty:tile"
+          "name": "steveparty:tile",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "steveparty:tile",
+              "properties": ["size"]
+            }
+          ]
         }
       ],
       "conditions": [

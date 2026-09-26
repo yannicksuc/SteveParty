@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayers;
@@ -51,6 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.ROTATION_8;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SUPPORT;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static java.lang.Math.PI;
 
@@ -82,20 +84,23 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         BoardSpaceType tileType = state.get(TILE_TYPE);
         Integer direction = state.get(ROTATION_8);
         TileSupport support = state.get(SUPPORT);
+        TileSize size = state.get(SIZE);
         ItemStack stack = BoardSpaceClientUtils.getDisplayedCartridge(entity);
         int color = stack.isEmpty() ? WHITE : stack.getOrDefault(COLOR, WHITE);
 
         matrices.push();
-        if (!support.isFlat()) {
-            // Not baked in the chunk (see the blockstate file): the level model, moved onto the support's surface
+        if (!support.isFlat() || size != TileSize.STANDARD) {
+            // Not baked in the chunk (see the blockstate file): the level standard model, moved onto the support's
+            // surface and brought to its size
             if (support.isSloped()) renderSkirt(state, support, matrices, vertexConsumers, light);
             matrices.multiplyPositionMatrix(support.transform());
+            applySize(matrices, size);
             renderLevelModel(state, matrices, vertexConsumers, light, overlay, color);
         }
         switch (tileType) {
             case TILE_START -> {
                 matrices.pop();
-                renderTileStart(entity, support, matrices, vertexConsumers, light, stack);
+                renderTileStart(entity, support, size, matrices, vertexConsumers, light, stack);
                 return;
             }
             case TILE_INVENTORY_INTERACTOR -> renderInventoryInteractor(entity, matrices, vertexConsumers, light, overlay, stack, direction);
@@ -103,6 +108,23 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
             default -> renderPicture(matrices, vertexConsumers, light, overlay, textureNeutral, direction, color);
         }
         matrices.pop();
+    }
+
+    /**
+     * From the standard size (2 blocks wide, centred on the block) to {@code size}: a small tile is shrunk so that its
+     * picture covers its block; a large one is moved to the middle of its 2x2 blocks (its block is the north-west one).
+     */
+    private static void applySize(MatrixStack matrices, TileSize size) {
+        switch (size) {
+            case SMALL -> {
+                matrices.translate(0.5, 0, 0.5);
+                matrices.scale(TileSize.SMALL_SCALE, 1, TileSize.SMALL_SCALE);
+                matrices.translate(-0.5, 0, -0.5);
+            }
+            case LARGE -> matrices.translate(0.5, 0, 0.5);
+            default -> {
+            }
+        }
     }
 
     /** The tile's own block model (as if it were level), drawn with the current transformation. */
@@ -166,7 +188,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         renderPicture(matrices, vertexConsumers, light, overlay, texture, direction, WHITE);
     }
 
-    private void renderTileStart(BoardSpaceBlockEntity entity, TileSupport support, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
+    private void renderTileStart(BoardSpaceBlockEntity entity, TileSupport support, TileSize size, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
         // Validate UUID
         String owner = stack.get(TB_START_OWNER);
         if (owner == null || owner.isEmpty()) return;
@@ -185,8 +207,11 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         // The model only has 4 orientations: diagonals keep the pedestal of the previous side, the head still looks diagonally.
         Vector3f front = frontVector(dir);
         Vector3f translate = (new Vector3f(9f/16, 0, 9f/16)).mul(front).add(0,-1f/16,0);
+        // Where the pedestal is for this size
+        if (size == TileSize.SMALL) translate.mul(TileSize.SMALL_SCALE, 1, TileSize.SMALL_SCALE);
+        else if (size == TileSize.LARGE) translate.add(0.5f, 0, 0.5f);
         // On the surface of the support (lowered or sloped), the head itself stays upright
-        translate.add(0, (float) support.surfaceY(0.5 + front.x * 9 / 16.0, 0.5 + front.z * 9 / 16.0), 0);
+        translate.add(0, (float) support.surfaceY(0.5 + translate.x, 0.5 + translate.z), 0);
         matrices.translate(translate.x, translate.y, translate.z);
         matrices.scale(1.0F, 1.0F, 1.0F);
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);

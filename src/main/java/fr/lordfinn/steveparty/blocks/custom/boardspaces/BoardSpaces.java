@@ -23,6 +23,9 @@ public final class BoardSpaces {
     /** The position of the board space a token standing at {@code feet} (its block position) is on, or null. */
     public static @Nullable BlockPos boardSpacePosAt(World world, BlockPos feet) {
         if (world.getBlockEntity(feet) instanceof BoardSpaceBlockEntity) return feet;
+        // In the middle of a large tile: on one of its parts
+        BlockPos master = TilePartBlock.resolve(world, feet);
+        if (master != null) return master;
         // Standing on a lowered tile: the feet are in the support's cell, the tile is the cell above
         BlockPos up = feet.up();
         BlockState above = world.getBlockState(up);
@@ -30,7 +33,15 @@ public final class BoardSpaces {
                 && world.getBlockEntity(up) instanceof BoardSpaceBlockEntity) {
             return up;
         }
+        BlockPos masterAbove = TilePartBlock.resolve(world, up);
+        if (masterAbove != null && world.getBlockState(masterAbove).get(ATileBlock.SUPPORT).standY() < 0) return masterAbove;
         return null;
+    }
+
+    /** The block standing for the board space at {@code pos}: the large tile a part belongs to, else {@code pos}. */
+    public static BlockPos resolve(World world, BlockPos pos) {
+        BlockPos master = TilePartBlock.resolve(world, pos);
+        return master != null ? master : pos;
     }
 
     /** The board space {@code entity} stands on, or null. */
@@ -45,7 +56,9 @@ public final class BoardSpaces {
     public static Vec3d standPos(World world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof ATileBlock) {
-            return new Vec3d(pos.getX() + 0.5, pos.getY() + state.get(ATileBlock.SUPPORT).standY(), pos.getZ() + 0.5);
+            // A large tile's middle is the corner shared by its 4 blocks
+            double centre = state.get(ATileBlock.SIZE) == TileSize.LARGE ? 1 : 0.5;
+            return new Vec3d(pos.getX() + centre, pos.getY() + state.get(ATileBlock.SUPPORT).standY(), pos.getZ() + centre);
         }
         VoxelShape shape = state.getCollisionShape(world, pos);
         double height = shape.isEmpty() ? 0 : shape.getMax(Direction.Axis.Y);

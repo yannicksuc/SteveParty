@@ -136,7 +136,7 @@ def terrain():
             cmds.append('fill %d 99 %d %d 99 %d grass_block' % (cx, cz, cx + 15, cz + 15))
     # Paths between the board and the stations
     cmds += ['fill 1958 99 2014 2080 99 2016 dirt_path',
-             'fill 2030 99 1966 2032 99 2042 dirt_path',
+             'fill 2030 99 1966 2032 99 2068 dirt_path',
              'fill 2055 99 1966 2057 99 2042 dirt_path',
              'fill 2006 99 1966 2008 99 2068 dirt_path',
              'fill 2006 99 1990 2080 99 1992 dirt_path']
@@ -592,6 +592,30 @@ def tiles_station(x0=2010, z0=2045):
     return cmds
 
 
+def tile_sizes_station(x0=2035, z0=2045):
+    """The 3 tile sizes, the Tile (grey border) and the Advanced Tile (gold border)."""
+    cmds = ['# Tile sizes'] + plot_title(x0, z0, 'TAILLES DE TUILES')
+    # Row: standard, small, large of each tile, on the grass (the large one takes 2x2 blocks)
+    for row, block, name in ((z0 + 2, 'simple_tile', 'Tuile'), (z0 + 7, 'tile', 'Tuile avancée')):
+        for k, (size, caption) in enumerate((('standard', 'standard (2x2 centrée)'), ('small', 'petite (1x1)'),
+                                             ('large', 'grande (2x2 blocs)'))):
+            x = x0 + 2 + 5 * k
+            cmds += [tile_block(x, Y, row, 4, block, 'size=' + size),
+                     label(x + (1 if size == 'large' else 0.5), Y + 2.2, row + 0.5, '%s %s' % (name, caption), 'white', 0.6, False)]
+    cmds.append(token_at(x0 + 13, Y + 0.125, z0 + 8, 'sheep', 'Pion au milieu de la grande tuile', 'aqua'))
+    # Small tiles on every stair: one continuous ramp
+    z = z0 + 13
+    cmds += staircase(x0 + 2, z, 6)
+    for k in range(6):
+        cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z, 2, 'simple_tile' if k % 2 else 'tile', 'size=small'))
+    cmds.append(label(x0 + 5, Y + 7.5, z + 0.5, 'Petites tuiles sur chaque marche', 'white', 0.7, False))
+    # A large tile on a floor of bottom slabs: lowered as a whole
+    cmds += ['fill %d %d %d %d %d %d smooth_stone_slab[type=bottom]' % (x0 + 11, Y, z0 + 13, x0 + 12, Y, z0 + 14),
+             tile_block(x0 + 11, Y + 1, z0 + 13, 4, 'tile', 'size=large'),
+             label(x0 + 12, Y + 2.5, z0 + 14, 'Grande tuile sur des dalles', 'white', 0.6, False)]
+    return cmds
+
+
 def mula_station(x0=2060, z0=2020):
     cmds = ['# Mula enclosure'] + plot_title(x0, z0 - 1, 'MULAS')
     gx0, gz0, gx1, gz1, top = x0 + 1, z0 + 1, x0 + 18, z0 + 18, Y + 8
@@ -691,7 +715,8 @@ def welcome(loop):
            '{kind:"cursed",value:2}],item_name=\'"Dé forgé"\']',
            'steveparty:tokenizer_wand', 'steveparty:token 4', 'steveparty:wrench', 'steveparty:board_space_behavior 8',
            'steveparty:board_space_behavior_stop 2', 'steveparty:tile_behavior_start 2', 'steveparty:inventory_cartridge 2',
-           'steveparty:tile 8', 'steveparty:simple_tile 4', 'steveparty:check_point 2', 'steveparty:mini_games_catalogue']
+           'steveparty:tile 8', 'steveparty:simple_tile 4', 'steveparty:simple_tile[block_state={size:"small"}] 8',
+           'steveparty:tile[block_state={size:"large"}] 2', 'steveparty:check_point 2', 'steveparty:mini_games_catalogue']
     return (['time set day', 'weather clear']
             + ['give %s %s' % (PLAYER, k) for k in kit]
             + ['tp %s %.1f %d %.1f %.1f 20' % (PLAYER, px, Y, pz, yaw),
@@ -709,7 +734,7 @@ def main():
         'terrain': terrain(),
         'board': board_cmds,
         'stations': (dice_station() + shop_station() + goal_pole_station() + plastic_station() + sign_station()
-                     + building_station() + misc_station() + mula_station() + tiles_station()),
+                     + building_station() + misc_station() + mula_station() + tiles_station() + tile_sizes_station()),
         'chests': chest_cmds,
         'welcome': welcome(loop),
     }

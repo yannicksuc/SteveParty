@@ -19,6 +19,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.tick.ScheduledTickView;
@@ -33,16 +34,18 @@ import java.util.List;
 public abstract class ATileBlock extends ABoardSpaceBlock {
     public static final IntProperty ROTATION_8 = IntProperty.of("rotation_8", 0, 7);
     public static final EnumProperty<TileSupport> SUPPORT = EnumProperty.of("support", TileSupport.class);
+    public static final EnumProperty<TileSize> SIZE = EnumProperty.of("size", TileSize.class);
 
     protected ATileBlock(Settings settings, int numberOfCartridges) {
         super(settings.nonOpaque(), numberOfCartridges);
-        setDefaultState(getStateManager().getDefaultState().with(ROTATION_8, 0).with(SUPPORT, TileSupport.FLAT));
+        setDefaultState(getStateManager().getDefaultState().with(ROTATION_8, 0).with(SUPPORT, TileSupport.FLAT)
+                .with(SIZE, TileSize.STANDARD));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(ROTATION_8, SUPPORT);
+        builder.add(ROTATION_8, SUPPORT, SIZE);
     }
 
     /** The translation key suffix of the line describing this tile in its tooltip. */
@@ -52,15 +55,40 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
         tooltip.add(Text.translatable("tooltip.steveparty.tile." + tooltipKey()).formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.tile.size",
+                Text.translatable("tooltip.steveparty.tile.size." + TileSize.of(stack).asString())).formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.tile.size.hint").formatted(Formatting.DARK_GRAY));
+    }
+
+    /** The picked tile keeps its size. */
+    @Override
+    public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
+        return TileSize.with(super.getPickStack(world, pos, state), state.get(SIZE));
     }
 
     // ---------------------------------------------------------------- placement and support
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
+        TileSize size = TileSize.of(ctx.getStack());
         return getDefaultState()
                 .with(ROTATION_8, rotation8FromYaw(ctx.getPlayerYaw()))
-                .with(SUPPORT, TileSupport.compute(ctx.getWorld(), ctx.getBlockPos()));
+                .with(SIZE, size)
+                .with(SUPPORT, support(ctx.getWorld(), ctx.getBlockPos(), size));
+    }
+
+    /**
+     * The support of a tile of {@code size} at {@code pos}. A large tile lies level: lowered only when its 4 blocks
+     * lie on the same level surface (a floor of bottom slabs...), otherwise flat.
+     */
+    public static TileSupport support(BlockView world, BlockPos pos, TileSize size) {
+        TileSupport support = TileSupport.compute(world, pos);
+        if (size != TileSize.LARGE) return support;
+        if (support.isSloped()) return TileSupport.FLAT;
+        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
+            if (TileSupport.compute(world, part.fromMaster(pos)) != support) return TileSupport.FLAT;
+        }
+        return support;
     }
 
     /** The support under the tile changed (placed, broken, a slab turned double...): follow its surface. */
@@ -69,18 +97,63 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
                                                    Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
         BlockState updated = super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
         if (direction == Direction.DOWN && updated.isOf(this)) {
-            return updated.with(SUPPORT, TileSupport.compute(world, pos));
+            return updated.with(SUPPORT, support(world, pos, updated.get(SIZE)));
         }
         return updated;
     }
 
-    /** Placed or replaced without a player (commands, structures, the test world): read the support there. */
+    /** A large tile's part saw its support change: the whole tile checks its support again. */
+    @Override
+    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        TileSupport support = support(world, pos, state.get(SIZE));
+        if (state.get(SUPPORT) != support) world.setBlockState(pos, state.with(SUPPORT, support), Block.NOTIFY_ALL);
+    }
+
+    /**
+     * Placed or replaced without a player too (commands, structures, the test world): reads the support there, and
+     * a large tile takes the 3 other blocks of its 2x2 (it shrinks back to the standard size if they are not free).
+     */
     @Override
     protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
         super.onBlockAdded(state, world, pos, oldState, notify);
         if (world.isClient) return;
-        TileSupport support = TileSupport.compute(world, pos);
+        if (state.get(SIZE) == TileSize.LARGE && !claimParts(world, pos)) {
+            world.setBlockState(pos, state.with(SIZE, TileSize.STANDARD), Block.NOTIFY_ALL);
+            return;
+        }
+        TileSupport support = support(world, pos, state.get(SIZE));
         if (state.get(SUPPORT) != support) world.setBlockState(pos, state.with(SUPPORT, support), Block.NOTIFY_ALL);
+    }
+
+    /** Fills the 3 other blocks of a large tile with its parts, if they are free (or already its parts). */
+    private boolean claimParts(World world, BlockPos master) {
+        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
+            BlockPos partPos = part.fromMaster(master);
+            BlockState there = world.getBlockState(partPos);
+            if (!TilePartBlock.isPartOf(there, part) && !there.isReplaceable()) return false;
+        }
+        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
+            BlockPos partPos = part.fromMaster(master);
+            if (!TilePartBlock.isPartOf(world.getBlockState(partPos), part)) {
+                world.setBlockState(partPos, TilePartBlock.stateFor(part), Block.NOTIFY_ALL);
+            }
+        }
+        return true;
+    }
+
+    /** A large tile gone (or no longer large): its parts go with it. */
+    @Override
+    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        boolean wasLarge = state.get(SIZE) == TileSize.LARGE;
+        boolean stillLarge = newState.isOf(this) && newState.get(SIZE) == TileSize.LARGE;
+        super.onStateReplaced(state, world, pos, newState, moved);
+        if (world.isClient || !wasLarge || stillLarge) return;
+        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
+            BlockPos partPos = part.fromMaster(pos);
+            if (TilePartBlock.isPartOf(world.getBlockState(partPos), part)) {
+                world.setBlockState(partPos, net.minecraft.block.Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL | Block.SKIP_DROPS);
+            }
+        }
     }
 
     @Override
@@ -88,9 +161,9 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         return state.get(SUPPORT).shape();
     }
 
-    /** The state to draw as a plain, level tile (e.g. the small tile shown by the destination arrows). */
+    /** The state to draw as a plain, level tile of the standard size (e.g. the small tile shown by the destination arrows). */
     public static BlockState levelState(BlockState state) {
-        return state.contains(SUPPORT) ? state.with(SUPPORT, TileSupport.FLAT) : state;
+        return state.contains(SUPPORT) ? state.with(SUPPORT, TileSupport.FLAT).with(SIZE, TileSize.STANDARD) : state;
     }
 
     // ---------------------------------------------------------------- 8 directions

@@ -338,14 +338,25 @@ public class ModBlocks {
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
-            "tile", true);
+            "tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
 
     public static final Block SIMPLE_TILE = register(SimpleTileBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
-            "simple_tile", true);
+            "simple_tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
+
+    /** The 3 other blocks of a large (2x2) tile (no item: placed and removed with the tile). */
+    public static final Block TILE_PART = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("tile_part")),
+            fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock::new,
+            Block.Settings.create()
+                    .strength(2f, 3600000.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .nonOpaque()
+                    .dynamicBounds()
+                    .dropsNothing()
+                    .pistonBehavior(net.minecraft.block.piston.PistonBehavior.BLOCK));
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()

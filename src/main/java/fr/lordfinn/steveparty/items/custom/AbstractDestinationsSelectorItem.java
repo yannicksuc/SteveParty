@@ -43,7 +43,8 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
         PlayerEntity player = context.getPlayer();
         if (player == null) return ActionResult.PASS;
 
-        BlockPos clickedPos = context.getBlockPos();
+        // A part of a large tile stands for the tile
+        BlockPos clickedPos = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.resolve(world, context.getBlockPos());
 
         ItemStack stack = context.getStack();
         ServerWorld serverWorld = (ServerWorld) world;

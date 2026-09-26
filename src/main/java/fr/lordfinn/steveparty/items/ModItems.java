@@ -153,8 +153,12 @@ public class ModItems {
             for (int color = 0; color < BandanaItem.COLOR_NAMES.length; color++) {
                 itemGroup.add(BandanaItem.create(color));
             }
-            itemGroup.add(SIMPLE_TILE);
-            itemGroup.add(TILE);
+            // Every tile in its 3 sizes
+            for (net.minecraft.item.ItemConvertible tile : List.of(SIMPLE_TILE, TILE)) {
+                for (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize size : fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.values()) {
+                    itemGroup.add(fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.with(new ItemStack(tile), size));
+                }
+            }
             itemGroup.add(CHECK_POINT);
             itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
             itemGroup.add(WRENCH);
