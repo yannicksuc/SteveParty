@@ -501,42 +501,9 @@ public class ShopGameTests implements FabricGameTest {
         return new ItemUsageContext(player, Hand.MAIN_HAND, new BlockHitResult(pos.toCenterPos(), Direction.UP, pos, false));
     }
 
-    /** ONE_SALE_PER_SIGNAL: locked by default, a rising edge gives one credit (max 1), a sale consumes it. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void oneSalePerSignalConsumesTheCredit(TestContext context) {
-        BlockPos stallPos = new BlockPos(1, 1, 1);
-        context.setBlockState(stallPos, ModBlocks.TRADING_STALL);
-        TradingStallBlockEntity stall = context.getBlockEntity(stallPos);
-        context.assertTrue(stall.isSaleAllowed(), "FREE mode by default");
-        stall.setSaleMode(TradingStallBlockEntity.SaleMode.ONE_SALE_PER_SIGNAL);
-        TradingStallBlockEntity.ExactTradeOffer offer = new TradingStallBlockEntity.ExactTradeOffer(
-                new ItemStack(Items.EMERALD), ItemStack.EMPTY, new ItemStack(Items.DIAMOND), stall);
-        context.assertFalse(offer.isSaleAllowed(), "locked until a signal");
-
-        context.setBlockState(stallPos.east(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(offer.isSaleAllowed(), "a redstone pulse unlocks one sale");
-        stall.onRedstonePower(true);
-        stall.onSale();
-        context.assertFalse(offer.isSaleAllowed(), "the sale consumed the credit (a steady signal is not a new pulse)");
-
-        context.setBlockState(stallPos.east(), Blocks.AIR);
-        context.setBlockState(stallPos.east(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(stall.hasSaleCredit(), "next rising edge gives a new credit");
-        stall.onRedstonePower(false);
-        stall.onRedstonePower(true);
-        stall.onSale();
-        context.assertFalse(stall.hasSaleCredit(), "credits do not accumulate beyond 1");
-
-        NbtCompound saved = stall.createNbtWithIdentifyingData(context.getWorld().getRegistryManager());
-        context.assertEquals(saved.getInt("sale_mode"), TradingStallBlockEntity.SaleMode.ONE_SALE_PER_SIGNAL.getId(), "mode saved");
-        stall.setSaleMode(TradingStallBlockEntity.SaleMode.FREE);
-        context.assertTrue(offer.isSaleAllowed(), "FREE mode never locks");
-        context.complete();
-    }
-
-    /** Full trader flow: FREE mode never exhausts the offer; ONE_SALE_PER_SIGNAL sells once per pulse. */
+    /** Full trader flow: the offer is never exhausted, and redstone next to the stall changes nothing. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
-    public void traderSellsFreelyAndOncePerSignal(TestContext context) {
+    public void traderSellsFreelyWithoutRedstone(TestContext context) {
         BlockPos stallPos = new BlockPos(1, 1, 1);
         BlockPos chestPos = new BlockPos(3, 1, 1);
         BlockPos registerPos = new BlockPos(1, 1, 3);
@@ -569,17 +536,15 @@ public class ShopGameTests implements FabricGameTest {
         context.assertEquals(register.count(Items.EMERALD), 3, "payments in the cash register");
         context.assertFalse(trader.getOffers().getFirst().isDisabled(), "offer not exhausted");
 
-        stall.setSaleMode(TradingStallBlockEntity.SaleMode.ONE_SALE_PER_SIGNAL);
+        // The stall has no redstone control any more (the shop stops limit the purchases)
+        context.setBlockState(stallPos.west(), Blocks.REDSTONE_BLOCK);
         context.waitAndRun(12, () -> {
-            context.assertFalse(buyOnce(handler, player), "locked stall: nothing to buy");
-            context.setBlockState(stallPos.west(), Blocks.REDSTONE_BLOCK);
-            context.waitAndRun(12, () -> {
-                context.assertTrue(buyOnce(handler, player), "one sale after the pulse");
-                context.assertFalse(buyOnce(handler, player), "locked again after the sale");
-                context.assertEquals(register.count(Items.EMERALD), 4, "one more payment");
-                player.closeHandledScreen();
-                context.complete();
-            });
+            context.assertTrue(buyOnce(handler, player), "a powered stall still sells");
+            context.assertTrue(buyOnce(handler, player), "and again");
+            context.assertEquals(register.count(Items.EMERALD), 5, "every payment in the cash register");
+            player.closeHandledScreen();
+            context.getWorld().getServer().getPlayerManager().remove(player);
+            context.complete();
         });
     }
 

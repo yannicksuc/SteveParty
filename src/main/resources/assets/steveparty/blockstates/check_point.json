@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "steveparty:block/check_point" }
+    "": { "model": "steveparty:block/check_point" },
+    "tile_type=board_space_shop": { "model": "steveparty:block/check_point_shop" }
   }
 }
