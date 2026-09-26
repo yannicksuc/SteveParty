@@ -240,14 +240,29 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 offerCartridge(ModItems.BOARD_SPACE_BEHAVIOR_STOP, Items.RED_DYE);
                 offerCartridge(ModItems.INVENTORY_CARTRIDGE, Items.CHEST);
 
-                // The (single-cartridge) Tile: the Advanced Tile's carpets on one pressure plate, without its chest
-                createShaped(RecipeCategory.REDSTONE, ModBlocks.TILE)
+                // The Tile: a plastic board (pellets) under a cloth face (carpets), on the pressure plate that feels
+                // the tokens landing on it; two at a time
+                createShaped(RecipeCategory.REDSTONE, ModBlocks.TILE, 2)
                         .pattern("WWW")
-                        .pattern(" P ")
+                        .pattern("CPC")
                         .input('W', ItemTags.WOOL_CARPETS)
+                        .input('C', ModItems.PLASTIC_PELLETS)
                         .input('P', Items.LIGHT_WEIGHTED_PRESSURE_PLATE)
+                        .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
                         .criterion(hasItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE))
-                        .criterion(hasItem(ModBlocks.ADVANCED_TILE), conditionsFromItem(ModBlocks.ADVANCED_TILE))
+                        .offerTo(recipeExporter);
+
+                // The Advanced Tile: a Tile in a gold frame, a chest for its 16 cartridges and a comparator reading
+                // the redstone power that picks the active one
+                createShaped(RecipeCategory.REDSTONE, ModBlocks.ADVANCED_TILE)
+                        .pattern(" R ")
+                        .pattern("GTG")
+                        .pattern("GCG")
+                        .input('R', Items.COMPARATOR)
+                        .input('G', Items.GOLD_INGOT)
+                        .input('T', ModBlocks.TILE)
+                        .input('C', Items.CHEST)
+                        .criterion(hasItem(ModBlocks.TILE), conditionsFromItem(ModBlocks.TILE))
                         .offerTo(recipeExporter);
 
                 // A page for the catalogue: paper dyed like the page

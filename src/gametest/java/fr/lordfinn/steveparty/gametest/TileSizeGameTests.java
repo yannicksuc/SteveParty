@@ -162,19 +162,34 @@ public class TileSizeGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aTileAloneInTheGridCyclesItsSize(TestContext context) {
+    public void tilesChangeSizeKeepingTheirMaterial(TestContext context) {
         TileSizeRecipe recipe = new TileSizeRecipe(CraftingRecipeCategory.MISC);
-        ItemStack tile = new ItemStack(ModBlocks.TILE, 5);
         var registries = context.getWorld().getRegistryManager();
-        ItemStack small = recipe.craft(CraftingRecipeInput.create(1, 1, List.of(tile)), registries);
-        context.assertTrue(small.getCount() == 1 && TileSize.of(small) == TileSize.SMALL, "standard -> small: " + small);
-        ItemStack large = recipe.craft(CraftingRecipeInput.create(1, 1, List.of(small)), registries);
-        context.assertTrue(TileSize.of(large) == TileSize.LARGE, "small -> large");
-        ItemStack standard = recipe.craft(CraftingRecipeInput.create(1, 1, List.of(large)), registries);
-        context.assertTrue(TileSize.of(standard) == TileSize.STANDARD && standard.getComponentChanges().isEmpty(),
-                "large -> standard, a plain tile again: " + standard.getComponentChanges());
-        context.assertFalse(recipe.matches(CraftingRecipeInput.create(2, 1, List.of(tile, tile)), context.getWorld()),
-                "two tiles: no recipe");
+        ItemStack tile = new ItemStack(ModBlocks.TILE);
+        // 4 standard tiles in a square: a large one
+        ItemStack large = recipe.craft(CraftingRecipeInput.create(2, 2, List.of(tile, tile, tile, tile)), registries);
+        context.assertTrue(large.isOf(ModBlocks.TILE.asItem()) && large.getCount() == 1 && TileSize.of(large) == TileSize.LARGE,
+                "4 tiles -> a large one: " + large);
+        // ... and back
+        ItemStack back = recipe.craft(CraftingRecipeInput.create(1, 1, List.of(large)), registries);
+        context.assertTrue(back.getCount() == 4 && TileSize.of(back) == TileSize.STANDARD && back.getComponentChanges().isEmpty(),
+                "a large tile -> 4 plain tiles: " + back);
+        // 2 small tiles: a standard one
+        ItemStack small = TileSize.with(new ItemStack(ModBlocks.ADVANCED_TILE), TileSize.SMALL);
+        ItemStack standard = recipe.craft(CraftingRecipeInput.create(2, 1, List.of(small, small.copy())), registries);
+        context.assertTrue(standard.isOf(ModBlocks.ADVANCED_TILE.asItem()) && TileSize.of(standard) == TileSize.STANDARD,
+                "2 small -> 1 standard: " + standard);
+        // Mixed kinds or sizes: nothing
+        context.assertFalse(recipe.matches(CraftingRecipeInput.create(2, 2, List.of(tile, tile, tile, new ItemStack(ModBlocks.ADVANCED_TILE))),
+                context.getWorld()), "a tile and an advanced tile don't merge");
+        context.assertFalse(recipe.matches(CraftingRecipeInput.create(1, 1, List.of(tile)), context.getWorld()), "a tile alone: nothing");
+        // The stonecutter cuts a tile into 2 small ones
+        var cut = context.getWorld().getServer().getRecipeManager().getFirstMatch(net.minecraft.recipe.RecipeType.STONECUTTING,
+                new net.minecraft.recipe.input.SingleStackRecipeInput(tile), context.getWorld());
+        context.assertTrue(cut.isPresent(), "a stonecutting recipe for the tile");
+        ItemStack cutResult = cut.get().value().craft(new net.minecraft.recipe.input.SingleStackRecipeInput(tile), registries);
+        context.assertTrue(cutResult.isOf(ModBlocks.TILE.asItem()) && cutResult.getCount() == 2 && TileSize.of(cutResult) == TileSize.SMALL,
+                "2 small tiles: " + cutResult);
         context.complete();
     }
 

@@ -19,7 +19,7 @@ public class ModRecipes {
     public static final RecipeSerializer<FlagDyeRecipe> FLAG_DYE = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_flag_dye"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(FlagDyeRecipe::new));
 
-    /** A tile alone in the grid: the same tile in its next size. */
+    /** Tiles change size in the grid: 4 in a square make a large one (and back), 2 small ones a standard one. */
     public static final RecipeSerializer<TileSizeRecipe> TILE_SIZE = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_tile_size"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(TileSizeRecipe::new));
 
