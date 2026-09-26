@@ -1070,6 +1070,7 @@
   "hud.steveparty.wrench.ghost.cut_none": "Aucun lien",
   "hud.steveparty.board.start": "Départ",
   "hud.steveparty.wrench.panel": "%s · %s",
+  "hud.steveparty.wrench.no_cartridge": "Plus de Cartouche",
   "hud.steveparty.board.summary.ok": "✔ %s cases",
   "hud.steveparty.board.summary.problems": "%s cases · %s impasses · %s injoignables",
   "message.steveparty.hopswitch.duration.seconds": "%s s",

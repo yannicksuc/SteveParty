@@ -59,8 +59,77 @@ public final class ToolHud {
         return MinecraftClient.getInstance().textRenderer.getWidth(text) + 12;
     }
 
-    /** The see-through hint line, centred above the boxes. */
+    /**
+     * The see-through hint, centred above the boxes: wrapped on several lines (going up) when wider than the screen
+     * (large GUI scales, long translations).
+     */
     public static void hint(DrawContext context, Text hint, int centerX, int boxesTop) {
-        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, hint, centerX, boxesTop - 10, HINT);
+        var textRenderer = MinecraftClient.getInstance().textRenderer;
+        var lines = textRenderer.wrapLines(hint, available(context));
+        for (int i = 0; i < lines.size(); i++) {
+            var line = lines.get(i);
+            int y = boxesTop - 10 * (lines.size() - i);
+            context.drawTextWithShadow(textRenderer, line, centerX - textRenderer.getWidth(line) / 2, y, HINT);
+        }
+    }
+
+    // ---------------------------------------------------------------- layout
+
+    /** Something drawn in a HUD row: a box, a plate... */
+    public interface Element {
+        int width();
+
+        void draw(DrawContext context, int x, int y);
+    }
+
+    public static Element element(int width, java.util.function.BiConsumer<Integer, Integer> draw) {
+        return new Element() {
+            @Override
+            public int width() {
+                return width;
+            }
+
+            @Override
+            public void draw(DrawContext context, int x, int y) {
+                draw.accept(x, y);
+            }
+        };
+    }
+
+    /** Room for a row: the screen width but a small margin on each side. */
+    public static int available(DrawContext context) {
+        return context.getScaledWindowWidth() - 16;
+    }
+
+    /**
+     * Draws groups of elements centred right above the hotbar: all on one row if they fit, else one row per group
+     * (the last group on the lowest row). Gaps of {@code gap} pixels between elements.
+     *
+     * @return the top of the highest row (where the hint goes above)
+     */
+    public static int rows(DrawContext context, java.util.List<java.util.List<Element>> groups, int gap) {
+        java.util.List<java.util.List<Element>> rows = new java.util.ArrayList<>();
+        java.util.List<Element> all = new java.util.ArrayList<>();
+        groups.forEach(all::addAll);
+        if (width(all, gap) <= available(context)) rows.add(all);
+        else rows.addAll(groups);
+        int bottom = top(context);
+        int centerX = context.getScaledWindowWidth() / 2;
+        for (int i = 0; i < rows.size(); i++) {
+            java.util.List<Element> row = rows.get(i);
+            int y = bottom - (rows.size() - 1 - i) * (BOX + 2);
+            int x = centerX - width(row, gap) / 2;
+            for (Element element : row) {
+                element.draw(context, x, y);
+                x += element.width() + gap;
+            }
+        }
+        return bottom - (rows.size() - 1) * (BOX + 2);
+    }
+
+    private static int width(java.util.List<Element> row, int gap) {
+        int width = 0;
+        for (Element element : row) width += element.width();
+        return width + Math.max(0, row.size() - 1) * gap;
     }
 }
