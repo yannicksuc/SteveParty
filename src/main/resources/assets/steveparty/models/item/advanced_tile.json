@@ -1,3 +1,17 @@
 {
-  "parent": "steveparty:block/advanced_tile"
+  "parent": "steveparty:block/advanced_tile",
+  "overrides": [
+    {
+      "predicate": {
+        "steveparty:tile_size": 0.5
+      },
+      "model": "steveparty:item/advanced_tile_small"
+    },
+    {
+      "predicate": {
+        "steveparty:tile_size": 1
+      },
+      "model": "steveparty:item/advanced_tile_large"
+    }
+  ]
 }

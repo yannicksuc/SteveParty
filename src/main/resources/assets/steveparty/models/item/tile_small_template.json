@@ -1,16 +1,14 @@
 {
-	"credit": "Made with Blockbench",
-	"texture_size": [64, 64],
 	"textures": {
 		"1": "steveparty:block/tile_overlay_neutral",
-		"2": "steveparty:block/advanced_tile",
-		"particle": "steveparty:block/advanced_tile"
+		"2": "#base",
+		"particle": "#base"
 	},
 	"elements": [
 		{
 			"name": "support",
-			"from": [-8, 0, -8],
-			"to": [24, 1, 24],
+			"from": [0, 0, 0],
+			"to": [16, 1, 16],
 			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0.5, 8]},
 			"faces": {
 				"north": {"uv": [8, 0, 16, 0.25], "texture": "#2"},
@@ -23,8 +21,8 @@
 		},
 		{
 			"name": "picture",
-			"from": [-5.58, 0.97, -5.58],
-			"to": [21.58, 1.94, 21.58],
+			"from": [1.5, 0.97, 1.5],
+			"to": [14.5, 1.94, 14.5],
 			"rotation": {"angle": 0, "axis": "y", "origin": [8, 1.455, 8]},
 			"faces": {
 				"north": {"uv": [1, 1, 15, 1.5], "texture": "#1", "tintindex": 0},
@@ -44,9 +42,5 @@
 		"gui": {"rotation": [30, 225, 0], "translation": [0, 1, 0], "scale": [0.35, 0.7, 0.35]},
 		"head": {"rotation": [-90, 0, 0], "translation": [0, 0, -12.5]},
 		"fixed": {"rotation": [-90, 0, 0], "translation": [0, 0, -7.75]}
-	},
-	"groups": [
-		{"name": "support", "origin": [8, 8, 8], "color": 0, "boneType": "", "children": [0]},
-		{"name": "picture", "origin": [8, 8, 8], "color": 0, "boneType": "", "children": [1]}
-	]
+	}
 }

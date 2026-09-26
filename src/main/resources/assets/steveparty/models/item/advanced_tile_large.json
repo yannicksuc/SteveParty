@@ -1,0 +1,6 @@
+{
+  "parent": "steveparty:item/tile_large_template",
+  "textures": {
+    "base": "steveparty:block/advanced_tile"
+  }
+}

@@ -188,6 +188,15 @@ public class StevepartyClient implements ClientModInitializer {
             return load.color() == null ? 0xFF6B6B6B : 0xFF000000 | load.color().getEntityColor();
         }, ModItems.STENCIL_GUN);
 
+        // Tiles: their size shows in hand and in the GUI (0 standard, 0.5 small: a 1x1 tile, 1 large: 4 faces in a 2x2)
+        for (net.minecraft.item.Item tile : java.util.List.of(ModBlocks.TILE.asItem(), ModBlocks.ADVANCED_TILE.asItem())) {
+            net.minecraft.client.item.ModelPredicateProviderRegistry.register(tile, Steveparty.id("tile_size"),
+                    (stack, world, entity, seed) -> switch (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.of(stack)) {
+                        case STANDARD -> 0f;
+                        case SMALL -> 0.5f;
+                        case LARGE -> 1f;
+                    });
+        }
         // Bandana: one icon per colour (0, 0.25, ... 1: teal, blue, pink, orange, yellow)
         net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.BANDANA, Steveparty.id("bandana_color"),
                 (stack, world, entity, seed) -> fr.lordfinn.steveparty.items.custom.BandanaItem.getColor(stack) / 4f);

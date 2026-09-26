@@ -1,3 +1,17 @@
 {
-  "parent": "steveparty:block/tile"
+  "parent": "steveparty:block/tile",
+  "overrides": [
+    {
+      "predicate": {
+        "steveparty:tile_size": 0.5
+      },
+      "model": "steveparty:item/tile_small"
+    },
+    {
+      "predicate": {
+        "steveparty:tile_size": 1
+      },
+      "model": "steveparty:item/tile_large"
+    }
+  ]
 }
