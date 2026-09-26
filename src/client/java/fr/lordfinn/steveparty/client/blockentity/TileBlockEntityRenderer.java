@@ -134,6 +134,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         Identifier face;
         if (stamp != null) face = TileStampTextures.get(stamp, small);
         else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = TileStampTextures.face(inventoryFace(stack), small);
+        // A Stop tile: a STOP sign over the face in the cartridge's colour
+        else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction);
