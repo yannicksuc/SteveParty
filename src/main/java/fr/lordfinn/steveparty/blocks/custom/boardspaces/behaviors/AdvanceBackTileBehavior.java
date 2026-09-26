@@ -43,6 +43,12 @@ public class AdvanceBackTileBehavior extends ABoardSpaceBehavior {
         TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, landing, notice, walked);
     }
 
+    /** The extra move just decided holds the turn: it ends where the token lands then (see AdvanceBackMoves). */
+    @Override
+    public boolean keepsTurn(MobEntity token) {
+        return AdvanceBackMoves.isWaiting(token);
+    }
+
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
         setColor(boardSpaceBlockEntity, AdvanceBackCartridgeItem.color(AdvanceBackCartridgeItem.steps(stack)));

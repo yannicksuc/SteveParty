@@ -42,7 +42,7 @@ public class TokenMovementService {
     private static final double MOVE_SPEED = 0.5;
 
     public TokenMovementService() {
-        TileReachedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
+        TileReachedEvent.EVENT.register(TokenMovementService::onTileReached);
         TileUpdatedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
 
         DiceRollEvent.EVENT.register(this::handleDiceRoll);
@@ -106,8 +106,15 @@ public class TokenMovementService {
         );
     }
 
+    /** A token reached a board space: a shop stop may keep it while its owner shops (ShopStops), else it goes on. */
+    private static @NotNull ActionResult onTileReached(MobEntity entity, BoardSpaceBlockEntity tile) {
+        if (!entity.getWorld().isClient && ShopStops.onTileReached(entity, tile)) return ActionResult.SUCCESS;
+        return tryToMoveEntityOnBoard(entity, tile);
+    }
+
     private static @NotNull ActionResult tryToMoveEntityOnBoard(MobEntity entity, BoardSpaceBlockEntity tile) {
         if (entity.getWorld().isClient) return ActionResult.PASS;
+        if (ShopStops.isShopping(entity.getUuid())) return ActionResult.PASS; // its owner is shopping
         int nbSteps = ((TokenizedEntityInterface) entity).steveparty$getNbSteps();
         if (nbSteps == 0) return ActionResult.PASS;
         // The extra move of a Move Forward / Back tile starts on its own, once its landing is heard

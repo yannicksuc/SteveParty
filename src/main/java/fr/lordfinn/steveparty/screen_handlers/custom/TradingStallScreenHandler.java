@@ -39,12 +39,7 @@ public class TradingStallScreenHandler extends ScreenHandler {
     private static final int PLAYER_INV_X = 12;
     private static final int PLAYER_INV_Y = 105;
 
-    /** Button id of the sale mode button (see {@link #onButtonClick}). */
-    public static final int SALE_MODE_BUTTON_ID = 0;
-
     private final Inventory inventory;
-    /** Sale mode and credit of the stall (synced to the client). */
-    private final PropertyDelegate propertyDelegate;
 
     public TradingStallScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos) {
         this(syncId, playerInventory, getInventoryFromPos(playerInventory, pos));
@@ -61,11 +56,6 @@ public class TradingStallScreenHandler extends ScreenHandler {
     public TradingStallScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
         super(ModScreensHandlers.TRADING_STALL_SCREEN_HANDLER, syncId);
         this.inventory = inventory;
-        // Server: live values of the stall. Client: filled by the property sync.
-        this.propertyDelegate = !playerInventory.player.getWorld().isClient && inventory instanceof TradingStallBlockEntity stall
-                ? stall.getPropertyDelegate()
-                : new ArrayPropertyDelegate(TradingStallBlockEntity.PROPERTY_COUNT);
-        this.addProperties(this.propertyDelegate);
 
         checkSize(inventory, INVENTORY_SIZE);
 
@@ -121,24 +111,6 @@ public class TradingStallScreenHandler extends ScreenHandler {
         }
 
         return newStack;
-    }
-
-    @Override
-    public boolean onButtonClick(PlayerEntity player, int id) {
-        if (id == SALE_MODE_BUTTON_ID && this.inventory instanceof TradingStallBlockEntity) {
-            // Only the players allowed to open the stall (Shopkeeper Key rules) get here
-            propertyDelegate.set(TradingStallBlockEntity.PROPERTY_SALE_MODE, getSaleMode().next().getId());
-            return true;
-        }
-        return super.onButtonClick(player, id);
-    }
-
-    public TradingStallBlockEntity.SaleMode getSaleMode() {
-        return TradingStallBlockEntity.SaleMode.fromId(propertyDelegate.get(TradingStallBlockEntity.PROPERTY_SALE_MODE));
-    }
-
-    public boolean hasSaleCredit() {
-        return propertyDelegate.get(TradingStallBlockEntity.PROPERTY_SALE_CREDIT) != 0;
     }
 
     @Override

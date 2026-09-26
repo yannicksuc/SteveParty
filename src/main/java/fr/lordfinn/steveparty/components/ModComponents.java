@@ -107,6 +107,13 @@ public class ModComponents {
     public static final ComponentType<fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize> TILE_SIZE =
             registerComponent("tile-size", fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.CODEC);
 
+    /** How many items a player may buy during a stop at a Shop Cartridge's space (1 by default). */
+    public static final ComponentType<Integer> SHOP_PURCHASES =
+            registerComponent("shop-purchases", Codec.intRange(1, fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.MAX_PURCHASES));
+    /** The shop chosen for a Shop Cartridge with the Wrench (none: the nearest merchant). */
+    public static final ComponentType<ShopLinkComponent> SHOP_LINK =
+            registerComponent("shop-link", ShopLinkComponent.CODEC);
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();

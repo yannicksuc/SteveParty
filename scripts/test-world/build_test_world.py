@@ -9,7 +9,7 @@ Writes <run-server>/world/datapacks/steveparty-test/, then in game (or through `
 The area (x 1936..2095, z 1952..2079, floor y=99, everything built at y=100), far from the demo board:
   - the board (west): a start zone of 4 start tiles (a token each) feeding the loop through an entry tile, a loop of 30 tiles spaced 4 blocks apart (2 block gap, tiles are 2 blocks wide), each one turned
     toward the next tile of the path, with diagonal sides, and a shortcut: the fork tile has two destinations (the
-    main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 emeralds and one is a stop trap driven by a router + lever);
+    main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 emeralds and one is a Stop space trap driven by a router + lever);
   - the stations (east), one per 20x20 plot: dice, shops, goal pole, plastic, signs, building blocks, misc, tiles
     (on stairs, slabs, snow, carpets),
     chests holding one of every item, and the Mulas' glass enclosure around an activated Dice Forge.
@@ -303,11 +303,11 @@ def board():
               'Embranchement : tout droit, ou raccourci dangereux (sud)', 'red', 1),
         label(loop[merge][0] + 0.5, Y + 2.5, loop[merge][1] + 0.5, 'Fin du raccourci', 'red', 1),
         label(shortcut[4][0] + 0.5, Y + 3, shortcut[4][1] + 0.5, 'Raccourci dangereux', 'red', 1.5),
-        label(shortcut[4][0] + 0.5, Y + 2.2, shortcut[4][1] + 0.5, '-5 émeraudes par case + un piège stop', 'red', 0.7, False),
-        label(shortcut[trap][0] + 0.5, Y + 2.2, shortcut[trap][1] + 0.5, 'Piège : stop tant que le levier est allumé',
+        label(shortcut[4][0] + 0.5, Y + 2.2, shortcut[4][1] + 0.5, '-5 émeraudes par case + un piège Stop', 'red', 0.7, False),
+        label(shortcut[trap][0] + 0.5, Y + 2.2, shortcut[trap][1] + 0.5, 'Piège : case Stop tant que le levier est allumé',
               'dark_red', 0.7, False),
         label(TRAP_ROUTER[0] + 0.5, Y + 1.8, TRAP_ROUTER[2] + 0.5, 'Routeur du piège + levier', 'white', 0.7, False),
-        label(loop[routed][0] + 0.5, Y + 2.5, loop[routed][1] + 0.5, 'Case stop si le routeur est alimenté', 'gold', 0.8),
+        label(loop[routed][0] + 0.5, Y + 2.5, loop[routed][1] + 0.5, 'Case Stop si le routeur est alimenté', 'gold', 0.8),
         label(router[0] + 0.5, Y + 1.8, router[2] + 0.5, 'Routeur + levier', 'white', 0.7, False),
         label(loop[check_point][0] + 0.5, Y + 2, loop[check_point][1] + 0.5, 'Point de passage', 'light_purple', 0.8),
         label(loop[simple][0] + 0.5, Y + 2, loop[simple][1] + 0.5, 'Case simple', 'white', 0.8),

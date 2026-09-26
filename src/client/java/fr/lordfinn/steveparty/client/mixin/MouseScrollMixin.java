@@ -24,5 +24,20 @@ public class MouseScrollMixin {
         else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.board.WrenchClient.onScroll(vertical)) ci.cancel();
         // Sneak + wheel with a Move Forward / Back cartridge: its number of spaces
         else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.gui.AdvanceBackCartridgeControls.onScroll(vertical)) ci.cancel();
+        // Sneak + wheel with a Shop Cartridge: the purchases a stop allows
+        else if (window == client.getWindow().getHandle() && steveparty$shopCartridgeScroll(vertical)) ci.cancel();
+    }
+
+    @org.spongepowered.asm.mixin.Unique
+    private boolean steveparty$shopCartridgeScroll(double vertical) {
+        if (client.currentScreen != null || client.player == null || !client.player.isSneaking()
+                || !(client.player.getMainHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem)) {
+            return false;
+        }
+        if (vertical != 0) {
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                    new fr.lordfinn.steveparty.payloads.custom.ShopCartridgeScrollPayload(vertical > 0 ? 1 : -1));
+        }
+        return true;
     }
 }
