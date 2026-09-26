@@ -459,8 +459,15 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public void onTileReached(@NotNull MobEntity token, PartyControllerEntity partyControllerEntity) {
-        if (this.world == null || this.walkedOnSound == null) return;
+        if (this.world == null) return;
         Vec3d at = BoardSpaces.standPos(this.world, this.pos);
+        // A token passing by: a few twinkles in the colour of the tile's face (its cartridge's colour)
+        if (this.world instanceof ServerWorld serverWorld) {
+            int color = getStack(activeSlot).getOrDefault(ModComponents.COLOR, 0xFFFFFF) & 0xFFFFFF;
+            serverWorld.spawnParticles(new fr.lordfinn.steveparty.particles.MulaSparkleEffect(color, 0.8F,
+                    fr.lordfinn.steveparty.particles.MulaSparkleEffect.TWINKLE), at.x, at.y + 0.15, at.z, 5, 0.3, 0.05, 0.3, 0.0);
+        }
+        if (this.walkedOnSound == null) return;
         this.world.playSound(null, at.x, at.y, at.z, this.walkedOnSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
