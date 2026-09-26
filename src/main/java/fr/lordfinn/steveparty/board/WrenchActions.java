@@ -167,7 +167,7 @@ public final class WrenchActions {
         clearOrigin(wrench);
         if (!message || origin == null) return;
         if (state.mode() == WrenchMode.TRACE && state.chainLength() > 0) {
-            say(player, Text.translatable("message.steveparty.wrench.trace.end", state.chainLength()));
+            say(player, Text.translatable("message.steveparty.wrench.trace.end", BoardText.num(state.chainLength())));
         } else {
             say(player, Text.translatable("message.steveparty.wrench.unbound", origin.getX(), origin.getY(), origin.getZ()));
         }
@@ -199,7 +199,7 @@ public final class WrenchActions {
         if (BoardLinks.links(originContainer, slot).contains(pos)) {
             // Already linked: follow the path from there
             setOrigin(wrench, world, pos, state.withChain(state.chainStart().or(() -> Optional.of(origin)), n + 1).withSlot(WrenchState.ACTIVE_SLOT));
-            say(player, Text.translatable("message.steveparty.wrench.trace.walk", n, n + 1));
+            say(player, Text.translatable("message.steveparty.wrench.trace.walk", BoardText.num(n), BoardText.num(n + 1)));
             playChainSound(world, player, n + 1);
             return;
         }
@@ -212,14 +212,14 @@ public final class WrenchActions {
         playChainSound(world, player, n + 1);
         if (closing) {
             clearOrigin(wrench);
-            say(player, Text.translatable("message.steveparty.wrench.trace.loop", n));
+            say(player, Text.translatable("message.steveparty.wrench.trace.loop", BoardText.num(n)));
             loopClosed(world, player, pos);
         } else if (joining) {
             clearOrigin(wrench);
-            say(player, Text.translatable("message.steveparty.wrench.trace.join", BoardText.pos(pos), n));
+            say(player, Text.translatable("message.steveparty.wrench.trace.join", BoardText.pos(pos), BoardText.num(n)));
         } else {
             setOrigin(wrench, world, pos, state.withChain(state.chainStart().or(() -> Optional.of(origin)), n + 1).withSlot(WrenchState.ACTIVE_SLOT));
-            say(player, Text.translatable("message.steveparty.wrench.trace.link", n, n + 1, n + 1));
+            say(player, Text.translatable("message.steveparty.wrench.trace.link", BoardText.num(n), BoardText.num(n + 1), BoardText.num(n + 1)));
         }
     }
 
@@ -228,7 +228,7 @@ public final class WrenchActions {
         setOrigin(wrench, world, pos, state.withChain(Optional.of(pos), 1).withSlot(WrenchState.ACTIVE_SLOT));
         int existing = BoardLinks.boardSpaceLinks(world, BoardLinks.links(container, BoardLinks.slotOf(container, WrenchState.ACTIVE_SLOT)));
         if (existing > 0) {
-            say(player, Text.translatable("message.steveparty.wrench.trace.fork", BoardText.pos(pos), existing));
+            say(player, Text.translatable("message.steveparty.wrench.trace.fork", BoardText.pos(pos), BoardText.num(existing)));
         } else {
             say(player, Text.translatable("message.steveparty.wrench.trace.start", BoardText.pos(pos)));
         }
@@ -297,7 +297,7 @@ public final class WrenchActions {
         }
         for (BlockPos link : links) BoardLinks.trail(world, pos, link, BoardLinks.CUT_COLOR);
         writeLinks(player, world, container, slot, List.of());
-        say(player, Text.translatable("message.steveparty.wrench.cut.done", links.size(), BoardText.pos(pos)));
+        say(player, Text.translatable("message.steveparty.wrench.cut.done", BoardText.num(links.size()), BoardText.pos(pos)));
         playSound(world, player, SoundEvents.ENTITY_SHEEP_SHEAR, 1f);
     }
 
@@ -417,7 +417,7 @@ public final class WrenchActions {
                 return;
             }
             setOrigin(wrench, world, pos, state.withChain(state.chainStart().or(() -> Optional.of(origin)), n + 1).withSlot(WrenchState.ACTIVE_SLOT));
-            say(player, Text.translatable("message.steveparty.wrench.auto_link.linked", n, n + 1, n + 1));
+            say(player, Text.translatable("message.steveparty.wrench.auto_link.linked", BoardText.num(n), BoardText.num(n + 1), BoardText.num(n + 1)));
             playChainSound(world, player, n + 1);
         });
     }
@@ -541,11 +541,20 @@ public final class WrenchActions {
      * (chosen)" (picked with sneak + wheel, until the origin changes). Slots are numbered like the power (0-15).
      */
     public static Text slotText(CartridgeContainerBlockEntity container, int slot) {
+        return slotText(container, slot, false);
+    }
+
+    /** Same, coloured for a HUD plate ({@code onPlate}) or the action bar: powered and chosen in distinct colours. */
+    public static Text slotText(CartridgeContainerBlockEntity container, int slot, boolean onPlate) {
         int actual = BoardLinks.slotOf(container, slot);
         int links = BoardLinks.links(container, actual).size();
-        return slot < 0
-                ? Text.translatable("message.steveparty.wrench.slot.active", actual, links)
-                : Text.translatable("message.steveparty.wrench.slot", actual, links);
+        Text status = Text.translatable(slot < 0 ? "message.steveparty.wrench.slot.active" : "message.steveparty.wrench.slot.chosen");
+        if (onPlate) {
+            BoardText.Plate colour = slot < 0 ? BoardText.Plate.POWERED : BoardText.Plate.CHOSEN;
+            return Text.translatable("message.steveparty.wrench.slot", colour.of(actual), colour.of(status), BoardText.Plate.NUMBER.of(links));
+        }
+        return Text.translatable("message.steveparty.wrench.slot", BoardText.num(actual),
+                status.copy().formatted(slot < 0 ? net.minecraft.util.Formatting.RED : net.minecraft.util.Formatting.LIGHT_PURPLE), BoardText.num(links));
     }
 
     // ---------------------------------------------------------------- sounds

@@ -119,14 +119,17 @@ public final class WrenchClient {
         }
         CartridgeContainerBlockEntity originContainer = origin == null ? null : BoardLinks.container(client.world, origin);
         if (originContainer != null && originContainer.size() > 1 && state.mode() != WrenchMode.CUT) {
-            detail = WrenchActions.slotText(originContainer, state.slot());
+            detail = WrenchActions.slotText(originContainer, state.slot(), true);
         }
         Text mode = Text.translatable("hud.steveparty.wrench.panel", state.mode().displayName().copy().formatted(Formatting.RESET), detail);
         int[] counts = BoardView.counts();
         boolean problems = counts[1] + counts[2] > 0;
         Text board = counts[0] == 0 ? null : problems
-                ? Text.translatable("hud.steveparty.board.summary.problems", counts[0], counts[1], counts[2])
-                : Text.translatable("hud.steveparty.board.summary.ok", counts[0]);
+                ? Text.translatable("hud.steveparty.board.summary.problems",
+                        BoardText.Plate.NUMBER.of(Text.translatable("hud.steveparty.board.spaces", counts[0])),
+                        (counts[1] > 0 ? BoardText.Plate.DEAD_END : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.dead_ends", counts[1])),
+                        (counts[2] > 0 ? BoardText.Plate.UNREACHABLE : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.unreachable", counts[2])))
+                : BoardText.Plate.OK.of(Text.translatable("hud.steveparty.board.summary.ok", Text.translatable("hud.steveparty.board.spaces", counts[0])));
 
         int gap = 4;
         // The cartridge the next new space will get: none left in survival -> a red box and a hint
@@ -144,7 +147,7 @@ public final class WrenchClient {
         }));
         tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> cartridgeBox(context, x, y, cartridge, left)));
         if (cartridge.isEmpty()) {
-            Text none = Text.translatable("hud.steveparty.wrench.no_cartridge");
+            Text none = BoardText.Plate.DEAD_END.of(Text.translatable("hud.steveparty.wrench.no_cartridge"));
             tool.add(ToolHud.element(ToolHud.textPlateWidth(none), (x, y) -> ToolHud.textPlate(context, x, y, none, ToolHud.Plate.RED)));
         }
         tool.add(ToolHud.element(ToolHud.textPlateWidth(mode), (x, y) -> ToolHud.textPlate(context, x, y, mode, modePlate)));

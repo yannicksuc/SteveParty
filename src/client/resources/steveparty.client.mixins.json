@@ -10,6 +10,7 @@
     "GameRendererStencilHammerShakeMixin",
     "HeldItemRendererStencilHammerMixin",
     "HeldItemRendererTokenSpellMixin",
+    "InGameHudToolHudMixin",
     "ItemRendererStencilHammerFaceMixin",
     "ItemRendererWandOrbitMixin",
     "LivingEntityRendererSetupTransformsMixin",

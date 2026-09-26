@@ -66,11 +66,37 @@ public final class ToolHud {
     public static void hint(DrawContext context, Text hint, int centerX, int boxesTop) {
         var textRenderer = MinecraftClient.getInstance().textRenderer;
         var lines = textRenderer.wrapLines(hint, available(context));
+        occupiedTop = boxesTop - 10 * lines.size();
+        framesSinceDrawn = 0;
         for (int i = 0; i < lines.size(); i++) {
             var line = lines.get(i);
             int y = boxesTop - 10 * (lines.size() - i);
             context.drawTextWithShadow(textRenderer, line, centerX - textRenderer.getWidth(line) / 2, y, HINT);
         }
+    }
+
+    // ---------------------------------------------------------------- room for the action bar
+
+    /** Top of the tool HUD drawn last (its hint included), and how many vanilla HUD frames ago. */
+    private static int occupiedTop;
+    private static int framesSinceDrawn = Integer.MAX_VALUE;
+
+    /**
+     * How far up a vanilla HUD text whose bottom is {@code bottomFromScreenBottom} pixels above the screen's bottom
+     * must go to clear the tool HUD (0 when none is shown). Called by the action bar and held item name renderers,
+     * before the tool HUDs of the frame: the previous frame's layout is used.
+     */
+    public static int liftFor(DrawContext context, int bottomFromScreenBottom) {
+        if (framesSinceDrawn != Integer.MAX_VALUE) framesSinceDrawn++;
+        if (framesSinceDrawn > 4) return 0;
+        return Math.max(0, context.getScaledWindowHeight() - bottomFromScreenBottom - (occupiedTop - 2));
+    }
+
+    /** Bottom of the held item's name, as vanilla places it. */
+    public static int itemNameBottom() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
+        return statusBars ? 50 : 36;
     }
 
     // ---------------------------------------------------------------- layout
