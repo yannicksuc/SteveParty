@@ -39,7 +39,7 @@ final class WrenchOverlay {
     static final int RED = 0xFFFF4040;
     static final int BLUE = 0xFF4CA6FF;
     static final int GOLD = 0xFFFFD83D;
-    private static final float LABEL_SCALE = 1f / 28f;
+    private static final float LABEL_SCALE = 1f / 32f;
 
     private WrenchOverlay() {
     }
@@ -95,11 +95,11 @@ final class WrenchOverlay {
                               WrenchState state, @Nullable BlockPos origin, BlockPos aimed) {
         CartridgeContainerBlockEntity target = BoardLinks.container(world, aimed);
         if (target == null) return;
-        Vec3d labelPos = anchor(world, aimed).add(0, 0.9, 0);
+        Vec3d labelPos = anchor(world, aimed).add(0, 1.35, 0);
         if (state.mode() == WrenchMode.CUT) {
             List<BlockPos> links = BoardLinks.links(target, BoardLinks.slotOf(target, WrenchState.ACTIVE_SLOT));
-            for (BlockPos link : links) WorldDraw.thickLine(matrices, consumers, camera, anchor(world, aimed), anchor(world, link), RED, 5);
-            WorldDraw.label(matrices, consumers, camera, labelPos, links.isEmpty()
+            for (BlockPos link : links) ghostPath(matrices, consumers, camera, world, aimed, link, RED);
+            label(matrices, consumers, camera, labelPos, links.isEmpty()
                     ? Text.translatable("hud.steveparty.wrench.ghost.cut_none")
                     : Text.translatable("hud.steveparty.wrench.ghost.cut", links.size()), links.isEmpty() ? 0xFFAAAAAA : RED, LABEL_SCALE);
             return;
@@ -110,12 +110,12 @@ final class WrenchOverlay {
                     : existing > 0 ? Text.translatable("hud.steveparty.wrench.ghost.fork", existing)
                     : Text.translatable("hud.steveparty.wrench.ghost.start");
             frame(matrices, consumers, camera, world, aimed, 0xFFFFFFFF);
-            WorldDraw.label(matrices, consumers, camera, labelPos, text, 0xFFFFFFFF, LABEL_SCALE);
+            label(matrices, consumers, camera, labelPos, text, 0xFFFFFFFF, LABEL_SCALE);
             return;
         }
         if (aimed.equals(origin)) {
             Text text = Text.translatable(state.mode() == WrenchMode.TRACE ? "hud.steveparty.wrench.ghost.end" : "hud.steveparty.wrench.ghost.unbind");
-            WorldDraw.label(matrices, consumers, camera, labelPos, text, 0xFFAAAAAA, LABEL_SCALE);
+            label(matrices, consumers, camera, labelPos, text, 0xFFAAAAAA, LABEL_SCALE);
             return;
         }
         CartridgeContainerBlockEntity from = BoardLinks.container(world, origin);
@@ -146,10 +146,29 @@ final class WrenchOverlay {
             color = GREEN;
             text = Text.translatable("hud.steveparty.wrench.ghost.link", n, n + 1);
         }
-        Vec3d a = anchor(world, origin), b = anchor(world, aimed);
-        WorldDraw.thickLine(matrices, consumers, camera, a, b, color, 6);
-        WorldDraw.arrow(matrices, consumers, camera, a, b, color, 0.85);
+        ghostPath(matrices, consumers, camera, world, origin, aimed, color);
         frame(matrices, consumers, camera, world, aimed, color);
-        WorldDraw.label(matrices, consumers, camera, labelPos, text, color, LABEL_SCALE);
+        label(matrices, consumers, camera, labelPos, text, color, LABEL_SCALE);
+    }
+
+    /** The path the click would make: chevrons of the board view, bigger and faster, in the colour of what it does. */
+    private static void ghostPath(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world,
+                                  BlockPos from, BlockPos to, int color) {
+        double phase = (world.getTime() + MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(true)) / 20.0 * 3.0;
+        WorldDraw.path(matrices, consumers, camera, anchor(world, from).add(0, 0.05, 0), anchor(world, to).add(0, 0.05, 0),
+                color, 0.55, 0.5, phase, 0.4, 0);
+    }
+
+    /** A label on a plate framed in the colour of what the click would do. */
+    private static void label(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d pos, Text text, int color, float scale) {
+        WorldDraw.Plate plate = switch (color) {
+            case GREEN -> WorldDraw.Plate.GREEN;
+            case GOLD -> WorldDraw.Plate.GOLD;
+            case RED -> WorldDraw.Plate.RED;
+            default -> WorldDraw.Plate.TEAL;
+        };
+        // Readable from afar, like the board view's numbers
+        float grow = (float) Math.clamp(Math.sqrt(pos.squaredDistanceTo(camera.getPos())) / 7.0, 1.0, 3.0);
+        WorldDraw.plateLabel(matrices, consumers, camera, pos, text, plate, WorldDraw.PLATE_TEXT, scale * grow);
     }
 }

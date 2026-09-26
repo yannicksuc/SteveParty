@@ -442,6 +442,112 @@ public class BoardLinkingGameTests implements FabricGameTest {
         });
     }
 
+    // ---------------------------------------------------------------- 16-slot board spaces and the redstone power
+
+    /**
+     * An Advanced Tile at (3, 1, 1) receiving a power of 5 (a comparator reading a third-full chest), and a Tile at
+     * (6, 1, 1). The comparator needs a few ticks: {@code then} runs once the power is there.
+     */
+    static void poweredAdvancedTile(TestContext context, java.util.function.BiConsumer<BlockPos, BlockPos> then) {
+        BlockPos advanced = tiles(context, ModBlocks.ADVANCED_TILE, new BlockPos(3, 1, 1)).getFirst();
+        BlockPos next = tiles(context, ModBlocks.TILE, new BlockPos(6, 1, 1)).getFirst();
+        context.setBlockState(new BlockPos(1, 0, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(2, 0, 1), Blocks.STONE);
+        // The comparator first: it only reads its chest when a neighbour changes (setBlockState is no player placement)
+        context.setBlockState(new BlockPos(2, 1, 1), Blocks.COMPARATOR.getDefaultState()
+                .with(net.minecraft.block.ComparatorBlock.FACING, net.minecraft.util.math.Direction.WEST));
+        context.setBlockState(new BlockPos(1, 1, 1), Blocks.CHEST);
+        net.minecraft.inventory.Inventory chest = (net.minecraft.inventory.Inventory) context.getBlockEntity(new BlockPos(1, 1, 1));
+        for (int i = 0; i < 9; i++) chest.setStack(i, new ItemStack(net.minecraft.item.Items.STONE, 64)); // 1/3 full: 5
+        chest.markDirty();
+        context.waitAndRun(6, () -> {
+            context.assertEquals(boardSpace(context, advanced).getActiveSlot(), 5, "powered at 5");
+            then.accept(advanced, next);
+        });
+    }
+
+    /** Like {@link #withPlayer}, for tests that go on over several ticks: {@code test} completes the test itself. */
+    static void withLatePlayer(TestContext context, Consumer<ServerPlayerEntity> test) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            test.accept(player);
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPoweredAdvancedTileIsLinkedInItsPoweredSlot(TestContext context) {
+        poweredAdvancedTile(context, (advanced, next) -> withLatePlayer(context, player -> {
+            ItemStack wrench = wrench(player);
+            click(player, wrench, context, advanced);
+            click(player, wrench, context, next);
+            BoardSpaceBlockEntity tile = boardSpace(context, advanced);
+            context.assertEquals(BoardLinks.links(tile, 5), List.of(next), "linked in slot 5");
+            context.assertTrue(tile.getStack(5).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "the cartridge was supplied in slot 5");
+            for (int slot = 0; slot < 16; slot++) {
+                if (slot != 5) context.assertTrue(tile.getStack(slot).isEmpty(), "slot " + slot + " untouched");
+            }
+            context.complete();
+        }));
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aCartridgeIsReplacedInThePoweredSlotOnly(TestContext context) {
+        poweredAdvancedTile(context, (advanced, next) -> withLatePlayer(context, player -> {
+            BoardSpaceBlockEntity tile = boardSpace(context, advanced);
+            BlockPos elsewhere = context.getAbsolutePos(new BlockPos(3, 1, 5));
+            ItemStack slot0 = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+            slot0.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(List.of(elsewhere)), ""));
+            ItemStack slot5 = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+            slot5.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(List.of(next)), ""));
+            tile.setStack(0, slot0);
+            tile.setStack(5, slot5);
+            ItemStack wrench = wrench(player);
+            player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
+            click(player, wrench, context, advanced);
+            context.assertTrue(tile.getStack(5).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "slot 5 now holds the stop cartridge");
+            context.assertEquals(BoardLinks.links(tile, 5), List.of(next), "with slot 5's links");
+            context.assertTrue(tile.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "slot 0 untouched");
+            context.assertEquals(BoardLinks.links(tile, 0), List.of(elsewhere), "slot 0 keeps its own links");
+            context.expectBlockProperty(new BlockPos(3, 1, 1), TILE_TYPE, BoardSpaceType.BOARD_SPACE_STOP);
+            context.complete();
+        }));
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aChosenSlotOverridesThePowerAndThePowerIsFollowedOtherwise(TestContext context) {
+        poweredAdvancedTile(context, (advanced, next) -> withLatePlayer(context, player -> {
+            tiles(context, ModBlocks.TILE, new BlockPos(6, 1, 4));
+            ItemStack wrench = wrench(player);
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1); // Edit: a fixed origin
+            click(player, wrench, context, advanced);
+            for (int i = 0; i < 8; i++) WrenchActions.control(player, wrench, WrenchActionPayload.Action.SLOT, 1);
+            context.assertEquals(WrenchState.of(wrench).slot(), 7, "slot 7 chosen");
+            click(player, wrench, context, next);
+            BoardSpaceBlockEntity tile = boardSpace(context, advanced);
+            context.assertEquals(BoardLinks.links(tile, 7), List.of(next), "the chosen slot 7, not the powered 5");
+            context.assertTrue(tile.getStack(5).isEmpty(), "slot 5 untouched");
+
+            // Back to the powered slot (after slot 15), then the power changes: the next link follows it
+            for (int i = 0; i < 9; i++) WrenchActions.control(player, wrench, WrenchActionPayload.Action.SLOT, 1);
+            context.assertEquals(WrenchState.of(wrench).slot(), WrenchState.ACTIVE_SLOT, "back to the powered slot");
+            context.removeBlock(new BlockPos(2, 1, 1)); // no more comparator: power 0
+        }));
+        context.waitAndRun(14, () -> withLatePlayer(context, player -> {
+            // A new player (same wrench state rebuilt): Edit origin on the advanced tile, powered slot
+            BlockPos advanced = context.getAbsolutePos(new BlockPos(3, 1, 1));
+            BlockPos third = context.getAbsolutePos(new BlockPos(6, 1, 4));
+            context.assertEquals(boardSpace(context, advanced).getActiveSlot(), 0, "no power: slot 0");
+            ItemStack wrench = wrench(player);
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1);
+            click(player, wrench, context, advanced);
+            click(player, wrench, context, third);
+            context.assertEquals(BoardLinks.links(boardSpace(context, advanced), 0), List.of(third), "the link follows the new power: slot 0");
+            context.complete();
+        }));
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void diagonalsAreOriented(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 4));
