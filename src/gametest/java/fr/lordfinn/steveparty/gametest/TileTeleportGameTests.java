@@ -93,12 +93,25 @@ public class TileTeleportGameTests implements FabricGameTest {
         return pig;
     }
 
+    private static final java.util.Map<TestContext, List<Runnable>> CLEANUPS = new java.util.WeakHashMap<>();
+
+    /** Runs {@code cleanup} when the test succeeds ({@link #finish}; a final task would end these waiting tests). */
+    private static void onEnd(TestContext context, Runnable cleanup) {
+        CLEANUPS.computeIfAbsent(context, c -> new ArrayList<>()).add(cleanup);
+    }
+
+    private static void finish(TestContext context) {
+        List<Runnable> cleanups = CLEANUPS.remove(context);
+        if (cleanups != null) cleanups.forEach(Runnable::run);
+        context.complete();
+    }
+
     /** Records the teleports of this test. */
     private static List<TileTeleport.Teleported> teleports(TestContext context) {
         List<TileTeleport.Teleported> list = new ArrayList<>();
         Consumer<TileTeleport.Teleported> listener = list::add;
         TileTeleport.LISTENERS.add(listener);
-        context.addFinalTask(() -> TileTeleport.LISTENERS.remove(listener));
+        onEnd(context, () -> TileTeleport.LISTENERS.remove(listener));
         return list;
     }
 
@@ -109,7 +122,7 @@ public class TileTeleportGameTests implements FabricGameTest {
             if (played.kind() == TileFeedback.Kind.LAND && box.contains(played.tile())) list.add(played);
         };
         TileFeedback.LISTENERS.add(listener);
-        context.addFinalTask(() -> TileFeedback.LISTENERS.remove(listener));
+        onEnd(context, () -> TileFeedback.LISTENERS.remove(listener));
         return list;
     }
 
@@ -132,7 +145,7 @@ public class TileTeleportGameTests implements FabricGameTest {
         controller.setPartyData(data);
         controller.nextStep();
         controller.nextStep();
-        context.addFinalTask(() -> context.removeBlock(pos));
+        onEnd(context, () -> context.removeBlock(pos));
         return controller;
     }
 
@@ -176,11 +189,12 @@ public class TileTeleportGameTests implements FabricGameTest {
             context.assertTrue(!TileTeleport.isTeleporting(pig), "done");
             context.assertTrue(pig.getAttributeInstance(EntityAttributes.SCALE).getModifier(fr.lordfinn.steveparty.Steveparty.id("teleport_shrink")) == null,
                     "back to its size");
-            context.assertEquals(teleports.size(), 1, "one teleport");
-            context.assertEquals(teleports.getFirst().to(), target, "to the arrival");
+            List<TileTeleport.Teleported> own = teleports.stream().filter(t -> t.token().equals(pig.getUuid())).toList();
+            context.assertEquals(own.size(), 1, "one teleport");
+            context.assertEquals(own.getFirst().to(), target, "to the arrival");
             context.assertEquals(data.getStepIndex(), 2, "the next turn");
             context.assertEquals(landings.size(), 1, "no landing on the arrival");
-            context.complete();
+            finish(context);
         });
     }
 
@@ -207,7 +221,7 @@ public class TileTeleportGameTests implements FabricGameTest {
         for (int i = 0; i < 4; i++) order.add(TileTeleport.pick(context.getWorld(), inTurn, inTurn.getActiveCartridgeItemStack()));
         context.assertEquals(order, List.of(context.getAbsolutePos(a), context.getAbsolutePos(b), context.getAbsolutePos(c), context.getAbsolutePos(a)),
                 "in turn, then again");
-        context.complete();
+        finish(context);
     }
 
     /**
@@ -235,7 +249,7 @@ public class TileTeleportGameTests implements FabricGameTest {
 
         context.waitAndRun(WAIT, () -> {
             assertStandsOn(context, pig, context.getAbsolutePos(second), "chain");
-            context.assertEquals(teleports.size(), 1, "one teleport only, no chain");
+            context.assertEquals(teleports.stream().filter(t -> t.token().equals(pig.getUuid())).count(), 1L, "one teleport only, no chain");
             context.assertTrue(!TileTeleport.isTeleporting(pig), "not sent on");
             context.assertEquals(controller.getPartyData().getStepIndex(), 2, "the turn went on");
             // A token arriving on a teleport tile by any way (free play) isn't sent on either while it stays
@@ -247,7 +261,7 @@ public class TileTeleportGameTests implements FabricGameTest {
                 assertStandsOn(context, other2, context.getAbsolutePos(bonus), "option");
                 context.assertTrue(landings.stream().anyMatch(l -> l.tile().equals(context.getAbsolutePos(bonus))
                         && l.landing() == TileFeedback.Landing.GOOD), "the option lands on the bonus arrival");
-                context.complete();
+                finish(context);
             });
         });
     }
@@ -279,7 +293,7 @@ public class TileTeleportGameTests implements FabricGameTest {
         context.assertEquals(graph.distance(context.getAbsolutePos(arrival)), graph.distance(absolute), "at the teleport tile's distance");
         context.assertTrue(graph.nodes().stream().noneMatch(node -> node.edges().stream().anyMatch(e -> e.to().equals(context.getAbsolutePos(arrival)))),
                 "arrivals are no path links");
-        context.complete();
+        finish(context);
     }
 
     private static boolean warned(TestContext context, BlockPos absolute) {
@@ -321,7 +335,7 @@ public class TileTeleportGameTests implements FabricGameTest {
             for (int i = 0; i < arrivals.size(); i++) {
                 assertStandsOn(context, pigs.get(i), context.getAbsolutePos(arrivals.get(i)), List.of("lowered", "sloped", "large").get(i));
             }
-            context.complete();
+            finish(context);
         });
     }
 
@@ -336,7 +350,7 @@ public class TileTeleportGameTests implements FabricGameTest {
         TileReachedEvent.EVENT.invoker().onTileReached(pig, teleport);
         context.assertTrue(!TileTeleport.isTeleporting(pig), "passing: no teleport");
         ((TokenizedEntityInterface) pig).steveparty$setNbSteps(0);
-        context.complete();
+        finish(context);
     }
 
     /**
@@ -360,6 +374,7 @@ public class TileTeleportGameTests implements FabricGameTest {
             // Tile 3 has no cartridge: in creative it becomes a Teleport tile... but tile 0 holds a plain cartridge
             BoardLinkingGameTests.click(player, wrench, context, teleport);
             context.assertTrue(WrenchActions.origin(wrench, context.getWorld()) == null, "a plain tile is no Teleport tile");
+            BoardLinkingGameTests.click(player, wrench, context, teleport.down()); // not the same space twice in a row (held button)
             player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.TELEPORT_CARTRIDGE));
             BoardLinkingGameTests.click(player, wrench, context, teleport);
             player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
