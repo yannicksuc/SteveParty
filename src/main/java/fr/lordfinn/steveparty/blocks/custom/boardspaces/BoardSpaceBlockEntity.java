@@ -84,8 +84,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private void syncToClients() {
-        if (world != null && !world.isClient)
+        if (world != null && !world.isClient) {
+            fr.lordfinn.steveparty.board.BoardPerf.boardSpaceSyncs++;
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
+        }
     }
 
     public DefaultedList<ItemStack> getItems() {
@@ -106,25 +108,35 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void refreshActiveSlot() {
         if (!(world instanceof ServerWorld serverWorld)) return;
         activeSlotNeedsCheck = false;
-        BlockPos routerPos = BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+        BlockPos routerPos = routerOf(serverWorld);
         BlockPos powerPos = routerPos != null ? routerPos : pos;
         // Never load a chunk for this: an unloaded router keeps the last known slot, it pushes its power when it changes
         if (!serverWorld.isChunkLoaded(powerPos)) return;
-        setActiveSlot(serverWorld.getReceivedRedstonePower(powerPos));
+        setActiveSlot(powerAt(serverWorld, powerPos));
+    }
+
+    private @Nullable BlockPos routerOf(ServerWorld serverWorld) {
+        fr.lordfinn.steveparty.board.BoardPerf.routerStateLookups++;
+        return BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+    }
+
+    private static int powerAt(ServerWorld serverWorld, BlockPos powerPos) {
+        fr.lordfinn.steveparty.board.BoardPerf.boardSpacePowerReads++;
+        return serverWorld.getReceivedRedstonePower(powerPos);
     }
 
     /** Own neighbors changed: only relevant when this board space is not driven by a router. */
     public void onNeighborUpdate() {
         if (!(world instanceof ServerWorld serverWorld)) return;
-        if (BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos) != null) return;
+        if (routerOf(serverWorld) != null) return;
         activeSlotNeedsCheck = false;
-        setActiveSlot(serverWorld.getReceivedRedstonePower(pos));
+        setActiveSlot(powerAt(serverWorld, pos));
     }
 
     /** Pushed by a router whose power changed. */
     public void onRouterPowerChanged(BlockPos routerPos, int power) {
         if (!(world instanceof ServerWorld serverWorld)) return;
-        if (!routerPos.equals(BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos))) return;
+        if (!routerPos.equals(routerOf(serverWorld))) return;
         activeSlotNeedsCheck = false;
         setActiveSlot(power);
     }

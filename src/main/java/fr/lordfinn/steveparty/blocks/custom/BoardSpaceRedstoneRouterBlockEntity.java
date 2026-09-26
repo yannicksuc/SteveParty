@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.board.BoardPerf;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
@@ -56,6 +57,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     }
 
     public int getPower() {
+        BoardPerf.routerPowerReads++;
         return world == null ? 0 : world.getReceivedRedstonePower(pos);
     }
 
@@ -64,6 +66,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
         if (!(this.world instanceof ServerWorld serverWorld)) return;
         int power = getPower();
         for (BlockPos boardSpacePos : routedBoardSpaces) {
+            BoardPerf.routerPushLookups++;
             if (serverWorld.isChunkLoaded(boardSpacePos)
                     && serverWorld.getBlockEntity(boardSpacePos) instanceof BoardSpaceBlockEntity boardSpace) {
                 boardSpace.onRouterPowerChanged(this.pos, power);
