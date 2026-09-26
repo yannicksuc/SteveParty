@@ -1,6 +1,14 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.board.BoardGraph;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.ShopLinkComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
+import fr.lordfinn.steveparty.service.ShopStops;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.Box;
+import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -47,6 +55,13 @@ public final class BoardView {
 
     private static @Nullable BoardGraph graph;
     private static Map<BoardGraph.Edge, Integer> colors = Map.of();
+    /** Shop spaces around (Shop Cartridge), with where their merchant is (null: none around). */
+    private static List<Shop> shops = List.of();
+    /** The Shop Cartridge's yellow. */
+    private static final int SHOP = 0xFF000000 | ShopCartridgeItem.COLOR;
+
+    private record Shop(BlockPos pos, boolean linked, @Nullable Vec3d target) {
+    }
     private static int age;
 
     private BoardView() {
@@ -62,9 +77,32 @@ public final class BoardView {
                 age = 0;
                 graph = BoardGraph.collect(client.world, client.player.getBlockPos(), RADIUS);
                 colors = branchColors(graph);
+                shops = shops(client.world, graph);
             }
         });
         WorldRenderEvents.AFTER_ENTITIES.register(BoardView::render);
+    }
+
+    /**
+     * The shop spaces of the graph, and where their merchant stands: the one chosen with the Wrench (or where he was
+     * chosen), else the nearest Hiding Trader around (the client doesn't know which stalls are whose: an estimate).
+     */
+    private static List<Shop> shops(ClientWorld world, BoardGraph graph) {
+        List<Shop> result = new java.util.ArrayList<>();
+        for (BoardGraph.Node node : graph.nodes()) {
+            if (!(world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space)) continue;
+            ItemStack cartridge = space.getActiveCartridgeItemStack();
+            if (!(cartridge.getItem() instanceof ShopCartridgeItem)) continue;
+            ShopLinkComponent link = cartridge.get(ModComponents.SHOP_LINK);
+            Vec3d at = Vec3d.ofCenter(node.pos());
+            Vec3d target = world.getEntitiesByClass(HidingTraderEntity.class, new Box(node.pos()).expand(ShopStops.SHOP_RADIUS),
+                            trader -> link == null || trader.getUuid().equals(link.trader())).stream()
+                    .min(java.util.Comparator.comparingDouble(trader -> trader.squaredDistanceTo(at)))
+                    .map(trader -> trader.getPos().add(0, 0.5, 0))
+                    .orElse(link != null ? Vec3d.ofCenter(link.anchor()) : null);
+            result.add(new Shop(node.pos(), target != null, target));
+        }
+        return result;
     }
 
     /** The current graph (null when the Wrench is not held). */
@@ -137,6 +175,12 @@ public final class BoardView {
                         edge.active() ? phase : 0, 0.45, 0.12);
             }
         }
+        // Shop check points: an emerald path to their shop
+        for (Shop shop : shops) {
+            if (shop.target() == null) continue;
+            WorldDraw.path(matrices, consumers, camera, WrenchOverlay.anchor(world, shop.pos()), shop.target(), SHOP, DOT * 0.8, SPACING,
+                    phase, 0.45, 0);
+        }
         // Labels from the farthest to the nearest: the nearest ones on top
         List<BoardGraph.Node> labelled = new java.util.ArrayList<>(shown.nodes().stream()
                 .filter(node -> WrenchOverlay.anchor(world, node.pos()).squaredDistanceTo(eye) <= LABEL_DISTANCE_SQ).toList());
@@ -148,6 +192,14 @@ public final class BoardView {
             float grow = (float) Math.clamp(distance / 7.0, 1.0, 3.0);
             float scale = LABEL_SCALE * grow;
             labels(matrices, consumers, camera, shown, node, from, scale, time);
+            for (Shop shop : shops) {
+                if (!shop.pos().equals(node.pos())) continue;
+                // Above the other plates of the space: « Shop », orange « Shop ? » while no merchant is around
+                Vec3d at = from.add(0, 0.25 + 16 * scale * 2.6, 0);
+                WorldDraw.plateLabel(matrices, consumers, camera, at,
+                        Text.translatable(shop.linked() ? "hud.steveparty.board.shop" : "hud.steveparty.board.shop_missing"),
+                        shop.linked() ? WorldDraw.Plate.GOLD : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale);
+            }
         }
         consumers.draw();
     }
