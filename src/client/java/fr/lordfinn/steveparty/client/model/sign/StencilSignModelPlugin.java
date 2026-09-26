@@ -21,7 +21,7 @@ import java.util.function.Function;
  * <p>
  * Models, all editable in Blockbench (front of the sign facing north):
  * <ul>
- *     <li>{@code block/<wood>_traffic_sign}, {@code block/traffic_sign_generic} (oak placeholder textures);</li>
+ *     <li>{@code block/<wood>_easel_sign}, {@code block/easel_sign_generic} (oak placeholder textures);</li>
  *     <li>{@code block/wooden_panel}: the board (the post is the fence below);</li>
  *     <li>{@code block/wooden_cutout_panel}: particles and item display only, the board is built from the stencil;</li>
  *     <li>{@code block/rock_sign}: the stone standing upright (leant by the code), without its front which is built
@@ -53,12 +53,12 @@ public class StencilSignModelPlugin implements ModelLoadingPlugin {
             Baker baker = ctx.baker();
             Function<SpriteIdentifier, Sprite> sprites = ctx.textureGetter();
 
-            if (path.startsWith("block/") && path.endsWith("_traffic_sign")
-                    && LEGACY_WOODS.contains(path.substring("block/".length(), path.length() - "_traffic_sign".length()))) {
-                return new StencilSignModels.TrafficSign(original, false);
+            if (path.startsWith("block/") && path.endsWith("_easel_sign")
+                    && LEGACY_WOODS.contains(path.substring("block/".length(), path.length() - "_easel_sign".length()))) {
+                return new StencilSignModels.EaselSign(original, false);
             }
             return switch (path) {
-                case "block/traffic_sign_generic", "item/traffic_sign" -> new StencilSignModels.TrafficSign(original, true);
+                case "block/easel_sign_generic", "item/easel_sign" -> new StencilSignModels.EaselSign(original, true);
                 case "block/wooden_panel", "item/wooden_panel" -> new StencilSignModels.Panel(original);
                 case "block/wooden_cutout_panel", "item/wooden_cutout_panel" ->
                         new StencilSignModels.CutoutPanel(original, blockSprite(sprites, StencilSignModels.OAK_PLANKS));

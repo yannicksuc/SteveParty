@@ -181,11 +181,11 @@ public class ModItems {
             itemGroup.add(TRADING_STALL);
             itemGroup.add(CASH_REGISTER);
             itemGroup.add(SHOPKEEPER_KEY);
-            // The 10 fixed-wood traffic signs stay in the game for the worlds that have them, but are no longer
-            // listed: the material traffic sign covers every planks, modded ones included
+            // The 10 fixed-wood easel signs stay in the game for the worlds that have them, but are no longer
+            // listed: the material easel sign covers every planks, modded ones included
             RegistryWrapper.WrapperLookup lookup = itemGroup.getContext().lookup();
             for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
-                itemGroup.add(MaterialSignItems.withMaterial(TRAFFIC_SIGN, planks));
+                itemGroup.add(MaterialSignItems.withMaterial(EASEL_SIGN, planks));
             }
             for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
                 itemGroup.add(MaterialSignItems.withMaterial(WOODEN_PANEL, planks));

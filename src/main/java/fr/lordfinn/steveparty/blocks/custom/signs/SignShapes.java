@@ -23,7 +23,7 @@ public final class SignShapes {
     private SignShapes() {
     }
 
-    /** Turn applied to the model of a sign with this rotation (same as the traffic sign always used). */
+    /** Turn applied to the model of a sign with this rotation (same as the easel sign always used). */
     public static float angleDegrees(int rotation) {
         return rotation * -22.5F + 180.0F;
     }

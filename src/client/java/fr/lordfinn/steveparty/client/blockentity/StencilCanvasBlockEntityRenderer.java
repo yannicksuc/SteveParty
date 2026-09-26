@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
-import fr.lordfinn.steveparty.blocks.custom.TrafficSignBlock;
+import fr.lordfinn.steveparty.blocks.custom.EaselSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.RockSignBlock;
@@ -195,7 +195,7 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         if (shape == null) return new Cache(state, List.of(), StencilShape.blank(), StencilResourceManager.Kind.FLAT, false);
         if (state.getBlock() instanceof PlasticRoadSignBlock) shape = masked(shape, state.get(PlasticRoadSignBlock.PLATE).mask());
         // Wooden signs keep their painted wood grain; everything else is a plain print
-        boolean woodGrain = entity.getColor() != null && (state.getBlock() instanceof TrafficSignBlock || state.getBlock() instanceof WoodenPanelBlock);
+        boolean woodGrain = entity.getColor() != null && (state.getBlock() instanceof EaselSignBlock || state.getBlock() instanceof WoodenPanelBlock);
         return new Cache(state, quads, shape, woodGrain ? StencilResourceManager.Kind.WOOD : StencilResourceManager.Kind.FLAT, sign);
     }
 

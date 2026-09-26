@@ -77,12 +77,12 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("bandana", "shorn off a Hiding Trader"),
             Map.entry("villager_block", "a villager pushed down by a piston"),
             Map.entry("mula_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
-            // The 10 fixed-wood traffic signs are kept for the worlds that have them: the material traffic sign replaced them
-            Map.entry("oak_traffic_sign", "legacy"), Map.entry("spruce_traffic_sign", "legacy"),
-            Map.entry("birch_traffic_sign", "legacy"), Map.entry("jungle_traffic_sign", "legacy"),
-            Map.entry("acacia_traffic_sign", "legacy"), Map.entry("dark_oak_traffic_sign", "legacy"),
-            Map.entry("mangrove_traffic_sign", "legacy"), Map.entry("crimson_traffic_sign", "legacy"),
-            Map.entry("warped_traffic_sign", "legacy"), Map.entry("cherry_traffic_sign", "legacy"));
+            // The 10 fixed-wood easel signs are kept for the worlds that have them: the material easel sign replaced them
+            Map.entry("oak_easel_sign", "legacy"), Map.entry("spruce_easel_sign", "legacy"),
+            Map.entry("birch_easel_sign", "legacy"), Map.entry("jungle_easel_sign", "legacy"),
+            Map.entry("acacia_easel_sign", "legacy"), Map.entry("dark_oak_easel_sign", "legacy"),
+            Map.entry("mangrove_easel_sign", "legacy"), Map.entry("crimson_easel_sign", "legacy"),
+            Map.entry("warped_easel_sign", "legacy"), Map.entry("cherry_easel_sign", "legacy"));
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyItemHasASurvivalRoute(TestContext context) {

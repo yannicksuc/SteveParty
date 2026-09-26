@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.StencilMakerBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.TrafficSignBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.EaselSignBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
@@ -150,9 +150,9 @@ public class StencilGameTests implements FabricGameTest {
     // ---------------------------------------------------------------- signs
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void trafficSignTakesAndGivesBackWater(TestContext context) {
+    public void easelSignTakesAndGivesBackWater(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);
-        context.setBlockState(SIGN, ModBlocks.OAK_TRAFFIC_SIGN);
+        context.setBlockState(SIGN, ModBlocks.OAK_EASEL_SIGN);
         ServerWorld world = context.getWorld();
         BlockPos abs = context.getAbsolutePos(SIGN);
         BlockState state = world.getBlockState(abs);
@@ -167,13 +167,13 @@ public class StencilGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilAndDyePaintOnceAndDyeAloneRepaints(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);
-        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
+        context.setBlockState(SIGN, ModBlocks.EASEL_SIGN);
         PlayerEntity player = survivalPlayer(context);
         player.setStackInHand(Hand.MAIN_HAND, stencil("heart"));
         player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.RED_DYE, 3));
         BlockState state = context.getBlockState(SIGN);
         state.onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
-        TrafficSignBlockEntity sign = at(context, SIGN);
+        EaselSignBlockEntity sign = at(context, SIGN);
         context.assertTrue(Arrays.equals(sign.getShape(), pattern("heart")) && sign.getColor() == DyeColor.RED, "red heart painted");
         context.assertEquals(player.getOffHandStack().getCount(), 2, "one dye used");
         // Same symbol, same colour: nothing is used
@@ -198,8 +198,8 @@ public class StencilGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void brokenSignKeepsItsMaterialAndSymbol(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);
-        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
-        TrafficSignBlockEntity sign = at(context, SIGN);
+        context.setBlockState(SIGN, ModBlocks.EASEL_SIGN);
+        EaselSignBlockEntity sign = at(context, SIGN);
         Identifier birch = Registries.BLOCK.getId(Blocks.BIRCH_PLANKS);
         sign.setMaterial(birch);
         sign.setSymbol(pattern("mushroom"), DyeColor.RED);
@@ -217,19 +217,54 @@ public class StencilGameTests implements FabricGameTest {
         // Placing it again gives the same sign
         BlockPos other = SIGN.east(2);
         context.setBlockState(other.down(), Blocks.STONE);
-        context.setBlockState(other, ModBlocks.TRAFFIC_SIGN);
-        TrafficSignBlockEntity placed = at(context, other);
+        context.setBlockState(other, ModBlocks.EASEL_SIGN);
+        EaselSignBlockEntity placed = at(context, other);
         placed.readComponents(drop);
         context.assertTrue(birch.equals(placed.getMaterial()) && Arrays.equals(placed.getShape(), pattern("mushroom"))
                 && placed.getColor() == DyeColor.RED && placed.isGlowing(), "same sign placed again");
         context.complete();
     }
 
+    /** Worlds saved before the rename: the easel signs were "traffic_sign" and "<wood>_traffic_sign". */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void easelSignsSavedUnderTheirOldNamesLoad(TestContext context) {
+        var registries = context.getWorld().getRegistryManager();
+        Identifier old = Identifier.of("steveparty", "traffic_sign");
+        context.assertTrue(Registries.BLOCK.get(old) == ModBlocks.EASEL_SIGN, "old block id");
+        context.assertTrue(Registries.ITEM.get(old) == ModBlocks.EASEL_SIGN.asItem(), "old item id");
+        context.assertTrue(Registries.BLOCK_ENTITY_TYPE.get(old) == fr.lordfinn.steveparty.blocks.ModBlockEntities.EASEL_SIGN_ENTITY, "old block entity id");
+        context.assertTrue(Registries.BLOCK.get(Identifier.of("steveparty", "cherry_traffic_sign")) == ModBlocks.CHERRY_EASEL_SIGN, "old wood block id");
+        context.assertTrue(Registries.ITEM.get(Identifier.of("steveparty", "warped_traffic_sign")) == ModBlocks.WARPED_EASEL_SIGN.asItem(), "old wood item id");
+        // A chunk palette entry
+        net.minecraft.nbt.NbtCompound stateNbt = new net.minecraft.nbt.NbtCompound();
+        stateNbt.putString("Name", "steveparty:oak_traffic_sign");
+        BlockState state = BlockState.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, stateNbt).getOrThrow();
+        context.assertTrue(state.isOf(ModBlocks.OAK_EASEL_SIGN), "old block state loads, got " + state);
+        // A saved stack
+        net.minecraft.nbt.NbtCompound stackNbt = new net.minecraft.nbt.NbtCompound();
+        stackNbt.putString("id", "steveparty:traffic_sign");
+        stackNbt.putInt("count", 3);
+        ItemStack stack = ItemStack.fromNbt(registries, stackNbt).orElse(ItemStack.EMPTY);
+        context.assertTrue(stack.isOf(ModBlocks.EASEL_SIGN.asItem()) && stack.getCount() == 3, "old stack loads, got " + stack);
+        // A saved block entity, with its symbol
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN, ModBlocks.EASEL_SIGN);
+        EaselSignBlockEntity sign = at(context, SIGN);
+        sign.setSymbol(pattern("heart"), DyeColor.RED);
+        net.minecraft.nbt.NbtCompound saved = sign.createNbtWithIdentifyingData(registries);
+        saved.putString("id", "steveparty:traffic_sign");
+        BlockPos abs = context.getAbsolutePos(SIGN);
+        var loaded = net.minecraft.block.entity.BlockEntity.createFromNbt(abs, context.getWorld().getBlockState(abs), saved, registries);
+        context.assertTrue(loaded instanceof EaselSignBlockEntity easel && Arrays.equals(easel.getShape(), pattern("heart"))
+                && easel.getColor() == DyeColor.RED, "old block entity loads with its symbol");
+        context.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void legacySignsStillReadTheirOldData(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);
-        context.setBlockState(SIGN, ModBlocks.OAK_TRAFFIC_SIGN);
-        TrafficSignBlockEntity sign = at(context, SIGN);
+        context.setBlockState(SIGN, ModBlocks.OAK_EASEL_SIGN);
+        EaselSignBlockEntity sign = at(context, SIGN);
         net.minecraft.nbt.NbtCompound old = new net.minecraft.nbt.NbtCompound();
         old.putByteArray("SymbolShape", pattern("left_arrow"));
         old.putString("Color", "lime");
@@ -330,7 +365,7 @@ public class StencilGameTests implements FabricGameTest {
 
         // Signs standing on the ground stand in front of it, their back against it
         context.setBlockState(front.down(), Blocks.STONE);
-        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.EASEL_SIGN)) {
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
             useOn(context, player, SIGN, Direction.SOUTH);
             BlockState leaning = context.getBlockState(front);
@@ -342,11 +377,11 @@ public class StencilGameTests implements FabricGameTest {
         // Every sign also stands on top of a fence or a wall
         BlockPos abs = context.getAbsolutePos(front);
         context.setBlockState(front.down(), Blocks.BIRCH_FENCE);
-        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.EASEL_SIGN)) {
             context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a fence");
         }
         context.setBlockState(front.down(), Blocks.MOSSY_STONE_BRICK_WALL);
-        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+        for (var sign : List.of(ModBlocks.ROCK_SIGN, ModBlocks.EASEL_SIGN)) {
             context.assertTrue(sign.getDefaultState().canPlaceAt(context.getWorld(), abs), sign + " on a wall");
         }
         context.complete();
@@ -524,7 +559,7 @@ public class StencilGameTests implements FabricGameTest {
     public void signsCanBeBumpedInto(TestContext context) {
         BlockPos abs = context.getAbsolutePos(SIGN);
         context.setBlockState(SIGN.down(), Blocks.OAK_FENCE);
-        for (var sign : List.of(ModBlocks.TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL,
+        for (var sign : List.of(ModBlocks.EASEL_SIGN, ModBlocks.OAK_EASEL_SIGN, ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL,
                 ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.ROCK_SIGN)) {
             context.setBlockState(SIGN, sign);
             context.assertTrue(!context.getBlockState(SIGN).getCollisionShape(context.getWorld(), abs).isEmpty(), sign + " has a hitbox");
@@ -645,12 +680,12 @@ public class StencilGameTests implements FabricGameTest {
     public void signRecipesKeepTheirMaterial(TestContext context) {
         ItemStack p = new ItemStack(Items.CHERRY_PLANKS), s = new ItemStack(Items.STICK), e = ItemStack.EMPTY;
         ItemStack sign = result(context, 3, 3, p, p, p, p, p, p, s, e, s);
-        context.assertTrue(sign.isOf(ModBlocks.TRAFFIC_SIGN.asItem()) && sign.getCount() == 2, "2 traffic signs");
+        context.assertTrue(sign.isOf(ModBlocks.EASEL_SIGN.asItem()) && sign.getCount() == 2, "2 easel signs");
         context.assertTrue(Registries.BLOCK.getId(Blocks.CHERRY_PLANKS).equals(sign.get(ModComponents.SIGN_MATERIAL)), "made of cherry");
 
         ItemStack b = new ItemStack(Items.BIRCH_PLANKS);
         ItemStack mixed = result(context, 3, 3, p, b, p, p, p, p, s, e, s);
-        context.assertTrue(!mixed.isOf(ModBlocks.TRAFFIC_SIGN.asItem()), "no half cherry half birch sign");
+        context.assertTrue(!mixed.isOf(ModBlocks.EASEL_SIGN.asItem()), "no half cherry half birch sign");
 
         ItemStack r = new ItemStack(Items.GRANITE);
         ItemStack rock = result(context, 3, 2, e, r, e, r, r, r);
@@ -878,7 +913,7 @@ public class StencilGameTests implements FabricGameTest {
 
         // On a sign: nothing painted, nothing used
         context.setBlockState(SIGN.east(2).down(), Blocks.STONE);
-        context.setBlockState(SIGN.east(2), ModBlocks.TRAFFIC_SIGN);
+        context.setBlockState(SIGN.east(2), ModBlocks.EASEL_SIGN);
         context.getBlockState(SIGN.east(2)).onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, hit(context, SIGN.east(2), Direction.NORTH));
         StencilCanvasBlockEntity sign = at(context, SIGN.east(2));
         context.assertTrue(!sign.hasShape(), "no blank symbol on the sign");
@@ -934,7 +969,7 @@ public class StencilGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void glowOnlySignKeepsNoSymbolThroughItsItem(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);
-        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
+        context.setBlockState(SIGN, ModBlocks.EASEL_SIGN);
         StencilCanvasBlockEntity sign = at(context, SIGN);
         sign.setGlowing(true);
         ServerWorld world = context.getWorld();
@@ -942,7 +977,7 @@ public class StencilGameTests implements FabricGameTest {
         ItemStack drop = net.minecraft.block.Block.getDroppedStacks(world.getBlockState(abs), world, abs, sign).getFirst();
         BlockPos other = SIGN.east(2);
         context.setBlockState(other.down(), Blocks.STONE);
-        context.setBlockState(other, ModBlocks.TRAFFIC_SIGN);
+        context.setBlockState(other, ModBlocks.EASEL_SIGN);
         StencilCanvasBlockEntity placed = at(context, other);
         placed.readComponents(drop);
         context.assertTrue(!placed.hasShape() && placed.isGlowing(), "glowing, and still no symbol");
@@ -952,7 +987,7 @@ public class StencilGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void glowInkOnlyGoesOnPaint(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);
-        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
+        context.setBlockState(SIGN, ModBlocks.EASEL_SIGN);
         StencilCanvasBlockEntity sign = at(context, SIGN);
         PlayerEntity player = survivalPlayer(context);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.GLOW_INK_SAC, 3));
@@ -972,7 +1007,7 @@ public class StencilGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilGunSpraysSignsFromTheOffHand(TestContext context) {
         context.setBlockState(SIGN.down(), Blocks.STONE);
-        context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN);
+        context.setBlockState(SIGN, ModBlocks.EASEL_SIGN);
         PlayerEntity player = survivalPlayer(context);
         ItemStack gun = loadedGun();
         player.setStackInHand(Hand.OFF_HAND, gun);
@@ -990,13 +1025,13 @@ public class StencilGameTests implements FabricGameTest {
     public void signsGoInPlaceOfGrass(TestContext context) {
         PlayerEntity player = survivalPlayer(context);
         player.setPosition(Vec3d.of(context.getAbsolutePos(SIGN)).add(0, 0, -6));
-        for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.TRAFFIC_SIGN)) {
+        for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.EASEL_SIGN)) {
             context.setBlockState(SIGN.down(), Blocks.DIRT);
             context.setBlockState(SIGN, Blocks.SHORT_GRASS);
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(sign));
             useOn(context, player, SIGN, Direction.NORTH);
             BlockState placed = context.getBlockState(SIGN);
-            AbstractStencilSignBlock.Mount expected = sign == ModBlocks.TRAFFIC_SIGN ? AbstractStencilSignBlock.Mount.POST : AbstractStencilSignBlock.Mount.FLOOR;
+            AbstractStencilSignBlock.Mount expected = sign == ModBlocks.EASEL_SIGN ? AbstractStencilSignBlock.Mount.POST : AbstractStencilSignBlock.Mount.FLOOR;
             context.assertTrue(placed.isOf(sign) && placed.get(AbstractStencilSignBlock.MOUNT) == expected, sign + " in place of grass: " + placed);
             context.setBlockState(SIGN, Blocks.AIR);
         }
@@ -1014,11 +1049,11 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void trafficSignOutlineFollowsItsBoard(TestContext context) {
+    public void easelSignOutlineFollowsItsBoard(TestContext context) {
         BlockPos abs = context.getAbsolutePos(SIGN);
         context.setBlockState(SIGN.down(), Blocks.STONE);
         for (int rotation : new int[]{0, 4, 2}) {
-            context.setBlockState(SIGN, ModBlocks.TRAFFIC_SIGN.getDefaultState().with(AbstractStencilSignBlock.ROTATION, rotation));
+            context.setBlockState(SIGN, ModBlocks.EASEL_SIGN.getDefaultState().with(AbstractStencilSignBlock.ROTATION, rotation));
             BlockState state = context.getBlockState(SIGN);
             net.minecraft.util.shape.VoxelShape outline = state.getOutlineShape(context.getWorld(), abs);
             net.minecraft.util.shape.VoxelShape collision = state.getCollisionShape(context.getWorld(), abs);

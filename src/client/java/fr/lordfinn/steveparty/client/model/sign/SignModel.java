@@ -49,7 +49,7 @@ import java.util.function.Supplier;
 
 /**
  * Chunk-mesh model of a 16-way stencil sign. Vanilla block models can only turn by 90°: this one emits the quads
- * of its JSON model(s) turned by the sign's {@code rotation} (22.5° steps, same turn the traffic sign always had),
+ * of its JSON model(s) turned by the sign's {@code rotation} (22.5° steps, same turn the easel sign always had),
  * and re-textured with the sign's material (see {@link MaterialSprites}). Signs standing on a post also draw the
  * post of the fence below them, never turned; signs hung on the side of a post are drawn around that post, one block
  * behind. Items get the same model, unturned, made of the material written on the stack.
@@ -127,7 +127,7 @@ public abstract class SignModel implements BakedModel {
         if (materials == null) {
             Renderer renderer = RendererAccess.INSTANCE.getRenderer();
             if (renderer == null) return false;
-            // Flat light like the traffic sign always had: ambient occlusion is wrong on turned faces
+            // Flat light like the easel sign always had: ambient occlusion is wrong on turned faces
             materials = new Materials(
                     renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).find(),
                     renderer.materialFinder().blendMode(BlendMode.CUTOUT).ambientOcclusion(TriState.FALSE).emissive(true).disableDiffuse(true).find(),

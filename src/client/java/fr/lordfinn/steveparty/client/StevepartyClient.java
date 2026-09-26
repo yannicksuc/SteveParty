@@ -245,12 +245,12 @@ public class StevepartyClient implements ClientModInitializer {
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.TRAFFIC_SIGN_ENTITY, StencilCanvasBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.EASEL_SIGN_ENTITY, StencilCanvasBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_CANVAS, StencilCanvasBlockEntityRenderer::new);
         // Stencil signs: turned models with see-through texels (stripped logs, pebbles...)
-        for (Block sign : new Block[]{OAK_TRAFFIC_SIGN, SPRUCE_TRAFFIC_SIGN, BIRCH_TRAFFIC_SIGN, JUNGLE_TRAFFIC_SIGN, ACACIA_TRAFFIC_SIGN,
-                DARK_OAK_TRAFFIC_SIGN, MANGROVE_TRAFFIC_SIGN, CHERRY_TRAFFIC_SIGN, CRIMSON_TRAFFIC_SIGN, WARPED_TRAFFIC_SIGN,
-                ModBlocks.TRAFFIC_SIGN, WOODEN_PANEL, WOODEN_CUTOUT_PANEL, ROCK_SIGN, PLASTIC_ROAD_SIGN}) {
+        for (Block sign : new Block[]{OAK_EASEL_SIGN, SPRUCE_EASEL_SIGN, BIRCH_EASEL_SIGN, JUNGLE_EASEL_SIGN, ACACIA_EASEL_SIGN,
+                DARK_OAK_EASEL_SIGN, MANGROVE_EASEL_SIGN, CHERRY_EASEL_SIGN, CRIMSON_EASEL_SIGN, WARPED_EASEL_SIGN,
+                ModBlocks.EASEL_SIGN, WOODEN_PANEL, WOODEN_CUTOUT_PANEL, ROCK_SIGN, PLASTIC_ROAD_SIGN}) {
             BlockRenderLayerMap.INSTANCE.putBlock(sign, RenderLayer.getCutout());
         }
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_MAKER_ENTITY, StencilMakerBlockEntityRenderer::new);

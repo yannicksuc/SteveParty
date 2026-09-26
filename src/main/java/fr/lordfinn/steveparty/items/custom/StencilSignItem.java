@@ -21,7 +21,7 @@ import net.minecraft.util.Formatting;
 import java.util.List;
 
 /**
- * Item of a stencil sign: named after what it is made of ("Traffic Sign (Birch Planks)", "Plastic Road Sign (Red)")
+ * Item of a stencil sign: named after what it is made of ("Easel Sign (Birch Planks)", "Plastic Road Sign (Red)")
  * and telling what is painted on it.
  */
 public class StencilSignItem extends BlockItem {
