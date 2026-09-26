@@ -19,34 +19,39 @@ import java.util.Map;
  * <p>
  * A tile always occupies the cell above its support (two blocks can't share a cell), but it is drawn, collides and is
  * outlined on the real surface of the support: lowered onto a bottom slab, snow layers or a carpet ({@code drop_N}:
- * N sixteenths below its cell), or sheared along the slope of stairs ({@code slope_*}: 45 degrees, rising toward the
- * named side, so that the tiles of a staircase make one continuous ramp touching every step nose; along the
- * diagonal on inner corner stairs). The profile is
+ * N sixteenths below its cell), or tilted 45 degrees along the slope of stairs ({@code slope_*}: rising toward the
+ * named side, through the step nose; along the diagonal on inner ({@code slope_*_*}) and outer ({@code outer_*})
+ * corner stairs). A tilted tile keeps its square face (it is turned, not stretched). The profile is
  * read from the support's outline shape, quarter by quarter, when the tile is placed and whenever the block under
  * it changes, and kept in the block state (see {@link ATileBlock#SUPPORT}).
  * <p>
  * Surface heights are relative to the floor of the tile's cell, in blocks: 0 is the top of a full block under it.
  */
 public enum TileSupport implements StringIdentifiable {
-    FLAT("flat", 0, 0, 0, 0),
-    DROP_1("drop_1", 1, 0, 0, 0), DROP_2("drop_2", 2, 0, 0, 0), DROP_3("drop_3", 3, 0, 0, 0),
-    DROP_4("drop_4", 4, 0, 0, 0), DROP_5("drop_5", 5, 0, 0, 0), DROP_6("drop_6", 6, 0, 0, 0),
-    DROP_7("drop_7", 7, 0, 0, 0), DROP_8("drop_8", 8, 0, 0, 0), DROP_9("drop_9", 9, 0, 0, 0),
-    DROP_10("drop_10", 10, 0, 0, 0), DROP_11("drop_11", 11, 0, 0, 0), DROP_12("drop_12", 12, 0, 0, 0),
-    DROP_13("drop_13", 13, 0, 0, 0), DROP_14("drop_14", 14, 0, 0, 0), DROP_15("drop_15", 15, 0, 0, 0),
+    FLAT("flat", 0, 0, 0, 0, 0),
+    DROP_1("drop_1", 1, 0, 0, 0, 0), DROP_2("drop_2", 2, 0, 0, 0, 0), DROP_3("drop_3", 3, 0, 0, 0, 0),
+    DROP_4("drop_4", 4, 0, 0, 0, 0), DROP_5("drop_5", 5, 0, 0, 0, 0), DROP_6("drop_6", 6, 0, 0, 0, 0),
+    DROP_7("drop_7", 7, 0, 0, 0, 0), DROP_8("drop_8", 8, 0, 0, 0, 0), DROP_9("drop_9", 9, 0, 0, 0, 0),
+    DROP_10("drop_10", 10, 0, 0, 0, 0), DROP_11("drop_11", 11, 0, 0, 0, 0), DROP_12("drop_12", 12, 0, 0, 0, 0),
+    DROP_13("drop_13", 13, 0, 0, 0, 0), DROP_14("drop_14", 14, 0, 0, 0, 0), DROP_15("drop_15", 15, 0, 0, 0, 0),
     /** Straight stairs: rises toward the side the stairs face (the side of their high step). */
-    SLOPE_NORTH("slope_north", 0, 0, -1, 0),
-    SLOPE_EAST("slope_east", 0, 1, 0, 0),
-    SLOPE_SOUTH("slope_south", 0, 0, 1, 0),
-    SLOPE_WEST("slope_west", 0, -1, 0, 0),
+    SLOPE_NORTH("slope_north", 0, 0, -1, 0, 0b0011),
+    SLOPE_EAST("slope_east", 0, 1, 0, 0, 0b1010),
+    SLOPE_SOUTH("slope_south", 0, 0, 1, 0, 0b1100),
+    SLOPE_WEST("slope_west", 0, -1, 0, 0, 0b0101),
     /**
-     * Inner corner stairs: rises 45 degrees along the diagonal toward the corner opposite their low quarter, lifted so
-     * that the tile's lowest corner lands on that quarter's step.
+     * Inner corner stairs (three high quarters): rises 45 degrees along the diagonal toward the corner opposite their
+     * low quarter, lifted so that the tile's lowest corner lands on that quarter's step.
      */
-    SLOPE_NORTH_EAST("slope_north_east", 0, Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT),
-    SLOPE_SOUTH_EAST("slope_south_east", 0, Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT),
-    SLOPE_SOUTH_WEST("slope_south_west", 0, -Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT),
-    SLOPE_NORTH_WEST("slope_north_west", 0, -Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT);
+    SLOPE_NORTH_EAST("slope_north_east", 0, Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT, 0b1011),
+    SLOPE_SOUTH_EAST("slope_south_east", 0, Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT, 0b1110),
+    SLOPE_SOUTH_WEST("slope_south_west", 0, -Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT, 0b1101),
+    SLOPE_NORTH_WEST("slope_north_west", 0, -Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT, 0b0111),
+    /** Outer corner stairs (one high quarter): rises 45 degrees along the diagonal toward that quarter. */
+    OUTER_NORTH_EAST("outer_north_east", 0, Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT, 0b0010),
+    OUTER_SOUTH_EAST("outer_south_east", 0, Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT, 0b1000),
+    OUTER_SOUTH_WEST("outer_south_west", 0, -Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT, 0b0100),
+    OUTER_NORTH_WEST("outer_north_west", 0, -Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT, 0b0001);
 
     /** A 45 degree slope along a diagonal: the gradient on each axis, and the height of its centre above the step. */
     private static final class Diagonal {
@@ -57,6 +62,8 @@ public enum TileSupport implements StringIdentifiable {
 
     /** Thickness of a tile (support + picture), in blocks. */
     public static final double THICKNESS = 2.0 / 16;
+    /** The tilt of every slope: 45 degrees. */
+    public static final float SLOPE_ANGLE = (float) (Math.PI / 4);
     private static final double EPSILON = 1.0E-3;
 
     private final String name;
@@ -65,13 +72,16 @@ public enum TileSupport implements StringIdentifiable {
     private final double gradientX, gradientZ;
     /** Height of the sloped surface at the centre of the cell. */
     private final double pivot;
+    /** The high quarters of the stairs under a slope (bit 0 = north-west, 1 = north-east, 2 = south-west, 3 = south-east). */
+    private final int highQuarters;
 
-    TileSupport(String name, int drop, double gradientX, double gradientZ, double pivot) {
+    TileSupport(String name, int drop, double gradientX, double gradientZ, double pivot, int highQuarters) {
         this.name = name;
         this.drop = drop;
         this.gradientX = gradientX;
         this.gradientZ = gradientZ;
         this.pivot = pivot;
+        this.highQuarters = highQuarters;
     }
 
     @Override
@@ -100,7 +110,10 @@ public enum TileSupport implements StringIdentifiable {
         return gradientZ;
     }
 
-    /** Height of the underside of the tile at ({@code x}, {@code z}), in cell coordinates (0..1). */
+    /**
+     * Height of the underside of the tile at ({@code x}, {@code z}), in the coordinates of the tile's cell (0..1 over
+     * it; the plane goes on beyond, over the other blocks of a large tile).
+     */
     public double surfaceY(double x, double z) {
         return pivot - drop / 16.0 + gradientX * (x - 0.5) + gradientZ * (z - 0.5);
     }
@@ -110,54 +123,96 @@ public enum TileSupport implements StringIdentifiable {
      * (0 = north-west, 1 = north-east, 2 = south-west, 3 = south-east), 0 for its high part, -0.5 for its step.
      */
     public double supportTop(int quarter) {
-        double x = 0.25 + 0.5 * (quarter & 1), z = 0.25 + 0.5 * (quarter >> 1);
         if (!isSloped()) return -drop / 16.0;
-        return surfaceY(x, z) - pivot >= -EPSILON ? 0 : -0.5;
+        return ((highQuarters >> quarter) & 1) != 0 ? 0 : -0.5;
     }
 
-    /** Height a token stands at on this tile, at the centre of the cell (tokens stay upright). */
+    /** Height a token stands at on this tile, at ({@code x}, {@code z}) (tokens stay upright on the slope). */
+    public double standY(double x, double z) {
+        // On the steps of its collision (the tile's thickness above the slope, straight up)
+        return surfaceY(x, z) + THICKNESS;
+    }
+
     public double standY() {
-        return surfaceY(0.5, 0.5) + THICKNESS;
+        return standY(0.5, 0.5);
     }
 
     /**
      * The transformation from a level tile drawn in its cell (cell coordinates, floor at y = 0) to this support:
-     * lowered, or sheared vertically along the slope (the tile keeps its footprint and follows the steps).
+     * lowered, or tilted 45 degrees about the point ({@code x}, {@code z}) of the tile (its centre), so that it lies
+     * on the slope with its square face kept square.
      */
-    public Matrix4f transform() {
+    public Matrix4f transform(double x, double z) {
         Matrix4f matrix = new Matrix4f();
-        // y' = y + gx * (x - 0.5) + gz * (z - 0.5) + pivot - drop
-        matrix.m01((float) gradientX);
-        matrix.m21((float) gradientZ);
-        matrix.m31((float) (pivot - drop / 16.0 - 0.5 * gradientX - 0.5 * gradientZ));
-        return matrix;
+        if (!isSloped()) return matrix.translation(0, (float) (-drop / 16.0), 0);
+        double length = Math.sqrt(gradientX * gradientX + gradientZ * gradientZ);
+        // Uphill (ux, uz): turning about (-uz, 0, ux) lifts it
+        float axisX = (float) (-gradientZ / length), axisZ = (float) (gradientX / length);
+        return matrix.translation((float) x, (float) surfaceY(x, z), (float) z)
+                .rotate(SLOPE_ANGLE, axisX, 0, axisZ)
+                .translate((float) -x, 0, (float) -z);
+    }
+
+    public Matrix4f transform() {
+        return transform(0.5, 0.5);
     }
 
     // ---------------------------------------------------------------- shapes
 
-    private static final Map<TileSupport, VoxelShape> SHAPES = new EnumMap<>(TileSupport.class);
+    private static final Map<TileSupport, VoxelShape[]> SHAPES = new EnumMap<>(TileSupport.class);
+    private static final Map<TileSupport, VoxelShape[]> OUTLINES = new EnumMap<>(TileSupport.class);
+    /** The outline stands a little above the tile's face, so that its lines are drawn over it (not hidden in it). */
+    private static final double OUTLINE_LIFT = 1.0 / 32;
 
     static {
-        for (TileSupport support : values()) SHAPES.put(support, support.buildShape());
+        for (TileSupport support : values()) {
+            VoxelShape[] shapes = new VoxelShape[9], outlines = new VoxelShape[9];
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    shapes[(dx + 1) * 3 + dz + 1] = support.buildShape(dx, dz, 0);
+                    outlines[(dx + 1) * 3 + dz + 1] = support.buildShape(dx, dz, OUTLINE_LIFT);
+                }
+            }
+            SHAPES.put(support, shapes);
+            OUTLINES.put(support, outlines);
+        }
+    }
+
+    /** What is outlined and aimed at: the collision {@link #shape(int, int)}, its top a little higher. */
+    public VoxelShape outline(int dx, int dz) {
+        return OUTLINES.get(this)[(dx + 1) * 3 + dz + 1];
+    }
+
+    public VoxelShape outline() {
+        return outline(0, 0);
     }
 
     /** Outline and collision of a tile lying on this support (may reach down into the support's cell). */
     public VoxelShape shape() {
-        return SHAPES.get(this);
+        return shape(0, 0);
     }
 
-    private VoxelShape buildShape() {
+    /**
+     * Outline and collision of the part of the tile's surface over the block at ({@code dx}, {@code dz}) from the
+     * tile's cell (the other blocks of a large tile), in that block's coordinates; never more than a block below it.
+     */
+    public VoxelShape shape(int dx, int dz) {
+        return SHAPES.get(this)[(dx + 1) * 3 + dz + 1];
+    }
+
+    private VoxelShape buildShape(int dx, int dz, double lift) {
         if (!isSloped()) {
             double bottom = -drop / 16.0;
-            return VoxelShapes.cuboid(0, bottom, 0, 1, bottom + THICKNESS, 1);
+            return VoxelShapes.cuboid(0, bottom, 0, 1, bottom + THICKNESS + lift, 1);
         }
         // A staircase of thin slabs under the sloped surface: fine enough to walk up (steps of 1/8 block) and to aim at
         int steps = 8;
+        boolean diagonal = gradientX != 0 && gradientZ != 0;
         VoxelShape shape = VoxelShapes.empty();
         for (int i = 0; i < steps; i++) {
-            for (int j = 0; j < (gradientX != 0 && gradientZ != 0 ? steps : 1); j++) {
+            for (int j = 0; j < (diagonal ? steps : 1); j++) {
                 double x0, x1, z0, z1;
-                if (gradientX != 0 && gradientZ != 0) {
+                if (diagonal) {
                     x0 = i / (double) steps; x1 = (i + 1) / (double) steps;
                     z0 = j / (double) steps; z1 = (j + 1) / (double) steps;
                 } else if (gradientX != 0) {
@@ -165,9 +220,11 @@ public enum TileSupport implements StringIdentifiable {
                 } else {
                     z0 = i / (double) steps; z1 = (i + 1) / (double) steps; x0 = 0; x1 = 1;
                 }
-                double top = Math.max(Math.max(surfaceY(x0, z0), surfaceY(x1, z1)), Math.max(surfaceY(x0, z1), surfaceY(x1, z0)))
-                        + THICKNESS;
-                shape = VoxelShapes.union(shape, VoxelShapes.cuboid(x0, top - THICKNESS, z0, x1, top, z1));
+                double top = Math.max(Math.max(surfaceY(x0 + dx, z0 + dz), surfaceY(x1 + dx, z1 + dz)),
+                        Math.max(surfaceY(x0 + dx, z1 + dz), surfaceY(x1 + dx, z0 + dz))) + THICKNESS;
+                double bottom = Math.max(top - THICKNESS, -1);
+                top = Math.max(top, bottom + 1.0 / 32) + lift;
+                shape = VoxelShapes.union(shape, VoxelShapes.cuboid(x0, bottom, z0, x1, top, z1));
             }
         }
         return shape.simplify();
@@ -233,6 +290,13 @@ public enum TileSupport implements StringIdentifiable {
             if (!high[2]) return SLOPE_NORTH_EAST;
             if (!high[1]) return SLOPE_SOUTH_WEST;
             return SLOPE_SOUTH_EAST;
+        }
+        if (highCount == 1) {
+            // Outer corner: rises toward its high quarter
+            if (high[0]) return OUTER_NORTH_WEST;
+            if (high[1]) return OUTER_NORTH_EAST;
+            if (high[2]) return OUTER_SOUTH_WEST;
+            return OUTER_SOUTH_EAST;
         }
         return null;
     }

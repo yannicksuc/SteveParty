@@ -6,6 +6,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.world.BlockView;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +39,27 @@ public final class BoardSpaces {
         BlockPos masterAbove = TilePartBlock.resolve(world, up);
         if (masterAbove != null && world.getBlockState(masterAbove).get(ATileBlock.SUPPORT).standY() < 0) return masterAbove;
         return null;
+    }
+
+    /**
+     * A lowered or sloped tile reaches down into the cell of its support, where the vanilla ray (which visits the cells
+     * in order and asks each one only about its own block) doesn't look for it: seen from the side or from low, it
+     * would hit the slab or the stairs, or go through the tile. Walks the cells the ray crossed before its hit and
+     * returns the tile (or large tile part) above one of them if the ray meets its shape first.
+     */
+    public static HitResult preferTile(BlockView world, Vec3d start, Vec3d end, HitResult hit) {
+        Vec3d until = hit.getType() == HitResult.Type.MISS ? end : hit.getPos();
+        double limit = start.squaredDistanceTo(until) + 1.0E-6;
+        BlockHitResult tile = BlockView.raycast(start, until, world, (view, cell) -> {
+            BlockPos above = cell.up();
+            BlockState state = view.getBlockState(above);
+            if (!(state.getBlock() instanceof ATileBlock) && !(state.getBlock() instanceof TilePartBlock)) return null;
+            VoxelShape shape = state.getOutlineShape(view, above);
+            if (shape.isEmpty() || shape.getMin(Direction.Axis.Y) >= 0) return null;
+            BlockHitResult found = shape.raycast(start, end, above);
+            return found != null && start.squaredDistanceTo(found.getPos()) <= limit ? found : null;
+        }, view -> null);
+        return tile != null ? tile : hit;
     }
 
     /** The block standing for the board space at {@code pos}: the large tile a part belongs to, else {@code pos}. */

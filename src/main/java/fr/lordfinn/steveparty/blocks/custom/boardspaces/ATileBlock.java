@@ -159,8 +159,15 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
 
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, ShapeContext context) {
+        return state.get(SUPPORT).outline();
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, ShapeContext context) {
         return state.get(SUPPORT).shape();
     }
+
+
 
     /** The state to draw as a plain, level tile of the standard size (e.g. the small tile shown by the destination arrows). */
     public static BlockState levelState(BlockState state) {

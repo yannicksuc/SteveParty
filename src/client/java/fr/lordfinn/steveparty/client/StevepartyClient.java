@@ -84,6 +84,7 @@ import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 import java.util.Map;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
+import fr.lordfinn.steveparty.client.utils.TileColors;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR1;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR2;
 import static fr.lordfinn.steveparty.items.ModItems.TRIPLE_JUMP_SHOES;
@@ -101,11 +102,12 @@ public class StevepartyClient implements ClientModInitializer {
      * (ABoardSpaceBehavior#setColor) and synced through the block entity / UpdateColoredTilePayload.
      */
     private static final BlockColorProvider getTileColor = (state, world, pos, tintIndex) -> {
-        if (world == null || pos == null) return 0xFFFFFFFF;
-        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity)) return 0xFFFFFFFF;
+        if (world == null || pos == null) return TileColors.tint(TileColors.WHITE, tintIndex);
+        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity)) return TileColors.tint(TileColors.WHITE, tintIndex);
         ItemStack behaviorItemstack = BoardSpaceClientUtils.getDisplayedCartridge(tileEntity);
-        if (behaviorItemstack.isEmpty()) return 0xFFFFFFFF;
-        return behaviorItemstack.getOrDefault(ModComponents.COLOR, 0xFFFFFFFF);
+        int color = behaviorItemstack.isEmpty() ? TileColors.WHITE : behaviorItemstack.getOrDefault(ModComponents.COLOR, TileColors.WHITE);
+        // Each tinted part of the model takes its own shade of the colour (vivid ramps, see TileColors)
+        return TileColors.tint(color, tintIndex);
     };
 
     private static final BlockColorProvider getTradingStallColor = (state, world, pos, tintIndex) -> {
@@ -224,6 +226,8 @@ public class StevepartyClient implements ClientModInitializer {
 
     private static void initBlockEntitiesRenderers() {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
+        // Cut out: the start tile's top is made of value layers (see TileColors#tint)
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.TILE, ModBlocks.SIMPLE_TILE);
 
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.SIMPLE_TILE_ENTITY, TileBlockEntityRenderer::new);

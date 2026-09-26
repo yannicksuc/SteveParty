@@ -79,8 +79,11 @@ public class TileSupportGameTests implements FabricGameTest {
                 TileSupport.SLOPE_WEST, "stairs facing west");
         context.assertEquals(supportOn(context, stairs(Direction.NORTH, BlockHalf.TOP, StairShape.STRAIGHT)),
                 TileSupport.FLAT, "upside-down stairs: a flat top");
+        // Outer left facing north: only its north-west quarter is high
         context.assertEquals(supportOn(context, stairs(Direction.NORTH, BlockHalf.BOTTOM, StairShape.OUTER_LEFT)),
-                TileSupport.FLAT, "outer corner: level on its high quarter");
+                TileSupport.OUTER_NORTH_WEST, "outer corner: along the diagonal toward its high quarter");
+        context.assertEquals(supportOn(context, stairs(Direction.SOUTH, BlockHalf.BOTTOM, StairShape.OUTER_RIGHT)),
+                TileSupport.OUTER_SOUTH_WEST, "outer right facing south");
         context.complete();
     }
 
@@ -120,6 +123,51 @@ public class TileSupportGameTests implements FabricGameTest {
         context.assertTrue(corner.surfaceY(0.5, 0.5) > 0, "above the inner nose");
         context.assertTrue(corner.supportTop(3) == -0.5 && corner.supportTop(0) == 0 && corner.supportTop(1) == 0
                 && corner.supportTop(2) == 0, "three high quarters, the south-east one low");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aTiltedTileKeepsItsSquareFace(TestContext context) {
+        // Turned, not stretched: a level square keeps its sides' lengths once on the slope
+        for (TileSupport support : List.of(TileSupport.SLOPE_NORTH, TileSupport.SLOPE_EAST, TileSupport.SLOPE_NORTH_WEST, TileSupport.OUTER_SOUTH_EAST)) {
+            org.joml.Matrix4f matrix = support.transform();
+            org.joml.Vector3f a = matrix.transformPosition(new org.joml.Vector3f(0, 0, 0));
+            org.joml.Vector3f b = matrix.transformPosition(new org.joml.Vector3f(1, 0, 0));
+            org.joml.Vector3f c = matrix.transformPosition(new org.joml.Vector3f(0, 0, 1));
+            context.assertTrue(Math.abs(a.distance(b) - 1) < 1.0E-5 && Math.abs(a.distance(c) - 1) < 1.0E-5,
+                    support + ": sides " + a.distance(b) + " / " + a.distance(c));
+            // ... and lies on the slope: its middle on the support's surface
+            org.joml.Vector3f middle = matrix.transformPosition(new org.joml.Vector3f(0.5f, 0, 0.5f));
+            context.assertTrue(Math.abs(middle.y - support.surfaceY(0.5, 0.5)) < 1.0E-5, support + ": middle on the surface");
+            // ... rising 45 degrees toward its high side
+            org.joml.Vector3f up = matrix.transformPosition(new org.joml.Vector3f(
+                    (float) (0.5 + 0.1 * Math.signum(support.gradientX())), 0, (float) (0.5 + 0.1 * Math.signum(support.gradientZ()))));
+            context.assertTrue(up.y > middle.y, support + ": rises toward its high side");
+        }
+        context.complete();
+    }
+
+    /** Aimed at from the side, low: the vanilla ray reaches the slab's cell first, the tile must still be the target. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aLoweredTileIsAimedAtFromEveryAngle(TestContext context) {
+        supportOn(context, Blocks.OAK_SLAB.getDefaultState());
+        context.setBlockState(TILE.down().west(), Blocks.OAK_SLAB.getDefaultState()); // a bare slab next to it
+        BlockPos abs = context.getAbsolutePos(TILE);
+        var world = context.getWorld();
+        // From the west, just above the slabs (y + 0.55 in the slab's cell), toward the tile's layer
+        Vec3d start = new Vec3d(abs.getX() - 1.5, abs.getY() - 0.45, abs.getZ() + 0.5);
+        Vec3d end = new Vec3d(abs.getX() + 0.5, abs.getY() - 0.42, abs.getZ() + 0.5);
+        var vanilla = world.raycast(new net.minecraft.world.RaycastContext(start, end, net.minecraft.world.RaycastContext.ShapeType.OUTLINE,
+                net.minecraft.world.RaycastContext.FluidHandling.NONE, net.minecraft.block.ShapeContext.absent()));
+        var hit = BoardSpaces.preferTile(world, start, end, vanilla);
+        context.assertTrue(hit instanceof net.minecraft.util.hit.BlockHitResult block && block.getBlockPos().equals(abs),
+                "the lowered tile is aimed at from the side: " + hit.getPos() + " vanilla " + vanilla.getType());
+        // Straight down on the bare slab: still the slab
+        Vec3d above = new Vec3d(abs.getX() - 0.5, abs.getY() + 1, abs.getZ() + 0.5);
+        Vec3d below = new Vec3d(abs.getX() - 0.5, abs.getY() - 1.5, abs.getZ() + 0.5);
+        var onSlab = world.raycast(new net.minecraft.world.RaycastContext(above, below, net.minecraft.world.RaycastContext.ShapeType.OUTLINE,
+                net.minecraft.world.RaycastContext.FluidHandling.NONE, net.minecraft.block.ShapeContext.absent()));
+        context.assertTrue(BoardSpaces.preferTile(world, above, below, onSlab) == onSlab, "the bare slab stays the target");
         context.complete();
     }
 

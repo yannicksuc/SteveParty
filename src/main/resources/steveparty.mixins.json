@@ -4,6 +4,7 @@
   "package": "fr.lordfinn.steveparty.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "EntityRaycastTileMixin",
     "FireworkRocketEntityAccessor",
     "LivingEntityMixin",
     "PlayerFallMixin",

@@ -589,6 +589,39 @@ def tiles_station(x0=2010, z0=2045):
         cmds += ['setblock %d %d %d oak_stairs[facing=%s,half=bottom,shape=%s]' % (x, Y, row, facing, shape),
                  tile_block(x, Y + 1, row, (2 * k + 1) % 8, 'simple_tile' if k % 2 else 'tile')]
     cmds.append(label(x0 + 6.5, Y + 3.2, row + 0.5, 'Coins intérieurs d\'escalier : pente en diagonale', 'white', 0.7, False))
+    # Rings of stairs, their corners shaped by their neighbours (as a player builds them): a mound (outer corners)
+    # and a pit (inner corners), tiles (standard and small) on every corner and side
+    for (cx, cz), inward, caption in (((x0 + 13, z0 + 2), True, 'Butte : coins extérieurs'),
+                                      ((x0 + 13, z0 + 8), False, 'Cuvette : coins intérieurs')):
+        cmds += stair_ring(cx, cz, inward)
+        ring = [(cx + dx, cz + dz) for dx in (-2, 0, 2) for dz in (-2, 0, 2) if (dx, dz) != (0, 0)]
+        for k, (x, z) in enumerate(ring):
+            cmds.append(tile_block(x, Y + 1, z, 4, 'simple_tile' if k % 2 else 'tile', 'size=small' if k % 3 == 0 else 'size=standard'))
+        cmds.append(label(cx + 0.5, Y + 3.2, cz + 0.5, caption, 'white', 0.7, False))
+    return cmds
+
+
+def stair_ring(cx, cz, inward):
+    """A ring of bottom stairs around (cx, cz) (5x5): rising toward the middle (a mound: 3x3 of stone in it) or away
+    from it (a pit). Corners first, so that their neighbours give them their corner shape."""
+    cmds = []
+    if inward:
+        cmds.append('fill %d %d %d %d %d %d stone' % (cx - 1, Y, cz - 1, cx + 1, Y, cz + 1))
+    else:
+        cmds.append('fill %d %d %d %d %d %d air' % (cx - 1, Y, cz - 1, cx + 1, Y, cz + 1))
+    cells = [(dx, dz) for dx in range(-2, 3) for dz in range(-2, 3) if max(abs(dx), abs(dz)) == 2]
+    cells.sort(key=lambda c: 0 if abs(c[0]) == 2 and abs(c[1]) == 2 else 1)
+    for dx, dz in cells:
+        # Facing = the side of the high step: toward the middle for a mound, away from it for a pit
+        if abs(dz) == 2 and abs(dx) < 2:
+            toward = 'south' if dz < 0 else 'north'
+        elif abs(dx) == 2 and abs(dz) < 2:
+            toward = 'east' if dx < 0 else 'west'
+        else:
+            toward = 'south' if dz < 0 else 'north'
+        opposite = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}
+        facing = toward if inward else opposite[toward]
+        cmds.append('setblock %d %d %d oak_stairs[facing=%s,half=bottom]' % (cx + dx, Y, cz + dz, facing))
     return cmds
 
 

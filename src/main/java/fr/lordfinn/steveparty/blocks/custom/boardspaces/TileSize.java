@@ -18,8 +18,11 @@ public enum TileSize implements StringIdentifiable {
     /** Covers exactly 2x2 blocks of the grid: the tile's block is the north-west one, the 3 others are {@link TilePartBlock}s. */
     LARGE("large");
 
-    /** Scale of a small tile: the picture of a standard tile (28 px of its 32) shrunk to 16 px, one block. */
-    public static final float SMALL_SCALE = 16f / 28f;
+    /**
+     * Scale of the model of a small tile: its 32 px base shrunk to 18 px, overhanging its block by 1 px on each side
+     * (its face is drawn apart, 16x16 over exactly its block, at the block's pixel density).
+     */
+    public static final float SMALL_SCALE = 18f / 32f;
 
     private final String name;
 
