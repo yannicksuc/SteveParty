@@ -107,6 +107,26 @@ public class RouterEventGameTests implements FabricGameTest {
         });
     }
 
+    /** Each role its level, the shop's included; a role without a level of its own gets its landing kind's. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void everyRoleHasItsLevel(TestContext context) {
+        BoardSpaceBlockEntity tile = setUp(context);
+        tile.setStack(0, new ItemStack(ModItems.SHOP_CARTRIDGE));
+        context.assertEquals(tile.getBoardSpaceBehavior().comparatorLevel(tile, tile.getStack(0)),
+                BoardSpaceRedstoneRouterBlockEntity.LEVEL_SHOP, "shop");
+        java.util.Set<Integer> levels = new java.util.HashSet<>();
+        for (TileFeedback.Landing landing : TileFeedback.Landing.values()) {
+            int level = BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing);
+            context.assertTrue(level > BoardSpaceRedstoneRouterBlockEntity.PASS_SIGNAL && level <= 15, landing + " in range");
+            context.assertTrue(levels.add(level), landing + " has a level of its own");
+        }
+        TileFeedback.land(context.getWorld(), tile, token(context, 0), null);
+        context.waitAndRun(SETTLE, () -> {
+            context.assertEquals(comparator(context), BoardSpaceRedstoneRouterBlockEntity.LEVEL_SHOP, "shop tile landing");
+            context.complete();
+        });
+    }
+
     /** Outside a game too: a token moved with a dice stops, or goes over. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void outsideAGameTheRouterStillPulses(TestContext context) {
