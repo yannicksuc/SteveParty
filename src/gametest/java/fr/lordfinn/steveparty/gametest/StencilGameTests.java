@@ -1052,13 +1052,14 @@ public class StencilGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Stencil paint only breaks with a tool: nothing by hand or with another item. */
+    /** Stencil paint can't be broken by hitting it outside creative (brush or water remove it). */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void stencilPaintOnlyBreaksWithATool(TestContext context) {
-        context.assertFalse(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(net.minecraft.item.ItemStack.EMPTY), "not by hand");
-        context.assertFalse(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(new net.minecraft.item.ItemStack(net.minecraft.item.Items.STICK)), "not with a stick");
-        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(new net.minecraft.item.ItemStack(net.minecraft.item.Items.WOODEN_PICKAXE)), "a pickaxe");
-        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(new net.minecraft.item.ItemStack(net.minecraft.item.Items.SHEARS)), "shears");
+    public void stencilPaintOnlyBreaksInCreative(TestContext context) {
+        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreak(
+                context.createMockPlayer(net.minecraft.world.GameMode.CREATIVE)), "creative can break it");
+        net.minecraft.entity.player.PlayerEntity survival = context.createMockPlayer(net.minecraft.world.GameMode.SURVIVAL);
+        survival.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.DIAMOND_PICKAXE));
+        context.assertFalse(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreak(survival), "survival can't, even with a pickaxe");
         context.complete();
     }
 }

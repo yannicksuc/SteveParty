@@ -8,8 +8,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.enums.Orientation;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.MiningToolItem;
-import net.minecraft.item.ShearsItem;
 import net.minecraft.item.Items;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -41,9 +39,9 @@ import java.util.Arrays;
 /**
  * Paint sprayed through a stencil on the face of a full block (wall, floor or ceiling). It is a thin layer in the
  * space in front of that face: blocks can be put over it, water washes it away, a brush fades it then scrubs it off,
- * and it goes when its block goes. It drops nothing. The symbol can be repainted like on a sign. It can only be
- * broken with a tool (pickaxe, axe, shovel, hoe, shears), not by hand or with any other item, creative included
- * ({@link #canBreakWith}, enforced by an attack callback registered in {@link #registerBreakRule}).
+ * and it goes when its block goes. It drops nothing. The symbol can be repainted like on a sign. It can't be
+ * broken by hitting it, whatever the item: only brushing, water (or losing its block) remove it; creative players can
+ * still break it ({@link #canBreak}, enforced by an attack callback registered in {@link #registerBreakRule}).
  * <p>
  * {@link #ORIENTATION}: facing = side of the block it is sprayed on (pointing out of it), rotation = which way the
  * top of the symbol points.
@@ -201,20 +199,20 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
         return true;
     }
 
-    /** Whether the paint may be broken with what the player holds: a tool (pickaxe, axe, shovel, hoe) or shears. */
-    public static boolean canBreakWith(ItemStack held) {
-        return held.getItem() instanceof MiningToolItem || held.getItem() instanceof ShearsItem;
+    /** Whether this player may break the paint by hitting it: only in creative (otherwise brush or water it off). */
+    public static boolean canBreak(PlayerEntity player) {
+        return player.isCreative();
     }
 
-    /** Without a tool, hitting the paint does nothing (also stops creative's instant break). Both sides. */
+    /** Hitting the paint does nothing outside creative. Both sides. */
     public static void registerBreakRule() {
         net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) ->
-                !player.isSpectator() && world.getBlockState(pos).isOf(ModBlocks.STENCIL_PAINT)
-                        && !canBreakWith(player.getStackInHand(hand)) ? ActionResult.FAIL : ActionResult.PASS);
+                !player.isSpectator() && world.getBlockState(pos).isOf(ModBlocks.STENCIL_PAINT) && !canBreak(player)
+                        ? ActionResult.FAIL : ActionResult.PASS);
     }
 
     @Override
     protected float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
-        return canBreakWith(player.getMainHandStack()) ? super.calcBlockBreakingDelta(state, player, world, pos) : 0F;
+        return canBreak(player) ? super.calcBlockBreakingDelta(state, player, world, pos) : 0F;
     }
 }
