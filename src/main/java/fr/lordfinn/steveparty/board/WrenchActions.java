@@ -536,13 +536,16 @@ public final class WrenchActions {
         }
     }
 
-    /** "Slot 4/16 (3 links)" or "Active slot (redstone 2)". */
+    /**
+     * "Slot 5 (powered)" (the default: the slot the redstone power selects, followed at each action) or "Slot 7
+     * (chosen)" (picked with sneak + wheel, until the origin changes). Slots are numbered like the power (0-15).
+     */
     public static Text slotText(CartridgeContainerBlockEntity container, int slot) {
         int actual = BoardLinks.slotOf(container, slot);
         int links = BoardLinks.links(container, actual).size();
         return slot < 0
-                ? Text.translatable("message.steveparty.wrench.slot.active", actual + 1, container.size(), links)
-                : Text.translatable("message.steveparty.wrench.slot", actual + 1, container.size(), links);
+                ? Text.translatable("message.steveparty.wrench.slot.active", actual, links)
+                : Text.translatable("message.steveparty.wrench.slot", actual, links);
     }
 
     // ---------------------------------------------------------------- sounds
