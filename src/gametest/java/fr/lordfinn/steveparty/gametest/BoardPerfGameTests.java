@@ -106,6 +106,10 @@ public class BoardPerfGameTests implements FabricGameTest {
         }
         log("router power toggles (100 tiles each)", System.nanoTime() - start, 20);
         long togglesPushes = BoardPerf.routerPushLookups;
+        context.assertTrue(BoardPerf.boardSpaceSyncs <= 20L * ROUTED, "each tile changing its role is sent once: " + BoardPerf.boardSpaceSyncs);
+        BoardSpaceBlockEntity routed = context.getBlockEntity(tiles.get(ROUTED - 1)), free = context.getBlockEntity(tiles.get(ROUTED));
+        context.assertEquals(routed.getActiveSlot(), 0, "routed tiles follow the (unpowered) router");
+        context.assertEquals(free.getActiveSlot(), 0, "the others their own power");
 
         // Neighbour updates that change nothing (redstone dust around, blocks placed next to the router or the tiles)
         BoardPerf.reset();
@@ -125,6 +129,11 @@ public class BoardPerfGameTests implements FabricGameTest {
         Steveparty.LOGGER.info("[board perf] pushes while toggling: {}, pushes without change: {}, syncs without change: {}",
                 togglesPushes, idlePushes, idleSyncs);
         context.assertEquals(idleSyncs, 0L, "nothing sent to the clients when nothing changed");
+        context.assertEquals(idlePushes, 0L, "a router pushes only a change of its power");
+        // Still routed after all that: the router's power drives its tiles
+        context.setBlockState(SWITCH, Blocks.REDSTONE_BLOCK);
+        context.assertEquals(routed.getActiveSlot(), 15, "the powered router's slot");
+        context.assertEquals(free.getActiveSlot(), 0, "not routed: unchanged");
         context.complete();
     }
 }

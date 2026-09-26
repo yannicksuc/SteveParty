@@ -36,6 +36,12 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     public static final int LANDING_TICKS = 10, PASS_TICKS = 4;
 
     private List<BlockPos> routedBoardSpaces = List.of();
+    /**
+     * The power last pushed to the routed board spaces (-1: none yet). Neighbour updates come in bursts (redstone dust,
+     * blocks placed around) and most don't change the power: only a change is pushed. Board spaces taken since then read
+     * the router's power themselves (see BoardSpaceBlockEntity#refreshActiveSlot), and so do those loaded later.
+     */
+    private int pushedPower = -1;
     /** Comparator output of the current pulse (0: none) and the game time it ends at. Not saved: pulses are short. */
     private int signal;
     private long signalEnd;
@@ -65,6 +71,8 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     public void pushPowerToBoardSpaces() {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
         int power = getPower();
+        if (power == pushedPower) return;
+        pushedPower = power;
         for (BlockPos boardSpacePos : routedBoardSpaces) {
             BoardPerf.routerPushLookups++;
             if (serverWorld.isChunkLoaded(boardSpacePos)

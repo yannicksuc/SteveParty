@@ -68,6 +68,13 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private int activeSlot = 0;
     /** Set when loaded from disk: the power may have changed while unloaded, recheck on first server use. */
     private boolean activeSlotNeedsCheck = true;
+    /**
+     * The router driving this board space (null: none), read from the persistent state once and again whenever the
+     * routing may have changed ({@link #refreshActiveSlot}, which the routers call for every board space they take or
+     * release), instead of at every neighbour update. Server side, not saved.
+     */
+    private @Nullable BlockPos router;
+    private boolean routerKnown;
     /** Last applied cartridge / type (baseline captured on creation and load), to react only to real changes. */
     private ItemStack appliedCartridge = ItemStack.EMPTY;
     private BoardSpaceType appliedType = BoardSpaceType.DEFAULT;
@@ -108,6 +115,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void refreshActiveSlot() {
         if (!(world instanceof ServerWorld serverWorld)) return;
         activeSlotNeedsCheck = false;
+        routerKnown = false; // the routing may have changed: read it again
         BlockPos routerPos = routerOf(serverWorld);
         BlockPos powerPos = routerPos != null ? routerPos : pos;
         // Never load a chunk for this: an unloaded router keeps the last known slot, it pushes its power when it changes
@@ -116,8 +124,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private @Nullable BlockPos routerOf(ServerWorld serverWorld) {
-        fr.lordfinn.steveparty.board.BoardPerf.routerStateLookups++;
-        return BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+        if (!routerKnown) {
+            fr.lordfinn.steveparty.board.BoardPerf.routerStateLookups++;
+            router = BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+            routerKnown = true;
+        }
+        return router;
     }
 
     private static int powerAt(ServerWorld serverWorld, BlockPos powerPos) {
@@ -145,8 +157,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         if (slot == activeSlot) return;
         activeSlot = slot;
         super.markDirty();
-        applyActiveCartridge();
-        syncToClients(); // the GUI shows the active slot, even when the cartridge doesn't change
+        // The GUI shows the active slot: sent even when the cartridge doesn't change (once)
+        if (!applyActiveCartridge()) syncToClients();
     }
 
     /**
@@ -225,14 +237,16 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     /**
      * Applies the role of the active cartridge (block state type, colour, token notification) if it changed.
      * Server side; the client receives the result through the block state and the block entity data.
+     *
+     * @return true if it changed (and was sent to the clients)
      */
-    private void applyActiveCartridge() {
-        if (!(world instanceof ServerWorld serverWorld)) return;
+    private boolean applyActiveCartridge() {
+        if (!(world instanceof ServerWorld serverWorld)) return false;
         ItemStack stack = getStack(activeSlot);
         BoardSpaceType type = determineBoardSpaceType(stack);
         if (stack == appliedCartridge && type == appliedType) {
             updateBoardSpaceColor();
-            return;
+            return false;
         }
         appliedCartridge = stack;
         appliedType = type;
@@ -246,6 +260,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         updateBoardSpaceColor();
         syncToClients();
         getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
+        return true;
     }
 
     private static BoardSpaceType determineBoardSpaceType(ItemStack stack) {
@@ -407,6 +422,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
                 ? fr.lordfinn.steveparty.components.TileStampComponent.CODEC.parse(NbtOps.INSTANCE, nbt.get(STAMP_KEY)).result().orElse(null)
                 : null;
         activeSlotNeedsCheck = true;
+        routerKnown = false;
         appliedCartridge = getStack(activeSlot);
         appliedType = determineBoardSpaceType(appliedCartridge);
         cycleIndexes.clear();
