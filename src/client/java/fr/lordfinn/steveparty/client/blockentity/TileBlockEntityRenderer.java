@@ -155,6 +155,9 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         // A Stop tile: a STOP sign over the face in the cartridge's colour
         else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
         else if (tileType == BoardSpaceType.BOARD_SPACE_SHOP) face = TileStampTextures.get(SHOP_FACE, small);
+        // A Move Forward / Back tile: a double arrow and the number of spaces, green forward, purple-red back
+        else if (tileType == BoardSpaceType.TILE_ADVANCE_BACK)
+            face = TileStampTextures.advanceBack(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.steps(stack), small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction);

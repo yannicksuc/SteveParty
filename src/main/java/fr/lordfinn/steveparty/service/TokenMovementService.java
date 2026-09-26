@@ -55,6 +55,7 @@ public class TokenMovementService {
         MobEntity chosenToken = getTargetedToken(world, dice, ownerUUID);
         if (chosenToken == null) return ActionResult.PASS;
 
+        AdvanceBackMoves.cancel(chosenToken); // a new move: nothing left of an extra move
         // Add small delay so players can appreciate the dice roll value
         SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(chosenToken, rollValue));
         return ActionResult.SUCCESS;
@@ -116,6 +117,8 @@ public class TokenMovementService {
         if (ShopStops.isShopping(entity.getUuid())) return ActionResult.PASS; // its owner is shopping
         int nbSteps = ((TokenizedEntityInterface) entity).steveparty$getNbSteps();
         if (nbSteps == 0) return ActionResult.PASS;
+        // The extra move of a Move Forward / Back tile starts on its own, once its landing is heard
+        if (AdvanceBackMoves.isWaiting(entity)) return ActionResult.PASS;
 
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
         // STOP board spaces keep the token until the board space is updated (TileUpdatedEvent)
@@ -139,7 +142,9 @@ public class TokenMovementService {
                 && ABoardSpaceBlock.countsAsStep(boardSpace.getCachedState().getBlock())) {
             token.steveparty$setNbSteps(token.steveparty$getNbSteps() - 1);
         }
+        AdvanceBackMoves.onArrived(mob, boardSpace.getPos());
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
+        AdvanceBackMoves.afterArrival(mob);
     }
 
     public static void moveEntityOnBoard(MobEntity mob, int rollNumber) {
@@ -157,10 +162,19 @@ public class TokenMovementService {
             return;
         }
         //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
+        AdvanceBackMoves.noteAt(mob, tileEntity.getPos()); // where it comes from (to go back that way)
 
         MessageUtils.sendToNearby((ServerWorld) mob.getWorld(), mob.getPos(), 100,
                 Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName() != null ? mob.getCustomName() : mob.getName())
                 , MessageUtils.MessageType.ACTION_BAR);
+
+        if (AdvanceBackMoves.isRouted(mob)) {
+            // Going back (Move Forward / Back tile): the way it came, not the destinations
+            BlockPos previous = AdvanceBackMoves.nextRouted(mob);
+            if (previous != null) moveEntity(mob, previous);
+            else stopOnCurrentBoardSpace(mob, tileEntity.getPos());
+            return;
+        }
 
         List<BoardSpaceDestination> destinations = tileEntity.getStockedDestinations()
                 .stream()
