@@ -173,6 +173,7 @@ public class StevepartyClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
         initParticleRenderers();
+        fr.lordfinn.steveparty.client.entity.DeferredGlows.initialize();
 
        }
 
