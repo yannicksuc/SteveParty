@@ -27,17 +27,15 @@ import java.util.List;
 /**
  * Stencil gun controls on the client: sneak + mouse wheel cycles the selected stencil or colour, the mode key
  * (G by default) switches which one the wheel cycles. A small HUD above the hotbar shows both, the one the wheel
- * changes being framed.
+ * changes on a gold plate (the tools' HUD look: see {@link ToolHud}).
  */
 public final class StencilGunHud {
     private static final KeyBinding MODE_KEY = KeyBindingHelper.registerKeyBinding(
             new KeyBinding("key.steveparty.stencil_gun_mode", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.steveparty"));
     private static final int PIXEL = 1;
-    private static final int BOX = 16 * PIXEL + 4;
-    /** The key hint is only a reminder: drawn see-through. */
-    private static final int HINT_COLOR = 0x88DDDDDD;
-    private static final int ACTIVE = 0xFFFFD83D;
-    private static final int INACTIVE = 0xFF555555;
+    private static final int BOX = ToolHud.BOX;
+    /** Where the 16 pixel content starts inside a box. */
+    private static final int INSET = (BOX - 16) / 2;
 
     /** True: the wheel picks the colour, false: the stencil. */
     private static boolean colorMode = false;
@@ -105,49 +103,45 @@ public final class StencilGunHud {
         StencilGunItem.Load load = shown.load();
 
         int width = context.getScaledWindowWidth();
-        // Right above the hotbar, or above the health / hunger rows when they are shown (survival, adventure)
-        boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
-        int y = context.getScaledWindowHeight() - (statusBars ? 50 : 26) - BOX;
+        int y = ToolHud.top(context);
         int stencilX = width / 2 - BOX - 4;
         int colorX = width / 2 + 4;
 
         // Stencil
-        context.fill(stencilX, y, stencilX + BOX, y + BOX, 0xAA000000);
-        context.drawBorder(stencilX, y, BOX, BOX, colorMode ? INACTIVE : ACTIVE);
+        ToolHud.box(context, stencilX, y, !colorMode);
         if (load.shape() != null) {
-            int paint = load.color() != null ? 0xFF000000 | load.color().getEntityColor() : 0xFF8A8A8A;
+            int paint = load.color() != null ? 0xFF000000 | load.color().getEntityColor() : 0xFF6B6B6B;
             byte[] shape = load.shape();
             for (int px = 0; px < 16; px++) {
                 for (int py = 0; py < 16; py++) {
                     if (!StencilShape.get(shape, px, py)) continue;
-                    int sx = stencilX + 2 + px * PIXEL, sy = y + 2 + py * PIXEL;
+                    int sx = stencilX + INSET + px * PIXEL, sy = y + INSET + py * PIXEL;
                     context.fill(sx, sy, sx + PIXEL, sy + PIXEL, paint);
                 }
             }
         }
 
         // Colour
-        context.fill(colorX, y, colorX + BOX, y + BOX, 0xAA000000);
-        context.drawBorder(colorX, y, BOX, BOX, colorMode ? ACTIVE : INACTIVE);
+        ToolHud.box(context, colorX, y, colorMode);
         ItemStack dye = selection.dye() == StencilGunSelection.ENGRAVE ? ItemStack.EMPTY : contents.get(StencilGunItem.STENCIL_SLOTS + selection.dye());
         if (dye.getItem() instanceof DyeItem) {
             context.getMatrices().push();
-            context.getMatrices().translate(colorX + 2, y + 2, 0);
+            context.getMatrices().translate(colorX + INSET, y + INSET, 0);
             context.drawItem(dye, 0, 0);
             context.getMatrices().pop();
-            context.drawStackOverlay(client.textRenderer, dye, colorX + 2, y + 2);
+            context.drawStackOverlay(client.textRenderer, dye, colorX + INSET, y + INSET);
         } else {
             Text engrave = Text.translatable("hud.steveparty.stencil_gun.engrave");
             context.getMatrices().push();
             context.getMatrices().translate(colorX + BOX / 2F, y + BOX / 2F - 2, 0);
             context.getMatrices().scale(0.5F, 0.5F, 1);
-            context.drawCenteredTextWithShadow(client.textRenderer, engrave, 0, 0, 0xFFBBBBBB);
+            context.drawText(client.textRenderer, engrave, -client.textRenderer.getWidth(engrave) / 2, 0, ToolHud.TEXT, false);
             context.getMatrices().pop();
         }
 
         // Hint (no stencil name: the preview says it)
         Text hint = Text.translatable(colorMode ? "hud.steveparty.stencil_gun.hint_color" : "hud.steveparty.stencil_gun.hint_stencil",
                 MODE_KEY.getBoundKeyLocalizedText());
-        context.drawCenteredTextWithShadow(client.textRenderer, hint, width / 2, y - 10, HINT_COLOR);
+        ToolHud.hint(context, hint, width / 2, y);
     }
 }

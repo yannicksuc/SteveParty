@@ -213,7 +213,7 @@ public final class WrenchActions {
         if (closing) {
             clearOrigin(wrench);
             say(player, Text.translatable("message.steveparty.wrench.trace.loop", n));
-            playSound(world, player, SoundEvents.ENTITY_PLAYER_LEVELUP, 1.2f);
+            loopClosed(world, player, pos);
         } else if (joining) {
             clearOrigin(wrench);
             say(player, Text.translatable("message.steveparty.wrench.trace.join", BoardText.pos(pos), n));
@@ -360,6 +360,7 @@ public final class WrenchActions {
             }
         }
         BoardLinks.trail(world, origin, target, BoardLinks.LINK_COLOR);
+        starPop(world, target);
         return true;
     }
 
@@ -546,10 +547,31 @@ public final class WrenchActions {
 
     // ---------------------------------------------------------------- sounds
 
+    /** Semitones of the major pentatonic scale: the chain climbs it, one note per board space. */
+    private static final int[] PENTATONIC = {0, 2, 4, 7, 9};
+
     private static void playChainSound(World world, ServerPlayerEntity player, int length) {
-        // One semitone higher per board space of the chain, from half pitch (1) to double pitch (25)
-        float pitch = (float) Math.pow(2, (Math.min(length, 25) - 13) / 12.0);
-        world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 0.6f, pitch);
+        // From half pitch (the first space) up two octaves of the pentatonic scale, then it stays on the top note
+        int step = Math.min(Math.max(length - 1, 0), 10);
+        int semitones = 12 * (step / 5) + PENTATONIC[step % 5] - 12;
+        float pitch = (float) Math.pow(2, semitones / 12.0);
+        world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.PLAYERS, 0.45f, pitch);
+    }
+
+    /** A new link: a small star pop on the linked space (few particles, short). */
+    private static void starPop(ServerWorld world, BlockPos target) {
+        net.minecraft.util.math.Vec3d at = BoardSpaces.standPos(world, target).add(0, 0.35, 0);
+        world.spawnParticles(fr.lordfinn.steveparty.particles.KamekShapeEffect.sparkle(2.4F, 0.8F, 9, fr.lordfinn.steveparty.particles.KamekShapeEffect.YELLOW),
+                at.x, at.y, at.z, 3, 0.15, 0.1, 0.15, 0.02);
+    }
+
+    /** The loop is closed: light confetti on the space and a short major chord. */
+    private static void loopClosed(ServerWorld world, ServerPlayerEntity player, BlockPos pos) {
+        net.minecraft.util.math.Vec3d at = BoardSpaces.standPos(world, pos).add(0, 0.6, 0);
+        world.spawnParticles(fr.lordfinn.steveparty.particles.KamekShapeEffect.shape(1.6F, 0.88F, 22), at.x, at.y, at.z, 12, 0.35, 0.2, 0.35, 0.12);
+        for (float pitch : new float[]{1.0F, 1.26F, 1.5F}) {
+            world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.PLAYERS, 0.4F, pitch);
+        }
     }
 
     private static void playSound(World world, ServerPlayerEntity player, SoundEvent sound, float pitch) {

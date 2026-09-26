@@ -17,7 +17,9 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
+import fr.lordfinn.steveparty.client.gui.ToolHud;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
@@ -26,13 +28,15 @@ import net.minecraft.util.math.BlockPos;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Wrench controls on the client: the mode key (R by default) and sneak + mouse wheel switch the mode; a small HUD next
- * to the hotbar shows the mode and the chain while the Wrench is held.
+ * Wrench controls on the client: the mode key (R by default) and sneak + mouse wheel switch the mode; a small HUD above
+ * the hotbar shows the mode, the chain and the board around while the Wrench is held.
  */
 public final class WrenchClient {
     private static final KeyBinding MODE_KEY = KeyBindingHelper.registerKeyBinding(
             new KeyBinding(WrenchItem.MODE_KEY, InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_R, "category.steveparty"));
-    private static final int HINT_COLOR = 0xAADDDDDD;
+    private static final net.minecraft.util.Identifier TRACE_ICON = fr.lordfinn.steveparty.Steveparty.id("textures/particle/arrow.png");
+    private static final ItemStack EDIT_ICON = new ItemStack(fr.lordfinn.steveparty.items.ModItems.WRENCH);
+    private static final ItemStack CUT_ICON = new ItemStack(net.minecraft.item.Items.SHEARS);
 
     private WrenchClient() {
     }
@@ -88,16 +92,17 @@ public final class WrenchClient {
         return container != null && container.size() > 1;
     }
 
+    /**
+     * The Wrench HUD, in the tools' look (see {@link ToolHud}, shared with the Stencil Hammer): right above the hotbar,
+     * a box with the mode's icon, a plate with the mode and what it is doing (chain, origin, edited slot), a plate
+     * summing up the board around (green: fine, orange: dead ends or unreachable spaces), and the see-through hint.
+     */
     private static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.options.hudHidden || client.currentScreen != null || client.player == null || client.world == null || !holdsWrench(client)) return;
         ItemStack wrench = client.player.getMainHandStack();
         WrenchState state = WrenchState.of(wrench);
         BlockPos origin = WrenchActions.origin(wrench, client.world);
-        // Top left corner, out of the way of the hotbar and the action bar messages
-        int x = 4;
-        int y = 24;
-        Text mode = Text.translatable("hud.steveparty.wrench.mode", state.mode().displayName());
         Text detail;
         if (origin == null) {
             detail = Text.translatable("hud.steveparty.wrench.no_origin." + state.mode().asString());
@@ -110,18 +115,41 @@ public final class WrenchClient {
         if (originContainer != null && originContainer.size() > 1 && state.mode() != WrenchMode.CUT) {
             detail = WrenchActions.slotText(originContainer, state.slot());
         }
-        context.drawTextWithShadow(client.textRenderer, mode, x, y, 0xFFFFFFFF);
-        context.drawTextWithShadow(client.textRenderer, detail.copy().formatted(Formatting.GRAY), x, y + 10, 0xFFFFFFFF);
+        Text mode = Text.translatable("hud.steveparty.wrench.panel", state.mode().displayName().copy().formatted(Formatting.RESET), detail);
+        int[] counts = BoardView.counts();
+        boolean problems = counts[1] + counts[2] > 0;
+        Text board = counts[0] == 0 ? null : problems
+                ? Text.translatable("hud.steveparty.board.summary.problems", counts[0], counts[1], counts[2])
+                : Text.translatable("hud.steveparty.board.summary.ok", counts[0]);
+
+        int gap = 4;
+        int modeWidth = ToolHud.textPlateWidth(mode), boardWidth = board == null ? 0 : ToolHud.textPlateWidth(board) + gap;
+        int total = ToolHud.BOX + gap + modeWidth + boardWidth;
+        int x = context.getScaledWindowWidth() / 2 - total / 2;
+        int y = ToolHud.top(context);
+        ToolHud.box(context, x, y, true);
+        modeIcon(context, state.mode(), x + (ToolHud.BOX - 16) / 2, y + (ToolHud.BOX - 16) / 2);
+        x += ToolHud.BOX + gap;
+        x += ToolHud.textPlate(context, x, y, mode, switch (state.mode()) {
+            case TRACE -> ToolHud.Plate.GREEN;
+            case EDIT -> ToolHud.Plate.TEAL;
+            case CUT -> ToolHud.Plate.RED;
+        }) + gap;
+        if (board != null) ToolHud.textPlate(context, x, y, board, problems ? ToolHud.Plate.ORANGE : ToolHud.Plate.GREEN);
+
         Text hint = state.mode() == WrenchMode.TRACE
                 ? Text.translatable("hud.steveparty.wrench.hint.trace", MODE_KEY.getBoundKeyLocalizedText(),
                         Text.translatable(state.autoLink() ? "hud.steveparty.wrench.auto_link.on" : "hud.steveparty.wrench.auto_link.off"))
                 : Text.translatable("hud.steveparty.wrench.hint", MODE_KEY.getBoundKeyLocalizedText());
-        context.drawTextWithShadow(client.textRenderer, hint, x, y - 10, HINT_COLOR);
-        // The board view around: problems at a glance
-        int[] counts = BoardView.counts();
-        if (counts[0] > 0) {
-            Text board = Text.translatable("hud.steveparty.board.counts", counts[0], counts[1], counts[2]);
-            context.drawTextWithShadow(client.textRenderer, board, x, y - 20, counts[1] + counts[2] > 0 ? 0xFFFFB050 : 0xFF90FF90);
+        ToolHud.hint(context, hint, context.getScaledWindowWidth() / 2, y);
+    }
+
+    /** Trace: the board view's chevron; Edit: the Wrench; Cut: shears. */
+    private static void modeIcon(DrawContext context, WrenchMode mode, int x, int y) {
+        switch (mode) {
+            case TRACE -> context.drawTexture(RenderLayer::getGuiTextured, TRACE_ICON, x, y, 0, 0, 16, 16, 16, 16, 0xFF3FB83F);
+            case EDIT -> context.drawItem(EDIT_ICON, x, y);
+            case CUT -> context.drawItem(CUT_ICON, x, y);
         }
     }
 }
