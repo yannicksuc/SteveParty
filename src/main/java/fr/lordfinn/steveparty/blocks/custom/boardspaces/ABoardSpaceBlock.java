@@ -103,7 +103,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
     /**
      * Whether reaching this block consumes one step of a token's movement.
-     * Tiles and simple tiles count; check points deliberately do not (they are waypoints).
+     * Tiles and advanced tiles count; check points deliberately do not (they are waypoints).
      */
     public static boolean countsAsStep(Block block) {
         return block instanceof TileBlock || block instanceof SimpleTileBlock;

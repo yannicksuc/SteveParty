@@ -3,6 +3,12 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import java.util.List;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.util.BlockMirror;
@@ -14,6 +20,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock.ROTATION_8;
 
+/**
+ * The « Tile » (« Tuile »): a board space holding a single cartridge, with a white/grey border. Registry id
+ * {@code simple_tile} (kept for existing worlds).
+ */
 public class SimpleTileBlock extends ABoardSpaceBlock {
     public static final MapCodec<SimpleTileBlock> CODEC = Block.createCodec(SimpleTileBlock::new);
 
@@ -55,6 +65,12 @@ public class SimpleTileBlock extends ABoardSpaceBlock {
     @Override
     public BlockState mirror(BlockState state, BlockMirror mirror) {
         return TileBlock.mirror8(state, mirror);
+    }
+
+    @Override
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
+        super.appendTooltip(stack, context, tooltip, options);
+        tooltip.add(Text.translatable("tooltip.steveparty.tile.simple").formatted(Formatting.GRAY));
     }
 
     @Override

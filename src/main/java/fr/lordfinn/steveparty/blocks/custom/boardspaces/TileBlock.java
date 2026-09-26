@@ -3,6 +3,12 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import java.util.List;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
@@ -16,6 +22,10 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * The « Advanced Tile » (« Tuile avancée »): a board space holding 16 cartridges, the redstone power picks the
+ * active one; gold border. Registry id {@code tile} (kept for existing worlds).
+ */
 public class TileBlock extends ABoardSpaceBlock {
 
     public static final MapCodec<TileBlock> CODEC = Block.createCodec(TileBlock::new);
@@ -77,6 +87,12 @@ public class TileBlock extends ABoardSpaceBlock {
     @Override
     public BlockState mirror(BlockState state, BlockMirror mirror) {
         return mirror8(state, mirror);
+    }
+
+    @Override
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
+        super.appendTooltip(stack, context, tooltip, options);
+        tooltip.add(Text.translatable("tooltip.steveparty.tile.advanced").formatted(Formatting.GRAY));
     }
 
     @Override

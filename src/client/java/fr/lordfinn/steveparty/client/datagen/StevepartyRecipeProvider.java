@@ -240,7 +240,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 offerCartridge(ModItems.BOARD_SPACE_BEHAVIOR_STOP, Items.RED_DYE);
                 offerCartridge(ModItems.INVENTORY_CARTRIDGE, Items.CHEST);
 
-                // A single-cartridge tile: the tile's carpets on one pressure plate, without its chest
+                // The (single-cartridge) Tile: the Advanced Tile's carpets on one pressure plate, without its chest
                 createShaped(RecipeCategory.REDSTONE, ModBlocks.SIMPLE_TILE)
                         .pattern("WWW")
                         .pattern(" P ")
