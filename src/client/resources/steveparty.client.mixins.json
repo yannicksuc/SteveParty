@@ -10,6 +10,7 @@
     "GameRendererStencilHammerShakeMixin",
     "HeldItemRendererStencilHammerMixin",
     "HeldItemRendererTokenSpellMixin",
+    "ItemRendererStencilHammerFaceMixin",
     "ItemRendererWandOrbitMixin",
     "LivingEntityRendererSetupTransformsMixin",
     "LivingEntityRendererShouldFlipMixin",
