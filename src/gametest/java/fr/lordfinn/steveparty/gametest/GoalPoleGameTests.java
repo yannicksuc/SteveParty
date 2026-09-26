@@ -431,18 +431,26 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Run-when-powered counts only with a signal at the back; ignore counts always. */
+    /** Ignore counts always; a base saved with the removed run-when-powered mode now pauses when powered. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void redstoneModesDecideWhenTheBaseCounts(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
-        base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED);
-        context.assertTrue(!base.isActive(), "run mode: idle without a signal");
-        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(base.isActive(), "run mode: counts with a signal");
         base.setRedstoneMode(GoalPoleBaseBlockEntity.RedstoneMode.IGNORE);
-        context.assertTrue(base.isActive(), "ignore: counts with a signal");
-        context.setBlockState(BASE.south(), Blocks.AIR);
         context.assertTrue(base.isActive(), "ignore: counts without a signal");
+        context.setBlockState(BASE.south(), Blocks.REDSTONE_BLOCK);
+        context.assertTrue(base.isActive(), "ignore: counts with a signal");
+        var saved = base.createNbt(context.getWorld().getRegistryManager());
+        saved.putString("RedstoneMode", "RUN_WHEN_POWERED");
+        base.read(saved, context.getWorld().getRegistryManager());
+        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "run-when-powered is migrated to pause");
+        context.assertTrue(!base.isActive(), "migrated: paused by the signal");
+        net.minecraft.nbt.NbtCompound settings = new net.minecraft.nbt.NbtCompound();
+        settings.putString("RedstoneMode", "IGNORE");
+        base.applySettings(settings);
+        settings.putString("RedstoneMode", "RUN_WHEN_POWERED");
+        base.applySettings(settings);
+        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "screen settings: run-when-powered becomes pause");
+        context.setBlockState(BASE.south(), Blocks.AIR);
         removeBase(context);
         context.complete();
     }
@@ -565,7 +573,8 @@ public class GoalPoleGameTests implements FabricGameTest {
 
     /**
      * A base saved before the rewrite: it counted while powered, reset on any side, and its objective counted the
-     * criterion. It keeps working the same way, and the objective's scores become its points.
+     * criterion. It keeps its criterion and players, the objective's scores become its points, and its back port
+     * now pauses it (counting only while powered is gone).
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void legacyBaseIsMigrated(TestContext context) {
@@ -583,7 +592,8 @@ public class GoalPoleGameTests implements FabricGameTest {
         GoalPoleBaseBlockEntity base = baseEntity(context);
         base.read(legacy, context.getWorld().getRegistryManager());
         GoalPoleNetwork.processPending();
-        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.RUN_WHEN_POWERED, "counts while powered, like before");
+        context.assertTrue(base.getRedstoneMode() == GoalPoleBaseBlockEntity.RedstoneMode.PAUSE_WHEN_POWERED, "the signal now pauses");
+        context.assertTrue(!base.isActive(), "powered at the back: paused");
         context.assertTrue(base.getSource() == GoalPoleBaseBlockEntity.Source.CRITERION && base.getCriterion().equals("deathCount"), "same criterion");
         context.assertTrue(base.getSelector().equals("@a") && base.getPlayers() == GoalPoleBaseBlockEntity.Players.SELECTOR,
                 "same selector, as the advanced choice");

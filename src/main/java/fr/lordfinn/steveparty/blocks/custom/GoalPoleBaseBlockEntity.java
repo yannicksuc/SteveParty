@@ -73,7 +73,7 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * of a followed player's score there is a point ({@code steveparty:landed_on_pole}, landings on any goal pole, was
  * the only source before and stays selectable).
  * <p>
- * <b>Redstone</b> ({@link RedstoneMode}): the back port pauses the base, or runs it, or is ignored. Paused, the base
+ * <b>Redstone</b> ({@link RedstoneMode}): the back port pauses the base, or is ignored. Paused, the base
  * counts nothing (increases seen meanwhile are dropped) but keeps its points, its objective and its outputs.
  * <p>
  * <b>Players</b> ({@link Players}): every player, the players near the base, the players of the nearest party (the
@@ -105,9 +105,16 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         /** The back port does nothing: the base always counts. */
         IGNORE,
         /** A signal at the back pauses the base (like a hopper). Default of new bases. */
-        PAUSE_WHEN_POWERED,
-        /** The base counts only while powered at the back (bases placed before this mode existed). */
-        RUN_WHEN_POWERED
+        PAUSE_WHEN_POWERED;
+
+        /** The removed mode where the base counted only while powered at the back; saved bases now pause instead. */
+        private static final String REMOVED_RUN_WHEN_POWERED = "RUN_WHEN_POWERED";
+
+        /** Reads a saved mode: the removed {@code RUN_WHEN_POWERED} becomes {@link #PAUSE_WHEN_POWERED}, unknown names {@code fallback}. */
+        public static RedstoneMode read(NbtCompound nbt, String key, RedstoneMode fallback) {
+            if (REMOVED_RUN_WHEN_POWERED.equals(nbt.getString(key))) return PAUSE_WHEN_POWERED;
+            return readEnum(nbt, key, values(), fallback);
+        }
     }
 
     public enum Source {
@@ -502,7 +509,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         return switch (redstoneMode) {
             case IGNORE -> true;
             case PAUSE_WHEN_POWERED -> !powered;
-            case RUN_WHEN_POWERED -> powered;
         };
     }
 
@@ -698,7 +704,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
 
     /** Settings from the screen ({@link #writeSettings}), each value checked. */
     public void applySettings(NbtCompound settings) {
-        setRedstoneMode(readEnum(settings, "RedstoneMode", RedstoneMode.values(), redstoneMode));
+        setRedstoneMode(RedstoneMode.read(settings, "RedstoneMode", redstoneMode));
         String selector = settings.getString("Selector");
         if (selector.length() <= MAX_STRING_LENGTH) setSelector(selector);
         setPlayers(readEnum(settings, "Players", Players.values(), players), settings.contains("Radius") ? settings.getInt("Radius") : radius);
@@ -741,9 +747,10 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         points.clear();
         sourceSeen.clear();
         if (nbt.getInt("Version") < 2) {
-            // The ticking base: counted while powered at the back, reset by any other side, criterion objective
+            // The ticking base: counted while powered at the back (that mode is gone: the signal now pauses it), reset
+            // by any other side, criterion objective
             legacy = true;
-            redstoneMode = RedstoneMode.RUN_WHEN_POWERED;
+            redstoneMode = RedstoneMode.PAUSE_WHEN_POWERED;
             outputMode = OutputMode.PULSE;
             source = Source.CRITERION;
             criterion = nbt.contains("Goal", NbtElement.STRING_TYPE) ? nbt.getString("Goal") : LANDED_ON_POLE_ID;
@@ -761,7 +768,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             return;
         }
         legacy = false;
-        redstoneMode = readEnum(nbt, "RedstoneMode", RedstoneMode.values(), RedstoneMode.PAUSE_WHEN_POWERED);
+        redstoneMode = RedstoneMode.read(nbt, "RedstoneMode", RedstoneMode.PAUSE_WHEN_POWERED);
         source = readEnum(nbt, "Source", Source.values(), Source.CRITERION);
         criterion = nbt.getString("Criterion");
         selector = nbt.getString("Selector");

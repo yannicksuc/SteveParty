@@ -105,7 +105,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         this.source = GoalPoleBaseBlockEntity.readEnum(settings, "Source", Source.values(), Source.LANDINGS_HERE);
         this.players = GoalPoleBaseBlockEntity.readEnum(settings, "Players", Players.values(), Players.ALL);
         this.partyNear = settings.getBoolean("PartyNear");
-        this.redstoneMode = GoalPoleBaseBlockEntity.readEnum(settings, "RedstoneMode", RedstoneMode.values(), RedstoneMode.PAUSE_WHEN_POWERED);
+        this.redstoneMode = RedstoneMode.read(settings, "RedstoneMode", RedstoneMode.PAUSE_WHEN_POWERED);
         this.outputMode = GoalPoleBaseBlockEntity.readEnum(settings, "OutputMode", OutputMode.values(), OutputMode.PULSE);
     }
 
