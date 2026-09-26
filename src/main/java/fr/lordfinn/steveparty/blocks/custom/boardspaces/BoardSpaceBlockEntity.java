@@ -168,6 +168,51 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         this.setStack(getActiveSlot(), stack);
     }
 
+    // ---------------------------------------------------------------- links kept when the cartridge is replaced
+
+    /**
+     * Links of the cartridges taken out of each slot, until a cartridge without links takes their place: replacing a
+     * cartridge (another type, from the interface or a hopper) keeps the links of the board space. Server side, not saved.
+     */
+    private final Map<Integer, DestinationsComponent> removedLinks = new HashMap<>();
+
+    @Override
+    public ItemStack removeStack(int slot, int amount) {
+        rememberLinks(slot);
+        return super.removeStack(slot, amount);
+    }
+
+    @Override
+    public ItemStack removeStack(int slot) {
+        rememberLinks(slot);
+        return super.removeStack(slot);
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack) {
+        if (world instanceof ServerWorld) {
+            int wrapped = wrapSlot(slot);
+            if (stack.isEmpty()) {
+                rememberLinks(wrapped);
+            } else if (stack.getItem() instanceof CartridgeItem) {
+                DestinationsComponent own = stack.get(ModComponents.DESTINATIONS_COMPONENT);
+                DestinationsComponent kept = removedLinks.remove(wrapped);
+                if ((own == null || own.destinations().isEmpty()) && kept != null) {
+                    stack.set(ModComponents.DESTINATIONS_COMPONENT, kept);
+                }
+            }
+        }
+        super.setStack(slot, stack);
+    }
+
+    private void rememberLinks(int slot) {
+        if (!(world instanceof ServerWorld)) return;
+        ItemStack current = getStack(slot);
+        if (!(current.getItem() instanceof CartridgeItem)) return;
+        DestinationsComponent links = current.get(ModComponents.DESTINATIONS_COMPONENT);
+        if (links != null && !links.destinations().isEmpty()) removedLinks.put(wrapSlot(slot), links);
+    }
+
     /**
      * Applies the role of the active cartridge (block state type, colour, token notification) if it changed.
      * Server side; the client receives the result through the block state and the block entity data.

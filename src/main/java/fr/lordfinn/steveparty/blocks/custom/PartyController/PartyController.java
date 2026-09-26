@@ -132,6 +132,8 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
+        // The Wrench checks the board (see WrenchActions)
+        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.WrenchItem) return ActionResult.PASS;
         if (stack.getItem() instanceof MiniGamesCatalogueItem) {
             ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state, player);
             if (success != null) return success;

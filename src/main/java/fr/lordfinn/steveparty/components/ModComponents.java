@@ -31,6 +31,9 @@ public class ModComponents {
             registerComponent("tile-behavior-component", DestinationsComponent.CODEC);
     public static final ComponentType<BlockOriginComponent> BLOCK_ORIGIN_COMPONENT =
             registerComponent("block-origin-component", BlockOriginComponent.CODEC);
+    /** Mode, chain, edited slot and auto link of a Wrench (see WrenchState). */
+    public static final ComponentType<fr.lordfinn.steveparty.board.WrenchState> WRENCH_STATE =
+            registerComponent("wrench-state", fr.lordfinn.steveparty.board.WrenchState.CODEC);
     /**
      * Legacy: token selected by the Tokenizer Wand when it could move tokens. No longer written; kept registered so
      * wands saved by older versions still load (an unknown component would drop the item), and stripped from them

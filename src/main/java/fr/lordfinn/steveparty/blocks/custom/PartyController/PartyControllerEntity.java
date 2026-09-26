@@ -254,6 +254,8 @@ public class PartyControllerEntity extends BlockEntity {
         clearInterestedPlayers();
         getTokenFromStartTiles(serverWorld);
         setTokensStatus(serverWorld);
+        // A warning for everyone around if the board has problems (the party still starts)
+        fr.lordfinn.steveparty.board.BoardValidator.warnAtStart(serverWorld, pos);
 
         addInterestedPlayersFromTokens(serverWorld);
 

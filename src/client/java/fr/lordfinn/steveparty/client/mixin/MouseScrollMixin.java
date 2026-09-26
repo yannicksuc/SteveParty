@@ -20,5 +20,7 @@ public class MouseScrollMixin {
     @Inject(method = "onMouseScroll", at = @At("HEAD"), cancellable = true)
     private void steveparty$stencilGunScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
         if (window == client.getWindow().getHandle() && StencilGunHud.onScroll(vertical)) ci.cancel();
+        // Sneak + wheel with the Wrench: its mode
+        else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.board.WrenchClient.onScroll(vertical)) ci.cancel();
     }
 }

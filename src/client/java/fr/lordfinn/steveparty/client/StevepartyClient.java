@@ -157,6 +157,7 @@ public class StevepartyClient implements ClientModInitializer {
         MobTextureColors.registerReloadListener();
         FlagPalettes.registerReloadListener();
         StencilGunHud.initialize();
+        fr.lordfinn.steveparty.client.board.WrenchClient.initialize();
         fr.lordfinn.steveparty.client.hammer.StencilHammerStrikes.initialize();
         SwitchableClient.initialize();
         fr.lordfinn.steveparty.client.token.TokenBaseRenderer.initialize();

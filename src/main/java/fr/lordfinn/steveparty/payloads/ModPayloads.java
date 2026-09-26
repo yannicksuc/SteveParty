@@ -61,6 +61,12 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(OpenTokenSpellPayload.ID, OpenTokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(WrenchActionPayload.ID, WrenchActionPayload.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(WrenchActionPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(VillagerBlockPunchPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
