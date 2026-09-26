@@ -275,7 +275,7 @@ public abstract class AbstractStencilSignBlock extends BlockWithEntity implement
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
                                          Hand hand, BlockHitResult hit) {
-        return StencilInteractions.onUseWithItem(state, world, pos, player, hand);
+        return StencilInteractions.onUseWithItem(state, world, pos, player, hand, hit);
     }
 
     /** Middle click gives this sign made of the same material (the symbol itself needs ctrl + middle click). */

@@ -148,7 +148,7 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
             }
             return ActionResult.SUCCESS;
         }
-        return StencilInteractions.onUseWithItem(state, world, pos, player, hand);
+        return StencilInteractions.onUseWithItem(state, world, pos, player, hand, hit);
     }
 
     /**
@@ -160,6 +160,11 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
      * @param up the player's horizontal facing: the symbol is sprayed the right way up for them
      * @return true if something was painted
      */
+    /** Where {@link #spray} puts (or repaints) the paint for the {@code side} face of the block at {@code target}. */
+    public static BlockPos paintPos(World world, BlockPos target, Direction side) {
+        return world.getBlockState(target).isOf(ModBlocks.STENCIL_PAINT) ? target : target.offset(side);
+    }
+
     public static boolean spray(World world, BlockPos target, Direction side, byte[] shape, DyeColor color, Direction up) {
         if (StencilShape.isBlank(shape)) return false;
         BlockState targetState = world.getBlockState(target);

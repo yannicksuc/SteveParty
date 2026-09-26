@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.signs.SignShapes;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.WoodenPanelBlock;
+import fr.lordfinn.steveparty.client.hammer.StencilHammerStrikes;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.OverlayTexture;
@@ -17,10 +18,13 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.RotationAxis;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.util.math.BlockPos;
@@ -49,6 +53,10 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
     private static final float[] FADE_ALPHA = {1.0F, 0.78F, 0.58F, 0.4F, 0.24F};
     /** Sprayed paint is a little see-through: the texture of the block it is on shows under it. */
     private static final float SPRAY_ALPHA = 0.86F;
+    /** Stencil Hammer stamp: how far (blocks) the pattern spreads from the hit point, cells per quad side, soft edge. */
+    private static final float REVEAL_RADIUS = 1.25F;
+    private static final int REVEAL_GRID = 8;
+    private static final float REVEAL_EDGE = 0.15F;
 
     public StencilCanvasBlockEntityRenderer(BlockEntityRendererFactory.Context ignoredCtx) {
     }
@@ -98,12 +106,36 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         }
         if (cache.texture == null) return;
 
-        DyeColor color = entity.getColor();
+        // A Stencil Hammer strike: the previous symbol stays until the head lands, then the new one spreads from
+        // the hit point over it
+        StencilHammerStrikes.Reveal reveal = StencilHammerStrikes.reveal(entity.getPos());
+        World world = entity.getWorld();
+        float since = reveal == null || !(world instanceof ClientWorld clientWorld) ? Float.MAX_VALUE : reveal.sinceImpact(clientWorld, tickDelta);
+        if (reveal != null && since < StencilHammerStrikes.REVEAL_TICKS && reveal.oldCache != cache) {
+            if (reveal.oldCache instanceof Cache old && old.state == state && old.texture != null && !old.quads.isEmpty()) {
+                draw(matrices, vertexConsumers, entity, state, old, reveal.oldColor, reveal.oldFade, reveal.oldGlowing, light, null, 0);
+            }
+            if (since < 0) return;
+            Vector3f hit = reveal.hit.subtract(Vec3d.of(entity.getPos())).toVector3f();
+            float progress = since / StencilHammerStrikes.REVEAL_TICKS;
+            float radius = REVEAL_RADIUS * progress * (2 - progress); // ease out: a splash spreading, slowing down
+            draw(matrices, vertexConsumers, entity, state, cache, entity.getColor(), entity.getFade(), entity.isGlowing(), light, hit, radius);
+            return;
+        }
+        draw(matrices, vertexConsumers, entity, state, cache, entity.getColor(), entity.getFade(), entity.isGlowing(), light, null, 0);
+    }
+
+    /**
+     * Draws a symbol; with {@code revealFrom} (block local) only the part within {@code radius} of it, its edge
+     * fading, in {@link #REVEAL_GRID}² cells per quad.
+     */
+    private void draw(MatrixStack matrices, VertexConsumerProvider vertexConsumers, T entity, BlockState state, Cache cache,
+                      @Nullable DyeColor color, int fade, boolean glowing, int light, @Nullable Vector3f revealFrom, float radius) {
         int argb = color == null ? ENGRAVED_COLOR : 0xFF000000 | color.getSignColor();
-        float alpha = FADE_ALPHA[Math.clamp(entity.getFade(), 0, FADE_ALPHA.length - 1)]
+        float alpha = FADE_ALPHA[Math.clamp(fade, 0, FADE_ALPHA.length - 1)]
                 * (state.getBlock() instanceof StencilPaintBlock ? SPRAY_ALPHA : 1.0F);
         argb = ColorHelper.withAlpha(Math.round((argb >>> 24) * alpha), argb);
-        int symbolLight = entity.isGlowing() && color != null ? FULL_BRIGHT : light;
+        int symbolLight = glowing && color != null ? FULL_BRIGHT : light;
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(cache.texture));
 
         matrices.push();
@@ -113,8 +145,41 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
             matrices.peek().getPositionMatrix().mul(cache.transform);
             matrices.peek().getNormalMatrix().mul(cache.normalTransform);
         }
-        for (SymbolLayouts.SymbolQuad quad : cache.quads) drawQuad(matrices.peek(), consumer, quad, argb, symbolLight);
+        for (SymbolLayouts.SymbolQuad quad : cache.quads) {
+            if (revealFrom == null) drawQuad(matrices.peek(), consumer, quad, argb, symbolLight);
+            else drawRevealed(matrices.peek(), consumer, quad, cache, argb, symbolLight, revealFrom, radius);
+        }
         matrices.pop();
+    }
+
+    /** The part of a quad already stamped: cells within {@code radius} of the hit point, the edge fading in. */
+    private static void drawRevealed(MatrixStack.Entry entry, VertexConsumer consumer, SymbolLayouts.SymbolQuad quad, Cache cache,
+                                     int argb, int light, Vector3f from, float radius) {
+        Vector3f center = new Vector3f();
+        for (int i = 0; i < REVEAL_GRID; i++) {
+            float u0 = (float) i / REVEAL_GRID, u1 = (float) (i + 1) / REVEAL_GRID;
+            for (int j = 0; j < REVEAL_GRID; j++) {
+                float v0 = (float) j / REVEAL_GRID, v1 = (float) (j + 1) / REVEAL_GRID;
+                lerp(quad, (u0 + u1) / 2, (v0 + v1) / 2, center).div(16F);
+                if (cache.sign) cache.transform.transformPosition(center);
+                float inside = MathHelper.clamp((radius - center.distance(from)) / REVEAL_EDGE, 0, 1);
+                if (inside <= 0) continue;
+                int cellArgb = ColorHelper.withAlpha(Math.round((argb >>> 24) * inside), argb);
+                Matrix4f matrix = entry.getPositionMatrix();
+                Vector3f n = quad.normal();
+                vertex(consumer, matrix, entry, lerp(quad, u0, v0, new Vector3f()), u0, v0, cellArgb, light, n);
+                vertex(consumer, matrix, entry, lerp(quad, u0, v1, new Vector3f()), u0, v1, cellArgb, light, n);
+                vertex(consumer, matrix, entry, lerp(quad, u1, v1, new Vector3f()), u1, v1, cellArgb, light, n);
+                vertex(consumer, matrix, entry, lerp(quad, u1, v0, new Vector3f()), u1, v0, cellArgb, light, n);
+            }
+        }
+    }
+
+    /** The point of a quad (in pixels) at texture coordinates (u, v). */
+    private static Vector3f lerp(SymbolLayouts.SymbolQuad quad, float u, float v, Vector3f out) {
+        Vector3f top = new Vector3f(quad.topLeft()).lerp(quad.topRight(), u);
+        Vector3f bottom = new Vector3f(quad.bottomLeft()).lerp(quad.bottomRight(), u);
+        return out.set(top).lerp(bottom, v);
     }
 
     private static Cache createCache(StencilCanvasBlockEntity entity, BlockState state) {

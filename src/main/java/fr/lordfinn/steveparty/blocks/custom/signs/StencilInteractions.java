@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.signs;
 
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
+import fr.lordfinn.steveparty.items.custom.StencilHammerStrike;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.block.BlockState;
@@ -18,7 +19,10 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +39,7 @@ import java.util.Objects;
  *     <li>glow ink sac: the paint glows (on a painted symbol only); sponge: it stops glowing;</li>
  *     <li>brush, held on it: fades the symbol a little every half second, then scrubs it off;</li>
  *     <li>wet sponge: washes the symbol off;</li>
- *     <li>stencil gun: sprays its selected stencil in its selected colour.</li>
+ *     <li>Stencil Hammer: strikes its selected stencil in its selected colour ({@link StencilHammerStrike}).</li>
  * </ul>
  * On a cut-out panel ({@link StencilCanvasBlock#usesSilhouette()}) a stencil and an axe (one in each hand) cut the
  * board along the stencil, using the axe; a wet sponge gives it back its whole board.
@@ -49,7 +53,8 @@ public final class StencilInteractions {
     public enum BrushResult { NOTHING, FADED, GONE }
 
     /** Called from {@code Block#onUseWithItem}, once per hand. */
-    public static ActionResult onUseWithItem(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand) {
+    public static ActionResult onUseWithItem(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
+                                             @Nullable BlockHitResult hit) {
         if (!(world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas)) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
         ItemStack main = player.getMainHandStack();
         ItemStack off = player.getOffHandStack();
@@ -65,11 +70,23 @@ public final class StencilInteractions {
             return ActionResult.SUCCESS;
         }
 
+        boolean hammer = !silhouette && leading.getItem() instanceof StencilGunItem;
+        // A strike at a time: the hammer is still swinging
+        if (hammer && StencilHammerStrike.isCoolingDown(player, acting)) return ActionResult.CONSUME;
+        // What the hammer stamps (read before the dye is used up)
+        DyeColor hammerColor = hammer ? StencilGunItem.selectedLoad(leading).color() : null;
         Runnable action = resolve(canvas, main, off, player, silhouette);
         if (action == null) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
         if (!world.isClient) {
             action.run();
             world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(player, state));
+        }
+        if (hammer) {
+            Vec3d hitPos = hit != null ? hit.getPos() : Vec3d.ofCenter(pos);
+            Direction side = hit != null ? hit.getSide() : Direction.UP;
+            StencilHammerStrike.strike(world, player, acting, pos, hitPos, side, hammerColor);
+            // No vanilla arm swing: the strike plays its own swing
+            return ActionResult.CONSUME;
         }
         return ActionResult.SUCCESS;
     }
@@ -134,7 +151,7 @@ public final class StencilInteractions {
             };
         }
 
-        // The gun sprays from whichever hand holds it (the leading item)
+        // The hammer strikes from whichever hand holds it (the leading item)
         if (leading.getItem() instanceof StencilGunItem) {
             ItemStack gun = leading;
             StencilGunItem.Load load = StencilGunItem.selectedLoad(gun);
@@ -143,7 +160,7 @@ public final class StencilInteractions {
             return () -> {
                 canvas.setSymbol(load.shape(), load.color());
                 if (load.color() != null && !player.isCreative()) StencilGunItem.consumeDye(gun, load.dyeSlot());
-                StencilGunItem.playSpray(world, pos, load.color());
+                // The sounds and the splash are the strike's (played by the clients)
             };
         }
 

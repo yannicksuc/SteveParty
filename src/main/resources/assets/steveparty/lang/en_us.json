@@ -672,7 +672,7 @@
   "tooltip.steveparty.stencil_gun.no_stencil": "No stencil loaded",
   "tooltip.steveparty.stencil_gun.color": "Paint: %s",
   "tooltip.steveparty.stencil_gun.dye_left": "%s dyes left",
-  "tooltip.steveparty.stencil_gun.usage": "Sneak + use: load. Sneak + wheel: choose.",
+  "tooltip.steveparty.stencil_gun.usage": "Use: strike to stamp. Sneak + use: load. Sneak + wheel: choose.",
   "hud.steveparty.stencil_gun.engrave": "Engrave",
   "hud.steveparty.stencil_gun.hint_stencil": "Sneak + wheel: stencil  |  %s: colour",
   "hud.steveparty.stencil_gun.hint_color": "Sneak + wheel: colour  |  %s: stencil",

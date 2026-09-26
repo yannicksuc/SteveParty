@@ -37,8 +37,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Stencil gun: carries up to 9 stencils and 9 dye stacks and sprays the selected stencil in the selected colour,
- * on stencil signs like a stencil + dye, and on the face of any full block like a spray can.
+ * Stencil Hammer (registry id stencil_gun, kept for existing worlds; it used to be a spray gun): carries up to 9
+ * stencils and 9 dye stacks and stamps the selected stencil in the selected colour with a hammer strike, on stencil
+ * signs like a stencil + dye, and on the face of any full block (see {@link StencilHammerStrike}).
  * <ul>
  *     <li>sneak + use: opens the gun to load / unload stencils and dyes;</li>
  *     <li>sneak + mouse wheel: picks the next / previous stencil, or colour (the "stencil gun mode" key switches
@@ -170,7 +171,10 @@ public class StencilGunItem extends Item {
         return ActionResult.PASS;
     }
 
-    /** Sneaking always opens the gun (the block is skipped); otherwise sprays on the face of a full block. */
+    /**
+     * Sneaking always opens the hammer (the block is skipped); otherwise strikes the face of a full block and stamps
+     * the stencil on it in the selected paint (see {@link StencilHammerStrike}).
+     */
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         PlayerEntity player = context.getPlayer();
@@ -183,15 +187,23 @@ public class StencilGunItem extends Item {
         ItemStack gun = context.getStack();
         Load load = selectedLoad(gun);
         if (load.shape() == null || load.color() == null) return ActionResult.PASS;
+        BlockPos canvasPos = StencilPaintBlock.paintPos(world, context.getBlockPos(), context.getSide());
         boolean sprayed = StencilPaintBlock.spray(world, context.getBlockPos(), context.getSide(), load.shape(), load.color(),
                 player.getHorizontalFacing());
         if (!sprayed) return ActionResult.PASS;
         if (!world.isClient) {
             if (!player.isCreative()) consumeDye(gun, load.dyeSlot());
-            playSpray(world, context.getBlockPos().offset(context.getSide()), load.color());
             world.emitGameEvent(GameEvent.BLOCK_CHANGE, context.getBlockPos(), GameEvent.Emitter.of(player));
         }
-        return ActionResult.SUCCESS;
+        StencilHammerStrike.strike(world, player, context.getHand(), canvasPos, context.getHitPos(), context.getSide(), load.color());
+        // No vanilla arm swing: the strike plays its own swing
+        return ActionResult.CONSUME;
+    }
+
+    /** Loading, picking a stencil or using up a dye changes the hammer: no re-equip bob of the hand for that. */
+    @Override
+    public boolean allowComponentsUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
+        return false;
     }
 
     private static void openLoader(PlayerEntity player, Hand hand) {

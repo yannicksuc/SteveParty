@@ -344,7 +344,7 @@
   "tooltip.steveparty.stencil_gun.no_stencil": "Aucun pochoir chargé",
   "tooltip.steveparty.stencil_gun.color": "Peinture : %s",
   "tooltip.steveparty.stencil_gun.dye_left": "%s colorants restants",
-  "tooltip.steveparty.stencil_gun.usage": "Accroupi + clic droit : charger. Accroupi + molette : choisir.",
+  "tooltip.steveparty.stencil_gun.usage": "Clic droit : frapper pour tamponner. Accroupi + clic droit : charger. Accroupi + molette : choisir.",
   "hud.steveparty.stencil_gun.engrave": "Graver",
   "hud.steveparty.stencil_gun.hint_stencil": "Accroupi + molette : pochoir  |  %s : couleur",
   "hud.steveparty.stencil_gun.hint_color": "Accroupi + molette : couleur  |  %s : pochoir",

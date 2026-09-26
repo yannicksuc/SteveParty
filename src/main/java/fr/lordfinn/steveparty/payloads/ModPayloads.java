@@ -57,6 +57,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(CartridgeSlotScrollPayload.ID, CartridgeSlotScrollPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SwitchableBlocksPayload.ID, SwitchableBlocksPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SquishAnimationPayload.ID, SquishAnimationPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(StencilHammerStrikePayload.ID, StencilHammerStrikePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(OpenTokenSpellPayload.ID, OpenTokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);

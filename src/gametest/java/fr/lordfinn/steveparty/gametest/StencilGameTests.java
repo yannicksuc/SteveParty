@@ -13,6 +13,7 @@ import fr.lordfinn.steveparty.components.StencilCanvasComponent;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
+import fr.lordfinn.steveparty.items.custom.StencilHammerStrike;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilLibrary;
@@ -46,6 +47,7 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -755,6 +757,47 @@ public class StencilGameTests implements FabricGameTest {
         context.assertEquals(StencilGunItem.selection(gun).dye(), StencilGunSelection.ENGRAVE, "then no paint");
         StencilGunItem.scroll(gun, true, 1);
         context.assertEquals(StencilGunItem.selection(gun).dye(), 0, "then back to the first colour");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilHammerStampsAWallWithOneStrike(TestContext context) {
+        BlockPos wall = new BlockPos(1, 1, 3);
+        context.setBlockState(wall, Blocks.STONE);
+        PlayerEntity player = survivalPlayer(context);
+        player.setStackInHand(Hand.MAIN_HAND, loadedGun());
+        BlockPos abs = context.getAbsolutePos(wall);
+        Vec3d face = Vec3d.ofCenter(abs).add(0, 0, -0.5);
+        ActionResult result = player.getMainHandStack().useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND,
+                new BlockHitResult(face, Direction.NORTH, abs, false)));
+        context.assertEquals(result, ActionResult.CONSUME, "the strike plays its own swing (no vanilla arm swing)");
+        context.expectBlock(ModBlocks.STENCIL_PAINT, wall.north());
+        StencilCanvasBlockEntity paint = at(context, wall.north());
+        context.assertTrue(Arrays.equals(paint.getShape(), pattern("coin")) && paint.getColor() == DyeColor.RED, "red coin stamped on the wall");
+        context.assertEquals(StencilGunItem.contents(player.getMainHandStack()).get(StencilGunItem.STENCIL_SLOTS).getCount(), 1, "one red dye used");
+        context.assertTrue(StencilHammerStrike.isCoolingDown(player, Hand.MAIN_HAND), "the hammer cools down for the length of its swing");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilHammerStrikesOneSignAtATime(TestContext context) {
+        context.setBlockState(SIGN.down(), ModBlocks.PLASTIC_FENCES[0]);
+        context.setBlockState(SIGN, ModBlocks.PLASTIC_ROAD_SIGN);
+        PlayerEntity player = survivalPlayer(context);
+        ItemStack gun = loadedGun();
+        player.setStackInHand(Hand.MAIN_HAND, gun);
+        ActionResult first = context.getBlockState(SIGN).onUseWithItem(gun, context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertEquals(first, ActionResult.CONSUME, "the strike plays its own swing");
+        // Straight away, with the blue dye: the hammer is still swinging
+        StencilGunItem.scroll(player.getMainHandStack(), true, 1);
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        StencilCanvasBlockEntity sign = at(context, SIGN);
+        context.assertTrue(sign.getColor() == DyeColor.RED, "no second strike while the first one swings");
+        context.assertEquals(StencilGunItem.contents(player.getMainHandStack()).get(StencilGunItem.STENCIL_SLOTS + 3).getCount(), 1, "no blue dye used");
+        // Once it has cooled down, it strikes again
+        player.getItemCooldownManager().remove(player.getItemCooldownManager().getGroup(player.getMainHandStack()));
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertTrue(sign.getColor() == DyeColor.BLUE, "blue once the swing is over");
         context.complete();
     }
 
