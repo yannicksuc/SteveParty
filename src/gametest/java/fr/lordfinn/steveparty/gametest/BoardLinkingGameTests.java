@@ -337,6 +337,93 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theWheelPicksTheEditedSlotOfAnAdvancedTile(TestContext context) {
+        List<BlockPos> advanced = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
+        List<BlockPos> next = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(4, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack wrench = wrench(player);
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1); // Edit
+            click(player, wrench, context, advanced.getFirst());
+            for (int i = 0; i < 4; i++) WrenchActions.control(player, wrench, WrenchActionPayload.Action.SLOT, 1);
+            context.assertEquals(WrenchState.of(wrench).slot(), 3, "4 notches: slot 3 (the 4th)");
+            click(player, wrench, context, next.getFirst());
+            BoardSpaceBlockEntity tile = boardSpace(context, advanced.getFirst());
+            context.assertEquals(BoardLinks.links(tile, 3), List.of(next.getFirst()), "linked in slot 3");
+            context.assertTrue(tile.getStack(0).isEmpty(), "the active slot (0, no redstone) untouched");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void pastingTurnsTheLinksWithTheCopyAndUndoRemovesIt(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(3, 1, 3));
+        link(context, t.get(0), t.get(1));
+        link(context, t.get(1), t.get(2), context.getAbsolutePos(new BlockPos(8, 1, 8)));
+        withPlayer(context, true, player -> {
+            ServerWorld world = context.getWorld();
+            fr.lordfinn.steveparty.board.BoardBlueprint.Clip clip = fr.lordfinn.steveparty.board.BoardBlueprint.copy(world,
+                    net.minecraft.util.math.BlockBox.create(t.get(0), t.get(2)), context.getAbsolutePos(new BlockPos(2, 1, 2)));
+            BlockPos anchor = context.getAbsolutePos(new BlockPos(6, 1, 6));
+            WrenchActions.recorded(player, world, null, () -> fr.lordfinn.steveparty.board.BoardBlueprint.paste(world, clip, anchor,
+                    net.minecraft.util.BlockRotation.CLOCKWISE_90, false, player));
+            // Relative to the anchor, (x, z) turns into (-z, x)
+            BlockPos a = anchor.add(1, 0, -1), b = anchor.add(1, 0, 1), c = anchor.add(-1, 0, 1);
+            context.assertEquals(links(context, a), List.of(b), "a' → b'");
+            context.assertEquals(links(context, b), List.of(c), "b' → c', the link leaving the copy is cut");
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "the original is untouched");
+            WrenchActions.control(player, wrench(player), WrenchActionPayload.Action.UNDO, 1);
+            context.assertTrue(world.getBlockState(a).isAir() && world.getBlockState(c).isAir(), "undo removes the paste");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void translateFollowsAMoveMadeWithAnotherTool(TestContext context) {
+        // a → b moved 3 blocks south by hand: the copies still point at the old b
+        List<BlockPos> moved = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 4), new BlockPos(3, 1, 4));
+        BlockPos oldB = context.getAbsolutePos(new BlockPos(3, 1, 1)), outside = context.getAbsolutePos(new BlockPos(7, 1, 7));
+        link(context, moved.get(0), oldB, outside);
+        int count = fr.lordfinn.steveparty.board.BoardBlueprint.translate(context.getWorld(),
+                net.minecraft.util.math.BlockBox.create(moved.get(0), moved.get(1)), new net.minecraft.util.math.Vec3i(0, 0, 3), null);
+        context.assertEquals(count, 1, "one link moved");
+        context.assertEquals(links(context, moved.get(0)), List.of(moved.get(1), outside), "the inner link follows, the outer one stays");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aLoopTemplateIsClosedAndStarts(TestContext context) {
+        List<BlockPos> cells = fr.lordfinn.steveparty.board.BoardBlueprint.template(context.getWorld(),
+                fr.lordfinn.steveparty.board.BoardBlueprint.Template.LOOP, context.getAbsolutePos(new BlockPos(1, 1, 7)),
+                net.minecraft.util.math.Direction.NORTH, 6, 2, null);
+        context.assertEquals(cells.size(), 6, "6 tiles");
+        for (int i = 0; i < 6; i++) context.assertEquals(links(context, cells.get(i)), List.of(cells.get((i + 1) % 6)), "tile " + i);
+        context.assertEquals(context.getWorld().getBlockState(cells.getFirst()).get(TILE_TYPE), BoardSpaceType.TILE_START, "the first one starts");
+        BoardValidator.Report report = BoardValidator.check(BoardGraph.collect(context.getWorld(), box(context)));
+        context.assertTrue(report.issues().stream().allMatch(i -> i.key().equals("no_token")), "a valid board: " + report.issues());
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPickedCopyComesWithoutLinks(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
+        link(context, t.get(0), t.get(1));
+        BoardSpaceBlockEntity source = boardSpace(context, t.get(0));
+        var registries = context.getWorld().getRegistryManager();
+        net.minecraft.nbt.NbtCompound nbt = source.createComponentlessNbtWithIdentifyingData(registries);
+        source.removeFromCopiedStackNbt(nbt);
+        ItemStack item = new ItemStack(ModBlocks.SIMPLE_TILE);
+        net.minecraft.item.BlockItem.setBlockEntityData(item, source.getType(), nbt);
+        context.setBlockState(new BlockPos(5, 0, 5), Blocks.STONE);
+        withPlayer(context, true, player -> {
+            player.setStackInHand(Hand.MAIN_HAND, item);
+            BlockPos ground = context.getAbsolutePos(new BlockPos(5, 0, 5));
+            item.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
+            BoardSpaceBlockEntity copy = boardSpace(context, ground.up());
+            context.assertTrue(copy.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "the copy has its cartridge");
+            context.assertTrue(BoardLinks.links(copy, 0).isEmpty(), "but no links to the original's neighbours");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void diagonalsAreOriented(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 4));
         withPlayer(context, true, player -> {

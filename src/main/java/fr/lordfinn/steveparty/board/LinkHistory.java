@@ -34,7 +34,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, BlockChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
     }
@@ -72,6 +72,33 @@ public final class LinkHistory {
             else cartridge.set(ModComponents.INVENTORY_POS, value);
             BoardLinks.sync(container);
             return true;
+        }
+    }
+
+    /**
+     * A block placed by a paste or a template: {@code before} (with its block entity data) comes back on undo if the
+     * block is still {@code after}; redo places {@code after} again with its data.
+     */
+    public record BlockChange(BlockPos pos, BlockState before, @Nullable net.minecraft.nbt.NbtCompound beforeData,
+                              BlockState after, @Nullable net.minecraft.nbt.NbtCompound afterData) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            if (world.getBlockState(pos) != (undo ? after : before)) return false;
+            BlockState state = undo ? before : after;
+            net.minecraft.nbt.NbtCompound data = undo ? beforeData : afterData;
+            world.setBlockState(pos, state, Block.NOTIFY_ALL);
+            if (data != null && world.getBlockEntity(pos) instanceof net.minecraft.block.entity.BlockEntity blockEntity) {
+                blockEntity.read(data, world.getRegistryManager());
+                blockEntity.markDirty();
+                world.updateListeners(pos, state, state, Block.NOTIFY_ALL);
+            }
+            return true;
+        }
+
+        /** The block at {@code pos} now, with its block entity data. */
+        static net.minecraft.nbt.NbtCompound data(ServerWorld world, BlockPos pos) {
+            net.minecraft.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
+            return blockEntity == null ? null : blockEntity.createNbt(world.getRegistryManager());
         }
     }
 

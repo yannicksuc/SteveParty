@@ -99,7 +99,7 @@ public final class WrenchActions {
     }
 
     /** The action bar message of an action (also its label in the undo history). */
-    static void say(ServerPlayerEntity player, Text text) {
+    public static void say(ServerPlayerEntity player, Text text) {
         LAST_LABELS.put(player.getUuid(), text);
         player.sendMessage(text, true);
     }
@@ -388,8 +388,10 @@ public final class WrenchActions {
      * with a chain going on, it is linked from the origin, the origin turns toward it and it becomes the new origin.
      * With the Wrench in the off hand and no chain yet, it starts one. So a loop is built by placing its tiles only.
      */
-    public static void onBoardSpacePlaced(World world, BlockPos pos, @Nullable net.minecraft.entity.LivingEntity placer) {
-        if (!(world instanceof ServerWorld serverWorld) || !(placer instanceof ServerPlayerEntity player)) return;
+    public static void onBoardSpacePlaced(World world, BlockPos pos, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack placedFrom) {
+        if (!(world instanceof ServerWorld serverWorld)) return;
+        dropCopiedLinks(serverWorld, pos, placer, placedFrom);
+        if (!(placer instanceof ServerPlayerEntity player)) return;
         ItemStack wrench = tracingWrench(player);
         if (wrench == null) return;
         WrenchState state = WrenchState.of(wrench);
@@ -417,6 +419,25 @@ public final class WrenchActions {
             say(player, Text.translatable("message.steveparty.wrench.auto_link.linked", n, n + 1, n + 1));
             playChainSound(world, player, n + 1);
         });
+    }
+
+    /**
+     * A board space placed from an item holding its data (creative pick block with Ctrl, a copied item...): its
+     * cartridges come without their links, which pointed at the neighbours of the original.
+     */
+    private static void dropCopiedLinks(ServerWorld world, BlockPos pos, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack placedFrom) {
+        if (!placedFrom.contains(net.minecraft.component.DataComponentTypes.BLOCK_ENTITY_DATA)) return;
+        if (!(world.getBlockEntity(pos) instanceof CartridgeContainerBlockEntity container)) return;
+        int dropped = 0;
+        for (int slot = 0; slot < container.size(); slot++) {
+            List<BlockPos> links = BoardLinks.links(container, slot);
+            if (links.isEmpty()) continue;
+            dropped += links.size();
+            BoardLinks.setLinks(world, container, slot, List.of());
+        }
+        if (dropped > 0 && placer instanceof ServerPlayerEntity player) {
+            player.sendMessage(Text.translatable("message.steveparty.wrench.copy_without_links", dropped), false);
+        }
     }
 
     /** The Wrench that links placed board spaces: in the off hand, or in the hotbar with a chain going on. */
