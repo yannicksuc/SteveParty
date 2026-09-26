@@ -242,7 +242,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public static void searchAndDisplayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
-        BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(world, pos);
+        BoardSpaceBlockEntity boardSpaceEntity = AdvancedTileBlock.getBoardSpaceEntity(world, pos);
         if (boardSpaceEntity == null) return;
         List<BoardSpaceDestination> destinations = boardSpaceEntity.getStockedDestinations();
         displayDestinations(world, pos, holder, destinations);

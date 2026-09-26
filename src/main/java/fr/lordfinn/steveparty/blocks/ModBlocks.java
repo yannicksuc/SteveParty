@@ -5,8 +5,8 @@ import fr.lordfinn.steveparty.blocks.custom.*;
 import fr.lordfinn.steveparty.blocks.custom.signs.*;
 import fr.lordfinn.steveparty.items.custom.StencilSignItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
@@ -332,20 +332,19 @@ public class ModBlocks {
                     .requiresTool(),
             "stencil_maker", true);
 
-    // Create and register the TILE block
+    public static final Block ADVANCED_TILE = register(AdvancedTileBlock::new,
+            Block.Settings.create()
+                    .strength(2f, 3600000.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
+            "advanced_tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
+
     public static final Block TILE = register(TileBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
             "tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
-
-    public static final Block SIMPLE_TILE = register(SimpleTileBlock::new,
-            Block.Settings.create()
-                    .strength(2f, 3600000.0f)
-                    .sounds(BlockSoundGroup.METAL)
-                    .requiresTool(),
-            "simple_tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
 
     /** The 3 other blocks of a large (2x2) tile (no item: placed and removed with the tile). */
     public static final Block TILE_PART = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("tile_part")),

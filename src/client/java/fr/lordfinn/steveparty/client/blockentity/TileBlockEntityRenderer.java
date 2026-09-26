@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileStamping;
@@ -78,8 +78,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureNeutral = Steveparty.id("block/tile_overlay_neutral");
     private static final Identifier textureExcited = Steveparty.id("block/tile_overlay_excited");
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
-    private static final Identifier textureAdvancedFill = Steveparty.id("block/tile_fill");
-    private static final Identifier textureSimpleFill = Steveparty.id("block/simple_tile_fill");
+    private static final Identifier textureAdvancedFill = Steveparty.id("block/advanced_tile_fill");
+    private static final Identifier textureSimpleFill = Steveparty.id("block/tile_fill");
     /** Height of the top of a tile's face above the tile's floor, and of its bottom (its picture is 1 px thick). */
     private static final float FACE_TOP = 2 / 16f, FACE_BOTTOM = 1 / 16f;
 
@@ -104,7 +104,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
 
         matrices.push();
         if (support.isSloped() && entity.getWorld() != null) {
-            Sprite fill = getSprite(state.getBlock() instanceof SimpleTileBlock ? textureSimpleFill : textureAdvancedFill);
+            Sprite fill = getSprite(state.getBlock() instanceof AdvancedTileBlock ? textureAdvancedFill : textureSimpleFill);
             // The tile's highest point: its face's corner, half a diagonal up the slope from its middle
             double half = small ? 0.5 * 18 / 16 : 1;
             double ceiling = support.surfaceY(centreX, centreZ) + half * Math.sqrt(2) * Math.sin(support.angle());

@@ -48,6 +48,7 @@ public class Steveparty implements ModInitializer {
         ModBlocks.initialize();
         ModItems.initialize();
         ModBlockEntities.initialize();
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration.initialize();
         fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.initialize();
         ModComponents.initialize();
         ModScreensHandlers.initialize();

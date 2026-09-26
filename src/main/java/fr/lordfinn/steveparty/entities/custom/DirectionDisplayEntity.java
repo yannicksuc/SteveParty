@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import fr.lordfinn.steveparty.payloads.custom.ArrowParticlesPayload;
@@ -74,9 +74,9 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         this.setPosition(start.add(startGap));
         BlockState blockState = world.getBlockState(destination.position());
         // Board spaces use an 8-direction rotation (0 = the former HORIZONTAL_FACING=SOUTH orientation)
-        if (blockState != null && blockState.contains(TileBlock.ROTATION_8)) {
+        if (blockState != null && blockState.contains(AdvancedTileBlock.ROTATION_8)) {
             // Drawn as a small level tile, whatever it lies on (its sloped/lowered look is drawn by its renderer)
-            blockState = fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.levelState(blockState.with(TileBlock.ROTATION_8, 0));
+            blockState = fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.levelState(blockState.with(AdvancedTileBlock.ROTATION_8, 0));
         }
         this.setBlockState(blockState);
         Quaternionf rot = new Quaternionf();

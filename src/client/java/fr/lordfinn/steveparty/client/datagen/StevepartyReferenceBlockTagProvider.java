@@ -52,7 +52,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 .add(
                         ModBlocks.GOAL_POLE_BASE,
                         ModBlocks.GOAL_POLE,
-                        ModBlocks.TILE,
+                        ModBlocks.ADVANCED_TILE,
                         ModBlocks.CHECK_POINT,
                         ModBlocks.CASH_REGISTER,
                         ModBlocks.PARTY_CONTROLLER,
@@ -63,7 +63,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.LOOTING_BOX,
                         ModBlocks.GRAVITY_CORE,
                         // requiresTool() blocks that had no mineable tag (unharvestable)
-                        ModBlocks.SIMPLE_TILE,
+                        ModBlocks.TILE,
                         ModBlocks.DICE_FORGE,
                         ModBlocks.ROCK_SIGN,
                         ModBlocks.PLASTIC_ROAD_SIGN
@@ -122,7 +122,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_STONE_TOOL)
                 .add(
-                        ModBlocks.TILE
+                        ModBlocks.ADVANCED_TILE
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_IRON_TOOL)
                 .add(

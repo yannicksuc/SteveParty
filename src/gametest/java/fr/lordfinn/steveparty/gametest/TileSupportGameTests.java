@@ -44,7 +44,7 @@ public class TileSupportGameTests implements FabricGameTest {
     private static TileSupport supportOn(TestContext context, BlockState support) {
         context.setBlockState(TILE.down(2), Blocks.STONE); // snow and carpets need a floor
         context.setBlockState(TILE.down(), support);
-        context.setBlockState(TILE, ModBlocks.SIMPLE_TILE);
+        context.setBlockState(TILE, ModBlocks.TILE);
         return context.getBlockState(TILE).get(SUPPORT);
     }
 
@@ -201,7 +201,7 @@ public class TileSupportGameTests implements FabricGameTest {
         context.setBlockState(TILE.down(), stairs(Direction.NORTH, BlockHalf.BOTTOM, StairShape.STRAIGHT));
         PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
         player.setYaw(-90); // looking east: the facing is the player's, the slope the stairs'
-        ItemStack item = new ItemStack(ModBlocks.TILE);
+        ItemStack item = new ItemStack(ModBlocks.ADVANCED_TILE);
         player.setStackInHand(Hand.MAIN_HAND, item);
         context.useStackOnBlock(player, item, TILE.down(), Direction.UP);
         context.expectBlockProperty(TILE, SUPPORT, TileSupport.SLOPE_NORTH);
@@ -227,7 +227,7 @@ public class TileSupportGameTests implements FabricGameTest {
         context.setBlockState(a.down(), Blocks.STONE);
         context.setBlockState(b.down(), Blocks.OAK_SLAB.getDefaultState());
         context.setBlockState(c.down(), stairs(Direction.EAST, BlockHalf.BOTTOM, StairShape.STRAIGHT));
-        for (BlockPos pos : List.of(a, b, c)) context.setBlockState(pos, ModBlocks.SIMPLE_TILE);
+        for (BlockPos pos : List.of(a, b, c)) context.setBlockState(pos, ModBlocks.TILE);
         link(context, a, b);
         link(context, b, c);
 

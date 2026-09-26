@@ -65,7 +65,7 @@ public class TileSizeGameTests implements FabricGameTest {
     public void largeTilePlacedByAPlayerTakesItsFourBlocks(TestContext context) {
         floor(context);
         PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
-        ItemStack item = sized(new ItemStack(ModBlocks.SIMPLE_TILE), TileSize.LARGE);
+        ItemStack item = sized(new ItemStack(ModBlocks.TILE), TileSize.LARGE);
         player.setStackInHand(Hand.MAIN_HAND, item);
         context.useStackOnBlock(player, item, TILE.down(), Direction.UP);
         // Aimed at the middle of the block: the 2x2 starts there and goes east and south
@@ -85,7 +85,7 @@ public class TileSizeGameTests implements FabricGameTest {
         // Stairs climbing north under the anchor; its downhill side is south
         context.setBlockState(TILE.down(), Blocks.OAK_STAIRS.getDefaultState().with(net.minecraft.block.StairsBlock.FACING, Direction.NORTH));
         PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
-        ItemStack item = sized(new ItemStack(ModBlocks.TILE), TileSize.LARGE);
+        ItemStack item = sized(new ItemStack(ModBlocks.ADVANCED_TILE), TileSize.LARGE);
         player.setStackInHand(Hand.MAIN_HAND, item);
         // Aimed at the west half of the step: across the slope, it spreads west
         BlockPos abs = context.getAbsolutePos(TILE.down());
@@ -112,12 +112,12 @@ public class TileSizeGameTests implements FabricGameTest {
         floor(context);
         context.setBlockState(TILE.east(), Blocks.STONE);
         PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
-        ItemStack item = sized(new ItemStack(ModBlocks.TILE), TileSize.LARGE);
+        ItemStack item = sized(new ItemStack(ModBlocks.ADVANCED_TILE), TileSize.LARGE);
         player.setStackInHand(Hand.MAIN_HAND, item);
         context.useStackOnBlock(player, item, TILE.down(), Direction.UP);
         context.expectBlock(Blocks.AIR, TILE);
         // Put by a command on a crowded spot: it shrinks back to the standard size
-        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, SE));
+        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(SIZE, SE));
         context.expectBlockProperty(TILE, SIZE, TileLayout.STANDARD);
         context.complete();
     }
@@ -125,7 +125,7 @@ public class TileSizeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void breakingAPartBreaksTheLargeTile(TestContext context) {
         floor(context);
-        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, SE));
+        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(SIZE, SE));
         assertLarge(context, TILE);
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         player.interactionManager.tryBreakBlock(context.getAbsolutePos(TILE.add(1, 0, 1)));
@@ -137,12 +137,12 @@ public class TileSizeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void brokenTileDropsItsSize(TestContext context) {
         floor(context);
-        context.setBlockState(TILE, ModBlocks.SIMPLE_TILE.getDefaultState().with(SIZE, SE));
+        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, SE));
         BlockPos abs = context.getAbsolutePos(TILE);
         context.getWorld().breakBlock(abs, true);
         for (BlockPos part : parts(TILE)) context.expectBlock(Blocks.AIR, part);
         List<ItemEntity> drops = context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(abs).expand(2), e -> true);
-        context.assertTrue(drops.size() == 1 && drops.getFirst().getStack().isOf(ModBlocks.SIMPLE_TILE.asItem())
+        context.assertTrue(drops.size() == 1 && drops.getFirst().getStack().isOf(ModBlocks.TILE.asItem())
                 && TileSize.of(drops.getFirst().getStack()) == TileSize.LARGE, "one large tile dropped: " + drops);
         drops.forEach(ItemEntity::discard);
         context.complete();
@@ -151,7 +151,7 @@ public class TileSizeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void largeTileLiesOnAFloorOfSlabs(TestContext context) {
         for (int x = 2; x < 4; x++) for (int z = 2; z < 4; z++) context.setBlockState(new BlockPos(x, 1, z), Blocks.OAK_SLAB);
-        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, SE));
+        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(SIZE, SE));
         context.expectBlockProperty(TILE, SUPPORT, TileSupport.DROP_8);
         // One block of the 2x2 on a full block: not one level surface any more
         context.setBlockState(new BlockPos(3, 1, 3), Blocks.STONE);
@@ -164,7 +164,7 @@ public class TileSizeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aTileAloneInTheGridCyclesItsSize(TestContext context) {
         TileSizeRecipe recipe = new TileSizeRecipe(CraftingRecipeCategory.MISC);
-        ItemStack tile = new ItemStack(ModBlocks.SIMPLE_TILE, 5);
+        ItemStack tile = new ItemStack(ModBlocks.TILE, 5);
         var registries = context.getWorld().getRegistryManager();
         ItemStack small = recipe.craft(CraftingRecipeInput.create(1, 1, List.of(tile)), registries);
         context.assertTrue(small.getCount() == 1 && TileSize.of(small) == TileSize.SMALL, "standard -> small: " + small);
@@ -182,7 +182,7 @@ public class TileSizeGameTests implements FabricGameTest {
     public void smallTilePlacedFromItsItem(TestContext context) {
         floor(context);
         PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
-        ItemStack item = sized(new ItemStack(ModBlocks.TILE), TileSize.SMALL);
+        ItemStack item = sized(new ItemStack(ModBlocks.ADVANCED_TILE), TileSize.SMALL);
         player.setStackInHand(Hand.MAIN_HAND, item);
         context.useStackOnBlock(player, item, TILE.down(), Direction.UP);
         context.expectBlockProperty(TILE, SIZE, TileLayout.SMALL);

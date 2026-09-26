@@ -235,7 +235,7 @@ def board():
              'fill %d 99 %d %d 99 %d minecraft:magma_block' % (sx - 3, z_from, sx - 3, z_to),
              'fill %d 99 %d %d 99 %d minecraft:magma_block' % (sx + 3, z_from, sx + 3, z_to)]
 
-    def tile(pos, nxt_list, state, items, block='tile'):
+    def tile(pos, nxt_list, state, items, block='advanced_tile'):
         rot = ROTATION[direction_between(pos, nxt_list[0])]
         return 'setblock %d %d %d steveparty:%s[tile_type=%s,rotation_8=%d]{Items:[%s]}' % (
             pos[0], Y, pos[1], block, state, rot, items)
@@ -252,7 +252,7 @@ def board():
         items = cartridge(0, 'board_space_behavior', nxt_list, color(WHITE))
         if i == check_point:
             return 'setblock %d %d %d steveparty:check_point[tile_type=default]{Items:[%s]}' % (pos[0], Y, pos[1], items)
-        return tile(pos, nxt_list, 'default', items, 'simple_tile' if i == simple else 'tile')
+        return tile(pos, nxt_list, 'default', items, 'tile' if i == simple else 'advanced_tile')
 
     # Start zone
     cmds.append(tile(ENTRY, [loop[0]], 'default', cartridge(0, 'board_space_behavior', [loop[0]], color(WHITE))))
@@ -539,7 +539,7 @@ def misc_station(x0=2010, z0=2020):
     return cmds
 
 
-def tile_block(x, y, z, rot, block='simple_tile', state='', items=''):
+def tile_block(x, y, z, rot, block='tile', state='', items=''):
     """A tile (its support, lowered/sloped, is read from the block under it when placed)."""
     props = 'rotation_8=%d%s' % (rot, ',' + state if state else '')
     return 'setblock %d %d %d steveparty:%s[%s]%s' % (x, y, z, block, props, '{Items:[%s]}' % items if items else '')
@@ -567,7 +567,7 @@ def tiles_station(x0=2010, z0=2045):
     for dz, rot, caption in ((2, 2, 'Sur escalier : montée (face à l\'est)'), (6, 6, 'Sur escalier : descente (face à l\'ouest)')):
         z = z0 + dz
         cmds += staircase(x0 + 2, z, 6)
-        for k, block in ((1, 'tile'), (4, 'simple_tile')):
+        for k, block in ((1, 'advanced_tile'), (4, 'tile')):
             cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z, rot, block))
         cmds.append(label(x0 + 5, Y + 7.5, z + 0.5, caption, 'white', 0.7, False))
     cmds.append(token_at(x0 + 3.5, Y + 2 + 0.125, z0 + 2.5, 'pig', 'Pion sur la pente', 'light_purple'))
@@ -578,7 +578,7 @@ def tiles_station(x0=2010, z0=2045):
     for k, (support, caption) in enumerate(supports):
         x = x0 + 2 + 4 * k
         cmds += ['setblock %d %d %d stone' % (x, Y - 1, row), 'setblock %d %d %d %s' % (x, Y, row, support),
-                 tile_block(x, Y + 1, row, 4, 'tile' if k % 2 else 'simple_tile'),
+                 tile_block(x, Y + 1, row, 4, 'advanced_tile' if k % 2 else 'tile'),
                  label(x + 0.5, Y + 3.2, row + 0.5, caption, 'white', 0.6, False)]
     cmds.append(token_at(x0 + 6.5, Y + 1 - 0.5 + 0.125, row + 0.5, 'cow', 'Pion sur la dalle', 'gold'))
     # Inner corner stairs: sloped along the diagonal (a stair corner: two flights meeting, and single corners)
@@ -587,7 +587,7 @@ def tiles_station(x0=2010, z0=2045):
     for k, (facing, shape) in enumerate(corners):
         x = x0 + 2 + 3 * k
         cmds += ['setblock %d %d %d oak_stairs[facing=%s,half=bottom,shape=%s]' % (x, Y, row, facing, shape),
-                 tile_block(x, Y + 1, row, (2 * k + 1) % 8, 'simple_tile' if k % 2 else 'tile')]
+                 tile_block(x, Y + 1, row, (2 * k + 1) % 8, 'tile' if k % 2 else 'advanced_tile')]
     cmds.append(label(x0 + 6.5, Y + 3.2, row + 0.5, 'Coins intérieurs d\'escalier : pente en diagonale', 'white', 0.7, False))
     # Rings of stairs, their corners shaped by their neighbours (as a player builds them): a mound (outer corners)
     # and a pit (inner corners), tiles (standard and small) on every corner and side
@@ -596,7 +596,7 @@ def tiles_station(x0=2010, z0=2045):
         cmds += stair_ring(cx, cz, inward)
         ring = [(cx + dx, cz + dz) for dx in (-2, 0, 2) for dz in (-2, 0, 2) if (dx, dz) != (0, 0)]
         for k, (x, z) in enumerate(ring):
-            cmds.append(tile_block(x, Y + 1, z, 4, 'simple_tile' if k % 2 else 'tile', 'size=small' if k % 3 == 0 else 'size=standard'))
+            cmds.append(tile_block(x, Y + 1, z, 4, 'tile' if k % 2 else 'advanced_tile', 'size=small' if k % 3 == 0 else 'size=standard'))
         cmds.append(label(cx + 0.5, Y + 3.2, cz + 0.5, caption, 'white', 0.7, False))
     return cmds
 
@@ -629,7 +629,7 @@ def tile_sizes_station(x0=2035, z0=2045):
     """The 3 tile sizes, the Tile (grey border) and the Advanced Tile (gold border)."""
     cmds = ['# Tile sizes'] + plot_title(x0, z0, 'TAILLES DE TUILES')
     # Row: standard, small, large of each tile, on the grass (the large one takes 2x2 blocks)
-    for row, block, name in ((z0 + 2, 'simple_tile', 'Tuile'), (z0 + 7, 'tile', 'Tuile avancée')):
+    for row, block, name in ((z0 + 2, 'tile', 'Tuile'), (z0 + 7, 'advanced_tile', 'Tuile avancée')):
         for k, (size, caption) in enumerate((('standard', 'standard (2x2 centrée)'), ('small', 'petite (1x1)'),
                                              ('large_south_east', 'grande (2x2 blocs)'))):
             x = x0 + 2 + 5 * k
@@ -640,11 +640,11 @@ def tile_sizes_station(x0=2035, z0=2045):
     z = z0 + 13
     cmds += staircase(x0 + 2, z, 6)
     for k in range(6):
-        cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z, 2, 'simple_tile' if k % 2 else 'tile', 'size=small'))
+        cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z, 2, 'tile' if k % 2 else 'advanced_tile', 'size=small'))
     cmds.append(label(x0 + 5, Y + 7.5, z + 0.5, 'Petites tuiles sur chaque marche', 'white', 0.7, False))
     # A large tile on a floor of bottom slabs: lowered as a whole
     cmds += ['fill %d %d %d %d %d %d smooth_stone_slab[type=bottom]' % (x0 + 11, Y, z0 + 13, x0 + 12, Y, z0 + 14),
-             tile_block(x0 + 11, Y + 1, z0 + 13, 4, 'tile', 'size=large_south_east'),
+             tile_block(x0 + 11, Y + 1, z0 + 13, 4, 'advanced_tile', 'size=large_south_east'),
              label(x0 + 12, Y + 2.5, z0 + 14, 'Grande tuile sur des dalles', 'white', 0.6, False)]
     # Stamped tiles: the look is the tile's while it holds no cartridge, else its cartridge's
     row = z0 + 18
@@ -657,13 +657,13 @@ def tile_sizes_station(x0=2035, z0=2045):
                 % stamp(pattern, col))
 
     showcase = [
-        ('simple_tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), '', 'Tuile tamponnée (sans cartouche)'),
-        ('tile', 'size=standard', 'Stamp:' + stamp('heart', 'pink'), '', 'Tuile avancée tamponnée'),
-        ('simple_tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), stamped_cartridge('power_star', 'yellow'),
+        ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), '', 'Tuile tamponnée (sans cartouche)'),
+        ('advanced_tile', 'size=standard', 'Stamp:' + stamp('heart', 'pink'), '', 'Tuile avancée tamponnée'),
+        ('tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), stamped_cartridge('power_star', 'yellow'),
          'Cartouche tamponnée : elle prime'),
-        ('tile', 'size=standard', 'Stamp:' + stamp('skull', 'black'), '{Slot:0b,id:"steveparty:board_space_behavior",count:1}',
+        ('advanced_tile', 'size=standard', 'Stamp:' + stamp('skull', 'black'), '{Slot:0b,id:"steveparty:board_space_behavior",count:1}',
          'Tuile tamponnée + cartouche non tamponnée'),
-        ('simple_tile', 'size=small', 'Stamp:' + stamp('creeper_face', 'lime'), '', 'Petite tuile tamponnée'),
+        ('tile', 'size=small', 'Stamp:' + stamp('creeper_face', 'lime'), '', 'Petite tuile tamponnée'),
     ]
     for k, (block, size, nbt, items, caption) in enumerate(showcase):
         x = x0 + 1 + 3 * k + (k > 3)
@@ -680,15 +680,15 @@ def large_tiles_station(x0=2060, z0=2045):
     for z in (z0 + 2, z0 + 3):
         cmds += staircase(x0 + 2, z, 6)
     for k in (1, 3, 5):
-        cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z0 + 2, 6, 'tile' if k % 4 == 1 else 'simple_tile', 'size=large_south_west'))
+        cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z0 + 2, 6, 'advanced_tile' if k % 4 == 1 else 'tile', 'size=large_south_west'))
     cmds.append(label(x0 + 5, Y + 8, z0 + 3, 'Grandes tuiles sur un escalier (ancrées en haut)', 'white', 0.7, False))
     # Corners: on a mound's outer corner (rising toward the middle) and a pit's inner corner (rising outward)
     mound, pit = (x0 + 5, z0 + 11), (x0 + 13, z0 + 11)
     cmds += stair_ring(*mound, True)
     cmds += stair_ring(*pit, False)
-    cmds += [tile_block(mound[0] + 2, Y + 1, mound[1] - 2, 1, 'tile', 'size=large_north_east'),
-             tile_block(mound[0] - 2, Y + 1, mound[1] + 2, 5, 'simple_tile', 'size=large_south_west'),
-             tile_block(pit[0] - 2, Y + 1, pit[1] - 2, 3, 'tile', 'size=large_south_east'),
+    cmds += [tile_block(mound[0] + 2, Y + 1, mound[1] - 2, 1, 'advanced_tile', 'size=large_north_east'),
+             tile_block(mound[0] - 2, Y + 1, mound[1] + 2, 5, 'tile', 'size=large_south_west'),
+             tile_block(pit[0] - 2, Y + 1, pit[1] - 2, 3, 'advanced_tile', 'size=large_south_east'),
              label(mound[0] + 0.5, Y + 3.5, mound[1] + 0.5, 'Grandes tuiles sur coins extérieurs', 'white', 0.7, False),
              label(pit[0] + 0.5, Y + 3.5, pit[1] + 0.5, 'Grande tuile sur coin intérieur', 'white', 0.7, False)]
     return cmds
@@ -719,7 +719,7 @@ def mula_station(x0=2060, z0=2020):
 def all_items():
     """Every registered steveparty item, grouped (same registration order as ModItems / ModBlocks)."""
     groups = []
-    groups.append(('Plateau', ['tile', 'simple_tile', 'check_point', 'board_space_redstone_router', 'party_controller',
+    groups.append(('Plateau', ['advanced_tile', 'tile', 'check_point', 'board_space_redstone_router', 'party_controller',
                                'step_controller', 'board_space_behavior', 'board_space_behavior_stop',
                                'tile_behavior_start', 'inventory_cartridge', 'wrench', 'tokenizer_wand', 'token',
                                'plunger', 'mini_games_catalogue', 'mini_game_page', 'garnet_crystal_ball',
@@ -793,8 +793,8 @@ def welcome(loop):
            '{kind:"cursed",value:2}],item_name=\'"Dé forgé"\']',
            'steveparty:tokenizer_wand', 'steveparty:token 4', 'steveparty:wrench', 'steveparty:board_space_behavior 8',
            'steveparty:board_space_behavior_stop 2', 'steveparty:tile_behavior_start 2', 'steveparty:inventory_cartridge 2',
-           'steveparty:tile 8', 'steveparty:simple_tile 4', 'steveparty:simple_tile[steveparty:tile-size="small"] 8',
-           'steveparty:tile[steveparty:tile-size="large"] 2', 'steveparty:check_point 2', 'steveparty:mini_games_catalogue']
+           'steveparty:advanced_tile 8', 'steveparty:tile 4', 'steveparty:tile[steveparty:tile-size="small"] 8',
+           'steveparty:advanced_tile[steveparty:tile-size="large"] 2', 'steveparty:check_point 2', 'steveparty:mini_games_catalogue']
     return (['time set day', 'weather clear']
             + ['give %s %s' % (PLAYER, k) for k in kit]
             + ['tp %s %.1f %d %.1f %.1f 20' % (PLAYER, px, Y, pz, yaw),
