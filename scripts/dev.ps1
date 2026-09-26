@@ -102,13 +102,20 @@ Add-Type -Namespace DevLaunch -Name Win32 -MemberDefinition @'
 [DllImport("user32.dll")] public static extern bool SetWindowPos(System.IntPtr hWnd, System.IntPtr after, int x, int y, int cx, int cy, uint flags);
 '@
 
-# Windowed (never fullscreen) client: the run dir's options.txt is read at start-up.
+# Windowed (never fullscreen), muted client: the run dir's options.txt is read at start-up. A new run dir (a fresh
+# worktree) gets one, so its first launch is already windowed and silent.
 function Set-WindowedClient {
     $options = Join-Path $RepoRoot 'run\options.txt'
-    if (Test-Path $options) {
-        $lines = Get-Content $options
-        if ($lines -match '^fullscreen:true') { ($lines -replace '^fullscreen:true', 'fullscreen:false') | Set-Content $options }
+    if (-not (Test-Path $options)) {
+        New-Item -ItemType Directory -Force (Split-Path $options) | Out-Null
+        Set-Content $options @('fullscreen:false', 'soundCategory_master:0.0', 'pauseOnLostFocus:false', 'onboardAccessibility:false')
+        return
     }
+    $lines = Get-Content $options
+    if ($lines -match '^fullscreen:true') { $lines = $lines -replace '^fullscreen:true', 'fullscreen:false' }
+    if ($lines -match '^soundCategory_master:') { $lines = $lines -replace '^soundCategory_master:.*', 'soundCategory_master:0.0' }
+    else { $lines += 'soundCategory_master:0.0' }
+    $lines | Set-Content $options
 }
 
 # Waits for the client's window, then puts it behind every other window and gives the focus back.
