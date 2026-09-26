@@ -122,7 +122,20 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 4),
-                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 0.749F, 6)));
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 0.749F, 6))),
+        /** A Replay tile giving another turn: a bright rising arpeggio, then an "en-core!" two-note call; a green swirl. */
+        REPLAY("replay", 0x56C93A, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 2.0F, 6),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.5F, 1.498F, 10),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.55F, 2.0F, 13),
+                new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.6F, 1.5F, 13))),
+        /** A Replay tile reached by the replay move itself: no further turn, a soft falling two-step. */
+        REPLAY_SPENT("replay_spent", 0x8FBF7F, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.498F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.0F, 3)));
 
         private final String key;
         /** Particle colour when the tile's own colour doesn't fit (plain white tile, or a themed burst). */
@@ -389,6 +402,17 @@ public final class TileFeedback {
                 world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
                 world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y + 0.2, at.z, 24, 0.3, 0.3, 0.3, 0.02);
             }
+            case REPLAY -> {
+                // A green swirl climbing around the token (the pictogram's circular arrow), and happy sparks
+                DustParticleEffect swirl = new DustParticleEffect(light, 1.2F);
+                for (int i = 0; i < 24; i++) {
+                    double angle = Math.PI * 3 * i / 24;
+                    world.spawnParticles(swirl, at.x + Math.cos(angle) * 0.5, y + i * 0.05, at.z + Math.sin(angle) * 0.5, 1, 0, 0, 0, 0);
+                }
+                world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, at.x, y + 0.4, at.z, 8, 0.35, 0.3, 0.35, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(0xB8F57A, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y + 1.2, at.z, 6, 0.2, 0.1, 0.2, 0.0);
+            }
+            case REPLAY_SPENT -> world.spawnParticles(new DustParticleEffect(light, 1.0F), at.x, y, at.z, 8, 0.3, 0.1, 0.3, 0.0);
             case ITEM, DEFAULT -> world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE),
                     at.x, y + 0.1, at.z, 12, 0.35, 0.25, 0.35, 0.0);
         }

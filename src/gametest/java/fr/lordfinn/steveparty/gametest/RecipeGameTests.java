@@ -142,6 +142,7 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.RED_DYE)).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "stop cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CHEST)).isOf(ModItems.INVENTORY_CARTRIDGE), "inventory cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.PISTON)).isOf(ModItems.ADVANCE_BACK_CARTRIDGE), "move forward / back cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.REPEATER)).isOf(ModItems.REPLAY_CARTRIDGE), "roll again cartridge");
 
         ItemStack carpet = new ItemStack(Items.RED_CARPET);
         ItemStack pellets = new ItemStack(ModItems.PLASTIC_PELLETS);

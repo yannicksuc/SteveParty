@@ -11,6 +11,7 @@
       "fr.lordfinn.steveparty.gametest.BoardPerfGameTests",
       "fr.lordfinn.steveparty.gametest.TileFeedbackGameTests",
       "fr.lordfinn.steveparty.gametest.AdvanceBackGameTests",
+      "fr.lordfinn.steveparty.gametest.ReplayTileGameTests",
       "fr.lordfinn.steveparty.gametest.BoardLinkingGameTests",
       "fr.lordfinn.steveparty.gametest.TileSupportGameTests",
       "fr.lordfinn.steveparty.gametest.TileSizeGameTests",
