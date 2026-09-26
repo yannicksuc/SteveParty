@@ -58,6 +58,8 @@ public class ModItems {
     public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
     public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
+    /** Shop Cartridge: a shop stop (a check point pauses the passing token, a tile opens the shop on landing). */
+    public static final Item SHOP_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.class, "shop_cartridge");
     public static final Item TELEPORT_CARTRIDGE = register(TeleportCartridgeItem.class, "teleport_cartridge");
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item HERE_WE_GO_BOOK = registerUnstackable(HereWeGoBookItem.class, "here_we_go_book");
@@ -168,6 +170,7 @@ public class ModItems {
             itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);
             itemGroup.add(TILE_BEHAVIOR_START);
             itemGroup.add(INVENTORY_CARTRIDGE);
+            itemGroup.add(SHOP_CARTRIDGE);
             itemGroup.add(TELEPORT_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);

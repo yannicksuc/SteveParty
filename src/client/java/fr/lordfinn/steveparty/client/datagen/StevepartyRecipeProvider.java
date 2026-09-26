@@ -235,7 +235,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .criterion(hasItem(Items.RABBIT_FOOT), conditionsFromItem(Items.RABBIT_FOOT))
                         .offerTo(recipeExporter);
 
-                // Special cartridges: a plain cartridge given its role (green to start, red to pause, a chest for the inventory)
+                // Special cartridges: a plain cartridge given its role (green to start, red to stop, a chest for the inventory)
                 offerCartridge(ModItems.TILE_BEHAVIOR_START, Items.LIME_DYE);
                 offerCartridge(ModItems.BOARD_SPACE_BEHAVIOR_STOP, Items.RED_DYE);
                 offerCartridge(ModItems.INVENTORY_CARTRIDGE, Items.CHEST);

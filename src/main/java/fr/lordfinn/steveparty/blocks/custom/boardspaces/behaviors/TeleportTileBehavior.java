@@ -28,10 +28,10 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         super(BoardSpaceType.TILE_TELEPORT);
     }
 
+    /** The turn goes on once the token has reappeared on the arrival. */
     @Override
-    public boolean endsTurnItself(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
-        World world = boardSpaceEntity.getWorld();
-        return world != null && !TileTeleport.validTargets(world, boardSpaceEntity.getPos(), stack).isEmpty();
+    public boolean keepsTurn(MobEntity token) {
+        return TileTeleport.isTeleporting(token);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         // The notice « 🌀 X est téléporté ! » and the whirl (a plain landing without arrival: see landing())
         TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController);
         BlockPos target = TileTeleport.pick(serverWorld, boardSpaceEntity, cartridge);
-        if (target == null) return; // no arrival: an ordinary space, the board space goes on with the party
+        if (target == null) return; // no arrival: an ordinary space, the party goes on right away (keepsTurn false)
         boolean landOnTarget = TileTeleport.settings(cartridge).landOnTarget();
         PartyStep step = partyController == null ? null : partyController.getPartyData().getCurrentStep();
         // No second move during the warp (a dice rolled meanwhile would move it again)
@@ -69,9 +69,8 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         if (arrival == null || party == null) return false;
         ABoardSpaceBehavior behavior = arrival.getBoardSpaceBehavior();
         if (behavior == null || behavior instanceof TeleportTileBehavior) return false;
-        boolean endsTurn = behavior.endsTurnItself(arrival, arrival.getActiveCartridgeItemStack());
         behavior.onDestinationReached(world, target, token, arrival, party);
-        return endsTurn;
+        return behavior.keepsTurn(token);
     }
 
     /** The teleport jingle and notice when it has somewhere to send the token, else a plain landing. */

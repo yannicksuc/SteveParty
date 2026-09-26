@@ -5,6 +5,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.components.ShopLinkComponent;
+import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -462,6 +465,38 @@ public final class WrenchActions {
     // ---------------------------------------------------------------- chests of inventory tiles
 
     public static void initialize() {
+        // A click on a trading stall or a cash register with the Wrench whose origin holds a Shop Cartridge: the shop of
+        // that stall / register (its Hiding Trader) is the cartridge's shop, instead of the nearest merchant
+        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
+            ItemStack wrench = player.getMainHandStack();
+            if (!isWrench(wrench)) return ActionResult.PASS;
+            net.minecraft.block.Block block = world.getBlockState(hit.getBlockPos()).getBlock();
+            if (!(block instanceof fr.lordfinn.steveparty.blocks.custom.TradingStallBlock)
+                    && !(block instanceof fr.lordfinn.steveparty.blocks.custom.CashRegisterBlock)) return ActionResult.PASS;
+            ShopOrigin shop = shopOrigin(wrench, world);
+            if (shop == null) return ActionResult.PASS;
+            if (world.isClient) return ActionResult.SUCCESS;
+            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+            BlockPos clicked = hit.getBlockPos().toImmutable();
+            if (isRepeat(serverPlayer, clicked, world.getTime())) return ActionResult.SUCCESS;
+            recorded(serverPlayer, world, wrench, () -> linkShopFromBlock(serverPlayer, (ServerWorld) world, shop, clicked));
+            return ActionResult.SUCCESS;
+        });
+        // A click on a Hiding Trader with the same Wrench: that trader is the cartridge's shop
+        net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
+            ItemStack wrench = player.getMainHandStack();
+            if (!isWrench(wrench) || !(entity instanceof HidingTraderEntity trader)) return ActionResult.PASS;
+            ShopOrigin shop = shopOrigin(wrench, world);
+            if (shop == null) return ActionResult.PASS;
+            if (world.isClient) return ActionResult.SUCCESS;
+            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+            if (isRepeat(serverPlayer, trader.getBlockPos(), world.getTime())) return ActionResult.SUCCESS;
+            recorded(serverPlayer, world, wrench, () -> linkShop(serverPlayer, (ServerWorld) world, shop,
+                    new ShopLinkComponent(trader.getUuid(), trader.getBlockPos().toImmutable())));
+            return ActionResult.SUCCESS;
+        });
         // A click on a chest with the Wrench whose origin is an inventory tile: that tile's chest (even without sneaking)
         net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
@@ -500,6 +535,70 @@ public final class WrenchActions {
             playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 1f);
         }
     }
+
+    // ---------------------------------------------------------------- shops of Shop Cartridges
+
+    /** The Shop Cartridge the wrench edits: its origin's cartridge in the edited slot. */
+    public record ShopOrigin(CartridgeContainerBlockEntity container, int slot) {
+        ItemStack cartridge() {
+            return container.getStack(slot);
+        }
+    }
+
+    /** The Shop Cartridge of the wrench's origin (the edited slot), or null. */
+    public static @Nullable ShopOrigin shopOrigin(ItemStack wrench, World world) {
+        BlockPos origin = origin(wrench, world);
+        CartridgeContainerBlockEntity container = origin == null ? null : BoardLinks.container(world, origin);
+        if (container == null) return null;
+        int slot = BoardLinks.slotOf(container, WrenchState.of(wrench).slot());
+        return container.getStack(slot).getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem
+                ? new ShopOrigin(container, slot) : null;
+    }
+
+    /** A trading stall or cash register clicked: the Hiding Trader it belongs to (Shopkeeper Key links) becomes the shop. */
+    private static void linkShopFromBlock(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, BlockPos clicked) {
+        VendorLinkPersistentState links = VendorLinkPersistentState.get(world.getServer());
+        java.util.Set<UUID> traders = links == null ? java.util.Set.of()
+                : links.getVendorsLinkedTo(net.minecraft.util.math.GlobalPos.create(world.getRegistryKey(), clicked));
+        if (traders.isEmpty()) {
+            say(player, Text.translatable("message.steveparty.wrench.shop.no_trader", BoardText.pos(clicked)));
+            playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 0.7f);
+            return;
+        }
+        // Several traders sharing the block: the loaded one first, else any (sorted: the same one every time)
+        UUID trader = traders.stream().filter(uuid -> world.getEntity(uuid) instanceof HidingTraderEntity)
+                .findFirst().orElse(traders.stream().sorted().findFirst().orElseThrow());
+        linkShop(player, world, origin, new ShopLinkComponent(trader, clicked));
+    }
+
+    /**
+     * Makes {@code shop} the cartridge's shop, or, if it was already, goes back to the nearest merchant.
+     */
+    private static void linkShop(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, ShopLinkComponent shop) {
+        ItemStack cartridge = origin.cartridge();
+        ShopLinkComponent before = cartridge.get(ModComponents.SHOP_LINK);
+        BlockPos pos = origin.container().getPos().toImmutable();
+        if (before != null && before.trader().equals(shop.trader())) {
+            cartridge.remove(ModComponents.SHOP_LINK);
+            BoardLinks.sync(origin.container());
+            LinkHistory.record(player, new LinkHistory.ShopChange(pos, origin.slot(), before, null));
+            BoardLinks.trail(world, pos, before.anchor(), BoardLinks.CUT_COLOR);
+            say(player, Text.translatable("message.steveparty.wrench.shop.unlinked", BoardText.pos(pos)));
+            playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 1f);
+            return;
+        }
+        cartridge.set(ModComponents.SHOP_LINK, shop);
+        BoardLinks.sync(origin.container());
+        LinkHistory.record(player, new LinkHistory.ShopChange(pos, origin.slot(), before, shop));
+        BoardLinks.trail(world, pos, shop.anchor(), SHOP_COLOR);
+        net.minecraft.entity.Entity trader = world.getEntity(shop.trader());
+        say(player, Text.translatable("message.steveparty.wrench.shop.linked", BoardText.pos(pos),
+                trader != null ? trader.getDisplayName() : Text.translatable("entity.steveparty.hiding_trader")));
+        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.PLAYERS, 0.6f, 1.2f);
+    }
+
+    /** Colour of a shop link (particles, board view): the Shop Cartridge's yellow. */
+    public static final int SHOP_COLOR = fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.COLOR;
 
     // ---------------------------------------------------------------- controls sent by the client
 

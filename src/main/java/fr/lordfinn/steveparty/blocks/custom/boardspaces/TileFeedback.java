@@ -90,6 +90,12 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.335F, 3),
                 new Layer(SoundEvents.ENTITY_ITEM_PICKUP, 0.25F, 1.4F, 3))),
+        /** A shop tile: a shop bell and a coin clink, gold sparkles. */
+        SHOP("shop", 0xFFD83D, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.5F, 1.498F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.45F, 2.0F, 3),
+                new Layer(SoundEvents.ENTITY_VILLAGER_TRADE, 0.45F, 1.1F, 2),
+                new Layer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.3F, 1.6F, 5))),
         /** The start tile: a little pling fanfare and a few fireworks sparks. */
         START("start", 0xFFB347, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.45F, 0.749F, 0),

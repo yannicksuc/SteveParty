@@ -87,10 +87,10 @@ public abstract class ABoardSpaceBehavior {
     }
 
     /**
-     * True if {@link #onDestinationReached} ends the turn itself, later (an animation plays first, like the teleport):
-     * the board space then doesn't go on with the party right away. Asked just before that call.
+     * After {@link #onDestinationReached}: true if this role holds the turn (a shop stop) and moves the party on itself
+     * later; false (the default) and the next step comes right away.
      */
-    public boolean endsTurnItself(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+    public boolean keepsTurn(MobEntity token) {
         return false;
     }
 
