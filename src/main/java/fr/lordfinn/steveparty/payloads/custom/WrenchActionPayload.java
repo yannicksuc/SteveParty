@@ -25,7 +25,15 @@ public record WrenchActionPayload(int action, int direction) implements CustomPa
 
     public enum Action {
         /** Next / previous mode. */
-        MODE
+        MODE,
+        /** Left click in the air: undo the last link action. */
+        UNDO,
+        /** Sneak + left click in the air: redo. */
+        REDO,
+        /** Sneak + mode key: placed board spaces are linked (or not) while tracing. */
+        AUTO_LINK,
+        /** Sneak + mouse wheel with a 16-slot origin: the slot whose cartridge is edited. */
+        SLOT
     }
 
     public WrenchActionPayload(Action action, int direction) {

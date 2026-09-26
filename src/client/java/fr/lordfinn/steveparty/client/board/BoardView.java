@@ -85,7 +85,9 @@ public final class BoardView {
                 WorldDraw.arrow(matrices, consumers, camera, from.add(shift), to.add(shift), color, 0.62);
             }
             if (from.squaredDistanceTo(eye) > LABEL_DISTANCE_SQ) continue;
-            WorldDraw.label(matrices, consumers, camera, from.add(0, 0.55, 0), label(shown, node), color(shown, node), LABEL_SCALE);
+            // Readable from afar: the farther, the bigger (up to 3 times)
+            float scale = LABEL_SCALE * (float) Math.clamp(Math.sqrt(from.squaredDistanceTo(eye)) / 6.0, 1.0, 3.0);
+            WorldDraw.label(matrices, consumers, camera, from.add(0, 0.45 + 0.12 * scale / LABEL_SCALE, 0), label(shown, node), color(shown, node), scale);
         }
         consumers.draw();
     }

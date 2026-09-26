@@ -267,6 +267,76 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void undoAndRedoFollowTheChain(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack wrench = wrench(player);
+            for (BlockPos pos : t) click(player, wrench, context, pos);
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.UNDO, 1);
+            context.assertTrue(links(context, t.get(1)).isEmpty(), "the last link is undone");
+            context.assertEquals(WrenchActions.origin(wrench, context.getWorld()), t.get(1), "the chain is back on the second tile");
+            context.assertEquals(WrenchState.of(wrench).chainLength(), 2, "chain of 2 again");
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.REDO, 1);
+            context.assertEquals(links(context, t.get(1)), List.of(t.get(2)), "redone");
+            context.assertEquals(WrenchActions.origin(wrench, context.getWorld()), t.get(2), "the chain is on the third tile again");
+
+            // Edited since (another player, the interface...): skipped
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.UNDO, 1);
+            BoardSpaceBlockEntity first = boardSpace(context, t.get(0));
+            BoardLinks.setLinks(context.getWorld(), first, 0, List.of(t.get(2)));
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.UNDO, 1);
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(2)), "a change made since is kept");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void placingTilesWithTheWrenchInTheOffHandLinksThem(TestContext context) {
+        for (int x = 0; x < 9; x++) context.setBlockState(new BlockPos(x, 0, 1), Blocks.STONE);
+        withPlayer(context, true, player -> {
+            ItemStack wrench = new ItemStack(ModItems.WRENCH);
+            player.setStackInHand(Hand.OFF_HAND, wrench);
+            List<BlockPos> placed = new ArrayList<>();
+            for (int x = 1; x <= 7; x += 3) {
+                ItemStack tile = new ItemStack(ModBlocks.SIMPLE_TILE);
+                player.setStackInHand(Hand.MAIN_HAND, tile);
+                BlockPos ground = context.getAbsolutePos(new BlockPos(x, 0, 1));
+                tile.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                        new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
+                placed.add(ground.up());
+            }
+            ItemStack offHand = player.getOffHandStack();
+            context.assertEquals(links(context, placed.get(0)), List.of(placed.get(1)), "first → second");
+            context.assertEquals(links(context, placed.get(1)), List.of(placed.get(2)), "second → third");
+            context.assertEquals(WrenchActions.origin(offHand, context.getWorld()), placed.get(2), "the last placed tile is the origin");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void inventoryTilesTakeTheNearestChestOrTheClickedOne(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
+        context.setBlockState(new BlockPos(1, 1, 3), Blocks.CHEST);
+        context.setBlockState(new BlockPos(6, 1, 3), Blocks.CHEST);
+        BlockPos near = context.getAbsolutePos(new BlockPos(1, 1, 3)), far = context.getAbsolutePos(new BlockPos(6, 1, 3));
+        withPlayer(context, true, player -> {
+            ItemStack wrench = wrench(player);
+            player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.INVENTORY_CARTRIDGE));
+            click(player, wrench, context, t.get(0)); // starts the chain, no cartridge yet
+            click(player, wrench, context, t.get(1)); // links: the inventory cartridge goes in the first tile
+            ItemStack cartridge = boardSpace(context, t.get(0)).getStack(0);
+            context.assertEquals(cartridge.get(ModComponents.INVENTORY_POS), near, "the nearest chest");
+
+            // Origin back on the first tile (Edit), click the far chest
+            player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
+            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1);
+            WrenchActions.endChain(player, wrench, context.getWorld(), false);
+            click(player, wrench, context, t.get(0));
+            net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(far.toCenterPos(), net.minecraft.util.math.Direction.UP, far, false));
+            context.assertEquals(boardSpace(context, t.get(0)).getStack(0).get(ModComponents.INVENTORY_POS), far, "the clicked chest");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void diagonalsAreOriented(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 4));
         withPlayer(context, true, player -> {

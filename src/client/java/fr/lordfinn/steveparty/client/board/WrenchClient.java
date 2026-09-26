@@ -1,6 +1,10 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BoardText;
+import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
+import net.minecraft.util.hit.HitResult;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.board.WrenchMode;
 import fr.lordfinn.steveparty.board.WrenchState;
@@ -37,9 +41,17 @@ public final class WrenchClient {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (MODE_KEY.wasPressed()) {
                 if (client.player != null && client.currentScreen == null && holdsWrench(client)) {
-                    send(WrenchActionPayload.Action.MODE, 1);
+                    send(client.player.isSneaking() ? WrenchActionPayload.Action.AUTO_LINK : WrenchActionPayload.Action.MODE, 1);
                 }
             }
+        });
+        // Left click in the air: undo (sneaking: redo). Left click on a block keeps breaking it.
+        ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> {
+            if (clickCount <= 0 || client.currentScreen != null || !holdsWrench(client)) return false;
+            HitResult target = client.crosshairTarget;
+            if (target != null && target.getType() != HitResult.Type.MISS) return false;
+            send(player.isSneaking() ? WrenchActionPayload.Action.REDO : WrenchActionPayload.Action.UNDO, 1);
+            return true;
         });
         HudRenderCallback.EVENT.register(WrenchClient::renderHud);
         WrenchOverlay.initialize();
@@ -63,8 +75,17 @@ public final class WrenchClient {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.currentScreen != null || client.player == null || !client.player.isSneaking() || !holdsWrench(client)) return false;
         if (vertical == 0) return true;
-        send(WrenchActionPayload.Action.MODE, vertical > 0 ? -1 : 1);
+        send(editsSlots(client) ? WrenchActionPayload.Action.SLOT : WrenchActionPayload.Action.MODE, vertical > 0 ? -1 : 1);
         return true;
+    }
+
+    /** The origin holds several cartridges (Advanced Tile, check point): the wheel picks the edited one. */
+    private static boolean editsSlots(MinecraftClient client) {
+        ItemStack wrench = client.player.getMainHandStack();
+        if (WrenchState.of(wrench).mode() == WrenchMode.CUT || client.world == null) return false;
+        BlockPos origin = WrenchActions.origin(wrench, client.world);
+        CartridgeContainerBlockEntity container = origin == null ? null : BoardLinks.container(client.world, origin);
+        return container != null && container.size() > 1;
     }
 
     private static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
@@ -73,9 +94,9 @@ public final class WrenchClient {
         ItemStack wrench = client.player.getMainHandStack();
         WrenchState state = WrenchState.of(wrench);
         BlockPos origin = WrenchActions.origin(wrench, client.world);
-        // Right of the hotbar (the off hand slot is on its left)
-        int x = context.getScaledWindowWidth() / 2 + 91 + 8;
-        int y = context.getScaledWindowHeight() - 21;
+        // Top left corner, out of the way of the hotbar and the action bar messages
+        int x = 4;
+        int y = 24;
         Text mode = Text.translatable("hud.steveparty.wrench.mode", state.mode().displayName());
         Text detail;
         if (origin == null) {
@@ -85,9 +106,16 @@ public final class WrenchClient {
         } else {
             detail = Text.translatable("hud.steveparty.wrench.origin", BoardText.pos(origin));
         }
+        CartridgeContainerBlockEntity originContainer = origin == null ? null : BoardLinks.container(client.world, origin);
+        if (originContainer != null && originContainer.size() > 1 && state.mode() != WrenchMode.CUT) {
+            detail = WrenchActions.slotText(originContainer, state.slot());
+        }
         context.drawTextWithShadow(client.textRenderer, mode, x, y, 0xFFFFFFFF);
         context.drawTextWithShadow(client.textRenderer, detail.copy().formatted(Formatting.GRAY), x, y + 10, 0xFFFFFFFF);
-        Text hint = Text.translatable("hud.steveparty.wrench.hint", MODE_KEY.getBoundKeyLocalizedText());
+        Text hint = state.mode() == WrenchMode.TRACE
+                ? Text.translatable("hud.steveparty.wrench.hint.trace", MODE_KEY.getBoundKeyLocalizedText(),
+                        Text.translatable(state.autoLink() ? "hud.steveparty.wrench.auto_link.on" : "hud.steveparty.wrench.auto_link.off"))
+                : Text.translatable("hud.steveparty.wrench.hint", MODE_KEY.getBoundKeyLocalizedText());
         context.drawTextWithShadow(client.textRenderer, hint, x, y - 10, HINT_COLOR);
         // The board view around: problems at a glance
         int[] counts = BoardView.counts();

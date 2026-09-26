@@ -142,7 +142,47 @@ public final class BoardLinks {
         BlockPos pos = container.getPos();
         player.sendMessage(Text.translatable("message.steveparty.wrench.cartridge_stored",
                 pos.getX(), pos.getY(), pos.getZ()).append(" (").append(inserted.getName()).append(")"), true);
+        linkNearestChest(player, container, slot);
         return container.getStack(slot);
+    }
+
+    // ---------------------------------------------------------------- chests of inventory tiles
+
+    /** How far an inventory tile looks for a chest when its cartridge has none. */
+    public static final int CHEST_SEARCH_RADIUS = 8;
+
+    /** A chest (any inventory block that is not a cartridge container) at {@code pos}. */
+    public static boolean isChest(World world, BlockPos pos) {
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+        return blockEntity instanceof net.minecraft.inventory.Inventory && !(blockEntity instanceof CartridgeContainerBlockEntity);
+    }
+
+    /**
+     * An Inventory Cartridge without chest just put in a board space takes the nearest chest within
+     * {@link #CHEST_SEARCH_RADIUS} blocks (a click on another chest with the Wrench changes it).
+     */
+    public static void linkNearestChest(PlayerEntity player, CartridgeContainerBlockEntity container, int slot) {
+        World world = container.getWorld();
+        ItemStack cartridge = container.getStack(slot);
+        if (world == null || !(cartridge.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem)
+                || cartridge.contains(ModComponents.INVENTORY_POS)) return;
+        BlockPos center = container.getPos();
+        BlockPos nearest = null;
+        double best = Double.MAX_VALUE;
+        for (BlockPos pos : BlockPos.iterate(center.add(-CHEST_SEARCH_RADIUS, -4, -CHEST_SEARCH_RADIUS), center.add(CHEST_SEARCH_RADIUS, 4, CHEST_SEARCH_RADIUS))) {
+            double distance = pos.getSquaredDistance(center);
+            if (distance < best && isChest(world, pos)) {
+                best = distance;
+                nearest = pos.toImmutable();
+            }
+        }
+        if (nearest == null) return;
+        cartridge.set(ModComponents.INVENTORY_POS, nearest);
+        sync(container);
+        if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
+            LinkHistory.record(serverPlayer, new LinkHistory.ChestChange(center.toImmutable(), slot, null, nearest));
+        }
+        player.sendMessage(Text.translatable("message.steveparty.wrench.chest.nearest", BoardText.pos(nearest)), false);
     }
 
     private static ItemStack cartridgeSource(PlayerEntity player) {

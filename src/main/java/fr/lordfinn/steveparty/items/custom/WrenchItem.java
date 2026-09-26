@@ -108,7 +108,11 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
         }
         tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
         tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls.click." + state.mode().asString()).formatted(Formatting.GRAY));
-        for (String control : List.of("sweep", "far", "sneak_click", "sneak_air", "offhand")) {
+        if (state.mode() == WrenchMode.TRACE) {
+            tooltip.add(Text.translatable("tooltip.steveparty.wrench.auto_link",
+                    Text.translatable(state.autoLink() ? "hud.steveparty.wrench.auto_link.on" : "hud.steveparty.wrench.auto_link.off")).formatted(Formatting.GRAY));
+        }
+        for (String control : List.of("sweep", "far", "sneak_click", "sneak_air", "undo", "place", "offhand", "chest", "controller")) {
             tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls." + control).formatted(Formatting.GRAY));
         }
         tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls.mode", Text.keybind(MODE_KEY)).formatted(Formatting.GRAY));
