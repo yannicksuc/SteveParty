@@ -31,7 +31,7 @@ final class WorldDraw {
 
     /** Plate colours (the frame): teal like the Tile screen, gold like the Advanced Tile's... */
     enum Plate {
-        TEAL, GOLD, GREEN, RED, ORANGE;
+        TEAL, GOLD, GREEN, RED, ORANGE, PURPLE;
 
         final Identifier texture = Steveparty.id("textures/gui/sprites/board/plate_" + name().toLowerCase() + ".png");
     }
@@ -80,6 +80,89 @@ final class WorldDraw {
             vertex(consumer, matrix, tipR, color, 1, 0);
             vertex(consumer, matrix, tailR, color, 1, 1);
             vertex(consumer, matrix, tailL, color, 0, 1);
+        }
+    }
+
+    // ---------------------------------------------------------------- teleport arcs
+
+    /**
+     * A teleport link from {@code a} to {@code b}: not a path (nobody walks it), so no chevrons but a dashed glowing arc
+     * {@code height} blocks high in its middle, its dashes flowing toward {@code b} ({@code phase}, blocks), with a few
+     * twinkling sparkles riding it. The ends ({@code margin}) stay clear for the tiles.
+     */
+    static void arc(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d a, Vec3d b, double height,
+                    int argb, int sparkle, double phase, double width, double margin) {
+        double length = a.distanceTo(b);
+        if (length < 2 * margin + 0.1) return;
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getDebugQuads());
+        Vec3d cam = camera.getPos();
+        int segments = Math.clamp((int) (length * 8), 16, 240);
+        // The arc's length, for dashes of the same size on any arc
+        double total = 0;
+        Vec3d previous = arcPoint(a, b, height, 0);
+        for (int i = 1; i <= segments; i++) {
+            Vec3d point = arcPoint(a, b, height, i / (double) segments);
+            total += point.distanceTo(previous);
+            previous = point;
+        }
+        double dash = 0.28, s = 0;
+        previous = arcPoint(a, b, height, 0);
+        for (int i = 1; i <= segments; i++) {
+            Vec3d point = arcPoint(a, b, height, i / (double) segments);
+            double step = point.distanceTo(previous);
+            double middle = s + step / 2;
+            s += step;
+            boolean on = Math.floorMod((long) Math.floor((middle - phase) / dash), 2L) == 0;
+            if (on && middle > margin && middle < total - margin) {
+                double fade = Math.min(1, Math.min((middle - margin) / 0.35, (total - margin - middle) / 0.35));
+                int color = ((int) ((argb >>> 24) * Math.max(0, fade)) << 24) | (argb & 0xFFFFFF);
+                ribbon(consumer, matrix, previous.subtract(cam), point.subtract(cam), width, color);
+            }
+            previous = point;
+        }
+        // Sparkles riding the arc toward b, twinkling (a four-pointed star facing the camera)
+        org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
+        org.joml.Vector3f up = new org.joml.Vector3f(0, 1, 0).rotate(camera.getRotation());
+        int count = Math.max(1, (int) (total / 2.5));
+        for (int k = 0; k < count; k++) {
+            double t = ((phase / Math.max(total, 0.01)) * 0.6 + k / (double) count) % 1.0;
+            double along = t * total;
+            if (along < margin || along > total - margin) continue;
+            Vec3d centre = arcPoint(a, b, height, t).subtract(cam);
+            double size = 0.1 + 0.05 * Math.sin(phase * 7 + k * 2.1);
+            star(consumer, matrix, centre, right, up, size, sparkle);
+        }
+    }
+
+    /** A point of the arc: the straight line from {@code a} to {@code b}, lifted by a parabola {@code height} high. */
+    static Vec3d arcPoint(Vec3d a, Vec3d b, double height, double t) {
+        return a.lerp(b, t).add(0, 4 * height * t * (1 - t), 0);
+    }
+
+    /** A flat band from {@code p0} to {@code p1} (camera space) turned toward the camera, both sides drawn. */
+    private static void ribbon(VertexConsumer consumer, Matrix4f matrix, Vec3d p0, Vec3d p1, double width, int color) {
+        Vec3d dir = p1.subtract(p0);
+        Vec3d view = p0.add(p1).multiply(0.5);
+        Vec3d side = dir.crossProduct(view);
+        if (side.lengthSquared() < 1.0E-8) return;
+        side = side.normalize().multiply(width / 2);
+        quad(consumer, matrix, p0.subtract(side), p0.add(side), p1.add(side), p1.subtract(side), color);
+    }
+
+    /** A four-pointed star centred on {@code c} (camera space), in the camera's plane. */
+    private static void star(VertexConsumer consumer, Matrix4f matrix, Vec3d c, org.joml.Vector3f right, org.joml.Vector3f up,
+                             double size, int color) {
+        Vec3d r = new Vec3d(right.x(), right.y(), right.z()), u = new Vec3d(up.x(), up.y(), up.z());
+        double thin = size * 0.22;
+        // A long thin diamond each way
+        quad(consumer, matrix, c.add(u.multiply(size)), c.add(r.multiply(thin)), c.subtract(u.multiply(size)), c.subtract(r.multiply(thin)), color);
+        quad(consumer, matrix, c.add(r.multiply(size)), c.add(u.multiply(thin)), c.subtract(r.multiply(size)), c.subtract(u.multiply(thin)), color);
+    }
+
+    private static void quad(VertexConsumer consumer, Matrix4f matrix, Vec3d a, Vec3d b, Vec3d c, Vec3d d, int color) {
+        for (Vec3d p : new Vec3d[]{a, b, c, d, d, c, b, a}) {
+            consumer.vertex(matrix, (float) p.x, (float) p.y, (float) p.z).color(color);
         }
     }
 

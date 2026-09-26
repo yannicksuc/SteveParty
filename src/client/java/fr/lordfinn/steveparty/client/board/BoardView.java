@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.board.BoardGraph;
+import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.board.TeleportLinks;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -27,7 +29,8 @@ import java.util.Map;
  * paths of a Mario Party board: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
- * gently pulsing. Only the holder sees it (client side); the links come from the block entity data the server already
+ * gently pulsing. A teleport tile's arrivals are no paths: dashed purple arcs with sparkles riding them (a teleport tile
+ * without arrival gets a purple « ! »). Only the holder sees it (client side); the links come from the block entity data the server already
  * sends, no packet needed. Rebuilt twice a second.
  */
 public final class BoardView {
@@ -42,6 +45,8 @@ public final class BoardView {
     static final int UNREACHED = 0xE0C8C8C8;
     static final int INACTIVE = 0x70A0A0A0;
     static final int BROKEN = 0xFFFF3030;
+    /** Teleport arcs: the dashes, and the sparkles riding them. */
+    static final int TELEPORT = 0xE0B266FF, TELEPORT_SPARKLE = 0xFFB8F6FF;
     /** Chevrons: size, gap and speed (blocks, blocks per second). */
     private static final double DOT = 0.56, SPACING = 0.72, SPEED = 1.4;
 
@@ -136,6 +141,14 @@ public final class BoardView {
                 WorldDraw.path(matrices, consumers, camera, from.add(lift), to.add(lift), color(edge), DOT, SPACING,
                         edge.active() ? phase : 0, 0.45, 0.12);
             }
+            if (node.teleports() != null) {
+                for (BlockPos arrival : node.teleports()) {
+                    Vec3d to = WrenchOverlay.anchor(world, arrival);
+                    boolean boardSpace = shown.node(arrival) != null || BoardLinks.isBoardSpace(world, arrival);
+                    WorldDraw.arc(matrices, consumers, camera, from, to, TeleportLinks.arcHeight(from.distanceTo(to)),
+                            boardSpace ? TELEPORT : BROKEN, TELEPORT_SPARKLE, phase, 0.07, 0.3);
+                }
+            }
         }
         // Labels from the farthest to the nearest: the nearest ones on top
         List<BoardGraph.Node> labelled = new java.util.ArrayList<>(shown.nodes().stream()
@@ -174,6 +187,13 @@ public final class BoardView {
             Vec3d at = alone ? top : top.add(0, plate * 1.05, 0);
             WorldDraw.plateLabel(matrices, consumers, camera, at, Text.literal("!"),
                     deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
+        }
+        if (node.teleportsNowhere()) {
+            // A teleport tile sending nowhere: to the left of the number
+            float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
+            org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
+            Vec3d beside = top.subtract(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
+            WorldDraw.plateLabel(matrices, consumers, camera, beside, Text.literal("!"), WorldDraw.Plate.PURPLE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
         if (graph.isFork(node)) {
             // The junction marker, beside the number (to the right as seen from the camera)
