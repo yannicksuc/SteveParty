@@ -77,13 +77,14 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     }
 
     /**
-     * Glows (halo, inner lights). Without a shader pack: vanilla's translucent emissive layer, unchanged. With one,
-     * that layer (writing no depth) is covered by the clouds, which the pack composites later: the same layer writing
-     * depth instead ({@link GlowRenderLayer}), so the glows stay in front, like the body. Neither is outlined by the
-     * glowing effect: only the body is.
+     * Where the glows (halo, inner lights) are drawn: vanilla's translucent emissive layer, not depth-writing and not
+     * outlined by the glowing effect (only the body is). Without a shader pack, drawn with the entity, unchanged. With
+     * one, drawn later, after the translucent terrain ({@link DeferredGlows}): drawn with the entity, the pack's clouds
+     * covered them.
      */
-    private static RenderLayer glowLayer(Identifier texture) {
-        return ShaderPacks.inUse() ? GlowRenderLayer.of(texture) : RenderLayer.getEntityTranslucentEmissive(texture, false);
+    private static VertexConsumer glowBuffer(VertexConsumerProvider bufferSource, Identifier texture) {
+        return ShaderPacks.inUse() ? DeferredGlows.buffer(texture)
+                : bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture, false));
     }
 
     /** Draws the springy visual size (it swells with a little boing when fed), the hitbox keeps the real one. */
@@ -223,7 +224,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 int b = 100 + ((tint & 0xFF) * 155 / 255);
                 int alpha = (int) (255 * MathHelper.clamp(0.7f + 0.2f * glow + 0.1f * full + 0.3f * flare + 0.25f * warm,
                         0f, 1f));
-                drawQuad(matrices, bufferSource.getBuffer(glowLayer(texture)), packedLight, r, g, b, alpha);
+                drawQuad(matrices, glowBuffer(bufferSource, texture), packedLight, r, g, b, alpha);
                 matrices.pop();
             }
         }
@@ -258,7 +259,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             int r = 90 + (((tint >> 16) & 0xFF) * 165 / 255);
             int g = 90 + (((tint >> 8) & 0xFF) * 165 / 255);
             int b = 90 + ((tint & 0xFF) * 165 / 255);
-            VertexConsumer vertices = bufferSource.getBuffer(glowLayer(WISP_TEXTURE));
+            VertexConsumer vertices = glowBuffer(bufferSource, WISP_TEXTURE);
             // the pose stack is world-aligned here: step towards the camera up to the surface, then face the camera
             matrices.push();
             float step = (float) surface * px;
