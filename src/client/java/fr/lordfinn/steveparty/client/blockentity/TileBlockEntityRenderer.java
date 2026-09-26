@@ -78,6 +78,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureNeutral = Steveparty.id("block/tile_overlay_neutral");
     private static final Identifier textureExcited = Steveparty.id("block/tile_overlay_excited");
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
+    /** Rejouer / Roll Again: a die in a circular arrow, in the cartridge's colour (lime green until dyed). */
+    private static final Identifier textureReplay = Steveparty.id("block/tile_overlay_replay");
     private static final Identifier textureAdvancedFill = Steveparty.id("block/advanced_tile_fill");
     private static final Identifier textureSimpleFill = Steveparty.id("block/tile_fill");
     /** The shop tile's face (Shop Cartridge): a shopping bag marked with an S, on the yellow rounded bevel. */
@@ -155,6 +157,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         // A Stop tile: a STOP sign over the face in the cartridge's colour
         else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
         else if (tileType == BoardSpaceType.BOARD_SPACE_SHOP) face = TileStampTextures.get(SHOP_FACE, small);
+        else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.face(textureReplay, color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction);
