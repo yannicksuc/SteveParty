@@ -475,8 +475,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
         // A board space without cartridge acts as a default one: the game must go on
-        this.getBoardSpaceBehavior().onDestinationReached(this.world, this.pos, token, this, partyController);
-        partyController.nextStep();
+        ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
+        behavior.onDestinationReached(this.world, this.pos, token, this, partyController);
+        if (!behavior.keepsTurn(token)) partyController.nextStep();
     }
 
     /**

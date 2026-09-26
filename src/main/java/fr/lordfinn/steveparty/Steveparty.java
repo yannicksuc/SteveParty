@@ -80,6 +80,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.commands.BoardCommands.initialize();
         fr.lordfinn.steveparty.board.WrenchActions.initialize();
         new TokenMovementService();
+        fr.lordfinn.steveparty.service.ShopStops.initialize();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             for (ServerPlayerEntity player : world.getPlayers()) {

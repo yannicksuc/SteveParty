@@ -212,24 +212,6 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
-        super.onPlaced(world, pos, state, placer, itemStack);
-        // A stall placed next to an already powered block must not count it as a pulse
-        if (!world.isClient && world.getBlockEntity(pos) instanceof TradingStallBlockEntity stall) {
-            stall.initRedstonePower(world.isReceivingRedstonePower(pos));
-        }
-    }
-
-    @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
-        // ONE_SALE_PER_SIGNAL: each redstone rising edge grants one sale
-        if (!world.isClient && world.getBlockEntity(pos) instanceof TradingStallBlockEntity stall) {
-            stall.onRedstonePower(world.isReceivingRedstonePower(pos));
-        }
-    }
-
-    @Override
     public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
         return 0;
     }

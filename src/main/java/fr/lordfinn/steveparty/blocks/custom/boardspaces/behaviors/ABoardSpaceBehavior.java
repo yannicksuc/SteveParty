@@ -86,6 +86,14 @@ public abstract class ABoardSpaceBehavior {
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController);
     }
 
+    /**
+     * After {@link #onDestinationReached}: true if this role holds the turn (a shop stop) and moves the party on itself
+     * later; false (the default) and the next step comes right away.
+     */
+    public boolean keepsTurn(MobEntity token) {
+        return false;
+    }
+
     /** How landing on this role feels (see {@link TileFeedback.Landing}); roles without their own: the default one. */
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return TileFeedback.Landing.DEFAULT;

@@ -80,6 +80,24 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
     private static final Identifier textureAdvancedFill = Steveparty.id("block/advanced_tile_fill");
     private static final Identifier textureSimpleFill = Steveparty.id("block/tile_fill");
+    /** The shop tile's face (Shop Cartridge): a shopping bag marked with an S, on the yellow rounded bevel. */
+    private static final TileStampComponent SHOP_FACE = TileStampComponent.of(fr.lordfinn.steveparty.stencil.StencilShape.fromRows(
+            "................",
+            "......####......",
+            ".....##..##.....",
+            ".....#....#.....",
+            "...##########...",
+            "...##########...",
+            "...####..####...",
+            "...###.##.###...",
+            "...###.######...",
+            "...####..####...",
+            "...######.###...",
+            "...###.##.###...",
+            "...####..####...",
+            "...##########...",
+            "...##########...",
+            "................"), net.minecraft.util.DyeColor.YELLOW);
     /** Height of the top of a tile's face above the tile's floor, and of its bottom (its picture is 1 px thick). */
     private static final float FACE_TOP = 2 / 16f, FACE_BOTTOM = 1 / 16f;
 
@@ -134,6 +152,9 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         Identifier face;
         if (stamp != null) face = TileStampTextures.get(stamp, small);
         else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = TileStampTextures.face(inventoryFace(stack), small);
+        // A Stop tile: a STOP sign over the face in the cartridge's colour
+        else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
+        else if (tileType == BoardSpaceType.BOARD_SPACE_SHOP) face = TileStampTextures.get(SHOP_FACE, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction);
