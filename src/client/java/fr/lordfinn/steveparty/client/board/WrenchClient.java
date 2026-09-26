@@ -27,6 +27,9 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Wrench controls on the client: the mode key (R by default) and sneak + mouse wheel switch the mode; a small HUD above
  * the hotbar shows the mode, the chain and the board around while the Wrench is held.
@@ -37,6 +40,8 @@ public final class WrenchClient {
     private static final net.minecraft.util.Identifier TRACE_ICON = fr.lordfinn.steveparty.Steveparty.id("textures/particle/arrow.png");
     private static final ItemStack EDIT_ICON = new ItemStack(fr.lordfinn.steveparty.items.ModItems.WRENCH);
     private static final ItemStack CUT_ICON = new ItemStack(net.minecraft.item.Items.SHEARS);
+    private static final int INSET = (ToolHud.BOX - 16) / 2;
+    private static final ItemStack NO_CARTRIDGE_ICON = new ItemStack(fr.lordfinn.steveparty.items.ModItems.BOARD_SPACE_BEHAVIOR);
 
     private WrenchClient() {
     }
@@ -94,8 +99,9 @@ public final class WrenchClient {
 
     /**
      * The Wrench HUD, in the tools' look (see {@link ToolHud}, shared with the Stencil Hammer): right above the hotbar,
-     * a box with the mode's icon, a plate with the mode and what it is doing (chain, origin, edited slot), a plate
-     * summing up the board around (green: fine, orange: dead ends or unreachable spaces), and the see-through hint.
+     * a box with the mode's icon, a box with the cartridge the next new space will get (and how many are left), a
+     * plate with the mode and what it is doing (chain, origin, edited slot), a plate summing up the board around
+     * (green: fine, orange: dead ends or unreachable spaces), and the see-through hint. On two rows when too wide.
      */
     private static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -123,25 +129,56 @@ public final class WrenchClient {
                 : Text.translatable("hud.steveparty.board.summary.ok", counts[0]);
 
         int gap = 4;
-        int modeWidth = ToolHud.textPlateWidth(mode), boardWidth = board == null ? 0 : ToolHud.textPlateWidth(board) + gap;
-        int total = ToolHud.BOX + gap + modeWidth + boardWidth;
-        int x = context.getScaledWindowWidth() / 2 - total / 2;
-        int y = ToolHud.top(context);
-        ToolHud.box(context, x, y, true);
-        modeIcon(context, state.mode(), x + (ToolHud.BOX - 16) / 2, y + (ToolHud.BOX - 16) / 2);
-        x += ToolHud.BOX + gap;
-        x += ToolHud.textPlate(context, x, y, mode, switch (state.mode()) {
+        // The cartridge the next new space will get: none left in survival -> a red box and a hint
+        ItemStack cartridge = BoardLinks.cartridgeSource(client.player);
+        int left = BoardLinks.cartridgesLeft(client.player);
+        ToolHud.Plate modePlate = switch (state.mode()) {
             case TRACE -> ToolHud.Plate.GREEN;
             case EDIT -> ToolHud.Plate.TEAL;
             case CUT -> ToolHud.Plate.RED;
-        }) + gap;
-        if (board != null) ToolHud.textPlate(context, x, y, board, problems ? ToolHud.Plate.ORANGE : ToolHud.Plate.GREEN);
+        };
+        List<ToolHud.Element> tool = new ArrayList<>();
+        tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> {
+            ToolHud.box(context, x, y, true);
+            modeIcon(context, state.mode(), x + INSET, y + INSET);
+        }));
+        tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> cartridgeBox(context, x, y, cartridge, left)));
+        if (cartridge.isEmpty()) {
+            Text none = Text.translatable("hud.steveparty.wrench.no_cartridge");
+            tool.add(ToolHud.element(ToolHud.textPlateWidth(none), (x, y) -> ToolHud.textPlate(context, x, y, none, ToolHud.Plate.RED)));
+        }
+        tool.add(ToolHud.element(ToolHud.textPlateWidth(mode), (x, y) -> ToolHud.textPlate(context, x, y, mode, modePlate)));
+        List<List<ToolHud.Element>> groups = new ArrayList<>(List.of(tool));
+        if (board != null) {
+            ToolHud.Plate boardPlate = problems ? ToolHud.Plate.ORANGE : ToolHud.Plate.GREEN;
+            groups.add(List.of(ToolHud.element(ToolHud.textPlateWidth(board), (x, y) -> ToolHud.textPlate(context, x, y, board, boardPlate))));
+        }
+        // One row if it fits, else the board summary on a second row
+        int y = ToolHud.rows(context, groups, gap);
 
         Text hint = state.mode() == WrenchMode.TRACE
                 ? Text.translatable("hud.steveparty.wrench.hint.trace", MODE_KEY.getBoundKeyLocalizedText(),
                         Text.translatable(state.autoLink() ? "hud.steveparty.wrench.auto_link.on" : "hud.steveparty.wrench.auto_link.off"))
                 : Text.translatable("hud.steveparty.wrench.hint", MODE_KEY.getBoundKeyLocalizedText());
         ToolHud.hint(context, hint, context.getScaledWindowWidth() / 2, y);
+    }
+
+    /**
+     * The cartridge box: the icon of the cartridge the next new space will get, with how many are left (like a hotbar
+     * stack; nothing in creative), or a red box with a greyed Cartridge when survival has none left (its hint is a
+     * plate of its own).
+     */
+    private static void cartridgeBox(DrawContext context, int x, int y, ItemStack cartridge, int left) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (!cartridge.isEmpty()) {
+            ToolHud.box(context, x, y, false);
+            context.drawItem(cartridge, x + INSET, y + INSET);
+            if (left >= 0) context.drawStackOverlay(client.textRenderer, cartridge, x + INSET, y + INSET, Integer.toString(left));
+            return;
+        }
+        ToolHud.plate(context, x, y, ToolHud.BOX, ToolHud.BOX, ToolHud.Plate.RED);
+        context.drawItem(NO_CARTRIDGE_ICON, x + INSET, y + INSET);
+        context.fill(x + INSET, y + INSET, x + INSET + 16, y + INSET + 16, 200, 0x80C4C4C4); // greyed
     }
 
     /** Trace: the board view's chevron; Edit: the Wrench; Cut: shears. */

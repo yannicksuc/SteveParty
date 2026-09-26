@@ -185,7 +185,29 @@ public final class BoardLinks {
         player.sendMessage(Text.translatable("message.steveparty.wrench.chest.nearest", BoardText.pos(nearest)), false);
     }
 
-    private static ItemStack cartridgeSource(PlayerEntity player) {
+    /**
+     * How many cartridges the Wrench can still insert (see {@link #cartridgeSource}): the off-hand stack, else the plain
+     * Cartridges of the inventory; -1 for unlimited (creative).
+     */
+    public static int cartridgesLeft(PlayerEntity player) {
+        ItemStack offHand = player.getOffHandStack();
+        boolean creative = player.getAbilities().creativeMode;
+        if (offHand.getItem() instanceof CartridgeItem) return creative ? -1 : offHand.getCount();
+        if (creative) return -1;
+        int count = 0;
+        PlayerInventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (stack.isOf(ModItems.BOARD_SPACE_BEHAVIOR)) count += stack.getCount();
+        }
+        return count;
+    }
+
+    /**
+     * The stack the next cartridge would come from (the off hand, a new plain Cartridge in creative, the first plain
+     * Cartridge of the inventory), or an empty stack. Same on both sides: the Wrench HUD shows it.
+     */
+    public static ItemStack cartridgeSource(PlayerEntity player) {
         ItemStack offHand = player.getOffHandStack();
         if (offHand.getItem() instanceof CartridgeItem) return offHand;
         if (player.getAbilities().creativeMode) return new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);

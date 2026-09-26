@@ -522,6 +522,7 @@
   "hud.steveparty.wrench.ghost.cut_none": "No link",
   "hud.steveparty.board.start": "Start",
   "hud.steveparty.wrench.panel": "%s · %s",
+  "hud.steveparty.wrench.no_cartridge": "No Cartridge left",
   "hud.steveparty.board.summary.ok": "✔ %s spaces",
   "hud.steveparty.board.summary.problems": "%s spaces · %s dead ends · %s unreachable",
   "party_step_type.default": "Default",
