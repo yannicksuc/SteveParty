@@ -238,6 +238,9 @@ public final class ShopStops {
             return false;
         }
         stop.handler = handler;
+        // A shop check point holds the token: its Router tells a comparator (a shop tile did when the token landed)
+        if (!ABoardSpaceBlock.countsAsStep(space.getCachedState().getBlock()))
+            fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, space);
         // The merchant glows for everyone while the stop lasts
         trader.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * seconds + 40, 0, false, false));
         sparkle(world, stop, trader);

@@ -162,6 +162,14 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
     @Override
     public void markDirty() {
         super.markDirty();
+        fr.lordfinn.steveparty.board.BoardRevision.changed(world); // a cartridge shown in an open screen, client side
+    }
+
+    /** The block state changed (role, support, size...): the client's board view reads it. */
+    @Override
+    public void setCachedState(net.minecraft.block.BlockState state) {
+        super.setCachedState(state);
+        fr.lordfinn.steveparty.board.BoardRevision.changed(world);
     }
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
@@ -190,6 +198,7 @@ public abstract class CartridgeContainerBlockEntity extends BlockEntity implemen
         } catch (Exception e) {
             Steveparty.LOGGER.error("Failed to read NBT", e);
         }
+        fr.lordfinn.steveparty.board.BoardRevision.changed(world); // new data from the server (links, cartridges)
     }
     public DefaultedList<ItemStack> getHeldStacks() {
         return this.heldStacks;

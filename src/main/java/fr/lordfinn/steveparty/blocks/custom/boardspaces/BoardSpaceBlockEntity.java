@@ -68,6 +68,13 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private int activeSlot = 0;
     /** Set when loaded from disk: the power may have changed while unloaded, recheck on first server use. */
     private boolean activeSlotNeedsCheck = true;
+    /**
+     * The router driving this board space (null: none), read from the persistent state once and again whenever the
+     * routing may have changed ({@link #refreshActiveSlot}, which the routers call for every board space they take or
+     * release), instead of at every neighbour update. Server side, not saved.
+     */
+    private @Nullable BlockPos router;
+    private boolean routerKnown;
     /** Last applied cartridge / type (baseline captured on creation and load), to react only to real changes. */
     private ItemStack appliedCartridge = ItemStack.EMPTY;
     private BoardSpaceType appliedType = BoardSpaceType.DEFAULT;
@@ -84,8 +91,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private void syncToClients() {
-        if (world != null && !world.isClient)
+        if (world != null && !world.isClient) {
+            fr.lordfinn.steveparty.board.BoardPerf.boardSpaceSyncs++;
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
+        }
     }
 
     public DefaultedList<ItemStack> getItems() {
@@ -106,25 +115,40 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void refreshActiveSlot() {
         if (!(world instanceof ServerWorld serverWorld)) return;
         activeSlotNeedsCheck = false;
-        BlockPos routerPos = BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+        routerKnown = false; // the routing may have changed: read it again
+        BlockPos routerPos = routerOf(serverWorld);
         BlockPos powerPos = routerPos != null ? routerPos : pos;
         // Never load a chunk for this: an unloaded router keeps the last known slot, it pushes its power when it changes
         if (!serverWorld.isChunkLoaded(powerPos)) return;
-        setActiveSlot(serverWorld.getReceivedRedstonePower(powerPos));
+        setActiveSlot(powerAt(serverWorld, powerPos));
+    }
+
+    private @Nullable BlockPos routerOf(ServerWorld serverWorld) {
+        if (!routerKnown) {
+            fr.lordfinn.steveparty.board.BoardPerf.routerStateLookups++;
+            router = BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+            routerKnown = true;
+        }
+        return router;
+    }
+
+    private static int powerAt(ServerWorld serverWorld, BlockPos powerPos) {
+        fr.lordfinn.steveparty.board.BoardPerf.boardSpacePowerReads++;
+        return serverWorld.getReceivedRedstonePower(powerPos);
     }
 
     /** Own neighbors changed: only relevant when this board space is not driven by a router. */
     public void onNeighborUpdate() {
         if (!(world instanceof ServerWorld serverWorld)) return;
-        if (BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos) != null) return;
+        if (routerOf(serverWorld) != null) return;
         activeSlotNeedsCheck = false;
-        setActiveSlot(serverWorld.getReceivedRedstonePower(pos));
+        setActiveSlot(powerAt(serverWorld, pos));
     }
 
     /** Pushed by a router whose power changed. */
     public void onRouterPowerChanged(BlockPos routerPos, int power) {
         if (!(world instanceof ServerWorld serverWorld)) return;
-        if (!routerPos.equals(BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos))) return;
+        if (!routerPos.equals(routerOf(serverWorld))) return;
         activeSlotNeedsCheck = false;
         setActiveSlot(power);
     }
@@ -133,8 +157,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         if (slot == activeSlot) return;
         activeSlot = slot;
         super.markDirty();
-        applyActiveCartridge();
-        syncToClients(); // the GUI shows the active slot, even when the cartridge doesn't change
+        // The GUI shows the active slot: sent even when the cartridge doesn't change (once)
+        if (!applyActiveCartridge()) syncToClients();
     }
 
     /**
@@ -213,14 +237,16 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     /**
      * Applies the role of the active cartridge (block state type, colour, token notification) if it changed.
      * Server side; the client receives the result through the block state and the block entity data.
+     *
+     * @return true if it changed (and was sent to the clients)
      */
-    private void applyActiveCartridge() {
-        if (!(world instanceof ServerWorld serverWorld)) return;
+    private boolean applyActiveCartridge() {
+        if (!(world instanceof ServerWorld serverWorld)) return false;
         ItemStack stack = getStack(activeSlot);
         BoardSpaceType type = determineBoardSpaceType(stack);
         if (stack == appliedCartridge && type == appliedType) {
             updateBoardSpaceColor();
-            return;
+            return false;
         }
         appliedCartridge = stack;
         appliedType = type;
@@ -234,6 +260,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         updateBoardSpaceColor();
         syncToClients();
         getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
+        return true;
     }
 
     private static BoardSpaceType determineBoardSpaceType(ItemStack stack) {
@@ -395,6 +422,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
                 ? fr.lordfinn.steveparty.components.TileStampComponent.CODEC.parse(NbtOps.INSTANCE, nbt.get(STAMP_KEY)).result().orElse(null)
                 : null;
         activeSlotNeedsCheck = true;
+        routerKnown = false;
         appliedCartridge = getStack(activeSlot);
         appliedType = determineBoardSpaceType(appliedCartridge);
         cycleIndexes.clear();

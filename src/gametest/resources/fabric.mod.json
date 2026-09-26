@@ -7,6 +7,8 @@
   "entrypoints": {
     "fabric-gametest": [
       "fr.lordfinn.steveparty.gametest.BoardSpaceGameTests",
+      "fr.lordfinn.steveparty.gametest.RouterEventGameTests",
+      "fr.lordfinn.steveparty.gametest.BoardPerfGameTests",
       "fr.lordfinn.steveparty.gametest.TileFeedbackGameTests",
       "fr.lordfinn.steveparty.gametest.AdvanceBackGameTests",
       "fr.lordfinn.steveparty.gametest.BoardLinkingGameTests",

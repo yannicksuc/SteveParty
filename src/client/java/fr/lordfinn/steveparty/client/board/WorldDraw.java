@@ -50,41 +50,56 @@ final class WorldDraw {
      */
     static void path(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d a, Vec3d b, int argb,
                      double size, double spacing, double phase, double margin, double shift) {
-        Vec3d d = b.subtract(a);
-        double length = d.length();
+        path(matrices, consumers, camera, a.x, a.y, a.z, b.x, b.y, b.z, argb, size, spacing, phase, margin, shift);
+    }
+
+    /** {@link #path(MatrixStack, VertexConsumerProvider, Camera, Vec3d, Vec3d, int, double, double, double, double, double)}, allocation free. */
+    static void path(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, double ax, double ay, double az,
+                     double bx, double by, double bz, int argb, double size, double spacing, double phase, double margin, double shift) {
+        double dx = bx - ax, dy = by - ay, dz = bz - az;
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (length < 2 * margin + 0.1) return;
-        Vec3d forward = d.multiply(1 / length);
-        Vec3d side = new Vec3d(-forward.z, 0, forward.x);
-        if (side.lengthSquared() < 1.0E-4) side = new Vec3d(1, 0, 0);
-        side = side.normalize();
-        a = a.add(side.multiply(shift));
+        double fx = dx / length, fy = dy / length, fz = dz / length;
+        double sx = -fz, sz = fx;
+        double sideLength = Math.sqrt(sx * sx + sz * sz);
+        if (sideLength * sideLength < 1.0E-4) {
+            sx = 1;
+            sz = 0;
+        } else {
+            sx /= sideLength;
+            sz /= sideLength;
+        }
         Vec3d cam = camera.getPos();
+        // Relative to the camera, shifted sideways
+        double ox = ax + sx * shift - cam.x, oy = ay - cam.y, oz = az + sz * shift - cam.z;
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         VertexConsumer consumer = consumers.getBuffer(RenderLayer.getText(ChevronSprites.of(argb)));
-        Vec3d halfForward = forward.multiply(size / 2), halfSide = side.multiply(size / 2);
+        double hfx = fx * size / 2, hfy = fy * size / 2, hfz = fz * size / 2, hsx = sx * size / 2, hsz = sz * size / 2;
         double start = margin + Math.floorMod((long) Math.floor(phase * 1000), (long) Math.floor(spacing * 1000)) / 1000.0;
         int alpha = (argb >>> 24);
         for (double t = start; t <= length - margin; t += spacing) {
             double fade = Math.min(1, Math.min((t - margin) / 0.35, (length - margin - t) / 0.35));
             // The colour is in the texture (a ramp of it): the vertices only carry the fade
             int color = ((int) (alpha * Math.max(0, fade)) << 24) | 0xFFFFFF;
-            Vec3d centre = a.add(forward.multiply(t)).subtract(cam);
-            Vec3d tipL = centre.add(halfForward).subtract(halfSide), tipR = centre.add(halfForward).add(halfSide);
-            Vec3d tailL = centre.subtract(halfForward).subtract(halfSide), tailR = centre.subtract(halfForward).add(halfSide);
+            double cx = ox + fx * t, cy = oy + fy * t, cz = oz + fz * t;
+            float tipLx = (float) (cx + hfx - hsx), tipLy = (float) (cy + hfy), tipLz = (float) (cz + hfz - hsz);
+            float tipRx = (float) (cx + hfx + hsx), tipRy = tipLy, tipRz = (float) (cz + hfz + hsz);
+            float tailLx = (float) (cx - hfx - hsx), tailLy = (float) (cy - hfy), tailLz = (float) (cz - hfz - hsz);
+            float tailRx = (float) (cx - hfx + hsx), tailRy = tailLy, tailRz = (float) (cz - hfz + hsz);
             // The chevron points to the top of its texture (v = 0); both sides drawn
-            vertex(consumer, matrix, tailL, color, 0, 1);
-            vertex(consumer, matrix, tailR, color, 1, 1);
-            vertex(consumer, matrix, tipR, color, 1, 0);
-            vertex(consumer, matrix, tipL, color, 0, 0);
-            vertex(consumer, matrix, tipL, color, 0, 0);
-            vertex(consumer, matrix, tipR, color, 1, 0);
-            vertex(consumer, matrix, tailR, color, 1, 1);
-            vertex(consumer, matrix, tailL, color, 0, 1);
+            vertex(consumer, matrix, tailLx, tailLy, tailLz, color, 0, 1);
+            vertex(consumer, matrix, tailRx, tailRy, tailRz, color, 1, 1);
+            vertex(consumer, matrix, tipRx, tipRy, tipRz, color, 1, 0);
+            vertex(consumer, matrix, tipLx, tipLy, tipLz, color, 0, 0);
+            vertex(consumer, matrix, tipLx, tipLy, tipLz, color, 0, 0);
+            vertex(consumer, matrix, tipRx, tipRy, tipRz, color, 1, 0);
+            vertex(consumer, matrix, tailRx, tailRy, tailRz, color, 1, 1);
+            vertex(consumer, matrix, tailLx, tailLy, tailLz, color, 0, 1);
         }
     }
 
-    private static void vertex(VertexConsumer consumer, Matrix4f matrix, Vec3d p, int color, float u, float v) {
-        consumer.vertex(matrix, (float) p.x, (float) p.y, (float) p.z).color(color).texture(u, v).light(LIGHT);
+    private static void vertex(VertexConsumer consumer, Matrix4f matrix, float x, float y, float z, int color, float u, float v) {
+        consumer.vertex(matrix, x, y, z).color(color).texture(u, v).light(LIGHT);
     }
 
     // ---------------------------------------------------------------- plates
