@@ -86,6 +86,14 @@ public abstract class ABoardSpaceBehavior {
             TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController);
     }
 
+    /**
+     * True if {@link #onDestinationReached} ends the turn itself, later (an animation plays first, like the teleport):
+     * the board space then doesn't go on with the party right away. Asked just before that call.
+     */
+    public boolean endsTurnItself(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+        return false;
+    }
+
     /** How landing on this role feels (see {@link TileFeedback.Landing}); roles without their own: the default one. */
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         return TileFeedback.Landing.DEFAULT;

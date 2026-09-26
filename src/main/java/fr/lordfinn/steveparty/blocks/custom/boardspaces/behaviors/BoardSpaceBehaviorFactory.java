@@ -13,6 +13,7 @@ public class BoardSpaceBehaviorFactory {
             BOARD_SPACES_TYPES.put(BoardSpaceType.DEFAULT, new DefaultBoardSpaceBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.BOARD_SPACE_STOP, new StopBoardSpaceBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_INVENTORY_INTERACTOR, new InventoryInteractorTileBehavior());
+            BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_TELEPORT, new TeleportTileBehavior());
         }
 
         public static ABoardSpaceBehavior get(BoardSpaceType type) {

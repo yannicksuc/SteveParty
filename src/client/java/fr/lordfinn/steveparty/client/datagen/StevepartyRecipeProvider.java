@@ -239,6 +239,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 offerCartridge(ModItems.TILE_BEHAVIOR_START, Items.LIME_DYE);
                 offerCartridge(ModItems.BOARD_SPACE_BEHAVIOR_STOP, Items.RED_DYE);
                 offerCartridge(ModItems.INVENTORY_CARTRIDGE, Items.CHEST);
+                // An ender pearl: the warp of the Teleport tile
+                offerCartridge(ModItems.TELEPORT_CARTRIDGE, Items.ENDER_PEARL);
 
                 // The Tile: a plastic board (pellets) under a cloth face (carpets), on the pressure plate that feels
                 // the tokens landing on it; two at a time
