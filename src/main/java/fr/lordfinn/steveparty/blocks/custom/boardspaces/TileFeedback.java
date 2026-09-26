@@ -252,16 +252,19 @@ public final class TileFeedback {
 
         int tileColor = tileColor(tile);
         int color = tileColor == 0xFFFFFF ? landing.accent() : tileColor;
-        burst(world, landing, at, color);
-        ring(world, at, color, ringRadius(world, pos));
-        SCHEDULER.schedule(UUID.randomUUID(), 4, () -> ring(world, at, color, ringRadius(world, pos) * 1.35));
+        // Lighter than the face, so the ring and the sparkles read over it
+        int light = lighten(color, 0.45F);
+        double radius = ringRadius(world, pos);
+        burst(world, landing, at, color, light);
+        ring(world, at, light, radius);
+        SCHEDULER.schedule(UUID.randomUUID(), 4, () -> ring(world, at, light, radius * 1.3));
 
         int recipients = 0;
         if (party != null && !party.isRemoved()) {
             List<ServerPlayerEntity> audience = party.getPartyAudience();
             Text name = token.getCustomName() != null ? token.getCustomName() : token.getName();
             Text notice = Text.translatable(landing.noticeKey(), name)
-                    .styled(style -> style.withColor(TextColor.fromRgb(color)));
+                    .styled(style -> style.withColor(TextColor.fromRgb(lighten(color, 0.2F))));
             MessageUtils.sendToPlayers(audience, notice, MessageUtils.MessageType.ACTION_BAR);
             recipients = audience.size();
         }
@@ -278,17 +281,26 @@ public final class TileFeedback {
     private static double ringRadius(ServerWorld world, BlockPos pos) {
         if (world.getBlockState(pos).getBlock() instanceof ATileBlock) {
             return switch (world.getBlockState(pos).get(ATileBlock.SIZE).size()) {
-                case LARGE -> 1.05;
-                case SMALL -> 0.32;
-                default -> 0.52;
+                case LARGE -> 1.15;
+                case SMALL -> 0.4;
+                default -> 0.62;
             };
         }
-        return 0.52;
+        return 0.62;
     }
 
-    /** A thin ring of dust around the tile's edge: the tile "pulses". */
+    /** {@code color} moved toward white by {@code amount} (0..1). */
+    public static int lighten(int color, float amount) {
+        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        r += (int) ((255 - r) * amount);
+        g += (int) ((255 - g) * amount);
+        b += (int) ((255 - b) * amount);
+        return (r << 16) | (g << 8) | b;
+    }
+
+    /** A thin ring of dust just around the tile's edge: the tile "pulses". */
     private static void ring(ServerWorld world, Vec3d at, int color, double radius) {
-        DustParticleEffect dust = new DustParticleEffect(color, 0.9F);
+        DustParticleEffect dust = new DustParticleEffect(color, 1.1F);
         int points = radius > 0.8 ? 28 : 18;
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2 * i / points;
@@ -297,27 +309,28 @@ public final class TileFeedback {
         }
     }
 
-    private static void burst(ServerWorld world, Landing landing, Vec3d at, int color) {
+    private static void burst(ServerWorld world, Landing landing, Vec3d at, int color, int light) {
         double y = at.y + 0.25;
         switch (landing) {
             case GOOD -> {
-                world.spawnParticles(new MulaSparkleEffect(0xFFD54A, 1.1F, MulaSparkleEffect.STAR_BIT), at.x, y, at.z, 8, 0.3, 0.2, 0.3, 0.0);
-                world.spawnParticles(new MulaSparkleEffect(color == landing.accent() ? 0x4FC3F7 : color, 1.0F, MulaSparkleEffect.TWINKLE), at.x, y + 0.2, at.z, 10, 0.35, 0.3, 0.35, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(0xFFD54A, 1.4F, MulaSparkleEffect.STAR_BIT), at.x, y, at.z, 9, 0.3, 0.2, 0.3, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(color == landing.accent() ? 0x9FE3FF : light, 1.2F, MulaSparkleEffect.TWINKLE), at.x, y + 0.3, at.z, 10, 0.35, 0.3, 0.35, 0.0);
                 world.spawnParticles(ParticleTypes.WAX_OFF, at.x, y + 0.3, at.z, 5, 0.3, 0.3, 0.3, 0.3);
             }
             case BAD -> {
-                world.spawnParticles(new DustParticleEffect(landing.accent(), 1.6F), at.x, y, at.z, 14, 0.35, 0.15, 0.35, 0.0);
-                world.spawnParticles(ParticleTypes.SMOKE, at.x, y, at.z, 8, 0.3, 0.1, 0.3, 0.01);
+                world.spawnParticles(new DustParticleEffect(lighten(landing.accent(), 0.25F), 1.8F), at.x, y + 0.2, at.z, 14, 0.35, 0.2, 0.35, 0.0);
+                world.spawnParticles(ParticleTypes.SMOKE, at.x, y, at.z, 5, 0.3, 0.05, 0.3, 0.01);
+                world.spawnParticles(ParticleTypes.ANGRY_VILLAGER, at.x, y + 0.6, at.z, 1, 0.1, 0.1, 0.1, 0.0);
             }
             case START -> {
                 world.spawnParticles(ParticleTypes.FIREWORK, at.x, y + 0.2, at.z, 12, 0.15, 0.2, 0.15, 0.08);
-                world.spawnParticles(new MulaSparkleEffect(color, 1.0F, MulaSparkleEffect.STAR_BIT), at.x, y, at.z, 8, 0.35, 0.2, 0.35, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(light, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y, at.z, 8, 0.35, 0.2, 0.35, 0.0);
             }
             case STOP -> {
-                world.spawnParticles(new DustParticleEffect(color, 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
+                world.spawnParticles(new DustParticleEffect(light, 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
                 world.spawnParticles(ParticleTypes.CRIT, at.x, y + 0.2, at.z, 6, 0.25, 0.2, 0.25, 0.1);
             }
-            case ITEM, DEFAULT -> world.spawnParticles(new MulaSparkleEffect(color, 1.0F, MulaSparkleEffect.TWINKLE),
+            case ITEM, DEFAULT -> world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE),
                     at.x, y + 0.1, at.z, 12, 0.35, 0.25, 0.35, 0.0);
         }
     }
