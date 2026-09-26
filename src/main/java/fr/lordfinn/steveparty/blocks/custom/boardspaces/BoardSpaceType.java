@@ -6,7 +6,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     DEFAULT("default"),
     TILE_START("tile_start"),
     BOARD_SPACE_STOP("board_space_stop"),
-    TILE_INVENTORY_INTERACTOR("tile_inventory_interactor");
+    TILE_INVENTORY_INTERACTOR("tile_inventory_interactor"),
+    /** Move Forward / Back: a token landing here moves on some spaces forward or back (see AdvanceBackTileBehavior). */
+    TILE_ADVANCE_BACK("tile_advance_back");
 
     private final String name;
 
