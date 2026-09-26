@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -149,8 +150,10 @@ public final class TileFeedback {
     public static void initialize() {
         // Tokens moved outside a game (dice in free play, commands): a pop on each tile they reach
         TileReachedEvent.EVENT.register((token, tile) -> {
-            if (token.getWorld() instanceof ServerWorld world && !isInRunningParty(token.getUuid()))
+            if (token.getWorld() instanceof ServerWorld world && !isInRunningParty(token.getUuid())) {
                 ambientStep(world, token, tile.getPos());
+                freePlayRouterSignal(world, token, tile);
+            }
             return ActionResult.PASS;
         });
         // Players walking on the board (a few block lookups per player and tick)
@@ -161,6 +164,19 @@ public final class TileFeedback {
                 ambientStep(world, player, BoardSpaces.boardSpacePosAt(world, player.getBlockPos()));
             }
         });
+    }
+
+    /**
+     * Outside a game there is no landing feedback, but a Router still tells its comparator where a token stops or goes
+     * over (same rules as in a game: see {@link BoardSpaceBlockEntity#onTileReached}).
+     */
+    private static void freePlayRouterSignal(ServerWorld world, MobEntity token, BoardSpaceBlockEntity tile) {
+        int steps = token instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
+        ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
+        boolean stops = steps == 0 ? ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
+                : behavior != null && behavior.needToStop(world, tile.getPos());
+        if (stops) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
+        else BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile.getPos());
     }
 
     /** True if a party with a current step counts this token among its tokens: the party gives its feedback. */
@@ -186,6 +202,7 @@ public final class TileFeedback {
     /** A token of a running party goes over this tile without stopping. */
     public static void pass(ServerWorld world, BlockPos tile) {
         pop(world, BoardSpaces.standPos(world, tile), POP_VOLUME);
+        BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile);
         report(Kind.PASS, tile, null, 0);
     }
 
@@ -268,6 +285,7 @@ public final class TileFeedback {
             MessageUtils.sendToPlayers(audience, notice, MessageUtils.MessageType.ACTION_BAR);
             recipients = audience.size();
         }
+        BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
         report(Kind.LAND, pos, landing, recipients);
     }
 

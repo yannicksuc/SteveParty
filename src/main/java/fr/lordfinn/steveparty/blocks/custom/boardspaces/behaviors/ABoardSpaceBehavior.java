@@ -91,6 +91,15 @@ public abstract class ABoardSpaceBehavior {
         return TileFeedback.Landing.DEFAULT;
     }
 
+    /**
+     * The comparator level of a Router driving this board space when a token stops here (see
+     * {@link fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity}): by default the level of its
+     * landing kind. A new role overrides it with a level of its own (2 to 15; 1 is a token passing).
+     */
+    public int comparatorLevel(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+        return fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.landingSignal(landing(boardSpaceEntity, stack));
+    }
+
     public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {
         ItemStack behaviorItemstack = getActiveCartdridgeItemstack(tileEntity);
         // Never write components on an empty stack (it may be the shared ItemStack.EMPTY instance)
