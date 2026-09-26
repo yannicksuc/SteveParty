@@ -50,6 +50,7 @@ public class ModEvents {
 
         HopSwitchBlock.registerUseBlockCallback();
         ShopProtection.register();
+        fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.registerBreakRule();
     }
 
     /**

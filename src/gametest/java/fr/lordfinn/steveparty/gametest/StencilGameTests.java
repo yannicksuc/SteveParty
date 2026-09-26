@@ -1051,4 +1051,14 @@ public class StencilGameTests implements FabricGameTest {
         context.assertTrue(found > 20, "stencils in cartographer chests (" + found + " in 200 chests)");
         context.complete();
     }
+
+    /** Stencil paint only breaks with a tool: nothing by hand or with another item. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilPaintOnlyBreaksWithATool(TestContext context) {
+        context.assertFalse(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(net.minecraft.item.ItemStack.EMPTY), "not by hand");
+        context.assertFalse(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(new net.minecraft.item.ItemStack(net.minecraft.item.Items.STICK)), "not with a stick");
+        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(new net.minecraft.item.ItemStack(net.minecraft.item.Items.WOODEN_PICKAXE)), "a pickaxe");
+        context.assertTrue(fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock.canBreakWith(new net.minecraft.item.ItemStack(net.minecraft.item.Items.SHEARS)), "shears");
+        context.complete();
+    }
 }
