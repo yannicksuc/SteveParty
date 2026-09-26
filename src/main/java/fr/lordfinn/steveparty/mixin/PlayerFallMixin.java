@@ -1,9 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import com.mojang.authlib.GameProfile;
-import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
@@ -68,10 +66,6 @@ public abstract class PlayerFallMixin extends PlayerEntity {
                 if (player.fallDistance < steveparty$getRequiredFallDistance(hardness))
                     return;
 
-                // The villager squashed in the block, if it has one (older and creative villager blocks don't)
-                NbtCompound villager = world.getBlockEntity(blockPos) instanceof VillagerBlockEntity villagerBlock
-                        && villagerBlock.getSoul() != null ? villagerBlock.getSoul().copy() : null;
-
                 // Supprime le bloc actuel et celui en dessous
                 world.breakBlock(blockPos, false);
                 world.breakBlock(belowPos, false);
@@ -80,8 +74,6 @@ public abstract class PlayerFallMixin extends PlayerEntity {
                 HidingTraderEntity trader = new HidingTraderEntity(HIDING_TRADER_ENTITY, world);
                 trader.refreshPositionAndAngles(belowPos.getX() + 0.5, belowPos.getY() + 1, belowPos.getZ() + 0.5, 0, 0);
                 trader.setBlockState(belowState);
-                // ...becomes the trader, keeping its trades, profession, level, experience and name
-                if (villager != null) trader.inheritVillager(villager);
 
                 double dx = player.getX() - trader.getX();
                 double dz = player.getZ() - trader.getZ();
