@@ -105,7 +105,7 @@
   "tooltip.steveparty.tile.size.standard": "2x2, centrée sur son bloc",
   "tooltip.steveparty.tile.size.small": "1x1",
   "tooltip.steveparty.tile.size.large": "2x2 blocs",
-  "tooltip.steveparty.tile.size.hint": "Seule dans une grille d'artisanat : taille suivante",
+  "tooltip.steveparty.tile.size.hint": "Tailleur de pierre : 2 petites tuiles. 4 tuiles en carré : 1 grande (seule : rend les 4). 2 petites : 1 tuile",
   "item.steveparty.flag": "Drapeau",
   "item.steveparty.triple_jump_shoes": "Chaussures de triple saut",
   "message.steveparty.vs": "vs",

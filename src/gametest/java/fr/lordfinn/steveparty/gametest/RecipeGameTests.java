@@ -143,9 +143,14 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.CHEST)).isOf(ModItems.INVENTORY_CARTRIDGE), "inventory cartridge");
 
         ItemStack carpet = new ItemStack(Items.RED_CARPET);
+        ItemStack pellets = new ItemStack(ModItems.PLASTIC_PELLETS);
         ItemStack tile = result(context, 3, 2, carpet, new ItemStack(Items.BLUE_CARPET), carpet,
-                e, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), e);
-        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()), "simple tile, got " + tile);
+                pellets, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), pellets);
+        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 2, "two tiles, got " + tile);
+        ItemStack gold = new ItemStack(Items.GOLD_INGOT);
+        ItemStack advanced = result(context, 3, 3, e, new ItemStack(Items.COMPARATOR), e,
+                gold, new ItemStack(ModBlocks.TILE), gold, gold, new ItemStack(Items.CHEST), gold);
+        context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
 
         ItemStack book = new ItemStack(Items.BOOK);
         ItemStack pearl = new ItemStack(Items.ENDER_PEARL);

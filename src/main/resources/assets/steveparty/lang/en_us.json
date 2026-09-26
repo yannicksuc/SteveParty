@@ -553,7 +553,7 @@
   "tooltip.steveparty.tile.size.standard": "2x2, centred on its block",
   "tooltip.steveparty.tile.size.small": "1x1",
   "tooltip.steveparty.tile.size.large": "2x2 blocks",
-  "tooltip.steveparty.tile.size.hint": "Alone in a crafting grid: next size",
+  "tooltip.steveparty.tile.size.hint": "Stonecutter: 2 small tiles. 4 tiles in a square: 1 large (alone: back to 4). 2 small: 1 tile",
   "item.steveparty.flag": "Flag",
   "item.steveparty.triple_jump_shoes": "Triple Jump Shoes",
   "message.steveparty.vs": "vs",
