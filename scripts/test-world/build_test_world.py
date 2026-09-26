@@ -10,7 +10,8 @@ The area (x 1936..2095, z 1952..2079, floor y=99, everything built at y=100), fa
   - the board (west): a start zone of 4 start tiles (a token each) feeding the loop through an entry tile, a loop of 30 tiles spaced 4 blocks apart (2 block gap, tiles are 2 blocks wide), each one turned
     toward the next tile of the path, with diagonal sides, and a shortcut: the fork tile has two destinations (the
     main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 emeralds and one is a stop trap driven by a router + lever);
-  - the stations (east), one per 20x20 plot: dice, shops, goal pole, plastic, signs, building blocks, misc,
+  - the stations (east), one per 20x20 plot: dice, shops, goal pole, plastic, signs, building blocks, misc, tiles
+    (on stairs, slabs, snow, carpets),
     chests holding one of every item, and the Mulas' glass enclosure around an activated Dice Forge.
 """
 import hashlib
@@ -137,7 +138,7 @@ def terrain():
     cmds += ['fill 1958 99 2014 2080 99 2016 dirt_path',
              'fill 2030 99 1966 2032 99 2042 dirt_path',
              'fill 2055 99 1966 2057 99 2042 dirt_path',
-             'fill 2006 99 1966 2008 99 2042 dirt_path',
+             'fill 2006 99 1966 2008 99 2068 dirt_path',
              'fill 2006 99 1990 2080 99 1992 dirt_path']
     return cmds
 
@@ -538,6 +539,51 @@ def misc_station(x0=2010, z0=2020):
     return cmds
 
 
+def tile_block(x, y, z, rot, block='simple_tile', state='', items=''):
+    """A tile (its support, lowered/sloped, is read from the block under it when placed)."""
+    props = 'rotation_8=%d%s' % (rot, ',' + state if state else '')
+    return 'setblock %d %d %d steveparty:%s[%s]%s' % (x, y, z, block, props, '{Items:[%s]}' % items if items else '')
+
+
+def token_at(x, y, z, mob, name, col):
+    return ('summon minecraft:%s %.3f %.3f %.3f {Tokenized:1b,PersistenceRequired:1b,NoGravity:1b,CustomNameVisible:1b,'
+            'CustomName:%s}') % (mob, x, y, z, jtext(name, col))
+
+
+def staircase(x, z, n, facing='east'):
+    """n bottom stairs climbing east from (x, Y, z), filled with stone under them."""
+    cmds = []
+    for k in range(n):
+        if k:
+            cmds.append('fill %d %d %d %d %d %d stone' % (x + k, Y, z, x + k, Y + k - 1, z))
+        cmds.append('setblock %d %d %d oak_stairs[facing=%s,half=bottom]' % (x + k, Y + k, z, facing))
+    return cmds
+
+
+def tiles_station(x0=2010, z0=2045):
+    """Tiles on any block: sloped on stairs (up and down), lowered on slabs, snow and carpets."""
+    cmds = ['# Tiles showcase'] + plot_title(x0, z0, 'TUILES')
+    # Stairs: the tile follows the slope, faces where the player looked (up the stairs, or down)
+    for dz, rot, caption in ((2, 2, 'Sur escalier : montée (face à l\'est)'), (6, 6, 'Sur escalier : descente (face à l\'ouest)')):
+        z = z0 + dz
+        cmds += staircase(x0 + 2, z, 6)
+        for k, block in ((1, 'tile'), (4, 'simple_tile')):
+            cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z, rot, block))
+        cmds.append(label(x0 + 5, Y + 7.5, z + 0.5, caption, 'white', 0.7, False))
+    cmds.append(token_at(x0 + 3.5, Y + 2 + 0.125, z0 + 2.5, 'pig', 'Pion sur la pente', 'light_purple'))
+    # Level supports lower the tile onto their real surface
+    row = z0 + 12
+    supports = [('grass_block', 'Bloc plein'), ('oak_slab[type=bottom]', 'Dalle du bas'), ('oak_slab[type=top]', 'Dalle du haut'),
+                ('snow[layers=4]', 'Neige (4 couches)'), ('red_carpet', 'Tapis')]
+    for k, (support, caption) in enumerate(supports):
+        x = x0 + 2 + 4 * k
+        cmds += ['setblock %d %d %d stone' % (x, Y - 1, row), 'setblock %d %d %d %s' % (x, Y, row, support),
+                 tile_block(x, Y + 1, row, 4, 'tile' if k % 2 else 'simple_tile'),
+                 label(x + 0.5, Y + 3.2, row + 0.5, caption, 'white', 0.6, False)]
+    cmds.append(token_at(x0 + 6.5, Y + 1 - 0.5 + 0.125, row + 0.5, 'cow', 'Pion sur la dalle', 'gold'))
+    return cmds
+
+
 def mula_station(x0=2060, z0=2020):
     cmds = ['# Mula enclosure'] + plot_title(x0, z0 - 1, 'MULAS')
     gx0, gz0, gx1, gz1, top = x0 + 1, z0 + 1, x0 + 18, z0 + 18, Y + 8
@@ -655,7 +701,7 @@ def main():
         'terrain': terrain(),
         'board': board_cmds,
         'stations': (dice_station() + shop_station() + goal_pole_station() + plastic_station() + sign_station()
-                     + building_station() + misc_station() + mula_station()),
+                     + building_station() + misc_station() + mula_station() + tiles_station()),
         'chests': chest_cmds,
         'welcome': welcome(loop),
     }

@@ -422,9 +422,9 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             }
             if (source.getAttacker() instanceof ServerPlayerEntity attacker) {
                 MessageUtils.sendToPlayer(attacker, Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
-                BlockEntity blockEntity = world.getBlockEntity(this.getBlockPos());
-                if (blockEntity instanceof BoardSpaceBlockEntity)
-                    EVENT.invoker().onTileUpdated((MobEntity) (Object) this, (BoardSpaceBlockEntity) blockEntity);
+                BoardSpaceBlockEntity boardSpace = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(this);
+                if (boardSpace != null)
+                    EVENT.invoker().onTileUpdated((MobEntity) (Object) this, boardSpace);
             }
             return false;
         }

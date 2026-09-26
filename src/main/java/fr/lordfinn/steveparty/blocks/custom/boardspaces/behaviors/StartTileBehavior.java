@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -56,13 +57,10 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
     private void unboundEntity(ServerWorld world, Entity entity) {
         if (recentlyUnboundEntities.contains(entity.getUuid())) return;
 
-        BlockPos tilePos = entity.getBlockPos();
-        BlockState state = world.getBlockState(tilePos);
-        if (state == null || !ABoardSpaceBlock.countsAsStep(state.getBlock())) {
-            tilePos = tilePos.subtract(new Vec3i(0, 1, 0));
-            state = world.getBlockState(tilePos);
-        }
-        if (state == null || !ABoardSpaceBlock.countsAsStep(state.getBlock())) {
+        // The bound token floats above its tile: the tile is its cell, or the one under it (or above, lowered tile)
+        BlockPos tilePos = BoardSpaces.boardSpacePosAt(world, entity.getBlockPos());
+        if (tilePos == null) tilePos = BoardSpaces.boardSpacePosAt(world, entity.getBlockPos().down());
+        if (tilePos == null || !ABoardSpaceBlock.countsAsStep(world.getBlockState(tilePos).getBlock())) {
             return;
         }
         BoardSpaceBlockEntity tileEntity = getTileEntity(world, tilePos);
@@ -157,7 +155,8 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
 
     private static boolean isBoundedEntity(Entity entity) {
         if (!(entity instanceof MobEntity token) || !((TokenizedEntityInterface) token).steveparty$isTokenized()) return false;
-        ItemStack stack = getActiveCartdridgeItemstack(entity.getWorld(), entity.getBlockPos());
+        BoardSpaceBlockEntity tile = BoardSpaces.boardSpaceOf(entity);
+        ItemStack stack = tile == null ? null : getActiveCartdridgeItemstack(tile);
         if (stack == null || stack.isEmpty()) return false;
         String bound_entity = stack.get(ModComponents.TB_START_BOUND_ENTITY);
         return bound_entity != null && bound_entity.equals(entity.getUuidAsString());
@@ -193,7 +192,9 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
             unboundEntity(world, boundEntity);
             return;
         }
-        boundEntity.setPos(pos.getX() + 0.5, pos.getY() + 0.5 + Math.sin((ticks * SPEED) * Math.PI) * AMPLITUDE, pos.getZ() + 0.5);
+        // Hovering over the surface of its tile (lowered or sloped tiles included)
+        Vec3d stand = BoardSpaces.standPos(world, pos);
+        boundEntity.setPos(stand.x, stand.y + 0.375 + Math.sin((ticks * SPEED) * Math.PI) * AMPLITUDE, stand.z);
 
         boundEntity.lookAt(EntityAnchorArgumentType.EntityAnchor.EYES, closestEntity.getPos());
         double deltaX = closestEntity.getX() - boundEntity.getX();

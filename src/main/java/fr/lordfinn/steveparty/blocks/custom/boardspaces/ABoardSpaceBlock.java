@@ -106,7 +106,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
      * Tiles and advanced tiles count; check points deliberately do not (they are waypoints).
      */
     public static boolean countsAsStep(Block block) {
-        return block instanceof TileBlock || block instanceof SimpleTileBlock;
+        return block instanceof ATileBlock;
     }
 
     public static BoardSpaceBlockEntity getBoardSpaceEntity(World world, BlockPos pos) {

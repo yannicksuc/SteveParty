@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.service;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -124,11 +125,11 @@ public class TokenMovementService {
      */
     public static void onTokenArrived(MobEntity mob) {
         if (mob.getWorld().isClient) return;
-        BlockEntity blockEntity = mob.getWorld().getBlockEntity(mob.getBlockPos());
-        if (!(blockEntity instanceof BoardSpaceBlockEntity boardSpace)) return;
+        BoardSpaceBlockEntity boardSpace = BoardSpaces.boardSpaceOf(mob);
+        if (boardSpace == null) return;
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         if (token.steveparty$getNbSteps() > 0 //TODO Manage negative Steps (Not urgent)
-                && ABoardSpaceBlock.countsAsStep(mob.getWorld().getBlockState(mob.getBlockPos()).getBlock())) {
+                && ABoardSpaceBlock.countsAsStep(boardSpace.getCachedState().getBlock())) {
             token.steveparty$setNbSteps(token.steveparty$getNbSteps() - 1);
         }
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
@@ -142,7 +143,7 @@ public class TokenMovementService {
                     MessageUtils.MessageType.ACTION_BAR);
             return;
         }
-        BoardSpaceBlockEntity tileEntity = ABoardSpaceBlock.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
+        BoardSpaceBlockEntity tileEntity = BoardSpaces.boardSpaceOf(mob);
         if (tileEntity == null) {
             // Not on the board: it can't move, and must not keep pending steps (it would never be eligible again)
             ((TokenizedEntityInterface) mob).steveparty$setNbSteps(0);
@@ -232,12 +233,10 @@ public class TokenMovementService {
         }
     }
 
+    /** Tokens stand on the real surface of the board space (lowered or sloped tiles included, see BoardSpaces). */
     private static Vector3d calculateTargetPosition(MobEntity mob, BlockPos targetPos) {
-        BlockState blockState = mob.getWorld().getBlockState(targetPos);
-        VoxelShape shape = blockState.getCollisionShape(mob.getWorld(), targetPos);
-
-        double blockHeight = shape.isEmpty() ? 0 : shape.getMax(Direction.Axis.Y);
-        return new Vector3d(targetPos.getX() + 0.5, targetPos.getY() + blockHeight, targetPos.getZ() + 0.5);
+        Vec3d stand = BoardSpaces.standPos(mob.getWorld(), targetPos);
+        return new Vector3d(stand.x, stand.y, stand.z);
     }
 
     private static boolean isTooFar(double distance) {

@@ -226,6 +226,7 @@ public class StevepartyClient implements ClientModInitializer {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
 
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.SIMPLE_TILE_ENTITY, TileBlockEntityRenderer::new);
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
@@ -268,7 +269,7 @@ public class StevepartyClient implements ClientModInitializer {
         // With a wrench in hand: what each port of the base does, next to it
         BlockEntityRendererFactories.register(ModBlockEntities.GOAL_POLE_BASE_ENTITY, GoalPoleBaseRenderer::new);
 
-        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
+        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE, SIMPLE_TILE);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);
     }
 

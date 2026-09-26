@@ -76,8 +76,8 @@ public class ModEvents {
         // Set the entity's custom name
         livingEntity.setCustomName(newName);
 
-        BlockEntity blockEntity = livingEntity.getWorld().getBlockEntity(livingEntity.getBlockPos());
-        if (blockEntity instanceof BoardSpaceBlockEntity tileEntity && tileEntity.getBoardSpaceBehavior() instanceof StartTileBehavior) {
+        BoardSpaceBlockEntity tileEntity = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(livingEntity);
+        if (tileEntity != null && tileEntity.getBoardSpaceBehavior() instanceof StartTileBehavior) {
             ABoardSpaceBehavior.setColor(tileEntity, colorRgb);
         }
 

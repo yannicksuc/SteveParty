@@ -255,7 +255,7 @@ public class MiniGamePartyStep extends PartyStep {
         tokensWithOwners.keySet().forEach(token -> {
             ABoardSpaceBehavior.Status status = ABoardSpaceBehavior.Status.NEUTRAL;
             MobEntity modToken = ((MobEntity) token);
-            BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(serverWorld, modToken.getBlockPos());
+            BoardSpaceBlockEntity boardSpaceEntity = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(modToken);
             ItemStack stack;
             if (boardSpaceEntity != null) {
                 stack = boardSpaceEntity.getActiveCartridgeItemStack();

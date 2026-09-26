@@ -74,7 +74,8 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         BlockState blockState = world.getBlockState(destination.position());
         // Board spaces use an 8-direction rotation (0 = the former HORIZONTAL_FACING=SOUTH orientation)
         if (blockState != null && blockState.contains(TileBlock.ROTATION_8)) {
-            blockState = blockState.with(TileBlock.ROTATION_8, 0);
+            // Drawn as a small level tile, whatever it lies on (its sloped/lowered look is drawn by its renderer)
+            blockState = fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.levelState(blockState.with(TileBlock.ROTATION_8, 0));
         }
         this.setBlockState(blockState);
         Quaternionf rot = new Quaternionf();

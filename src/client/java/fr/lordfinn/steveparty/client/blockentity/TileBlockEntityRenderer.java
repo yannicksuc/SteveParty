@@ -3,6 +3,15 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.block.BlockRenderManager;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.util.math.MathHelper;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
@@ -40,7 +49,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
-import static fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock.ROTATION_8;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.ROTATION_8;
+import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SUPPORT;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static java.lang.Math.PI;
 
@@ -57,6 +67,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureExcited = Steveparty.id("block/tile_overlay_excited");
     private static final int WHITE = 0xFFFFFF;
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
+    private static final Identifier textureAdvancedBase = Steveparty.id("block/tile");
+    private static final Identifier textureSimpleBase = Steveparty.id("block/simple_tile");
 
 
     public TileBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
@@ -65,15 +77,82 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
 
     @Override
     public void render(BoardSpaceBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
-        BoardSpaceType tileType = entity.getCachedState().get(TILE_TYPE);
-        Integer direction = entity.getCachedState().get(ROTATION_8);
+        BlockState state = entity.getCachedState();
+        if (!state.contains(SUPPORT)) return;
+        BoardSpaceType tileType = state.get(TILE_TYPE);
+        Integer direction = state.get(ROTATION_8);
+        TileSupport support = state.get(SUPPORT);
         ItemStack stack = BoardSpaceClientUtils.getDisplayedCartridge(entity);
+        int color = stack.isEmpty() ? WHITE : stack.getOrDefault(COLOR, WHITE);
+
+        matrices.push();
+        if (!support.isFlat()) {
+            // Not baked in the chunk (see the blockstate file): the level model, moved onto the support's surface
+            if (support.isSloped()) renderSkirt(state, support, matrices, vertexConsumers, light);
+            matrices.multiplyPositionMatrix(support.transform());
+            renderLevelModel(state, matrices, vertexConsumers, light, overlay, color);
+        }
         switch (tileType) {
-            case TILE_START -> renderTileStart(entity, matrices, vertexConsumers, light, stack);
+            case TILE_START -> {
+                matrices.pop();
+                renderTileStart(entity, support, matrices, vertexConsumers, light, stack);
+                return;
+            }
             case TILE_INVENTORY_INTERACTOR -> renderInventoryInteractor(entity, matrices, vertexConsumers, light, overlay, stack, direction);
             // The neutral face covers the tinted top of the model: it takes the cartridge colour (dyes), white by default
-            default -> renderPicture(matrices, vertexConsumers, light, overlay, textureNeutral, direction,
-                    stack.isEmpty() ? WHITE : stack.getOrDefault(COLOR, WHITE));
+            default -> renderPicture(matrices, vertexConsumers, light, overlay, textureNeutral, direction, color);
+        }
+        matrices.pop();
+    }
+
+    /** The tile's own block model (as if it were level), drawn with the current transformation. */
+    private static void renderLevelModel(BlockState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers,
+                                         int light, int overlay, int color) {
+        BlockRenderManager manager = MinecraftClient.getInstance().getBlockRenderManager();
+        BlockState level = ATileBlock.levelState(state);
+        BakedModel model = manager.getModel(level);
+        float r = ((color >> 16) & 0xFF) / 255f, g = ((color >> 8) & 0xFF) / 255f, b = (color & 0xFF) / 255f;
+        manager.getModelRenderer().render(matrices.peek(), vertexConsumers.getBuffer(RenderLayers.getBlockLayer(level)),
+                level, model, r, g, b, light, overlay);
+    }
+
+    /**
+     * Fills the hollows between a sloped tile and the stairs under it: the sides of the wedge of tile base between the
+     * steps and the slope, on the edges of the cell (the tile covers its top).
+     */
+    private static void renderSkirt(BlockState state, TileSupport support, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
+        Sprite sprite = getSprite(state.getBlock() instanceof SimpleTileBlock ? textureSimpleBase : textureAdvancedBase);
+        // The underside of the tile's base: the lower left quarter of its texture
+        float u0 = MathHelper.lerp(0.0f, sprite.getMinU(), sprite.getMaxU()), u1 = MathHelper.lerp(0.5f, sprite.getMinU(), sprite.getMaxU());
+        float v0 = MathHelper.lerp(0.5f, sprite.getMinV(), sprite.getMaxV()), v1 = MathHelper.lerp(1.0f, sprite.getMinV(), sprite.getMaxV());
+        VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getSolid());
+        MatrixStack.Entry entry = matrices.peek();
+        // Each edge of the cell, in two halves (one per quarter of the support under it)
+        double[][] edges = {{0, 0, 1, 0}, {1, 0, 1, 1}, {1, 1, 0, 1}, {0, 1, 0, 0}};
+        for (double[] edge : edges) {
+            for (int half = 0; half < 2; half++) {
+                double ax = MathHelper.lerp(half * 0.5, edge[0], edge[2]), az = MathHelper.lerp(half * 0.5, edge[1], edge[3]);
+                double bx = MathHelper.lerp(half * 0.5 + 0.5, edge[0], edge[2]), bz = MathHelper.lerp(half * 0.5 + 0.5, edge[1], edge[3]);
+                double mx = (ax + bx) / 2, mz = (az + bz) / 2;
+                int quarter = (mx > 0.5 ? 1 : 0) + (mz > 0.5 ? 2 : 0);
+                float bottom = (float) support.supportTop(quarter);
+                float topA = (float) Math.max(bottom, support.surfaceY(ax, az));
+                float topB = (float) Math.max(bottom, support.surfaceY(bx, bz));
+                if (topA - bottom < 1.0E-3 && topB - bottom < 1.0E-3) continue;
+                float nx = (float) (bz - az), nz = (float) (ax - bx);
+                float[][] quad = {{(float) ax, bottom, (float) az}, {(float) bx, bottom, (float) bz},
+                        {(float) bx, topB, (float) bz}, {(float) ax, topA, (float) az}};
+                float[][] uv = {{u0, v1}, {u1, v1}, {u1, MathHelper.lerp((topB - bottom) * 2, v1, v0)}, {u0, MathHelper.lerp((topA - bottom) * 2, v1, v0)}};
+                // Both sides: seen from outside the cell and from the hollow of a missing neighbour
+                for (int side = 0; side < 2; side++) {
+                    for (int k = 0; k < 4; k++) {
+                        int i = side == 0 ? k : 3 - k;
+                        consumer.vertex(entry.getPositionMatrix(), quad[i][0], quad[i][1], quad[i][2]).color(255, 255, 255, 255)
+                                .texture(uv[i][0], uv[i][1]).overlay(OverlayTexture.DEFAULT_UV).light(light)
+                                .normal(entry, side == 0 ? nx : -nx, 0, side == 0 ? nz : -nz);
+                    }
+                }
+            }
         }
     }
 
@@ -87,7 +166,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         renderPicture(matrices, vertexConsumers, light, overlay, texture, direction, WHITE);
     }
 
-    private void renderTileStart(BoardSpaceBlockEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
+    private void renderTileStart(BoardSpaceBlockEntity entity, TileSupport support, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ItemStack stack) {
         // Validate UUID
         String owner = stack.get(TB_START_OWNER);
         if (owner == null || owner.isEmpty()) return;
@@ -104,7 +183,10 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         Integer dir = entity.getCachedState().get(ROTATION_8);
         // The head sits on the pedestal of the model, on the front side (toward the player who placed the tile).
         // The model only has 4 orientations: diagonals keep the pedestal of the previous side, the head still looks diagonally.
-        Vector3f translate = (new Vector3f(9f/16, 0, 9f/16)).mul(frontVector(dir)).add(0,-1f/16,0);
+        Vector3f front = frontVector(dir);
+        Vector3f translate = (new Vector3f(9f/16, 0, 9f/16)).mul(front).add(0,-1f/16,0);
+        // On the surface of the support (lowered or sloped), the head itself stays upright
+        translate.add(0, (float) support.surfaceY(0.5 + front.x * 9 / 16.0, 0.5 + front.z * 9 / 16.0), 0);
         matrices.translate(translate.x, translate.y, translate.z);
         matrices.scale(1.0F, 1.0F, 1.0F);
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);

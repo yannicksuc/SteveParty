@@ -367,7 +367,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public List<MobEntity> getTokensOnMe() {
         List<MobEntity> tokens = new ArrayList<>();
         if (this.world != null) {
-            for (MobEntity entity : this.world.getEntitiesByClass(MobEntity.class, Box.of(this.getPos().toCenterPos(), 1, 1, 1), entity -> entity instanceof MobEntity)) {
+            // Around where tokens stand: the surface of a lowered tile is in the cell below
+            Vec3d stand = BoardSpaces.standPos(this.world, this.getPos());
+            Box box = new Box(stand.x - 0.5, stand.y - 0.25, stand.z - 0.5, stand.x + 0.5, stand.y + 0.75, stand.z + 0.5);
+            for (MobEntity entity : this.world.getEntitiesByClass(MobEntity.class, box, entity -> entity instanceof MobEntity)) {
                 if (entity instanceof TokenizedEntityInterface && ((TokenizedEntityInterface) entity).steveparty$isTokenized()) {
                     tokens.add(entity);
                 }
