@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.payloads.custom.UpdateColoredTilePayload;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -17,9 +18,6 @@ import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -30,7 +28,6 @@ import static net.minecraft.util.ActionResult.SUCCESS;
 
 public abstract class ABoardSpaceBehavior {
     protected final BoardSpaceType tileType;
-    private SoundEvent activateSound = SoundEvents.BLOCK_NOTE_BLOCK_HARP.value();
 
     public ABoardSpaceBehavior(BoardSpaceType tileType) {
         this.tileType = tileType;
@@ -83,18 +80,15 @@ public abstract class ABoardSpaceBehavior {
         return false;
     }
 
+    /** A token stopped here at the end of its move: the landing feedback of this role (sound, particles, notice). */
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
-        this.playActivateSound(world, pos);
+        if (world instanceof ServerWorld serverWorld && boardSpaceEntity != null)
+            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController);
     }
 
-    protected void setActivateSound(SoundEvent activateSound) {
-        this.activateSound = activateSound;
-    }
-
-    private void playActivateSound(World world, BlockPos pos) {
-        if (world == null || this.activateSound == null) return;
-        net.minecraft.util.math.Vec3d at = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, pos);
-        world.playSound(null, at.x, at.y, at.z, this.activateSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+    /** How landing on this role feels (see {@link TileFeedback.Landing}); roles without their own: the default one. */
+    public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+        return TileFeedback.Landing.DEFAULT;
     }
 
     public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {

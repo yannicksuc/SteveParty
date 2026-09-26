@@ -48,6 +48,8 @@ public class Steveparty implements ModInitializer {
         ModBlocks.initialize();
         ModItems.initialize();
         ModBlockEntities.initialize();
+        // Before the party / movement listeners of TileReachedEvent (a movement going on stops the chain)
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.initialize();
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration.initialize();
         fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.initialize();
         ModComponents.initialize();
