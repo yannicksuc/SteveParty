@@ -60,13 +60,14 @@ final class WorldDraw {
         a = a.add(side.multiply(shift));
         Vec3d cam = camera.getPos();
         Matrix4f matrix = matrices.peek().getPositionMatrix();
-        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getText(CHEVRON));
+        VertexConsumer consumer = consumers.getBuffer(RenderLayer.getText(ChevronSprites.of(argb)));
         Vec3d halfForward = forward.multiply(size / 2), halfSide = side.multiply(size / 2);
         double start = margin + Math.floorMod((long) Math.floor(phase * 1000), (long) Math.floor(spacing * 1000)) / 1000.0;
         int alpha = (argb >>> 24);
         for (double t = start; t <= length - margin; t += spacing) {
             double fade = Math.min(1, Math.min((t - margin) / 0.35, (length - margin - t) / 0.35));
-            int color = ((int) (alpha * Math.max(0, fade)) << 24) | (argb & 0xFFFFFF);
+            // The colour is in the texture (a ramp of it): the vertices only carry the fade
+            int color = ((int) (alpha * Math.max(0, fade)) << 24) | 0xFFFFFF;
             Vec3d centre = a.add(forward.multiply(t)).subtract(cam);
             Vec3d tipL = centre.add(halfForward).subtract(halfSide), tipR = centre.add(halfForward).add(halfSide);
             Vec3d tailL = centre.subtract(halfForward).subtract(halfSide), tailR = centre.subtract(halfForward).add(halfSide);
