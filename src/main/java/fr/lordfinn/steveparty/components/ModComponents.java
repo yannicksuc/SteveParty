@@ -93,6 +93,10 @@ public class ModComponents {
     public static final ComponentType<UUID> SHOPKEEPER_UUID =
             registerComponent("shopkeeper-uuid", Codec.STRING.xmap(UUID::fromString, UUID::toString));
 
+    /** A look stamped on a tile (the tile keeps it when empty, else its cartridge: see TileStamping). */
+    public static final ComponentType<TileStampComponent> TILE_STAMP =
+            registerComponent("tile-stamp", TileStampComponent.CODEC);
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();

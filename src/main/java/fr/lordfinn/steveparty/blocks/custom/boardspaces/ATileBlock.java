@@ -58,6 +58,7 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
         tooltip.add(Text.translatable("tooltip.steveparty.tile.size",
                 Text.translatable("tooltip.steveparty.tile.size." + TileSize.of(stack).asString())).formatted(Formatting.GRAY));
         tooltip.add(Text.translatable("tooltip.steveparty.tile.size.hint").formatted(Formatting.DARK_GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.tile.stamp.hint").formatted(Formatting.DARK_GRAY));
     }
 
     /** The picked tile keeps its size. */

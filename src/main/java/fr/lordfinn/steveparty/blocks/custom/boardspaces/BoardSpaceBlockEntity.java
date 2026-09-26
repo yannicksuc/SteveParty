@@ -22,6 +22,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
@@ -52,6 +53,10 @@ import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity, ExtendedScreenHandlerFactory<BlockPosPayload> {
     private static final String ACTIVE_SLOT_KEY = "ActiveSlot";
     private static final String CYCLE_INDEXES_KEY = "CycleIndexes";
+    private static final String STAMP_KEY = "Stamp";
+
+    /** The look stamped on the tile itself (shown while it holds no cartridge: see TileStamping). */
+    private @Nullable fr.lordfinn.steveparty.components.TileStampComponent stamp;
 
     private int ticks = 0;
     private SoundEvent walkedOnSound = null;
@@ -313,10 +318,25 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         getBoardSpaceBehavior(stack).tick(serverWorld, this, stack, ticks);
     }
 
+    public @Nullable fr.lordfinn.steveparty.components.TileStampComponent getStamp() {
+        return stamp;
+    }
+
+    /** Stamps (or, with null, clears) the tile's own look; saved and sent to the clients. */
+    public void setStamp(@Nullable fr.lordfinn.steveparty.components.TileStampComponent stamp) {
+        this.stamp = stamp;
+        super.markDirty();
+        syncToClients();
+    }
+
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
         nbt.putInt(ACTIVE_SLOT_KEY, activeSlot);
+        if (stamp != null) {
+            fr.lordfinn.steveparty.components.TileStampComponent.CODEC.encodeStart(NbtOps.INSTANCE, stamp)
+                    .ifSuccess(element -> nbt.put(STAMP_KEY, element));
+        }
         if (!cycleIndexes.isEmpty()) {
             NbtCompound cycles = new NbtCompound();
             cycleIndexes.forEach((slot, index) -> cycles.putInt(Integer.toString(slot), index));
@@ -328,6 +348,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
         activeSlot = nbt.getInt(ACTIVE_SLOT_KEY);
+        stamp = nbt.contains(STAMP_KEY)
+                ? fr.lordfinn.steveparty.components.TileStampComponent.CODEC.parse(NbtOps.INSTANCE, nbt.get(STAMP_KEY)).result().orElse(null)
+                : null;
         activeSlotNeedsCheck = true;
         appliedCartridge = getStack(activeSlot);
         appliedType = determineBoardSpaceType(appliedCartridge);

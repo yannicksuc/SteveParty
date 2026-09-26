@@ -227,6 +227,7 @@ public class StevepartyClient implements ClientModInitializer {
 
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.SIMPLE_TILE_ENTITY, TileBlockEntityRenderer::new);
+        fr.lordfinn.steveparty.client.gui.TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);

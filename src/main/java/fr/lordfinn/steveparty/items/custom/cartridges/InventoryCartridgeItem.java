@@ -132,6 +132,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
     @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        super.appendTooltip(stack, context, tooltip, type); // the stamp, if any
         // --- Controls ---
         tooltip.add(Text.translatable("tooltip.steveparty.controls")
                 .setStyle(Style.EMPTY.withBold(true).withColor(0xfcb017)));

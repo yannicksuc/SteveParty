@@ -613,6 +613,30 @@ def tile_sizes_station(x0=2035, z0=2045):
     cmds += ['fill %d %d %d %d %d %d smooth_stone_slab[type=bottom]' % (x0 + 11, Y, z0 + 13, x0 + 12, Y, z0 + 14),
              tile_block(x0 + 11, Y + 1, z0 + 13, 4, 'tile', 'size=large'),
              label(x0 + 12, Y + 2.5, z0 + 14, 'Grande tuile sur des dalles', 'white', 0.6, False)]
+    # Stamped tiles: the look is the tile's while it holds no cartridge, else its cartridge's
+    row = z0 + 18
+
+    def stamp(pattern, col):
+        return '{shape:%s,color:"%s"}' % (shape_list(pattern), col)
+
+    def stamped_cartridge(pattern, col):
+        return ('{Slot:0b,id:"steveparty:board_space_behavior",count:1,components:{"steveparty:tile-stamp":%s}}'
+                % stamp(pattern, col))
+
+    showcase = [
+        ('simple_tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), '', 'Tuile tamponnée (sans cartouche)'),
+        ('tile', 'size=standard', 'Stamp:' + stamp('heart', 'pink'), '', 'Tuile avancée tamponnée'),
+        ('simple_tile', 'size=standard', 'Stamp:' + stamp('coin', 'red'), stamped_cartridge('power_star', 'yellow'),
+         'Cartouche tamponnée : elle prime'),
+        ('tile', 'size=standard', 'Stamp:' + stamp('skull', 'black'), '{Slot:0b,id:"steveparty:board_space_behavior",count:1}',
+         'Tuile tamponnée + cartouche non tamponnée'),
+        ('simple_tile', 'size=small', 'Stamp:' + stamp('creeper_face', 'lime'), '', 'Petite tuile tamponnée'),
+    ]
+    for k, (block, size, nbt, items, caption) in enumerate(showcase):
+        x = x0 + 1 + 3 * k + (k > 3)
+        data = nbt + (',Items:[%s]' % items if items else '')
+        cmds += ['setblock %d %d %d steveparty:%s[rotation_8=4,%s]{%s}' % (x, Y, row, block, size, data),
+                 label(x + 0.5, Y + 1.6 + 0.5 * (k % 2), row + 0.5, caption, 'white', 0.5, False)]
     return cmds
 
 

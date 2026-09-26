@@ -51,6 +51,9 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
 
     @Override
     protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        // Stencil + dye, the Stencil Hammer, a wet sponge: a new look for the tile (client-safe: decided the same way on both sides)
+        ActionResult stamped = TileStamping.onUseWithItem(state, world, pos, player, hand, hit);
+        if (stamped != null) return stamped;
         // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
         if (world.isClient) return stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS;
         return BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit);
