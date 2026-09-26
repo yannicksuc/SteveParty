@@ -1,20 +1,20 @@
 {
   "multipart": [
-    {"when": {"rotation_8": "0", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile"}},
+    {"when": {"rotation_8": "0", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile"}},
     {"when": {"rotation_8": "0", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start"}},
-    {"when": {"rotation_8": "1", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45"}},
+    {"when": {"rotation_8": "1", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45"}},
     {"when": {"rotation_8": "1", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start"}},
-    {"when": {"rotation_8": "2", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile", "y": 90}},
+    {"when": {"rotation_8": "2", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile", "y": 90}},
     {"when": {"rotation_8": "2", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start", "y": 90}},
-    {"when": {"rotation_8": "3", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45", "y": 90}},
+    {"when": {"rotation_8": "3", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45", "y": 90}},
     {"when": {"rotation_8": "3", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start", "y": 90}},
-    {"when": {"rotation_8": "4", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile", "y": 180}},
+    {"when": {"rotation_8": "4", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile", "y": 180}},
     {"when": {"rotation_8": "4", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start", "y": 180}},
-    {"when": {"rotation_8": "5", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45", "y": 180}},
+    {"when": {"rotation_8": "5", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45", "y": 180}},
     {"when": {"rotation_8": "5", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start", "y": 180}},
-    {"when": {"rotation_8": "6", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile", "y": 270}},
+    {"when": {"rotation_8": "6", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile", "y": 270}},
     {"when": {"rotation_8": "6", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start", "y": 270}},
-    {"when": {"rotation_8": "7", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45", "y": 270}},
+    {"when": {"rotation_8": "7", "tile_type": "default|board_space_stop|tile_inventory_interactor|board_space_shop|tile_advance_back|tile_replay", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_45", "y": 270}},
     {"when": {"rotation_8": "7", "tile_type": "tile_start", "support": "flat", "size": "standard"}, "apply": {"model": "steveparty:block/tile_start", "y": 270}}
   ]
 }

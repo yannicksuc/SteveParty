@@ -22,6 +22,8 @@ public class MouseScrollMixin {
         if (window == client.getWindow().getHandle() && StencilGunHud.onScroll(vertical)) ci.cancel();
         // Sneak + wheel with the Wrench: its mode
         else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.board.WrenchClient.onScroll(vertical)) ci.cancel();
+        // Sneak + wheel with a Move Forward / Back cartridge: its number of spaces
+        else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.gui.AdvanceBackCartridgeControls.onScroll(vertical)) ci.cancel();
         // Sneak + wheel with a Shop Cartridge: the purchases a stop allows
         else if (window == client.getWindow().getHandle() && steveparty$shopCartridgeScroll(vertical)) ci.cancel();
     }

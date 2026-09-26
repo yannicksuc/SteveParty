@@ -108,6 +108,20 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 0.749F, 4))),
+        /** Move Forward (the token moves on): a quick rising run of chiptune notes over a piston push, green gusts. */
+        ADVANCE("advance", 0x3CC85A, List.of(
+                new Layer(SoundEvents.BLOCK_PISTON_EXTEND, 0.35F, 1.3F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 2.0F, 6))),
+        /** Move Back (the token goes back): the same run falling, a piston pulling back, a purple "rewind". */
+        BACK("back", 0xB8307A, List.of(
+                new Layer(SoundEvents.BLOCK_PISTON_CONTRACT, 0.35F, 0.9F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 0.749F, 6))),
         /** A Replay tile giving another turn: a bright rising arpeggio, then an "en-core!" two-note call; a green swirl. */
         REPLAY("replay", 0x56C93A, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
@@ -256,11 +270,16 @@ public final class TileFeedback {
      * the party's players (none without a party).
      */
     public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party) {
-        land(world, tile, token, party, landingOf(tile));
+        Landing landing = landingOf(tile);
+        land(world, tile, token, party, landing, landing.noticeKey());
     }
 
-    /** The same, with the landing a behaviour decided for this very landing (a Replay tile whose replay is spent...). */
-    public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party, Landing landing) {
+    /**
+     * A landing of the given kind (not necessarily the tile's own) with the notice {@code noticeKey}, whose arguments
+     * are the token's name then {@code noticeArgs}.
+     */
+    public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party,
+                            Landing landing, String noticeKey, Object... noticeArgs) {
         BlockPos pos = tile.getPos();
         Vec3d at = BoardSpaces.standPos(world, pos);
 
@@ -286,7 +305,10 @@ public final class TileFeedback {
         if (party != null && !party.isRemoved()) {
             List<ServerPlayerEntity> audience = party.getPartyAudience();
             Text name = token.getCustomName() != null ? token.getCustomName() : token.getName();
-            Text notice = Text.translatable(landing.noticeKey(), name)
+            Object[] args = new Object[noticeArgs.length + 1];
+            args[0] = name;
+            System.arraycopy(noticeArgs, 0, args, 1, noticeArgs.length);
+            Text notice = Text.translatable(noticeKey, args)
                     .styled(style -> style.withColor(TextColor.fromRgb(lighten(color, 0.2F))));
             MessageUtils.sendToPlayers(audience, notice, MessageUtils.MessageType.ACTION_BAR);
             recipients = audience.size();
@@ -352,6 +374,15 @@ public final class TileFeedback {
             case STOP -> {
                 world.spawnParticles(new DustParticleEffect(light, 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
                 world.spawnParticles(ParticleTypes.CRIT, at.x, y + 0.2, at.z, 6, 0.25, 0.2, 0.25, 0.1);
+            }
+            case ADVANCE -> {
+                world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(0xB8FFC4, 1.2F, MulaSparkleEffect.STAR_BIT), at.x, y + 0.2, at.z, 8, 0.3, 0.25, 0.3, 0.0);
+                world.spawnParticles(ParticleTypes.SMALL_GUST, at.x, y + 0.1, at.z, 3, 0.3, 0.05, 0.3, 0.0);
+            }
+            case BACK -> {
+                world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
+                world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y + 0.2, at.z, 24, 0.3, 0.3, 0.3, 0.02);
             }
             case REPLAY -> {
                 // A green swirl climbing around the token (the pictogram's circular arrow), and happy sparks
