@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.items.custom.CartridgeContainerOpener;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.Block;
@@ -57,7 +58,12 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         ItemStack offHandStack = player.getOffHandStack();
         // Vanilla then calls onUse (main hand) on both sides
         if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return PASS_TO_DEFAULT_BLOCK_ACTION;
-        if (!(mainHandStack.getItem() instanceof CartridgeContainerOpener) && !(offHandStack.getItem() instanceof CartridgeContainerOpener)) {
+        // The Wrench links board spaces with a plain right click (sneaking opens the interface: see WrenchActions)
+        if (mainHandStack.getItem() instanceof WrenchItem && isLinkedWithWrench()) return PASS;
+        // A Wrench in the off hand (to link the tiles being placed) lets the main hand item act
+        boolean offHandOpener = offHandStack.getItem() instanceof CartridgeContainerOpener
+                && (mainHandStack.isEmpty() || !(offHandStack.getItem() instanceof WrenchItem));
+        if (!(mainHandStack.getItem() instanceof CartridgeContainerOpener) && !offHandOpener) {
             // Implementations must be client-safe (see ABoardSpaceBlock)
             return onUseWithoutCartridgeContainerOpener(stack, state, world, pos, player, hand, hit);
         }
@@ -65,6 +71,17 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         ActionResult.Success success = openScreen(state, world, pos, player);
         if (success != null) return success;
         return FAIL;
+    }
+
+    /** Board spaces and routers: their links are edited by right clicking them with the Wrench. */
+    public boolean isLinkedWithWrench() {
+        return this instanceof ABoardSpaceBlock || this instanceof fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlock;
+    }
+
+    /** Opens the interface of this container for {@code player} (server side), e.g. sneak + right click with the Wrench. */
+    public ActionResult openContainerScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        ActionResult.Success success = openScreen(state, world, pos, player);
+        return success != null ? success : FAIL;
     }
 
     protected ActionResult.@Nullable Success openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {

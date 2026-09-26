@@ -1,0 +1,199 @@
+package fr.lordfinn.steveparty.board;
+
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
+import net.minecraft.block.entity.BlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Reading and writing the links between board spaces. The save format does not change: the links of a board space
+ * are the absolute positions of the {@code DESTINATIONS_COMPONENT} of its cartridge (the active one, or a chosen slot
+ * of a 16-slot board space); everything here is a layer of tools above it.
+ */
+public final class BoardLinks {
+    /** Colour of the link trail particles. */
+    public static final int LINK_COLOR = 0x4CFF4C;
+    public static final int CUT_COLOR = 0xFF4040;
+
+    private BoardLinks() {
+    }
+
+    public static String worldName(World world) {
+        return world.getRegistryKey().getValue().toString();
+    }
+
+    /**
+     * The board space or router at {@code pos} (a part of a large tile stands for its tile): the cartridge containers
+     * whose links the Wrench edits. Null for anything else.
+     */
+    public static @Nullable CartridgeContainerBlockEntity container(World world, BlockPos pos) {
+        BlockEntity blockEntity = world.getBlockEntity(BoardSpaces.resolve(world, pos));
+        if (blockEntity instanceof BoardSpaceBlockEntity || blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity) {
+            return (CartridgeContainerBlockEntity) blockEntity;
+        }
+        return null;
+    }
+
+    public static boolean isBoardSpace(World world, BlockPos pos) {
+        return world.getBlockState(pos).getBlock() instanceof ABoardSpaceBlock && world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity;
+    }
+
+    /**
+     * The slot whose cartridge holds the links edited on {@code container}: {@code requested} on a board space with
+     * several slots (if valid), else the active one (board spaces) or the only one (routers).
+     */
+    public static int slotOf(CartridgeContainerBlockEntity container, int requested) {
+        if (container instanceof BoardSpaceBlockEntity boardSpace) {
+            return requested >= 0 && requested < boardSpace.size() ? requested : boardSpace.getActiveSlot();
+        }
+        return 0;
+    }
+
+    public static ItemStack cartridge(CartridgeContainerBlockEntity container, int slot) {
+        return container.getStack(slot);
+    }
+
+    /** The links held by the cartridge in {@code slot} (empty without cartridge). */
+    public static List<BlockPos> links(CartridgeContainerBlockEntity container, int slot) {
+        return links(container.getStack(slot));
+    }
+
+    public static List<BlockPos> links(ItemStack cartridge) {
+        if (cartridge.isEmpty() || !(cartridge.getItem() instanceof CartridgeItem)) return List.of();
+        return cartridge.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations();
+    }
+
+    /** Number of links of {@code links} leading to a board space. */
+    public static int boardSpaceLinks(World world, List<BlockPos> links) {
+        int count = 0;
+        for (BlockPos link : links) if (isBoardSpace(world, link)) count++;
+        return count;
+    }
+
+    /**
+     * Writes the links of the cartridge in {@code slot}, saves the block entity and sends it to the clients (the board
+     * view reads the links from there).
+     *
+     * @return false if there is no cartridge there
+     */
+    public static boolean setLinks(World world, CartridgeContainerBlockEntity container, int slot, List<BlockPos> links) {
+        ItemStack cartridge = container.getStack(slot);
+        if (cartridge.isEmpty() || !(cartridge.getItem() instanceof CartridgeItem)) return false;
+        cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(links), worldName(world)));
+        sync(container);
+        return true;
+    }
+
+    /** Saves {@code container} and sends it to the clients. */
+    public static void sync(CartridgeContainerBlockEntity container) {
+        if (container instanceof BoardSpaceBlockEntity boardSpace) {
+            boardSpace.update();
+            return;
+        }
+        container.markDirty();
+        World world = container.getWorld();
+        if (world != null && !world.isClient) {
+            BlockState state = container.getCachedState();
+            world.updateListeners(container.getPos(), state, state, Block.NOTIFY_ALL);
+        }
+    }
+
+    // ---------------------------------------------------------------- cartridges supplied automatically
+
+    /**
+     * The cartridge in {@code slot}, inserting one first if the slot is empty: in creative a new one (of the type held
+     * in the off hand, if any, else a plain Cartridge), in survival the one in the off hand, else the first plain
+     * Cartridge of the inventory. The inserted cartridge never inherits links from the stack it comes from.
+     *
+     * @return the cartridge, or an empty stack if none could be found
+     */
+    public static ItemStack ensureCartridge(PlayerEntity player, CartridgeContainerBlockEntity container, int slot) {
+        ItemStack current = container.getStack(slot);
+        if (!current.isEmpty()) return current;
+        ItemStack source = cartridgeSource(player);
+        if (source.isEmpty()) return ItemStack.EMPTY;
+        ItemStack inserted = source.copyWithCount(1);
+        inserted.remove(ModComponents.DESTINATIONS_COMPONENT);
+        if (!player.getAbilities().creativeMode) source.decrement(1);
+        container.setStack(slot, inserted);
+        sync(container);
+        BlockPos pos = container.getPos();
+        player.sendMessage(Text.translatable("message.steveparty.wrench.cartridge_stored",
+                pos.getX(), pos.getY(), pos.getZ()).append(" (").append(inserted.getName()).append(")"), true);
+        return container.getStack(slot);
+    }
+
+    private static ItemStack cartridgeSource(PlayerEntity player) {
+        ItemStack offHand = player.getOffHandStack();
+        if (offHand.getItem() instanceof CartridgeItem) return offHand;
+        if (player.getAbilities().creativeMode) return new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        PlayerInventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (stack.isOf(ModItems.BOARD_SPACE_BEHAVIOR)) return stack;
+        }
+        return ItemStack.EMPTY;
+    }
+
+    // ---------------------------------------------------------------- orientation
+
+    /** The 8-step rotation (0 = north, 2 = east...) of a tile at {@code from} facing {@code to}, or -1 if above it. */
+    public static int rotationToward(World world, BlockPos from, BlockPos to) {
+        Vec3d a = BoardSpaces.standPos(world, from), b = BoardSpaces.standPos(world, to);
+        double dx = b.x - a.x, dz = b.z - a.z;
+        if (dx * dx + dz * dz < 1.0E-4) return -1;
+        double angle = Math.toDegrees(Math.atan2(dx, -dz)); // 0 = north, 90 = east
+        return (int) Math.floorMod(Math.round(angle / 45.0), 8L);
+    }
+
+    /**
+     * Turns the tile at {@code from} toward {@code to}.
+     *
+     * @return the previous rotation if it changed, else -1
+     */
+    public static int orient(World world, BlockPos from, BlockPos to) {
+        BlockState state = world.getBlockState(from);
+        if (!(state.getBlock() instanceof ATileBlock)) return -1;
+        int rotation = rotationToward(world, from, to);
+        int previous = state.get(ATileBlock.ROTATION_8);
+        if (rotation < 0 || rotation == previous) return -1;
+        world.setBlockState(from, state.with(ATileBlock.ROTATION_8, rotation), Block.NOTIFY_ALL);
+        return previous;
+    }
+
+    // ---------------------------------------------------------------- feedback
+
+    /** A trail of particles from {@code from} to {@code to} (seen by everyone around: useful when building together). */
+    public static void trail(ServerWorld world, BlockPos from, BlockPos to, int color) {
+        Vec3d a = BoardSpaces.standPos(world, from).add(0, 0.25, 0), b = BoardSpaces.standPos(world, to).add(0, 0.25, 0);
+        Vec3d step = b.subtract(a);
+        int count = Math.max(2, (int) Math.ceil(step.length() / 0.35));
+        DustParticleEffect dust = new DustParticleEffect(color, 1.1F);
+        for (int i = 0; i <= count; i++) {
+            Vec3d p = a.add(step.multiply(i / (double) count));
+            world.spawnParticles(dust, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+        }
+    }
+}
