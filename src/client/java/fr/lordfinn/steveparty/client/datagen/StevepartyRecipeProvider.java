@@ -241,13 +241,13 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 offerCartridge(ModItems.INVENTORY_CARTRIDGE, Items.CHEST);
 
                 // The (single-cartridge) Tile: the Advanced Tile's carpets on one pressure plate, without its chest
-                createShaped(RecipeCategory.REDSTONE, ModBlocks.SIMPLE_TILE)
+                createShaped(RecipeCategory.REDSTONE, ModBlocks.TILE)
                         .pattern("WWW")
                         .pattern(" P ")
                         .input('W', ItemTags.WOOL_CARPETS)
                         .input('P', Items.LIGHT_WEIGHTED_PRESSURE_PLATE)
                         .criterion(hasItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE))
-                        .criterion(hasItem(ModBlocks.TILE), conditionsFromItem(ModBlocks.TILE))
+                        .criterion(hasItem(ModBlocks.ADVANCED_TILE), conditionsFromItem(ModBlocks.ADVANCED_TILE))
                         .offerTo(recipeExporter);
 
                 // A page for the catalogue: paper dyed like the page

@@ -145,7 +145,7 @@ public class RecipeGameTests implements FabricGameTest {
         ItemStack carpet = new ItemStack(Items.RED_CARPET);
         ItemStack tile = result(context, 3, 2, carpet, new ItemStack(Items.BLUE_CARPET), carpet,
                 e, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), e);
-        context.assertTrue(tile.isOf(ModBlocks.SIMPLE_TILE.asItem()), "simple tile, got " + tile);
+        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()), "simple tile, got " + tile);
 
         ItemStack book = new ItemStack(Items.BOOK);
         ItemStack pearl = new ItemStack(Items.ENDER_PEARL);

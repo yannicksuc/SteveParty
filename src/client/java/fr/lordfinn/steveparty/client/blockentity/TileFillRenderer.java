@@ -38,9 +38,10 @@ final class TileFillRenderer {
 
     /**
      * @param cells offsets (dx, dz) of the blocks the tile covers, from its own block
+     * @param ceiling the highest point of the tilted tile: the base never rises above it (no wall beyond the tile)
      */
-    static void render(World world, BlockPos pos, TileSupport support, List<int[]> cells, Sprite sprite, MatrixStack matrices,
-                       VertexConsumerProvider vertexConsumers, int light) {
+    static void render(World world, BlockPos pos, TileSupport support, List<int[]> cells, double ceiling, Sprite sprite,
+                       MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getCutout());
         MatrixStack.Entry entry = matrices.peek();
         for (int[] cell : cells) {
@@ -55,13 +56,13 @@ final class TileFillRenderer {
                     double bx = cx + MathHelper.lerp(half * 0.5 + 0.5, edge[0], edge[2]), bz = cz + MathHelper.lerp(half * 0.5 + 0.5, edge[1], edge[3]);
                     // The ground of the quarter along this half edge, sampled just inside the block
                     double mx = (ax + bx) / 2 - nx * 0.05, mz = (az + bz) / 2 - nz * 0.05;
-                    double topA = support.surfaceY(ax, az), topB = support.surfaceY(bx, bz);
+                    double topA = Math.min(ceiling, support.surfaceY(ax, az)), topB = Math.min(ceiling, support.surfaceY(bx, bz));
                     double ground = ground(world, pos, mx, mz, support.surfaceY(mx, mz));
                     if (topA - ground < 1.0E-3 && topB - ground < 1.0E-3) continue;
                     wall(consumer, entry, sprite, light, ax, az, bx, bz, ground, Math.max(ground, topA), Math.max(ground, topB), nx, nz);
                 }
             }
-            cap(consumer, entry, sprite, light, support, cx, cz);
+            cap(consumer, entry, sprite, light, support, cx, cz, ceiling);
         }
     }
 
@@ -142,7 +143,8 @@ final class TileFillRenderer {
      * The slope over a block, just under the tile, in 4x4 pieces textured by their position on the slope (so its
      * pixels keep their size on the tilted surface).
      */
-    private static void cap(VertexConsumer consumer, MatrixStack.Entry entry, Sprite sprite, int light, TileSupport support, int cx, int cz) {
+    private static void cap(VertexConsumer consumer, MatrixStack.Entry entry, Sprite sprite, int light, TileSupport support, int cx, int cz,
+                            double ceiling) {
         double gx = support.gradientX(), gz = support.gradientZ();
         double length = Math.sqrt(gx * gx + gz * gz);
         double ux = gx / length, uz = gz / length;
@@ -156,6 +158,8 @@ final class TileFillRenderer {
                 double x0 = cx + i / (double) pieces, x1 = cx + (i + 1) / (double) pieces;
                 double z0 = cz + j / (double) pieces, z1 = cz + (j + 1) / (double) pieces;
                 double[][] corners = {{x0, z0}, {x0, z1}, {x1, z1}, {x1, z0}};
+                // Not above the tile
+                if (support.surfaceY((x0 + x1) / 2, (z0 + z1) / 2) > ceiling) continue;
                 double[] us = new double[4], vs = new double[4];
                 double minU = Double.MAX_VALUE, minV = Double.MAX_VALUE, maxU = -Double.MAX_VALUE, maxV = -Double.MAX_VALUE;
                 for (int k = 0; k < 4; k++) {

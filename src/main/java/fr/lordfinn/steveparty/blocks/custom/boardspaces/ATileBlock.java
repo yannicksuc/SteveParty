@@ -34,12 +34,12 @@ import java.util.List;
 public abstract class ATileBlock extends ABoardSpaceBlock {
     public static final IntProperty ROTATION_8 = IntProperty.of("rotation_8", 0, 7);
     public static final EnumProperty<TileSupport> SUPPORT = EnumProperty.of("support", TileSupport.class);
-    public static final EnumProperty<TileSize> SIZE = EnumProperty.of("size", TileSize.class);
+    public static final EnumProperty<TileLayout> SIZE = EnumProperty.of("size", TileLayout.class);
 
     protected ATileBlock(Settings settings, int numberOfCartridges) {
         super(settings.nonOpaque(), numberOfCartridges);
         setDefaultState(getStateManager().getDefaultState().with(ROTATION_8, 0).with(SUPPORT, TileSupport.FLAT)
-                .with(SIZE, TileSize.STANDARD));
+                .with(SIZE, TileLayout.STANDARD));
     }
 
     @Override
@@ -64,30 +64,46 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     /** The picked tile keeps its size. */
     @Override
     public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
-        return TileSize.with(super.getPickStack(world, pos, state), state.get(SIZE));
+        return TileSize.with(super.getPickStack(world, pos, state), state.get(SIZE).size());
+    }
+
+    /** A broken tile drops itself in its size. */
+    @Override
+    protected List<ItemStack> getDroppedStacks(BlockState state, net.minecraft.loot.context.LootWorldContext.Builder builder) {
+        List<ItemStack> drops = super.getDroppedStacks(state, builder);
+        for (ItemStack drop : drops) if (drop.isOf(asItem())) TileSize.with(drop, state.get(SIZE).size());
+        return drops;
     }
 
     // ---------------------------------------------------------------- placement and support
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
-        TileSize size = TileSize.of(ctx.getStack());
+        TileLayout layout = layoutFor(ctx);
         return getDefaultState()
                 .with(ROTATION_8, rotation8FromYaw(ctx.getPlayerYaw()))
-                .with(SIZE, size)
-                .with(SUPPORT, support(ctx.getWorld(), ctx.getBlockPos(), size));
+                .with(SIZE, layout)
+                .with(SUPPORT, support(ctx.getWorld(), ctx.getBlockPos(), layout));
+    }
+
+    /** The layout of the tile placed by {@code ctx}: its item's size, and for a large one the side it spreads to. */
+    public static TileLayout layoutFor(ItemPlacementContext ctx) {
+        TileSize size = TileSize.of(ctx.getStack());
+        if (size != TileSize.LARGE) return TileLayout.of(size);
+        return TileLayout.largeFor(TileSupport.compute(ctx.getWorld(), ctx.getBlockPos()), ctx.getBlockPos(), ctx.getHitPos());
     }
 
     /**
-     * The support of a tile of {@code size} at {@code pos}. A large tile lies level: lowered only when its 4 blocks
-     * lie on the same level surface (a floor of bottom slabs...), otherwise flat.
+     * The support of a tile laid out as {@code layout} at {@code pos}. A large tile follows the slope under its own
+     * block (its highest one) when it spreads down it; on level ground it is lowered only when its 4 blocks lie on the
+     * same level surface (a floor of bottom slabs...); otherwise it lies flat.
      */
-    public static TileSupport support(BlockView world, BlockPos pos, TileSize size) {
+    public static TileSupport support(BlockView world, BlockPos pos, TileLayout layout) {
         TileSupport support = TileSupport.compute(world, pos);
-        if (size != TileSize.LARGE) return support;
-        if (support.isSloped()) return TileSupport.FLAT;
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
-            if (TileSupport.compute(world, part.fromMaster(pos)) != support) return TileSupport.FLAT;
+        if (!layout.isLarge()) return support;
+        if (support.isSloped()) return layout.goesDown(support) ? support : TileSupport.FLAT;
+        for (BlockPos part : layout.parts(pos)) {
+            if (TileSupport.compute(world, part) != support) return TileSupport.FLAT;
         }
         return support;
     }
@@ -118,41 +134,44 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
         super.onBlockAdded(state, world, pos, oldState, notify);
         if (world.isClient) return;
-        if (state.get(SIZE) == TileSize.LARGE && !claimParts(world, pos)) {
-            world.setBlockState(pos, state.with(SIZE, TileSize.STANDARD), Block.NOTIFY_ALL);
+        if (state.get(SIZE).isLarge() && !claimParts(world, pos, state.get(SIZE))) {
+            world.setBlockState(pos, state.with(SIZE, TileLayout.STANDARD), Block.NOTIFY_ALL);
             return;
         }
         TileSupport support = support(world, pos, state.get(SIZE));
         if (state.get(SUPPORT) != support) world.setBlockState(pos, state.with(SUPPORT, support), Block.NOTIFY_ALL);
     }
 
-    /** Fills the 3 other blocks of a large tile with its parts, if they are free (or already its parts). */
-    private boolean claimParts(World world, BlockPos master) {
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
-            BlockPos partPos = part.fromMaster(master);
-            BlockState there = world.getBlockState(partPos);
-            if (!TilePartBlock.isPartOf(there, part) && !there.isReplaceable()) return false;
+    /** Whether the other blocks of a large tile at {@code anchor} are free (or already its parts). */
+    public static boolean partsFree(BlockView world, BlockPos anchor, TileLayout layout) {
+        for (BlockPos part : layout.parts(anchor)) {
+            BlockState there = world.getBlockState(part);
+            if (!TilePartBlock.isPartOf(there, part, anchor) && !there.isReplaceable()) return false;
         }
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
-            BlockPos partPos = part.fromMaster(master);
-            if (!TilePartBlock.isPartOf(world.getBlockState(partPos), part)) {
-                world.setBlockState(partPos, TilePartBlock.stateFor(part), Block.NOTIFY_ALL);
+        return true;
+    }
+
+    /** Fills the 3 other blocks of a large tile with its parts, if they are free (or already its parts). */
+    private boolean claimParts(World world, BlockPos anchor, TileLayout layout) {
+        if (!partsFree(world, anchor, layout)) return false;
+        for (BlockPos part : layout.parts(anchor)) {
+            if (!TilePartBlock.isPartOf(world.getBlockState(part), part, anchor)) {
+                world.setBlockState(part, TilePartBlock.stateFor(part, anchor), Block.NOTIFY_ALL);
             }
         }
         return true;
     }
 
-    /** A large tile gone (or no longer large): its parts go with it. */
+    /** A large tile gone (or laid out another way): its parts go with it. */
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        boolean wasLarge = state.get(SIZE) == TileSize.LARGE;
-        boolean stillLarge = newState.isOf(this) && newState.get(SIZE) == TileSize.LARGE;
+        TileLayout was = state.get(SIZE);
+        TileLayout now = newState.isOf(this) ? newState.get(SIZE) : null;
         super.onStateReplaced(state, world, pos, newState, moved);
-        if (world.isClient || !wasLarge || stillLarge) return;
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
-            BlockPos partPos = part.fromMaster(pos);
-            if (TilePartBlock.isPartOf(world.getBlockState(partPos), part)) {
-                world.setBlockState(partPos, net.minecraft.block.Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL | Block.SKIP_DROPS);
+        if (world.isClient || !was.isLarge() || was == now) return;
+        for (BlockPos part : was.parts(pos)) {
+            if (TilePartBlock.isPartOf(world.getBlockState(part), part, pos)) {
+                world.setBlockState(part, net.minecraft.block.Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL | Block.SKIP_DROPS);
             }
         }
     }
@@ -164,14 +183,34 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, ShapeContext context) {
-        return state.get(SUPPORT).shape();
+        return collision(state, 0, 0, context);
+    }
+
+    /**
+     * What collides over the block at ({@code dx}, {@code dz}) from the tile's own: the slope for players and mobs
+     * (walked up and down like bare stairs); for tokens, which the board stands upright in the middle of the tile, a
+     * level platform at that height.
+     */
+    public static VoxelShape collision(BlockState tile, int dx, int dz, ShapeContext context) {
+        TileSupport support = tile.get(SUPPORT);
+        if (support.isSloped() && isToken(context)) {
+            TileLayout layout = tile.get(SIZE);
+            return TileSupport.tokenPlatform(support.standY(layout.centreX(), layout.centreZ()));
+        }
+        return support.shape(dx, dz);
+    }
+
+    private static boolean isToken(ShapeContext context) {
+        return context instanceof net.minecraft.block.EntityShapeContext entityContext
+                && entityContext.getEntity() instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface token
+                && token.steveparty$isTokenized();
     }
 
 
 
     /** The state to draw as a plain, level tile of the standard size (e.g. the small tile shown by the destination arrows). */
     public static BlockState levelState(BlockState state) {
-        return state.contains(SUPPORT) ? state.with(SUPPORT, TileSupport.FLAT).with(SIZE, TileSize.STANDARD) : state;
+        return state.contains(SUPPORT) ? state.with(SUPPORT, TileSupport.FLAT).with(SIZE, TileLayout.STANDARD) : state;
     }
 
     // ---------------------------------------------------------------- 8 directions

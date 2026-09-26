@@ -8,24 +8,24 @@ import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The « Advanced Tile » (« Tuile avancée »): a board space holding 16 cartridges, the redstone power picks the
- * active one; gold border. Registry id {@code tile} (kept for existing worlds).
+ * The « Tile » (« Tuile »): a board space holding a single cartridge, with a white/grey border. Registry id
+ * {@code tile} (it was {@code simple_tile}: see TileMigration).
  */
 public class TileBlock extends ATileBlock {
     public static final MapCodec<TileBlock> CODEC = Block.createCodec(TileBlock::new);
 
     public TileBlock(Settings settings) {
-        super(settings, 16);
+        super(settings, 1);
     }
 
     @Override
-    protected MapCodec<? extends TileBlock> getCodec() {
+    protected MapCodec<TileBlock> getCodec() {
         return CODEC;
     }
 
     @Override
     protected String tooltipKey() {
-        return "advanced";
+        return "simple";
     }
 
     @Override

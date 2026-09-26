@@ -154,7 +154,7 @@ public class ModItems {
                 itemGroup.add(BandanaItem.create(color));
             }
             // Every tile in its 3 sizes
-            for (net.minecraft.item.ItemConvertible tile : List.of(SIMPLE_TILE, TILE)) {
+            for (net.minecraft.item.ItemConvertible tile : List.of(TILE, ADVANCED_TILE)) {
                 for (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize size : fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.values()) {
                     itemGroup.add(fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.with(new ItemStack(tile), size));
                 }

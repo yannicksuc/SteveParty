@@ -4,8 +4,9 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileStamping;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
@@ -77,8 +78,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureNeutral = Steveparty.id("block/tile_overlay_neutral");
     private static final Identifier textureExcited = Steveparty.id("block/tile_overlay_excited");
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
-    private static final Identifier textureAdvancedFill = Steveparty.id("block/tile_fill");
-    private static final Identifier textureSimpleFill = Steveparty.id("block/simple_tile_fill");
+    private static final Identifier textureAdvancedFill = Steveparty.id("block/advanced_tile_fill");
+    private static final Identifier textureSimpleFill = Steveparty.id("block/tile_fill");
     /** Height of the top of a tile's face above the tile's floor, and of its bottom (its picture is 1 px thick). */
     private static final float FACE_TOP = 2 / 16f, FACE_BOTTOM = 1 / 16f;
 
@@ -93,17 +94,21 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         BoardSpaceType tileType = state.get(TILE_TYPE);
         int direction = state.get(ROTATION_8);
         TileSupport support = state.get(SUPPORT);
-        TileSize size = state.get(SIZE);
+        TileLayout layout = state.get(SIZE);
+        TileSize size = layout.size();
         ItemStack stack = BoardSpaceClientUtils.getDisplayedCartridge(entity);
         int color = stack.isEmpty() ? TileColors.WHITE : stack.getOrDefault(COLOR, TileColors.WHITE);
         boolean small = size == TileSize.SMALL;
         // The middle of the tile, in its cell (a large tile's is the corner shared by its 4 blocks)
-        double centreX = size == TileSize.LARGE ? 1 : 0.5, centreZ = centreX;
+        double centreX = layout.centreX(), centreZ = layout.centreZ();
 
         matrices.push();
         if (support.isSloped() && entity.getWorld() != null) {
-            Sprite fill = getSprite(state.getBlock() instanceof SimpleTileBlock ? textureSimpleFill : textureAdvancedFill);
-            TileFillRenderer.render(entity.getWorld(), entity.getPos(), support, cells(size), fill, matrices, vertexConsumers, light);
+            Sprite fill = getSprite(state.getBlock() instanceof AdvancedTileBlock ? textureAdvancedFill : textureSimpleFill);
+            // The tile's highest point: its face's corner, half a diagonal up the slope from its middle
+            double half = small ? 0.5 * 18 / 16 : 1;
+            double ceiling = support.surfaceY(centreX, centreZ) + half * Math.sqrt(2) * Math.sin(support.angle());
+            TileFillRenderer.render(entity.getWorld(), entity.getPos(), support, layout.cells(), ceiling, fill, matrices, vertexConsumers, light);
         }
         applySupport(matrices, support, centreX, centreZ);
         matrices.translate(centreX - 0.5, 0, centreZ - 0.5);
@@ -135,12 +140,6 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         matrices.pop();
     }
 
-    /** The blocks a tile covers, as offsets from its own block. */
-    private static List<int[]> cells(TileSize size) {
-        if (size == TileSize.LARGE) return List.of(new int[]{0, 0}, new int[]{1, 0}, new int[]{0, 1}, new int[]{1, 1});
-        return List.<int[]>of(new int[]{0, 0});
-    }
-
     /**
      * Moves a level tile onto its support: lowered, or turned 45 degrees about its middle ({@code x}, {@code z})
      * (through the matrix stack, so that the normals turn too).
@@ -152,7 +151,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         }
         double length = Math.sqrt(support.gradientX() * support.gradientX() + support.gradientZ() * support.gradientZ());
         matrices.translate(x, support.surfaceY(x, z), z);
-        matrices.multiply(new Quaternionf().rotationAxis(TileSupport.SLOPE_ANGLE,
+        matrices.multiply(new Quaternionf().rotationAxis(support.angle(),
                 (float) (-support.gradientZ() / length), 0, (float) (support.gradientX() / length)));
         matrices.translate(-x, 0, -z);
     }

@@ -40,7 +40,7 @@ public class TileStampGameTests implements FabricGameTest {
 
     private static BoardSpaceBlockEntity tile(TestContext context) {
         context.setBlockState(TILE.down(), Blocks.STONE);
-        context.setBlockState(TILE, ModBlocks.SIMPLE_TILE);
+        context.setBlockState(TILE, ModBlocks.TILE);
         return context.getBlockEntity(TILE);
     }
 
@@ -136,9 +136,10 @@ public class TileStampGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aLargeTileIsStampedFromAnyOfItsBlocks(TestContext context) {
         context.setBlockState(TILE.down(), Blocks.STONE);
-        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE, TileSize.LARGE));
+        context.setBlockState(TILE, ModBlocks.ADVANCED_TILE.getDefaultState().with(fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE,
+                fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout.LARGE_SOUTH_EAST));
         BoardSpaceBlockEntity tile = context.getBlockEntity(TILE);
-        use(context, stencilAndDye(context, "coin", Items.ORANGE_DYE, 1), TilePartBlock.Part.SOUTH_EAST.fromMaster(TILE));
+        use(context, stencilAndDye(context, "coin", Items.ORANGE_DYE, 1), TILE.add(1, 0, 1));
         context.assertTrue(tile.getStamp() != null && tile.getStamp().sameAs(pattern("coin"), DyeColor.ORANGE), "stamped through a part");
         context.complete();
     }

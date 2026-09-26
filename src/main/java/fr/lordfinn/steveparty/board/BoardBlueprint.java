@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -49,9 +49,8 @@ public final class BoardBlueprint {
     /**
      * @param box      the copied area, in the world it was copied from (the links pointing into it follow the copy)
      * @param anchor   the player's position when copying
-     * @param masters  the large tiles of the copy (their 2x2 footprint must stay on its north-west corner once turned)
      */
-    public record Clip(BlockBox box, BlockPos anchor, List<Entry> entries, Set<BlockPos> masters) {
+    public record Clip(BlockBox box, BlockPos anchor, List<Entry> entries) {
         public int boardSpaces() {
             return (int) entries.stream().filter(e -> e.data() != null && e.state().getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock).count();
         }
@@ -75,16 +74,14 @@ public final class BoardBlueprint {
     /** Copies the blocks of {@code box} (air and large tile parts left out: a large tile takes its parts back). */
     public static Clip copy(ServerWorld world, BlockBox box, BlockPos anchor) {
         List<Entry> entries = new ArrayList<>();
-        Set<BlockPos> masters = new HashSet<>();
         for (BlockPos pos : BlockPos.iterate(box.getMinX(), box.getMinY(), box.getMinZ(), box.getMaxX(), box.getMaxY(), box.getMaxZ())) {
             BlockState state = world.getBlockState(pos);
             if (state.isAir() || state.getBlock() instanceof TilePartBlock) continue;
             BlockEntity blockEntity = world.getBlockEntity(pos);
             NbtCompound data = blockEntity == null ? null : blockEntity.createNbt(world.getRegistryManager());
             entries.add(new Entry(pos.subtract(anchor), state, data));
-            if (state.getBlock() instanceof ATileBlock && state.get(ATileBlock.SIZE) == TileSize.LARGE) masters.add(pos.toImmutable());
         }
-        return new Clip(box, anchor.toImmutable(), entries, masters);
+        return new Clip(box, anchor.toImmutable(), entries);
     }
 
     public static Clip copyFor(ServerPlayerEntity player, ServerWorld world, BlockBox box) {
@@ -105,22 +102,11 @@ public final class BoardBlueprint {
     public static int paste(ServerWorld world, Clip clip, BlockPos anchor, BlockRotation rotation, boolean keepOutsideLinks,
                             @Nullable ServerPlayerEntity player) {
         Function<BlockPos, BlockPos> place = source -> anchor.add(source.subtract(clip.anchor()).rotate(rotation));
-        // Where each copied block goes (a large tile: the north-west corner of its turned footprint)
-        Map<BlockPos, BlockPos> moved = new HashMap<>();
-        for (Entry entry : clip.entries()) {
-            BlockPos source = clip.anchor().add(entry.relative());
-            moved.put(source, clip.masters().contains(source) ? largeMaster(place, source) : place.apply(source));
-        }
-        Function<BlockPos, BlockPos> follow = link -> {
-            BlockPos target = moved.get(link);
-            if (target != null) return target;
-            if (clip.box().contains(link)) return place.apply(link);
-            return keepOutsideLinks ? link : null;
-        };
+        Function<BlockPos, BlockPos> follow = link -> clip.box().contains(link) ? place.apply(link) : keepOutsideLinks ? link : null;
         List<BlockPos> containers = new ArrayList<>();
         for (Entry entry : clip.entries()) {
-            BlockPos target = moved.get(clip.anchor().add(entry.relative()));
-            BlockState state = entry.state().rotate(rotation);
+            BlockPos target = place.apply(clip.anchor().add(entry.relative()));
+            BlockState state = turn(entry.state(), rotation);
             BlockState before = world.getBlockState(target);
             NbtCompound beforeData = LinkHistory.BlockChange.data(world, target);
             world.setBlockState(target, state, Block.NOTIFY_ALL);
@@ -142,13 +128,15 @@ public final class BoardBlueprint {
         return clip.entries().size();
     }
 
-    private static BlockPos largeMaster(Function<BlockPos, BlockPos> place, BlockPos master) {
-        BlockPos min = place.apply(master);
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
-            BlockPos p = place.apply(part.fromMaster(master));
-            min = new BlockPos(Math.min(min.getX(), p.getX()), min.getY(), Math.min(min.getZ(), p.getZ()));
+    /** A block turned; a large tile also turns the side it spreads toward from its own block (which stays its anchor). */
+    private static BlockState turn(BlockState state, BlockRotation rotation) {
+        BlockState turned = state.rotate(rotation);
+        if (turned.getBlock() instanceof ATileBlock && turned.get(ATileBlock.SIZE).isLarge()) {
+            TileLayout layout = turned.get(ATileBlock.SIZE);
+            BlockPos side = new BlockPos(layout.dx(), 0, layout.dz()).rotate(rotation);
+            turned = turned.with(ATileBlock.SIZE, TileLayout.large(side.getX(), side.getZ()));
         }
-        return min;
+        return turned;
     }
 
     /** Links and chests of every cartridge through {@code follow} (null: cut); start tokens dropped. */
@@ -263,7 +251,7 @@ public final class BoardBlueprint {
         for (BlockPos cell : cells) {
             befores.add(world.getBlockState(cell));
             beforeData.add(LinkHistory.BlockChange.data(world, cell));
-            world.setBlockState(cell, ModBlocks.SIMPLE_TILE.getDefaultState(), Block.NOTIFY_ALL);
+            world.setBlockState(cell, ModBlocks.TILE.getDefaultState(), Block.NOTIFY_ALL);
         }
         boolean closed = template == Template.LOOP;
         for (int i = 0; i < cells.size(); i++) {

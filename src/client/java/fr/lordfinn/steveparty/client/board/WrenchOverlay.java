@@ -4,8 +4,8 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.board.WrenchMode;
 import fr.lordfinn.steveparty.board.WrenchState;
@@ -84,14 +84,11 @@ final class WrenchOverlay {
         return BoardSpaces.standPos(world, pos).add(0, 0.2, 0);
     }
 
-    /** A flat, pulsing frame on the surface of a board space. */
+    /** A pulsing highlight on a board space, where it is seen (lowered, sloped, all 4 blocks of a large tile). */
     static void frame(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world, BlockPos pos, int argb) {
-        BlockState state = world.getBlockState(pos);
-        double half = state.getBlock() instanceof ATileBlock && state.get(ATileBlock.SIZE) == TileSize.LARGE ? 1.0 : 0.5;
-        Vec3d stand = BoardSpaces.standPos(world, pos);
         float pulse = 0.25f + 0.15f * (float) Math.sin(world.getTime() / 3.0);
-        WorldDraw.box(matrices, consumers, camera, stand.add(-half - 0.02, 0.01, -half - 0.02), stand.add(half + 0.02, 0.09, half + 0.02),
-                argb & 0xFFFFFF, pulse);
+        GlowingCuboidRenderer.drawBlockBox(matrices, consumers, pos,
+                ((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, pulse);
     }
 
     private static void ghost(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, Camera camera, ClientWorld world,

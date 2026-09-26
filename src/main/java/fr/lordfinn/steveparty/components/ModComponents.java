@@ -100,6 +100,10 @@ public class ModComponents {
     public static final ComponentType<TileStampComponent> TILE_STAMP =
             registerComponent("tile-stamp", TileStampComponent.CODEC);
 
+    /** The size a tile item places (none: the standard size). */
+    public static final ComponentType<fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize> TILE_SIZE =
+            registerComponent("tile-size", fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.CODEC);
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();

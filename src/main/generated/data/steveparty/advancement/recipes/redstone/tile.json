@@ -1,6 +1,16 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
+    "has_advanced_tile": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:advanced_tile"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
     "has_light_weighted_pressure_plate": {
       "conditions": {
         "items": [
@@ -13,31 +23,21 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "steveparty:simple_tile"
+        "recipe": "steveparty:tile"
       },
       "trigger": "minecraft:recipe_unlocked"
-    },
-    "has_tile": {
-      "conditions": {
-        "items": [
-          {
-            "items": "steveparty:tile"
-          }
-        ]
-      },
-      "trigger": "minecraft:inventory_changed"
     }
   },
   "requirements": [
     [
       "has_the_recipe",
       "has_light_weighted_pressure_plate",
-      "has_tile"
+      "has_advanced_tile"
     ]
   ],
   "rewards": {
     "recipes": [
-      "steveparty:simple_tile"
+      "steveparty:tile"
     ]
   }
 }

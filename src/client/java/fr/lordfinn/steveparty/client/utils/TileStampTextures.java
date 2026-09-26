@@ -64,8 +64,10 @@ public final class TileStampTextures {
     /** Value maps (darkness per pixel, NaN transparent) of the face textures, and their own base colour. */
     private static final Map<Identifier, Template> TEMPLATES = new HashMap<>();
 
-    private record Template(float[] big, float[] small, int baseColor) {
+    private record Template(float[] big, float[] small, float[] bigFrame, float[] smallFrame, int baseColor) {
     }
+
+    private static final Identifier NEUTRAL = Steveparty.id("block/tile_overlay_neutral");
 
     private TileStampTextures() {
     }
@@ -100,7 +102,7 @@ public final class TileStampTextures {
 
     private static float[] stampValues(byte[] shape, boolean small) {
         int side = small ? SMALL_SIDE : SIDE;
-        float[] values = frame(small);
+        float[] values = frame(small).clone();
         // 32x32: the pattern in the middle, over the base; 16x16: the pattern over the whole face (frame where empty)
         int offset = small ? 0 : 8;
         for (int x = 0; x < StencilShape.SIDE; x++) {
@@ -111,8 +113,14 @@ public final class TileStampTextures {
         return values;
     }
 
-    /** A plain face: base colour, soft rings toward the edge. */
+    /** The blank tile face: the neutral face's rounded bevel without its features (square rings if it is missing). */
     private static float[] frame(boolean small) {
+        Template neutral = template(NEUTRAL);
+        if (neutral != null) return small ? neutral.smallFrame : neutral.bigFrame;
+        return squareFrame(small);
+    }
+
+    private static float[] squareFrame(boolean small) {
         int side = small ? SMALL_SIDE : SIDE;
         int margin = small ? 0 : MARGIN;
         float[] rings = small ? SMALL_RINGS : RINGS;
@@ -208,15 +216,22 @@ public final class TileStampTextures {
                 big[y * SIDE + x] = value;
             }
         }
-        // 16x16: soft rings drawn anew, the features of the big face brought to the block's pixel density
-        float[] small = frame(true);
-        for (int i = 2; i < SMALL_SIDE - 2; i++) {
-            for (int j = 2; j < SMALL_SIDE - 2; j++) {
+        // Without the features: the blank face (its rounded bevel), for stamped looks
+        float[] bigFrame = big.clone();
+        for (int i = 0; i < bigFrame.length; i++) if (bigFrame[i] == FEATURE) bigFrame[i] = 0;
+        // 16x16: the drawn 28x28 brought to the block's pixel density (every ring, the rounded corners, the features)
+        return new Template(big, downsample(big), bigFrame, downsample(bigFrame), base & 0xFFFFFF);
+    }
+
+    private static float[] downsample(float[] big) {
+        float[] small = new float[SMALL_SIDE * SMALL_SIDE];
+        for (int i = 0; i < SMALL_SIDE; i++) {
+            for (int j = 0; j < SMALL_SIDE; j++) {
                 int x = (int) Math.floor(16 + (i + 0.5 - 8) * 1.75), y = (int) Math.floor(16 + (j + 0.5 - 8) * 1.75);
-                if (big[y * SIDE + x] == FEATURE) small[j * SMALL_SIDE + i] = FEATURE;
+                small[j * SMALL_SIDE + i] = big[y * SIDE + x];
             }
         }
-        return new Template(big, small, base & 0xFFFFFF);
+        return small;
     }
 
     /** Ring darkness by rank among the darker levels (0 = lightest, just around the base). */

@@ -228,10 +228,10 @@ public class StevepartyClient implements ClientModInitializer {
     private static void initBlockEntitiesRenderers() {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
         // Cut out: the start tile's top is made of value layers (see TileColors#tint)
-        BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.TILE, ModBlocks.SIMPLE_TILE);
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.ADVANCED_TILE, ModBlocks.TILE);
 
+        BlockEntityRendererFactories.register(ModBlockEntities.ADVANCED_TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.SIMPLE_TILE_ENTITY, TileBlockEntityRenderer::new);
         fr.lordfinn.steveparty.client.gui.TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
@@ -275,7 +275,7 @@ public class StevepartyClient implements ClientModInitializer {
         // With a wrench in hand: what each port of the base does, next to it
         BlockEntityRendererFactories.register(ModBlockEntities.GOAL_POLE_BASE_ENTITY, GoalPoleBaseRenderer::new);
 
-        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE, SIMPLE_TILE);
+        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE, ADVANCED_TILE);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);
     }
 

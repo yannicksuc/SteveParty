@@ -93,7 +93,8 @@ public abstract class ABoardSpaceBehavior {
 
     private void playActivateSound(World world, BlockPos pos) {
         if (world == null || this.activateSound == null) return;
-        world.playSound(null, pos, this.activateSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+        net.minecraft.util.math.Vec3d at = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, pos);
+        world.playSound(null, at.x, at.y, at.z, this.activateSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
     public static void setColor(BoardSpaceBlockEntity tileEntity, int color) {

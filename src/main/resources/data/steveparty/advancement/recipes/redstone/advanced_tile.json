@@ -34,7 +34,7 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "steveparty:tile"
+        "recipe": "steveparty:advanced_tile"
       }
     }
   },
@@ -48,7 +48,7 @@
   ],
   "rewards": {
     "recipes": [
-      "steveparty:tile"
+      "steveparty:advanced_tile"
     ]
   }
 }

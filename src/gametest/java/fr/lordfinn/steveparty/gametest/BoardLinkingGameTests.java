@@ -78,7 +78,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void traceLinksAChainAndClosesTheLoop(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE,
+        List<BlockPos> t = tiles(context, ModBlocks.TILE,
                 new BlockPos(1, 1, 1), new BlockPos(4, 1, 1), new BlockPos(4, 1, 4), new BlockPos(1, 1, 4));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
@@ -100,7 +100,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void holdingTheButtonOverTheOriginDoesNotEndTheChain(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
             click(player, wrench, context, t.get(0));
@@ -115,7 +115,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void startingOnALinkedTileForksAndEndingOnOneJoins(TestContext context) {
         // a → b → c → d, then a branch a → e → c
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1),
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1),
                 new BlockPos(5, 1, 1), new BlockPos(7, 1, 1), new BlockPos(3, 1, 4));
         BlockPos a = t.get(0), b = t.get(1), c = t.get(2), d = t.get(3), e = t.get(4);
         withPlayer(context, true, player -> {
@@ -140,7 +140,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void editTogglesAndCutClears(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(3, 1, 3));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(3, 1, 3));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
             WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1);
@@ -162,7 +162,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void survivalTakesCartridgesFromTheInventoryWithoutTheirLinks(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
         withPlayer(context, false, player -> {
             ItemStack wrench = wrench(player);
             ItemStack cartridges = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR, 1);
@@ -182,7 +182,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void replacingTheCartridgeKeepsTheLinks(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
             click(player, wrench, context, t.get(0));
@@ -209,7 +209,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     /** Builds s → a → b ⑂ (c, d), d → a, and a lonely e; s is a start tile. */
     static List<BlockPos> smallBoard(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1),
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1),
                 new BlockPos(5, 1, 1), new BlockPos(7, 1, 1), new BlockPos(5, 1, 3), new BlockPos(1, 1, 5));
         link(context, t.get(0), t.get(1));
         link(context, t.get(1), t.get(2));
@@ -268,7 +268,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void undoAndRedoFollowTheChain(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
             for (BlockPos pos : t) click(player, wrench, context, pos);
@@ -297,7 +297,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             player.setStackInHand(Hand.OFF_HAND, wrench);
             List<BlockPos> placed = new ArrayList<>();
             for (int x = 1; x <= 7; x += 3) {
-                ItemStack tile = new ItemStack(ModBlocks.SIMPLE_TILE);
+                ItemStack tile = new ItemStack(ModBlocks.TILE);
                 player.setStackInHand(Hand.MAIN_HAND, tile);
                 BlockPos ground = context.getAbsolutePos(new BlockPos(x, 0, 1));
                 tile.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
@@ -313,7 +313,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void inventoryTilesTakeTheNearestChestOrTheClickedOne(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
         context.setBlockState(new BlockPos(1, 1, 3), Blocks.CHEST);
         context.setBlockState(new BlockPos(6, 1, 3), Blocks.CHEST);
         BlockPos near = context.getAbsolutePos(new BlockPos(1, 1, 3)), far = context.getAbsolutePos(new BlockPos(6, 1, 3));
@@ -338,8 +338,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theWheelPicksTheEditedSlotOfAnAdvancedTile(TestContext context) {
-        List<BlockPos> advanced = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
-        List<BlockPos> next = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(4, 1, 1));
+        List<BlockPos> advanced = tiles(context, ModBlocks.ADVANCED_TILE, new BlockPos(1, 1, 1));
+        List<BlockPos> next = tiles(context, ModBlocks.TILE, new BlockPos(4, 1, 1));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
             WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1); // Edit
@@ -355,7 +355,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void pastingTurnsTheLinksWithTheCopyAndUndoRemovesIt(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(3, 1, 3));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(3, 1, 3));
         link(context, t.get(0), t.get(1));
         link(context, t.get(1), t.get(2), context.getAbsolutePos(new BlockPos(8, 1, 8)));
         withPlayer(context, true, player -> {
@@ -376,9 +376,28 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPastedLargeTileTurnsItsSide(TestContext context) {
+        for (int x = 1; x <= 7; x++) for (int z = 1; z <= 7; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
+        context.setBlockState(new BlockPos(2, 1, 2), ModBlocks.TILE.getDefaultState()
+                .with(ATileBlock.SIZE, fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout.LARGE_SOUTH_EAST));
+        ServerWorld world = context.getWorld();
+        fr.lordfinn.steveparty.board.BoardBlueprint.Clip clip = fr.lordfinn.steveparty.board.BoardBlueprint.copy(world,
+                net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(2, 1, 2)), context.getAbsolutePos(new BlockPos(3, 1, 3))),
+                context.getAbsolutePos(new BlockPos(2, 1, 2)));
+        context.assertEquals(clip.entries().size(), 1, "the parts are not copied");
+        BlockPos anchor = context.getAbsolutePos(new BlockPos(5, 1, 5));
+        fr.lordfinn.steveparty.board.BoardBlueprint.paste(world, clip, anchor, net.minecraft.util.BlockRotation.CLOCKWISE_90, false, null);
+        context.assertEquals(world.getBlockState(anchor).get(ATileBlock.SIZE),
+                fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout.LARGE_SOUTH_WEST, "south-east turned 90 degrees: south-west");
+        context.assertTrue(world.getBlockState(anchor.west()).getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock,
+                "its parts follow");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void translateFollowsAMoveMadeWithAnotherTool(TestContext context) {
         // a → b moved 3 blocks south by hand: the copies still point at the old b
-        List<BlockPos> moved = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 4), new BlockPos(3, 1, 4));
+        List<BlockPos> moved = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 4), new BlockPos(3, 1, 4));
         BlockPos oldB = context.getAbsolutePos(new BlockPos(3, 1, 1)), outside = context.getAbsolutePos(new BlockPos(7, 1, 7));
         link(context, moved.get(0), oldB, outside);
         int count = fr.lordfinn.steveparty.board.BoardBlueprint.translate(context.getWorld(),
@@ -403,13 +422,13 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aPickedCopyComesWithoutLinks(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
         link(context, t.get(0), t.get(1));
         BoardSpaceBlockEntity source = boardSpace(context, t.get(0));
         var registries = context.getWorld().getRegistryManager();
         net.minecraft.nbt.NbtCompound nbt = source.createComponentlessNbtWithIdentifyingData(registries);
         source.removeFromCopiedStackNbt(nbt);
-        ItemStack item = new ItemStack(ModBlocks.SIMPLE_TILE);
+        ItemStack item = new ItemStack(ModBlocks.TILE);
         net.minecraft.item.BlockItem.setBlockEntityData(item, source.getType(), nbt);
         context.setBlockState(new BlockPos(5, 0, 5), Blocks.STONE);
         withPlayer(context, true, player -> {
@@ -425,7 +444,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void diagonalsAreOriented(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 4));
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 4));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
             click(player, wrench, context, t.get(0));
