@@ -27,6 +27,22 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         return BoardSpaceType.DEFAULT;
     }
 
+    private static final int LINE_WIDTH = 46;
+
+    /** Adds {@code text} as lines of at most {@link #LINE_WIDTH} characters (a tooltip line doesn't wrap by itself). */
+    public static void addWrapped(List<Text> tooltip, Text text, Formatting formatting) {
+        StringBuilder line = new StringBuilder();
+        for (String word : text.getString().split(" ")) {
+            if (line.length() > 0 && line.length() + 1 + word.length() > LINE_WIDTH) {
+                tooltip.add(Text.literal(line.toString()).formatted(formatting));
+                line.setLength(0);
+            }
+            if (line.length() > 0) line.append(' ');
+            line.append(word);
+        }
+        if (line.length() > 0) tooltip.add(Text.literal(line.toString()).formatted(formatting));
+    }
+
     /** A stamped cartridge shows its look (drawn by the client's tooltip component). */
     @Override
     public Optional<TooltipData> getTooltipData(ItemStack stack) {
@@ -36,6 +52,11 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        // What a cartridge is, what this one does, how to use it
+        String id = net.minecraft.registry.Registries.ITEM.getId(this).getPath();
+        addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge.what"), Formatting.GRAY);
+        addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge." + id), Formatting.GRAY);
+        addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge.use"), Formatting.DARK_GRAY);
         super.appendTooltip(stack, context, tooltip, type);
         TileStampComponent stamp = stack.get(ModComponents.TILE_STAMP);
         if (stamp != null) {
