@@ -111,7 +111,8 @@ public final class TileStamping {
                 apply(tile, cartridge, null);
                 play(world, pos, SoundEvents.ENTITY_GENERIC_SPLASH, 1.4F);
                 if (world instanceof ServerWorld serverWorld) {
-                    serverWorld.spawnParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 0.3, pos.getZ() + 0.5, 12, 0.3, 0.1, 0.3, 0.1);
+                    Vec3d at = BoardSpaces.standPos(serverWorld, pos);
+                    serverWorld.spawnParticles(ParticleTypes.SPLASH, at.x, at.y + 0.1, at.z, 12, 0.3, 0.1, 0.3, 0.1);
                 }
                 world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(player, state));
             }
@@ -133,6 +134,7 @@ public final class TileStamping {
     }
 
     private static void play(World world, BlockPos pos, SoundEvent sound, float pitch) {
-        world.playSound(null, pos, sound, SoundCategory.BLOCKS, 1.0F, pitch);
+        Vec3d at = BoardSpaces.standPos(world, pos);
+        world.playSound(null, at.x, at.y, at.z, sound, SoundCategory.BLOCKS, 1.0F, pitch);
     }
 }

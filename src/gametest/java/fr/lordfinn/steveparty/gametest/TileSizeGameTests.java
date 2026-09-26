@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSupport;
 import fr.lordfinn.steveparty.recipes.TileSizeRecipe;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -41,11 +42,23 @@ public class TileSizeGameTests implements FabricGameTest {
         return TileSize.with(stack, size);
     }
 
-    private static void assertLarge(TestContext context, BlockPos master) {
-        context.expectBlockProperty(master, SIZE, TileSize.LARGE);
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) {
-            context.expectBlockProperty(part.fromMaster(master), TilePartBlock.PART, part);
+    private static final TileLayout SE = TileLayout.LARGE_SOUTH_EAST;
+
+    private static List<BlockPos> parts(BlockPos master) {
+        return SE.parts(master);
+    }
+
+    private static void assertLarge(TestContext context, BlockPos master, TileLayout layout) {
+        context.expectBlockProperty(master, SIZE, layout);
+        BlockPos absMaster = context.getAbsolutePos(master);
+        for (BlockPos part : layout.parts(master)) {
+            context.assertTrue(TilePartBlock.isPartOf(context.getBlockState(part), context.getAbsolutePos(part), absMaster),
+                    "a part of the tile at " + part);
         }
+    }
+
+    private static void assertLarge(TestContext context, BlockPos master) {
+        assertLarge(context, master, SE);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -66,6 +79,34 @@ public class TileSizeGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** On stairs, a large tile is anchored on the aimed (highest) block and spreads downhill, sloped like its stairs. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void largeTileFollowsTheSlopeUnderItsAnchor(TestContext context) {
+        // Stairs climbing north under the anchor; its downhill side is south
+        context.setBlockState(TILE.down(), Blocks.OAK_STAIRS.getDefaultState().with(net.minecraft.block.StairsBlock.FACING, Direction.NORTH));
+        PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
+        ItemStack item = sized(new ItemStack(ModBlocks.TILE), TileSize.LARGE);
+        player.setStackInHand(Hand.MAIN_HAND, item);
+        // Aimed at the west half of the step: across the slope, it spreads west
+        BlockPos abs = context.getAbsolutePos(TILE.down());
+        net.minecraft.util.hit.BlockHitResult hit = new net.minecraft.util.hit.BlockHitResult(
+                new Vec3d(abs.getX() + 0.25, abs.getY() + 1, abs.getZ() + 0.3), Direction.UP, abs, false);
+        item.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND, hit));
+        assertLarge(context, TILE, TileLayout.LARGE_SOUTH_WEST);
+        context.expectBlockProperty(TILE, SUPPORT, TileSupport.SLOPE_NORTH);
+        // Its middle (the corner of its 4 blocks) is on the slope, half a block down from the step nose
+        Vec3d stand = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(TILE));
+        BlockPos tile = context.getAbsolutePos(TILE);
+        context.assertTrue(stand.distanceTo(new Vec3d(tile.getX(), tile.getY() + TileSupport.SLOPE_NORTH.standY(0, 1), tile.getZ() + 1)) < 1.0E-6
+                && Math.abs(TileSupport.SLOPE_NORTH.surfaceY(0, 1) + 0.5) < 1.0E-6,
+                "stands in its middle, on the slope: " + stand);
+        // The parts carry the slope on: aimed at from above, the south part's outline is lower
+        double southTop = context.getBlockState(TILE.south()).getOutlineShape(context.getWorld(), context.getAbsolutePos(TILE.south()))
+                .getMax(Direction.Axis.Y);
+        context.assertTrue(southTop < 0, "the downhill part is below its block's floor: " + southTop);
+        context.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void largeTileNeedsFreeBlocks(TestContext context) {
         floor(context);
@@ -76,30 +117,30 @@ public class TileSizeGameTests implements FabricGameTest {
         context.useStackOnBlock(player, item, TILE.down(), Direction.UP);
         context.expectBlock(Blocks.AIR, TILE);
         // Put by a command on a crowded spot: it shrinks back to the standard size
-        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, TileSize.LARGE));
-        context.expectBlockProperty(TILE, SIZE, TileSize.STANDARD);
+        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, SE));
+        context.expectBlockProperty(TILE, SIZE, TileLayout.STANDARD);
         context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void breakingAPartBreaksTheLargeTile(TestContext context) {
         floor(context);
-        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, TileSize.LARGE));
+        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, SE));
         assertLarge(context, TILE);
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
-        player.interactionManager.tryBreakBlock(context.getAbsolutePos(TilePartBlock.Part.SOUTH_EAST.fromMaster(TILE)));
+        player.interactionManager.tryBreakBlock(context.getAbsolutePos(TILE.add(1, 0, 1)));
         context.expectBlock(Blocks.AIR, TILE);
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) context.expectBlock(Blocks.AIR, part.fromMaster(TILE));
+        for (BlockPos part : parts(TILE)) context.expectBlock(Blocks.AIR, part);
         context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void brokenTileDropsItsSize(TestContext context) {
         floor(context);
-        context.setBlockState(TILE, ModBlocks.SIMPLE_TILE.getDefaultState().with(SIZE, TileSize.LARGE));
+        context.setBlockState(TILE, ModBlocks.SIMPLE_TILE.getDefaultState().with(SIZE, SE));
         BlockPos abs = context.getAbsolutePos(TILE);
         context.getWorld().breakBlock(abs, true);
-        for (TilePartBlock.Part part : TilePartBlock.Part.values()) context.expectBlock(Blocks.AIR, part.fromMaster(TILE));
+        for (BlockPos part : parts(TILE)) context.expectBlock(Blocks.AIR, part);
         List<ItemEntity> drops = context.getWorld().getEntitiesByClass(ItemEntity.class, new Box(abs).expand(2), e -> true);
         context.assertTrue(drops.size() == 1 && drops.getFirst().getStack().isOf(ModBlocks.SIMPLE_TILE.asItem())
                 && TileSize.of(drops.getFirst().getStack()) == TileSize.LARGE, "one large tile dropped: " + drops);
@@ -110,7 +151,7 @@ public class TileSizeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void largeTileLiesOnAFloorOfSlabs(TestContext context) {
         for (int x = 2; x < 4; x++) for (int z = 2; z < 4; z++) context.setBlockState(new BlockPos(x, 1, z), Blocks.OAK_SLAB);
-        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, TileSize.LARGE));
+        context.setBlockState(TILE, ModBlocks.TILE.getDefaultState().with(SIZE, SE));
         context.expectBlockProperty(TILE, SUPPORT, TileSupport.DROP_8);
         // One block of the 2x2 on a full block: not one level surface any more
         context.setBlockState(new BlockPos(3, 1, 3), Blocks.STONE);
@@ -144,9 +185,9 @@ public class TileSizeGameTests implements FabricGameTest {
         ItemStack item = sized(new ItemStack(ModBlocks.TILE), TileSize.SMALL);
         player.setStackInHand(Hand.MAIN_HAND, item);
         context.useStackOnBlock(player, item, TILE.down(), Direction.UP);
-        context.expectBlockProperty(TILE, SIZE, TileSize.SMALL);
+        context.expectBlockProperty(TILE, SIZE, TileLayout.SMALL);
         context.expectBlock(Blocks.AIR, TILE.east());
-        context.assertTrue(ATileBlock.levelState(context.getBlockState(TILE)).get(SIZE) == TileSize.STANDARD, "drawn as standard for arrows");
+        context.assertTrue(ATileBlock.levelState(context.getBlockState(TILE)).get(SIZE) == TileLayout.STANDARD, "drawn as standard for arrows");
         context.complete();
     }
 }

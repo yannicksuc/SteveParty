@@ -278,9 +278,10 @@ public class TokenMovementService {
     }
 
     private static void playSound(MobEntity mob, BlockPos targetPos, SoundEvent soundEvent) {
+        Vec3d at = BoardSpaces.standPos(mob.getWorld(), targetPos); // where the tile is seen
         mob.getWorld().playSound(
                 null, // Null plays sound to all nearby players
-                targetPos,
+                at.x, at.y, at.z,
                 soundEvent,
                 SoundCategory.PLAYERS,
                 100,

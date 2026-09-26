@@ -631,10 +631,10 @@ def tile_sizes_station(x0=2035, z0=2045):
     # Row: standard, small, large of each tile, on the grass (the large one takes 2x2 blocks)
     for row, block, name in ((z0 + 2, 'simple_tile', 'Tuile'), (z0 + 7, 'tile', 'Tuile avancée')):
         for k, (size, caption) in enumerate((('standard', 'standard (2x2 centrée)'), ('small', 'petite (1x1)'),
-                                             ('large', 'grande (2x2 blocs)'))):
+                                             ('large_south_east', 'grande (2x2 blocs)'))):
             x = x0 + 2 + 5 * k
             cmds += [tile_block(x, Y, row, 4, block, 'size=' + size),
-                     label(x + (1 if size == 'large' else 0.5), Y + 2.2, row + 0.5, '%s %s' % (name, caption), 'white', 0.6, False)]
+                     label(x + (1 if size.startswith('large') else 0.5), Y + 2.2, row + 0.5, '%s %s' % (name, caption), 'white', 0.6, False)]
     cmds.append(token_at(x0 + 13, Y + 0.125, z0 + 8, 'sheep', 'Pion au milieu de la grande tuile', 'aqua'))
     # Small tiles on every stair: one continuous ramp
     z = z0 + 13
@@ -644,7 +644,7 @@ def tile_sizes_station(x0=2035, z0=2045):
     cmds.append(label(x0 + 5, Y + 7.5, z + 0.5, 'Petites tuiles sur chaque marche', 'white', 0.7, False))
     # A large tile on a floor of bottom slabs: lowered as a whole
     cmds += ['fill %d %d %d %d %d %d smooth_stone_slab[type=bottom]' % (x0 + 11, Y, z0 + 13, x0 + 12, Y, z0 + 14),
-             tile_block(x0 + 11, Y + 1, z0 + 13, 4, 'tile', 'size=large'),
+             tile_block(x0 + 11, Y + 1, z0 + 13, 4, 'tile', 'size=large_south_east'),
              label(x0 + 12, Y + 2.5, z0 + 14, 'Grande tuile sur des dalles', 'white', 0.6, False)]
     # Stamped tiles: the look is the tile's while it holds no cartridge, else its cartridge's
     row = z0 + 18
@@ -670,6 +670,27 @@ def tile_sizes_station(x0=2035, z0=2045):
         data = nbt + (',Items:[%s]' % items if items else '')
         cmds += ['setblock %d %d %d steveparty:%s[rotation_8=4,%s]{%s}' % (x, Y, row, block, size, data),
                  label(x + 0.5, Y + 1.6 + 0.5 * (k % 2), row + 0.5, caption, 'white', 0.5, False)]
+    return cmds
+
+
+def large_tiles_station(x0=2060, z0=2045):
+    """Large (2x2) tiles on slopes: anchored on their highest block, spreading downhill."""
+    cmds = ['# Large tiles on slopes'] + plot_title(x0, z0, 'GRANDES TUILES EN PENTE')
+    # A staircase 2 blocks wide, climbing east: large tiles over 2 steps each, anchored on the higher one
+    for z in (z0 + 2, z0 + 3):
+        cmds += staircase(x0 + 2, z, 6)
+    for k in (1, 3, 5):
+        cmds.append(tile_block(x0 + 2 + k, Y + k + 1, z0 + 2, 6, 'tile' if k % 4 == 1 else 'simple_tile', 'size=large_south_west'))
+    cmds.append(label(x0 + 5, Y + 8, z0 + 3, 'Grandes tuiles sur un escalier (ancrées en haut)', 'white', 0.7, False))
+    # Corners: on a mound's outer corner (rising toward the middle) and a pit's inner corner (rising outward)
+    mound, pit = (x0 + 5, z0 + 11), (x0 + 13, z0 + 11)
+    cmds += stair_ring(*mound, True)
+    cmds += stair_ring(*pit, False)
+    cmds += [tile_block(mound[0] + 2, Y + 1, mound[1] - 2, 1, 'tile', 'size=large_north_east'),
+             tile_block(mound[0] - 2, Y + 1, mound[1] + 2, 5, 'simple_tile', 'size=large_south_west'),
+             tile_block(pit[0] - 2, Y + 1, pit[1] - 2, 3, 'tile', 'size=large_south_east'),
+             label(mound[0] + 0.5, Y + 3.5, mound[1] + 0.5, 'Grandes tuiles sur coins extérieurs', 'white', 0.7, False),
+             label(pit[0] + 0.5, Y + 3.5, pit[1] + 0.5, 'Grande tuile sur coin intérieur', 'white', 0.7, False)]
     return cmds
 
 
@@ -772,8 +793,8 @@ def welcome(loop):
            '{kind:"cursed",value:2}],item_name=\'"Dé forgé"\']',
            'steveparty:tokenizer_wand', 'steveparty:token 4', 'steveparty:wrench', 'steveparty:board_space_behavior 8',
            'steveparty:board_space_behavior_stop 2', 'steveparty:tile_behavior_start 2', 'steveparty:inventory_cartridge 2',
-           'steveparty:tile 8', 'steveparty:simple_tile 4', 'steveparty:simple_tile[block_state={size:"small"}] 8',
-           'steveparty:tile[block_state={size:"large"}] 2', 'steveparty:check_point 2', 'steveparty:mini_games_catalogue']
+           'steveparty:tile 8', 'steveparty:simple_tile 4', 'steveparty:simple_tile[steveparty:tile-size="small"] 8',
+           'steveparty:tile[steveparty:tile-size="large"] 2', 'steveparty:check_point 2', 'steveparty:mini_games_catalogue']
     return (['time set day', 'weather clear']
             + ['give %s %s' % (PLAYER, k) for k in kit]
             + ['tp %s %.1f %d %.1f %.1f 20' % (PLAYER, px, Y, pz, yaw),
@@ -791,7 +812,7 @@ def main():
         'terrain': terrain(),
         'board': board_cmds,
         'stations': (dice_station() + shop_station() + goal_pole_station() + plastic_station() + sign_station()
-                     + building_station() + misc_station() + mula_station() + tiles_station() + tile_sizes_station()),
+                     + building_station() + misc_station() + mula_station() + tiles_station() + tile_sizes_station() + large_tiles_station()),
         'chests': chest_cmds,
         'welcome': welcome(loop),
     }

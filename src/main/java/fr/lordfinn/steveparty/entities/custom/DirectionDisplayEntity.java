@@ -59,15 +59,16 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         this.tokenUuid = token;
         this.tileOrigin = origin;
         this.tileDestination = destination;
-        BlockPos distanceAsBlockPos = destination.position().subtract(origin);
-        Vec3d distance = new Vec3d(distanceAsBlockPos.getX(), distanceAsBlockPos.getY(), distanceAsBlockPos.getZ());
+        // From where the tiles are seen (lowered, sloped, a large tile's middle), not their blocks
+        Vec3d from = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, origin);
+        Vec3d distance = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, destination.position()).subtract(from);
         Color color = destination.isTile() ? Color.WHITE : Color.RED;
         encodedVelocity = ParticleUtils.encodeVelocity(
                 color,
                 (float) distance.x,
                 (float) distance.y,
                 (float) distance.z);
-        start = origin.toCenterPos().add(0,0.1,0);
+        start = from.add(0, 0.475, 0);
         float size = 0.3F;
         Vec3d startGap = distance.normalize().multiply(Math.min(1.5, distance.length())).add(0,-0.4,0);
         this.setPosition(start.add(startGap));

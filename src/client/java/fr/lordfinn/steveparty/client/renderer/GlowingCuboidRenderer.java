@@ -55,6 +55,25 @@ public class GlowingCuboidRenderer {
     }
 
     public static void drawBlockBox(MatrixStack matrices, VertexConsumerProvider vertexConsumers, BlockPos pos, float red, float green, float blue, float alpha) {
+        // A tile is highlighted where it is seen: hugging its surface (lowered, sloped, all 4 blocks of a large tile)
+        net.minecraft.client.world.ClientWorld world = MinecraftClient.getInstance().world;
+        Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
+        if (world != null && camera.isReady()) {
+            BlockPos tile = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.resolve(world, pos);
+            net.minecraft.block.BlockState state = world.getBlockState(tile);
+            if (state.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock) {
+                var layout = state.get(fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SIZE);
+                var support = state.get(fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.SUPPORT);
+                Vec3d camPos = camera.getPos();
+                for (int[] cell : layout.cells()) {
+                    for (Box box : support.outline(cell[0], cell[1]).getBoundingBoxes()) {
+                        drawBox(matrices, vertexConsumers, box.offset(tile.getX() + cell[0], tile.getY(), tile.getZ() + cell[1])
+                                .offset(camPos.negate()).expand(0.01), red, green, blue, alpha);
+                    }
+                }
+                return;
+            }
+        }
         drawBox(matrices, vertexConsumers, pos, pos.add(1, 1, 1), red, green, blue, alpha);
     }
 

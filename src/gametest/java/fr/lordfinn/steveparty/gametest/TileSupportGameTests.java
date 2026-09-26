@@ -97,8 +97,19 @@ public class TileSupportGameTests implements FabricGameTest {
         context.assertTrue(slope.supportTop(0) == 0 && slope.supportTop(1) == 0 && slope.supportTop(2) == -0.5
                 && slope.supportTop(3) == -0.5, "high step north, low step south");
         // The outline follows the slope: aimed at from above, it is high at the north edge, low at the south edge
-        context.assertTrue(slope.shape().getMax(Direction.Axis.Y) > 0.6 && slope.shape().getMin(Direction.Axis.Y) < -0.3,
-                "outline along the slope: " + slope.shape());
+        context.assertTrue(slope.outline().getMax(Direction.Axis.Y) > 0.6 && slope.outline().getMin(Direction.Axis.Y) < -0.3,
+                "outline along the slope: " + slope.outline());
+        // Walked like bare stairs: its lowest step is the lower stair step (half a block above the stairs below),
+        // and it rises by steps of a quarter of a block, each longer than a walking stride per tick
+        java.util.List<net.minecraft.util.math.Box> boxes = slope.shape().getBoundingBoxes();
+        double lowest = boxes.stream().mapToDouble(box -> box.maxY).min().orElse(9);
+        context.assertTrue(Math.abs(lowest + 0.5) < 1.0E-6, "lowest step on the lower stair step: " + lowest);
+        for (double z = 0; z < 1; z += 1.0 / 16) {
+            final double at = z + 1.0 / 32, next = z + 1.0 / 32 + 1.0 / 16;
+            double here = boxes.stream().filter(box -> box.minZ <= at && at <= box.maxZ).mapToDouble(box -> box.maxY).max().orElse(-9);
+            double then = boxes.stream().filter(box -> box.minZ <= next && next <= box.maxZ).mapToDouble(box -> box.maxY).max().orElse(here);
+            context.assertTrue(Math.abs(here - then) <= 0.25 + 1.0E-6, "smooth steps at z " + z + ": " + here + " -> " + then);
+        }
         context.complete();
     }
 
@@ -115,12 +126,14 @@ public class TileSupportGameTests implements FabricGameTest {
                 TileSupport.SLOPE_SOUTH_WEST, "inner right, facing south");
 
         TileSupport corner = TileSupport.SLOPE_NORTH_WEST;
-        // 45 degrees along the diagonal: one block of height per block walked toward the north-west
-        double step = Math.sqrt(0.5) * 0.5;
-        context.assertTrue(Math.abs(corner.surfaceY(0.5 - step, 0.5 - step) - corner.surfaceY(0.5, 0.5) - Math.sqrt(0.5) * 0.5 * Math.sqrt(2)) < 1.0E-6,
-                "45 degrees along the diagonal");
-        context.assertTrue(Math.abs(corner.surfaceY(1, 1) + 0.5) < 1.0E-6, "the low corner lands on the step");
-        context.assertTrue(corner.surfaceY(0.5, 0.5) > 0, "above the inner nose");
+        // 45 degrees along the diagonal, resting on the inner edges of the L (where the high part meets the low step)
+        context.assertTrue(Math.abs(corner.angle() - Math.PI / 4) < 1.0E-6, "45 degrees");
+        context.assertTrue(Math.abs(corner.surfaceY(1, 0.5)) < 1.0E-6 && Math.abs(corner.surfaceY(0.5, 1)) < 1.0E-6, "on the L's edges");
+        // ... and never under the stairs: above the high part everywhere
+        for (double x = 0; x <= 1; x += 0.125) for (double z = 0; z <= 1; z += 0.125) {
+            boolean lowQuarter = x > 0.5 && z > 0.5;
+            context.assertTrue(corner.surfaceY(x, z) >= (lowQuarter ? -0.5 : 0) - 1.0E-6, "above the stairs at " + x + ", " + z);
+        }
         context.assertTrue(corner.supportTop(3) == -0.5 && corner.supportTop(0) == 0 && corner.supportTop(1) == 0
                 && corner.supportTop(2) == 0, "three high quarters, the south-east one low");
         context.complete();

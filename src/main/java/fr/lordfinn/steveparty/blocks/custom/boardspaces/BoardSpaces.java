@@ -25,20 +25,19 @@ public final class BoardSpaces {
 
     /** The position of the board space a token standing at {@code feet} (its block position) is on, or null. */
     public static @Nullable BlockPos boardSpacePosAt(World world, BlockPos feet) {
-        if (world.getBlockEntity(feet) instanceof BoardSpaceBlockEntity) return feet;
-        // In the middle of a large tile: on one of its parts
-        BlockPos master = TilePartBlock.resolve(world, feet);
-        if (master != null) return master;
-        // Standing on a lowered tile: the feet are in the support's cell, the tile is the cell above
-        BlockPos up = feet.up();
-        BlockState above = world.getBlockState(up);
-        if (above.getBlock() instanceof ATileBlock && above.get(ATileBlock.SUPPORT).standY() < 0
-                && world.getBlockEntity(up) instanceof BoardSpaceBlockEntity) {
-            return up;
-        }
-        BlockPos masterAbove = TilePartBlock.resolve(world, up);
-        if (masterAbove != null && world.getBlockState(masterAbove).get(ATileBlock.SUPPORT).standY() < 0) return masterAbove;
+        BlockPos here = boardSpaceOrTile(world, feet);
+        if (here != null) return here;
+        // Standing on a lowered or sloped tile: the feet are in the cell under the tile (or under a part of it)
+        BlockPos above = boardSpaceOrTile(world, feet.up());
+        if (above != null && standPos(world, above).y < feet.getY() + 1 + 1.0E-6) return above;
         return null;
+    }
+
+    /** The board space at {@code pos}, or the large tile of the part there. */
+    private static @Nullable BlockPos boardSpaceOrTile(World world, BlockPos pos) {
+        if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity) return pos;
+        BlockPos master = TilePartBlock.resolve(world, pos);
+        return master != null && world.getBlockEntity(master) instanceof BoardSpaceBlockEntity ? master : null;
     }
 
     /**
@@ -81,8 +80,9 @@ public final class BoardSpaces {
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof ATileBlock) {
             // A large tile's middle is the corner shared by its 4 blocks
-            double centre = state.get(ATileBlock.SIZE) == TileSize.LARGE ? 1 : 0.5;
-            return new Vec3d(pos.getX() + centre, pos.getY() + state.get(ATileBlock.SUPPORT).standY(), pos.getZ() + centre);
+            TileLayout layout = state.get(ATileBlock.SIZE);
+            double x = layout.centreX(), z = layout.centreZ();
+            return new Vec3d(pos.getX() + x, pos.getY() + state.get(ATileBlock.SUPPORT).standY(x, z), pos.getZ() + z);
         }
         VoxelShape shape = state.getCollisionShape(world, pos);
         double height = shape.isEmpty() ? 0 : shape.getMax(Direction.Axis.Y);

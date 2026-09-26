@@ -207,7 +207,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private void spawnChangeParticles(ServerWorld serverWorld) {
-        Vec3d center = pos.toCenterPos();
+        // On the tile as it is seen (lowered, sloped, a large tile's middle)
+        Vec3d center = BoardSpaces.standPos(serverWorld, pos).add(0, 0.2, 0);
         serverWorld.spawnParticles(ParticleTypes.GLOW, center.x, center.y, center.z, 10, 0.05, 0.05, 0.05, 0.2);
     }
 
@@ -414,7 +415,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void onTileReached(@NotNull MobEntity token, PartyControllerEntity partyControllerEntity) {
         if (this.world == null || this.walkedOnSound == null) return;
-        this.world.playSound(null, this.pos, this.walkedOnSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+        Vec3d at = BoardSpaces.standPos(this.world, this.pos);
+        this.world.playSound(null, at.x, at.y, at.z, this.walkedOnSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
     public void setCycleIndex(int i) {

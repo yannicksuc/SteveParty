@@ -27,21 +27,23 @@ import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The 3 other blocks of a large (2x2) tile: they only hold the place (nothing can be put there), look and collide like
- * the tile, and pass every click to it. The tile itself (the board space: cartridges, destinations, tokens) is the
- * north-west block. Breaking a part breaks the tile; the parts vanish with it.
+ * The 3 other blocks of a large (2x2) tile: they only hold the place (nothing can be put there), are aimed at and
+ * collide like the tile (its surface over them: level, lowered, or sloped down from the tile's own block), and pass
+ * every click to it. The tile itself (the board space: cartridges, destinations, tokens) is its own block, the anchor;
+ * a part knows where it is from its {@code to_tile} direction. Breaking a part breaks the tile; the parts go with it.
  */
 public class TilePartBlock extends Block {
     public static final MapCodec<TilePartBlock> CODEC = Block.createCodec(TilePartBlock::new);
 
-    /** Where the part is from the tile (its north-west block). */
-    public enum Part implements StringIdentifiable {
-        EAST("east", 1, 0), SOUTH("south", 0, 1), SOUTH_EAST("south_east", 1, 1);
+    /** Where the tile is from the part: one of the 8 blocks around it. */
+    public enum ToTile implements StringIdentifiable {
+        NORTH("north", 0, -1), NORTH_EAST("north_east", 1, -1), EAST("east", 1, 0), SOUTH_EAST("south_east", 1, 1),
+        SOUTH("south", 0, 1), SOUTH_WEST("south_west", -1, 1), WEST("west", -1, 0), NORTH_WEST("north_west", -1, -1);
 
         private final String name;
         private final int dx, dz;
 
-        Part(String name, int dx, int dz) {
+        ToTile(String name, int dx, int dz) {
             this.name = name;
             this.dx = dx;
             this.dz = dz;
@@ -52,20 +54,17 @@ public class TilePartBlock extends Block {
             return name;
         }
 
-        public BlockPos fromMaster(BlockPos master) {
-            return master.add(dx, 0, dz);
-        }
-
-        public BlockPos toMaster(BlockPos part) {
-            return part.add(-dx, 0, -dz);
+        public static ToTile of(int dx, int dz) {
+            for (ToTile value : values()) if (value.dx == dx && value.dz == dz) return value;
+            throw new IllegalArgumentException("Not next to the tile: " + dx + ", " + dz);
         }
     }
 
-    public static final EnumProperty<Part> PART = EnumProperty.of("part", Part.class);
+    public static final EnumProperty<ToTile> TO_TILE = EnumProperty.of("to_tile", ToTile.class);
 
     public TilePartBlock(Settings settings) {
         super(settings);
-        setDefaultState(getStateManager().getDefaultState().with(PART, Part.EAST));
+        setDefaultState(getStateManager().getDefaultState().with(TO_TILE, ToTile.WEST));
     }
 
     @Override
@@ -75,25 +74,32 @@ public class TilePartBlock extends Block {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(PART);
+        builder.add(TO_TILE);
     }
 
-    public static BlockState stateFor(Part part) {
-        return ModBlocks.TILE_PART.getDefaultState().with(PART, part);
+    /** The part at {@code part} of the tile at {@code tile}. */
+    public static BlockState stateFor(BlockPos part, BlockPos tile) {
+        return ModBlocks.TILE_PART.getDefaultState().with(TO_TILE, ToTile.of(tile.getX() - part.getX(), tile.getZ() - part.getZ()));
     }
 
-    public static boolean isPartOf(BlockState state, Part part) {
-        return state.isOf(ModBlocks.TILE_PART) && state.get(PART) == part;
+    /** Whether {@code state} at {@code part} is a part of the tile at {@code tile}. */
+    public static boolean isPartOf(BlockState state, BlockPos part, BlockPos tile) {
+        return state.isOf(ModBlocks.TILE_PART) && master(state, part).equals(tile);
     }
 
     /** The position of the large tile this part belongs to. */
     public static BlockPos master(BlockState state, BlockPos pos) {
-        return state.get(PART).toMaster(pos);
+        ToTile toTile = state.get(TO_TILE);
+        return pos.add(toTile.dx, 0, toTile.dz);
     }
 
-    private static boolean hasMaster(BlockView world, BlockState state, BlockPos pos) {
-        BlockState master = world.getBlockState(master(state, pos));
-        return master.getBlock() instanceof ATileBlock && master.get(ATileBlock.SIZE) == TileSize.LARGE;
+    private static @Nullable BlockState tileOf(BlockView world, BlockState state, BlockPos pos) {
+        BlockPos master = master(state, pos);
+        BlockState tile = world.getBlockState(master);
+        if (!(tile.getBlock() instanceof ATileBlock) || !tile.get(ATileBlock.SIZE).isLarge()) return null;
+        // Really one of its blocks (the tile spreads toward this part)
+        for (BlockPos part : tile.get(ATileBlock.SIZE).parts(master)) if (part.equals(pos)) return tile;
+        return null;
     }
 
     /** Drawn by the tile's renderer. */
@@ -102,18 +108,27 @@ public class TilePartBlock extends Block {
         return BlockRenderType.INVISIBLE;
     }
 
-    /** The same thin slab as the tile, at the tile's height (a large tile only lies level). */
+    /** The tile's surface over this block (a large tile on a slope goes down over its parts). */
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        BlockState master = world.getBlockState(master(state, pos));
-        if (master.getBlock() instanceof ATileBlock) return master.get(ATileBlock.SUPPORT).shape();
-        return VoxelShapes.cuboid(0, 0, 0, 1, TileSupport.THICKNESS, 1);
+        BlockState tile = tileOf(world, state, pos);
+        if (tile == null) return VoxelShapes.cuboid(0, 0, 0, 1, TileSupport.THICKNESS, 1);
+        BlockPos master = master(state, pos);
+        return tile.get(ATileBlock.SUPPORT).outline(pos.getX() - master.getX(), pos.getZ() - master.getZ());
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        BlockState tile = tileOf(world, state, pos);
+        if (tile == null) return VoxelShapes.cuboid(0, 0, 0, 1, TileSupport.THICKNESS, 1);
+        BlockPos master = master(state, pos);
+        return ATileBlock.collision(tile, pos.getX() - master.getX(), pos.getZ() - master.getZ(), context);
     }
 
     @Override
     protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
                                                    Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
-        if (!hasMaster(world, state, pos)) return Blocks.AIR.getDefaultState();
+        if (tileOf(world, state, pos) == null) return Blocks.AIR.getDefaultState();
         // Its own support changed: the tile checks whether it still lies on one level surface
         if (direction == Direction.DOWN) {
             BlockPos master = master(state, pos);
@@ -126,43 +141,38 @@ public class TilePartBlock extends Block {
 
     @Override
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        BlockPos master = master(state, pos);
-        BlockState masterState = world.getBlockState(master);
-        if (!(masterState.getBlock() instanceof ATileBlock)) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
-        return masterState.onUseWithItem(stack, world, player, hand, hit.withBlockPos(master));
+        BlockState tile = tileOf(world, state, pos);
+        if (tile == null) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        return tile.onUseWithItem(stack, world, player, hand, hit.withBlockPos(master(state, pos)));
     }
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        BlockPos master = master(state, pos);
-        BlockState masterState = world.getBlockState(master);
-        if (!(masterState.getBlock() instanceof ATileBlock)) return ActionResult.PASS;
-        return masterState.onUse(world, player, hit.withBlockPos(master));
+        BlockState tile = tileOf(world, state, pos);
+        if (tile == null) return ActionResult.PASS;
+        return tile.onUse(world, player, hit.withBlockPos(master(state, pos)));
     }
 
     /** Breaking a part breaks the tile (which drops itself, like when broken directly). */
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        BlockPos master = master(state, pos);
-        if (!world.isClient && world.getBlockState(master).getBlock() instanceof ATileBlock) {
-            world.breakBlock(master, !player.isCreative(), player);
+        if (!world.isClient && tileOf(world, state, pos) != null) {
+            world.breakBlock(master(state, pos), !player.isCreative(), player);
         }
         return super.onBreak(world, pos, state, player);
     }
 
     @Override
     protected float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
-        BlockPos master = master(state, pos);
-        BlockState masterState = world.getBlockState(master);
-        if (masterState.getBlock() instanceof ATileBlock) return masterState.calcBlockBreakingDelta(player, world, master);
+        BlockState tile = tileOf(world, state, pos);
+        if (tile != null) return tile.calcBlockBreakingDelta(player, world, master(state, pos));
         return super.calcBlockBreakingDelta(state, player, world, pos);
     }
 
     @Override
     public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
-        BlockPos master = master(state, pos);
-        BlockState masterState = world.getBlockState(master);
-        if (masterState.getBlock() instanceof ATileBlock) return masterState.getBlock().getPickStack(world, master, masterState);
+        BlockState tile = tileOf(world, state, pos);
+        if (tile != null) return tile.getBlock().getPickStack(world, master(state, pos), tile);
         return ItemStack.EMPTY;
     }
 
@@ -170,6 +180,6 @@ public class TilePartBlock extends Block {
     public static @Nullable BlockPos resolve(BlockView world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);
         if (!state.isOf(ModBlocks.TILE_PART)) return null;
-        return hasMaster(world, state, pos) ? master(state, pos) : null;
+        return tileOf(world, state, pos) != null ? master(state, pos) : null;
     }
 }
