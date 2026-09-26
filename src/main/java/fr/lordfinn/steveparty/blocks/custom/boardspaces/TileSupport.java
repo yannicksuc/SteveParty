@@ -20,7 +20,8 @@ import java.util.Map;
  * A tile always occupies the cell above its support (two blocks can't share a cell), but it is drawn, collides and is
  * outlined on the real surface of the support: lowered onto a bottom slab, snow layers or a carpet ({@code drop_N}:
  * N sixteenths below its cell), or sheared along the slope of stairs ({@code slope_*}: 45 degrees, rising toward the
- * named side, so that the tiles of a staircase make one continuous ramp touching every step nose). The profile is
+ * named side, so that the tiles of a staircase make one continuous ramp touching every step nose; along the
+ * diagonal on inner corner stairs). The profile is
  * read from the support's outline shape, quarter by quarter, when the tile is placed and whenever the block under
  * it changes, and kept in the block state (see {@link ATileBlock#SUPPORT}).
  * <p>
@@ -37,7 +38,22 @@ public enum TileSupport implements StringIdentifiable {
     SLOPE_NORTH("slope_north", 0, 0, -1, 0),
     SLOPE_EAST("slope_east", 0, 1, 0, 0),
     SLOPE_SOUTH("slope_south", 0, 0, 1, 0),
-    SLOPE_WEST("slope_west", 0, -1, 0, 0);
+    SLOPE_WEST("slope_west", 0, -1, 0, 0),
+    /**
+     * Inner corner stairs: rises 45 degrees along the diagonal toward the corner opposite their low quarter, lifted so
+     * that the tile's lowest corner lands on that quarter's step.
+     */
+    SLOPE_NORTH_EAST("slope_north_east", 0, Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT),
+    SLOPE_SOUTH_EAST("slope_south_east", 0, Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT),
+    SLOPE_SOUTH_WEST("slope_south_west", 0, -Diagonal.GRADIENT, Diagonal.GRADIENT, Diagonal.PIVOT),
+    SLOPE_NORTH_WEST("slope_north_west", 0, -Diagonal.GRADIENT, -Diagonal.GRADIENT, Diagonal.PIVOT);
+
+    /** A 45 degree slope along a diagonal: the gradient on each axis, and the height of its centre above the step. */
+    private static final class Diagonal {
+        static final double GRADIENT = Math.sqrt(0.5);
+        /** Half a diagonal (0.707) down from the centre lands on the low step (-0.5). */
+        static final double PIVOT = Math.sqrt(0.5) - 0.5;
+    }
 
     /** Thickness of a tile (support + picture), in blocks. */
     public static final double THICKNESS = 2.0 / 16;
@@ -210,6 +226,13 @@ public enum TileSupport implements StringIdentifiable {
             if (high[2] && high[3]) return SLOPE_SOUTH;
             if (high[0] && high[2]) return SLOPE_WEST;
             if (high[1] && high[3]) return SLOPE_EAST;
+        }
+        if (highCount == 3) {
+            // Inner corner: rises toward the quarter opposite the low one
+            if (!high[3]) return SLOPE_NORTH_WEST;
+            if (!high[2]) return SLOPE_NORTH_EAST;
+            if (!high[1]) return SLOPE_SOUTH_WEST;
+            return SLOPE_SOUTH_EAST;
         }
         return null;
     }

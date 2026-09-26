@@ -100,6 +100,30 @@ public class TileSupportGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void innerCornersSlopeAlongTheDiagonal(TestContext context) {
+        // Inner left facing north: high north half and south-west quarter, low south-east quarter
+        context.assertEquals(supportOn(context, stairs(Direction.NORTH, BlockHalf.BOTTOM, StairShape.INNER_LEFT)),
+                TileSupport.SLOPE_NORTH_WEST, "inner left, facing north");
+        context.assertEquals(supportOn(context, stairs(Direction.NORTH, BlockHalf.BOTTOM, StairShape.INNER_RIGHT)),
+                TileSupport.SLOPE_NORTH_EAST, "inner right, facing north");
+        context.assertEquals(supportOn(context, stairs(Direction.SOUTH, BlockHalf.BOTTOM, StairShape.INNER_LEFT)),
+                TileSupport.SLOPE_SOUTH_EAST, "inner left, facing south");
+        context.assertEquals(supportOn(context, stairs(Direction.SOUTH, BlockHalf.BOTTOM, StairShape.INNER_RIGHT)),
+                TileSupport.SLOPE_SOUTH_WEST, "inner right, facing south");
+
+        TileSupport corner = TileSupport.SLOPE_NORTH_WEST;
+        // 45 degrees along the diagonal: one block of height per block walked toward the north-west
+        double step = Math.sqrt(0.5) * 0.5;
+        context.assertTrue(Math.abs(corner.surfaceY(0.5 - step, 0.5 - step) - corner.surfaceY(0.5, 0.5) - Math.sqrt(0.5) * 0.5 * Math.sqrt(2)) < 1.0E-6,
+                "45 degrees along the diagonal");
+        context.assertTrue(Math.abs(corner.surfaceY(1, 1) + 0.5) < 1.0E-6, "the low corner lands on the step");
+        context.assertTrue(corner.surfaceY(0.5, 0.5) > 0, "above the inner nose");
+        context.assertTrue(corner.supportTop(3) == -0.5 && corner.supportTop(0) == 0 && corner.supportTop(1) == 0
+                && corner.supportTop(2) == 0, "three high quarters, the south-east one low");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void supportFollowsTheBlockUnder(TestContext context) {
         supportOn(context, Blocks.STONE.getDefaultState());
         context.setBlockState(TILE.down(), Blocks.STONE_SLAB.getDefaultState());

@@ -581,6 +581,14 @@ def tiles_station(x0=2010, z0=2045):
                  tile_block(x, Y + 1, row, 4, 'tile' if k % 2 else 'simple_tile'),
                  label(x + 0.5, Y + 3.2, row + 0.5, caption, 'white', 0.6, False)]
     cmds.append(token_at(x0 + 6.5, Y + 1 - 0.5 + 0.125, row + 0.5, 'cow', 'Pion sur la dalle', 'gold'))
+    # Inner corner stairs: sloped along the diagonal (a stair corner: two flights meeting, and single corners)
+    row = z0 + 17
+    corners = [('north', 'inner_left'), ('north', 'inner_right'), ('south', 'inner_left'), ('south', 'inner_right')]
+    for k, (facing, shape) in enumerate(corners):
+        x = x0 + 2 + 3 * k
+        cmds += ['setblock %d %d %d oak_stairs[facing=%s,half=bottom,shape=%s]' % (x, Y, row, facing, shape),
+                 tile_block(x, Y + 1, row, (2 * k + 1) % 8, 'simple_tile' if k % 2 else 'tile')]
+    cmds.append(label(x0 + 6.5, Y + 3.2, row + 0.5, 'Coins intérieurs d\'escalier : pente en diagonale', 'white', 0.7, False))
     return cmds
 
 
