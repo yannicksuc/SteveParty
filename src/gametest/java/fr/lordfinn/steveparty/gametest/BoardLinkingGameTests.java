@@ -4,7 +4,9 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.board.BoardValidator;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.board.WrenchMode;
 import fr.lordfinn.steveparty.board.WrenchState;
@@ -203,6 +205,65 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "links kept through the Wrench");
             context.assertTrue(WrenchActions.origin(wrench, context.getWorld()) == null, "a swap does not start a chain");
         });
+    }
+
+    /** Builds s → a → b ⑂ (c, d), d → a, and a lonely e; s is a start tile. */
+    static List<BlockPos> smallBoard(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.SIMPLE_TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1),
+                new BlockPos(5, 1, 1), new BlockPos(7, 1, 1), new BlockPos(5, 1, 3), new BlockPos(1, 1, 5));
+        link(context, t.get(0), t.get(1));
+        link(context, t.get(1), t.get(2));
+        link(context, t.get(2), t.get(3), t.get(4));
+        link(context, t.get(4), t.get(1));
+        ItemStack start = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+        start.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(List.of(t.get(1))), ""));
+        boardSpace(context, t.get(0)).setStack(0, start);
+        return t;
+    }
+
+    /** This test's area only (tests run side by side). */
+    static net.minecraft.util.math.BlockBox box(TestContext context) {
+        return net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(0, 0, 0)), context.getAbsolutePos(new BlockPos(8, 3, 8)));
+    }
+
+    static void link(TestContext context, BlockPos from, BlockPos... to) {
+        ItemStack cartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(List.of(to)), ""));
+        boardSpace(context, from).setStack(0, cartridge);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void boardGraphNumbersTheSpacesAndFindsTheProblems(TestContext context) {
+        List<BlockPos> t = smallBoard(context);
+        BoardGraph graph = BoardGraph.collect(context.getWorld(), box(context));
+        context.assertEquals(graph.nodes().size(), 6, "6 board spaces");
+        context.assertEquals(graph.distance(t.get(0)), 0, "start");
+        context.assertEquals(graph.distance(t.get(2)), 2, "b is 2 steps away");
+        context.assertEquals(graph.distance(t.get(3)), 3, "c is 3 steps away");
+        context.assertTrue(graph.isFork(graph.node(t.get(2))), "b is a fork");
+        context.assertTrue(graph.isDeadEnd(graph.node(t.get(3))), "c is a dead end");
+        context.assertTrue(graph.isUnreachable(graph.node(t.get(5))), "e is unreachable");
+        context.assertTrue(!graph.isUnreachable(graph.node(t.get(4))), "d is reachable");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void boardCheckReportsEachProblem(TestContext context) {
+        List<BlockPos> t = smallBoard(context);
+        // e links to a block that is no board space
+        context.setBlockState(new BlockPos(1, 1, 7), Blocks.STONE);
+        link(context, t.get(5), context.getAbsolutePos(new BlockPos(1, 1, 7)));
+        BoardValidator.Report report = BoardValidator.check(BoardGraph.collect(context.getWorld(), box(context)));
+        java.util.Map<String, List<BlockPos>> issues = new java.util.HashMap<>();
+        for (BoardValidator.Issue issue : report.issues()) issues.put(issue.key(), issue.positions());
+        context.assertEquals(report.starts(), 1, "one start");
+        context.assertEquals(java.util.Set.copyOf(issues.get("dead_ends")), java.util.Set.of(t.get(3), t.get(5)), "c and e are dead ends");
+        context.assertEquals(issues.get("unreachable"), List.of(t.get(5)), "e is unreachable");
+        context.assertEquals(issues.get("broken_links"), List.of(t.get(5)), "e's link is broken");
+        context.assertEquals(issues.get("no_token"), List.of(t.get(0)), "the start has no token");
+        context.assertTrue(!issues.containsKey("no_start"), "a start exists");
+        context.assertTrue(!report.ok(), "not ok");
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)

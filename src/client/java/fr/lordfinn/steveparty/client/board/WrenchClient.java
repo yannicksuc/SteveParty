@@ -43,6 +43,7 @@ public final class WrenchClient {
         });
         HudRenderCallback.EVENT.register(WrenchClient::renderHud);
         WrenchOverlay.initialize();
+        BoardView.initialize();
     }
 
     static boolean holdsWrench(MinecraftClient client) {
@@ -88,5 +89,11 @@ public final class WrenchClient {
         context.drawTextWithShadow(client.textRenderer, detail.copy().formatted(Formatting.GRAY), x, y + 10, 0xFFFFFFFF);
         Text hint = Text.translatable("hud.steveparty.wrench.hint", MODE_KEY.getBoundKeyLocalizedText());
         context.drawTextWithShadow(client.textRenderer, hint, x, y - 10, HINT_COLOR);
+        // The board view around: problems at a glance
+        int[] counts = BoardView.counts();
+        if (counts[0] > 0) {
+            Text board = Text.translatable("hud.steveparty.board.counts", counts[0], counts[1], counts[2]);
+            context.drawTextWithShadow(client.textRenderer, board, x, y - 20, counts[1] + counts[2] > 0 ? 0xFFFFB050 : 0xFF90FF90);
+        }
     }
 }

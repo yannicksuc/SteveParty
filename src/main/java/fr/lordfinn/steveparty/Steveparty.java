@@ -74,6 +74,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.items.custom.TokenizerFlare.initialize();
         fr.lordfinn.steveparty.entities.custom.MulaEphemeride.initialize();
         fr.lordfinn.steveparty.commands.PartyCommands.initialize();
+        fr.lordfinn.steveparty.commands.BoardCommands.initialize();
         new TokenMovementService();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
