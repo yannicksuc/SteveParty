@@ -1,22 +1,31 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.board.BoardGraph;
+import fr.lordfinn.steveparty.board.BoardRevision;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -28,14 +37,23 @@ import java.util.Map;
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
  * gently pulsing. Only the holder sees it (client side); the links come from the block entity data the server already
- * sends, no packet needed. Rebuilt twice a second.
+ * sends, no packet needed.
+ * <p>
+ * The graph is rebuilt only when the board may have changed ({@link BoardRevision}: board space or router data or
+ * block state received, such a block entity or a chest loaded or removed) or when the holder moved a few blocks, with
+ * a slow safety refresh; everything drawn (anchors, colours, labels, bounds) is computed then, so a frame reads no
+ * block and allocates nothing per link.
  */
 public final class BoardView {
     /** Board spaces within this many blocks are shown. */
     public static final int RADIUS = 48;
-    private static final int REFRESH_TICKS = 10;
+    /** The holder moved this far (blocks, Manhattan) from where the graph was built: rebuilt around them. */
+    private static final int MOVE_REBUILD = 4;
+    /** Rebuilt anyway after this many ticks (what no event reports, e.g. a chunk of a link target loaded). */
+    private static final int SAFETY_REFRESH_TICKS = 100;
     private static final double LABEL_DISTANCE_SQ = 32 * 32;
     private static final float LABEL_SCALE = 1f / 40f;
+    private static final Text WARNING = Text.literal("!"), FORK = Text.literal("?");
 
     /** Branch colours: the main path, then each new branch at a fork. */
     private static final int[] BRANCHES = {0xFF3A9BFF, 0xFFFFD83D, 0xFF6CCB52, 0xFFF36BAA, 0xFFB983FF, 0xFFF9901D};
@@ -45,8 +63,40 @@ public final class BoardView {
     /** Chevrons: size, gap and speed (blocks, blocks per second). */
     private static final double DOT = 0.56, SPACING = 0.72, SPEED = 1.4;
 
+    /** A link as drawn: its ends (lifted for inactive ones), colour, and bounds for the frustum test. */
+    private record DrawnEdge(double ax, double ay, double az, double bx, double by, double bz, int color, boolean active, Box bounds) {
+    }
+
+    /** A space's labels as drawn: where, what, and the reusable distance used to sort them each frame. */
+    private static final class Label {
+        final Vec3d anchor;
+        final Box bounds;
+        final @Nullable Text number;
+        final WorldDraw.Plate numberPlate;
+        final boolean deadEnd, unreachable, fork, alone;
+        double distanceSq;
+
+        Label(Vec3d anchor, @Nullable Text number, WorldDraw.Plate numberPlate, boolean deadEnd, boolean unreachable, boolean fork, boolean alone) {
+            this.anchor = anchor;
+            this.bounds = new Box(anchor.x - 1.5, anchor.y - 0.5, anchor.z - 1.5, anchor.x + 1.5, anchor.y + 2.5, anchor.z + 1.5);
+            this.number = number;
+            this.numberPlate = numberPlate;
+            this.deadEnd = deadEnd;
+            this.unreachable = unreachable;
+            this.fork = fork;
+            this.alone = alone;
+        }
+    }
+
     private static @Nullable BoardGraph graph;
-    private static Map<BoardGraph.Edge, Integer> colors = Map.of();
+    private static List<DrawnEdge> edges = List.of();
+    private static List<Label> labels = List.of();
+    /** The labels near enough to be drawn this frame, reused from frame to frame. */
+    private static final List<Label> SHOWN = new ArrayList<>();
+    private static final Comparator<Label> FARTHEST_FIRST = (a, b) -> Double.compare(b.distanceSq, a.distanceSq);
+    private static int[] counts = {0, 0, 0};
+    private static @Nullable BlockPos builtAt;
+    private static long builtRevision = -1;
     private static int age;
 
     private BoardView() {
@@ -55,16 +105,76 @@ public final class BoardView {
     static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null || client.world == null || !holdsWrench(client.player)) {
-                graph = null;
+                clear();
                 return;
             }
-            if (graph == null || ++age >= REFRESH_TICKS) {
-                age = 0;
-                graph = BoardGraph.collect(client.world, client.player.getBlockPos(), RADIUS);
-                colors = branchColors(graph);
+            BlockPos at = client.player.getBlockPos();
+            if (graph == null || builtRevision != BoardRevision.client() || builtAt == null
+                    || builtAt.getManhattanDistance(at) >= MOVE_REBUILD || ++age >= SAFETY_REFRESH_TICKS) {
+                build(client.world, at);
             }
         });
+        // Board spaces and routers (their links), chests (inventory tiles) appearing or going away
+        ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, world) -> onBlockEntity(blockEntity));
+        ClientBlockEntityEvents.BLOCK_ENTITY_UNLOAD.register((blockEntity, world) -> onBlockEntity(blockEntity));
         WorldRenderEvents.AFTER_ENTITIES.register(BoardView::render);
+    }
+
+    private static void onBlockEntity(BlockEntity blockEntity) {
+        if (blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof Inventory) BoardRevision.changedOnClient();
+    }
+
+    private static void clear() {
+        if (graph == null) return;
+        graph = null;
+        edges = List.of();
+        labels = List.of();
+        SHOWN.clear();
+        counts = new int[]{0, 0, 0};
+        builtAt = null;
+    }
+
+    private static void build(ClientWorld world, BlockPos at) {
+        age = 0;
+        builtAt = at.toImmutable();
+        builtRevision = BoardRevision.client();
+        BoardGraph built = BoardGraph.collect(world, at, RADIUS);
+        Map<BoardGraph.Edge, Integer> colors = branchColors(built);
+        Map<BlockPos, Vec3d> anchors = new HashMap<>();
+        List<DrawnEdge> drawnEdges = new ArrayList<>();
+        List<Label> builtLabels = new ArrayList<>();
+        int deadEnds = 0, unreachable = 0;
+        boolean hasStart = built.hasStart();
+        for (BoardGraph.Node node : built.nodes()) {
+            Vec3d from = anchors.computeIfAbsent(node.pos(), pos -> WrenchOverlay.anchor(world, pos));
+            for (BoardGraph.Edge edge : node.edges()) {
+                Vec3d to = anchors.computeIfAbsent(edge.to(), pos -> WrenchOverlay.anchor(world, pos));
+                // Other cartridges of an Advanced Tile: a little higher, dimmed, not moving
+                double lift = edge.active() ? 0 : 0.06 * (1 + edge.slot() % 4);
+                Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
+                drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color(edge, colors), edge.active(), bounds));
+            }
+            Integer distance = built.distance(node.pos());
+            Text number = null;
+            WorldDraw.Plate plate = WorldDraw.Plate.TEAL;
+            if (node.start()) {
+                number = Text.translatable("hud.steveparty.board.start");
+                plate = WorldDraw.Plate.GREEN;
+            } else if (distance != null) {
+                number = Text.literal(Integer.toString(distance));
+            } else if (!hasStart) {
+                number = Text.literal("·");
+            }
+            boolean deadEnd = built.isDeadEnd(node), notReached = built.isUnreachable(node);
+            if (deadEnd) deadEnds++;
+            if (notReached) unreachable++;
+            boolean alone = !node.start() && distance == null && hasStart;
+            builtLabels.add(new Label(from, number, plate, deadEnd, notReached, built.isFork(node), alone));
+        }
+        graph = built;
+        edges = drawnEdges;
+        labels = builtLabels;
+        counts = new int[]{built.nodes().size(), deadEnds, unreachable};
     }
 
     /** The current graph (null when the Wrench is not held). */
@@ -109,7 +219,7 @@ public final class BoardView {
         return result;
     }
 
-    private static int color(BoardGraph.Edge edge) {
+    private static int color(BoardGraph.Edge edge, Map<BoardGraph.Edge, Integer> colors) {
         if (edge.target() == BoardGraph.Target.BROKEN) return BROKEN;
         if (!edge.active()) return INACTIVE;
         Integer branch = colors.get(edge);
@@ -117,81 +227,58 @@ public final class BoardView {
     }
 
     private static void render(WorldRenderContext context) {
-        BoardGraph shown = graph;
         MinecraftClient client = MinecraftClient.getInstance();
-        ClientWorld world = client.world;
         MatrixStack matrices = context.matrixStack();
-        if (shown == null || world == null || matrices == null || client.player == null) return;
+        if (graph == null || client.world == null || matrices == null || client.player == null) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         Camera camera = context.camera();
+        Frustum frustum = context.frustum();
         Vec3d eye = camera.getPos();
-        double time = (world.getTime() + context.tickCounter().getTickDelta(true)) / 20.0;
+        double time = (client.world.getTime() + context.tickCounter().getTickDelta(true)) / 20.0;
         double phase = time * SPEED;
-        for (BoardGraph.Node node : shown.nodes()) {
-            Vec3d from = WrenchOverlay.anchor(world, node.pos());
-            for (BoardGraph.Edge edge : node.edges()) {
-                Vec3d to = WrenchOverlay.anchor(world, edge.to());
-                // Other cartridges of an Advanced Tile: a little higher, dimmed, not moving
-                Vec3d lift = edge.active() ? Vec3d.ZERO : new Vec3d(0, 0.06 * (1 + edge.slot() % 4), 0);
-                WorldDraw.path(matrices, consumers, camera, from.add(lift), to.add(lift), color(edge), DOT, SPACING,
-                        edge.active() ? phase : 0, 0.45, 0.12);
-            }
+        for (DrawnEdge edge : edges) {
+            if (frustum != null && !frustum.isVisible(edge.bounds())) continue;
+            WorldDraw.path(matrices, consumers, camera, edge.ax(), edge.ay(), edge.az(), edge.bx(), edge.by(), edge.bz(),
+                    edge.color(), DOT, SPACING, edge.active() ? phase : 0, 0.45, 0.12);
         }
         // Labels from the farthest to the nearest: the nearest ones on top
-        List<BoardGraph.Node> labelled = new java.util.ArrayList<>(shown.nodes().stream()
-                .filter(node -> WrenchOverlay.anchor(world, node.pos()).squaredDistanceTo(eye) <= LABEL_DISTANCE_SQ).toList());
-        labelled.sort(java.util.Comparator.comparingDouble((BoardGraph.Node node) -> WrenchOverlay.anchor(world, node.pos()).squaredDistanceTo(eye)).reversed());
-        for (BoardGraph.Node node : labelled) {
-            Vec3d from = WrenchOverlay.anchor(world, node.pos());
-            double distance = Math.sqrt(from.squaredDistanceTo(eye));
+        SHOWN.clear();
+        for (Label label : labels) {
+            label.distanceSq = label.anchor.squaredDistanceTo(eye);
+            if (label.distanceSq <= LABEL_DISTANCE_SQ && (frustum == null || frustum.isVisible(label.bounds))) SHOWN.add(label);
+        }
+        SHOWN.sort(FARTHEST_FIRST);
+        for (Label label : SHOWN) {
             // Readable from afar: the farther, the bigger (up to 3 times)
-            float grow = (float) Math.clamp(distance / 7.0, 1.0, 3.0);
-            float scale = LABEL_SCALE * grow;
-            labels(matrices, consumers, camera, shown, node, from, scale, time);
+            float grow = (float) Math.clamp(Math.sqrt(label.distanceSq) / 7.0, 1.0, 3.0);
+            labels(matrices, consumers, camera, label, LABEL_SCALE * grow, time);
         }
         consumers.draw();
     }
 
-    private static void labels(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, BoardGraph graph,
-                               BoardGraph.Node node, Vec3d anchor, float scale, double time) {
+    private static void labels(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Label label, float scale, double time) {
         double plate = 16 * scale; // a plate's height in blocks
-        Vec3d top = anchor.add(0, 0.25 + plate / 2, 0);
-        Integer distance = graph.distance(node.pos());
-        if (node.start()) {
-            WorldDraw.plateLabel(matrices, consumers, camera, top, Text.translatable("hud.steveparty.board.start"),
-                    WorldDraw.Plate.GREEN, WorldDraw.PLATE_TEXT, scale);
-        } else if (distance != null) {
-            WorldDraw.plateLabel(matrices, consumers, camera, top, Text.literal(Integer.toString(distance)),
-                    WorldDraw.Plate.TEAL, WorldDraw.PLATE_TEXT, scale);
-        } else if (!graph.hasStart()) {
-            WorldDraw.plateLabel(matrices, consumers, camera, top, Text.literal("·"), WorldDraw.Plate.TEAL, WorldDraw.PLATE_TEXT, scale);
+        Vec3d top = label.anchor.add(0, 0.25 + plate / 2, 0);
+        if (label.number != null) {
+            WorldDraw.plateLabel(matrices, consumers, camera, top, label.number, label.numberPlate, WorldDraw.PLATE_TEXT, scale);
         }
-        boolean deadEnd = graph.isDeadEnd(node), unreachable = graph.isUnreachable(node);
-        if (deadEnd || unreachable) {
+        if (label.deadEnd || label.unreachable) {
             // Gently pulsing, never flashing
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
-            boolean alone = !node.start() && distance == null && graph.hasStart();
-            Vec3d at = alone ? top : top.add(0, plate * 1.05, 0);
-            WorldDraw.plateLabel(matrices, consumers, camera, at, Text.literal("!"),
-                    deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
+            Vec3d at = label.alone ? top : top.add(0, plate * 1.05, 0);
+            WorldDraw.plateLabel(matrices, consumers, camera, at, WARNING,
+                    label.deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
-        if (graph.isFork(node)) {
+        if (label.fork) {
             // The junction marker, beside the number (to the right as seen from the camera)
             org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
             Vec3d beside = top.add(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
-            WorldDraw.plateLabel(matrices, consumers, camera, beside, Text.literal("?"), WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
+            WorldDraw.plateLabel(matrices, consumers, camera, beside, FORK, WorldDraw.Plate.GOLD, WorldDraw.PLATE_TEXT, scale);
         }
     }
 
-    /** For the HUD: the spaces around, dead ends and spaces no start leads to. */
+    /** For the HUD: the spaces around, dead ends and spaces no start leads to (counted when the graph is built). */
     static int[] counts() {
-        BoardGraph shown = graph;
-        if (shown == null) return new int[]{0, 0, 0};
-        int deadEnds = 0, unreachable = 0;
-        for (BoardGraph.Node node : shown.nodes()) {
-            if (shown.isDeadEnd(node)) deadEnds++;
-            if (shown.isUnreachable(node)) unreachable++;
-        }
-        return new int[]{shown.nodes().size(), deadEnds, unreachable};
+        return counts;
     }
 }
