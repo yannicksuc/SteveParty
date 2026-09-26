@@ -30,7 +30,9 @@ public class BrickShadeModelPlugin implements ModelLoadingPlugin {
                 variants[n] = ctx.textureGetter().apply(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE,
                         Identifier.of(texture.getNamespace(), "block/polished_bricks/" + name + "_" + n)));
             }
-            return new BrickShadeModel(originalModel, variants);
+            Sprite particle = ctx.textureGetter().apply(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE,
+                    Identifier.of(texture.getNamespace(), "block/polished_bricks/particle/" + name)));
+            return new BrickShadeModel(originalModel, variants, particle);
         });
     }
 

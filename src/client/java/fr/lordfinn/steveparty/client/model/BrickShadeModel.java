@@ -50,10 +50,13 @@ public class BrickShadeModel implements BakedModel {
     private final BakedModel base;
     /** The textures a zone may draw (the first is the block's own). */
     private final Sprite[] variants;
+    /** One block's worth of texture: the break / step particles (the full sprite spans {@link #SPAN} blocks). */
+    private final Sprite particle;
 
-    public BrickShadeModel(BakedModel base, Sprite[] variants) {
+    public BrickShadeModel(BakedModel base, Sprite[] variants, Sprite particle) {
         this.base = base;
         this.variants = variants;
+        this.particle = particle;
     }
 
     @Override
@@ -115,7 +118,7 @@ public class BrickShadeModel implements BakedModel {
     @Override public boolean hasDepth() { return base.hasDepth(); }
     @Override public boolean isSideLit() { return base.isSideLit(); }
     @Override public boolean isBuiltin() { return false; }
-    @Override public Sprite getParticleSprite() { return base.getParticleSprite(); }
+    @Override public Sprite getParticleSprite() { return particle; }
     @Override public ModelTransformation getTransformation() { return base.getTransformation(); }
     @Override public ModelOverrideList getOverrides() { return base.getOverrides(); }
 }
