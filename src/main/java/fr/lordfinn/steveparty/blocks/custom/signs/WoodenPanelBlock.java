@@ -12,7 +12,7 @@ import net.minecraft.world.WorldView;
 /**
  * Big wooden panel on a post: it stands on any fence or wall ({@link SignPosts}), whose post goes on behind the
  * board without turning, and the board turns in 16 directions. Made of any planks. Stencils engrave or paint its
- * 16x16 middle like a traffic sign.
+ * 16x16 middle like a easel sign.
  */
 public class WoodenPanelBlock extends AbstractStencilSignBlock {
     public static final MapCodec<WoodenPanelBlock> CODEC = createCodec(WoodenPanelBlock::new);

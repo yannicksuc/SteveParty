@@ -61,13 +61,13 @@ public final class StencilSignModels {
         };
     }
 
-    // ---------------------------------------------------------------- traffic sign
+    // ---------------------------------------------------------------- easel sign
 
-    /** Traffic sign: its JSON model turned; the material one re-textured with its planks. */
-    static final class TrafficSign extends SignModel {
+    /** Easel sign: its JSON model turned; the material one re-textured with its planks. */
+    static final class EaselSign extends SignModel {
         private final boolean material;
 
-        TrafficSign(BakedModel base, boolean material) {
+        EaselSign(BakedModel base, boolean material) {
             super(base);
             this.material = material;
         }

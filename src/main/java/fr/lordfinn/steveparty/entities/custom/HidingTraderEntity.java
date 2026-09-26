@@ -37,6 +37,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.entity.ExperienceOrbEntity;
+import net.minecraft.village.TradeOffers;
+import net.minecraft.village.VillagerData;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
@@ -79,6 +84,19 @@ import java.util.UUID;
 public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     private final TradeOfferList tradeOffers = new TradeOfferList();
+    /**
+     * The trades of the villager he was (a villager block landed on from high enough, see {@link #inheritVillager}),
+     * shown after the stalls' offers and traded like a villager's: limited uses restocked each day, no stock taken, no
+     * payment to the cash registers, experience and level ups. Empty for a trader who never was a villager.
+     */
+    private final TradeOfferList villagerOffers = new TradeOfferList();
+    /** Profession, biome type and level of the villager he was, null if he never was one. */
+    @Nullable
+    private VillagerData villagerData = null;
+    private int villagerExperience = 0;
+    /** World day of the last restock of {@link #villagerOffers}. */
+    private long villagerRestockDay = Long.MIN_VALUE;
+    public static final String FORMER_VILLAGER_NBT = "FormerVillager";
     private VendorLinkPersistentState vendorLinkPersistentState;
     private final List<Inventory> storages = new ArrayList<>();
     private final List<TradingStallBlockEntity> tradingStalls = new ArrayList<>();
@@ -311,7 +329,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         offer.disable();
         merchantInventory.updateOffers();
         PlayerEntity customer = getCustomer();
-        if (customer != null) updateTradesToClient(customer, 0);
+        if (customer != null) updateTradesToClient(customer, levelProgress());
         handler.syncState();
         return false;
     }
@@ -369,7 +387,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     public boolean isLeveledMerchant() {
-        return false;
+        // A former villager with a profession shows his level and experience like one
+        return villagerData != null && !villagerOffers.isEmpty();
     }
 
     private void updateInventories() {
@@ -400,11 +419,153 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 tradeOffers.addAll(stall.getTradeOffers());
             }
         }
+        restockVillagerOffers();
+        tradeOffers.addAll(villagerOffers);
         refreshOfferAvailability();
+    }
+
+    // ------------------------------------------------------------------ former villager
+
+    /**
+     * He was the villager of a villager block (its data, see VillagerSoul): he keeps what a trader can have of it.
+     * Its trades (with their uses and prices), profession, level and experience, its name, health, command tags and
+     * silent / invulnerable / glowing flags. The villager's pockets are emptied on the ground.
+     */
+    public void inheritVillager(NbtCompound villager) {
+        var ops = this.getRegistryManager().getOps(NbtOps.INSTANCE);
+        if (villager.contains("VillagerData", NbtElement.COMPOUND_TYPE)) {
+            VillagerData.CODEC.parse(NbtOps.INSTANCE, villager.get("VillagerData"))
+                    .resultOrPartial(error -> Steveparty.LOGGER.warn("Villager data not inherited: {}", error))
+                    .ifPresent(data -> villagerData = data);
+        }
+        villagerExperience = villager.getInt("Xp");
+        villagerOffers.clear();
+        if (villager.contains("Offers")) {
+            TradeOfferList.CODEC.parse(ops, villager.get("Offers"))
+                    .resultOrPartial(error -> Steveparty.LOGGER.warn("Villager trades not inherited: {}", error))
+                    .ifPresent(villagerOffers::addAll);
+        }
+        villagerRestockDay = getWorld().getTimeOfDay() / 24000L;
+        if (villager.contains("CustomName", NbtElement.STRING_TYPE)) {
+            try {
+                setCustomName(Text.Serialization.fromJson(villager.getString("CustomName"), this.getRegistryManager()));
+            } catch (Exception e) {
+                Steveparty.LOGGER.warn("Villager name not inherited: {}", villager.getString("CustomName"));
+            }
+            setCustomNameVisible(villager.getBoolean("CustomNameVisible"));
+        }
+        if (villager.contains("Health", NbtElement.NUMBER_TYPE) && villager.getFloat("Health") > 0) {
+            setHealth(Math.min(villager.getFloat("Health"), getMaxHealth()));
+        }
+        villager.getList("Tags", NbtElement.STRING_TYPE).forEach(tag -> addCommandTag(tag.asString()));
+        if (villager.getBoolean("Silent")) setSilent(true);
+        if (villager.getBoolean("Invulnerable")) setInvulnerable(true);
+        if (villager.getBoolean("Glowing")) setGlowing(true);
+        if (getWorld() instanceof ServerWorld serverWorld && villager.contains("Inventory", NbtElement.LIST_TYPE)) {
+            SimpleInventory pockets = new SimpleInventory(8);
+            pockets.readNbtList(villager.getList("Inventory", NbtElement.COMPOUND_TYPE), this.getRegistryManager());
+            for (ItemStack stack : pockets.clearToList()) dropStack(serverWorld, stack);
+        }
+    }
+
+    /** The trades inherited from the villager he was (empty if he never was one). */
+    public TradeOfferList getVillagerOffers() {
+        return villagerOffers;
+    }
+
+    @Nullable
+    public VillagerData getVillagerData() {
+        return villagerData;
+    }
+
+    public int getVillagerExperience() {
+        return villagerExperience;
+    }
+
+    private boolean isVillagerOffer(TradeOffer offer) {
+        for (TradeOffer own : villagerOffers) {
+            if (own == offer) return true;
+        }
+        return false;
+    }
+
+    /** Like a villager at his workstation, but once a day: the used trades are available again, prices follow demand. */
+    private void restockVillagerOffers() {
+        if (villagerOffers.isEmpty()) return;
+        long day = getWorld().getTimeOfDay() / 24000L;
+        if (day == villagerRestockDay) return;
+        villagerRestockDay = day;
+        for (TradeOffer offer : villagerOffers) {
+            offer.updateDemandBonus();
+            offer.resetUses();
+        }
+    }
+
+    /** A trade of the villager he was: experience, level up, experience orbs for the customer (like a villager). */
+    private void afterVillagerTrade(TradeOffer offer) {
+        villagerExperience += offer.getMerchantExperience();
+        if (offer.shouldRewardPlayerExperience() && getWorld() instanceof ServerWorld serverWorld) {
+            serverWorld.spawnEntity(new ExperienceOrbEntity(serverWorld, getX(), getY() + 0.5, getZ(), 3 + random.nextInt(4)));
+        }
+        if (villagerData != null && VillagerData.canLevelUp(villagerData.getLevel())
+                && villagerExperience >= VillagerData.getUpperLevelExperience(villagerData.getLevel())) {
+            villagerData = villagerData.withLevel(villagerData.getLevel() + 1);
+            var byLevel = TradeOffers.PROFESSION_TO_LEVELED_TRADE.get(villagerData.getProfession());
+            TradeOffers.Factory[] pool = byLevel == null ? null : byLevel.get(villagerData.getLevel());
+            if (pool != null) {
+                int before = villagerOffers.size();
+                fillRecipesFromPool(villagerOffers, pool, 2);
+                tradeOffers.addAll(villagerOffers.subList(before, villagerOffers.size()));
+            }
+            this.playSound(SoundEvents.ENTITY_VILLAGER_CELEBRATE, 1.0F, this.getSoundPitch());
+        }
+        refreshOfferAvailability();
+        updateTradesToClient(getCustomer(), levelProgress());
+        this.playSound(SoundEvents.ENTITY_VILLAGER_TRADE, 1.0F, this.getSoundPitch());
+    }
+
+    /** The level shown by the trade screen: the villager's he was, none for a trader who never was one. */
+    private int levelProgress() {
+        return isLeveledMerchant() && villagerData != null ? villagerData.getLevel() : 0;
+    }
+
+    private void writeFormerVillager(NbtCompound nbt) {
+        if (villagerData == null && villagerOffers.isEmpty()) return;
+        NbtCompound former = new NbtCompound();
+        if (villagerData != null) {
+            VillagerData.CODEC.encodeStart(NbtOps.INSTANCE, villagerData).resultOrPartial(Steveparty.LOGGER::warn)
+                    .ifPresent(data -> former.put("VillagerData", data));
+        }
+        former.putInt("Xp", villagerExperience);
+        if (!villagerOffers.isEmpty()) {
+            TradeOfferList.CODEC.encodeStart(this.getRegistryManager().getOps(NbtOps.INSTANCE), villagerOffers)
+                    .resultOrPartial(Steveparty.LOGGER::warn).ifPresent(offers -> former.put("Offers", offers));
+        }
+        former.putLong("RestockDay", villagerRestockDay);
+        nbt.put(FORMER_VILLAGER_NBT, former);
+    }
+
+    private void readFormerVillager(NbtCompound nbt) {
+        villagerData = null;
+        villagerOffers.clear();
+        villagerExperience = 0;
+        if (!nbt.contains(FORMER_VILLAGER_NBT, NbtElement.COMPOUND_TYPE)) return;
+        NbtCompound former = nbt.getCompound(FORMER_VILLAGER_NBT);
+        if (former.contains("VillagerData", NbtElement.COMPOUND_TYPE)) {
+            VillagerData.CODEC.parse(NbtOps.INSTANCE, former.get("VillagerData")).resultOrPartial(Steveparty.LOGGER::warn)
+                    .ifPresent(data -> villagerData = data);
+        }
+        villagerExperience = former.getInt("Xp");
+        if (former.contains("Offers")) {
+            TradeOfferList.CODEC.parse(this.getRegistryManager().getOps(NbtOps.INSTANCE), former.get("Offers"))
+                    .resultOrPartial(Steveparty.LOGGER::warn).ifPresent(villagerOffers::addAll);
+        }
+        villagerRestockDay = former.getLong("RestockDay");
     }
 
     /** Availability of an offer: locked stall first, then missing stock. */
     private int getOfferState(TradeOffer offer) {
+        if (isVillagerOffer(offer)) return offer.isDisabled() ? OFFER_OUT_OF_STOCK : OFFER_AVAILABLE;
         if (offer instanceof TradingStallBlockEntity.ExactTradeOffer exactOffer && !exactOffer.isSaleAllowed()) {
             return OFFER_LOCKED;
         }
@@ -422,6 +583,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         for (TradeOffer offer : tradeOffers) {
             int state = getOfferState(offer);
             states.add(state);
+            // A villager's trade is used up by its uses, until the next restock
+            if (isVillagerOffer(offer)) continue;
             if (state == OFFER_AVAILABLE) {
                 if (offer.isDisabled() || offer.getUses() > 0) offer.resetUses();
             } else if (!offer.isDisabled()) {
@@ -540,10 +703,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 return ActionResult.SUCCESS;
             }
             this.fillRecipes();
-            if (storages.isEmpty() || tradeOffers.isEmpty())
+            if (tradeOffers.isEmpty() || (storages.isEmpty() && villagerOffers.isEmpty()))
                 return ActionResult.PASS;
             this.setCustomer(player);
-            this.sendOffers(player, this.getDisplayName(), 0);
+            this.sendOffers(player, this.getDisplayName(), levelProgress());
             if (isAttentionTarget(player)) playHappyGesture();
             return ActionResult.SUCCESS;
         }
@@ -604,6 +767,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (nbt.contains(HOME_NBT, NbtElement.LONG_TYPE)) {
             home = BlockPos.fromLong(nbt.getLong(HOME_NBT));
         }
+        readFormerVillager(nbt);
         if (nbt.contains(BANDANA_COLOR_NBT, NbtElement.NUMBER_TYPE)) {
             setBandanaColor(nbt.getInt(BANDANA_COLOR_NBT));
         } else if (getBandanaColor() < 0) {
@@ -637,6 +801,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (home != null) {
             nbt.putLong(HOME_NBT, home.asLong());
         }
+        writeFormerVillager(nbt);
         return super.writeNbt(nbt);
     }
 
@@ -672,6 +837,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected void afterUsing(TradeOffer offer) {
+        if (isVillagerOffer(offer)) {
+            afterVillagerTrade(offer);
+            return;
+        }
         consumeStock(offer.getSellItem());
         // Deposit the stacks the player really paid with (exact components); fall back to the offer's price
         List<ItemStack> payment = offer instanceof TradingStallBlockEntity.ExactTradeOffer exactOffer
@@ -688,7 +857,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             exactOffer.getStall().onSale();
         }
         refreshOfferAvailability();
-        updateTradesToClient(getCustomer(), 0);
+        updateTradesToClient(getCustomer(), levelProgress());
         triggerCashRegisters();
         if (hasPassengers() && getFirstPassenger() instanceof MobEntity passenger) {
             boolean silentStatus = passenger.isSilent();
@@ -705,7 +874,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     public int getExperience() {
-        return 0;
+        return villagerExperience;
     }
 
     @Override
@@ -837,7 +1006,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                     merchantInventory.updateOffers();
                     handler.sendContentUpdates();
                 }
-                updateTradesToClient(customer, 0);
+                updateTradesToClient(customer, levelProgress());
             }
         }
         if (this.getWorld().isClient) {

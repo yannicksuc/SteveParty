@@ -34,7 +34,7 @@ public class StencilResourceManager {
         /** The stencil itself: metal plate with the shape cut out (items, stencil maker). */
         METAL(Steveparty.id("textures/item/stencil.png"), true),
         /** Painted wood grain in the shape (wooden signs, as they always were). */
-        WOOD(Steveparty.id("textures/block/traffic_sign_overlay_base.png"), false),
+        WOOD(Steveparty.id("textures/block/easel_sign_overlay_base.png"), false),
         /** Plain white shape, tinted by the paint colour (rock, plastic, sprayed paint, engravings). */
         FLAT(null, false);
 

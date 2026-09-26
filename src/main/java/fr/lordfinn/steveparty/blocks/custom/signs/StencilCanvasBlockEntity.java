@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Block entity of every block a stencil can be applied to (traffic signs, panels, rock signs, plastic road signs,
+ * Block entity of every block a stencil can be applied to (easel signs, panels, rock signs, plastic road signs,
  * sprayed paint). It holds the symbol and what the block itself is made of:
  * <ul>
  *     <li>{@code shape}: the stencil applied, null when nothing was applied;</li>
@@ -141,7 +141,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
         onChanged();
     }
 
-    /** Legacy name, kept for the traffic sign code. */
+    /** Legacy name, kept for the easel sign code. */
     public void setShape(@Nullable byte[] shape) {
         setSymbol(shape, color);
     }

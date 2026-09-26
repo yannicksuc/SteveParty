@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.client.blockentity;
 
-import fr.lordfinn.steveparty.blocks.custom.TrafficSignBlock;
+import fr.lordfinn.steveparty.blocks.custom.EaselSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.WoodenPanelBlock;
@@ -28,8 +28,8 @@ public final class SymbolLayouts {
     private SymbolLayouts() {
     }
 
-    // Traffic sign: the board of traffic_sign.json, tilted by 22.5° around x at (8, 0, 3); symbol on its front only
-    private static final List<SymbolQuad> TRAFFIC_SIGN = List.of(
+    // Easel sign: the board of easel_sign.json, tilted by 22.5° around x at (8, 0, 3); symbol on its front only
+    private static final List<SymbolQuad> EASEL_SIGN = List.of(
             tiltX(front(new Vector3f(8, 7.75F, 1 - GAP), 16, 16), 22.5F, 0, 3));
 
     // Wooden panel: the planks of the board (z = 3) between its rails, one symbol pixel per board pixel
@@ -42,7 +42,7 @@ public final class SymbolLayouts {
 
     /** @return the symbol quads of a sign in model space, or an empty list if it shows no symbol. */
     public static List<SymbolQuad> forSign(BlockState state) {
-        if (state.getBlock() instanceof TrafficSignBlock) return TRAFFIC_SIGN;
+        if (state.getBlock() instanceof EaselSignBlock) return EASEL_SIGN;
         if (state.getBlock() instanceof WoodenPanelBlock) return WOODEN_PANEL;
         if (state.getBlock() instanceof PlasticRoadSignBlock) {
             return state.get(PlasticRoadSignBlock.PLATE).turned() ? PLATE_DIAMOND : PLATE;

@@ -449,19 +449,19 @@ def sign_station(x0=2035, z0=1995):
     def pattern(k):
         return pats[k % len(pats)]
 
-    # Row 1: the 10 fixed-wood traffic signs
+    # Row 1: the 10 fixed-wood easel signs
     z = z0 + 2
     for k, wood in enumerate(WOODS):
-        cmds.append('setblock %d %d %d steveparty:%s_traffic_sign[rotation=0,mount=post]{SymbolShape:%s,Color:"%s"}'
+        cmds.append('setblock %d %d %d steveparty:%s_easel_sign[rotation=0,mount=post]{SymbolShape:%s,Color:"%s"}'
                     % (x0 + 1 + 2 * k, Y, z, wood, shape_nbt(pattern(k)), dyes[k % len(dyes)]))
     cmds.append(label(x0 + 10, Y + 2.6, z + 0.5, 'Panneaux de signalisation (bois fixes)', 'white', 0.7, False))
-    # Row 2: the material traffic sign, every planks
+    # Row 2: the material easel sign, every planks
     z = z0 + 6
     for k, wood in enumerate(PLANKS):
-        cmds.append('setblock %d %d %d steveparty:traffic_sign[rotation=0,mount=post]{Material:"minecraft:%s_planks",'
+        cmds.append('setblock %d %d %d steveparty:easel_sign[rotation=0,mount=post]{Material:"minecraft:%s_planks",'
                     'SymbolShape:%s,Color:"%s"}' % (x0 - 1 + 2 * k, Y, z, wood, shape_nbt(pattern(k + 3)),
                                                      dyes[(k + 2) % len(dyes)]))
-    cmds.append(label(x0 + 10, Y + 2.6, z + 0.5, 'Traffic sign (toutes les planches)', 'white', 0.7, False))
+    cmds.append(label(x0 + 10, Y + 2.6, z + 0.5, 'Chevalet (toutes les planches)', 'white', 0.7, False))
     # Row 3: rock signs, engraved
     z = z0 + 10
     rocks = ['stone', 'granite', 'diorite', 'andesite', 'deepslate', 'tuff', 'sandstone', 'blackstone', 'calcite']
@@ -733,8 +733,8 @@ def all_items():
     groups.append(('Boutique et divers', ['trading_stall', 'cash_register', 'looting_box', 'villager_block',
                                           'shopkeeper_key', 'bandana', 'goal_pole_base', 'goal_pole', 'flag',
                                           'triple_jump_shoes', 'hop_switch', 'plastic_pellets', 'plastic_stick']))
-    groups.append(('Panneaux', ['%s_traffic_sign' % w for w in WOODS] +
-                   ['traffic_sign', 'wooden_panel', 'wooden_cutout_panel', 'rock_sign', 'plastic_road_sign',
+    groups.append(('Panneaux', ['%s_easel_sign' % w for w in WOODS] +
+                   ['easel_sign', 'wooden_panel', 'wooden_cutout_panel', 'rock_sign', 'plastic_road_sign',
                     'stencil', 'stencil_gun', 'stencil_maker']))
     for kind, name in [('plastic_block', 'blocs'), ('plastic_stud', 'plots'), ('plastic_fence', 'barrières'),
                        ('plastic_slab', 'dalles'), ('plastic_stairs', 'escaliers'), ('plastic_wall', 'murs')]:
@@ -759,12 +759,12 @@ def chests_station(x0=2035, z0=2020):
         parts = [ids[i:i + 27] for i in range(0, len(ids), 27)]
         for n, part in enumerate(parts):
             chests.append((name + ('' if len(parts) == 1 else ' %d/%d' % (n + 1, len(parts))), part))
-    # Extra chest: one stencil of each pattern, the traffic sign in every planks, the bandana in every colour
+    # Extra chest: one stencil of each pattern, the easel sign in every planks, the bandana in every colour
     extras = ['{id:"steveparty:stencil",count:1,components:{"steveparty:stencil-pixels":%s}}' % shape_list(p)
               for p in PATTERNS]
     extra_chests = [('Pochoirs %d/%d' % (i // 27 + 1, (len(extras) + 26) // 27), extras[i:i + 27])
                     for i in range(0, len(extras), 27)]
-    variants = ['{id:"steveparty:traffic_sign",count:1,components:{"steveparty:sign-material":"minecraft:%s_planks"}}' % w
+    variants = ['{id:"steveparty:easel_sign",count:1,components:{"steveparty:sign-material":"minecraft:%s_planks"}}' % w
                 for w in PLANKS]
     variants += ['{id:"steveparty:bandana",count:1,components:{"steveparty:bandana-color":%d}}' % c for c in range(5)]
     extra_chests.append(('Variantes (planches, bandanas)', variants))

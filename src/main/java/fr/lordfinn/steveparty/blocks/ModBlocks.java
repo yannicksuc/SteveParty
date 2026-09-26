@@ -420,45 +420,45 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.BONE),
             "hop_switch", true);
 
-    public static final Block OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.OAK, c),
+    public static final Block OAK_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.OAK, c),
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "oak_traffic_sign", true, StencilSignItem::new);
+            "oak_easel_sign", true, StencilSignItem::new);
 
-    public static final Block SPRUCE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.SPRUCE, c),
+    public static final Block SPRUCE_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.SPRUCE, c),
             AbstractBlock.Settings.create().mapColor(MapColor.SPRUCE_BROWN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "spruce_traffic_sign", true, StencilSignItem::new);
+            "spruce_easel_sign", true, StencilSignItem::new);
 
-    public static final Block BIRCH_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.BIRCH, c),
+    public static final Block BIRCH_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.BIRCH, c),
             AbstractBlock.Settings.create().mapColor(MapColor.PALE_YELLOW).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "birch_traffic_sign", true, StencilSignItem::new);
+            "birch_easel_sign", true, StencilSignItem::new);
 
-    public static final Block JUNGLE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.JUNGLE, c),
+    public static final Block JUNGLE_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.JUNGLE, c),
             AbstractBlock.Settings.create().mapColor(MapColor.BROWN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "jungle_traffic_sign", true, StencilSignItem::new);
+            "jungle_easel_sign", true, StencilSignItem::new);
 
-    public static final Block ACACIA_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.ACACIA, c),
+    public static final Block ACACIA_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.ACACIA, c),
             AbstractBlock.Settings.create().mapColor(MapColor.ORANGE).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "acacia_traffic_sign", true, StencilSignItem::new);
+            "acacia_easel_sign", true, StencilSignItem::new);
 
-    public static final Block DARK_OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.DARK_OAK, c),
+    public static final Block DARK_OAK_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.DARK_OAK, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "dark_oak_traffic_sign", true, StencilSignItem::new);
+            "dark_oak_easel_sign", true, StencilSignItem::new);
 
-    public static final Block MANGROVE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.MANGROVE, c),
+    public static final Block MANGROVE_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.MANGROVE, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "mangrove_traffic_sign", true, StencilSignItem::new);
+            "mangrove_easel_sign", true, StencilSignItem::new);
 
-    public static final Block CRIMSON_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CRIMSON, c),
+    public static final Block CRIMSON_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.CRIMSON, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DARK_CRIMSON).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "crimson_traffic_sign", true, StencilSignItem::new);
+            "crimson_easel_sign", true, StencilSignItem::new);
 
-    public static final Block WARPED_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.WARPED, c),
+    public static final Block WARPED_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.WARPED, c),
             AbstractBlock.Settings.create().mapColor(MapColor.CYAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "warped_traffic_sign", true, StencilSignItem::new);
+            "warped_easel_sign", true, StencilSignItem::new);
 
-    public static final Block CHERRY_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CHERRY, c),
+    public static final Block CHERRY_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.CHERRY, c),
             AbstractBlock.Settings.create().mapColor(MapColor.DULL_PINK).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "cherry_traffic_sign", true, StencilSignItem::new);
+            "cherry_easel_sign", true, StencilSignItem::new);
 
     public static final Block GOAL_POLE_BASE = register(GoalPoleBaseBlock::new,
             Block.Settings.create()
@@ -533,10 +533,19 @@ public class ModBlocks {
 
     // ---------------------------------------------------------------- stencil signs
 
-    /** Traffic sign of any planks (the wood is kept by the block entity and the item). */
-    public static final Block TRAFFIC_SIGN = register(MaterialTrafficSignBlock::new,
+    /** Easel sign of any planks (the wood is kept by the block entity and the item). */
+    public static final Block EASEL_SIGN = register(MaterialEaselSignBlock::new,
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "traffic_sign", true, StencilSignItem::new);
+            "easel_sign", true, StencilSignItem::new);
+
+    static {
+        // Saves from before the rename still know the easel signs as "traffic_sign" and "<wood>_traffic_sign" (blocks,
+        // items, and the block entity, which had the block's id)
+        RegistryAliases.add(Steveparty.id("traffic_sign"), Steveparty.id("easel_sign"));
+        for (String wood : new String[]{"oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "crimson", "warped"}) {
+            RegistryAliases.add(Steveparty.id(wood + "_traffic_sign"), Steveparty.id(wood + "_easel_sign"));
+        }
+    }
 
     public static final Block WOODEN_PANEL = register(WoodenPanelBlock::new,
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().dynamicBounds().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),

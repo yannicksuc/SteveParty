@@ -70,10 +70,10 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "step_controller"),
             FabricBlockEntityTypeBuilder.create(StepControllerBlockEntity::new, ModBlocks.STEP_CONTROLLER).build(null)
     );
-    public static final BlockEntityType<TrafficSignBlockEntity> TRAFFIC_SIGN_ENTITY = Registry.register(
+    public static final BlockEntityType<EaselSignBlockEntity> EASEL_SIGN_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
-            Identifier.of (MOD_ID, "traffic_sign"),
-            FabricBlockEntityTypeBuilder.create(TrafficSignBlockEntity::new, ModBlocks.SPRUCE_TRAFFIC_SIGN, ModBlocks.JUNGLE_TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.DARK_OAK_TRAFFIC_SIGN, ModBlocks.CRIMSON_TRAFFIC_SIGN, ModBlocks.WARPED_TRAFFIC_SIGN, ModBlocks.BIRCH_TRAFFIC_SIGN, ModBlocks.ACACIA_TRAFFIC_SIGN, ModBlocks.MANGROVE_TRAFFIC_SIGN, ModBlocks.CHERRY_TRAFFIC_SIGN, ModBlocks.TRAFFIC_SIGN).build(null)
+            Identifier.of (MOD_ID, "easel_sign"),
+            FabricBlockEntityTypeBuilder.create(EaselSignBlockEntity::new, ModBlocks.SPRUCE_EASEL_SIGN, ModBlocks.JUNGLE_EASEL_SIGN, ModBlocks.OAK_EASEL_SIGN, ModBlocks.DARK_OAK_EASEL_SIGN, ModBlocks.CRIMSON_EASEL_SIGN, ModBlocks.WARPED_EASEL_SIGN, ModBlocks.BIRCH_EASEL_SIGN, ModBlocks.ACACIA_EASEL_SIGN, ModBlocks.MANGROVE_EASEL_SIGN, ModBlocks.CHERRY_EASEL_SIGN, ModBlocks.EASEL_SIGN).build(null)
     );
     /** Every other block taking stencils: panels, rock signs, plastic road signs, sprayed paint. */
     public static final BlockEntityType<StencilCanvasBlockEntity> STENCIL_CANVAS = Registry.register(
