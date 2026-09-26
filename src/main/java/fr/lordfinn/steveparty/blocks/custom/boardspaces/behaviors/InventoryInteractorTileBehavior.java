@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
@@ -197,5 +198,15 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             }
         }
         return status;
+    }
+
+    /** Gain (blue) or loss (red) by what the cartridge gives or takes; an empty one: a neutral item tile. */
+    @Override
+    public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+        return switch (getStatus(boardSpaceEntity, stack)) {
+            case GOOD -> TileFeedback.Landing.GOOD;
+            case BAD -> TileFeedback.Landing.BAD;
+            case NEUTRAL -> TileFeedback.Landing.ITEM;
+        };
     }
 }

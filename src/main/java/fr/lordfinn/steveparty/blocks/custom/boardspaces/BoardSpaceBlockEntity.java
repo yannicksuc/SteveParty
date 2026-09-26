@@ -31,8 +31,6 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -59,7 +57,6 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private @Nullable fr.lordfinn.steveparty.components.TileStampComponent stamp;
 
     private int ticks = 0;
-    private SoundEvent walkedOnSound = null;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
     public final int INV_SIZE;
 
@@ -454,21 +451,25 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         partyController.nextStep();
     }
 
-    protected void setWalkedOnSound(SoundEvent walkedOnSound) {
-        this.walkedOnSound = walkedOnSound;
-    }
-
+    /**
+     * A token of a running party reached this board space (see PartyStep#onTileReached): the tile twinkles, and pops
+     * softly if the token goes on. Where it stops (its destination: see {@link #onDestinationReached}) or when a stop
+     * tile halts it, the landing feedback of the tile's role plays instead ({@link TileFeedback}).
+     */
     public void onTileReached(@NotNull MobEntity token, PartyControllerEntity partyControllerEntity) {
-        if (this.world == null) return;
-        Vec3d at = BoardSpaces.standPos(this.world, this.pos);
-        // A token passing by: a few twinkles in the colour of the tile's face (its cartridge's colour)
-        if (this.world instanceof ServerWorld serverWorld) {
-            int color = getStack(activeSlot).getOrDefault(ModComponents.COLOR, 0xFFFFFF) & 0xFFFFFF;
-            serverWorld.spawnParticles(new fr.lordfinn.steveparty.particles.MulaSparkleEffect(color, 0.8F,
-                    fr.lordfinn.steveparty.particles.MulaSparkleEffect.TWINKLE), at.x, at.y + 0.15, at.z, 5, 0.3, 0.05, 0.3, 0.0);
+        if (!(this.world instanceof ServerWorld serverWorld)) return;
+        Vec3d at = BoardSpaces.standPos(serverWorld, this.pos);
+        // A few twinkles in the colour of the tile's face (its cartridge's colour)
+        serverWorld.spawnParticles(new fr.lordfinn.steveparty.particles.MulaSparkleEffect(TileFeedback.tileColor(this), 0.8F,
+                fr.lordfinn.steveparty.particles.MulaSparkleEffect.TWINKLE), at.x, at.y + 0.15, at.z, 5, 0.3, 0.05, 0.3, 0.0);
+        int steps = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
+        if (steps == 0 && ABoardSpaceBlock.countsAsStep(getCachedState().getBlock())) return; // lands: onDestinationReached
+        ABoardSpaceBehavior behavior = getBoardSpaceBehavior();
+        if (steps > 0 && behavior != null && behavior.needToStop(serverWorld, this.pos)) {
+            TileFeedback.land(serverWorld, this, token, partyControllerEntity); // halted here until the tile changes
+        } else {
+            TileFeedback.pass(serverWorld, this.pos);
         }
-        if (this.walkedOnSound == null) return;
-        this.world.playSound(null, at.x, at.y, at.z, this.walkedOnSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
     }
 
     public void setCycleIndex(int i) {

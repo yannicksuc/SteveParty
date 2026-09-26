@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -249,5 +250,10 @@ public class StartTileBehavior extends ABoardSpaceBehavior {
        @SuppressWarnings("SameParameterValue")
     private List<Entity> getAroundEntities(Entity entity, int radius) {
         return entity.getWorld().getOtherEntities(entity, entity.getBoundingBox().expand(radius));
+    }
+
+    @Override
+    public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+        return TileFeedback.Landing.START;
     }
 }
