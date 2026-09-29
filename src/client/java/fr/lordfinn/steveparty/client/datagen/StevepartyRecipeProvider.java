@@ -242,6 +242,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 offerCartridge(ModItems.ADVANCE_BACK_CARTRIDGE, Items.PISTON); // pushes the token on, or pulls it back
                 // Roll Again: a repeater, to play the turn again
                 offerCartridge(ModItems.REPLAY_CARTRIDGE, Items.REPEATER);
+                // An ender pearl: the warp of the Teleport tile
+                offerCartridge(ModItems.TELEPORT_CARTRIDGE, Items.ENDER_PEARL);
 
                 // The Tile: a plastic board (pellets) under a cloth face (carpets), on the pressure plate that feels
                 // the tokens landing on it; two at a time

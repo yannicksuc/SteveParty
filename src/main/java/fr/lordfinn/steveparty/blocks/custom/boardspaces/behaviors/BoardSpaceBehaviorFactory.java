@@ -16,6 +16,7 @@ public class BoardSpaceBehaviorFactory {
             BOARD_SPACES_TYPES.put(BoardSpaceType.BOARD_SPACE_SHOP, new ShopBoardSpaceBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_ADVANCE_BACK, new AdvanceBackTileBehavior());
             BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_REPLAY, new ReplayBoardSpaceBehavior());
+            BOARD_SPACES_TYPES.put(BoardSpaceType.TILE_TELEPORT, new TeleportTileBehavior());
         }
 
         public static ABoardSpaceBehavior get(BoardSpaceType type) {

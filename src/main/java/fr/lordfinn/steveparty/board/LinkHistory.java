@@ -34,7 +34,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, ShopChange, BlockChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, ShopChange, BlockChange, TeleportLinks.TargetsChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
     }

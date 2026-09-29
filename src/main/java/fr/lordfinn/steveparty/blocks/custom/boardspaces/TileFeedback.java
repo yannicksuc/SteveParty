@@ -135,7 +135,14 @@ public final class TileFeedback {
         /** A Replay tile reached by the replay move itself: no further turn, a soft falling two-step. */
         REPLAY_SPENT("replay_spent", 0x8FBF7F, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.498F, 0),
-                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.0F, 3)));
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.0F, 3))),
+        /** A teleport tile (warp pipe): a flute whirl going down while the token spins away (see TileTeleport). */
+        TELEPORT("teleport", 0xA35CFF, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.498F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.26F, 2),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.0F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 0.749F, 6),
+                new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 0.5F, 1.4F, 0)));
 
         private final String key;
         /** Particle colour when the tile's own colour doesn't fit (plain white tile, or a themed burst). */
@@ -413,6 +420,10 @@ public final class TileFeedback {
                 world.spawnParticles(new MulaSparkleEffect(0xB8F57A, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y + 1.2, at.z, 6, 0.2, 0.1, 0.2, 0.0);
             }
             case REPLAY_SPENT -> world.spawnParticles(new DustParticleEffect(light, 1.0F), at.x, y, at.z, 8, 0.3, 0.1, 0.3, 0.0);
+            case TELEPORT -> {
+                world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y, at.z, 16, 0.3, 0.1, 0.3, 0.02);
+                world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE), at.x, y + 0.2, at.z, 8, 0.35, 0.25, 0.35, 0.0);
+            }
             case ITEM, DEFAULT -> world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE),
                     at.x, y + 0.1, at.z, 12, 0.35, 0.25, 0.35, 0.0);
         }

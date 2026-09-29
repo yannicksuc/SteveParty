@@ -10,6 +10,8 @@ import fr.lordfinn.steveparty.service.ShopStops;
 import net.minecraft.item.ItemStack;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BoardRevision;
+import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.board.TeleportLinks;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -43,7 +45,8 @@ import java.util.Map;
  * paths of a Mario Party board: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
- * gently pulsing. Only the holder sees it (client side); the links come from the block entity data the server already
+ * gently pulsing. A teleport tile's arrivals are no paths: dashed purple arcs with sparkles riding them (a teleport tile
+ * without arrival gets a purple « ! »). Only the holder sees it (client side); the links come from the block entity data the server already
  * sends, no packet needed.
  * <p>
  * The graph is rebuilt only when the board may have changed ({@link BoardRevision}: board space or router data or
@@ -68,6 +71,8 @@ public final class BoardView {
     static final int UNREACHED = 0xE0C8C8C8;
     static final int INACTIVE = 0x70A0A0A0;
     static final int BROKEN = 0xFFFF3030;
+    /** Teleport arcs: the dashes, and the sparkles riding them. */
+    static final int TELEPORT = 0xE0B266FF, TELEPORT_SPARKLE = 0xFFB8F6FF;
     /** Chevrons: size, gap and speed (blocks, blocks per second). */
     private static final double DOT = 0.56, SPACING = 0.72, SPEED = 1.4;
     /** The Shop Cartridge's yellow. */
@@ -81,6 +86,10 @@ public final class BoardView {
     private record DrawnEdge(double ax, double ay, double az, double bx, double by, double bz, int color, boolean active, Box bounds) {
     }
 
+    /** A teleport tile's link to one of its arrivals as drawn: sampled once, purple (red toward a block that is no space). */
+    private record DrawnArc(WorldDraw.Arc arc, int color) {
+    }
+
     /** A space's labels as drawn: where, what, and the reusable distance used to sort them each frame. */
     private static final class Label {
         final Vec3d anchor;
@@ -91,6 +100,8 @@ public final class BoardView {
         double distanceSq;
         /** A shop space: its « Shop » plate, gold when its merchant is around ({@link #shopLinked}). */
         boolean shop, shopLinked;
+        /** A teleport tile with no arrival that is a space: a purple « ! ». */
+        boolean teleportsNowhere;
 
         Label(Vec3d anchor, @Nullable Text number, WorldDraw.Plate numberPlate, boolean deadEnd, boolean unreachable, boolean fork, boolean alone) {
             this.anchor = anchor;
@@ -107,6 +118,7 @@ public final class BoardView {
     private static @Nullable BoardGraph graph;
     private static List<DrawnEdge> edges = List.of();
     private static List<Label> labels = List.of();
+    private static List<DrawnArc> arcs = List.of();
     /** The shop spaces around (Shop Cartridge), and where their merchant is (null: none around). */
     private static List<ShopSpace> shops = List.of();
     private static int shopAge;
@@ -166,6 +178,7 @@ public final class BoardView {
         graph = null;
         edges = List.of();
         labels = List.of();
+        arcs = List.of();
         shops = List.of();
         SHOWN.clear();
         counts = new int[]{0, 0, 0};
@@ -181,6 +194,7 @@ public final class BoardView {
         Map<BlockPos, Vec3d> anchors = new HashMap<>();
         List<DrawnEdge> drawnEdges = new ArrayList<>();
         List<Label> builtLabels = new ArrayList<>();
+        List<DrawnArc> drawnArcs = new ArrayList<>();
         List<ShopSpace> shopSpaces = new ArrayList<>();
         int deadEnds = 0, unreachable = 0;
         boolean hasStart = built.hasStart();
@@ -192,6 +206,14 @@ public final class BoardView {
                 double lift = edge.active() ? 0 : 0.06 * (1 + edge.slot() % 4);
                 Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
                 drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color(edge, colors), edge.active(), bounds));
+            }
+            if (node.teleports() != null) {
+                for (BlockPos arrival : node.teleports()) {
+                    Vec3d to = anchors.computeIfAbsent(arrival, pos -> WrenchOverlay.anchor(world, pos));
+                    boolean boardSpace = built.node(arrival) != null || BoardLinks.isBoardSpace(world, arrival);
+                    drawnArcs.add(new DrawnArc(new WorldDraw.Arc(from, to, TeleportLinks.arcHeight(from.distanceTo(to))),
+                            boardSpace ? TELEPORT : BROKEN));
+                }
             }
             Integer distance = built.distance(node.pos());
             Text number = null;
@@ -209,6 +231,7 @@ public final class BoardView {
             if (notReached) unreachable++;
             boolean alone = !node.start() && distance == null && hasStart;
             Label label = new Label(from, number, plate, deadEnd, notReached, built.isFork(node), alone);
+            label.teleportsNowhere = node.teleportsNowhere();
             builtLabels.add(label);
             if (world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space) {
                 ItemStack cartridge = space.getActiveCartridgeItemStack();
@@ -221,6 +244,7 @@ public final class BoardView {
         graph = built;
         edges = drawnEdges;
         labels = builtLabels;
+        arcs = drawnArcs;
         shops = shopSpaces;
         refreshShops(world);
         counts = new int[]{built.nodes().size(), deadEnds, unreachable};
@@ -315,6 +339,10 @@ public final class BoardView {
             WorldDraw.path(matrices, consumers, camera, edge.ax(), edge.ay(), edge.az(), edge.bx(), edge.by(), edge.bz(),
                     edge.color(), DOT, SPACING, edge.active() ? phase : 0, 0.45, 0.12);
         }
+        for (DrawnArc arc : arcs) {
+            if (frustum != null && !frustum.isVisible(arc.arc().bounds)) continue;
+            WorldDraw.arc(matrices, consumers, camera, arc.arc(), arc.color(), TELEPORT_SPARKLE, phase, 0.07, 0.3);
+        }
         // Shop check points: a path to their shop
         for (ShopSpace shop : shops) {
             Vec3d target = shop.target;
@@ -349,6 +377,13 @@ public final class BoardView {
             Vec3d at = label.alone ? top : top.add(0, plate * 1.05, 0);
             WorldDraw.plateLabel(matrices, consumers, camera, at, WARNING,
                     label.deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
+        }
+        if (label.teleportsNowhere) {
+            // A teleport tile sending nowhere: to the left of the number
+            float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
+            org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
+            Vec3d beside = top.subtract(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);
+            WorldDraw.plateLabel(matrices, consumers, camera, beside, WARNING, WorldDraw.Plate.PURPLE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
         if (label.fork) {
             // The junction marker, beside the number (to the right as seen from the camera)

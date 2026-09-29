@@ -139,6 +139,7 @@ public final class WrenchActions {
             case TRACE -> trace(player, wrench, world, pos, container);
             case EDIT -> edit(player, wrench, world, pos, container);
             case CUT -> cut(player, wrench, world, pos, container);
+            case TELEPORT -> TeleportLinks.click(player, wrench, world, pos, container);
         }
     }
 
@@ -152,7 +153,7 @@ public final class WrenchActions {
         return origin.origin();
     }
 
-    private static void setOrigin(ItemStack wrench, World world, BlockPos pos, WrenchState state) {
+    static void setOrigin(ItemStack wrench, World world, BlockPos pos, WrenchState state) {
         wrench.set(ModComponents.BLOCK_ORIGIN_COMPONENT, new BlockOriginComponent(pos, BoardLinks.worldName(world)));
         wrench.set(ModComponents.WRENCH_STATE, state);
     }
@@ -312,7 +313,7 @@ public final class WrenchActions {
      *
      * @return true if the cartridge was swapped
      */
-    private static boolean swapCartridge(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
+    static boolean swapCartridge(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
                                          CartridgeContainerBlockEntity container, int requestedSlot) {
         ItemStack offHand = player.getOffHandStack();
         if (!(offHand.getItem() instanceof CartridgeItem)) return false;
@@ -434,6 +435,7 @@ public final class WrenchActions {
         if (!(world.getBlockEntity(pos) instanceof CartridgeContainerBlockEntity container)) return;
         int dropped = 0;
         for (int slot = 0; slot < container.size(); slot++) {
+            dropped += TeleportLinks.clearTargets(container, slot);
             List<BlockPos> links = BoardLinks.links(container, slot);
             if (links.isEmpty()) continue;
             dropped += links.size();
@@ -685,7 +687,7 @@ public final class WrenchActions {
         }
     }
 
-    private static void playSound(World world, ServerPlayerEntity player, SoundEvent sound, float pitch) {
+    static void playSound(World world, ServerPlayerEntity player, SoundEvent sound, float pitch) {
         world.playSound(null, player.getBlockPos(), sound, SoundCategory.PLAYERS, 0.6f, pitch);
     }
 

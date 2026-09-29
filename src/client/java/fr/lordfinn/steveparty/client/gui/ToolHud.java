@@ -21,7 +21,7 @@ public final class ToolHud {
     public static final int HINT = 0x88DDDDDD;
 
     public enum Plate {
-        TEAL, GOLD, GREEN, RED, ORANGE;
+        TEAL, GOLD, GREEN, RED, ORANGE, PURPLE;
 
         final Identifier sprite = Steveparty.id("board/plate_" + name().toLowerCase());
     }

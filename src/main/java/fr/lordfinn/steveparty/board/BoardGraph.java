@@ -54,9 +54,14 @@ public final class BoardGraph {
      * @param start         a start tile (its active cartridge)
      * @param cartridges    number of cartridges it holds
      * @param inventoryIssue for an inventory tile: its chest is missing (null: fine or not an inventory tile)
+     * @param teleports     for a teleport tile (its active cartridge): its arrivals (not links: no one walks them),
+     *                      null for any other board space
+     * @param teleportsNowhere a teleport tile none of whose arrivals is a board space (or unloaded): it sends no one
      */
     public record Node(BlockPos pos, boolean step, boolean start, int cartridges, boolean hasStartToken,
-                       @Nullable InventoryIssue inventoryIssue, List<Edge> edges) {
+                       @Nullable InventoryIssue inventoryIssue, List<Edge> edges, @Nullable List<BlockPos> teleports,
+                       boolean teleportsNowhere) {
+
         public long boardSpaceLinks() {
             return edges.stream().filter(e -> e.target() != Target.BROKEN).count();
         }
@@ -161,8 +166,11 @@ public final class BoardGraph {
         }
         ItemStack activeCartridge = boardSpace.getStack(active);
         boolean hasToken = start && activeCartridge.get(ModComponents.TB_START_BOUND_ENTITY) != null;
+        List<BlockPos> teleports = TeleportLinks.isTeleportCartridge(activeCartridge) ? TeleportLinks.targets(activeCartridge) : null;
+        boolean teleportsNowhere = teleports != null
+                && teleports.stream().noneMatch(target -> !target.equals(pos) && target(world, target) != Target.BROKEN);
         return new Node(pos, ABoardSpaceBlock.countsAsStep(state.getBlock()), start, cartridges, hasToken,
-                inventoryIssue(world, activeCartridge), edges);
+                inventoryIssue(world, activeCartridge), edges, teleports, teleportsNowhere);
     }
 
     private static @Nullable InventoryIssue inventoryIssue(World world, ItemStack cartridge) {
@@ -204,6 +212,17 @@ public final class BoardGraph {
                 distances.put(next.pos(), d);
                 if (next.step()) queue.addLast(next.pos());
                 else queue.addFirst(next.pos());
+            }
+            // A token landing on a teleport tile ends its move on an arrival: reached as soon as the tile is
+            if (node.teleports() != null) {
+                for (BlockPos to : node.teleports()) {
+                    Node next = nodes.get(to);
+                    if (next == null) continue;
+                    Integer known = distances.get(next.pos());
+                    if (known != null && known <= distance) continue;
+                    distances.put(next.pos(), distance);
+                    queue.addFirst(next.pos());
+                }
             }
         }
     }
