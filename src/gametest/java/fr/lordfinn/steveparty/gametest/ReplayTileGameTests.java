@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -173,18 +174,16 @@ public class ReplayTileGameTests implements FabricGameTest {
         replay.onDestinationReached(token, controller);
         context.assertTrue(turn(data).isReplay(), "replay turn");
 
-        // A stop tile halts the replay move (the turn goes on), then it lands on a bonus tile
+        // The replay move goes over a bonus tile, then a stop tile ends it (forced arrival)
+        token.refreshPositionAndAngles(context.getAbsolutePos(bonusPos).up().toCenterPos(), 0, 0);
+        ((TokenizedEntityInterface) token).steveparty$setNbSteps(3);
+        context.assertTrue(!TokenMovementService.endMoveIfForcedStop(token, bonus), "a bonus tile doesn't end the move");
         BoardSpaceBlockEntity stop = placeTile(context, stopPos, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
         token.refreshPositionAndAngles(context.getAbsolutePos(stopPos).up().toCenterPos(), 0, 0);
-        ((TokenizedEntityInterface) token).steveparty$setNbSteps(2);
-        stop.onTileReached(token, controller);
-        context.assertEquals(played.getLast().landing(), Landing.STOP, "halted on the stop tile");
+        context.assertTrue(TokenMovementService.endMoveIfForcedStop(token, stop), "the stop tile ends the replay move");
         context.assertTrue(turn(data).isReplay(), "still the replay turn");
-
-        ((TokenizedEntityInterface) token).steveparty$setNbSteps(0);
-        token.refreshPositionAndAngles(context.getAbsolutePos(bonusPos).up().toCenterPos(), 0, 0);
-        bonus.onDestinationReached(token, controller);
-        context.assertEquals(played.getLast().landing(), Landing.GOOD, "the bonus tile's own landing");
+        stop.onDestinationReached(token, controller);
+        context.assertEquals(played.getLast().landing(), Landing.STOP, "the stop tile's own landing");
         context.assertEquals(data.getStepIndex(), 3, "then the turn order goes on");
         context.assertTrue(b.equals(turn(data).getTokenUUID()), "turn of b");
         context.removeBlock(CONTROLLER);

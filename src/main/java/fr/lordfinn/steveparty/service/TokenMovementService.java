@@ -121,7 +121,7 @@ public class TokenMovementService {
         if (AdvanceBackMoves.isWaiting(entity)) return ActionResult.PASS;
 
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
-        // STOP board spaces keep the token until the board space is updated (TileUpdatedEvent)
+        // A token still standing on a Stop space has no steps left (forced arrival: see onTokenArrived)
         if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos())) {
             moveEntityOnBoard(entity, nbSteps);
             return ActionResult.SUCCESS;
@@ -142,9 +142,29 @@ public class TokenMovementService {
                 && ABoardSpaceBlock.countsAsStep(boardSpace.getCachedState().getBlock())) {
             token.steveparty$setNbSteps(token.steveparty$getNbSteps() - 1);
         }
+        endMoveIfForcedStop(mob, boardSpace);
         AdvanceBackMoves.onArrived(mob, boardSpace.getPos());
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
         AdvanceBackMoves.afterArrival(mob);
+    }
+
+    /** True if a token reaching this board space must end its move there (a Stop space), steps left or not. */
+    public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace) {
+        ABoardSpaceBehavior behavior = boardSpace.getBoardSpaceBehavior();
+        return behavior != null && behavior.needToStop(world, boardSpace.getPos());
+    }
+
+    /**
+     * A token reaching a Stop space ends its move there (forced arrival): the steps left of its roll are lost.
+     *
+     * @return true if the move was ended here
+     */
+    public static boolean endMoveIfForcedStop(MobEntity mob, BoardSpaceBlockEntity boardSpace) {
+        TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
+        if (token.steveparty$getNbSteps() <= 0 || !isForcedStop(mob.getWorld(), boardSpace)) return false;
+        token.steveparty$setNbSteps(0);
+        SCHEDULER.cancel(mob.getUuid()); // nothing of the roll may move it on
+        return true;
     }
 
     public static void moveEntityOnBoard(MobEntity mob, int rollNumber) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -131,7 +132,11 @@ public class TileFeedbackGameTests implements FabricGameTest {
         BoardSpaceBlockEntity stop = placeTile(context, stopPos);
         stop.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
         MobEntity halted = spawnToken(context, stopPos, 2);
+        context.assertTrue(TokenMovementService.endMoveIfForcedStop(halted, stop), "a stop tile ends the move there");
+        context.assertEquals(((TokenizedEntityInterface) halted).steveparty$getNbSteps(), 0, "its steps left are lost");
         stop.onTileReached(halted, controller);
+        context.assertEquals(count(played, Kind.LAND), 1L, "the landing is the destination's (onDestinationReached)");
+        stop.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), stop.getPos(), halted, stop, controller);
         context.assertTrue(played.stream().anyMatch(event -> event.kind() == Kind.LAND && event.landing() == Landing.STOP
                 && event.tile().equals(context.getAbsolutePos(stopPos))), "a stop tile halting a token lands");
         context.assertEquals(count(played, Kind.PASS), 1L, "and does not pop");

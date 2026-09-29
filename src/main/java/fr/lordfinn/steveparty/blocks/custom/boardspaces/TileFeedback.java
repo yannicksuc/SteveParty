@@ -213,8 +213,8 @@ public final class TileFeedback {
     private static void freePlayRouterSignal(ServerWorld world, MobEntity token, BoardSpaceBlockEntity tile) {
         int steps = token instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
-        boolean stops = steps == 0 ? ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
-                : behavior != null && behavior.needToStop(world, tile.getPos());
+        boolean stops = steps == 0 && (ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
+                || behavior != null && behavior.needToStop(world, tile.getPos()));
         if (stops) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
         else BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile.getPos());
     }

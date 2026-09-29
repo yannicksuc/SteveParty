@@ -492,13 +492,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         serverWorld.spawnParticles(new fr.lordfinn.steveparty.particles.MulaSparkleEffect(TileFeedback.tileColor(this), 0.8F,
                 fr.lordfinn.steveparty.particles.MulaSparkleEffect.TWINKLE), at.x, at.y + 0.15, at.z, 5, 0.3, 0.05, 0.3, 0.0);
         int steps = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
-        if (steps == 0 && ABoardSpaceBlock.countsAsStep(getCachedState().getBlock())) return; // lands: onDestinationReached
-        ABoardSpaceBehavior behavior = getBoardSpaceBehavior();
-        if (steps > 0 && behavior != null && behavior.needToStop(serverWorld, this.pos)) {
-            TileFeedback.land(serverWorld, this, token, partyControllerEntity); // halted here until the tile changes
-        } else {
-            TileFeedback.pass(serverWorld, this.pos);
-        }
+        // Lands (onDestinationReached): its move ends here, or a Stop space ended it (forced arrival)
+        if (steps == 0 && (ABoardSpaceBlock.countsAsStep(getCachedState().getBlock())
+                || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(serverWorld, this))) return;
+        TileFeedback.pass(serverWorld, this.pos);
     }
 
     public void setCycleIndex(int i) {
