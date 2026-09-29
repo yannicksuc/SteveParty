@@ -133,6 +133,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
             case REPLAY, REPLAY_SPENT -> LEVEL_REPLAY;
             case ADVANCE -> LEVEL_FORWARD;
             case BACK -> LEVEL_BACKWARD;
+            case TELEPORT -> LEVEL_TELEPORT;
             default -> LEVEL_DEFAULT;
         };
     }

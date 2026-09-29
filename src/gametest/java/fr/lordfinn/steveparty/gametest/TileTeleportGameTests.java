@@ -169,6 +169,8 @@ public class TileTeleportGameTests implements FabricGameTest {
         BoardSpaceBlockEntity teleport = teleportTile(context, from, false, false, to);
         context.expectBlockProperty(from, TILE_TYPE, fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType.TILE_TELEPORT);
         context.assertEquals(TileFeedback.landingOf(teleport), TileFeedback.Landing.TELEPORT, "teleport landing");
+        context.assertEquals(teleport.getBoardSpaceBehavior().comparatorLevel(teleport, teleport.getActiveCartridgeItemStack()),
+                fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.LEVEL_TELEPORT, "a Router's comparator reads 8");
         context.assertEquals(teleport.getActiveCartridgeItemStack().get(ModComponents.COLOR), TileTeleport.COLOR, "purple tile");
         PigEntity pig = token(context, from);
         PartyControllerEntity controller = party(context, pig);
