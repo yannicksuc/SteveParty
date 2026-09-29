@@ -157,7 +157,7 @@ public class TileTeleportGameTests implements FabricGameTest {
     }
 
     /** In a party: warped to the arrival, the turn goes on once it has reappeared, and it doesn't land there. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void aTokenLandingIsTeleportedAndTheTurnGoesOnAfterwards(TestContext context) {
         BlockPos from = new BlockPos(1, 1, 1), to = new BlockPos(5, 1, 2);
         List<TileTeleport.Teleported> teleports = teleports(context);
@@ -205,7 +205,7 @@ public class TileTeleportGameTests implements FabricGameTest {
     }
 
     /** Several arrivals: random among them (each one comes up), or each in turn; never an arrival that is no space. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE)
     public void severalArrivalsRandomOrInTurn(TestContext context) {
         BlockPos a = new BlockPos(4, 1, 1), b = new BlockPos(4, 1, 3), c = new BlockPos(4, 1, 5), stone = new BlockPos(6, 1, 1);
         tile(context, a);
@@ -230,7 +230,7 @@ public class TileTeleportGameTests implements FabricGameTest {
      * No chains: an arrival that is itself a Teleport tile keeps the token, even with the "lands there" option; with
      * that option, an ordinary arrival's role plays.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void noTeleportChainButTheOptionLandsOnTheArrival(TestContext context) {
         BlockPos first = new BlockPos(1, 1, 1), second = new BlockPos(4, 1, 1), third = new BlockPos(7, 1, 1);
         BlockPos bonus = new BlockPos(1, 1, 5), other = new BlockPos(4, 1, 5);
@@ -269,7 +269,7 @@ public class TileTeleportGameTests implements FabricGameTest {
     }
 
     /** The board check warns about a Teleport tile without arrival (or whose arrivals are no spaces). */
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE)
     public void aTeleportTileWithoutArrivalIsWarned(TestContext context) {
         BlockPos pos = new BlockPos(1, 1, 1), arrival = new BlockPos(4, 1, 1), stone = new BlockPos(6, 1, 1);
         BoardSpaceBlockEntity teleport = teleportTile(context, pos, false, false);
@@ -305,7 +305,7 @@ public class TileTeleportGameTests implements FabricGameTest {
     }
 
     /** The arrival is where tokens stand on it: lowered on a slab, sloped on stairs, the middle of a large tile. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void arrivalsOnLoweredSlopedAndLargeTiles(TestContext context) {
         BlockPos lowered = new BlockPos(1, 2, 5), sloped = new BlockPos(3, 2, 5), large = new BlockPos(5, 2, 5);
         context.setBlockState(lowered.down(2), Blocks.STONE);
@@ -342,7 +342,7 @@ public class TileTeleportGameTests implements FabricGameTest {
     }
 
     /** Going over a Teleport tile (steps left) does nothing. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE)
     public void goingOverATeleportTileDoesNothing(TestContext context) {
         BlockPos from = new BlockPos(1, 1, 1), to = new BlockPos(4, 1, 1);
         tile(context, to);
@@ -359,7 +359,7 @@ public class TileTeleportGameTests implements FabricGameTest {
      * The Wrench's Teleport mode: click the Teleport tile, then its arrivals (again: removed); the path links stay
      * untouched; undo restores. A tile without cartridge becomes a Teleport tile in creative.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE)
+    @GameTest(batchId = "tile_teleport", templateName = EMPTY_STRUCTURE)
     public void theWrenchLinksArrivalsApartFromThePaths(TestContext context) {
         List<BlockPos> t = BoardLinkingGameTests.tiles(context, ModBlocks.TILE,
                 new BlockPos(1, 1, 1), new BlockPos(4, 1, 1), new BlockPos(4, 1, 4), new BlockPos(1, 1, 4));
