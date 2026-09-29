@@ -239,6 +239,9 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 offerCartridge(ModItems.TILE_BEHAVIOR_START, Items.LIME_DYE);
                 offerCartridge(ModItems.BOARD_SPACE_BEHAVIOR_STOP, Items.RED_DYE);
                 offerCartridge(ModItems.INVENTORY_CARTRIDGE, Items.CHEST);
+                offerCartridge(ModItems.ADVANCE_BACK_CARTRIDGE, Items.PISTON); // pushes the token on, or pulls it back
+                // Roll Again: a repeater, to play the turn again
+                offerCartridge(ModItems.REPLAY_CARTRIDGE, Items.REPEATER);
                 // An ender pearl: the warp of the Teleport tile
                 offerCartridge(ModItems.TELEPORT_CARTRIDGE, Items.ENDER_PEARL);
 

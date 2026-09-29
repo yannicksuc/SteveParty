@@ -50,124 +50,171 @@ final class WorldDraw {
      */
     static void path(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d a, Vec3d b, int argb,
                      double size, double spacing, double phase, double margin, double shift) {
-        Vec3d d = b.subtract(a);
-        double length = d.length();
+        path(matrices, consumers, camera, a.x, a.y, a.z, b.x, b.y, b.z, argb, size, spacing, phase, margin, shift);
+    }
+
+    /** {@link #path(MatrixStack, VertexConsumerProvider, Camera, Vec3d, Vec3d, int, double, double, double, double, double)}, allocation free. */
+    static void path(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, double ax, double ay, double az,
+                     double bx, double by, double bz, int argb, double size, double spacing, double phase, double margin, double shift) {
+        double dx = bx - ax, dy = by - ay, dz = bz - az;
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (length < 2 * margin + 0.1) return;
-        Vec3d forward = d.multiply(1 / length);
-        Vec3d side = new Vec3d(-forward.z, 0, forward.x);
-        if (side.lengthSquared() < 1.0E-4) side = new Vec3d(1, 0, 0);
-        side = side.normalize();
-        a = a.add(side.multiply(shift));
+        double fx = dx / length, fy = dy / length, fz = dz / length;
+        double sx = -fz, sz = fx;
+        double sideLength = Math.sqrt(sx * sx + sz * sz);
+        if (sideLength * sideLength < 1.0E-4) {
+            sx = 1;
+            sz = 0;
+        } else {
+            sx /= sideLength;
+            sz /= sideLength;
+        }
         Vec3d cam = camera.getPos();
+        // Relative to the camera, shifted sideways
+        double ox = ax + sx * shift - cam.x, oy = ay - cam.y, oz = az + sz * shift - cam.z;
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         VertexConsumer consumer = consumers.getBuffer(RenderLayer.getText(ChevronSprites.of(argb)));
-        Vec3d halfForward = forward.multiply(size / 2), halfSide = side.multiply(size / 2);
+        double hfx = fx * size / 2, hfy = fy * size / 2, hfz = fz * size / 2, hsx = sx * size / 2, hsz = sz * size / 2;
         double start = margin + Math.floorMod((long) Math.floor(phase * 1000), (long) Math.floor(spacing * 1000)) / 1000.0;
         int alpha = (argb >>> 24);
         for (double t = start; t <= length - margin; t += spacing) {
             double fade = Math.min(1, Math.min((t - margin) / 0.35, (length - margin - t) / 0.35));
             // The colour is in the texture (a ramp of it): the vertices only carry the fade
             int color = ((int) (alpha * Math.max(0, fade)) << 24) | 0xFFFFFF;
-            Vec3d centre = a.add(forward.multiply(t)).subtract(cam);
-            Vec3d tipL = centre.add(halfForward).subtract(halfSide), tipR = centre.add(halfForward).add(halfSide);
-            Vec3d tailL = centre.subtract(halfForward).subtract(halfSide), tailR = centre.subtract(halfForward).add(halfSide);
+            double cx = ox + fx * t, cy = oy + fy * t, cz = oz + fz * t;
+            float tipLx = (float) (cx + hfx - hsx), tipLy = (float) (cy + hfy), tipLz = (float) (cz + hfz - hsz);
+            float tipRx = (float) (cx + hfx + hsx), tipRy = tipLy, tipRz = (float) (cz + hfz + hsz);
+            float tailLx = (float) (cx - hfx - hsx), tailLy = (float) (cy - hfy), tailLz = (float) (cz - hfz - hsz);
+            float tailRx = (float) (cx - hfx + hsx), tailRy = tailLy, tailRz = (float) (cz - hfz + hsz);
             // The chevron points to the top of its texture (v = 0); both sides drawn
-            vertex(consumer, matrix, tailL, color, 0, 1);
-            vertex(consumer, matrix, tailR, color, 1, 1);
-            vertex(consumer, matrix, tipR, color, 1, 0);
-            vertex(consumer, matrix, tipL, color, 0, 0);
-            vertex(consumer, matrix, tipL, color, 0, 0);
-            vertex(consumer, matrix, tipR, color, 1, 0);
-            vertex(consumer, matrix, tailR, color, 1, 1);
-            vertex(consumer, matrix, tailL, color, 0, 1);
+            vertex(consumer, matrix, tailLx, tailLy, tailLz, color, 0, 1);
+            vertex(consumer, matrix, tailRx, tailRy, tailRz, color, 1, 1);
+            vertex(consumer, matrix, tipRx, tipRy, tipRz, color, 1, 0);
+            vertex(consumer, matrix, tipLx, tipLy, tipLz, color, 0, 0);
+            vertex(consumer, matrix, tipLx, tipLy, tipLz, color, 0, 0);
+            vertex(consumer, matrix, tipRx, tipRy, tipRz, color, 1, 0);
+            vertex(consumer, matrix, tailRx, tailRy, tailRz, color, 1, 1);
+            vertex(consumer, matrix, tailLx, tailLy, tailLz, color, 0, 1);
         }
     }
 
     // ---------------------------------------------------------------- teleport arcs
 
     /**
-     * A teleport link from {@code a} to {@code b}: not a path (nobody walks it), so no chevrons but a dashed glowing arc
-     * {@code height} blocks high in its middle, its dashes flowing toward {@code b} ({@code phase}, blocks), with a few
-     * twinkling sparkles riding it. The ends ({@code margin}) stay clear for the tiles.
+     * A teleport link, sampled once (when the board view is built): a parabola {@code height} blocks high in its middle
+     * from {@code a} to {@code b}, its points and how far along the arc each one is. Drawn by {@link #arc} without any
+     * allocation.
      */
+    static final class Arc {
+        final double[] x, y, z, along;
+        final double total;
+        final net.minecraft.util.math.Box bounds;
+
+        Arc(Vec3d a, Vec3d b, double height) {
+            int segments = Math.clamp((int) (a.distanceTo(b) * 8), 16, 240);
+            x = new double[segments + 1];
+            y = new double[segments + 1];
+            z = new double[segments + 1];
+            along = new double[segments + 1];
+            double sum = 0;
+            for (int i = 0; i <= segments; i++) {
+                double t = i / (double) segments;
+                x[i] = a.x + (b.x - a.x) * t;
+                y[i] = a.y + (b.y - a.y) * t + 4 * height * t * (1 - t);
+                z[i] = a.z + (b.z - a.z) * t;
+                if (i > 0) {
+                    double dx = x[i] - x[i - 1], dy = y[i] - y[i - 1], dz = z[i] - z[i - 1];
+                    sum += Math.sqrt(dx * dx + dy * dy + dz * dz);
+                }
+                along[i] = sum;
+            }
+            total = sum;
+            bounds = new net.minecraft.util.math.Box(a.x, Math.min(a.y, b.y), a.z, b.x, Math.max(a.y, b.y) + height, b.z).expand(0.5);
+        }
+    }
+
+    /** Camera axes of the frame (render thread only), for the sparkles. */
+    private static final org.joml.Vector3f RIGHT = new org.joml.Vector3f(), UP = new org.joml.Vector3f();
+
+    /** A teleport link drawn once (the Wrench's ghost of a click): {@link #arc} on a new {@link Arc}. */
     static void arc(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d a, Vec3d b, double height,
                     int argb, int sparkle, double phase, double width, double margin) {
-        double length = a.distanceTo(b);
-        if (length < 2 * margin + 0.1) return;
+        arc(matrices, consumers, camera, new Arc(a, b, height), argb, sparkle, phase, width, margin);
+    }
+
+    /**
+     * A teleport link: not a path (nobody walks it), so no chevrons but a dashed glowing arc, its dashes flowing toward
+     * its end ({@code phase}, blocks), with a few twinkling sparkles riding it. The ends ({@code margin}) stay clear for
+     * the tiles.
+     */
+    static void arc(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Arc arc, int argb, int sparkle,
+                    double phase, double width, double margin) {
+        if (arc.total < 2 * margin + 0.1) return;
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         VertexConsumer consumer = consumers.getBuffer(RenderLayer.getDebugQuads());
         Vec3d cam = camera.getPos();
-        int segments = Math.clamp((int) (length * 8), 16, 240);
-        // The arc's length, for dashes of the same size on any arc
-        double total = 0;
-        Vec3d previous = arcPoint(a, b, height, 0);
-        for (int i = 1; i <= segments; i++) {
-            Vec3d point = arcPoint(a, b, height, i / (double) segments);
-            total += point.distanceTo(previous);
-            previous = point;
+        double dash = 0.28, half = width / 2;
+        for (int i = 1; i < arc.x.length; i++) {
+            double middle = (arc.along[i - 1] + arc.along[i]) / 2;
+            if (Math.floorMod((long) Math.floor((middle - phase) / dash), 2L) != 0) continue;
+            if (middle <= margin || middle >= arc.total - margin) continue;
+            double fade = Math.min(1, Math.min((middle - margin) / 0.35, (arc.total - margin - middle) / 0.35));
+            int color = ((int) ((argb >>> 24) * Math.max(0, fade)) << 24) | (argb & 0xFFFFFF);
+            double x0 = arc.x[i - 1] - cam.x, y0 = arc.y[i - 1] - cam.y, z0 = arc.z[i - 1] - cam.z;
+            double x1 = arc.x[i] - cam.x, y1 = arc.y[i] - cam.y, z1 = arc.z[i] - cam.z;
+            // A band turned toward the camera: sideways = direction x view
+            double dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+            double vx = (x0 + x1) / 2, vy = (y0 + y1) / 2, vz = (z0 + z1) / 2;
+            double sx = dy * vz - dz * vy, sy = dz * vx - dx * vz, sz = dx * vy - dy * vx;
+            double length = Math.sqrt(sx * sx + sy * sy + sz * sz);
+            if (length < 1.0E-4) continue;
+            sx *= half / length;
+            sy *= half / length;
+            sz *= half / length;
+            quad(consumer, matrix, x0 - sx, y0 - sy, z0 - sz, x0 + sx, y0 + sy, z0 + sz,
+                    x1 + sx, y1 + sy, z1 + sz, x1 - sx, y1 - sy, z1 - sz, color);
         }
-        double dash = 0.28, s = 0;
-        previous = arcPoint(a, b, height, 0);
-        for (int i = 1; i <= segments; i++) {
-            Vec3d point = arcPoint(a, b, height, i / (double) segments);
-            double step = point.distanceTo(previous);
-            double middle = s + step / 2;
-            s += step;
-            boolean on = Math.floorMod((long) Math.floor((middle - phase) / dash), 2L) == 0;
-            if (on && middle > margin && middle < total - margin) {
-                double fade = Math.min(1, Math.min((middle - margin) / 0.35, (total - margin - middle) / 0.35));
-                int color = ((int) ((argb >>> 24) * Math.max(0, fade)) << 24) | (argb & 0xFFFFFF);
-                ribbon(consumer, matrix, previous.subtract(cam), point.subtract(cam), width, color);
-            }
-            previous = point;
-        }
-        // Sparkles riding the arc toward b, twinkling (a four-pointed star facing the camera)
-        org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
-        org.joml.Vector3f up = new org.joml.Vector3f(0, 1, 0).rotate(camera.getRotation());
-        int count = Math.max(1, (int) (total / 2.5));
+        // Sparkles riding the arc toward its end, twinkling (a four-pointed star facing the camera)
+        RIGHT.set(1, 0, 0).rotate(camera.getRotation());
+        UP.set(0, 1, 0).rotate(camera.getRotation());
+        int count = Math.max(1, (int) (arc.total / 2.5));
+        int last = arc.x.length - 1;
         for (int k = 0; k < count; k++) {
-            double t = ((phase / Math.max(total, 0.01)) * 0.6 + k / (double) count) % 1.0;
-            double along = t * total;
-            if (along < margin || along > total - margin) continue;
-            Vec3d centre = arcPoint(a, b, height, t).subtract(cam);
-            double size = 0.1 + 0.05 * Math.sin(phase * 7 + k * 2.1);
-            star(consumer, matrix, centre, right, up, size, sparkle);
+            double t = ((phase / Math.max(arc.total, 0.01)) * 0.6 + k / (double) count) % 1.0;
+            double at = t * arc.total;
+            if (at < margin || at > arc.total - margin) continue;
+            int i = (int) Math.round(t * last);
+            double size = 0.1 + 0.05 * Math.sin(phase * 7 + k * 2.1), thin = size * 0.22;
+            double cx = arc.x[i] - cam.x, cy = arc.y[i] - cam.y, cz = arc.z[i] - cam.z;
+            // A long thin diamond each way
+            quad(consumer, matrix,
+                    cx + UP.x() * size, cy + UP.y() * size, cz + UP.z() * size,
+                    cx + RIGHT.x() * thin, cy + RIGHT.y() * thin, cz + RIGHT.z() * thin,
+                    cx - UP.x() * size, cy - UP.y() * size, cz - UP.z() * size,
+                    cx - RIGHT.x() * thin, cy - RIGHT.y() * thin, cz - RIGHT.z() * thin, sparkle);
+            quad(consumer, matrix,
+                    cx + RIGHT.x() * size, cy + RIGHT.y() * size, cz + RIGHT.z() * size,
+                    cx + UP.x() * thin, cy + UP.y() * thin, cz + UP.z() * thin,
+                    cx - RIGHT.x() * size, cy - RIGHT.y() * size, cz - RIGHT.z() * size,
+                    cx - UP.x() * thin, cy - UP.y() * thin, cz - UP.z() * thin, sparkle);
         }
     }
 
-    /** A point of the arc: the straight line from {@code a} to {@code b}, lifted by a parabola {@code height} high. */
-    static Vec3d arcPoint(Vec3d a, Vec3d b, double height, double t) {
-        return a.lerp(b, t).add(0, 4 * height * t * (1 - t), 0);
+    /** A quad (camera space), both sides drawn. */
+    private static void quad(VertexConsumer consumer, Matrix4f matrix, double ax, double ay, double az, double bx, double by,
+                             double bz, double cx, double cy, double cz, double dx, double dy, double dz, int color) {
+        consumer.vertex(matrix, (float) ax, (float) ay, (float) az).color(color);
+        consumer.vertex(matrix, (float) bx, (float) by, (float) bz).color(color);
+        consumer.vertex(matrix, (float) cx, (float) cy, (float) cz).color(color);
+        consumer.vertex(matrix, (float) dx, (float) dy, (float) dz).color(color);
+        consumer.vertex(matrix, (float) dx, (float) dy, (float) dz).color(color);
+        consumer.vertex(matrix, (float) cx, (float) cy, (float) cz).color(color);
+        consumer.vertex(matrix, (float) bx, (float) by, (float) bz).color(color);
+        consumer.vertex(matrix, (float) ax, (float) ay, (float) az).color(color);
     }
 
-    /** A flat band from {@code p0} to {@code p1} (camera space) turned toward the camera, both sides drawn. */
-    private static void ribbon(VertexConsumer consumer, Matrix4f matrix, Vec3d p0, Vec3d p1, double width, int color) {
-        Vec3d dir = p1.subtract(p0);
-        Vec3d view = p0.add(p1).multiply(0.5);
-        Vec3d side = dir.crossProduct(view);
-        if (side.lengthSquared() < 1.0E-8) return;
-        side = side.normalize().multiply(width / 2);
-        quad(consumer, matrix, p0.subtract(side), p0.add(side), p1.add(side), p1.subtract(side), color);
-    }
-
-    /** A four-pointed star centred on {@code c} (camera space), in the camera's plane. */
-    private static void star(VertexConsumer consumer, Matrix4f matrix, Vec3d c, org.joml.Vector3f right, org.joml.Vector3f up,
-                             double size, int color) {
-        Vec3d r = new Vec3d(right.x(), right.y(), right.z()), u = new Vec3d(up.x(), up.y(), up.z());
-        double thin = size * 0.22;
-        // A long thin diamond each way
-        quad(consumer, matrix, c.add(u.multiply(size)), c.add(r.multiply(thin)), c.subtract(u.multiply(size)), c.subtract(r.multiply(thin)), color);
-        quad(consumer, matrix, c.add(r.multiply(size)), c.add(u.multiply(thin)), c.subtract(r.multiply(size)), c.subtract(u.multiply(thin)), color);
-    }
-
-    private static void quad(VertexConsumer consumer, Matrix4f matrix, Vec3d a, Vec3d b, Vec3d c, Vec3d d, int color) {
-        for (Vec3d p : new Vec3d[]{a, b, c, d, d, c, b, a}) {
-            consumer.vertex(matrix, (float) p.x, (float) p.y, (float) p.z).color(color);
-        }
-    }
-
-    private static void vertex(VertexConsumer consumer, Matrix4f matrix, Vec3d p, int color, float u, float v) {
-        consumer.vertex(matrix, (float) p.x, (float) p.y, (float) p.z).color(color).texture(u, v).light(LIGHT);
+    private static void vertex(VertexConsumer consumer, Matrix4f matrix, float x, float y, float z, int color, float u, float v) {
+        consumer.vertex(matrix, x, y, z).color(color).texture(u, v).light(LIGHT);
     }
 
     // ---------------------------------------------------------------- plates

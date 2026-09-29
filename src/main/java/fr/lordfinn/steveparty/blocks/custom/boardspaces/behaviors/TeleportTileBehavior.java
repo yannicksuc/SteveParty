@@ -81,6 +81,14 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
                 ? TileFeedback.Landing.TELEPORT : TileFeedback.Landing.DEFAULT;
     }
 
+    /** A Router's comparator reads 8 when a token lands here (a plain landing's level when it sends nowhere). */
+    @Override
+    public int comparatorLevel(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+        return landing(boardSpaceEntity, stack) == TileFeedback.Landing.TELEPORT
+                ? fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity.LEVEL_TELEPORT
+                : super.comparatorLevel(boardSpaceEntity, stack);
+    }
+
     /** Purple unless dyed. */
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {

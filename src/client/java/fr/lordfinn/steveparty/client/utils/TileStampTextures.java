@@ -139,6 +139,96 @@ public final class TileStampTextures {
         return values;
     }
 
+    // ---------------------------------------------------------------- Move Forward / Back faces
+
+    /** Double arrows (like ⏩) pointing right, then 5x7 digits (32x32 faces) and 3x5 digits (16x16 faces). */
+    private static final String[] ARROW = {
+            "#...#...",
+            "##..##..",
+            "###.###.",
+            "########",
+            "###.###.",
+            "##..##..",
+            "#...#..."};
+    private static final String[] SMALL_ARROW = {
+            "#..#..",
+            "##.##.",
+            "######",
+            "##.##.",
+            "#..#.."};
+    private static final String[][] DIGITS = {
+            {".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."},
+            {"..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."},
+            {".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"},
+            {"####.", "....#", "....#", ".###.", "....#", "....#", "####."},
+            {"...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."},
+            {"#####", "#....", "####.", "....#", "....#", "#...#", ".###."},
+            {".###.", "#....", "#....", "####.", "#...#", "#...#", ".###."}};
+    private static final String[][] SMALL_DIGITS = {
+            {"###", "#.#", "#.#", "#.#", "###"},
+            {".#.", "##.", ".#.", ".#.", "###"},
+            {"##.", "..#", ".#.", "#..", "###"},
+            {"##.", "..#", ".#.", "..#", "##."},
+            {"#.#", "#.#", "###", "..#", "..#"},
+            {"###", "#..", "##.", "..#", "##."},
+            {".##", "#..", "###", "#.#", "###"}};
+    /** The number: almost white, over the colour. */
+    private static final float NUMBER = -0.95f;
+
+    /**
+     * The face of a Move Forward / Back tile: the blank rounded bevel in green (forward) or purple-red (back), a double
+     * arrow in the darkest shade and the number of spaces almost white ("3 ⏩", "⏪ 2").
+     */
+    public static Identifier advanceBack(int steps, boolean small) {
+        int rgb = fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.color(steps);
+        return TEXTURES.computeIfAbsent(new Key("advance_back:" + steps, rgb, small), key -> register(advanceBackValues(steps, small), rgb, small));
+    }
+
+    private static float[] advanceBackValues(int steps, boolean small) {
+        int side = small ? SMALL_SIDE : SIDE;
+        float[] values = frame(small).clone();
+        String[] arrow = small ? SMALL_ARROW : ARROW;
+        int digit = Math.min(9, Math.abs(steps));
+        String[] number = (small ? SMALL_DIGITS : DIGITS)[Math.min(digit, (small ? SMALL_DIGITS : DIGITS).length - 1)];
+        boolean back = steps < 0;
+        int gap = small ? 1 : 2;
+        int width = arrow[0].length() + gap + number[0].length();
+        int height = Math.max(arrow.length, number.length);
+        // Centred on the flat middle of the face (the base, inside the bevel)
+        int minX = side, minY = side, maxX = -1, maxY = -1;
+        for (int x = 0; x < side; x++) {
+            for (int y = 0; y < side; y++) {
+                if (values[y * side + x] != 0) continue;
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+            }
+        }
+        if (maxX < 0) {
+            minX = minY = 0;
+            maxX = maxY = side - 1;
+        }
+        int left = (minX + maxX + 1 - width) / 2, top = (minY + maxY + 1 - height) / 2;
+        // Forward: the number, then the arrow pointing on; back: the arrow pointing back, then the number
+        int numberX = back ? left + arrow[0].length() + gap : left;
+        int arrowX = back ? left : left + number[0].length() + gap;
+        paint(values, side, number, numberX, top + (height - number.length) / 2, false, NUMBER);
+        paint(values, side, arrow, arrowX, top + (height - arrow.length) / 2, back, FEATURE);
+        return values;
+    }
+
+    private static void paint(float[] values, int side, String[] glyph, int left, int top, boolean mirrored, float value) {
+        for (int row = 0; row < glyph.length; row++) {
+            String line = glyph[row];
+            for (int col = 0; col < line.length(); col++) {
+                if (line.charAt(mirrored ? line.length() - 1 - col : col) != '#') continue;
+                int x = left + col, y = top + row;
+                if (x >= 0 && y >= 0 && x < side && y < side) values[y * side + x] = value;
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- faces
 
     /** The face {@code texture} (a 32x32 tile face) painted with the ramp of {@code rgb}. */

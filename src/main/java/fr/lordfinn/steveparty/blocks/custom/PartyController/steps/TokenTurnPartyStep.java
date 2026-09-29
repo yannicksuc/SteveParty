@@ -2,17 +2,22 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +44,13 @@ public class TokenTurnPartyStep extends PartyStep {
      */
     private long absentDeadline = -1;
     private UUID cancelTaskId = null;
+    /**
+     * The extra turn a Replay tile gives (see {@link #grantReplay}): saved, and shown as such in the steps HUD. Landing
+     * on a Replay tile during it gives no further turn.
+     */
+    private boolean replay;
+    /** The die spent for this turn (a copy), given back with a replay. Not saved: lost across a restart. */
+    private ItemStack spentDie = ItemStack.EMPTY;
 
     public TokenTurnPartyStep(NbtCompound nbt) {
         super(nbt);
@@ -132,6 +144,64 @@ public class TokenTurnPartyStep extends PartyStep {
                             .formatted(Formatting.GOLD),
                     MessageUtils.MessageType.ACTION_BAR);
         }
+    }
+
+    /** @return true for the extra turn a Replay tile gave */
+    public boolean isReplay() {
+        return replay;
+    }
+
+    @Override
+    public String getName() {
+        return replay ? "party_step_type.token_turn_replay" : super.getName();
+    }
+
+    /** Remembers the die spent by this turn's player (for a replay: see {@link #grantReplay}). Never consumes the roll. */
+    @Override
+    public ActionResult onDiceRoll(DiceEntity dice, UUID ownerUUID, int rollValue, PartyControllerEntity partyControllerEntity) {
+        if (status == Status.IN_PROGRESS && (owner == null || owner.equals(ownerUUID)))
+            spentDie = spentDie(dice);
+        return ActionResult.PASS;
+    }
+
+    /**
+     * The item of a rolled die (a group of linked dice: the one holding it), empty if nothing was spent: an Infinity
+     * die goes back to its owner by itself.
+     */
+    private static ItemStack spentDie(DiceEntity dice) {
+        List<DiceEntity> group = new java.util.ArrayList<>(List.of(dice));
+        if (dice.getWorld() instanceof ServerWorld world)
+            for (UUID linked : dice.getLinkedDice())
+                if (world.getEntity(linked) instanceof DiceEntity other) group.add(other);
+        for (DiceEntity die : group) {
+            ItemStack item = die.getItemReference();
+            if (item != null && !item.isEmpty()) return die.hasInfinity() ? ItemStack.EMPTY : item.copyWithCount(1);
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * Rejouer / Roll Again: the token of this turn landed on a Replay tile. Its owner plays again right away: a turn of
+     * the same token is inserted right after this one (the turn order then goes on as before), and the die spent for
+     * this turn comes back to the owner (not in creative), so the replay can always be rolled, a forged die included.
+     * The extra turn itself never gives another one (no endless chain).
+     *
+     * @return the extra turn (started by the caller's next step), null if this turn gives none
+     */
+    public @Nullable TokenTurnPartyStep grantReplay(PartyControllerEntity partyControllerEntity) {
+        if (replay || tokenUUID == null || !isStillActive(partyControllerEntity)) return null;
+        TokenTurnPartyStep extra = new TokenTurnPartyStep(tokenUUID, owner);
+        extra.replay = true;
+        extra.tokenName = tokenName;
+        PartyData partyData = partyControllerEntity.getPartyData();
+        partyData.getSteps().add(partyData.getStepIndex() + 1, extra);
+        if (!spentDie.isEmpty() && owner != null && partyControllerEntity.getWorld() instanceof ServerWorld world) {
+            ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(owner);
+            if (player != null && !player.isInCreativeMode()) player.getInventory().offerOrDrop(spentDie.copy());
+        }
+        spentDie = ItemStack.EMPTY;
+        partyControllerEntity.markDirty();
+        return extra;
     }
 
     /**
@@ -288,6 +358,7 @@ public class TokenTurnPartyStep extends PartyStep {
             this.tokenName = nbt.getString("TokenName");
         }
         this.absentDeadline = nbt.contains("AbsentDeadline") ? nbt.getLong("AbsentDeadline") : -1;
+        this.replay = nbt.getBoolean("Replay");
     }
 
     @Override
@@ -301,6 +372,8 @@ public class TokenTurnPartyStep extends PartyStep {
             nbtCompound.putString("TokenName", tokenName);
         if (absentDeadline >= 0)
             nbtCompound.putLong("AbsentDeadline", absentDeadline);
+        if (replay)
+            nbtCompound.putBoolean("Replay", true);
         return nbtCompound;
     }
 

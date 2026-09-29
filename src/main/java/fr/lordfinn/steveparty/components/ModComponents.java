@@ -71,6 +71,9 @@ public class ModComponents {
             registerComponent("inventory-cartridge", InventoryComponent.CODEC);
     public static final ComponentType<BlockPos> INVENTORY_POS =
             registerComponent("inventory-pos", BlockPos.CODEC);
+    /** Move Forward / Back cartridge: spaces a token landing on its tile moves on (1..6 forward, -1..-6 back). */
+    public static final ComponentType<Integer> ADVANCE_BACK_STEPS =
+            registerComponent("advance-back-steps", Codec.intRange(-6, 6));
     public static final ComponentType<Integer> SELECTION_STATE =
             registerComponent("selection-state", Codec.INT);
     public static final ComponentType<Integer> STATE =

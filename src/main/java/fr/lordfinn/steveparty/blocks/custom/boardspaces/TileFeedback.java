@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -108,6 +109,33 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 0.749F, 4))),
+        /** Move Forward (the token moves on): a quick rising run of chiptune notes over a piston push, green gusts. */
+        ADVANCE("advance", 0x3CC85A, List.of(
+                new Layer(SoundEvents.BLOCK_PISTON_EXTEND, 0.35F, 1.3F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 2.0F, 6))),
+        /** Move Back (the token goes back): the same run falling, a piston pulling back, a purple "rewind". */
+        BACK("back", 0xB8307A, List.of(
+                new Layer(SoundEvents.BLOCK_PISTON_CONTRACT, 0.35F, 0.9F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 0.749F, 6))),
+        /** A Replay tile giving another turn: a bright rising arpeggio, then an "en-core!" two-note call; a green swirl. */
+        REPLAY("replay", 0x56C93A, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 2.0F, 6),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.5F, 1.498F, 10),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.55F, 2.0F, 13),
+                new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.6F, 1.5F, 13))),
+        /** A Replay tile reached by the replay move itself: no further turn, a soft falling two-step. */
+        REPLAY_SPENT("replay_spent", 0x8FBF7F, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.498F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.0F, 3))),
         /** A teleport tile (warp pipe): a flute whirl going down while the token spins away (see TileTeleport). */
         TELEPORT("teleport", 0xA35CFF, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.498F, 0),
@@ -162,8 +190,10 @@ public final class TileFeedback {
     public static void initialize() {
         // Tokens moved outside a game (dice in free play, commands): a pop on each tile they reach
         TileReachedEvent.EVENT.register((token, tile) -> {
-            if (token.getWorld() instanceof ServerWorld world && !isInRunningParty(token.getUuid()))
+            if (token.getWorld() instanceof ServerWorld world && !isInRunningParty(token.getUuid())) {
                 ambientStep(world, token, tile.getPos());
+                freePlayRouterSignal(world, token, tile);
+            }
             return ActionResult.PASS;
         });
         // Players walking on the board (a few block lookups per player and tick)
@@ -174,6 +204,19 @@ public final class TileFeedback {
                 ambientStep(world, player, BoardSpaces.boardSpacePosAt(world, player.getBlockPos()));
             }
         });
+    }
+
+    /**
+     * Outside a game there is no landing feedback, but a Router still tells its comparator where a token stops or goes
+     * over (same rules as in a game: see {@link BoardSpaceBlockEntity#onTileReached}).
+     */
+    private static void freePlayRouterSignal(ServerWorld world, MobEntity token, BoardSpaceBlockEntity tile) {
+        int steps = token instanceof fr.lordfinn.steveparty.entities.TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
+        ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
+        boolean stops = steps == 0 ? ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
+                : behavior != null && behavior.needToStop(world, tile.getPos());
+        if (stops) BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
+        else BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile.getPos());
     }
 
     /** True if a party with a current step counts this token among its tokens: the party gives its feedback. */
@@ -199,6 +242,7 @@ public final class TileFeedback {
     /** A token of a running party goes over this tile without stopping. */
     public static void pass(ServerWorld world, BlockPos tile) {
         pop(world, BoardSpaces.standPos(world, tile), POP_VOLUME);
+        BoardSpaceRedstoneRouterBlockEntity.onTokenPassed(world, tile);
         report(Kind.PASS, tile, null, 0);
     }
 
@@ -251,6 +295,15 @@ public final class TileFeedback {
      */
     public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party) {
         Landing landing = landingOf(tile);
+        land(world, tile, token, party, landing, landing.noticeKey());
+    }
+
+    /**
+     * A landing of the given kind (not necessarily the tile's own) with the notice {@code noticeKey}, whose arguments
+     * are the token's name then {@code noticeArgs}.
+     */
+    public static void land(ServerWorld world, BoardSpaceBlockEntity tile, MobEntity token, @Nullable PartyControllerEntity party,
+                            Landing landing, String noticeKey, Object... noticeArgs) {
         BlockPos pos = tile.getPos();
         Vec3d at = BoardSpaces.standPos(world, pos);
 
@@ -276,11 +329,15 @@ public final class TileFeedback {
         if (party != null && !party.isRemoved()) {
             List<ServerPlayerEntity> audience = party.getPartyAudience();
             Text name = token.getCustomName() != null ? token.getCustomName() : token.getName();
-            Text notice = Text.translatable(landing.noticeKey(), name)
+            Object[] args = new Object[noticeArgs.length + 1];
+            args[0] = name;
+            System.arraycopy(noticeArgs, 0, args, 1, noticeArgs.length);
+            Text notice = Text.translatable(noticeKey, args)
                     .styled(style -> style.withColor(TextColor.fromRgb(lighten(color, 0.2F))));
             MessageUtils.sendToPlayers(audience, notice, MessageUtils.MessageType.ACTION_BAR);
             recipients = audience.size();
         }
+        BoardSpaceRedstoneRouterBlockEntity.onTokenStopped(world, tile);
         report(Kind.LAND, pos, landing, recipients);
     }
 
@@ -343,6 +400,26 @@ public final class TileFeedback {
                 world.spawnParticles(new DustParticleEffect(light, 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
                 world.spawnParticles(ParticleTypes.CRIT, at.x, y + 0.2, at.z, 6, 0.25, 0.2, 0.25, 0.1);
             }
+            case ADVANCE -> {
+                world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(0xB8FFC4, 1.2F, MulaSparkleEffect.STAR_BIT), at.x, y + 0.2, at.z, 8, 0.3, 0.25, 0.3, 0.0);
+                world.spawnParticles(ParticleTypes.SMALL_GUST, at.x, y + 0.1, at.z, 3, 0.3, 0.05, 0.3, 0.0);
+            }
+            case BACK -> {
+                world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
+                world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y + 0.2, at.z, 24, 0.3, 0.3, 0.3, 0.02);
+            }
+            case REPLAY -> {
+                // A green swirl climbing around the token (the pictogram's circular arrow), and happy sparks
+                DustParticleEffect swirl = new DustParticleEffect(light, 1.2F);
+                for (int i = 0; i < 24; i++) {
+                    double angle = Math.PI * 3 * i / 24;
+                    world.spawnParticles(swirl, at.x + Math.cos(angle) * 0.5, y + i * 0.05, at.z + Math.sin(angle) * 0.5, 1, 0, 0, 0, 0);
+                }
+                world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, at.x, y + 0.4, at.z, 8, 0.35, 0.3, 0.35, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(0xB8F57A, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y + 1.2, at.z, 6, 0.2, 0.1, 0.2, 0.0);
+            }
+            case REPLAY_SPENT -> world.spawnParticles(new DustParticleEffect(light, 1.0F), at.x, y, at.z, 8, 0.3, 0.1, 0.3, 0.0);
             case TELEPORT -> {
                 world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y, at.z, 16, 0.3, 0.1, 0.3, 0.02);
                 world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE), at.x, y + 0.2, at.z, 8, 0.35, 0.25, 0.35, 0.0);
