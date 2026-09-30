@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "steveparty:podium",
+          "name": "steveparty:bronze_podium",
           "functions": [
             {
               "function": "minecraft:set_count",
@@ -15,7 +15,7 @@
               "conditions": [
                 {
                   "condition": "minecraft:block_state_property",
-                  "block": "steveparty:podium",
+                  "block": "steveparty:bronze_podium",
                   "properties": {
                     "full": "true"
                   }

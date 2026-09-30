@@ -1470,5 +1470,9 @@
   "block.steveparty.brown_stained_glass_pipe": "Brown Stained Glass Pipe",
   "block.steveparty.green_stained_glass_pipe": "Green Stained Glass Pipe",
   "block.steveparty.red_stained_glass_pipe": "Red Stained Glass Pipe",
-  "block.steveparty.black_stained_glass_pipe": "Black Stained Glass Pipe"
+  "block.steveparty.black_stained_glass_pipe": "Black Stained Glass Pipe",
+  "block.steveparty.gold_podium": "Gold Podium",
+  "block.steveparty.silver_podium": "Silver Podium",
+  "block.steveparty.bronze_podium": "Bronze Podium",
+  "message.steveparty.podium.place": "%1$s takes place %2$s!"
 }

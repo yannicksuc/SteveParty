@@ -1471,5 +1471,9 @@
   "block.steveparty.brown_stained_glass_pipe": "Tuyau en verre teinté marron",
   "block.steveparty.green_stained_glass_pipe": "Tuyau en verre teinté vert",
   "block.steveparty.red_stained_glass_pipe": "Tuyau en verre teinté rouge",
-  "block.steveparty.black_stained_glass_pipe": "Tuyau en verre teinté noir"
+  "block.steveparty.black_stained_glass_pipe": "Tuyau en verre teinté noir",
+  "block.steveparty.gold_podium": "Podium d'or",
+  "block.steveparty.silver_podium": "Podium d'argent",
+  "block.steveparty.bronze_podium": "Podium de bronze",
+  "message.steveparty.podium.place": "%1$s prend la place %2$s !"
 }

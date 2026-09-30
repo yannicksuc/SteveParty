@@ -446,13 +446,35 @@ public class ModBlocks {
                     .nonOpaque()
                     .requiresTool(),
             "party_bell", true);
-    public static final Block PODIUM = register(PodiumBlock::new,
+    /** Podiums: the classic one, and the gold, silver and bronze ones giving the 1st, 2nd and 3rd place. */
+    public static final Block PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.CLASSIC),
             Block.Settings.create()
                     .strength(2.0f, 6.0f)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "podium", true);
+    public static final Block GOLD_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.FIRST),
+            Block.Settings.create()
+                    .strength(2.0f, 6.0f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .nonOpaque()
+                    .requiresTool(),
+            "gold_podium", true);
+    public static final Block SILVER_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.SECOND),
+            Block.Settings.create()
+                    .strength(2.0f, 6.0f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .nonOpaque()
+                    .requiresTool(),
+            "silver_podium", true);
+    public static final Block BRONZE_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.THIRD),
+            Block.Settings.create()
+                    .strength(2.0f, 6.0f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .nonOpaque()
+                    .requiresTool(),
+            "bronze_podium", true);
     public static final Block PIGGY_BANK = register(PiggyBankBlock::new,
             Block.Settings.create()
                     .strength(1.0f, 3.0f)

@@ -8,7 +8,9 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.*;
+import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
+import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -25,7 +27,9 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 import java.util.*;
 
@@ -262,12 +266,12 @@ public class PartyLoopGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** A participant stepping on a podium ("first arrived") wins the mini-game being played. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
-    public void podiumEndsTheMiniGame(TestContext context) {
-        BlockPos pos = new BlockPos(1, 1, 1);
+    private record PlayedMiniGame(PartyControllerEntity controller, MiniGamePartyStep miniGame, PartyData data) {
+    }
+
+    /** A controller at {@code pos} whose mini-game is being played by {@code player}. */
+    private static PlayedMiniGame playedMiniGame(TestContext context, BlockPos pos, ServerPlayerEntity player) {
         PartyControllerEntity controller = placeController(context, pos);
-        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         UUID token = UUID.randomUUID();
         NbtCompound miniGameNbt = new NbtCompound();
         miniGameNbt.putString("Type", PartyStepType.MINI_GAME.name());
@@ -287,6 +291,19 @@ public class PartyLoopGameTests implements FabricGameTest {
         controller.setPartyData(data);
         context.assertTrue(miniGame.isPlaying(), "mini-game being played");
 
+        return new PlayedMiniGame(controller, miniGame, data);
+    }
+
+    /** A participant stepping on a podium ("first arrived") wins the mini-game being played. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void podiumEndsTheMiniGame(TestContext context) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        PlayedMiniGame played = playedMiniGame(context, pos, player);
+        PartyControllerEntity controller = played.controller();
+        MiniGamePartyStep miniGame = played.miniGame();
+        PartyData data = played.data();
+
         BlockPos podiumPos = new BlockPos(4, 1, 4);
         context.setBlockState(podiumPos, ModBlocks.PODIUM);
         PodiumBlockEntity podium = context.getBlockEntity(podiumPos);
@@ -299,6 +316,61 @@ public class PartyLoopGameTests implements FabricGameTest {
             context.assertEquals(controller.getLastWinners(), List.of(player.getUuid()), "winners remembered");
             context.waitAndRun(70, () -> {
                 context.assertTrue(data.isAtEnd(), "the party went on");
+                context.removeBlock(pos);
+                context.complete();
+            });
+        });
+    }
+
+    /** Stacked podiums make one column: the top one is stood on, the bottom one keeps the settings and the banner. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void podiumColumn(TestContext context) {
+        BlockPos bottom = new BlockPos(2, 1, 2);
+        context.setBlockState(bottom, ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FACING, Direction.EAST).with(PodiumBlock.FULL, true));
+        context.assertTrue(context.getBlockState(bottom).get(PodiumBlock.TOP), "alone: its own top");
+        context.setBlockState(bottom.up(), ModBlocks.GOLD_PODIUM.getDefaultState().with(PodiumBlock.FACING, Direction.EAST));
+        context.assertFalse(context.getBlockState(bottom).get(PodiumBlock.TOP), "covered: no longer the top");
+        context.assertTrue(context.getBlockState(bottom.up()).get(PodiumBlock.TOP), "the slab is the top");
+        BlockPos absBottom = context.getAbsolutePos(bottom);
+        context.assertEquals(PodiumBlock.topOf(context.getWorld(), absBottom), absBottom.up(), "top of the column");
+        PodiumBlockEntity master = context.getBlockEntity(bottom);
+        context.assertTrue(PodiumBlock.master(context.getWorld(), absBottom.up()) == master, "the bottom block keeps the settings");
+        TileStampComponent stamp = TileStampComponent.of(new byte[256], DyeColor.BLUE);
+        master.setBannerStamp(stamp);
+        context.assertEquals(PodiumBlock.master(context.getWorld(), absBottom.up()).getBannerStamp(), stamp, "banner of the column");
+
+        // Someone on the top: the whole column pulses
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        BlockPos top = absBottom.up();
+        player.setPosition(top.getX() + 0.5, top.getY() + 0.6, top.getZ() + 0.5);
+        context.addInstantFinalTask(() -> {
+            context.assertTrue(context.getBlockState(bottom).get(PodiumBlock.POWERED), "bottom powered");
+            context.assertTrue(context.getBlockState(bottom.up()).get(PodiumBlock.POWERED), "top powered");
+            context.assertEquals(context.getWorld().getEmittedRedstonePower(absBottom, Direction.EAST), 15, "signal out of the bottom's side");
+            context.assertEquals(comparator(context, bottom), 1, "one player on it");
+            context.removeBlock(bottom.up());
+            context.assertTrue(context.getBlockState(bottom).get(PodiumBlock.TOP), "uncovered: the top again");
+        });
+    }
+
+    /** Silver and bronze give their place without ending the mini-game; the gold podium ends it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void podiumPlaces(TestContext context) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        PlayedMiniGame played = playedMiniGame(context, pos, player);
+        BlockPos silver = new BlockPos(4, 1, 1), gold = new BlockPos(4, 1, 4);
+        context.setBlockState(silver, ModBlocks.SILVER_PODIUM);
+        context.setBlockState(gold, ModBlocks.GOLD_PODIUM);
+        BlockPos abs = context.getAbsolutePos(silver);
+        player.setPosition(abs.getX() + 0.5, abs.getY() + 0.6, abs.getZ() + 0.5);
+        context.waitAndRun(6, () -> {
+            context.assertTrue(played.miniGame().isPlaying(), "the silver place doesn't end it");
+            BlockPos absGold = context.getAbsolutePos(gold);
+            player.setPosition(absGold.getX() + 0.5, absGold.getY() + 0.6, absGold.getZ() + 0.5);
+            context.waitAndRun(6, () -> {
+                context.assertEquals(played.miniGame().getPhase(), MiniGamePartyStep.Phase.FINISHED, "gold ends it");
+                context.assertEquals(played.miniGame().getWinners(), List.of(player.getUuid()), "the player won");
                 context.removeBlock(pos);
                 context.complete();
             });

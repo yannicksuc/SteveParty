@@ -4,20 +4,20 @@
       "model": "steveparty:block/podium_body_slab"
     },
     "facing=north,full=false,top=true": {
-      "model": "steveparty:block/podium_slab"
+      "model": "steveparty:block/bronze_podium_slab"
     },
     "facing=north,full=true,top=false": {
       "model": "steveparty:block/podium_body_full"
     },
     "facing=north,full=true,top=true": {
-      "model": "steveparty:block/podium_full"
+      "model": "steveparty:block/bronze_podium_full"
     },
     "facing=east,full=false,top=false": {
       "model": "steveparty:block/podium_body_slab",
       "y": 90
     },
     "facing=east,full=false,top=true": {
-      "model": "steveparty:block/podium_slab",
+      "model": "steveparty:block/bronze_podium_slab",
       "y": 90
     },
     "facing=east,full=true,top=false": {
@@ -25,7 +25,7 @@
       "y": 90
     },
     "facing=east,full=true,top=true": {
-      "model": "steveparty:block/podium_full",
+      "model": "steveparty:block/bronze_podium_full",
       "y": 90
     },
     "facing=south,full=false,top=false": {
@@ -33,7 +33,7 @@
       "y": 180
     },
     "facing=south,full=false,top=true": {
-      "model": "steveparty:block/podium_slab",
+      "model": "steveparty:block/bronze_podium_slab",
       "y": 180
     },
     "facing=south,full=true,top=false": {
@@ -41,7 +41,7 @@
       "y": 180
     },
     "facing=south,full=true,top=true": {
-      "model": "steveparty:block/podium_full",
+      "model": "steveparty:block/bronze_podium_full",
       "y": 180
     },
     "facing=west,full=false,top=false": {
@@ -49,7 +49,7 @@
       "y": 270
     },
     "facing=west,full=false,top=true": {
-      "model": "steveparty:block/podium_slab",
+      "model": "steveparty:block/bronze_podium_slab",
       "y": 270
     },
     "facing=west,full=true,top=false": {
@@ -57,7 +57,7 @@
       "y": 270
     },
     "facing=west,full=true,top=true": {
-      "model": "steveparty:block/podium_full",
+      "model": "steveparty:block/bronze_podium_full",
       "y": 270
     }
   }

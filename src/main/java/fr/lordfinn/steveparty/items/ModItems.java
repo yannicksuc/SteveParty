@@ -211,6 +211,9 @@ public class ModItems {
             itemGroup.add(PARTY_CARD_EVENT);
             itemGroup.add(PARTY_CARD_REPEAT);
             itemGroup.add(PARTY_BELL);
+            itemGroup.add(GOLD_PODIUM);
+            itemGroup.add(SILVER_PODIUM);
+            itemGroup.add(BRONZE_PODIUM);
             itemGroup.add(PODIUM);
             itemGroup.add(PIGGY_BANK);
             itemGroup.add(MINI_GAMES_CATALOGUE);

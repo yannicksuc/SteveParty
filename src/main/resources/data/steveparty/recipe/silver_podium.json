@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "steveparty:podium",
+    "minecraft:iron_ingot"
+  ],
+  "result": {
+    "id": "steveparty:silver_podium"
+  }
+}

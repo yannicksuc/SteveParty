@@ -1,6 +1,13 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.util.Formatting;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
@@ -25,9 +32,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 /**
- * Podium: ends the mini-game being played and names its winners.
+ * Podium: ends the mini-game being played and names its winners. A column of podiums is one podium: its top block
+ * watches the players standing on it, its bottom block keeps the settings (mode, cartridge, stamped banner).
  * <ul>
- *     <li>"First arrived" mode (default): the first participant to step on it wins.</li>
+ *     <li>"First arrived" mode (default): the first participant to step on a gold or classic podium wins; a silver or
+ *     bronze podium gives the 2nd or 3rd place.</li>
  *     <li>"On signal" mode: stepping on it does nothing.</li>
  * </ul>
  * In both modes a redstone pulse ends the mini-game, its power designating the winners (see
@@ -63,6 +72,8 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
     private final Set<UUID> playersOn = new LinkedHashSet<>();
     private boolean inputPowered = false;
     private int cycleIndex = 0;
+    /** The look stamped on the banner (bottom block of the column; drawn on its top block). */
+    private @Nullable TileStampComponent bannerStamp;
 
     public PodiumBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PODIUM_ENTITY, pos, state, 1);
@@ -97,15 +108,52 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
         for (ServerPlayerEntity player : arrived) onArrival(world, player);
     }
 
+    /** Players standing on the top of the column this block belongs to. */
     private List<ServerPlayerEntity> getPlayersStandingOn(ServerWorld world) {
-        Box above = new Box(pos.getX(), pos.getY() + 0.5, pos.getZ(), pos.getX() + 1, pos.getY() + 1.6, pos.getZ() + 1);
+        BlockPos top = PodiumBlock.topOf(world, pos);
+        BlockState state = world.getBlockState(top);
+        double surface = top.getY() + (PodiumBlock.isPodium(state) && state.get(PodiumBlock.FULL) ? 1.0 : 0.5);
+        Box above = new Box(top.getX(), surface - 0.1, top.getZ(), top.getX() + 1, surface + 1.1, top.getZ() + 1);
         return world.getEntitiesByClass(ServerPlayerEntity.class, above, player -> !player.isSpectator() && player.isAlive());
     }
 
     private void onArrival(ServerWorld world, ServerPlayerEntity player) {
-        PodiumBlock.pulse(world, pos, getCachedState());
-        if (mode != Mode.FIRST_ARRIVED) return;
-        findPlayedMiniGame(world, player.getUuid()).ifPresent(controller -> finish(world, controller, List.of(player.getUuid())));
+        PodiumBlock.pulse(world, pos);
+        PodiumBlockEntity master = PodiumBlock.master(world, pos);
+        if (master == null || master.mode != Mode.FIRST_ARRIVED) return;
+        if (!(getCachedState().getBlock() instanceof PodiumBlock block)) return;
+        PodiumBlock.Place place = block.getPlace();
+        findPlayedMiniGame(world, player.getUuid()).ifPresent(controller -> {
+            if (place.endsTheMiniGame()) {
+                master.finish(world, controller, List.of(player.getUuid()));
+            } else {
+                // 2nd / 3rd place: told to everybody, the mini-game goes on until the gold podium is reached
+                MessageUtils.sendToPlayers(controller.getPartyAudience(), Text.translatableWithFallback("message.steveparty.podium.place",
+                        "%1$s takes the place %2$s", player.getName(), place.rank()).formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
+            }
+        });
+    }
+
+    public @Nullable TileStampComponent getBannerStamp() {
+        return bannerStamp;
+    }
+
+    public void setBannerStamp(@Nullable TileStampComponent stamp) {
+        if (java.util.Objects.equals(bannerStamp, stamp)) return;
+        bannerStamp = stamp;
+        markDirty();
+        if (world != null && !world.isClient)
+            world.updateListeners(pos, getCachedState(), getCachedState(), net.minecraft.block.Block.NOTIFY_ALL);
+    }
+
+    @Override
+    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
+    }
+
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        return createNbt(registries);
     }
 
     /**
@@ -209,6 +257,9 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
         nbt.putString("Mode", mode.asString());
         nbt.putBoolean("InputPowered", inputPowered);
         nbt.putInt("CycleIndex", cycleIndex);
+        if (bannerStamp != null)
+            TileStampComponent.CODEC.encodeStart(wrapper.getOps(NbtOps.INSTANCE), bannerStamp)
+                    .ifSuccess(element -> nbt.put("BannerStamp", element));
     }
 
     @Override
@@ -220,5 +271,8 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
         }
         inputPowered = nbt.getBoolean("InputPowered");
         cycleIndex = nbt.getInt("CycleIndex");
+        bannerStamp = nbt.contains("BannerStamp")
+                ? TileStampComponent.CODEC.parse(wrapper.getOps(NbtOps.INSTANCE), nbt.get("BannerStamp")).result().orElse(null)
+                : null;
     }
 }

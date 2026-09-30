@@ -85,7 +85,7 @@ public class ModBlockEntities {
     public static final BlockEntityType<PodiumBlockEntity> PODIUM_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "podium"),
-            FabricBlockEntityTypeBuilder.create(PodiumBlockEntity::new, ModBlocks.PODIUM).build(null)
+            FabricBlockEntityTypeBuilder.create(PodiumBlockEntity::new, ModBlocks.PODIUM, ModBlocks.GOLD_PODIUM, ModBlocks.SILVER_PODIUM, ModBlocks.BRONZE_PODIUM).build(null)
     );
     public static final BlockEntityType<PiggyBankBlockEntity> PIGGY_BANK_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,

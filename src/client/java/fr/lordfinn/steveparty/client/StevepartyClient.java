@@ -278,6 +278,9 @@ public class StevepartyClient implements ClientModInitializer {
             return infos == null || infos.isEmpty() ? -1 : infos.last().getStage();
         };
         BlockEntityRendererFactories.register(ModBlockEntities.DICE_FORGE_ENTITY, DiceForgeBlockEntityRenderer::new);
+        // The pattern tagged on a podium's banner
+        BlockEntityRendererFactories.register(ModBlockEntities.PODIUM_ENTITY, fr.lordfinn.steveparty.client.blockentity.PodiumBannerRenderer::new);
+        fr.lordfinn.steveparty.client.blockentity.PodiumBannerRenderer.registerReloadListener();
 
         BlockRenderLayerMap.INSTANCE.putBlock(BLUE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
         BlockRenderLayerMap.INSTANCE.putBlock(PURPLE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());

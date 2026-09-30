@@ -76,6 +76,9 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.PLASTIC_ROAD_SIGN,
                         ModBlocks.PARTY_BELL,
                         ModBlocks.PODIUM,
+                        ModBlocks.GOLD_PODIUM,
+                        ModBlocks.SILVER_PODIUM,
+                        ModBlocks.BRONZE_PODIUM,
                         ModBlocks.PIGGY_BANK
                 );
         for (Block b : ModBlocks.POLISHED_TERRACOTTA_SLABS)

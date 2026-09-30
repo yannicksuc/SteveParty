@@ -1,10 +1,8 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "side": "steveparty:block/podium_side",
-    "top": "steveparty:block/podium_top_on",
-    "bottom": "minecraft:block/smooth_stone",
-    "particle": "steveparty:block/podium_side"
+    "body": "steveparty:block/podium_body",
+    "particle": "steveparty:block/podium_body"
   },
   "elements": [
     {
@@ -15,52 +13,52 @@
       ],
       "to": [
         16,
-        12,
+        16,
         16
       ],
       "faces": {
         "north": {
-          "texture": "#side",
           "uv": [
             0,
-            4,
-            16,
-            16
-          ]
-        },
-        "east": {
-          "texture": "#side",
-          "uv": [
             0,
-            4,
             16,
             16
-          ]
+          ],
+          "texture": "#body"
         },
         "south": {
-          "texture": "#side",
           "uv": [
             0,
-            4,
+            0,
             16,
             16
-          ]
+          ],
+          "texture": "#body"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#body"
         },
         "west": {
-          "texture": "#side",
           "uv": [
             0,
-            4,
+            0,
             16,
             16
-          ]
-        },
-        "up": {
-          "texture": "#top"
+          ],
+          "texture": "#body"
         },
         "down": {
-          "texture": "#bottom",
+          "texture": "#body",
           "cullface": "down"
+        },
+        "up": {
+          "texture": "#body"
         }
       }
     }
