@@ -84,6 +84,10 @@ dependencies {
     modLocalRuntime "maven.modrinth:iris:${project.iris_version}"
     // Recipe viewer in the dev client (JEI has no Fabric 1.21.3 build; REI is the Fabric equivalent)
     modLocalRuntime "maven.modrinth:rei:17.0.807+fabric"
+    // Optional REI plugin (client compat.rei, entrypoint rei_client): compiled against REI, never required at runtime
+    modCompileOnly "maven.modrinth:rei:17.0.807+fabric"
+    modCompileOnly "maven.modrinth:architectury-api:14.0.4+fabric"
+    modCompileOnly "me.shedaniel.cloth:basic-math:0.6.1"
     modLocalRuntime "maven.modrinth:architectury-api:14.0.4+fabric"
     modLocalRuntime "maven.modrinth:cloth-config:16.0.143+fabric"
     modLocalRuntime "me.shedaniel.cloth:basic-math:0.6.1"

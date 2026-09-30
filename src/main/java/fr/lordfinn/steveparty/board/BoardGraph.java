@@ -5,8 +5,10 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TeleportNetwork;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.inventory.Inventory;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -54,13 +57,10 @@ public final class BoardGraph {
      * @param start         a start tile (its active cartridge)
      * @param cartridges    number of cartridges it holds
      * @param inventoryIssue for an inventory tile: its chest is missing (null: fine or not an inventory tile)
-     * @param teleports     for a teleport tile (its active cartridge): its arrivals (not links: no one walks them),
-     *                      null for any other board space
-     * @param teleportsNowhere a teleport tile none of whose arrivals is a board space (or unloaded): it sends no one
+     * @param teleportNetwork for a teleport tile (its active cartridge): its network, null for any other board space
      */
     public record Node(BlockPos pos, boolean step, boolean start, int cartridges, boolean hasStartToken,
-                       @Nullable InventoryIssue inventoryIssue, List<Edge> edges, @Nullable List<BlockPos> teleports,
-                       boolean teleportsNowhere) {
+                       @Nullable InventoryIssue inventoryIssue, List<Edge> edges, @Nullable TeleportNetwork teleportNetwork) {
 
         public long boardSpaceLinks() {
             return edges.stream().filter(e -> e.target() != Target.BROKEN).count();
@@ -81,6 +81,10 @@ public final class BoardGraph {
     private final List<Router> routers;
     private final Map<BlockPos, Integer> distances = new HashMap<>();
     private final Set<BlockPos> withIncoming = new HashSet<>();
+    /** The teleport tiles of each network on each board (see {@link #teleportPartners}), in the graph's order. */
+    private final Map<BlockPos, List<BlockPos>> teleportGroups = new HashMap<>();
+    /** Each board space's board: one of its spaces, the same for all the spaces paths join. */
+    private final Map<BlockPos, BlockPos> boards = new HashMap<>();
 
     private BoardGraph(Map<BlockPos, Node> nodes, List<Router> routers) {
         this.nodes = nodes;
@@ -88,6 +92,7 @@ public final class BoardGraph {
         for (Node node : nodes.values()) {
             for (Edge edge : node.edges()) withIncoming.add(edge.to());
         }
+        groupTeleports();
         computeDistances();
     }
 
@@ -166,11 +171,10 @@ public final class BoardGraph {
         }
         ItemStack activeCartridge = boardSpace.getStack(active);
         boolean hasToken = start && activeCartridge.get(ModComponents.TB_START_BOUND_ENTITY) != null;
-        List<BlockPos> teleports = TeleportLinks.isTeleportCartridge(activeCartridge) ? TeleportLinks.targets(activeCartridge) : null;
-        boolean teleportsNowhere = teleports != null
-                && teleports.stream().noneMatch(target -> !target.equals(pos) && target(world, target) != Target.BROKEN);
+        TeleportNetwork network = activeCartridge.getItem() instanceof TeleportCartridgeItem
+                ? TeleportCartridgeItem.settings(activeCartridge).network() : null;
         return new Node(pos, ABoardSpaceBlock.countsAsStep(state.getBlock()), start, cartridges, hasToken,
-                inventoryIssue(world, activeCartridge), edges, teleports, teleportsNowhere);
+                inventoryIssue(world, activeCartridge), edges, network);
     }
 
     private static @Nullable InventoryIssue inventoryIssue(World world, ItemStack cartridge) {
@@ -185,6 +189,73 @@ public final class BoardGraph {
     private static Target target(World world, BlockPos pos) {
         if (!world.isChunkLoaded(pos)) return Target.UNLOADED;
         return BoardLinks.isBoardSpace(world, pos) ? Target.BOARD_SPACE : Target.BROKEN;
+    }
+
+    // ---------------------------------------------------------------- teleport networks
+
+    /**
+     * Groups the teleport tiles by network and by board: two tiles are on the same board when paths join them (links
+     * of any cartridge, whichever way), so two boards side by side never send tokens to each other.
+     */
+    private void groupTeleports() {
+        Map<BlockPos, BlockPos> parent = new HashMap<>();
+        for (Node node : nodes.values()) {
+            for (Edge edge : node.edges()) {
+                if (nodes.containsKey(edge.to())) union(parent, node.pos(), edge.to());
+            }
+        }
+        Map<BlockPos, Map<TeleportNetwork, List<BlockPos>>> networks = new HashMap<>();
+        for (Node node : nodes.values()) {
+            BlockPos board = find(parent, node.pos());
+            boards.put(node.pos(), board);
+            if (node.teleportNetwork() == null) continue;
+            List<BlockPos> group = networks.computeIfAbsent(board, b -> new EnumMap<>(TeleportNetwork.class))
+                    .computeIfAbsent(node.teleportNetwork(), network -> new ArrayList<>());
+            group.add(node.pos());
+            teleportGroups.put(node.pos(), group);
+        }
+    }
+
+    private static BlockPos find(Map<BlockPos, BlockPos> parent, BlockPos pos) {
+        BlockPos root = pos;
+        for (BlockPos up = parent.get(root); up != null; up = parent.get(root)) root = up;
+        // Path compression
+        for (BlockPos at = pos, up = parent.get(at); up != null && !up.equals(root); at = up, up = parent.get(at)) parent.put(at, root);
+        return root;
+    }
+
+    private static void union(Map<BlockPos, BlockPos> parent, BlockPos a, BlockPos b) {
+        BlockPos rootA = find(parent, a), rootB = find(parent, b);
+        if (!rootA.equals(rootB)) parent.put(rootA, rootB);
+    }
+
+    /**
+     * The other teleport tiles of {@code pos}'s network on its board (loaded, in the graph's stable order): where a
+     * token landing on it may be sent. Empty for a tile alone in its network, or no teleport tile.
+     */
+    public List<BlockPos> teleportPartners(BlockPos pos) {
+        List<BlockPos> group = teleportGroups.get(pos);
+        if (group == null || group.size() < 2) return List.of();
+        List<BlockPos> partners = new ArrayList<>(group);
+        partners.remove(pos);
+        return partners;
+    }
+
+    /** All the teleport tiles of {@code pos}'s network on its board, itself included (empty if it is none). */
+    public List<BlockPos> teleportNetworkOf(BlockPos pos) {
+        List<BlockPos> group = teleportGroups.get(pos);
+        return group == null ? List.of() : group;
+    }
+
+    /** Paths join the board spaces at {@code a} and {@code b} (links of any cartridge, whichever way). */
+    public boolean sameBoard(BlockPos a, BlockPos b) {
+        BlockPos boardA = boards.get(a);
+        return boardA != null && boardA.equals(boards.get(b));
+    }
+
+    /** A teleport tile no other tile of its network shares its board with: a token landing there stays. */
+    public boolean isTeleportAlone(Node node) {
+        return node.teleportNetwork() != null && teleportPartners(node.pos()).isEmpty();
     }
 
     // ---------------------------------------------------------------- distances
@@ -213,9 +284,9 @@ public final class BoardGraph {
                 if (next.step()) queue.addLast(next.pos());
                 else queue.addFirst(next.pos());
             }
-            // A token landing on a teleport tile ends its move on an arrival: reached as soon as the tile is
-            if (node.teleports() != null) {
-                for (BlockPos to : node.teleports()) {
+            // A token landing on a teleport tile is sent to another one of its network: reached as soon as the tile is
+            if (node.teleportNetwork() != null) {
+                for (BlockPos to : teleportPartners(node.pos())) {
                     Node next = nodes.get(to);
                     if (next == null) continue;
                     Integer known = distances.get(next.pos());

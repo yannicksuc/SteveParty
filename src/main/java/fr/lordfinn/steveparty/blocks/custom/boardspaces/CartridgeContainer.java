@@ -103,11 +103,16 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         return null;
     }
 
+    /** Whether the cartridges spill out when {@code player} breaks it (a tile broken with Silk Touch keeps them). */
+    protected boolean dropsContentsOnBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        return true;
+    }
+
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
 
-        if (blockEntity instanceof CartridgeContainerBlockEntity inventory) {
+        if (blockEntity instanceof CartridgeContainerBlockEntity inventory && dropsContentsOnBreak(world, pos, state, player)) {
             // Drop all items in the inventory
             for (int i = 0; i < inventory.size(); i++) {
                 ItemStack stack = inventory.getStack(i);

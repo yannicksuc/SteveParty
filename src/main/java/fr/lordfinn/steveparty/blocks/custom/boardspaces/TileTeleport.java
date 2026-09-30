@@ -1,13 +1,16 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.TeleportTileBehavior;
-import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.TeleportTargetsComponent;
+import fr.lordfinn.steveparty.components.TeleportNetwork;
+import fr.lordfinn.steveparty.components.TeleportSettingsComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
+import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -26,9 +29,10 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -37,32 +41,42 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
 
 /**
- * The « Téléportation » tile (warp pipe): a token that <b>lands</b> on it (its move ends there) is sent to one of the
- * arrivals of its Teleport Cartridge ({@link TeleportTargetsComponent}), picked at random or in turn.
+ * The « Téléportation » tile (warp pipe): a token that <b>lands</b> on it (its move ends there) is sent to another
+ * Teleport tile of the same network (the colour of its cartridge, see {@link TeleportNetwork}) on the same board,
+ * picked at random or in turn.
  * <ul>
- *     <li>the token spins and shrinks into a swirl of purple and cyan sparkles, vanishes with a chorus "whoop", and pops
- *     back at the arrival, where tokens stand on it (lowered, sloped and large tiles included: {@link BoardSpaces#standPos});</li>
- *     <li>its move ends there <b>without</b> landing on the arrival: no role of the arrival plays (no bonus, no item),
- *     unless the cartridge's option says so; even then an arrival that is a teleport tile never sends it on (no chains);</li>
- *     <li>a token only going over the tile is not teleported.</li>
+ *     <li>the token spins and shrinks into a swirl of sparkles in the network's colour, vanishes with a chorus "whoop",
+ *     and pops back on the other tile, where tokens stand on it (lowered, sloped and large tiles included:
+ *     {@link BoardSpaces#standPos});</li>
+ *     <li>there it stays (its move ends on the arrival tile, which never sends it on: no chains), or, if the cartridge
+ *     says so, it is pushed one space further along the arrival tile's path (the owner chooses at a fork), where its
+ *     move ends; that space triggers its effect or not, as the cartridge says (a Teleport tile never does);</li>
+ *     <li>a tile alone in its network sends no one; a token only going over the tile is not teleported.</li>
  * </ul>
- * In a party, the turn goes on once the token has reappeared ({@link TeleportTileBehavior}); in free play (dice outside
- * a party) a token ending its move there is teleported too.
+ * In a party, the turn goes on once the token has reappeared (or landed after the push: {@link TeleportTileBehavior});
+ * in free play (dice outside a party) a token ending its move there is teleported too.
  */
 public final class TileTeleport {
-    /** Default colour of a teleport tile (a dye changes it). */
-    public static final int COLOR = 0x8E4BFF;
+    /** Default colour of a teleport tile: the violet network's. */
+    public static final int COLOR = TeleportNetwork.VIOLET.color();
     /** The cyan of the swirl and of the pop. */
     public static final int ACCENT = 0x5FE6FF;
     /** Ticks of the animation: shrinking and spinning, gone, popping back. */
     public static final int SHRINK_TICKS = 16, GONE_TICKS = 5, GROW_TICKS = 7;
     public static final int TOTAL_TICKS = SHRINK_TICKS + GONE_TICKS + GROW_TICKS;
+    /** How far around the tile the board is read to find the other tiles of its network. */
+    public static final int NETWORK_RANGE = 96;
     /** Smallest size of the token (fraction of its own) while it is away. */
     private static final double MIN_SCALE = 0.05;
     private static final Identifier SHRINK_MODIFIER = Steveparty.id("teleport_shrink");
 
     /** Tokens being teleported (server thread). */
     private static final Set<UUID> TELEPORTING = new HashSet<>();
+    /**
+     * Tokens pushed one space on after a teleport, until they land: whether that space triggers its effect (server
+     * thread, not saved: a restart in the middle ends it as an ordinary move).
+     */
+    private static final Map<UUID, Boolean> PUSHED = new HashMap<>();
 
     /** A teleport, for the GameTests: the token, where it left from and where it arrived. Empty in normal play. */
     public record Teleported(UUID token, BlockPos from, BlockPos to) {
@@ -76,56 +90,98 @@ public final class TileTeleport {
     /** Free play: a token ending its move on a teleport tile outside a party is teleported too. */
     public static void initialize() {
         TileReachedEvent.EVENT.register((token, tile) -> {
-            if (token.getWorld() instanceof ServerWorld world && tile != null && landsOn(token, tile)
+            if (token.getWorld() instanceof ServerWorld world && tile != null && lands(token, tile)
                     && !TileFeedback.isInRunningParty(token.getUuid())) {
-                BlockPos target = pick(world, tile, tile.getActiveCartridgeItemStack());
-                if (target != null) teleport(world, token, tile.getPos(), target, () -> {
-                });
+                // Pushed after a teleport: it stops there (no chains)
+                boolean pushed = PUSHED.remove(token.getUuid()) != null;
+                if (!pushed && tile.getBoardSpaceBehavior() instanceof TeleportTileBehavior) {
+                    ItemStack cartridge = tile.getActiveCartridgeItemStack();
+                    BlockPos target = pick(world, tile, cartridge);
+                    if (target != null) {
+                        TeleportSettingsComponent settings = settings(cartridge);
+                        teleport(world, token, tile.getPos(), target, settings.network().color(), () -> {
+                            if (settings.push()) push(world, token, target, settings.pushTriggers());
+                        });
+                    }
+                }
             }
             return ActionResult.PASS;
         });
     }
 
-    /** The token's move ends on {@code tile}, a teleport tile, and it isn't being teleported already. */
-    private static boolean landsOn(MobEntity token, BoardSpaceBlockEntity tile) {
+    /** The token's move ends on {@code tile} (a tile, not a check point), and it isn't being teleported. */
+    private static boolean lands(MobEntity token, BoardSpaceBlockEntity tile) {
         return token instanceof TokenizedEntityInterface tokenized && tokenized.steveparty$getNbSteps() == 0
                 && ABoardSpaceBlock.countsAsStep(tile.getCachedState().getBlock())
-                && tile.getBoardSpaceBehavior() instanceof TeleportTileBehavior
                 && !isTeleporting(token);
     }
 
-    // ---------------------------------------------------------------- targets
+    // ---------------------------------------------------------------- settings and network
 
-    public static TeleportTargetsComponent settings(@Nullable ItemStack cartridge) {
-        if (cartridge == null || cartridge.isEmpty()) return TeleportTargetsComponent.DEFAULT;
-        return cartridge.getOrDefault(ModComponents.TELEPORT_TARGETS, TeleportTargetsComponent.DEFAULT);
+    public static TeleportSettingsComponent settings(@Nullable ItemStack cartridge) {
+        if (cartridge == null || cartridge.isEmpty()) return TeleportSettingsComponent.DEFAULT;
+        return cartridge.getOrDefault(ModComponents.TELEPORT_SETTINGS, TeleportSettingsComponent.DEFAULT);
     }
 
     /**
-     * The arrivals a token can be sent to now: board spaces in loaded chunks (never loads one), other than the tile
-     * itself, in the cartridge's order.
+     * The other Teleport tiles of {@code tile}'s network on its board (see {@link BoardGraph#teleportPartners}), in
+     * loaded chunks (never loads one) within {@link #NETWORK_RANGE} blocks, in a stable order.
      */
-    @SuppressWarnings("deprecation") // isChunkLoaded(BlockPos): a teleport must not load a chunk
-    public static List<BlockPos> validTargets(World world, BlockPos tile, @Nullable ItemStack cartridge) {
-        List<BlockPos> valid = new ArrayList<>();
-        for (BlockPos target : settings(cartridge).targets()) {
-            if (target.equals(tile) || !world.isChunkLoaded(target)) continue;
-            if (BoardLinks.isBoardSpace(world, target)) valid.add(target);
-        }
-        return valid;
+    public static List<BlockPos> partners(World world, BlockPos tile) {
+        return BoardGraph.collect(world, tile, NETWORK_RANGE).teleportPartners(tile.toImmutable());
     }
 
     /**
-     * The arrival for a token landing on {@code tile} now: at random, or the next one in turn (the turn is kept by the
-     * tile, per cartridge slot). Null if it has none.
+     * Where a token landing on {@code tile} now is sent: at random, or the next one in turn (the turn is kept by the
+     * tile, per cartridge slot). Null if it is alone in its network.
      */
     public static @Nullable BlockPos pick(ServerWorld world, BoardSpaceBlockEntity tile, @Nullable ItemStack cartridge) {
-        List<BlockPos> valid = validTargets(world, tile.getPos(), cartridge);
-        if (valid.isEmpty()) return null;
-        if (!settings(cartridge).cycle()) return valid.get(world.random.nextInt(valid.size()));
-        int index = Math.floorMod(tile.getCycleIndex(), valid.size());
-        tile.setCycleIndex((index + 1) % valid.size());
-        return valid.get(index);
+        List<BlockPos> partners = partners(world, tile.getPos());
+        if (partners.isEmpty()) return null;
+        if (!settings(cartridge).cycle()) return partners.get(world.random.nextInt(partners.size()));
+        int index = Math.floorMod(tile.getCycleIndex(), partners.size());
+        tile.setCycleIndex((index + 1) % partners.size());
+        return partners.get(index);
+    }
+
+    // ---------------------------------------------------------------- pushed one space on
+
+    /**
+     * After a teleport, with the "move on one space" option: the token walks one space along the arrival tile's path
+     * (an ordinary move of one step: the owner chooses at a fork, a Stop space halts it), where its move ends.
+     *
+     * @return false if the arrival tile leads nowhere (the token stays there)
+     */
+    public static boolean push(ServerWorld world, MobEntity token, BlockPos arrival, boolean triggers) {
+        BoardSpaceBlockEntity tile = ABoardSpaceBlock.getBoardSpaceEntity(world, arrival);
+        if (tile == null || tile.getStockedDestinations().stream().noneMatch(BoardSpaceDestination::isTile)) return false;
+        PUSHED.put(token.getUuid(), triggers);
+        if (AdvanceBackMoves.launch(world, token, arrival, 1) == 0) {
+            PUSHED.remove(token.getUuid());
+            return false;
+        }
+        return true;
+    }
+
+    /** True while the token is pushed one space on after a teleport (until it lands). */
+    public static boolean isPushed(MobEntity token) {
+        return PUSHED.containsKey(token.getUuid());
+    }
+
+    /**
+     * The token lands (in a party) where {@code behavior} would play: if it was pushed there after a teleport, that
+     * ends the push.
+     *
+     * @return true if that space must not trigger its effect (the option says no, or it is a Teleport tile: no chains)
+     */
+    public static boolean endPush(MobEntity token, @Nullable ABoardSpaceBehavior behavior) {
+        Boolean triggers = PUSHED.remove(token.getUuid());
+        return triggers != null && (!triggers || behavior instanceof TeleportTileBehavior);
+    }
+
+    /** A new move of the token (a dice roll): nothing left of a push. */
+    public static void cancelPush(MobEntity token) {
+        PUSHED.remove(token.getUuid());
     }
 
     // ---------------------------------------------------------------- the teleport
@@ -138,7 +194,7 @@ public final class TileTeleport {
      * Sends {@code token} from the tile at {@code from} to the board space at {@code to}, with the warp animation.
      * {@code onArrived} runs once it has reappeared there (also if the token went away meanwhile: the game goes on).
      */
-    public static void teleport(ServerWorld world, MobEntity token, BlockPos from, BlockPos to, Runnable onArrived) {
+    public static void teleport(ServerWorld world, MobEntity token, BlockPos from, BlockPos to, int color, Runnable onArrived) {
         UUID id = token.getUuid();
         if (!TELEPORTING.add(id)) return;
         Vec3d start = BoardSpaces.standPos(world, from), end = BoardSpaces.standPos(world, to);
@@ -148,9 +204,9 @@ public final class TileTeleport {
         world.playSound(null, start.x, start.y, start.z, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, SoundCategory.BLOCKS, 0.3F, 1.5F);
         SCHEDULER.repeat(task, 1, () -> {
             int t = ++tick[0];
-            if (t <= SHRINK_TICKS) shrinking(world, token, start, yaw, t);
-            else if (t <= SHRINK_TICKS + GONE_TICKS) gone(world, token, start, end, t - SHRINK_TICKS);
-            else growing(world, token, end, t - SHRINK_TICKS - GONE_TICKS);
+            if (t <= SHRINK_TICKS) shrinking(world, token, start, yaw, t, color);
+            else if (t <= SHRINK_TICKS + GONE_TICKS) gone(world, token, start, end, t - SHRINK_TICKS, color);
+            else growing(world, token, end, t - SHRINK_TICKS - GONE_TICKS, color);
         }, () -> tick[0] < TOTAL_TICKS && !token.isRemoved(), () -> {
             TELEPORTING.remove(id);
             setScale(token, 1);
@@ -169,7 +225,7 @@ public final class TileTeleport {
     }
 
     /** Spinning faster and faster, shrinking into a swirl of sparkles going down into the tile. */
-    private static void shrinking(ServerWorld world, MobEntity token, Vec3d at, float yaw, int t) {
+    private static void shrinking(ServerWorld world, MobEntity token, Vec3d at, float yaw, int t, int tileColor) {
         double p = t / (double) SHRINK_TICKS;
         setScale(token, 1 - (1 - MIN_SCALE) * p * p);
         TokenMovementService.faceYaw(token, yaw + (float) (t * (10 + 30 * p)));
@@ -179,7 +235,7 @@ public final class TileTeleport {
             double angle = t * 0.55 + arm * Math.PI;
             double radius = 0.2 + 0.6 * (1 - p);
             double y = at.y + 0.15 + 0.9 * (1 - p);
-            int color = arm == 0 ? TileTeleport.COLOR : ACCENT;
+            int color = arm == 0 ? tileColor : ACCENT;
             world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(color, 0.25F), 0.9F, MulaSparkleEffect.TWINKLE),
                     at.x + Math.cos(angle) * radius, y, at.z + Math.sin(angle) * radius, 1, 0, 0, 0, 0);
             world.spawnParticles(new DustParticleEffect(color, 0.9F),
@@ -192,7 +248,7 @@ public final class TileTeleport {
     }
 
     /** Gone: a puff where it left, the arrival's portal opening (a ring of cyan sparkles narrowing). */
-    private static void gone(ServerWorld world, MobEntity token, Vec3d start, Vec3d end, int t) {
+    private static void gone(ServerWorld world, MobEntity token, Vec3d start, Vec3d end, int t, int color) {
         if (t == 1) {
             world.spawnParticles(ParticleTypes.REVERSE_PORTAL, start.x, start.y + 0.2, start.z, 20, 0.15, 0.15, 0.15, 0.06);
             world.spawnParticles(new MulaSparkleEffect(0xFFFFFF, 1.1F, MulaSparkleEffect.STAR_BIT), start.x, start.y + 0.25, start.z, 4, 0.2, 0.1, 0.2, 0);
@@ -203,13 +259,13 @@ public final class TileTeleport {
         int points = 10;
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2 * i / points + t * 0.4;
-            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(i % 2 == 0 ? ACCENT : COLOR, 0.3F), 0.8F, MulaSparkleEffect.TWINKLE),
+            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(i % 2 == 0 ? ACCENT : color, 0.3F), 0.8F, MulaSparkleEffect.TWINKLE),
                     end.x + Math.cos(angle) * radius, end.y + 0.12, end.z + Math.sin(angle) * radius, 1, 0, 0, 0, 0);
         }
     }
 
     /** Pops back, a bit too big first, with a burst of sparkles. */
-    private static void growing(ServerWorld world, MobEntity token, Vec3d at, int t) {
+    private static void growing(ServerWorld world, MobEntity token, Vec3d at, int t, int color) {
         double q = t / (double) GROW_TICKS;
         // Ease out with an overshoot: up to about 1.15 times its size, back to its size
         double c = 2.2, back = 1 + (c + 1) * Math.pow(q - 1, 3) + c * Math.pow(q - 1, 2);
@@ -220,7 +276,7 @@ public final class TileTeleport {
             world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), SoundCategory.BLOCKS, 0.4F, 2.0F);
             world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.BLOCKS, 0.25F, 1.7F);
             world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(ACCENT, 0.2F), 1.3F, MulaSparkleEffect.STAR_BIT), at.x, at.y + 0.4, at.z, 8, 0.3, 0.3, 0.3, 0.0);
-            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(COLOR, 0.35F), 1.1F, MulaSparkleEffect.TWINKLE), at.x, at.y + 0.3, at.z, 10, 0.4, 0.25, 0.4, 0.0);
+            world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(color, 0.35F), 1.1F, MulaSparkleEffect.TWINKLE), at.x, at.y + 0.3, at.z, 10, 0.4, 0.25, 0.4, 0.0);
             world.spawnParticles(ParticleTypes.END_ROD, at.x, at.y + 0.3, at.z, 5, 0.1, 0.1, 0.1, 0.08);
         }
     }

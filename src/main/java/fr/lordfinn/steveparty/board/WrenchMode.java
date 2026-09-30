@@ -15,12 +15,7 @@ public enum WrenchMode implements StringIdentifiable {
     /** The former behaviour: a fixed origin, each click adds or removes one of its links (forks, routers). */
     EDIT("edit", Formatting.AQUA),
     /** A click on a board space removes all its outgoing links. */
-    CUT("cut", Formatting.RED),
-    /**
-     * The arrivals of a Teleport tile, apart from the path links: click the teleport tile, then each space it sends to
-     * (again: removed). See {@link TeleportLinks}.
-     */
-    TELEPORT("teleport", Formatting.LIGHT_PURPLE);
+    CUT("cut", Formatting.RED);
 
     public static final Codec<WrenchMode> CODEC = StringIdentifiable.createCodec(WrenchMode::values);
 

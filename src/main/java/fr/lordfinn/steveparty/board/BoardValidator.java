@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Checks a board before playing it: missing start, dead ends, board spaces no start leads to, links to blocks that are
- * not board spaces, inventory tiles without chest, routers driving empty positions, teleport tiles sending nowhere, start
+ * not board spaces, inventory tiles without chest, routers driving empty positions, teleport tiles alone in their network, start
  * tiles without token. Run by a
  * Wrench click on the Party Controller, {@code /steveparty board check}, and at the start of a party (as a warning:
  * the party still starts).
@@ -75,7 +75,7 @@ public final class BoardValidator {
             if (node.inventoryIssue() == BoardGraph.InventoryIssue.NO_CHEST) noChest.add(node.pos());
             if (node.inventoryIssue() == BoardGraph.InventoryIssue.CHEST_GONE) chestGone.add(node.pos());
         }
-        List<BlockPos> noTeleportTarget = graph.nodes().stream().filter(BoardGraph.Node::teleportsNowhere).map(BoardGraph.Node::pos).toList();
+        List<BlockPos> teleportAlone = graph.nodes().stream().filter(graph::isTeleportAlone).map(BoardGraph.Node::pos).toList();
         List<BlockPos> badRouters = graph.routers().stream().filter(r -> !r.brokenTargets().isEmpty()).map(BoardGraph.Router::pos).toList();
 
         int count = graph.nodes().size();
@@ -86,7 +86,7 @@ public final class BoardValidator {
         add(issues, Severity.WARNING, "no_chest", noChest);
         add(issues, Severity.WARNING, "chest_gone", chestGone);
         add(issues, Severity.WARNING, "router_targets", badRouters);
-        add(issues, Severity.WARNING, "teleport_no_target", noTeleportTarget);
+        add(issues, Severity.WARNING, "teleport_alone", teleportAlone);
         add(issues, Severity.INFO, "no_token", noToken);
         return new Report(count, starts.size(), issues);
     }

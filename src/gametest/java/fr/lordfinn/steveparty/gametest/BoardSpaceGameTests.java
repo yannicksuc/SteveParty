@@ -70,16 +70,13 @@ public class BoardSpaceGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void placingTileHoldingCartridgeAppliesRole(TestContext context) {
-        // A tile item holding a start cartridge, as made by the creative pick block (block entity data)
+        // A tile item holding a start cartridge, as made by the creative pick block (block entity data and components)
         BlockPos source = new BlockPos(5, 1, 5);
         context.setBlockState(source, ModBlocks.ADVANCED_TILE);
         BoardSpaceBlockEntity sourceTile = context.getBlockEntity(source);
         sourceTile.setStack(0, new ItemStack(ModItems.TILE_BEHAVIOR_START));
-        var registries = context.getWorld().getRegistryManager();
-        NbtCompound nbt = sourceTile.createComponentlessNbtWithIdentifyingData(registries);
-        sourceTile.removeFromCopiedStackNbt(nbt);
-        ItemStack item = new ItemStack(ModBlocks.ADVANCED_TILE);
-        BlockItem.setBlockEntityData(item, sourceTile.getType(), nbt);
+        ItemStack item = fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.copyOf(
+                new ItemStack(ModBlocks.ADVANCED_TILE), sourceTile, context.getWorld());
 
         context.setBlockState(TILE.down(), Blocks.STONE);
         PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);

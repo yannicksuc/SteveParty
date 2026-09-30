@@ -40,7 +40,6 @@ public final class WrenchClient {
     private static final net.minecraft.util.Identifier TRACE_ICON = fr.lordfinn.steveparty.Steveparty.id("textures/particle/arrow.png");
     private static final ItemStack EDIT_ICON = new ItemStack(fr.lordfinn.steveparty.items.ModItems.WRENCH);
     private static final ItemStack CUT_ICON = new ItemStack(net.minecraft.item.Items.SHEARS);
-    private static final ItemStack TELEPORT_ICON = new ItemStack(net.minecraft.item.Items.ENDER_PEARL);
     private static final int INSET = (ToolHud.BOX - 16) / 2;
     private static final ItemStack NO_CARTRIDGE_ICON = new ItemStack(fr.lordfinn.steveparty.items.ModItems.BOARD_SPACE_BEHAVIOR);
 
@@ -113,9 +112,6 @@ public final class WrenchClient {
         Text detail;
         if (origin == null) {
             detail = Text.translatable("hud.steveparty.wrench.no_origin." + state.mode().asString());
-        } else if (state.mode() == WrenchMode.TELEPORT && BoardLinks.container(client.world, origin) instanceof CartridgeContainerBlockEntity teleport) {
-            detail = Text.translatable("hud.steveparty.wrench.teleport", BoardText.pos(origin),
-                    fr.lordfinn.steveparty.board.TeleportLinks.targets(teleport, BoardLinks.slotOf(teleport, state.slot())).size());
         } else if (state.mode() == WrenchMode.TRACE && state.chainLength() > 0) {
             detail = Text.translatable("hud.steveparty.wrench.chain", state.chainLength());
         } else {
@@ -143,7 +139,6 @@ public final class WrenchClient {
             case TRACE -> ToolHud.Plate.GREEN;
             case EDIT -> ToolHud.Plate.TEAL;
             case CUT -> ToolHud.Plate.RED;
-            case TELEPORT -> ToolHud.Plate.PURPLE;
         };
         List<ToolHud.Element> tool = new ArrayList<>();
         tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> {
@@ -189,13 +184,12 @@ public final class WrenchClient {
         context.fill(x + INSET, y + INSET, x + INSET + 16, y + INSET + 16, 200, 0x80C4C4C4); // greyed
     }
 
-    /** Trace: the board view's chevron; Edit: the Wrench; Cut: shears; Teleport: an ender pearl. */
+    /** Trace: the board view's chevron; Edit: the Wrench; Cut: shears. */
     private static void modeIcon(DrawContext context, WrenchMode mode, int x, int y) {
         switch (mode) {
             case TRACE -> context.drawTexture(RenderLayer::getGuiTextured, TRACE_ICON, x, y, 0, 0, 16, 16, 16, 16, 0xFF3FB83F);
             case EDIT -> context.drawItem(EDIT_ICON, x, y);
             case CUT -> context.drawItem(CUT_ICON, x, y);
-            case TELEPORT -> context.drawItem(TELEPORT_ICON, x, y);
         }
     }
 }
