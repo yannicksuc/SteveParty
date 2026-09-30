@@ -1,7 +1,54 @@
 {
   "variants": {
-    "": {
-      "model": "steveparty:block/black_star_fragments_block"
-    }
+    "": [
+      {
+        "model": "steveparty:block/black_star_fragments_block",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v1",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v2",
+        "weight": 5
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v3",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v4",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v5",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v6",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v7",
+        "weight": 5
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v8",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v9",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v10",
+        "weight": 6
+      },
+      {
+        "model": "steveparty:block/black_star_fragments_block_v11",
+        "weight": 6
+      }
+    ]
   }
 }

@@ -62,10 +62,11 @@ Welcome to the **SteveParty Mod**! This mod enhances your Minecraft experience b
     - [MessageUtils](#messageutils)
 
 ## 🚀 Installation
-To install the SteveParty mod, follow these steps:
-1. Download the latest version of the mod from the releases page.
-2. Place the mod file into the `mods` folder of your Minecraft installation.
-3. Launch Minecraft with the Fabric or Forge profile.
+SteveParty is a Fabric mod for Minecraft 1.21.3.
+1. Install [Fabric Loader](https://fabricmc.net/use/) (0.16.9 or newer) for Minecraft 1.21.3.
+2. Put [Fabric API](https://modrinth.com/mod/fabric-api) and [GeckoLib](https://modrinth.com/mod/geckolib) (4.7.1 or newer) into the `mods` folder of your Minecraft installation.
+3. Download the SteveParty jar from the [releases page](https://github.com/yannicksuc/SteveParty/releases) and put it into the same `mods` folder.
+4. Launch Minecraft with the Fabric profile.
 
 ## 🛠️ Development
 
@@ -77,9 +78,15 @@ Requires JDK 21. Everything goes through the Gradle wrapper.
 | `.\scripts\dev.ps1 status` | Shows whether the server and client are running |
 | `.\scripts\dev.ps1 tail server` | Follows the server log (`tail client` for the client) |
 | `.\scripts\dev.ps1 stop` | Stops the client, then the server gracefully (save + stop through RCON) |
+| `.\scripts\dev.ps1 cmd "<commande>"` | Runs a server command through RCON and prints its output (e.g. `cmd "time set day"`) |
 | `./gradlew runClient` | Plain client, singleplayer (Sodium + Iris + shaders for local testing) |
 | `./gradlew runServer` / `runClientJoin` | The same server / joining client, in the foreground (also available as IDE run configs) |
 | `./gradlew runGametest` | Automated in-game tests on a dedicated server (`src/gametest`) |
+
+Demo board: `python scripts/demo-board/build_demo_board.py` writes a datapack into `run-server/world`, then
+`.\scripts\dev.ps1 cmd "reload"` and `.\scripts\dev.ps1 cmd "function steveparty_demo:board"` build a ready-to-play
+loop of 20 tiles (start, blue/red inventory tiles linked to a chest of emeralds), a Party Controller and a Step
+Controller with levers, two tokens and a kit for `LordFinn`.
 
 The dev server lives in `run-server/` and is prepared automatically before each start
 (`gradle/dev-server.gradle`): offline mode, creative, peaceful, eternal day, clear weather, `LordFinn` op,
@@ -259,7 +266,10 @@ port 25580 (RCON 25590). Change the settings in that file.
 We welcome contributions to the SteveParty mod! If you have ideas for new features, bug fixes, or improvements, feel free to submit a pull request or open an issue.
 
 ## 📄 License
-This project is licensed under the MIT License. See the LICENSE file for more details.
+Copyright (c) 2024-2026 LordFinn. All rights reserved.
+
+SteveParty is not open source: you may not copy, modify, redistribute or publish this code or its assets, in
+whole or in part, without the author's prior written permission. See [LICENSE.txt](LICENSE.txt).
 
 ## 📞 Contact
 For any inquiries or support, please reach out to the project maintainers via the project's GitHub page.
@@ -267,4 +277,3 @@ For any inquiries or support, please reach out to the project maintainers via th
 ---
 
 Thank you for checking out the SteveParty mod! We hope you enjoy the new features and enhancements it brings to your Minecraft experience! 🎮
-```

@@ -4,13 +4,31 @@
   "package": "fr.lordfinn.steveparty.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "BossBarHudAccessor",
+    "ClientPlayerInteractionManagerVillagerPunchMixin",
+    "FallingBlockEntityRendererVillagerMixin",
     "GameRendererFovMixin",
+    "GameRendererStencilHammerShakeMixin",
+    "HeldItemRendererStencilHammerMixin",
+    "HeldItemRendererTokenSpellMixin",
+    "InGameHudToolHudMixin",
+    "ItemRendererStencilHammerFaceMixin",
+    "ItemRendererWandOrbitMixin",
     "LivingEntityRendererSetupTransformsMixin",
     "LivingEntityRendererShouldFlipMixin",
     "LivingEntityRendererSmoothFlipMixin",
     "LivingEntityRendererSquishMixin",
+    "MouseBackgroundDevMixin",
+    "MouseScrollMixin",
     "LivingEntityRenderStateMixin",
-    "PlayerEntityModelMixin"
+    "PlayerEntityModelMixin",
+    "PlayerEntityModelStencilHammerMixin",
+    "PlayerEntityRendererStencilHammerMixin",
+    "PlayerEntityRenderStateStencilHammerMixin",
+    "TokenBaseLivingEntityRendererMixin",
+    "TokenBaseRenderStateMixin",
+    "WindowBackgroundDevMixin",
+    "WorldRendererBreakingAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

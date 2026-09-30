@@ -14,9 +14,8 @@ import java.util.WeakHashMap;
  * Client-side, per-entity storage of the goal-pole flip animation.
  * <p>
  * The progress is advanced once per entity tick (FPS independent) and interpolated with tickDelta
- * when rendering. Two independent tracks exist: one for the entity model (follows
- * {@code LivingEntityRenderer.shouldFlipUpsideDown}) and one for the camera roll (goal pole only).
- * Only accessed from the render thread.
+ * when rendering. It tracks the entity model only (it follows {@code LivingEntityRenderer.shouldFlipUpsideDown}):
+ * the camera is not rolled. Only accessed from the render thread.
  */
 public final class GoalPoleFlipTracker {
     /** Fraction of the remaining distance covered each tick (~0.1 per frame at 60 FPS). */

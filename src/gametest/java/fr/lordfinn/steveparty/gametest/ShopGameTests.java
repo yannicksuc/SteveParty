@@ -11,13 +11,18 @@ import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
+import fr.lordfinn.steveparty.persistent_state.ShopProtection;
 import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.block.enums.ChestType;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -31,6 +36,7 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
@@ -336,46 +342,168 @@ public class ShopGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** Links the blocks (relative positions) to a new trader, owned by the given player (null: no owner). */
+    private static UUID shopOf(TestContext context, UUID owner, BlockPos... relatives) {
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(context.getWorld().getServer());
+        UUID vendor = UUID.randomUUID();
+        for (BlockPos relative : relatives) {
+            state.linkBlock(vendor, GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(relative)));
+        }
+        if (owner != null) state.setOwner(vendor, owner);
+        return vendor;
+    }
+
+    private static void forgetShops(TestContext context, UUID... vendors) {
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(context.getWorld().getServer());
+        for (UUID vendor : vendors) state.forgetVendor(vendor);
+    }
+
+    /**
+     * Stall, register and stock chest of an owned shop: another player (even in creative, without operator rights)
+     * can't break them, the owner can; the blocks of an unowned shop stay breakable by anyone.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void ownedShopBlocksCanOnlyBeBrokenByTheOwner(TestContext context) {
+        BlockPos stall = new BlockPos(1, 1, 1);
+        BlockPos register = new BlockPos(3, 1, 1);
+        BlockPos chest = new BlockPos(5, 1, 1);
+        BlockPos unownedChest = new BlockPos(1, 1, 3);
+        context.setBlockState(stall, ModBlocks.TRADING_STALL);
+        context.setBlockState(register, ModBlocks.CASH_REGISTER);
+        context.setBlockState(chest, Blocks.CHEST);
+        context.setBlockState(unownedChest, Blocks.CHEST);
+        ServerPlayerEntity owner = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity stranger = context.createMockCreativeServerPlayerInWorld();
+        UUID shop = shopOf(context, owner.getUuid(), stall, register, chest);
+        UUID unownedShop = shopOf(context, null, unownedChest);
+        try {
+            PlayerEntity survivalStranger = context.createMockPlayer(GameMode.SURVIVAL);
+            for (BlockPos pos : List.of(stall, register, chest)) {
+                BlockPos absolute = context.getAbsolutePos(pos);
+                context.assertFalse(ShopProtection.canBreak(survivalStranger, context.getWorld(), absolute), "survival stranger can't break " + pos);
+                context.assertFalse(stranger.interactionManager.tryBreakBlock(absolute), "creative non-op stranger can't break " + pos);
+                context.assertFalse(context.getBlockState(pos).isAir(), "block kept: " + pos);
+            }
+
+            for (BlockPos pos : List.of(stall, register, chest)) {
+                context.assertTrue(owner.interactionManager.tryBreakBlock(context.getAbsolutePos(pos)), "owner breaks " + pos);
+                context.assertTrue(context.getBlockState(pos).isAir(), "broken by the owner: " + pos);
+            }
+
+            context.assertTrue(stranger.interactionManager.tryBreakBlock(context.getAbsolutePos(unownedChest)), "unowned shop: unchanged");
+            context.assertTrue(context.getBlockState(unownedChest).isAir(), "unowned chest broken");
+        } finally {
+            forgetShops(context, shop, unownedShop);
+        }
+        context.complete();
+    }
+
+    /** A stock container of an owned shop only opens for its owner (and creative/operators), also through a double chest. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stockContainersOfAnOwnedShopOpenOnlyForTheOwner(TestContext context) {
+        BlockPos chest = new BlockPos(1, 1, 1);
+        BlockPos doubleLeft = new BlockPos(1, 1, 3);
+        BlockPos doubleRight = new BlockPos(2, 1, 3);
+        BlockPos unownedChest = new BlockPos(4, 1, 1);
+        context.setBlockState(chest, Blocks.CHEST);
+        context.setBlockState(doubleLeft, Blocks.CHEST.getDefaultState()
+                .with(ChestBlock.FACING, Direction.NORTH).with(ChestBlock.CHEST_TYPE, ChestType.LEFT));
+        context.setBlockState(doubleRight, Blocks.CHEST.getDefaultState()
+                .with(ChestBlock.FACING, Direction.NORTH).with(ChestBlock.CHEST_TYPE, ChestType.RIGHT));
+        context.setBlockState(unownedChest, Blocks.CHEST);
+
+        PlayerEntity owner = context.createMockPlayer(GameMode.SURVIVAL);
+        PlayerEntity stranger = context.createMockPlayer(GameMode.SURVIVAL);
+        PlayerEntity creative = context.createMockPlayer(GameMode.CREATIVE);
+        // Only the left half of the double chest is linked
+        UUID shop = shopOf(context, owner.getUuid(), chest, doubleLeft);
+        UUID unownedShop = shopOf(context, null, unownedChest);
+        try {
+            context.assertEquals(use(context, stranger, chest), ActionResult.FAIL, "stranger can't open the stock chest");
+            context.assertEquals(use(context, stranger, doubleRight), ActionResult.FAIL, "nor its unlinked double-chest half");
+            context.assertEquals(use(context, owner, chest), ActionResult.PASS, "owner opens the stock chest");
+            context.assertEquals(use(context, owner, doubleRight), ActionResult.PASS, "owner opens the double chest");
+            context.assertEquals(use(context, creative, chest), ActionResult.PASS, "creative opens the stock chest");
+            context.assertEquals(use(context, stranger, unownedChest), ActionResult.PASS, "unowned shop: unchanged");
+
+            // Sneaking with an item doesn't use the chest (placing a block against it, a key...): not blocked
+            stranger.setSneaking(true);
+            stranger.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.STONE));
+            context.assertEquals(use(context, stranger, chest), ActionResult.PASS, "sneak + item passes through");
+        } finally {
+            forgetShops(context, shop, unownedShop);
+        }
+        context.complete();
+    }
+
+    private static ActionResult use(TestContext context, PlayerEntity player, BlockPos relative) {
+        BlockPos pos = context.getAbsolutePos(relative);
+        return UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
+                new BlockHitResult(pos.toCenterPos(), Direction.UP, pos, false));
+    }
+
+    /** Hoppers don't pull from an owned shop's stock chest nor its cash register; an unowned chest is drained as usual. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void hoppersDontPullFromOwnedShopBlocks(TestContext context) {
+        BlockPos chest = new BlockPos(1, 2, 1);
+        BlockPos register = new BlockPos(3, 2, 1);
+        BlockPos unownedChest = new BlockPos(5, 2, 1);
+        context.setBlockState(chest, Blocks.CHEST);
+        context.setBlockState(register, ModBlocks.CASH_REGISTER);
+        context.setBlockState(unownedChest, Blocks.CHEST);
+        for (BlockPos pos : List.of(chest, register, unownedChest)) {
+            context.setBlockState(pos.down(), Blocks.HOPPER);
+        }
+        inventoryAt(context, chest).setStack(0, new ItemStack(Items.DIAMOND, 10));
+        inventoryAt(context, register).setStack(0, new ItemStack(Items.EMERALD, 10));
+        inventoryAt(context, unownedChest).setStack(0, new ItemStack(Items.DIAMOND, 10));
+        UUID shop = shopOf(context, UUID.randomUUID(), chest, register);
+        UUID unownedShop = shopOf(context, null, unownedChest);
+
+        context.waitAndRun(40, () -> {
+            try {
+                context.assertEquals(inventoryAt(context, chest).count(Items.DIAMOND), 10, "owned stock not pulled");
+                context.assertEquals(inventoryAt(context, register).count(Items.EMERALD), 10, "owned register not pulled");
+                context.assertTrue(inventoryAt(context, unownedChest).count(Items.DIAMOND) < 10, "unowned chest pulled as usual");
+            } finally {
+                forgetShops(context, shop, unownedShop);
+            }
+            context.complete();
+        });
+    }
+
+    private static Inventory inventoryAt(TestContext context, BlockPos relative) {
+        return (Inventory) context.getWorld().getBlockEntity(context.getAbsolutePos(relative));
+    }
+
+    /** An explosion spares the blocks of an owned shop and still destroys the others. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void explosionsSpareOwnedShopBlocks(TestContext context) {
+        BlockPos stall = new BlockPos(2, 1, 1);
+        BlockPos unownedStall = new BlockPos(2, 1, 3);
+        context.setBlockState(stall, ModBlocks.TRADING_STALL);
+        context.setBlockState(unownedStall, ModBlocks.TRADING_STALL);
+        UUID shop = shopOf(context, UUID.randomUUID(), stall);
+        UUID unownedShop = shopOf(context, null, unownedStall);
+        try {
+            BlockPos center = context.getAbsolutePos(new BlockPos(2, 1, 2));
+            context.getWorld().createExplosion(null, center.getX() + 0.5, center.getY() + 0.5, center.getZ() + 0.5,
+                    4.0f, World.ExplosionSourceType.TNT);
+            context.assertTrue(context.getBlockState(stall).isOf(ModBlocks.TRADING_STALL), "owned stall kept");
+            context.assertTrue(context.getBlockState(unownedStall).isAir(), "unowned stall destroyed as usual");
+        } finally {
+            forgetShops(context, shop, unownedShop);
+        }
+        context.complete();
+    }
+
     private static ItemUsageContext useOn(PlayerEntity player, BlockPos pos) {
         return new ItemUsageContext(player, Hand.MAIN_HAND, new BlockHitResult(pos.toCenterPos(), Direction.UP, pos, false));
     }
 
-    /** ONE_SALE_PER_SIGNAL: locked by default, a rising edge gives one credit (max 1), a sale consumes it. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void oneSalePerSignalConsumesTheCredit(TestContext context) {
-        BlockPos stallPos = new BlockPos(1, 1, 1);
-        context.setBlockState(stallPos, ModBlocks.TRADING_STALL);
-        TradingStallBlockEntity stall = context.getBlockEntity(stallPos);
-        context.assertTrue(stall.isSaleAllowed(), "FREE mode by default");
-        stall.setSaleMode(TradingStallBlockEntity.SaleMode.ONE_SALE_PER_SIGNAL);
-        TradingStallBlockEntity.ExactTradeOffer offer = new TradingStallBlockEntity.ExactTradeOffer(
-                new ItemStack(Items.EMERALD), ItemStack.EMPTY, new ItemStack(Items.DIAMOND), stall);
-        context.assertFalse(offer.isSaleAllowed(), "locked until a signal");
-
-        context.setBlockState(stallPos.east(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(offer.isSaleAllowed(), "a redstone pulse unlocks one sale");
-        stall.onRedstonePower(true);
-        stall.onSale();
-        context.assertFalse(offer.isSaleAllowed(), "the sale consumed the credit (a steady signal is not a new pulse)");
-
-        context.setBlockState(stallPos.east(), Blocks.AIR);
-        context.setBlockState(stallPos.east(), Blocks.REDSTONE_BLOCK);
-        context.assertTrue(stall.hasSaleCredit(), "next rising edge gives a new credit");
-        stall.onRedstonePower(false);
-        stall.onRedstonePower(true);
-        stall.onSale();
-        context.assertFalse(stall.hasSaleCredit(), "credits do not accumulate beyond 1");
-
-        NbtCompound saved = stall.createNbtWithIdentifyingData(context.getWorld().getRegistryManager());
-        context.assertEquals(saved.getInt("sale_mode"), TradingStallBlockEntity.SaleMode.ONE_SALE_PER_SIGNAL.getId(), "mode saved");
-        stall.setSaleMode(TradingStallBlockEntity.SaleMode.FREE);
-        context.assertTrue(offer.isSaleAllowed(), "FREE mode never locks");
-        context.complete();
-    }
-
-    /** Full trader flow: FREE mode never exhausts the offer; ONE_SALE_PER_SIGNAL sells once per pulse. */
+    /** Full trader flow: the offer is never exhausted, and redstone next to the stall changes nothing. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
-    public void traderSellsFreelyAndOncePerSignal(TestContext context) {
+    public void traderSellsFreelyWithoutRedstone(TestContext context) {
         BlockPos stallPos = new BlockPos(1, 1, 1);
         BlockPos chestPos = new BlockPos(3, 1, 1);
         BlockPos registerPos = new BlockPos(1, 1, 3);
@@ -408,17 +536,15 @@ public class ShopGameTests implements FabricGameTest {
         context.assertEquals(register.count(Items.EMERALD), 3, "payments in the cash register");
         context.assertFalse(trader.getOffers().getFirst().isDisabled(), "offer not exhausted");
 
-        stall.setSaleMode(TradingStallBlockEntity.SaleMode.ONE_SALE_PER_SIGNAL);
+        // The stall has no redstone control any more (the shop stops limit the purchases)
+        context.setBlockState(stallPos.west(), Blocks.REDSTONE_BLOCK);
         context.waitAndRun(12, () -> {
-            context.assertFalse(buyOnce(handler, player), "locked stall: nothing to buy");
-            context.setBlockState(stallPos.west(), Blocks.REDSTONE_BLOCK);
-            context.waitAndRun(12, () -> {
-                context.assertTrue(buyOnce(handler, player), "one sale after the pulse");
-                context.assertFalse(buyOnce(handler, player), "locked again after the sale");
-                context.assertEquals(register.count(Items.EMERALD), 4, "one more payment");
-                player.closeHandledScreen();
-                context.complete();
-            });
+            context.assertTrue(buyOnce(handler, player), "a powered stall still sells");
+            context.assertTrue(buyOnce(handler, player), "and again");
+            context.assertEquals(register.count(Items.EMERALD), 5, "every payment in the cash register");
+            player.closeHandledScreen();
+            context.getWorld().getServer().getPlayerManager().remove(player);
+            context.complete();
         });
     }
 
@@ -439,6 +565,45 @@ public class ShopGameTests implements FabricGameTest {
         ItemStack key = new ItemStack(ModItems.SHOPKEEPER_KEY);
         key.set(ModComponents.SHOPKEEPER_UUID, vendor);
         return key;
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void hidingTraderBandanaColorIsRandomSavedAndNeverRerolled(TestContext context) {
+        ServerWorld world = context.getWorld();
+        // Summoned (initialize): a colour is picked
+        HidingTraderEntity summoned = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        summoned.initialize(world, world.getLocalDifficulty(summoned.getBlockPos()), SpawnReason.COMMAND, null);
+        int color = summoned.getBandanaColor();
+        context.assertTrue(color >= 0 && color < HidingTraderEntity.BANDANA_COLORS, "colour 0-4 after spawn, got " + color);
+        // Saved, then loaded many times: always the same colour
+        NbtCompound saved = summoned.writeNbt(new NbtCompound());
+        context.assertEquals(saved.getInt(HidingTraderEntity.BANDANA_COLOR_NBT), color, "colour saved");
+        for (int i = 0; i < 20; i++) {
+            HidingTraderEntity loaded = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+            loaded.readNbt(saved);
+            context.assertEquals(loaded.getBandanaColor(), color, "colour kept on reload " + i);
+            loaded.initialize(world, world.getLocalDifficulty(loaded.getBlockPos()), SpawnReason.LOAD, null);
+            context.assertEquals(loaded.getBandanaColor(), color, "colour not re-rolled by initialize " + i);
+        }
+        // Summon with NBT: the given colour is used
+        NbtCompound given = new NbtCompound();
+        given.putInt(HidingTraderEntity.BANDANA_COLOR_NBT, 3);
+        HidingTraderEntity fromNbt = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        fromNbt.readNbt(given);
+        context.assertEquals(fromNbt.getBandanaColor(), 3, "BandanaColor from NBT");
+        // Trader saved before bandanas existed: gets one when loaded
+        NbtCompound legacy = summoned.writeNbt(new NbtCompound());
+        legacy.remove(HidingTraderEntity.BANDANA_COLOR_NBT);
+        HidingTraderEntity old = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+        old.readNbt(legacy);
+        context.assertTrue(old.getBandanaColor() >= 0 && old.getBandanaColor() < HidingTraderEntity.BANDANA_COLORS, "legacy trader gets a colour");
+        // Spawned from code without initialize() nor NBT (villager block fall): picked on its first tick
+        HidingTraderEntity spawned = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(1, 1, 1));
+        context.waitAndRun(2, () -> {
+            int c = spawned.getBandanaColor();
+            context.assertTrue(c >= 0 && c < HidingTraderEntity.BANDANA_COLORS, "colour picked on the first tick, got " + c);
+            context.complete();
+        });
     }
 
     private static RegistryEntry<Enchantment> sharpness(TestContext context) {

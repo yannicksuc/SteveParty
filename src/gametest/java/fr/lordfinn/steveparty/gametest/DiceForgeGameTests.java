@@ -47,6 +47,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
         forge.setStack(CENTER_SLOT, new ItemStack(ModBlocks.GRAVITY_CORE));
         context.assertTrue(forge.isActivated(), "core inserted in the center slot activates the forge");
+        context.assertTrue(forge.isCoreInPlace(), "the insertion is known: the core is drawn and animated");
         context.assertTrue(forge.getStack(CENTER_SLOT).isEmpty(), "the core goes into the forge, not the output slot");
         return forge;
     }
@@ -85,7 +86,7 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertTrue(!forge.canExtract(0, forge.getStack(0), Direction.DOWN), "faces not extractable");
             forge.toggleProduction();
             context.assertTrue(!forge.isCrafting(), "toggle stops production");
-            context.complete();
+            GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
         });
     }
 
@@ -117,7 +118,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         context.assertEquals(forge.getStatus(), Status.NOT_ENOUGH_BLANK_FACES, "no blank faces yet");
         forge.setStack(BLANK_SLOT, blanks(2));
         context.assertEquals(forge.getStatus(), Status.OK, "1 red + 3 black is valid");
-        context.complete();
+        GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
     }
 
     /** The loop stops as soon as the blank faces run out (no unwanted die), and remembers what is missing. */
@@ -146,7 +147,7 @@ public class DiceForgeGameTests implements FabricGameTest {
             context.assertTrue(!forge.canInsert(BLANK_SLOT, new ItemStack(face(9)), Direction.UP), "wrong item refused");
             context.assertTrue(forge.canInsert(BLANK_SLOT, blanks(1), Direction.UP), "blank faces accepted");
             context.assertTrue(!forge.canInsert(OUTPUT_SLOT, blanks(1), Direction.UP), "nothing goes in the output");
-            context.complete();
+            GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
         });
     }
 
@@ -188,7 +189,7 @@ public class DiceForgeGameTests implements FabricGameTest {
             ItemStack die = forge.getStack(OUTPUT_SLOT);
             context.assertTrue(!die.isEmpty(), "a die was forged");
             context.assertEquals(DiceFacesComponent.rollFace(die, Random.create(1)), 4, "with the new face");
-            context.complete();
+            GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
         });
     }
 
@@ -231,7 +232,7 @@ public class DiceForgeGameTests implements FabricGameTest {
                 context.assertEquals(DiceFacesComponent.rollFace(output, random), 4, "single-face roll");
             }
             forge.toggleProduction();
-            context.complete();
+            GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
         });
     }
 
@@ -297,7 +298,7 @@ public class DiceForgeGameTests implements FabricGameTest {
             } finally {
                 context.getWorld().getServer().getPlayerManager().remove(player);
             }
-            context.complete();
+            GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
         });
     }
 
@@ -397,6 +398,6 @@ public class DiceForgeGameTests implements FabricGameTest {
             forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
         }
         context.assertTrue(getTargetAltitude(forge) == MAX_CORE_ALTITUDE, "4 black fragments: 16 blocks");
-        context.complete();
+        GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
     }
 }

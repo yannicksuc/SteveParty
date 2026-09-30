@@ -81,6 +81,8 @@ public class StartRollsStep extends PartyStep {
                 rolls.put(((Entity) diceTarget).getUuid(), rollValue);
                 partyControllerEntity.markDirty();
                 partyControllerEntity.ringMoment(PartyMoment.DICE_ROLLED, rollValue);
+                // The party HUD shows each roll as it comes
+                partyControllerEntity.sendPacketToInterestedPlayers();
             }
 
             // Every token currently played by a connected owner has rolled

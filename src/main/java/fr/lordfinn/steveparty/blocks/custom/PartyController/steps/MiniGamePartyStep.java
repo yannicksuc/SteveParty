@@ -4,11 +4,12 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
@@ -63,17 +64,27 @@ public class MiniGamePartyStep extends PartyStep {
     private Phase phase;
     /** Players taking part (owners of the tokens), and their arrival pads. */
     private List<UUID> participants;
-    private Map<UUID, BlockPos> assignments;
     private Map<UUID, ReturnPos> returnPositions;
     private List<UUID> winners;
     private UUID rouletteTaskId = null;
     private UUID flowTaskId = null;
+    /**
+     * Where each player was sent by a « Here we go » book (mini-game mode) during this mini-game: the pad of the
+     * « Here we come » book and the index of the condition he fills. No initializer, see above.
+     */
+    private Map<UUID, Destination> destinations;
+    /** The catalogue slot of the page the roulette chose, plus one (0: none yet). No initializer, see above. */
+    private int chosenPageSlot;
+
+    /** A place taken by a player in the current mini-game: condition {@code targetIndex} of the book on {@code pad}. */
+    public record Destination(BlockPos pad, int targetIndex) {}
 
     public MiniGamePartyStep(List<UUID> tokens) {
         if (tokens == null)
             tokens = new ArrayList<>();
         this.tokens = tokens;
         initCollections();
+        this.destinations = new HashMap<>();
         setType(PartyStepType.MINI_GAME);
     }
 
@@ -81,13 +92,14 @@ public class MiniGamePartyStep extends PartyStep {
         super(nbt);
         if (this.tokens == null)
             this.tokens = new ArrayList<>();
+        if (this.destinations == null)
+            this.destinations = new HashMap<>();
         initCollections();
     }
 
     private void initCollections() {
         if (phase == null) phase = Phase.ROULETTE;
         if (participants == null) participants = new ArrayList<>();
-        if (assignments == null) assignments = new LinkedHashMap<>();
         if (returnPositions == null) returnPositions = new LinkedHashMap<>();
         if (winners == null) winners = new ArrayList<>();
     }
@@ -122,9 +134,10 @@ public class MiniGamePartyStep extends PartyStep {
         miniGameChosen = false;
         phase = Phase.ROULETTE;
         participants.clear();
-        assignments.clear();
         winners.clear();
         // Players still away from a previous run of this step (restart) keep their original return position
+        chosenPageSlot = 0;
+        destinations.clear();
 
         // Step 1: Ensure the world is a ServerWorld
         if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) {
@@ -259,21 +272,15 @@ public class MiniGamePartyStep extends PartyStep {
     private void teleportParticipants(PartyControllerEntity controller) {
         phase = Phase.PLAYING;
         if (controller.getWorld() instanceof ServerWorld world) {
-            ItemStack page = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
-            TeamDisposition disposition = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue);
-            Map<BlockPos, List<TeleportingTarget>> pads = MiniGameTeleports.getArrivalPads(world, page);
-            Map<UUID, BlockPos> newAssignments = MiniGameTeleports.assign(pads, disposition, participants, assignments);
-            assignments.clear();
-            assignments.putAll(newAssignments);
             for (ServerPlayerEntity player : getOnlineParticipants(controller)) {
-                BlockPos pad = assignments.get(player.getUuid());
-                if (pad == null) {
-                    if (!pads.isEmpty())
-                        MessageUtils.sendToPlayer(player, Text.translatableWithFallback("message.steveparty.minigame.no_pad",
-                                "No free arrival pad for you in this mini-game."), MessageUtils.MessageType.CHAT);
+                // Same places as the « Here we go » books in mini-game mode: team, capacity, fill priority
+                HereWeGoBookItem.Destination destination = HereWeGoBookItem.getMiniGameDestination(player, controller);
+                if (destination.pos() == null) {
+                    if (destination.failure() != null)
+                        MessageUtils.sendToPlayer(player, destination.failure(), MessageUtils.MessageType.CHAT);
                     continue;
                 }
-                sendToPad(player, world, pad);
+                sendToPad(player, world, destination.pos());
             }
             MessageUtils.sendToPlayers(getOnlineParticipants(controller),
                     Text.translatableWithFallback("message.steveparty.minigame.go", "Go!").styled(style -> style.withColor(0x55FF55).withBold(true)),
@@ -289,31 +296,6 @@ public class MiniGamePartyStep extends PartyStep {
         returnPositions.putIfAbsent(player.getUuid(),
                 new ReturnPos(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch()));
         MiniGameTeleports.teleport(player, world, MiniGameTeleports.standingPos(world, pad), player.getYaw(), player.getPitch());
-    }
-
-    /**
-     * The arrival pad of a participant, for a "Here we go" book set to "current mini-game": the pad they were given,
-     * or a free one. Their position is remembered to bring them back at the end.
-     *
-     * @return null if the player is not a participant or no pad is free
-     */
-    public BlockPos getOrAssignPad(PartyControllerEntity controller, ServerPlayerEntity player) {
-        if (status != Status.IN_PROGRESS || !miniGameChosen || !participants.contains(player.getUuid())) return null;
-        if (!(controller.getWorld() instanceof ServerWorld world)) return null;
-        if (!assignments.containsKey(player.getUuid())) {
-            ItemStack page = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
-            TeamDisposition disposition = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue);
-            Map<UUID, BlockPos> newAssignments = MiniGameTeleports.assign(MiniGameTeleports.getArrivalPads(world, page),
-                    disposition, List.of(player.getUuid()), assignments);
-            assignments.clear();
-            assignments.putAll(newAssignments);
-        }
-        BlockPos pad = assignments.get(player.getUuid());
-        if (pad != null && player.getWorld() == world)
-            returnPositions.putIfAbsent(player.getUuid(),
-                    new ReturnPos(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch()));
-        controller.markDirty();
-        return pad;
     }
 
     // ---------------------------------------------------------------- end of the mini-game
@@ -375,7 +357,6 @@ public class MiniGamePartyStep extends PartyStep {
             MiniGameTeleports.teleport(player, world, new Vec3d(back.x(), back.y(), back.z()), back.yaw(), back.pitch());
         }
         returnPositions.clear();
-        assignments.clear();
         controller.markDirty();
     }
 
@@ -392,6 +373,21 @@ public class MiniGamePartyStep extends PartyStep {
     @Override
     public void onTokenExcluded(UUID tokenUUID, PartyControllerEntity partyControllerEntity) {
         tokens.remove(tokenUUID);
+    }
+
+    /** @return true once the roulette chose the mini-game (the « Here we go » books can send players to it). */
+    public boolean isMiniGameChosen() {
+        return miniGameChosen;
+    }
+
+    /** @return the catalogue slot of the page the roulette chose for this mini-game, -1 before it chose (or if unknown). */
+    public int getChosenPageSlot() {
+        return chosenPageSlot - 1;
+    }
+
+    /** Places taken by the players in the current mini-game (live view). */
+    public Map<UUID, Destination> getDestinations() {
+        return destinations;
     }
 
     private void cancelRoulette() {
@@ -466,6 +462,14 @@ public class MiniGamePartyStep extends PartyStep {
         // Store the final selection
         MiniGamesCatalogueItem.setCurrentMiniGamePage(partyControllerEntity.catalogue, chosenMiniGame);
         miniGameChosen = true;
+        List<ItemStack> pages = MiniGamesCatalogueItem.getStoredPages(partyControllerEntity.catalogue);
+        chosenPageSlot = 0;
+        for (int slot = 0; slot < pages.size(); slot++) {
+            if (ItemStack.areEqual(pages.get(slot), chosenMiniGame)) {
+                chosenPageSlot = slot + 1;
+                break;
+            }
+        }
         partyControllerEntity.markDirty();
 
         // Play a celebratory sound for selection
@@ -501,7 +505,7 @@ public class MiniGamePartyStep extends PartyStep {
         tokensWithOwners.keySet().forEach(token -> {
             ABoardSpaceBehavior.Status status = ABoardSpaceBehavior.Status.NEUTRAL;
             MobEntity modToken = ((MobEntity) token);
-            BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(serverWorld, modToken.getBlockPos());
+            BoardSpaceBlockEntity boardSpaceEntity = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(modToken);
             ItemStack stack;
             if (boardSpaceEntity != null) {
                 stack = boardSpaceEntity.getActiveCartridgeItemStack();
@@ -614,15 +618,6 @@ public class MiniGamePartyStep extends PartyStep {
         readUuids(nbt.getList("Participants", NbtElement.STRING_TYPE), participants);
         winners.clear();
         readUuids(nbt.getList("Winners", NbtElement.STRING_TYPE), winners);
-        assignments.clear();
-        NbtCompound assignmentsNbt = nbt.getCompound("Assignments");
-        for (String key : assignmentsNbt.getKeys()) {
-            try {
-                int[] xyz = assignmentsNbt.getIntArray(key);
-                if (xyz.length == 3) assignments.put(UUID.fromString(key), new BlockPos(xyz[0], xyz[1], xyz[2]));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
         returnPositions.clear();
         NbtCompound returnsNbt = nbt.getCompound("ReturnPositions");
         for (String key : returnsNbt.getKeys()) {
@@ -633,6 +628,19 @@ public class MiniGamePartyStep extends PartyStep {
             } catch (IllegalArgumentException ignored) {
             }
         }
+        this.chosenPageSlot = nbt.contains("ChosenPage") ? nbt.getInt("ChosenPage") + 1 : 0;
+        if (destinations == null)
+            destinations = new HashMap<>();
+        destinations.clear();
+        nbt.getList("Destinations", NbtElement.COMPOUND_TYPE).forEach(element -> {
+            NbtCompound entry = (NbtCompound) element;
+            try {
+                destinations.put(UUID.fromString(entry.getString("Player")),
+                        new Destination(BlockPos.fromLong(entry.getLong("Pad")), entry.getInt("Target")));
+            } catch (IllegalArgumentException ignored) {
+                // corrupted entry
+            }
+        });
         if (nbt.contains("Tokens")) {
             if (tokens == null)
                 tokens = new ArrayList<>();
@@ -658,11 +666,6 @@ public class MiniGamePartyStep extends PartyStep {
         nbtCompound.putString("Phase", phase.name());
         if (!participants.isEmpty()) nbtCompound.put("Participants", writeUuids(participants));
         if (!winners.isEmpty()) nbtCompound.put("Winners", writeUuids(winners));
-        if (!assignments.isEmpty()) {
-            NbtCompound assignmentsNbt = new NbtCompound();
-            assignments.forEach((uuid, pos) -> assignmentsNbt.putIntArray(uuid.toString(), new int[]{pos.getX(), pos.getY(), pos.getZ()}));
-            nbtCompound.put("Assignments", assignmentsNbt);
-        }
         if (!returnPositions.isEmpty()) {
             NbtCompound returnsNbt = new NbtCompound();
             returnPositions.forEach((uuid, back) -> {
@@ -675,6 +678,19 @@ public class MiniGamePartyStep extends PartyStep {
                 returnsNbt.put(uuid.toString(), backNbt);
             });
             nbtCompound.put("ReturnPositions", returnsNbt);
+        }
+        if (chosenPageSlot > 0)
+            nbtCompound.putInt("ChosenPage", chosenPageSlot - 1);
+        if (destinations != null && !destinations.isEmpty()) {
+            NbtList destinationsNbt = new NbtList();
+            destinations.forEach((player, destination) -> {
+                NbtCompound entry = new NbtCompound();
+                entry.putString("Player", player.toString());
+                entry.putLong("Pad", destination.pad().asLong());
+                entry.putInt("Target", destination.targetIndex());
+                destinationsNbt.add(entry);
+            });
+            nbtCompound.put("Destinations", destinationsNbt);
         }
         return nbtCompound;
     }

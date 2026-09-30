@@ -1,12 +1,14 @@
 package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlockEntity;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlockEntity;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.registry.Registries;
@@ -16,10 +18,15 @@ import net.minecraft.util.Identifier;
 import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 
 public class ModBlockEntities {
-    public static final BlockEntityType<TileBlockEntity> TILE_ENTITY = Registry.register(
+    /**
+     * The Advanced Tile's. It also accepts the plain Tile block: an Advanced Tile from a world saved before the tiles
+     * were renamed loads as a Tile holding this block entity, and is turned back into an Advanced Tile (see
+     * {@link fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration}).
+     */
+    public static final BlockEntityType<AdvancedTileBlockEntity> ADVANCED_TILE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
-            Identifier.of(MOD_ID, "tile_entity"),
-            FabricBlockEntityTypeBuilder.create(TileBlockEntity::new, ModBlocks.TILE).build(null)
+            Identifier.of(MOD_ID, "advanced_tile"),
+            FabricBlockEntityTypeBuilder.create(AdvancedTileBlockEntity::new, ModBlocks.ADVANCED_TILE, ModBlocks.TILE).build(null)
     );
 
     public static final BlockEntityType<SwitchedOffBlockEntity> SWITCHED_OFF_BLOCK_ENTITY = Registry.register(
@@ -34,10 +41,10 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(CheckPointBlockEntity::new, ModBlocks.CHECK_POINT).build(null)
     );
 
-    public static final BlockEntityType<SimpleTileBlockEntity> SIMPLE_TILE_ENTITY = Registry.register(
+    public static final BlockEntityType<TileBlockEntity> TILE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
-            Identifier.of(MOD_ID, "simple_tile_entity"),
-            FabricBlockEntityTypeBuilder.create(SimpleTileBlockEntity::new, ModBlocks.SIMPLE_TILE).build(null)
+            Identifier.of(MOD_ID, "tile"),
+            FabricBlockEntityTypeBuilder.create(TileBlockEntity::new, ModBlocks.TILE).build(null)
     );
 
     public static final BlockEntityType<BoardSpaceRedstoneRouterBlockEntity> BOARD_SPACE_REDSTONE_ROUTER_ENTITY = Registry.register(
@@ -78,10 +85,17 @@ public class ModBlockEntities {
             Identifier.of(MOD_ID, "piggy_bank"),
             FabricBlockEntityTypeBuilder.create(PiggyBankBlockEntity::new, ModBlocks.PIGGY_BANK).build(null)
     );
-    public static final BlockEntityType<TrafficSignBlockEntity> TRAFFIC_SIGN_ENTITY = Registry.register(
+    public static final BlockEntityType<EaselSignBlockEntity> EASEL_SIGN_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
-            Identifier.of (MOD_ID, "traffic_sign"),
-            FabricBlockEntityTypeBuilder.create(TrafficSignBlockEntity::new, ModBlocks.SPRUCE_TRAFFIC_SIGN, ModBlocks.JUNGLE_TRAFFIC_SIGN, ModBlocks.OAK_TRAFFIC_SIGN, ModBlocks.DARK_OAK_TRAFFIC_SIGN, ModBlocks.CRIMSON_TRAFFIC_SIGN, ModBlocks.WARPED_TRAFFIC_SIGN, ModBlocks.BIRCH_TRAFFIC_SIGN, ModBlocks.ACACIA_TRAFFIC_SIGN, ModBlocks.MANGROVE_TRAFFIC_SIGN, ModBlocks.CHERRY_TRAFFIC_SIGN).build(null)
+            Identifier.of (MOD_ID, "easel_sign"),
+            FabricBlockEntityTypeBuilder.create(EaselSignBlockEntity::new, ModBlocks.SPRUCE_EASEL_SIGN, ModBlocks.JUNGLE_EASEL_SIGN, ModBlocks.OAK_EASEL_SIGN, ModBlocks.DARK_OAK_EASEL_SIGN, ModBlocks.CRIMSON_EASEL_SIGN, ModBlocks.WARPED_EASEL_SIGN, ModBlocks.BIRCH_EASEL_SIGN, ModBlocks.ACACIA_EASEL_SIGN, ModBlocks.MANGROVE_EASEL_SIGN, ModBlocks.CHERRY_EASEL_SIGN, ModBlocks.EASEL_SIGN).build(null)
+    );
+    /** Every other block taking stencils: panels, rock signs, plastic road signs, sprayed paint. */
+    public static final BlockEntityType<StencilCanvasBlockEntity> STENCIL_CANVAS = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "stencil_canvas"),
+            FabricBlockEntityTypeBuilder.create(StencilCanvasBlockEntity::new, ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL,
+                    ModBlocks.ROCK_SIGN, ModBlocks.PLASTIC_ROAD_SIGN, ModBlocks.STENCIL_PAINT).build(null)
     );
     public static final BlockEntityType<StencilMakerBlockEntity> STENCIL_MAKER_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
@@ -109,7 +123,7 @@ public class ModBlockEntities {
             Identifier.of (MOD_ID, "goal_pole_base_entity"),
             FabricBlockEntityTypeBuilder.create(GoalPoleBaseBlockEntity::new, ModBlocks.GOAL_POLE_BASE).build(null)
     );
-    public static final BlockEntityType<?> GOAL_POLE_ENTITY = Registry.register(
+    public static final BlockEntityType<GoalPoleBlockEntity> GOAL_POLE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "goal_pole_entity"),
             FabricBlockEntityTypeBuilder.create(GoalPoleBlockEntity::new, ModBlocks.GOAL_POLE).build(null)
@@ -118,6 +132,11 @@ public class ModBlockEntities {
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "looting_box_entity"),
             FabricBlockEntityTypeBuilder.create(LootingBoxBlockEntity::new, ModBlocks.LOOTING_BOX).build(null)
+    );
+    public static final BlockEntityType<VillagerBlockEntity> VILLAGER_BLOCK_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "villager_block"),
+            FabricBlockEntityTypeBuilder.create(VillagerBlockEntity::new, ModBlocks.VILLAGER_BLOCK).build(null)
     );
     public static final BlockEntityType<GravityCoreBlockEntity> GRAVITY_CORE_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,

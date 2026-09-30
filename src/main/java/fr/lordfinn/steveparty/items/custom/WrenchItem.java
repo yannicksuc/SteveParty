@@ -1,148 +1,120 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
-import fr.lordfinn.steveparty.components.BlockOriginComponent;
-import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.board.BoardText;
+import fr.lordfinn.steveparty.board.WrenchActions;
+import fr.lordfinn.steveparty.board.WrenchMode;
+import fr.lordfinn.steveparty.board.WrenchState;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.World;
 
+import java.util.List;
+
+/**
+ * The Wrench (« Clé »): links board spaces, with modes (see {@link WrenchMode}) and a chain (see {@link WrenchActions}).
+ * Everything it remembers (origin, mode, chain) is on the item: each player has their own.
+ */
 public class WrenchItem extends AbstractDestinationsSelectorItem implements CartridgeContainerOpener {
 
     // Instant break needs speed / hardness / 30 >= 1, even when the /5 airborne or underwater penalty applies
     private static final float PLASTIC_MINING_SPEED = 1000f;
+    private static final int CONTROLS_COLOR = 0xfcb017;
+    /** Translation key of the key binding that switches the mode (registered by the client). */
+    public static final String MODE_KEY = "key.steveparty.wrench_mode";
 
     public WrenchItem(Settings settings) {
         super(settings);
     }
 
-    // The wrench takes plastic pieces (plastic blocks, studs) apart in one hit
+    // The wrench takes anything made of plastic (the steveparty:plastic tag) apart in one hit
     @Override
     public float getMiningSpeed(ItemStack stack, BlockState state) {
         if (state.isIn(Switchables.PLASTIC)) return PLASTIC_MINING_SPEED;
         return super.getMiningSpeed(stack, state);
     }
 
+    /**
+     * Right click on a block. The client predicts a success (the hand swings, and the off hand item is not used
+     * instead); the server decides.
+     */
     @Override
-    public DestinationsComponent addOrRemoveDestination(DestinationsComponent component, BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
-        BlockOriginComponent originComponent = stack.getOrDefault(ModComponents.BLOCK_ORIGIN_COMPONENT, BlockOriginComponent.DEFAULT_ORIGIN_COMPONENT);
-        if (originComponent.origin().equals(BlockOriginComponent.DEFAULT_ORIGIN)) { //Clicked on a new tile not yet bounded
-            return tryToBindTileAtPosFromWrench(clickedPos, player, stack, serverWorld);
-        } else if (originComponent.origin().equals(clickedPos)) { //User clicked on the same tile already saved unbind it
-            unbindTileAtPosFromWrench(clickedPos, (ServerPlayerEntity) player, stack, serverWorld);
-            return null;
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        if (context.getHand() != Hand.MAIN_HAND || context.getPlayer() == null) return ActionResult.PASS;
+        if (context.getWorld().isClient) return ActionResult.SUCCESS;
+        return WrenchActions.useOnBlock((ServerPlayerEntity) context.getPlayer(), context.getStack(),
+                (ServerWorld) context.getWorld(), context.getBlockPos());
+    }
+
+    /** Right click in the air: a board space aimed at from afar, or (sneaking) the end of the chain. */
+    @Override
+    public ActionResult use(World world, PlayerEntity player, Hand hand) {
+        if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
+        ItemStack stack = player.getStackInHand(hand);
+        if (world.isClient) {
+            boolean acts = player.isSneaking() ? WrenchActions.origin(stack, world) != null : WrenchActions.aimedBoardSpace(player, world) != null;
+            return acts ? ActionResult.SUCCESS : ActionResult.PASS;
         }
-        //Player want to add or remove a destination to the tile
-        DestinationsComponent newComponent = super.addOrRemoveDestination(component, clickedPos, player, stack, serverWorld);
-        if (!updateStackAtPos(newComponent, originComponent.origin(), serverWorld)) { //Try to update the tileBehavior at the registered Pos If no destination remove the bind from the wrench
-            removeBinding(originComponent.origin(), stack, serverWorld);
-            MessageUtils.sendToPlayer((ServerPlayerEntity) player, "The board space has changed and no longer matches the stored configuration in the wrench. It has been automatically unbound.", MessageUtils.MessageType.CHAT);
-            return null;
+        return WrenchActions.use((ServerPlayerEntity) player, stack, (ServerWorld) world);
+    }
+
+    /** The mode, origin and chain change at every click: no re-equip animation of the hand. */
+    @Override
+    public boolean allowComponentsUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
+        return false;
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
+        super.inventoryTick(stack, world, entity, slot, selected);
+        // Wrenches of older versions mirrored the links of their tile on themselves: the board view shows them now
+        if (!world.isClient && stack.contains(ModComponents.DESTINATIONS_COMPONENT)) stack.remove(ModComponents.DESTINATIONS_COMPONENT);
+    }
+
+    /** "Wrench (Trace)". */
+    @Override
+    public Text getName(ItemStack stack) {
+        return super.getName(stack).copy().append(Text.literal(" (").formatted(Formatting.GRAY))
+                .append(WrenchState.of(stack).mode().displayName()).append(Text.literal(")").formatted(Formatting.GRAY));
+    }
+
+    @Environment(EnvType.CLIENT)
+    @Override
+    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        WrenchState state = WrenchState.of(stack);
+        tooltip.add(Text.translatable("tooltip.steveparty.wrench.mode", state.mode().displayName()).formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.wrench.mode." + state.mode().asString()).formatted(Formatting.DARK_GRAY));
+        Entity holder = stack.getHolder();
+        BlockPos origin = holder == null ? null : WrenchActions.origin(stack, holder.getWorld());
+        if (origin != null) {
+            tooltip.add(state.mode() == WrenchMode.TRACE && state.chainLength() > 0
+                    ? Text.translatable("tooltip.steveparty.wrench.chain", BoardText.pos(origin), state.chainLength()).formatted(Formatting.WHITE)
+                    : Text.translatable("tooltip.steveparty.wrench.origin", BoardText.pos(origin)).formatted(Formatting.WHITE));
         }
-        displayLinks(serverWorld, originComponent);
-        return newComponent;
-    }
-
-    private @Nullable DestinationsComponent tryToBindTileAtPosFromWrench(BlockPos clickedPos, PlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
-        BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(serverWorld, clickedPos);
-        if (boardSpaceEntity == null) return null;
-
-        ItemStack boardSpaceStoredBehavior = getOrCreateFromPlayerTileBehaviorStack(boardSpaceEntity, player);
-        if (boardSpaceStoredBehavior == null) return null;
-
-        // Composant comportement
-        DestinationsComponent updatedComponent = boardSpaceStoredBehavior.getOrDefault(
-                ModComponents.DESTINATIONS_COMPONENT,
-                DestinationsComponent.DEFAULT
-        );
-        updatedComponent = new DestinationsComponent(updatedComponent.destinations(), updatedComponent.world());
-
-        // Composant origine
-        BlockOriginComponent originComponent = new BlockOriginComponent(clickedPos, getWorldName(serverWorld));
-
-        // Mise à jour des composants
-        stack.set(ModComponents.DESTINATIONS_COMPONENT, updatedComponent);
-        stack.set(ModComponents.BLOCK_ORIGIN_COMPONENT, originComponent);
-
-        boardSpaceStoredBehavior.set(ModComponents.DESTINATIONS_COMPONENT, updatedComponent);
-        boardSpaceEntity.markDirty();
-
-        // Message utilisateur
-        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal(
-                "The wrench is now bound to a new board space at position X: " + clickedPos.getX() +
-                        ", Y: " + clickedPos.getY() + ", Z: " + clickedPos.getZ() + "."
-        ), MessageUtils.MessageType.ACTION_BAR);
-
-        displayLinks(serverWorld, originComponent);
-        serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
-        return updatedComponent;
-    }
-
-
-    private static void unbindTileAtPosFromWrench(BlockPos clickedPos, ServerPlayerEntity player, ItemStack stack, ServerWorld serverWorld) {
-        removeBinding(clickedPos, stack, serverWorld);
-        // Remove the override (instead of forcing it to false) so the default glint behaviour applies again
-        stack.remove(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
-        MessageUtils.sendToPlayer(player, Text.literal("The wrench is no longer bound to the board space behavior stored at position X: "+ clickedPos.getX()+", Y: "+ clickedPos.getY()+", Z: "+ clickedPos.getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
-        serverWorld.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.PLAYERS, 0.5F, 1.0F);
-    }
-
-    private static void displayLinks(ServerWorld serverWorld, BlockOriginComponent originComponent) {
-        BoardSpaceBlockEntity.hideDestinations(serverWorld, originComponent.origin());
-        BoardSpaceBlockEntity.searchAndDisplayDestinations(serverWorld, originComponent.origin(), null);
-    }
-
-    private static void removeBinding(BlockPos pos, ItemStack stack, ServerWorld serverWorld) {
-        BoardSpaceBlockEntity.hideDestinations(serverWorld, pos);
-        stack.set(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT);
-        stack.set(ModComponents.BLOCK_ORIGIN_COMPONENT, BlockOriginComponent.DEFAULT_ORIGIN_COMPONENT);
-    }
-
-    private boolean updateStackAtPos(DestinationsComponent component, BlockPos clickedPos, ServerWorld serverWorld) {
-        BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(serverWorld, clickedPos);
-        if (boardSpaceEntity == null) return false;
-        ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveCartridgeItemStack();
-        if (boardSpaceStoredBehavior == null) return false;
-        boardSpaceStoredBehavior.set(ModComponents.DESTINATIONS_COMPONENT, component);
-        boardSpaceEntity.markDirty();
-        return true;
-    }
-
-    ItemStack getOrCreateFromPlayerTileBehaviorStack(BoardSpaceBlockEntity boardSpaceEntity, PlayerEntity player) {
-        ItemStack boardSpaceStoredBehavior = boardSpaceEntity.getActiveCartridgeItemStack();
-        if (boardSpaceStoredBehavior == null || boardSpaceStoredBehavior.isEmpty()) {
-
-            //Item Stack doesn't exist in the tile create one by taking it from the offHand
-            ItemStack offHandStack = player.getOffHandStack();
-            if (!offHandStack.isEmpty() && offHandStack.getItem() instanceof CartridgeItem) {
-                ItemStack newBehaviorItem = offHandStack.copyWithCount(1);
-                if (!player.isCreative())
-                    offHandStack.decrement(1);
-                player.setStackInHand(Hand.OFF_HAND, offHandStack);
-                boardSpaceEntity.setActiveCartridgeItemStack(newBehaviorItem);
-                boardSpaceEntity.markDirty();
-                boardSpaceStoredBehavior = newBehaviorItem;
-                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.literal("New space behavior stored at position X: "+boardSpaceEntity.getPos().getX()+", Y: "+boardSpaceEntity.getPos().getY()+", Z: "+boardSpaceEntity.getPos().getZ()+"."), MessageUtils.MessageType.ACTION_BAR);
-            } else {
-                MessageUtils.sendToPlayer((ServerPlayerEntity) player, "No behavior is assigned to this board space, and it can't be filled from your off-hand.", MessageUtils.MessageType.CHAT);
-                return null;
-            }
+        tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
+        tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls.click." + state.mode().asString()).formatted(Formatting.GRAY));
+        if (state.mode() == WrenchMode.TRACE) {
+            tooltip.add(Text.translatable("tooltip.steveparty.wrench.auto_link",
+                    Text.translatable(state.autoLink() ? "hud.steveparty.wrench.auto_link.on" : "hud.steveparty.wrench.auto_link.off")).formatted(Formatting.GRAY));
         }
-        return boardSpaceStoredBehavior;
+        for (String control : List.of("sweep", "far", "sneak_click", "sneak_air", "undo", "place", "offhand", "chest", "shop", "controller")) {
+            tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls." + control).formatted(Formatting.GRAY));
+        }
+        tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls.mode", Text.keybind(MODE_KEY)).formatted(Formatting.GRAY));
     }
 }
-//, () -> player.isHolding(this) && holders.contains(player.getUuid()), () -> holders.remove(player.getUuid())

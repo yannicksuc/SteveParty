@@ -7,6 +7,8 @@ import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
 import fr.lordfinn.steveparty.persistent_state.TeleportationHistoryStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
+import fr.lordfinn.steveparty.utils.MessageUtils;
+import fr.lordfinn.steveparty.utils.SafeLanding;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -20,22 +22,31 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class TeleportationPadBlock extends BlockWithEntity {
     public static final MapCodec<TeleportationPadBlock> CODEC = Block.createCodec(TeleportationPadBlock::new);
     private static final VoxelShape SHAPE = Block.createCuboidShape(0, 0, 0, 16.0, 4.0, 16.0);
+    private static final int FAILURE_MESSAGE_INTERVAL = 40;
+    /** World time of the last "no destination" message sent to each player. */
+    private static final Map<UUID, Long> LAST_FAILURE_MESSAGE = new HashMap<>();
 
     public TeleportationPadBlock(Settings settings) {
         super(settings);
@@ -112,18 +123,33 @@ public class TeleportationPadBlock extends BlockWithEntity {
         if (book == null || book.isEmpty()) return;  // Ensure the pad is not empty
         if (!(book.getItem() instanceof HereWeGoBookItem)) return;
         if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
+        // Just teleported here (e.g. back onto this pad by a « last used » book): wait until he steps off
+        if (TeleportationPadArrivals.isJustArrived(serverPlayer)) return;
 
         // onEntityCollision fires every tick of contact: only handle one pending teleport per player
         UUID taskId = getTeleportTaskId(player);
         if (Steveparty.SCHEDULER.isScheduled(taskId)) return;
 
-        BlockPos tpPos = HereWeGoBookItem.getTpPos(book, player);
-        if (tpPos == null) return; // No valid destination: do not teleport
+        HereWeGoBookItem.Destination destination = HereWeGoBookItem.getDestination(book, player);
+        BlockPos tpPos = destination.pos();
+        if (tpPos == null) { // No valid destination: do not teleport, tell why
+            if (destination.failure() != null) notifyNoDestination(serverPlayer, destination.failure());
+            return;
+        }
 
         TeleportationHistoryStorage storage = TeleportationPadStorageManager.getTeleportationHistoryStorage((ServerWorld) player.getWorld());
         storage.addTeleportation(player.getUuid(), padPos, tpPos);
 
         teleportPlayer(serverPlayer, tpPos, taskId);
+    }
+
+    /** Action bar message, at most once every {@link #FAILURE_MESSAGE_INTERVAL} ticks per player (the collision fires every tick). */
+    private static void notifyNoDestination(ServerPlayerEntity player, Text message) {
+        long now = player.getServerWorld().getTime();
+        Long last = LAST_FAILURE_MESSAGE.get(player.getUuid());
+        if (last != null && now >= last && now - last < FAILURE_MESSAGE_INTERVAL) return;
+        LAST_FAILURE_MESSAGE.put(player.getUuid(), now);
+        MessageUtils.sendToPlayer(player, message.copy().formatted(Formatting.RED), MessageUtils.MessageType.ACTION_BAR);
     }
 
     private static UUID getTeleportTaskId(PlayerEntity player) {
@@ -149,6 +175,18 @@ public class TeleportationPadBlock extends BlockWithEntity {
         );
     }
 
+    /**
+     * Teleports the player standing on the top of the block at {@code target} (or the nearest free space above it),
+     * never inside it.
+     */
+    public static void teleportOnto(ServerPlayerEntity player, BlockPos target) {
+        ServerWorld world = player.getServerWorld();
+        Vec3d landing = SafeLanding.findLandingPos(world, player, target);
+        player.teleport(world, landing.x, landing.y, landing.z, Set.of(), player.getYaw(), player.getPitch(), false);
+        player.fallDistance = 0;
+        TeleportationPadArrivals.markArrived(player, landing);
+    }
+
     private void teleportPlayer(ServerPlayerEntity player, BlockPos pos, UUID taskId) {
         Steveparty.SCHEDULER.schedule(
                 taskId,
@@ -157,7 +195,7 @@ public class TeleportationPadBlock extends BlockWithEntity {
                     if (player.isRemoved()) return;
                     // Teleport the player after the tick is done
                     playTeleportationSound(player.getWorld(), pos);
-                    player.teleport(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, true);
+                    teleportOnto(player, pos);
                 }
         );
     }

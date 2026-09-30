@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.mixin;
 
+import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.service.TokenMovementService;
@@ -14,9 +15,13 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootTable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -31,9 +36,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 
@@ -52,6 +59,12 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     private Vec3d targetPosition;
     @Unique
     private double targetPositionSpeed;
+    /** Size chosen with the wand spell (biggest dimension, in blocks), 0 = never chosen. Server side only. */
+    @Unique
+    private float steveparty$tokenSize = 0;
+    /** Colour computed from the mob texture (0xRRGGBB), -1 = never set. Server side only. */
+    @Unique
+    private int steveparty$tokenColor = -1;
 
     // State of the mob before it became a token, restored when it stops being one
     @Unique
@@ -62,6 +75,11 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     private boolean steveparty$preTokenInvulnerable = false;
     @Unique
     private boolean steveparty$preTokenCustomNameVisible = false;
+    @Unique
+    private boolean steveparty$preTokenSilent = false;
+    /** Age at which this side first ticked it as a token (its idle animations stay frozen on that frame), -1 = none. */
+    @Unique
+    private int steveparty$pawnAge = -1;
 
     @Shadow
     @Final
@@ -113,27 +131,41 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
                 this.steveparty$preTokenAiDisabled = mob.isAiDisabled();
                 this.steveparty$preTokenInvulnerable = mob.isInvulnerable();
                 this.steveparty$preTokenCustomNameVisible = mob.isCustomNameVisible();
+                this.steveparty$preTokenSilent = mob.isSilent();
                 this.steveparty$hasPreTokenState = true;
             }
+            // A static pawn: no AI at all (goals, brain, look / move controls), silent, not led nor in love
             mob.setAiDisabled(true);
             mob.clearGoalsAndTasks();
             mob.setTarget(null);
+            mob.getNavigation().stop();
+            mob.setJumping(false);
             mob.setInvulnerable(true);
             mob.setCustomNameVisible(true);
+            mob.setSilent(true);
+            if (!mob.getWorld().isClient && mob.isLeashed()) mob.detachLeash(true, true);
+            if (mob instanceof AnimalEntity animal) animal.resetLoveTicks();
+            this.headYaw = this.bodyYaw = this.getYaw();
+            this.setPitch(0);
         } else if (wasTokenized) {
             // Only on a real token -> mob transition: never touch regular mobs
             if (this.steveparty$hasPreTokenState) {
                 mob.setAiDisabled(this.steveparty$preTokenAiDisabled);
                 mob.setInvulnerable(this.steveparty$preTokenInvulnerable);
                 mob.setCustomNameVisible(this.steveparty$preTokenCustomNameVisible);
+                mob.setSilent(this.steveparty$preTokenSilent);
             } else {
                 // Token saved before the pre-token state was recorded: previous behavior
                 mob.setAiDisabled(false);
                 mob.setInvulnerable(false);
                 mob.setCustomNameVisible(false);
+                // recorded from the mob itself when it was loaded (tokens were not silenced back then)
+                mob.setSilent(this.steveparty$preTokenSilent);
             }
             this.steveparty$hasPreTokenState = false;
             this.targetPosition = null;
+            this.steveparty$tokenSize = 0;
+            this.steveparty$tokenColor = -1;
             // Restaure les AI goals vanilla (cleared first so they are not duplicated)
             this.goalSelector.clear(goal -> true);
             this.targetSelector.clear(goal -> true);
@@ -157,6 +189,22 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         return this.dataTracker.get(TOKEN_OWNER).orElse(null);
     }
 
+    public float steveparty$getTokenSize() {
+        return this.steveparty$tokenSize;
+    }
+
+    public void steveparty$setTokenSize(float size) {
+        this.steveparty$tokenSize = Float.isFinite(size) && size > 0 ? size : 0;
+    }
+
+    public int steveparty$getTokenColor() {
+        return this.steveparty$tokenColor;
+    }
+
+    public void steveparty$setTokenColor(int color) {
+        this.steveparty$tokenColor = color >= 0 && color <= 0xFFFFFF ? color : -1;
+    }
+
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
     private void onReadCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
         // Regular mobs have no token data (older versions wrote Tokenized:0b on every mob: ignored)
@@ -171,6 +219,9 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             this.steveparty$preTokenAiDisabled = preTokenState.getBoolean("NoAI");
             this.steveparty$preTokenInvulnerable = preTokenState.getBoolean("Invulnerable");
             this.steveparty$preTokenCustomNameVisible = preTokenState.getBoolean("CustomNameVisible");
+            // Tokens saved before tokens were silenced: the mob's own flag is still the pre-token one
+            this.steveparty$preTokenSilent = preTokenState.contains("Silent", NbtElement.NUMBER_TYPE)
+                    ? preTokenState.getBoolean("Silent") : this.steveparty$preTokenSilent;
             this.steveparty$hasPreTokenState = true;
         } else {
             this.steveparty$hasPreTokenState = false;
@@ -191,6 +242,9 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             this.steveparty$setStatus(nbt.getInt("TokenStatus"));
         }
 
+        this.steveparty$setTokenSize(nbt.contains("TokenSize", NbtElement.NUMBER_TYPE) ? nbt.getFloat("TokenSize") : 0);
+        this.steveparty$setTokenColor(nbt.contains("TokenColor", NbtElement.NUMBER_TYPE) ? nbt.getInt("TokenColor") : -1);
+
         if (nbt.contains("TokenTarget", NbtElement.COMPOUND_TYPE)) {
             NbtCompound target = nbt.getCompound("TokenTarget");
             this.targetPosition = new Vec3d(target.getDouble("x"), target.getDouble("y"), target.getDouble("z"));
@@ -208,11 +262,18 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             nbt.putUuid("TokenOwner", tokenOwner);
         }
         nbt.putInt("TokenStatus", this.steveparty$getStatus());
+        if (this.steveparty$tokenSize > 0) {
+            nbt.putFloat("TokenSize", this.steveparty$tokenSize);
+        }
+        if (this.steveparty$tokenColor >= 0) {
+            nbt.putInt("TokenColor", this.steveparty$tokenColor);
+        }
         if (this.steveparty$hasPreTokenState) {
             NbtCompound preTokenState = new NbtCompound();
             preTokenState.putBoolean("NoAI", this.steveparty$preTokenAiDisabled);
             preTokenState.putBoolean("Invulnerable", this.steveparty$preTokenInvulnerable);
             preTokenState.putBoolean("CustomNameVisible", this.steveparty$preTokenCustomNameVisible);
+            preTokenState.putBoolean("Silent", this.steveparty$preTokenSilent);
             nbt.put("PreTokenState", preTokenState);
         }
         if (this.targetPosition != null) {
@@ -257,6 +318,15 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
      */
     @Inject(method = "tick", at = @At("TAIL"))
     private void onTick(CallbackInfo ci) {
+        if (this.steveparty$isTokenized()) {
+            // A pawn: head and body always face where it goes (the board sets its yaw), no idle look around
+            this.bodyYaw = this.getYaw();
+            this.headYaw = this.getYaw();
+            if (this.getPitch() != 0) this.setPitch(0);
+            if (this.steveparty$pawnAge < 0) this.steveparty$pawnAge = this.age;
+        } else if (this.steveparty$pawnAge >= 0) {
+            this.steveparty$pawnAge = -1;
+        }
         if (this.getWorld().isClient)  return;
         if (this.targetPosition != null) {
             Vec3d currentPosition = this.getPos();
@@ -307,6 +377,33 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         }
     }
 
+    /**
+     * A token is a game piece: it does not produce items on its own. Blocks the periodic "gifts" of the living
+     * mobs (chicken eggs, armadillo scutes...); their timers still reset, so nothing is stored up for later.
+     * Player actions (brushing, shearing...) and death loot are not affected.
+     */
+    @Override
+    public boolean forEachGiftedItem(ServerWorld world, RegistryKey<LootTable> lootTableKey, BiConsumer<ServerWorld, ItemStack> lootConsumer) {
+        if (this.steveparty$isTokenized()) return false;
+        return super.forEachGiftedItem(world, lootTableKey, lootConsumer);
+    }
+
+    public int steveparty$getPawnAge() {
+        return this.steveparty$pawnAge;
+    }
+
+    /** A pawn stays on its base: players and mobs bumping into it do not push it around. */
+    @Override
+    public boolean isPushable() {
+        return !this.steveparty$isTokenized() && super.isPushable();
+    }
+
+    /** No lead on a pawn (it would be dragged off the board). */
+    @Inject(method = "canBeLeashed", at = @At("HEAD"), cancellable = true)
+    private void steveparty$noLeashOnTokens(CallbackInfoReturnable<Boolean> cir) {
+        if (this.steveparty$isTokenized()) cir.setReturnValue(false);
+    }
+
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (this.steveparty$isTokenized()) {
@@ -314,11 +411,20 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
                 return super.damage(world, source, amount);
             }
+            // Hitting a token relaunches a stuck move while it still has steps to walk. Outside a party, a resting
+            // token just reminds the player how tokens are moved.
+            if (source.getAttacker() instanceof ServerPlayerEntity attacker && this.steveparty$getNbSteps() <= 0) {
+                if (!TokenStatus.hasStatus(this.steveparty$getStatus(), TokenStatus.IN_GAME)) {
+                    MessageUtils.sendToPlayer(attacker, Text.translatableWithFallback("message.steveparty.token_hint",
+                            "I'm a token now! To move me, store me in a Token."), MessageUtils.MessageType.ACTION_BAR);
+                }
+                return false;
+            }
             if (source.getAttacker() instanceof ServerPlayerEntity attacker) {
                 MessageUtils.sendToPlayer(attacker, Text.translatable("message.steveparty.steps_remaining_for", this.steveparty$getNbSteps(), this.getCustomName()), MessageUtils.MessageType.CHAT);
-                BlockEntity blockEntity = world.getBlockEntity(this.getBlockPos());
-                if (blockEntity instanceof BoardSpaceBlockEntity)
-                    EVENT.invoker().onTileUpdated((MobEntity) (Object) this, (BoardSpaceBlockEntity) blockEntity);
+                BoardSpaceBlockEntity boardSpace = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(this);
+                if (boardSpace != null)
+                    EVENT.invoker().onTileUpdated((MobEntity) (Object) this, boardSpace);
             }
             return false;
         }

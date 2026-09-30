@@ -49,7 +49,6 @@ public class EndPartyStep extends PartyStep {
                 partyControllerEntity.getPos().toCenterPos(), 100,
                 Text.translatableWithFallback("message.steveparty.game_ended", "The party is over !"),
                 MessageUtils.MessageType.CHAT);
-        partyControllerEntity.announceRanking();
         partyControllerEntity.markDirty();
     }
 

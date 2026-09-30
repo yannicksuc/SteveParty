@@ -2,14 +2,17 @@ package fr.lordfinn.steveparty.blocks;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.*;
+import fr.lordfinn.steveparty.blocks.custom.signs.*;
+import fr.lordfinn.steveparty.items.custom.StencilSignItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CheckPointBlock;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.SimpleTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
 import fr.lordfinn.steveparty.registry.RegistryAliases;
 import net.minecraft.block.*;
+import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
@@ -17,6 +20,7 @@ import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.DyeColor;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.RegistryKeys;
 
@@ -89,7 +93,50 @@ public class ModBlocks {
         }
     }
 
+    // Plastic fences: posts for the plastic road signs (and fences like any other)
+    public static final Block[] PLASTIC_FENCES = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            String color = COLORS[i];
+            PLASTIC_FENCES[i] = register(
+                    PlasticFenceBlock::new,
+                    Block.Settings.create()
+                            .mapColor(DyeColor.byName(color, DyeColor.WHITE))
+                            .solid()
+                            .strength(1.0f, 1.0f)
+                            .sounds(BlockSoundGroup.BAMBOO_WOOD),
+                    color + "_plastic_fence",
+                    true
+            );
+        }
+    }
+
+    // Plastic slabs, stairs and walls, like the vanilla stone ones (they do not float: only full plastic pieces do)
+    public static final Block[] PLASTIC_SLABS = new Block[COLORS.length];
+    public static final Block[] PLASTIC_STAIRS = new Block[COLORS.length];
+    public static final Block[] PLASTIC_WALLS = new Block[COLORS.length];
+
+    static {
+        for (int i = 0; i < COLORS.length; i++) {
+            final int index = i;
+            String color = COLORS[i];
+            PLASTIC_SLABS[i] = register(SlabBlock::new, Block.Settings.copy(PLASTIC_BLOCKS[i]),
+                    color + "_plastic_slab", true);
+            // Stairs only take their blast resistance and pathfinding from their base block
+            PLASTIC_STAIRS[i] = register(s -> new StairsBlock(PLASTIC_BLOCKS[index].getDefaultState(), s),
+                    Block.Settings.copy(PLASTIC_BLOCKS[i]), color + "_plastic_stairs", true);
+            PLASTIC_WALLS[i] = register(WallBlock::new, Block.Settings.copy(PLASTIC_BLOCKS[i]).solid(),
+                    color + "_plastic_wall", true);
+        }
+    }
+
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
+
+    /** The vanilla terracotta a polished terracotta is made from ("default" = plain terracotta): same map colour. */
+    private static Block vanillaTerracotta(String color) {
+        return color.equals("default") ? Blocks.TERRACOTTA : Registries.BLOCK.get(Identifier.ofVanilla(color + "_terracotta"));
+    }
 
     static {
         for (int i = 0; i < COLORS_WITH_DEFAULT.length; i++) {
@@ -98,6 +145,8 @@ public class ModBlocks {
 
             POLISHED_TERRACOTTA_BLOCKS[i] = register(Block::new,
                     Block.Settings.create()
+                            .mapColor(vanillaTerracotta(color).getDefaultMapColor())
+                            .instrument(NoteBlockInstrument.BASEDRUM)
                             .strength(1.25f, 4.2f)
                             .sounds(BlockSoundGroup.STONE)
                             .solid()
@@ -116,6 +165,8 @@ public class ModBlocks {
 
             POLISHED_TERRACOTTA_BRICKS_BLOCKS[i] = register(Block::new,
                     Block.Settings.create()
+                            .mapColor(vanillaTerracotta(color).getDefaultMapColor())
+                            .instrument(NoteBlockInstrument.BASEDRUM)
                             .strength(1.5f, 6.0f)
                             .sounds(BlockSoundGroup.STONE)
                             .solid()
@@ -281,20 +332,30 @@ public class ModBlocks {
                     .requiresTool(),
             "stencil_maker", true);
 
-    // Create and register the TILE block
+    public static final Block ADVANCED_TILE = register(AdvancedTileBlock::new,
+            Block.Settings.create()
+                    .strength(2f, 3600000.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
+            "advanced_tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
+
     public static final Block TILE = register(TileBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
-            "tile", true);
+            "tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
 
-    public static final Block SIMPLE_TILE = register(SimpleTileBlock::new,
+    /** The 3 other blocks of a large (2x2) tile (no item: placed and removed with the tile). */
+    public static final Block TILE_PART = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("tile_part")),
+            fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock::new,
             Block.Settings.create()
                     .strength(2f, 3600000.0f)
                     .sounds(BlockSoundGroup.METAL)
-                    .requiresTool(),
-            "simple_tile", true);
+                    .nonOpaque()
+                    .dynamicBounds()
+                    .dropsNothing()
+                    .pistonBehavior(net.minecraft.block.piston.PistonBehavior.BLOCK));
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()
@@ -323,10 +384,11 @@ public class ModBlocks {
 
     public static final Block VILLAGER_BLOCK = register(VillagerBlock::new,
             Block.Settings.create()
-                    .strength(0.5f)
+                    // No tool needed (no requiresTool: it drops by hand), but breaking it takes a moment (1.5 s by
+                    // hand), long enough for it to plead and cry (see VillagerBlock#onBlockBreakStart)
+                    .strength(1.0f)
                     .nonOpaque()  // Fully transparent/visible (for entity-like behavior)
-                    .sounds(BlockSoundGroup.WOOL)  // Soft sound to match its potential villager theme
-                    .breakInstantly(),  // Breaks instantly, emphasizing its decorative nature
+                    .sounds(BlockSoundGroup.WOOL),  // (its own villager sounds: VillagerBlock#getSoundGroup)
             "villager_block", true);
 
     public static final Block CASH_REGISTER = register(CashRegisterBlock::new,
@@ -379,45 +441,45 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.BONE),
             "hop_switch", true);
 
-    public static final Block OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.OAK, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "oak_traffic_sign", true);
+    public static final Block OAK_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.OAK, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "oak_easel_sign", true, StencilSignItem::new);
 
-    public static final Block SPRUCE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.SPRUCE, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.SPRUCE_BROWN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "spruce_traffic_sign", true);
+    public static final Block SPRUCE_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.SPRUCE, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.SPRUCE_BROWN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "spruce_easel_sign", true, StencilSignItem::new);
 
-    public static final Block BIRCH_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.BIRCH, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.PALE_YELLOW).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "birch_traffic_sign", true);
+    public static final Block BIRCH_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.BIRCH, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.PALE_YELLOW).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "birch_easel_sign", true, StencilSignItem::new);
 
-    public static final Block JUNGLE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.JUNGLE, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.BROWN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "jungle_traffic_sign", true);
+    public static final Block JUNGLE_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.JUNGLE, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.BROWN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "jungle_easel_sign", true, StencilSignItem::new);
 
-    public static final Block ACACIA_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.ACACIA, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.ORANGE).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "acacia_traffic_sign", true);
+    public static final Block ACACIA_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.ACACIA, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.ORANGE).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "acacia_easel_sign", true, StencilSignItem::new);
 
-    public static final Block DARK_OAK_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.DARK_OAK, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "dark_oak_traffic_sign", true);
+    public static final Block DARK_OAK_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.DARK_OAK, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "dark_oak_easel_sign", true, StencilSignItem::new);
 
-    public static final Block MANGROVE_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.MANGROVE, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "mangrove_traffic_sign", true);
+    public static final Block MANGROVE_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.MANGROVE, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.DARK_RED).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "mangrove_easel_sign", true, StencilSignItem::new);
 
-    public static final Block CRIMSON_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CRIMSON, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DARK_CRIMSON).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "crimson_traffic_sign", true);
+    public static final Block CRIMSON_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.CRIMSON, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.DARK_CRIMSON).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "crimson_easel_sign", true, StencilSignItem::new);
 
-    public static final Block WARPED_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.WARPED, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.CYAN).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "warped_traffic_sign", true);
+    public static final Block WARPED_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.WARPED, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.CYAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "warped_easel_sign", true, StencilSignItem::new);
 
-    public static final Block CHERRY_TRAFFIC_SIGN = register(c -> new TrafficSignBlock(WoodType.CHERRY, c),
-            AbstractBlock.Settings.create().mapColor(MapColor.DULL_PINK).solid().noCollision().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
-            "cherry_traffic_sign", true);
+    public static final Block CHERRY_EASEL_SIGN = register(c -> new EaselSignBlock(WoodType.CHERRY, c),
+            AbstractBlock.Settings.create().mapColor(MapColor.DULL_PINK).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "cherry_easel_sign", true, StencilSignItem::new);
 
     public static final Block GOAL_POLE_BASE = register(GoalPoleBaseBlock::new,
             Block.Settings.create()
@@ -441,47 +503,36 @@ public class ModBlocks {
                     .requiresTool(),
             "looting_box", true);
 
-    public static final Block BLUE_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    /** Glowing translucent crystal built like glass: see-through, lets light pass, never suffocates or blocks vision. */
+    private static Block.Settings starFragmentsSettings() {
+        return Block.Settings.create()
+                .strength(0.5f)
+                .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                .luminance(state -> 15)
+                .nonOpaque()
+                .allowsSpawning((state, world, pos, type) -> false)
+                .solidBlock((state, world, pos) -> false)
+                .suffocates((state, world, pos) -> false)
+                .blockVision((state, world, pos) -> false);
+    }
+
+    public static final Block BLUE_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.BLUE, s), starFragmentsSettings(),
             "blue_star_fragments_block", true);
-    public static final Block GREEN_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block GREEN_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.GREEN, s), starFragmentsSettings(),
             "green_star_fragments_block", true);
-    public static final Block RED_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block RED_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.RED, s), starFragmentsSettings(),
             "red_star_fragments_block", true);
-    public static final Block YELLOW_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block YELLOW_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.YELLOW, s), starFragmentsSettings(),
             "yellow_star_fragments_block", true);
-    public static final Block PURPLE_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block PURPLE_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.PURPLE, s), starFragmentsSettings(),
             "purple_star_fragments_block", true);
-    public static final Block BLACK_STAR_FRAGMENTS_BLOCK = register(StarFragmentsBlock::new,
-            Block.Settings.create()
-                    .strength(0.5f)
-                    .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                    .luminance(state -> 15)
-                    .nonOpaque(),
+    public static final Block BLACK_STAR_FRAGMENTS_BLOCK = register(
+            s -> new StarFragmentsBlock(StarFragmentsBlock.BLACK, s), starFragmentsSettings(),
             "black_star_fragments_block", true);
 
     public static final Block GRAVITY_CORE = register(GravityCoreBlock::new,
@@ -500,6 +551,45 @@ public class ModBlocks {
                     .sounds(BlockSoundGroup.STONE)
                     .requiresTool(),
             "dice_forge", true);
+
+    // ---------------------------------------------------------------- stencil signs
+
+    /** Easel sign of any planks (the wood is kept by the block entity and the item). */
+    public static final Block EASEL_SIGN = register(MaterialEaselSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "easel_sign", true, StencilSignItem::new);
+
+    static {
+        // Saves from before the rename still know the easel signs as "traffic_sign" and "<wood>_traffic_sign" (blocks,
+        // items, and the block entity, which had the block's id)
+        RegistryAliases.add(Steveparty.id("traffic_sign"), Steveparty.id("easel_sign"));
+        for (String wood : new String[]{"oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "crimson", "warped"}) {
+            RegistryAliases.add(Steveparty.id(wood + "_traffic_sign"), Steveparty.id(wood + "_easel_sign"));
+        }
+    }
+
+    public static final Block WOODEN_PANEL = register(WoodenPanelBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().dynamicBounds().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "wooden_panel", true, StencilSignItem::new);
+
+    public static final Block WOODEN_CUTOUT_PANEL = register(WoodenCutoutPanelBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).solid().dynamicBounds().nonOpaque().strength(1.0F).burnable().sounds(BlockSoundGroup.WOOD),
+            "wooden_cutout_panel", true, StencilSignItem::new);
+
+    public static final Block ROCK_SIGN = register(RockSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY).nonOpaque().requiresTool().strength(1.5F, 6.0F).sounds(BlockSoundGroup.STONE),
+            "rock_sign", true, StencilSignItem::new);
+
+    public static final Block PLASTIC_ROAD_SIGN = register(PlasticRoadSignBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.WHITE).solid().dynamicBounds().nonOpaque().strength(1.0F, 1.0F).sounds(BlockSoundGroup.BAMBOO_WOOD),
+            "plastic_road_sign", true, StencilSignItem::new);
+
+    /** Paint sprayed through a stencil on a block face (no item: made by stencils and the stencil gun). */
+    public static final Block STENCIL_PAINT = Blocks.register(
+            RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("stencil_paint")),
+            StencilPaintBlock::new,
+            AbstractBlock.Settings.create().replaceable().noCollision().nonOpaque().breakInstantly().dropsNothing()
+                    .pistonBehavior(PistonBehavior.DESTROY).sounds(BlockSoundGroup.WOOL));
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(

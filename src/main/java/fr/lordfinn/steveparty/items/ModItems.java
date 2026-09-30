@@ -2,11 +2,20 @@ package fr.lordfinn.steveparty.items;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.signs.MaterialSignItems;
+import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
+import fr.lordfinn.steveparty.stencil.StencilPatterns;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BlockStateComponent;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.util.DyeColor;
 import fr.lordfinn.steveparty.items.custom.*;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StartCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StopCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookItem;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
@@ -35,10 +44,14 @@ public class ModItems {
     public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
 
     public static final Item STENCIL = register(StencilItem.class, "stencil");
+    public static final Item STENCIL_GUN = registerUnstackable(StencilGunItem.class, "stencil_gun");
     public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
-    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop");
+    /** Its tile's face is anthracite until dyed. */
+    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior.COLOR));
     public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand", new Item.Settings().maxCount(1).enchantable(TOKENIZER_WAND_ENCHANTABILITY));
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
@@ -48,6 +61,14 @@ public class ModItems {
     public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
     public static final Item INVENTORY_CARTRIDGE = register(InventoryCartridgeItem.class, "inventory_cartridge");
+    /** Shop Cartridge: a shop stop (a check point pauses the passing token, a tile opens the shop on landing). */
+    public static final Item SHOP_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.class, "shop_cartridge");
+    public static final Item ADVANCE_BACK_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.class, "advance_back_cartridge");
+    /** Its tile's face is cyan until dyed. */
+    public static final Item REPLAY_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem.class, "replay_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior.COLOR));
+    public static final Item TELEPORT_CARTRIDGE = register(TeleportCartridgeItem.class, "teleport_cartridge");
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item HERE_WE_GO_BOOK = registerUnstackable(HereWeGoBookItem.class, "here_we_go_book");
     public static final Item HERE_WE_COME_BOOK = registerUnstackable(HereWeComeBookItem.class, "here_we_come_book");
@@ -63,6 +84,10 @@ public class ModItems {
     public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
+    /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
+    public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
+    /** The Hiding Trader's bandana (stolen with shears), wearable on the head. */
+    public static final Item BANDANA = register(BandanaItem.class, "bandana", new Item.Settings().maxCount(1));
     public static final Item PARTY_CARD_TURNS = registerCard(PartyCardItem.CardType.TURNS);
     public static final Item PARTY_CARD_MINIGAME = registerCard(PartyCardItem.CardType.MINIGAME);
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
@@ -115,6 +140,15 @@ public class ModItems {
 
     }
 
+    /** Blocks of a sign material kind, from the tags of the running game (modded blocks included). */
+    private static List<Block> blocksOf(RegistryWrapper.WrapperLookup lookup, SignMaterial kind) {
+        List<Block> blocks = new ArrayList<>();
+        lookup.getOrThrow(RegistryKeys.BLOCK).getOptional(kind.tag())
+                .ifPresent(list -> list.forEach(entry -> blocks.add(entry.value())));
+        if (blocks.isEmpty()) blocks.add(kind.defaultBlock());
+        return blocks;
+    }
+
     public static void initialize() {
         // Register the group.
         Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
@@ -138,8 +172,15 @@ public class ModItems {
 
         // Register items to the custom item group.
         ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
-            itemGroup.add(SIMPLE_TILE);
-            itemGroup.add(TILE);
+            for (int color = 0; color < BandanaItem.COLOR_NAMES.length; color++) {
+                itemGroup.add(BandanaItem.create(color));
+            }
+            // Every tile in its 3 sizes
+            for (net.minecraft.item.ItemConvertible tile : List.of(TILE, ADVANCED_TILE)) {
+                for (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize size : fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.values()) {
+                    itemGroup.add(fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.with(new ItemStack(tile), size));
+                }
+            }
             itemGroup.add(CHECK_POINT);
             itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
             itemGroup.add(WRENCH);
@@ -147,6 +188,11 @@ public class ModItems {
             itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);
             itemGroup.add(TILE_BEHAVIOR_START);
             itemGroup.add(INVENTORY_CARTRIDGE);
+            itemGroup.add(SHOP_CARTRIDGE);
+            itemGroup.add(ADVANCE_BACK_CARTRIDGE);
+            itemGroup.add(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.withSteps(-3));
+            itemGroup.add(REPLAY_CARTRIDGE);
+            itemGroup.add(TELEPORT_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);
@@ -169,25 +215,49 @@ public class ModItems {
             itemGroup.add(TRADING_STALL);
             itemGroup.add(CASH_REGISTER);
             itemGroup.add(SHOPKEEPER_KEY);
-            itemGroup.add(OAK_TRAFFIC_SIGN);
-            itemGroup.add(BIRCH_TRAFFIC_SIGN);
-            itemGroup.add(SPRUCE_TRAFFIC_SIGN);
-            itemGroup.add(JUNGLE_TRAFFIC_SIGN);
-            itemGroup.add(ACACIA_TRAFFIC_SIGN);
-            itemGroup.add(DARK_OAK_TRAFFIC_SIGN);
-            itemGroup.add(MANGROVE_TRAFFIC_SIGN);
-            itemGroup.add(CHERRY_TRAFFIC_SIGN);
-            itemGroup.add(CRIMSON_TRAFFIC_SIGN);
-            itemGroup.add(WARPED_TRAFFIC_SIGN);
+            // The 10 fixed-wood easel signs stay in the game for the worlds that have them, but are no longer
+            // listed: the material easel sign covers every planks, modded ones included
+            RegistryWrapper.WrapperLookup lookup = itemGroup.getContext().lookup();
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(EASEL_SIGN, planks));
+            }
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_PANEL, planks));
+            }
+            for (Block planks : blocksOf(lookup, SignMaterial.WOOD)) {
+                itemGroup.add(MaterialSignItems.withMaterial(WOODEN_CUTOUT_PANEL, planks));
+            }
+            for (Block rock : blocksOf(lookup, SignMaterial.ROCK)) {
+                itemGroup.add(MaterialSignItems.withMaterial(ROCK_SIGN, rock));
+            }
+            for (PlasticRoadSignBlock.Plate plate : PlasticRoadSignBlock.Plate.values()) {
+                ItemStack sign = MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, plate == PlasticRoadSignBlock.Plate.ROUND ? DyeColor.RED : DyeColor.YELLOW);
+                sign.set(DataComponentTypes.BLOCK_STATE, BlockStateComponent.DEFAULT.with(PlasticRoadSignBlock.PLATE, plate));
+                itemGroup.add(sign);
+            }
+            for (DyeColor color : DyeColor.values()) {
+                itemGroup.add(MaterialSignItems.withPlateColor(PLASTIC_ROAD_SIGN, color));
+            }
             itemGroup.add(STENCIL);
+            for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
+                itemGroup.add(StencilItem.of(pattern));
+            }
+            itemGroup.add(STENCIL_GUN);
             itemGroup.add(STENCIL_MAKER);
             itemGroup.add(HOP_SWITCH);
             itemGroup.add(PLASTIC_PELLETS);
+            itemGroup.add(PLASTIC_STICK);
             for (Block plasticBlock : ModBlocks.PLASTIC_BLOCKS) {
                 itemGroup.add(plasticBlock);
             }
             for (Block stud : ModBlocks.PLASTIC_STUDS) {
                 itemGroup.add(stud);
+            }
+            for (Block fence : ModBlocks.PLASTIC_FENCES) {
+                itemGroup.add(fence);
+            }
+            for (Block[] shapes : new Block[][]{ModBlocks.PLASTIC_SLABS, ModBlocks.PLASTIC_STAIRS, ModBlocks.PLASTIC_WALLS}) {
+                for (Block shape : shapes) itemGroup.add(shape);
             }
             itemGroup.add(GOAL_POLE_BASE);
             itemGroup.add(GOAL_POLE);

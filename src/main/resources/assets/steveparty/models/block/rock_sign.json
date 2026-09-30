@@ -1,0 +1,171 @@
+{
+	"credit": "SteveParty - standing stone, upright (leant by the code). No north face: the 16x16 front is built from the engraving, and its top is built by the code too (it joins the neighbouring stones). stone = sides, smooth_stone = tops",
+	"textures": {
+		"side": "minecraft:block/stone",
+		"top": "minecraft:block/smooth_stone",
+		"particle": "minecraft:block/stone"
+	},
+	"elements": [
+		{
+			"from": [
+				0,
+				0,
+				5
+			],
+			"to": [
+				16,
+				16,
+				11
+			],
+			"faces": {
+				"east": {
+					"uv": [
+						5,
+						0,
+						11,
+						16
+					],
+					"texture": "#side"
+				},
+				"south": {
+					"uv": [
+						0,
+						0,
+						16,
+						16
+					],
+					"texture": "#side"
+				},
+				"west": {
+					"uv": [
+						5,
+						0,
+						11,
+						16
+					],
+					"texture": "#side"
+				},
+				"up": {
+					"uv": [
+						0,
+						5,
+						16,
+						11
+					],
+					"texture": "#top"
+				},
+				"down": {
+					"uv": [
+						0,
+						5,
+						16,
+						11
+					],
+					"texture": "#top"
+				}
+			},
+			"name": "stone"
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [
+				75,
+				45,
+				0
+			],
+			"translation": [
+				0,
+				2.5,
+				0
+			],
+			"scale": [
+				0.375,
+				0.375,
+				0.375
+			]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [
+				75,
+				45,
+				0
+			],
+			"translation": [
+				0,
+				2.5,
+				0
+			],
+			"scale": [
+				0.375,
+				0.375,
+				0.375
+			]
+		},
+		"firstperson_righthand": {
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"scale": [
+				0.4,
+				0.4,
+				0.4
+			]
+		},
+		"firstperson_lefthand": {
+			"rotation": [
+				0,
+				225,
+				0
+			],
+			"scale": [
+				0.4,
+				0.4,
+				0.4
+			]
+		},
+		"ground": {
+			"translation": [
+				0,
+				3,
+				0
+			],
+			"scale": [
+				0.25,
+				0.25,
+				0.25
+			]
+		},
+		"gui": {
+			"rotation": [
+				30,
+				225,
+				0
+			],
+			"translation": [
+				0,
+				-0.5,
+				0
+			],
+			"scale": [
+				0.45,
+				0.45,
+				0.45
+			]
+		},
+		"fixed": {
+			"rotation": [
+				0,
+				180,
+				0
+			],
+			"scale": [
+				0.5,
+				0.5,
+				0.5
+			]
+		}
+	}
+}

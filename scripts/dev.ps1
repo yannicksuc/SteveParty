@@ -17,6 +17,7 @@
   status  - show whether the server / client are running.
   stop    - stop the server (gracefully, via RCON), the client, or both (default: all).
   tail    - follow the server or client log (Ctrl+C stops following, not the process).
+  cmd     - run a server command through RCON and print its output, e.g. .\scripts\dev.ps1 cmd "time set day".
 
 .EXAMPLE
   .\scripts\dev.ps1 up
@@ -28,16 +29,19 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('up', 'server', 'client', 'status', 'stop', 'tail')]
+    [ValidateSet('up', 'server', 'client', 'status', 'stop', 'tail', 'cmd')]
     [string]$Command = 'up',
 
     [Parameter(Position = 1)]
-    [ValidateSet('server', 'client', 'all')]
     [string]$Kind = 'all',
 
     # Dev server port (RCON = port + 10). Default: gradle/dev-server.gradle (25580).
     # Use it to join another checkout's server, e.g. -Port 25581 for a worktree's server.
-    [int]$Port = 0
+    [int]$Port = 0,
+
+    # Let the client window come to the front. By default a started client is windowed and sent behind the other
+    # windows as soon as it opens, so tests running in the background don't disturb whoever uses the PC.
+    [switch]$Foreground
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,7 +49,8 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 $Gradlew = Join-Path $RepoRoot 'gradlew.bat'
-$PortArgs = if ($Port -gt 0) { @("-PdevServerPort=$Port") } else { @() }
+# @(...) keeps an array: a one-element if result would be unwrapped to a string and splatted char by char
+$PortArgs = @(if ($Port -gt 0) { "-PdevServerPort=$Port" })
 $StateDir = Join-Path $RepoRoot '.dev-launch'
 New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
 
@@ -89,6 +94,57 @@ function Start-Kind {
         -RedirectStandardOutput $log -RedirectStandardError "$log.err" -WindowStyle Hidden | Out-Null
     Write-Host "Started $K ($task) -> $log"
     return $true
+}
+
+Add-Type -Namespace DevLaunch -Name Win32 -MemberDefinition @'
+[DllImport("user32.dll")] public static extern System.IntPtr GetForegroundWindow();
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(System.IntPtr hWnd);
+[DllImport("user32.dll")] public static extern bool SetWindowPos(System.IntPtr hWnd, System.IntPtr after, int x, int y, int cx, int cy, uint flags);
+'@
+
+# Windowed (never fullscreen), muted client: the run dir's options.txt is read at start-up. A new run dir (a fresh
+# worktree) gets one, so its first launch is already windowed and silent.
+function Set-WindowedClient {
+    $options = Join-Path $RepoRoot 'run\options.txt'
+    if (-not (Test-Path $options)) {
+        New-Item -ItemType Directory -Force (Split-Path $options) | Out-Null
+        Set-Content $options @('fullscreen:false', 'soundCategory_master:0.0', 'pauseOnLostFocus:false', 'onboardAccessibility:false')
+        return
+    }
+    $lines = Get-Content $options
+    if ($lines -match '^fullscreen:true') { $lines = $lines -replace '^fullscreen:true', 'fullscreen:false' }
+    if ($lines -match '^soundCategory_master:') { $lines = $lines -replace '^soundCategory_master:.*', 'soundCategory_master:0.0' }
+    else { $lines += 'soundCategory_master:0.0' }
+    $lines | Set-Content $options
+}
+
+# Waits for the client's window, then puts it behind every other window and gives the focus back.
+function Send-ClientToBack {
+    param([System.IntPtr]$PreviousForeground, [int]$TimeoutSeconds = 300)
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        foreach ($id in @(Find-GameJvm 'client')) {
+            $handle = (Get-Process -Id $id -ErrorAction SilentlyContinue).MainWindowHandle
+            if ($handle -and $handle -ne [System.IntPtr]::Zero) {
+                # HWND_BOTTOM, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+                [DevLaunch.Win32]::SetWindowPos($handle, [System.IntPtr]1, 0, 0, 0, 0, 0x13) | Out-Null
+                # The window opened without the focus (WindowBackgroundDevMixin): give it back only if it took it anyway
+                if ($PreviousForeground -ne [System.IntPtr]::Zero -and [DevLaunch.Win32]::GetForegroundWindow() -eq $handle) {
+                    [DevLaunch.Win32]::SetForegroundWindow($PreviousForeground) | Out-Null
+                }
+                Write-Host "Client window sent to the back (use -Foreground to keep it in front)."
+                return
+            }
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    Write-Warning "The client window didn't show up within $TimeoutSeconds s."
+}
+
+function Start-Client {
+    Set-WindowedClient
+    $previous = [DevLaunch.Win32]::GetForegroundWindow()
+    if ((Start-Kind 'client') -and -not $Foreground) { Send-ClientToBack $previous }
 }
 
 function Wait-ServerReady {
@@ -142,21 +198,23 @@ function Read-RconRequestId {
     }
     $length = [BitConverter]::ToInt32((& $read 4), 0)
     $payload = & $read $length
-    return [BitConverter]::ToInt32($payload, 0)
+    $body = if ($length -gt 10) { [System.Text.Encoding]::UTF8.GetString($payload, 8, $length - 10) } else { '' }
+    return @{ RequestId = [BitConverter]::ToInt32($payload, 0); Body = $body }
 }
 
 function Send-RconCommands {
-    param([int]$Port, [string]$Password, [string[]]$Commands)
+    param([int]$Port, [string]$Password, [string[]]$Commands, [switch]$PrintOutput)
     $client = New-Object System.Net.Sockets.TcpClient
     try {
         if (-not $client.ConnectAsync('127.0.0.1', $Port).Wait(3000)) { return $false }
         $stream = $client.GetStream()
         $stream.ReadTimeout = 5000
         Send-RconPacket $stream 1 3 $Password
-        if ((Read-RconRequestId $stream) -eq -1) { return $false }
+        if ((Read-RconRequestId $stream).RequestId -eq -1) { return $false }
         foreach ($command in $Commands) {
             Send-RconPacket $stream 2 2 $command
-            Read-RconRequestId $stream | Out-Null
+            $response = Read-RconRequestId $stream
+            if ($PrintOutput -and $response.Body) { Write-Host ($response.Body -replace '§.', '') }
         }
         return $true
     } catch {
@@ -166,14 +224,45 @@ function Send-RconCommands {
     }
 }
 
+# The settings the running server actually started with: prepareDevServer writes them right before runServer.
+function Get-ServerProperties {
+    param([string]$RunDir)
+    $properties = @{}
+    $file = Join-Path (Join-Path $RepoRoot $RunDir) 'server.properties'
+    if (Test-Path $file) {
+        Get-Content $file | ForEach-Object {
+            if ($_ -match '^([\w.-]+)=(.*)$') { $properties[$Matches[1]] = $Matches[2].Trim() }
+        }
+    }
+    return $properties
+}
+
+# Port and RCON settings of this checkout's server as it actually started, whatever -Port says: the default
+# (or a wrong -Port) could be another checkout's server.
+function Get-RunningServer {
+    $info = Get-DevServerInfo
+    $properties = Get-ServerProperties $info.runDir
+    return @{
+        Port         = if ($properties['server-port']) { [int]$properties['server-port'] } else { [int]$info.port }
+        RconPort     = if ($properties['rcon.port']) { [int]$properties['rcon.port'] } else { [int]$info.rconPort }
+        RconPassword = if ($properties['rcon.password']) { $properties['rcon.password'] } else { $info.rconPassword }
+    }
+}
+
 function Stop-Kind {
     param([string]$K)
     $jvms = @(Find-GameJvm $K)
     if ($jvms.Count -eq 0) { Write-Host "$K is not running."; return }
     if ($K -eq 'server') {
-        $info = Get-DevServerInfo
-        Write-Host "Stopping the server gracefully (save-all flush, stop)..."
-        if (Send-RconCommands -Port ([int]$info.rconPort) -Password $info.rconPassword -Commands @('save-all flush', 'stop')) {
+        # A wrong -Port would otherwise stop another checkout's server through its RCON, or miss and kill this one
+        # without saving
+        $server = Get-RunningServer
+        if ($Port -gt 0 -and $server.Port -ne $Port) {
+            Write-Warning "This checkout's server runs on port $($server.Port), not $Port`: left running. Stop it with: .\scripts\dev.ps1 stop server"
+            return
+        }
+        Write-Host "Stopping the server on port $($server.Port) gracefully (save-all flush, stop)..."
+        if (Send-RconCommands -Port $server.RconPort -Password $server.RconPassword -Commands @('save-all flush', 'stop')) {
             $deadline = (Get-Date).AddSeconds(30)
             while ((Get-Date) -lt $deadline -and @(Find-GameJvm 'server').Count -gt 0) { Start-Sleep -Milliseconds 500 }
             if (@(Find-GameJvm 'server').Count -eq 0) { Write-Host "Server stopped."; return }
@@ -195,24 +284,44 @@ function Show-Status {
     }
 }
 
+if ($Command -in 'stop', 'tail' -and $Kind -notin 'server', 'client', 'all') { throw "Kind must be server, client or all." }
+
 switch ($Command) {
     'up' {
         $info = Get-DevServerInfo
         $alreadyUp = @(Find-GameJvm 'server').Count -gt 0
         if (-not $alreadyUp) { Start-Kind 'server' | Out-Null }
         if ($alreadyUp -or (Wait-ServerReady)) {
-            Start-Kind 'client' | Out-Null
+            Start-Client
             Write-Host "The client joins localhost:$($info.port) as $($info.player) (op, creative)."
             Write-Host "Stop everything with: .\scripts\dev.ps1 stop"
         }
     }
     'server' { Start-Kind 'server' | Out-Null }
-    'client' { Start-Kind 'client' | Out-Null }
+    'client' { Start-Client }
     'status' { Show-Status }
     'stop' {
         # Client first, so it doesn't sit on a "connection lost" screen while the server saves
         if ($Kind -in 'client', 'all') { Stop-Kind 'client' }
         if ($Kind -in 'server', 'all') { Stop-Kind 'server' }
+    }
+    'cmd' {
+        if ($Kind -eq 'all') { throw 'Usage: .\scripts\dev.ps1 cmd "<server command>"' }
+        # Without -Port: this checkout's running server only, never whatever listens on the default RCON port.
+        # With -Port: the server on that port, possibly another checkout's (like client -Port).
+        $running = @(Find-GameJvm 'server').Count -gt 0
+        $server = if ($running) { Get-RunningServer }
+        if (-not $server -or ($Port -gt 0 -and $server.Port -ne $Port)) {
+            if ($Port -eq 0) {
+                Write-Warning "This checkout's server is not running (.\scripts\dev.ps1 status). Use -Port to reach another checkout's server."
+                return
+            }
+            $info = Get-DevServerInfo
+            $server = @{ Port = $Port; RconPort = [int]$info.rconPort; RconPassword = $info.rconPassword }
+        }
+        if (-not (Send-RconCommands -Port $server.RconPort -Password $server.RconPassword -Commands @($Kind) -PrintOutput)) {
+            Write-Warning "RCON unreachable on port $($server.RconPort): is the server on port $($server.Port) running?"
+        }
     }
     'tail' {
         $k = if ($Kind -eq 'all') { 'server' } else { $Kind }

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "LPL",
+    " S ",
+    " K "
+  ],
+  "key": {
+    "L": "minecraft:leather",
+    "P": "#minecraft:planks",
+    "S": "steveparty:stencil",
+    "K": "minecraft:stick"
+  },
+  "result": {
+    "id": "steveparty:stencil_gun",
+    "count": 1
+  }
+}

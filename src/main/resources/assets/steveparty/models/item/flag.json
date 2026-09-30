@@ -2,5 +2,8 @@
   "parent": "item/handheld",
   "textures": {
     "layer0": "steveparty:item/flag"
-  }
+  },
+  "overrides": [
+    { "predicate": { "steveparty:dyed": 1 }, "model": "steveparty:item/flag_dyed" }
+  ]
 }

@@ -1,9 +1,10 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -24,9 +25,10 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
 
 public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
 
-    public final static int NEUTRAL_COLOR = 0x951CAE;
-    public final static int GOOD_COLOR = 0x0083DF;
-    public final static int BAD_COLOR = 0xC41C24;
+    /** Item tile colours (face and sides): orange while it has nothing to give or take, blue bonus, red malus. */
+    public final static int NEUTRAL_COLOR = 0xFF9A1F;
+    public final static int GOOD_COLOR = 0x1566E0;
+    public final static int BAD_COLOR = 0xD42A2A;
 
     public InventoryInteractorTileBehavior() {
         super(BoardSpaceType.TILE_INVENTORY_INTERACTOR);
@@ -34,7 +36,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
 
     @Override
     public void onDestinationReached(World world, BlockPos pos, MobEntity token, BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyController) {
-        if (TileBlock.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
+        if (AdvancedTileBlock.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
                 tileEntity.getActiveCartridgeItemStack() instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory &&
                 itemStack.get(INVENTORY_POS) instanceof BlockPos connectedInventoryPos  && world.getBlockEntity(connectedInventoryPos) instanceof Inventory connectedInventory) {
@@ -197,5 +199,15 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             }
         }
         return status;
+    }
+
+    /** Gain (blue) or loss (red) by what the cartridge gives or takes; an empty one: a neutral item tile. */
+    @Override
+    public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
+        return switch (getStatus(boardSpaceEntity, stack)) {
+            case GOOD -> TileFeedback.Landing.GOOD;
+            case BAD -> TileFeedback.Landing.BAD;
+            case NEUTRAL -> TileFeedback.Landing.ITEM;
+        };
     }
 }

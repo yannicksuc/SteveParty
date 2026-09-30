@@ -1,10 +1,7 @@
 package fr.lordfinn.steveparty.client.utils;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
 
@@ -19,9 +16,6 @@ public class StencilRenderUtils {
                                     int color,
                                     boolean isGlowing,
                                     Consumer<MatrixStack> transform) {
-        AbstractTexture texture = MinecraftClient.getInstance().getTextureManager().getTexture(textureId);
-        texture.bindTexture();
-
         if (isGlowing) {
             light = 0xF000F0; // glowing
         }

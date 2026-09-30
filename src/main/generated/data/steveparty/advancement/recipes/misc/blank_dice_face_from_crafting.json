@@ -23,7 +23,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:blank_dice_face_from_crafting"
+        "recipe": "steveparty:blank_dice_face_from_crafting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -37,7 +37,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:blank_dice_face_from_crafting"
+      "steveparty:blank_dice_face_from_crafting"
     ]
   }
 }

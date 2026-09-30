@@ -1,0 +1,161 @@
+package fr.lordfinn.steveparty.client.gui;
+
+import fr.lordfinn.steveparty.Steveparty;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+
+/**
+ * One visual language for the HUDs of the mod's tools held in hand (the Stencil Hammer, the Wrench): small plates just
+ * above the hotbar, cut like the mod's screens (teal like the Tile's, gold when active: see
+ * the art sources), and a see-through hint line above them.
+ */
+public final class ToolHud {
+    /** Size of a square box (an icon, a stencil...). */
+    public static final int BOX = 24;
+    /** Dark grey of the mod's screen titles: text on a plate. */
+    public static final int TEXT = 0xFF3F3F3F;
+    /** The hint is only a reminder: drawn see-through. */
+    public static final int HINT = 0x88DDDDDD;
+
+    public enum Plate {
+        TEAL, GOLD, GREEN, RED, ORANGE, PURPLE;
+
+        final Identifier sprite = Steveparty.id("board/plate_" + name().toLowerCase());
+    }
+
+    private ToolHud() {
+    }
+
+    /** Top of the boxes: right above the hotbar, or above the health / hunger rows when they are shown. */
+    public static int top(DrawContext context) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
+        return context.getScaledWindowHeight() - (statusBars ? 50 : 26) - BOX;
+    }
+
+    /** A plate (nine-slice) over (x, y, width, height). */
+    public static void plate(DrawContext context, int x, int y, int width, int height, Plate plate) {
+        context.drawGuiTexture(RenderLayer::getGuiTextured, plate.sprite, x, y, width, height);
+    }
+
+    /** A box: a gold plate when it is the active one, teal otherwise. */
+    public static void box(DrawContext context, int x, int y, boolean active) {
+        plate(context, x, y, BOX, BOX, active ? Plate.GOLD : Plate.TEAL);
+    }
+
+    /** A one-line text plate {@link #BOX} high, returns its width. */
+    public static int textPlate(DrawContext context, int x, int y, Text text, Plate plate) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        int width = client.textRenderer.getWidth(text) + 12;
+        plate(context, x, y, width, BOX, plate);
+        context.drawText(client.textRenderer, text, x + 6, y + (BOX - 8) / 2, TEXT, false);
+        return width;
+    }
+
+    public static int textPlateWidth(Text text) {
+        return MinecraftClient.getInstance().textRenderer.getWidth(text) + 12;
+    }
+
+    /**
+     * The see-through hint, centred above the boxes: wrapped on several lines (going up) when wider than the screen
+     * (large GUI scales, long translations).
+     */
+    public static void hint(DrawContext context, Text hint, int centerX, int boxesTop) {
+        var textRenderer = MinecraftClient.getInstance().textRenderer;
+        var lines = textRenderer.wrapLines(hint, available(context));
+        occupiedTop = boxesTop - 10 * lines.size();
+        framesSinceDrawn = 0;
+        for (int i = 0; i < lines.size(); i++) {
+            var line = lines.get(i);
+            int y = boxesTop - 10 * (lines.size() - i);
+            context.drawTextWithShadow(textRenderer, line, centerX - textRenderer.getWidth(line) / 2, y, HINT);
+        }
+    }
+
+    // ---------------------------------------------------------------- room for the action bar
+
+    /** Top of the tool HUD drawn last (its hint included), and how many vanilla HUD frames ago. */
+    private static int occupiedTop;
+    private static int framesSinceDrawn = Integer.MAX_VALUE;
+
+    /**
+     * How far up a vanilla HUD text whose bottom is {@code bottomFromScreenBottom} pixels above the screen's bottom
+     * must go to clear the tool HUD (0 when none is shown). Called by the action bar and held item name renderers,
+     * before the tool HUDs of the frame: the previous frame's layout is used.
+     */
+    public static int liftFor(DrawContext context, int bottomFromScreenBottom) {
+        if (framesSinceDrawn != Integer.MAX_VALUE) framesSinceDrawn++;
+        if (framesSinceDrawn > 4) return 0;
+        return Math.max(0, context.getScaledWindowHeight() - bottomFromScreenBottom - (occupiedTop - 2));
+    }
+
+    /** Bottom of the held item's name, as vanilla places it. */
+    public static int itemNameBottom() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
+        return statusBars ? 50 : 36;
+    }
+
+    // ---------------------------------------------------------------- layout
+
+    /** Something drawn in a HUD row: a box, a plate... */
+    public interface Element {
+        int width();
+
+        void draw(DrawContext context, int x, int y);
+    }
+
+    public static Element element(int width, java.util.function.BiConsumer<Integer, Integer> draw) {
+        return new Element() {
+            @Override
+            public int width() {
+                return width;
+            }
+
+            @Override
+            public void draw(DrawContext context, int x, int y) {
+                draw.accept(x, y);
+            }
+        };
+    }
+
+    /** Room for a row: the screen width but a small margin on each side. */
+    public static int available(DrawContext context) {
+        return context.getScaledWindowWidth() - 16;
+    }
+
+    /**
+     * Draws groups of elements centred right above the hotbar: all on one row if they fit, else one row per group
+     * (the last group on the lowest row). Gaps of {@code gap} pixels between elements.
+     *
+     * @return the top of the highest row (where the hint goes above)
+     */
+    public static int rows(DrawContext context, java.util.List<java.util.List<Element>> groups, int gap) {
+        java.util.List<java.util.List<Element>> rows = new java.util.ArrayList<>();
+        java.util.List<Element> all = new java.util.ArrayList<>();
+        groups.forEach(all::addAll);
+        if (width(all, gap) <= available(context)) rows.add(all);
+        else rows.addAll(groups);
+        int bottom = top(context);
+        int centerX = context.getScaledWindowWidth() / 2;
+        for (int i = 0; i < rows.size(); i++) {
+            java.util.List<Element> row = rows.get(i);
+            int y = bottom - (rows.size() - 1 - i) * (BOX + 2);
+            int x = centerX - width(row, gap) / 2;
+            for (Element element : row) {
+                element.draw(context, x, y);
+                x += element.width() + gap;
+            }
+        }
+        return bottom - (rows.size() - 1) * (BOX + 2);
+    }
+
+    private static int width(java.util.List<Element> row, int gap) {
+        int width = 0;
+        for (Element element : row) width += element.width();
+        return width + Math.max(0, row.size() - 1) * gap;
+    }
+}

@@ -23,18 +23,36 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
 
     @Override
     protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
-        // Plastic blocks and studs: the hop switch can switch them (datapacks and the server config can add more)
+        // Everything made of plastic (Switchables.PLASTIC): the wrench and shears take it apart quickly, the hop switch
+        // can switch it (datapacks and the server config can add more)
         for (Block[] plastic : new Block[][]{ModBlocks.PLASTIC_BLOCKS, ModBlocks.PLASTIC_STUDS})
             for (Block block : plastic) {
                 getOrCreateTagBuilder(Switchables.PLASTIC).add(block);
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(block);
             }
         getOrCreateTagBuilder(Switchables.SWITCHABLE).addTag(Switchables.PLASTIC);
+        // Plastic fences and the plastic road sign: plastic too (the road sign has a block entity: never switchable)
+        for (Block fence : ModBlocks.PLASTIC_FENCES) {
+            getOrCreateTagBuilder(Switchables.PLASTIC).add(fence);
+            getOrCreateTagBuilder(BlockTags.FENCES).add(fence);
+            getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(fence);
+        }
+        getOrCreateTagBuilder(Switchables.PLASTIC).add(ModBlocks.PLASTIC_ROAD_SIGN);
+        // Plastic slabs, stairs and walls: plastic too (taken apart in one hit with the wrench, switchable)
+        for (int i = 0; i < ModBlocks.COLORS.length; i++) {
+            getOrCreateTagBuilder(BlockTags.SLABS).add(ModBlocks.PLASTIC_SLABS[i]);
+            getOrCreateTagBuilder(BlockTags.STAIRS).add(ModBlocks.PLASTIC_STAIRS[i]);
+            getOrCreateTagBuilder(BlockTags.WALLS).add(ModBlocks.PLASTIC_WALLS[i]);
+            for (Block shape : new Block[]{ModBlocks.PLASTIC_SLABS[i], ModBlocks.PLASTIC_STAIRS[i], ModBlocks.PLASTIC_WALLS[i]}) {
+                getOrCreateTagBuilder(Switchables.PLASTIC).add(shape);
+                getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(shape);
+            }
+        }
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,
                         ModBlocks.GOAL_POLE,
-                        ModBlocks.TILE,
+                        ModBlocks.ADVANCED_TILE,
                         ModBlocks.CHECK_POINT,
                         ModBlocks.CASH_REGISTER,
                         ModBlocks.PARTY_CONTROLLER,
@@ -45,8 +63,10 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.LOOTING_BOX,
                         ModBlocks.GRAVITY_CORE,
                         // requiresTool() blocks that had no mineable tag (unharvestable)
-                        ModBlocks.SIMPLE_TILE,
+                        ModBlocks.TILE,
                         ModBlocks.DICE_FORGE,
+                        ModBlocks.ROCK_SIGN,
+                        ModBlocks.PLASTIC_ROAD_SIGN,
                         ModBlocks.PARTY_BELL,
                         ModBlocks.PODIUM,
                         ModBlocks.PIGGY_BANK
@@ -88,21 +108,24 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
                         ModBlocks.TELEPORTATION_PAD,
-                        ModBlocks.SPRUCE_TRAFFIC_SIGN,
-                        ModBlocks.OAK_TRAFFIC_SIGN,
-                        ModBlocks.BIRCH_TRAFFIC_SIGN,
-                        ModBlocks.JUNGLE_TRAFFIC_SIGN,
-                        ModBlocks.ACACIA_TRAFFIC_SIGN,
-                        ModBlocks.DARK_OAK_TRAFFIC_SIGN,
-                        ModBlocks.MANGROVE_TRAFFIC_SIGN,
-                        ModBlocks.CHERRY_TRAFFIC_SIGN,
-                        ModBlocks.CRIMSON_TRAFFIC_SIGN,
-                        ModBlocks.WARPED_TRAFFIC_SIGN,
+                        ModBlocks.SPRUCE_EASEL_SIGN,
+                        ModBlocks.OAK_EASEL_SIGN,
+                        ModBlocks.BIRCH_EASEL_SIGN,
+                        ModBlocks.JUNGLE_EASEL_SIGN,
+                        ModBlocks.ACACIA_EASEL_SIGN,
+                        ModBlocks.DARK_OAK_EASEL_SIGN,
+                        ModBlocks.MANGROVE_EASEL_SIGN,
+                        ModBlocks.CHERRY_EASEL_SIGN,
+                        ModBlocks.CRIMSON_EASEL_SIGN,
+                        ModBlocks.WARPED_EASEL_SIGN,
+                        ModBlocks.EASEL_SIGN,
+                        ModBlocks.WOODEN_PANEL,
+                        ModBlocks.WOODEN_CUTOUT_PANEL,
                         ModBlocks.TRADING_STALL
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_STONE_TOOL)
                 .add(
-                        ModBlocks.TILE
+                        ModBlocks.ADVANCED_TILE
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_IRON_TOOL)
                 .add(

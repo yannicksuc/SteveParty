@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
@@ -42,7 +43,7 @@ public class TokenMovementService {
     private static final double MOVE_SPEED = 0.5;
 
     public TokenMovementService() {
-        TileReachedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
+        TileReachedEvent.EVENT.register(TokenMovementService::onTileReached);
         TileUpdatedEvent.EVENT.register(TokenMovementService::tryToMoveEntityOnBoard);
 
         DiceRollEvent.EVENT.register(this::handleDiceRoll);
@@ -56,6 +57,7 @@ public class TokenMovementService {
         if (chosenToken == null) return ActionResult.PASS;
 
         PartyControllerEntity.onTokenDiceRolled(world, chosenToken, rollValue);
+        AdvanceBackMoves.cancel(chosenToken); // a new move: nothing left of an extra move
         // Add small delay so players can appreciate the dice roll value
         SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(chosenToken, rollValue));
         return ActionResult.SUCCESS;
@@ -106,13 +108,22 @@ public class TokenMovementService {
         );
     }
 
+    /** A token reached a board space: a shop stop may keep it while its owner shops (ShopStops), else it goes on. */
+    private static @NotNull ActionResult onTileReached(MobEntity entity, BoardSpaceBlockEntity tile) {
+        if (!entity.getWorld().isClient && ShopStops.onTileReached(entity, tile)) return ActionResult.SUCCESS;
+        return tryToMoveEntityOnBoard(entity, tile);
+    }
+
     private static @NotNull ActionResult tryToMoveEntityOnBoard(MobEntity entity, BoardSpaceBlockEntity tile) {
         if (entity.getWorld().isClient) return ActionResult.PASS;
+        if (ShopStops.isShopping(entity.getUuid())) return ActionResult.PASS; // its owner is shopping
         int nbSteps = ((TokenizedEntityInterface) entity).steveparty$getNbSteps();
         if (nbSteps == 0) return ActionResult.PASS;
+        // The extra move of a Move Forward / Back tile starts on its own, once its landing is heard
+        if (AdvanceBackMoves.isWaiting(entity)) return ActionResult.PASS;
 
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
-        // STOP board spaces keep the token until the board space is updated (TileUpdatedEvent)
+        // A token still standing on a Stop space has no steps left (forced arrival: see onTokenArrived)
         if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos())) {
             moveEntityOnBoard(entity, nbSteps);
             return ActionResult.SUCCESS;
@@ -126,16 +137,38 @@ public class TokenMovementService {
      */
     public static void onTokenArrived(MobEntity mob) {
         if (mob.getWorld().isClient) return;
-        BlockEntity blockEntity = mob.getWorld().getBlockEntity(mob.getBlockPos());
-        if (!(blockEntity instanceof BoardSpaceBlockEntity boardSpace)) return;
+        BoardSpaceBlockEntity boardSpace = BoardSpaces.boardSpaceOf(mob);
+        if (boardSpace == null) return;
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         if (token.steveparty$getNbSteps() > 0 //TODO Manage negative Steps (Not urgent)
-                && ABoardSpaceBlock.countsAsStep(mob.getWorld().getBlockState(mob.getBlockPos()).getBlock())) {
+                && ABoardSpaceBlock.countsAsStep(boardSpace.getCachedState().getBlock())) {
             token.steveparty$setNbSteps(token.steveparty$getNbSteps() - 1);
         }
+        endMoveIfForcedStop(mob, boardSpace);
+        AdvanceBackMoves.onArrived(mob, boardSpace.getPos());
         if (token.steveparty$getNbSteps() == 0 && mob.getWorld() instanceof ServerWorld serverWorld)
             PartyControllerEntity.onFreeTokenArrived(serverWorld, mob);
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
+        AdvanceBackMoves.afterArrival(mob);
+    }
+
+    /** True if a token reaching this board space must end its move there (a Stop space), steps left or not. */
+    public static boolean isForcedStop(net.minecraft.world.World world, BoardSpaceBlockEntity boardSpace) {
+        ABoardSpaceBehavior behavior = boardSpace.getBoardSpaceBehavior();
+        return behavior != null && behavior.needToStop(world, boardSpace.getPos());
+    }
+
+    /**
+     * A token reaching a Stop space ends its move there (forced arrival): the steps left of its roll are lost.
+     *
+     * @return true if the move was ended here
+     */
+    public static boolean endMoveIfForcedStop(MobEntity mob, BoardSpaceBlockEntity boardSpace) {
+        TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
+        if (token.steveparty$getNbSteps() <= 0 || !isForcedStop(mob.getWorld(), boardSpace)) return false;
+        token.steveparty$setNbSteps(0);
+        SCHEDULER.cancel(mob.getUuid()); // nothing of the roll may move it on
+        return true;
     }
 
     public static void moveEntityOnBoard(MobEntity mob, int rollNumber) {
@@ -146,17 +179,26 @@ public class TokenMovementService {
                     MessageUtils.MessageType.ACTION_BAR);
             return;
         }
-        BoardSpaceBlockEntity tileEntity = ABoardSpaceBlock.getBoardSpaceEntity(mob.getWorld(), mob.getBlockPos());
+        BoardSpaceBlockEntity tileEntity = BoardSpaces.boardSpaceOf(mob);
         if (tileEntity == null) {
             // Not on the board: it can't move, and must not keep pending steps (it would never be eligible again)
             ((TokenizedEntityInterface) mob).steveparty$setNbSteps(0);
             return;
         }
         //SendMessageService.sendTokenMovementMessage(mob, rollNumber);
+        AdvanceBackMoves.noteAt(mob, tileEntity.getPos()); // where it comes from (to go back that way)
 
         MessageUtils.sendToNearby((ServerWorld) mob.getWorld(), mob.getPos(), 100,
                 Text.translatable("message.steveparty.steps_remaining_for", rollNumber, mob.getCustomName() != null ? mob.getCustomName() : mob.getName())
                 , MessageUtils.MessageType.ACTION_BAR);
+
+        if (AdvanceBackMoves.isRouted(mob)) {
+            // Going back (Move Forward / Back tile): the way it came, not the destinations
+            BlockPos previous = AdvanceBackMoves.nextRouted(mob);
+            if (previous != null) moveEntity(mob, previous);
+            else stopOnCurrentBoardSpace(mob, tileEntity.getPos());
+            return;
+        }
 
         List<BoardSpaceDestination> destinations = tileEntity.getStockedDestinations()
                 .stream()
@@ -236,12 +278,10 @@ public class TokenMovementService {
         }
     }
 
+    /** Tokens stand on the real surface of the board space (lowered or sloped tiles included, see BoardSpaces). */
     private static Vector3d calculateTargetPosition(MobEntity mob, BlockPos targetPos) {
-        BlockState blockState = mob.getWorld().getBlockState(targetPos);
-        VoxelShape shape = blockState.getCollisionShape(mob.getWorld(), targetPos);
-
-        double blockHeight = shape.isEmpty() ? 0 : shape.getMax(Direction.Axis.Y);
-        return new Vector3d(targetPos.getX() + 0.5, targetPos.getY() + blockHeight, targetPos.getZ() + 0.5);
+        Vec3d stand = BoardSpaces.standPos(mob.getWorld(), targetPos);
+        return new Vector3d(stand.x, stand.y, stand.z);
     }
 
     private static boolean isTooFar(double distance) {
@@ -263,24 +303,30 @@ public class TokenMovementService {
             tokenizedEntity.steveparty$setTargetPosition(target, MOVE_SPEED);
         }
 
-        // Calculate rotation
+        // A pawn faces where it goes: body and head together, level (a straight up / down move keeps its facing)
         double deltaX = target.x() - mob.getX();
         double deltaZ = target.z() - mob.getZ();
-        float yaw = (float) (Math.atan2(deltaZ, deltaX) * (180 / Math.PI)) - 90; // Convert radians to degrees
-        mob.setYaw(yaw);
-
-        // Optionally update pitch for vertical rotation
         double deltaY = target.y() - mob.getY();
-        double horizontalDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-        float pitch = (float) -(Math.atan2(deltaY, horizontalDistance) * (180 / Math.PI)); // Convert radians to degrees
-        mob.setPitch(pitch);
+        if (deltaX * deltaX + deltaZ * deltaZ > 1.0E-6) {
+            float yaw = (float) (Math.atan2(deltaZ, deltaX) * (180 / Math.PI)) - 90; // Convert radians to degrees
+            faceYaw(mob, yaw);
+        }
+        mob.setPitch(0);
         mob.setVelocity(deltaX, deltaY, deltaZ);
     }
 
+    /** Turns a token (body and head) to {@code yaw}, degrees. */
+    public static void faceYaw(MobEntity mob, float yaw) {
+        mob.setYaw(yaw);
+        mob.setBodyYaw(yaw);
+        mob.setHeadYaw(yaw);
+    }
+
     private static void playSound(MobEntity mob, BlockPos targetPos, SoundEvent soundEvent) {
+        Vec3d at = BoardSpaces.standPos(mob.getWorld(), targetPos); // where the tile is seen
         mob.getWorld().playSound(
                 null, // Null plays sound to all nearby players
-                targetPos,
+                at.x, at.y, at.z,
                 soundEvent,
                 SoundCategory.PLAYERS,
                 100,

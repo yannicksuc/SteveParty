@@ -1,0 +1,65 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_writable_book": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:writable_book"
+          }
+        ]
+      }
+    },
+    "has_map": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:map"
+          }
+        ]
+      }
+    },
+    "has_clock": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:clock"
+          }
+        ]
+      }
+    },
+    "has_music_disc_otherside": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:music_disc_otherside"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "steveparty:mini_games_catalogue"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_writable_book",
+      "has_map",
+      "has_clock",
+      "has_music_disc_otherside",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:mini_games_catalogue"
+    ]
+  }
+}

@@ -110,8 +110,13 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public static final int FORGED_EVENT = 1;
     /** A die may have a single face (it then always rolls that face). */
     public static final int MIN_FACES = 1;
-    /** Duration of the "core_insert" animation (must match the animation JSON: 3 s). */
-    public static final int CORE_INSERT_TICKS = 60;
+    /**
+     * Duration of the core insertion: the animation controller's 10-tick transition, then the 1 s "core_insert"
+     * animation (must match the animation JSON). The core only rises once it is over.
+     */
+    public static final int CORE_INSERT_TICKS = 30;
+    /** Activation time of a forge without its core. */
+    private static final long NO_ACTIVATION = Long.MIN_VALUE / 2;
     /** Fragments counted for the core altitude: 256 (4 full stacks) lift it {@link #MAX_CORE_ALTITUDE} blocks. */
     public static final int MAX_ALTITUDE_FRAGMENTS = 256;
     public static final float MAX_CORE_ALTITUDE = 16f;
@@ -120,7 +125,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** Height of the core above the plate once risen, before the fragments lift it (blocks). */
     public static final float CORE_BASE_LIFT = 0.5f;
     /** Height of the core center above the forge block when resting in the plate (blocks). */
-    public static final float CORE_REST_HEIGHT = 1f;
+    public static final float CORE_REST_HEIGHT = 1f + 2f / 16f;
     /** Reach (blocks) and pull (blocks per tick²) of the core at its highest; both grow with its altitude. */
     public static final double PULL_RANGE = 32, PULL_STRENGTH = 0.3;
     /** Radius of the orbit what the core pulls ends up circling on (blocks): within reach to hit it. */
@@ -177,7 +182,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     private boolean powered = false;
     /** Production stopped with the button while powered: no auto-resume until the next rising edge. */
     private boolean manualStop = false;
-    private long activationTime = Long.MIN_VALUE / 2;
+    private long activationTime = NO_ACTIVATION;
     /** Items that must leave the forge (legacy power star, extra cores): dropped on the next tick. */
     private final List<ItemStack> pendingDrops = new ArrayList<>();
     private float rotationTicks = 0f; // client only
@@ -283,7 +288,9 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         this.progress = Math.max(0, Math.min(CRAFT_TIME, nbt.getInt("Progress")));
         this.powered = nbt.getBoolean("Powered");
         this.manualStop = nbt.getBoolean("ManualStop");
-        this.activationTime = nbt.contains("ActivationTime") ? nbt.getLong("ActivationTime") : Long.MIN_VALUE / 2;
+        // Missing from very old saves: an activated forge got its core long ago
+        this.activationTime = nbt.contains("ActivationTime") ? nbt.getLong("ActivationTime")
+                : isActivated() ? 0 : NO_ACTIVATION;
         Arrays.fill(layout, null);
         if (nbt.contains("Layout", NbtElement.LIST_TYPE)) {
             NbtList layoutNbt = nbt.getList("Layout", NbtElement.STRING_TYPE);
@@ -332,6 +339,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             return;
         }
         syncCoreEntity((ServerWorld) world);
+        if (isActivated() && Math.floorMod(world.getTime() + pos.hashCode(), 20) == 0) conductMulas();
 
         if (!powerChecked) {
             powerChecked = true;
@@ -562,7 +570,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             // No manual stop flag: under redstone power, production resumes once the core is back
             stop(false);
         }
-        activationTime = Long.MIN_VALUE / 2;
+        activationTime = NO_ACTIVATION;
         world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, false));
         giveOrDrop(player, new ItemStack(ModBlocks.GRAVITY_CORE));
         world.playSound(null, pos, SoundEvents.BLOCK_HEAVY_CORE_BREAK, SoundCategory.BLOCKS, 1.0f, 1.0f);
@@ -582,6 +590,15 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** @return world time at which the gravity core was inserted (drives the insertion animation). */
     public long getActivationTime() {
         return activationTime;
+    }
+
+    /**
+     * @return true once the core is known to be in the forge. The client learns that the forge is activated (block
+     * state) slightly before the insertion time (block entity data): until then, the core is neither drawn nor
+     * animated, or it would flash in its final place for a frame before its insertion plays.
+     */
+    public boolean isCoreInPlace() {
+        return isActivated() && activationTime != NO_ACTIVATION;
     }
 
     /** @return true while the core insertion animation plays (client). */
@@ -628,10 +645,18 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         return MAX_CORE_ALTITUDE * countAltitudeFragments(inventory) / MAX_ALTITUDE_FRAGMENTS;
     }
 
+    /**
+     * The forge at its highest level: core in, lifted to its maximum ({@value #MAX_ALTITUDE_FRAGMENTS} fragments, 4
+     * full stacks, or black fragments which count as infinite). Such a forge guarantees an ephemeride at full moon.
+     */
+    public boolean isMaxLevel() {
+        return isActivated() && getTargetAltitude(this) >= MAX_CORE_ALTITUDE;
+    }
+
     private void updateCoreAltitude() {
         prevCoreAltitude = coreAltitude;
         // The core rises out of the plate once the insertion animation is over
-        float target = isActivated() && !isInsertingCore(0f) ? CORE_BASE_LIFT + getTargetAltitude(this) : 0f;
+        float target = isCoreInPlace() && !isInsertingCore(0f) ? CORE_BASE_LIFT + getTargetAltitude(this) : 0f;
         float delta = target - coreAltitude;
         float step = Math.signum(delta) * Math.min(Math.abs(delta), Math.max(0.02f, Math.abs(delta) * 0.06f));
         coreAltitude += step;
@@ -640,6 +665,63 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** @return the center of the core, in the world. */
     public Vec3d getCoreCenter() {
         return new Vec3d(pos.getX() + 0.5, pos.getY() + CORE_REST_HEIGHT + coreAltitude, pos.getZ() + 0.5);
+    }
+
+    /** Mulas dance round a forge: up to this many, the others wait their turn nearby. */
+    private static final int MAX_DANCERS = 8;
+    private static final double DANCE_RANGE = 11;
+
+    /**
+     * Once a second, only with its core in: the Mulas within {@link MulaHome#RADIUS} blocks now live here (MulaHome:
+     * they don't leave its area; not one its owner is leading, not one living at another forge), and those within
+     * {@value #DANCE_RANGE} blocks (not sitting, not scared) get their place in the forge's dance, in the order of their
+     * ids (stable), up to {@value #MAX_DANCERS}. The dance itself is computed by each from the time.
+     */
+    private void conductMulas() {
+        double r = fr.lordfinn.steveparty.entities.custom.MulaHome.RADIUS;
+        double cx = pos.getX() + 0.5, cz = pos.getZ() + 0.5;
+        java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> around = world.getEntitiesByClass(
+                fr.lordfinn.steveparty.entities.custom.MulaEntity.class,
+                new net.minecraft.util.math.Box(pos).expand(r, fr.lordfinn.steveparty.entities.custom.MulaHome.ABOVE, r),
+                m -> m.isAlive() && !m.isToken() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
+                        && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= r * r);
+        if (around.isEmpty()) return;
+        java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> dancers = new java.util.ArrayList<>();
+        for (var m : around) {
+            if (m.homeForge() != null && !m.homeForge().equals(pos)
+                    && fr.lordfinn.steveparty.entities.custom.MulaHome.holds(world, m.homeForge())) continue;
+            m.setHomeForge(pos);
+            if (!m.isSitting() && !m.getMulaBrain().isShy() && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= DANCE_RANGE * DANCE_RANGE) {
+                dancers.add(m);
+            }
+        }
+        dancers.sort(java.util.Comparator.comparingInt(net.minecraft.entity.Entity::getId));
+        int count = Math.min(MAX_DANCERS, dancers.size());
+        for (int i = 0; i < count; i++) dancers.get(i).assignDance(pos, i, count);
+    }
+
+    /**
+     * The core blows up: the Mulas living here burst too, a chain reaction from the core outwards (a few ticks apart),
+     * and fly away as shooting stars spread round the compass (100 to 400 blocks: the forge can't hold them any more).
+     * They drop no fragments (a blast is not a meal). Bounded to this forge's Mulas; one already bursting is left alone.
+     */
+    private void burstMulas(Vec3d center) {
+        double r = fr.lordfinn.steveparty.entities.custom.MulaHome.RADIUS + 2;
+        java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> mulas = world.getEntitiesByClass(
+                fr.lordfinn.steveparty.entities.custom.MulaEntity.class,
+                new net.minecraft.util.math.Box(pos).expand(r, fr.lordfinn.steveparty.entities.custom.MulaHome.ABOVE + 2, r),
+                m -> m.isAlive() && !m.isToken() && pos.equals(m.homeForge()) && !m.isBursting());
+        if (mulas.isEmpty()) return;
+        mulas.sort(java.util.Comparator.comparingDouble(m -> m.squaredDistanceTo(center)));
+        int n = mulas.size();
+        double start = world.getRandom().nextDouble() * net.minecraft.util.math.MathHelper.TAU;
+        for (int i = 0; i < n; i++) {
+            fr.lordfinn.steveparty.entities.custom.MulaEntity m = mulas.get(i);
+            // spread round the compass, a little randomness on each
+            double angle = start + net.minecraft.util.math.MathHelper.TAU * i / n + (world.getRandom().nextDouble() - 0.5) * (net.minecraft.util.math.MathHelper.TAU / n) * 0.6;
+            int delay = 2 + i * 4 + (int) (Math.sqrt(m.squaredDistanceTo(center)) * 0.8);
+            m.burstFromCore(delay, angle);
+        }
     }
 
     /** The risen core pulls what is around it: the higher, the stronger and the farther. */
@@ -677,8 +759,9 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public void explodeCore(@Nullable Entity cause) {
         if (!(world instanceof ServerWorld serverWorld) || !isActivated()) return;
         Vec3d center = getCoreCenter();
+        burstMulas(center);
         if (running) stop(false);
-        activationTime = Long.MIN_VALUE / 2;
+        activationTime = NO_ACTIVATION;
         world.setBlockState(pos, getCachedState().with(DiceForgeBlock.ACTIVATED, false));
         coreAltitude = prevCoreAltitude = 0f;
         // Hurts, but breaks no block (the forge right under a low core included)
@@ -810,8 +893,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     /** idle (static, no core) → core_insert → floating loop; crafting loop while producing. */
     private PlayState mainAnimController(AnimationState<DiceForgeBlockEntity> state) {
-        if (!isActivated()) {
-            // Core removed (or never inserted): next insertion must replay core_insert from its start
+        if (!isCoreInPlace()) {
+            // Core removed, never inserted, or its insertion not known yet: the next one replays core_insert from its start
             state.getController().forceAnimationReset();
             return PlayState.STOP;
         }

@@ -1,0 +1,16 @@
+{
+  "type": "steveparty:material_shaped",
+  "category": "misc",
+  "pattern": [
+    "P",
+    "#"
+  ],
+  "key": {
+    "P": "#steveparty:plastic_blocks",
+    "#": "steveparty:plastic_pellets"
+  },
+  "result": {
+    "id": "steveparty:plastic_road_sign",
+    "count": 2
+  }
+}

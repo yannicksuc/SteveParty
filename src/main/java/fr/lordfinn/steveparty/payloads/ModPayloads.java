@@ -27,6 +27,8 @@ public class ModPayloads {
     public static final Identifier ENCHANTED_CIRCULAR_PAYLOAD = Steveparty.id("enchanted-circular-particles-payload");
     public static final Identifier UPDATE_COLORED_TILE_PAYLOAD = Steveparty.id("update-colored-tile-payload");
     public static final Identifier PARTY_DATA_PAYLOAD = Steveparty.id("party-data");
+    public static final Identifier PARTY_LIVE_PAYLOAD = Steveparty.id("party-live");
+    public static final Identifier PARTY_DASHBOARD_PAYLOAD = Steveparty.id("party-dashboard");
     public static final Identifier SELECTION_STATE_PAYLOAD = Steveparty.id("selection-state-payload");
     public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Steveparty.id("here-we-go-book-payload");
     public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Steveparty.id("here-we-come-book-payload");
@@ -36,8 +38,7 @@ public class ModPayloads {
     public static final Identifier FLOATING_TEXT_PAYLOAD = Steveparty.id("floating-text-payload");
     public static final Identifier CARTRIDGE_SLOT_SCROLL_PAYLOAD = Steveparty.id("cartridge-slot-scroll-payload");
     public static final Identifier SWITCHABLE_BLOCKS_PAYLOAD = Steveparty.id("switchable-blocks-payload");
-    /** Max length accepted for the goal pole base selector / goal strings. */
-    private static final int MAX_GOAL_POLE_STRING_LENGTH = 256;
+    public static final Identifier VILLAGER_BLOCK_PUNCH_PAYLOAD = Steveparty.id("villager-block-punch");
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
@@ -45,36 +46,63 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(EnchantedCircularParticlePayload.ID, EnchantedCircularParticlePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(UpdateColoredTilePayload.ID, UpdateColoredTilePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PartyDataPayload.ID, PartyDataPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(PartyLivePayload.ID, PartyLivePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(PartyDashboardPayload.ID, PartyDashboardPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeGoBookPayload.ID, HereWeGoBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(StencilGunScrollPayload.ID, StencilGunScrollPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(ShopCartridgeScrollPayload.ID, ShopCartridgeScrollPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(AdvanceBackScrollPayload.ID, AdvanceBackScrollPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(StencilMakerActionPayload.ID, StencilMakerActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPolePayload.ID, GoalPolePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(CartridgeSlotScrollPayload.ID, CartridgeSlotScrollPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SwitchableBlocksPayload.ID, SwitchableBlocksPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SquishAnimationPayload.ID, SquishAnimationPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(StencilHammerStrikePayload.ID, StencilHammerStrikePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(OpenTokenSpellPayload.ID, OpenTokenSpellPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(WrenchActionPayload.ID, WrenchActionPayload.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(WrenchActionPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(VillagerBlockPunchPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () ->
+                    fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.onPunchRequest(player, payload.pos()));
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(TokenSpellPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(CartridgeSlotScrollPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> CartridgeSlotScrollPayload.handle(payload, player));
+            runInPacketOrder(player, () -> CartridgeSlotScrollPayload.handle(payload, player));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> handleHereWeGoBookPayload(player, payload.state()));
+            runInPacketOrder(player, () -> handleHereWeGoBookPayload(player, payload.state()));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(HereWeComeBookPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> handleHereWeComeBookPayload(player, payload.teleportingTargets()));
+            runInPacketOrder(player, () -> handleHereWeComeBookPayload(player, payload.teleportingTargets()));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(SaveStencilPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> {
+            runInPacketOrder(player, () -> {
                 BlockPos pos = payload.pos();
                 byte[] shape = payload.shape();
                 if (shape == null || shape.length != SaveStencilPayload.SHAPE_SIZE) return;
@@ -87,20 +115,33 @@ public class ModPayloads {
                         && blockEntity == handler.getBlockEntity()) {
                     ItemStack stencil = blockEntity.getStencil();
                     if (stencil.isEmpty() || !(stencil.getItem() instanceof StencilItem)) return;
-                    StencilItem.setShape(shape, stencil);
-                    blockEntity.markDirty();
+                    blockEntity.setStencilShape(shape);
                 }
             });
+        });
+        ServerPlayNetworking.registerGlobalReceiver(StencilMakerActionPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(StencilGunScrollPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(ShopCartridgeScrollPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(AdvanceBackScrollPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
         });
         ServerPlayNetworking.registerGlobalReceiver(GoalPoleBasePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
 
-            // Schedule on server thread
-            player.server.execute(() -> {
+            // In packet order (see runInPacketOrder): the screen closes right after this payload is sent
+            runInPacketOrder(player, () -> {
                 BlockPos pos = payload.pos();
-                if (payload.selector() == null || payload.goal() == null
-                        || payload.selector().length() > MAX_GOAL_POLE_STRING_LENGTH
-                        || payload.goal().length() > MAX_GOAL_POLE_STRING_LENGTH) return;
+                if (payload.settings() == null) return;
                 // The goal pole base screen for this block must be open and the block in reach
                 if (!(player.currentScreenHandler instanceof GoalPoleBaseScreenHandler handler)
                         || !pos.equals(handler.getPos())
@@ -108,15 +149,15 @@ public class ModPayloads {
 
                 // Check the BlockEntity type
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity blockEntity) {
-                    // Update the BlockEntity fields
-                    blockEntity.update(payload.selector(), payload.goal());
+                    // Each setting is checked by the base (known values, string lengths)
+                    blockEntity.applySettings(payload.settings());
                 }
             });
         });
 
         ServerPlayNetworking.registerGlobalReceiver(GoalPolePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            player.server.execute(() -> {
+            runInPacketOrder(player, () -> {
                 BlockPos pos = payload.pos();
                 if (payload.comparator() == null) return;
                 // The goal pole screen for this block must be open and the block in reach
@@ -124,10 +165,21 @@ public class ModPayloads {
                         || !pos.equals(handler.getPos())
                         || !ScreenHandlerChecks.isInReach(player, pos)) return;
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBlockEntity blockEntity) {
-                    blockEntity.update(payload.comparator(), payload.value());
+                    blockEntity.applyGoal(payload.comparator(), payload.value(), payload.perSegment());
+                    blockEntity.applyFlagSteps(payload.flagSteps());
                 }
             });
         });
     }
 
+    /**
+     * Runs a C2S payload's action right away when Fabric already calls the receiver on the server thread (it does for
+     * play payloads), so that it is handled in packet order. Deferring it with {@code server.execute} queued it behind
+     * the packets received with it: a screen that sends its settings then closes had its close packet handled first,
+     * and the "screen must be open" check then dropped the settings (the goal pole screens often did not save).
+     */
+    public static void runInPacketOrder(ServerPlayerEntity player, Runnable action) {
+        if (player.server.isOnThread()) action.run();
+        else player.server.execute(action);
+    }
 }

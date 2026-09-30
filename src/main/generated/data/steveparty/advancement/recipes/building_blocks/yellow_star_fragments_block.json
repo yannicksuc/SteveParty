@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:yellow_star_fragments_block"
+        "recipe": "steveparty:yellow_star_fragments_block"
       },
       "trigger": "minecraft:recipe_unlocked"
     },
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:yellow_star_fragments_block"
+      "steveparty:yellow_star_fragments_block"
     ]
   }
 }

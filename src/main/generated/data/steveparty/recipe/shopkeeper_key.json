@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "F": [
+      "steveparty:blue_star_fragment",
+      "steveparty:purple_star_fragment",
+      "steveparty:red_star_fragment",
+      "steveparty:yellow_star_fragment",
+      "steveparty:green_star_fragment",
+      "steveparty:black_star_fragment"
+    ],
+    "G": "minecraft:gold_ingot",
+    "N": "minecraft:gold_nugget"
+  },
+  "pattern": [
+    "F",
+    "G",
+    "N"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:shopkeeper_key"
+  }
+}

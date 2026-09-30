@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:cyan_polished_concrete_slab_from_cyan_concrete_stonecutting"
+        "recipe": "steveparty:cyan_polished_concrete_slab_from_cyan_concrete_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:cyan_polished_concrete_slab_from_cyan_concrete_stonecutting"
+      "steveparty:cyan_polished_concrete_slab_from_cyan_concrete_stonecutting"
     ]
   }
 }

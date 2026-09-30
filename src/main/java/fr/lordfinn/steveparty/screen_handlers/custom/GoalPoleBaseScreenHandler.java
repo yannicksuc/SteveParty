@@ -7,53 +7,42 @@ import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.math.BlockPos;
 
 public class GoalPoleBaseScreenHandler extends ScreenHandler {
     private GoalPoleBaseBlockEntity blockEntity = null;
-    private String selector;
-    private String goal;
+    private final NbtCompound settings;
     private BlockPos pos;
 
     public GoalPoleBaseScreenHandler(int syncId, PlayerInventory playerInventory, GoalPoleBaseBlockEntity entity) {
         super(ModScreensHandlers.GOAL_POLE_BASE_SCREEN_HANDLER, syncId);
         this.blockEntity = entity;
-        this.selector = this.blockEntity.getSelector();
-        this.goal = this.blockEntity.getGoal();
+        this.settings = entity.writeSettings();
     }
 
-    public GoalPoleBaseScreenHandler(int syncId, PlayerInventory playerInventory, GoalPoleBasePayload blockPosPayload) {
+    public GoalPoleBaseScreenHandler(int syncId, PlayerInventory playerInventory, GoalPoleBasePayload payload) {
         super(ModScreensHandlers.GOAL_POLE_BASE_SCREEN_HANDLER, syncId);
-        this.pos = blockPosPayload.pos();
-        this.selector = blockPosPayload.selector();
-        this.goal = blockPosPayload.goal();
+        this.pos = payload.pos();
+        this.settings = payload.settings();
     }
 
     public GoalPoleBaseBlockEntity getBlockEntity() {
         return blockEntity;
     }
 
-    public String getSelector() {
-        return selector;
+    /** The base's settings when the screen opened (see {@link GoalPoleBaseBlockEntity#writeSettings}). */
+    public NbtCompound getSettings() {
+        return settings;
     }
 
-    public void setSelector(String selector) {
-        this.selector = selector;
-        if (blockEntity != null) {
-            blockEntity.setSelector(selector);
-        }
+    public String getSelector() {
+        return settings.getString("Selector");
     }
 
     public String getGoal() {
-        return goal;
-    }
-
-    public void setGoal(String goal) {
-        this.goal = goal;
-        if (blockEntity != null) {
-            blockEntity.setGoal(goal);
-        }
+        return settings.getString("Criterion");
     }
 
     @Override

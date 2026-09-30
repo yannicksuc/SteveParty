@@ -24,4 +24,23 @@ public interface TokenizedEntityInterface {
     void steveparty$setTokenOwner(UUID owner);
 
     UUID steveparty$getTokenOwner();
+
+    /**
+     * Size chosen with the Tokenizer Wand spell: the token's biggest dimension (height, or width if wider than tall),
+     * in blocks. 0 when never chosen (the squish effect then uses its amplifier, as before).
+     */
+    float steveparty$getTokenSize();
+
+    void steveparty$setTokenSize(float size);
+
+    /** Token colour (0xRRGGBB) computed from the mob texture by the client, or -1 if never set. */
+    int steveparty$getTokenColor();
+
+    void steveparty$setTokenColor(int color);
+
+    /**
+     * Age at which this side first ticked it as a token (a pawn: its idle animations stay frozen on that frame), -1
+     * when it is not a token. Not saved nor synced.
+     */
+    int steveparty$getPawnAge();
 }

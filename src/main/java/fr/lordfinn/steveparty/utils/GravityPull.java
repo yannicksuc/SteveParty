@@ -60,6 +60,8 @@ public final class GravityPull {
         if (entity.isSpectator() || entity.hasVehicle() || entity instanceof DisplayEntity || entity instanceof ForgeCoreEntity) {
             return false;
         }
+        // Mulas float on their own (they dance round the forge instead)
+        if (entity instanceof fr.lordfinn.steveparty.entities.custom.MulaEntity) return false;
         // Board tokens are moved by the board only
         if (entity instanceof TokenizedEntityInterface token && token.steveparty$isTokenized()) return false;
         if (entity instanceof PlayerEntity player) return client && player.isMainPlayer();

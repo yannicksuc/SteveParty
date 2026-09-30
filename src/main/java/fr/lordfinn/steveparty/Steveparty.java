@@ -48,9 +48,16 @@ public class Steveparty implements ModInitializer {
         ModBlocks.initialize();
         ModItems.initialize();
         ModBlockEntities.initialize();
+        // Before the party / movement listeners of TileReachedEvent (a movement going on stops the chain)
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.initialize();
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.initialize();
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration.initialize();
+        fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.initialize();
         ModComponents.initialize();
         ModScreensHandlers.initialize();
         ModEffects.initialize();
+        fr.lordfinn.steveparty.loot.RandomStencilPatternLootFunction.initialize();
+        fr.lordfinn.steveparty.stencil.StencilLibrary.initialize();
         ModLootTableModifiers.initialize();
         ModPayloads.initialize();
         SwitchableConfig.initialize();
@@ -59,11 +66,22 @@ public class Steveparty implements ModInitializer {
         ModHandler.initialize();
         ModRecipes.initialize();
         ModScoreboardCriteria.initialize();
+        fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork.initialize();
+        fr.lordfinn.steveparty.blocks.custom.TeleportationPadArrivals.initialize();
         ServerNetworking.initialize();
 
         MoveTokenCommand.initialize();
+        fr.lordfinn.steveparty.commands.MulaCommand.initialize();
+        fr.lordfinn.steveparty.commands.VillagerBlockCommand.initialize();
+        fr.lordfinn.steveparty.entities.custom.MulaRebirths.initialize();
+        fr.lordfinn.steveparty.entities.custom.MulaLift.initialize();
+        fr.lordfinn.steveparty.items.custom.TokenizerFlare.initialize();
+        fr.lordfinn.steveparty.entities.custom.MulaEphemeride.initialize();
         fr.lordfinn.steveparty.commands.PartyCommands.initialize();
+        fr.lordfinn.steveparty.commands.BoardCommands.initialize();
+        fr.lordfinn.steveparty.board.WrenchActions.initialize();
         new TokenMovementService();
+        fr.lordfinn.steveparty.service.ShopStops.initialize();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             for (ServerPlayerEntity player : world.getPlayers()) {

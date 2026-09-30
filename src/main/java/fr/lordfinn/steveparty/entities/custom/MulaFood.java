@@ -1,4 +1,169 @@
 package fr.lordfinn.steveparty.entities.custom;
 
-public class MulaFood {
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.FoodComponent;
+import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * What a Mula eats: something both of ITS COLOUR and EDIBLE (or a seed of its colour).
+ * <ul>
+ *   <li><b>Food</b> (an item with the vanilla {@code food} component) listed for its colour below; the satiety it gives
+ *   is the food's nutrition (the hunger points it gives a player).</li>
+ *   <li><b>Potions</b> (drinkable ones) whose liquid colour is closest to the Mula's colour; they give, summed over
+ *   their effects: {@code minutes x (level x 2)}, each resulting minute counting as 1 point, whole minutes, at least one
+ *   (Strength II, 1:30 = 1 x (2 x 2) = 4; long Strength, 8:00 = 8 x (1 x 2) = 16). Instant effects count as one
+ *   minute. The empty bottle goes back to the player.</li>
+ *   <li><b>Seeds</b> (not edible for a player, the one exception): each gives what a melon slice gives (read from its
+ *   food component).</li>
+ * </ul>
+ * Anything else (a dye, an ore, a potion of another colour, water...) is gently refused.
+ * <p>
+ * "Its colour" for foods (vanilla food items, grouped by what they look like):
+ * blue = the cold-sea fish (cod, tropical fish); red = apple, sweet berries, salmon, raw beef and mutton;
+ * green = melon slice, poisonous potato; yellow = golden apples and carrot, honey, baked potato, bread, glow berries;
+ * purple = chorus fruit, beetroot and its soup; black = the dark foods (dried kelp, cookie, mushroom and rabbit stews,
+ * steak, cooked mutton).
+ * <p>
+ * Seeds, by what they look like: green = wheat seeds, torchflower seeds (green and olive); black = melon seeds (almost
+ * black); yellow = pumpkin seeds (pale cream); red = beetroot seeds (tan, nearer red than purple), pitcher pod
+ * (reddish brown).
+ */
+public final class MulaFood {
+    private MulaFood() {
+    }
+
+    private static final Map<MulaEntity.MulaVariant, Set<Item>> FOODS = new EnumMap<>(MulaEntity.MulaVariant.class);
+    private static final Map<Item, MulaEntity.MulaVariant> SEEDS = new java.util.HashMap<>();
+
+    static {
+        FOODS.put(MulaEntity.MulaVariant.BLUE, Set.of(Items.COD, Items.COOKED_COD, Items.TROPICAL_FISH));
+        FOODS.put(MulaEntity.MulaVariant.RED, Set.of(Items.APPLE, Items.SWEET_BERRIES, Items.SALMON, Items.COOKED_SALMON,
+                Items.BEEF, Items.MUTTON));
+        FOODS.put(MulaEntity.MulaVariant.GREEN, Set.of(Items.MELON_SLICE, Items.POISONOUS_POTATO));
+        FOODS.put(MulaEntity.MulaVariant.YELLOW, Set.of(Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE,
+                Items.GOLDEN_CARROT, Items.HONEY_BOTTLE, Items.BAKED_POTATO, Items.BREAD, Items.GLOW_BERRIES));
+        FOODS.put(MulaEntity.MulaVariant.PURPLE, Set.of(Items.CHORUS_FRUIT, Items.BEETROOT, Items.BEETROOT_SOUP));
+        FOODS.put(MulaEntity.MulaVariant.BLACK, Set.of(Items.DRIED_KELP, Items.COOKIE, Items.MUSHROOM_STEW,
+                Items.RABBIT_STEW, Items.COOKED_BEEF, Items.COOKED_MUTTON));
+        SEEDS.put(Items.WHEAT_SEEDS, MulaEntity.MulaVariant.GREEN);
+        SEEDS.put(Items.TORCHFLOWER_SEEDS, MulaEntity.MulaVariant.GREEN);
+        SEEDS.put(Items.MELON_SEEDS, MulaEntity.MulaVariant.BLACK);
+        SEEDS.put(Items.PUMPKIN_SEEDS, MulaEntity.MulaVariant.YELLOW);
+        SEEDS.put(Items.BEETROOT_SEEDS, MulaEntity.MulaVariant.RED);
+        SEEDS.put(Items.PITCHER_POD, MulaEntity.MulaVariant.RED);
+    }
+
+    /** The seeds of this colour (for tests and the test scene). */
+    public static Set<Item> seedsOf(MulaEntity.MulaVariant variant) {
+        Set<Item> seeds = new java.util.HashSet<>();
+        SEEDS.forEach((item, v) -> {
+            if (v == variant) seeds.add(item);
+        });
+        return seeds;
+    }
+
+    /** What a seed gives: a melon slice's nutrition. */
+    public static int seedValue() {
+        FoodComponent melon = Items.MELON_SLICE.getComponents().get(DataComponentTypes.FOOD);
+        return melon == null ? 2 : Math.max(1, melon.nutrition());
+    }
+
+    /** The colour of Mula that eats this (food, seed or potion), or null if none does (for the tooltip). */
+    public static @org.jetbrains.annotations.Nullable MulaEntity.MulaVariant eatenBy(ItemStack stack) {
+        for (MulaEntity.MulaVariant v : MulaEntity.MulaVariant.values()) {
+            if (value(v, stack) > 0) return v;
+        }
+        return null;
+    }
+
+    /** The foods of this colour (for tests, the tooltip and the test scene). */
+    public static Set<Item> foodsOf(MulaEntity.MulaVariant variant) {
+        return FOODS.get(variant);
+    }
+
+    /** Satiety this stack gives a Mula of this colour, 0 if it doesn't eat it. */
+    public static int value(MulaEntity.MulaVariant variant, ItemStack stack) {
+        if (stack.isEmpty()) return 0;
+        if (stack.isOf(Items.POTION)) {
+            PotionContentsComponent potion = stack.get(DataComponentTypes.POTION_CONTENTS);
+            if (potion == null || colourOf(potion.getColor()) != variant) return 0;
+            return potionValue(potion.getEffects());
+        }
+        MulaEntity.MulaVariant seed = SEEDS.get(stack.getItem());
+        if (seed != null) return seed == variant ? seedValue() : 0;
+        FoodComponent food = stack.get(DataComponentTypes.FOOD);
+        if (food == null || !FOODS.get(variant).contains(stack.getItem())) return 0;
+        return Math.max(1, food.nutrition());
+    }
+
+    /** Sum over the effects of minutes x (level x 2); an instant effect counts as one minute. */
+    public static int potionValue(Iterable<StatusEffectInstance> effects) {
+        int total = 0;
+        for (StatusEffectInstance effect : effects) {
+            int minutes = effect.getEffectType().value().isInstant() ? 1 : Math.max(1, effect.getDuration() / 1200);
+            total += minutes * (effect.getAmplifier() + 1) * 2;
+        }
+        return total;
+    }
+
+    /** "Minutes x (level x 2)" spelled out for the feedback message, e.g. "8 min x (1 x 2)". */
+    public static Text potionFormula(Iterable<StatusEffectInstance> effects) {
+        MutableText text = Text.empty();
+        boolean first = true;
+        for (StatusEffectInstance effect : effects) {
+            int minutes = effect.getEffectType().value().isInstant() ? 1 : Math.max(1, effect.getDuration() / 1200);
+            if (!first) text.append(" + ");
+            text.append(Text.translatable("message.steveparty.mula.feed.potion_term", minutes, effect.getAmplifier() + 1));
+            first = false;
+        }
+        return text;
+    }
+
+    /** The Mula colour closest to a liquid colour (RGB): dark ones are black's, otherwise the nearest hue. */
+    public static MulaEntity.MulaVariant colourOf(int rgb) {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+        int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+        if (max < 90) return MulaEntity.MulaVariant.BLACK;
+        MulaEntity.MulaVariant best = MulaEntity.MulaVariant.BLUE;
+        double bestDistance = Double.MAX_VALUE;
+        for (MulaEntity.MulaVariant v : MulaEntity.MulaVariant.values()) {
+            if (v == MulaEntity.MulaVariant.BLACK) continue;
+            double d = hueDistance(hue(r, g, b, max, min), hueOf(v.getColor()));
+            if (d < bestDistance) {
+                bestDistance = d;
+                best = v;
+            }
+        }
+        return best;
+    }
+
+    private static double hueOf(int rgb) {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+        return hue(r, g, b, Math.max(r, Math.max(g, b)), Math.min(r, Math.min(g, b)));
+    }
+
+    private static double hue(int r, int g, int b, int max, int min) {
+        if (max == min) return 0;
+        double d = max - min, h;
+        if (max == r) h = ((g - b) / d) % 6;
+        else if (max == g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60;
+        return h < 0 ? h + 360 : h;
+    }
+
+    private static double hueDistance(double a, double b) {
+        double d = Math.abs(a - b) % 360;
+        return Math.min(d, 360 - d);
+    }
 }

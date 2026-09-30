@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " N ",
+    "NPN",
+    " N "
+  ],
+  "key": {
+    "N": "minecraft:iron_nugget",
+    "P": "minecraft:paper"
+  },
+  "result": {
+    "id": "steveparty:stencil",
+    "count": 2
+  }
+}

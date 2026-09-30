@@ -38,5 +38,550 @@
     "sounds": [
       "steveparty:goal_pole_reach"
     ]
+  },
+  "token_spell.charge": {
+    "subtitle": "subtitles.steveparty.token_spell.charge",
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_block.resonate",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "token_spell.charge_sweep": {
+    "sounds": [
+      {
+        "name": "minecraft:block.enchantment_table.use",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "token_spell.draw": {
+    "subtitle": "subtitles.steveparty.token_spell.draw",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.chime",
+        "type": "event",
+        "volume": 0.22,
+        "weight": 2
+      },
+      {
+        "name": "minecraft:block.amethyst_block.chime",
+        "type": "event",
+        "volume": 0.3
+      }
+    ]
+  },
+  "token_spell.snap": {
+    "subtitle": "subtitles.steveparty.token_spell.snap",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.bell",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "token_spell.snap_sparkle": {
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_block.chime",
+        "type": "event",
+        "volume": 0.55,
+        "pitch": 1.8
+      }
+    ]
+  },
+  "token_spell.cast": {
+    "subtitle": "subtitles.steveparty.token_spell.cast",
+    "sounds": [
+      {
+        "name": "minecraft:entity.illusioner.cast_spell",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "token_spell.cast_whoosh": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.wind_charge.throw",
+        "type": "event",
+        "volume": 0.45,
+        "pitch": 1.3
+      }
+    ]
+  },
+  "token_spell.boing": {
+    "subtitle": "subtitles.steveparty.token_spell.boing",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.jump_small",
+        "type": "event",
+        "volume": 0.6
+      }
+    ]
+  },
+  "token_spell.bubble": {
+    "sounds": [
+      {
+        "name": "minecraft:block.bubble_column.bubble_pop",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "token_spell.sparkle_tail": {
+    "subtitle": "subtitles.steveparty.token_spell.sparkle_tail",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.chime",
+        "type": "event",
+        "volume": 0.3,
+        "pitch": 2.0
+      },
+      {
+        "name": "minecraft:block.amethyst_block.chime",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.9
+      }
+    ]
+  },
+  "token_spell.fizzle": {
+    "subtitle": "subtitles.steveparty.token_spell.fizzle",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event",
+        "volume": 0.2,
+        "pitch": 1.9
+      }
+    ]
+  },
+  "token_spell.cancel": {
+    "subtitle": "subtitles.steveparty.token_spell.cancel",
+    "sounds": [
+      {
+        "name": "minecraft:entity.puffer_fish.blow_out",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.6
+      }
+    ]
+  },
+  "token_spell.flare": {
+    "subtitle": "subtitles.steveparty.token_spell.flare",
+    "sounds": [
+      {
+        "name": "minecraft:entity.allay.item_thrown",
+        "type": "event",
+        "volume": 0.4,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "villager_block.hmm": {
+    "subtitle": "subtitles.steveparty.villager_block.hmm",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.ambient",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.25
+      },
+      {
+        "name": "minecraft:entity.villager.trade",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.2
+      }
+    ]
+  },
+  "villager_block.yes": {
+    "subtitle": "subtitles.steveparty.villager_block.yes",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.yes",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.25
+      }
+    ]
+  },
+  "villager_block.no": {
+    "subtitle": "subtitles.steveparty.villager_block.no",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.no",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.2
+      }
+    ]
+  },
+  "villager_block.grumble": {
+    "subtitle": "subtitles.steveparty.villager_block.grumble",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.no",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:entity.villager.ambient",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.65
+      }
+    ]
+  },
+  "villager_block.giggle": {
+    "subtitle": "subtitles.steveparty.villager_block.giggle",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.celebrate",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.6
+      },
+      {
+        "name": "minecraft:entity.villager.yes",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.8
+      }
+    ]
+  },
+  "villager_block.ouch": {
+    "subtitle": "subtitles.steveparty.villager_block.ouch",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.hurt",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.3
+      }
+    ]
+  },
+  "villager_block.faint": {
+    "subtitle": "subtitles.steveparty.villager_block.faint",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.death",
+        "type": "event",
+        "volume": 0.9,
+        "pitch": 1.25
+      }
+    ]
+  },
+  "villager_block.gasp": {
+    "subtitle": "subtitles.steveparty.villager_block.gasp",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.hurt",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.8
+      },
+      {
+        "name": "minecraft:entity.villager.no",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.9
+      }
+    ]
+  },
+  "villager_block.snore": {
+    "subtitle": "subtitles.steveparty.villager_block.snore",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.ambient",
+        "type": "event",
+        "volume": 0.35,
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.villager.work_shepherd",
+        "type": "event",
+        "volume": 0.25,
+        "pitch": 0.5
+      }
+    ]
+  },
+  "villager_block.yawn": {
+    "subtitle": "subtitles.steveparty.villager_block.yawn",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.ambient",
+        "type": "event",
+        "volume": 0.7,
+        "pitch": 0.55
+      }
+    ]
+  },
+  "villager_block.sneeze": {
+    "subtitle": "subtitles.steveparty.villager_block.sneeze",
+    "sounds": [
+      {
+        "name": "minecraft:entity.panda.sneeze",
+        "type": "event",
+        "volume": 0.9,
+        "pitch": 1.35
+      }
+    ]
+  },
+  "villager_block.whistle": {
+    "subtitle": "subtitles.steveparty.villager_block.whistle",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.flute",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.0
+      }
+    ]
+  },
+  "villager_block.munch": {
+    "subtitle": "subtitles.steveparty.villager_block.munch",
+    "sounds": [
+      {
+        "name": "minecraft:entity.generic.eat",
+        "type": "event",
+        "volume": 0.7,
+        "pitch": 1.3
+      }
+    ]
+  },
+  "villager_block.boing": {
+    "subtitle": "subtitles.steveparty.villager_block.boing",
+    "sounds": [
+      {
+        "name": "minecraft:entity.slime.jump_small",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 1.3
+      }
+    ]
+  },
+  "villager_block.delighted": {
+    "subtitle": "subtitles.steveparty.villager_block.delighted",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.celebrate",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.3
+      },
+      {
+        "name": "minecraft:entity.villager.yes",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.5
+      }
+    ]
+  },
+  "villager_block.purr": {
+    "subtitle": "subtitles.steveparty.villager_block.purr",
+    "sounds": [
+      {
+        "name": "minecraft:entity.cat.purr",
+        "type": "event",
+        "volume": 0.9,
+        "pitch": 0.8
+      }
+    ]
+  },
+  "villager_block.whisper": {
+    "subtitle": "subtitles.steveparty.villager_block.whisper",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.ambient",
+        "type": "event",
+        "volume": 0.25,
+        "pitch": 0.8
+      }
+    ]
+  },
+  "villager_block.cheer": {
+    "subtitle": "subtitles.steveparty.villager_block.cheer",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.celebrate",
+        "type": "event",
+        "volume": 0.9,
+        "pitch": 1.1
+      }
+    ]
+  },
+  "villager_block.sob": {
+    "subtitle": "subtitles.steveparty.villager_block.sob",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.no",
+        "type": "event",
+        "volume": 0.7,
+        "pitch": 0.5
+      },
+      {
+        "name": "minecraft:entity.villager.hurt",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 0.55
+      }
+    ]
+  },
+  "villager_block.flop": {
+    "subtitle": "subtitles.steveparty.villager_block.flop",
+    "sounds": [
+      {
+        "name": "minecraft:block.wool.fall",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.6
+      },
+      {
+        "name": "minecraft:entity.slime.squish",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 0.7
+      }
+    ]
+  },
+  "villager_block.hiccup": {
+    "subtitle": "subtitles.steveparty.villager_block.hiccup",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.ambient",
+        "type": "event",
+        "volume": 0.5,
+        "pitch": 2.0
+      }
+    ]
+  },
+  "villager_block.shiver": {
+    "subtitle": "subtitles.steveparty.villager_block.shiver",
+    "sounds": [
+      {
+        "name": "minecraft:block.powder_snow.step",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "villager_block.poof": {
+    "subtitle": "subtitles.steveparty.villager_block.poof",
+    "sounds": [
+      {
+        "name": "minecraft:entity.illusioner.mirror_move",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "villager_block.bleh": {
+    "subtitle": "subtitles.steveparty.villager_block.bleh",
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.burp",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 0.7
+      }
+    ]
+  },
+  "villager_block.sniff": {
+    "subtitle": "subtitles.steveparty.villager_block.sniff",
+    "sounds": [
+      {
+        "name": "minecraft:entity.fox.sniff",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.2
+      }
+    ]
+  },
+  "villager_block.jackpot": {
+    "subtitle": "subtitles.steveparty.villager_block.jackpot",
+    "sounds": [
+      {
+        "name": "minecraft:entity.player.levelup",
+        "type": "event",
+        "volume": 0.7,
+        "pitch": 1.4
+      }
+    ]
+  },
+  "villager_block.whimper": {
+    "subtitle": "subtitles.steveparty.villager_block.whimper",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.hurt",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 0.7
+      },
+      {
+        "name": "minecraft:entity.villager.no",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 0.65
+      }
+    ]
+  },
+  "villager_block.farewell": {
+    "subtitle": "subtitles.steveparty.villager_block.farewell",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.death",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.7
+      }
+    ]
+  },
+  "villager_block.sigh": {
+    "subtitle": "subtitles.steveparty.villager_block.sigh",
+    "sounds": [
+      {
+        "name": "minecraft:particle.soul_escape",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 0.8
+      },
+      {
+        "name": "minecraft:entity.villager.ambient",
+        "type": "event",
+        "volume": 0.6,
+        "pitch": 0.5
+      }
+    ]
+  },
+  "villager_block.freed": {
+    "subtitle": "subtitles.steveparty.villager_block.freed",
+    "sounds": [
+      {
+        "name": "minecraft:entity.villager.celebrate",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 1.2
+      },
+      {
+        "name": "minecraft:entity.villager.yes",
+        "type": "event",
+        "volume": 1.0,
+        "pitch": 1.1
+      }
+    ]
   }
 }

@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:polished_pink_concrete_bricks_from_pink_concrete_stonecutting"
+        "recipe": "steveparty:polished_pink_concrete_bricks_from_pink_concrete_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:polished_pink_concrete_bricks_from_pink_concrete_stonecutting"
+      "steveparty:polished_pink_concrete_bricks_from_pink_concrete_stonecutting"
     ]
   }
 }

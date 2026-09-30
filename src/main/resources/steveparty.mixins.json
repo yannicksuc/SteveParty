@@ -4,9 +4,11 @@
   "package": "fr.lordfinn.steveparty.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "EntityRaycastTileMixin",
     "FireworkRocketEntityAccessor",
     "LivingEntityMixin",
     "PlayerFallMixin",
+    "PlayerWandInteractMixin",
     "PreparedRecipesMixin",
     "ShapedRecipeAccessor",
     "ShearsItemMixin",
@@ -15,7 +17,14 @@
     "EntityBubbleColumnMixin",
     "StatusEffectMixin",
     "TokenEntityMixin",
-    "MixinPistonBlock"
+    "TokenBaseDimensionsMixin",
+    "TokenTurtleMixin",
+    "TokenPawnInteractionMixin",
+    "TokenMerchantMixin",
+    "MixinPistonBlock",
+    "ServerScoreboardMixin",
+    "HopperBlockEntityMixin",
+    "ExplosionImplMixin"
   ],
   "injectors": {
     "defaultRequire": 1

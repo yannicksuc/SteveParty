@@ -38,7 +38,7 @@ public class BasicGameGeneratorStep extends PartyStep {
         ServerWorld world = (ServerWorld) partyControllerEntity.getWorld();
         if (world == null) return;
         PartyData partyData = partyControllerEntity.getPartyData();
-        generateSteps(partyData, world, partyControllerEntity.getProgram());
+        generateSteps(partyData, world, partyControllerEntity.getProgramCards());
         partyControllerEntity.markDirty();
         scheduleStart(partyControllerEntity, world);
     }

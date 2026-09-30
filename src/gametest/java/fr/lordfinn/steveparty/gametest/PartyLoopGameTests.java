@@ -13,7 +13,6 @@ import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
-import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -30,7 +29,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
 
-/** Party loop: bells, waiting bells, program cards, controller phase, ranking, piggy bank, mini-game pads, podium. */
+/** Party loop: bells, waiting bells, program cards, controller phase, piggy bank, podium. */
 public class PartyLoopGameTests implements FabricGameTest {
 
     private static PartyControllerEntity placeController(TestContext context, BlockPos pos) {
@@ -172,9 +171,9 @@ public class PartyLoopGameTests implements FabricGameTest {
     public void generatorFollowsTheProgram(TestContext context) {
         BlockPos pos = new BlockPos(2, 1, 2);
         PartyControllerEntity controller = placeController(context, pos);
-        controller.getSettings().setStack(PartyControllerEntity.PROGRAM_FIRST_SLOT, card(PartyCardItem.CardType.TURNS, 1));
-        controller.getSettings().setStack(PartyControllerEntity.PROGRAM_FIRST_SLOT + 1, card(PartyCardItem.CardType.EVENT, 4));
-        controller.getSettings().setStack(PartyControllerEntity.PROGRAM_FIRST_SLOT + 2, card(PartyCardItem.CardType.REPEAT, 2));
+        controller.getProgram().setStack(0, card(PartyCardItem.CardType.TURNS, 1));
+        controller.getProgram().setStack(1, card(PartyCardItem.CardType.EVENT, 4));
+        controller.getProgram().setStack(2, card(PartyCardItem.CardType.REPEAT, 2));
         UUID a = UUID.randomUUID(), b = UUID.randomUUID();
         PartyData data = new PartyData();
         data.addToken(a);
@@ -213,34 +212,6 @@ public class PartyLoopGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Ranking: stars first, then coins, counted in the inventories with the items chosen in the controller. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void rankingCountsStarsThenCoins(TestContext context) {
-        BlockPos pos = new BlockPos(2, 1, 2);
-        PartyControllerEntity controller = placeController(context, pos);
-        controller.getSettings().setStack(PartyControllerEntity.SLOT_COIN, new ItemStack(Items.GOLD_NUGGET));
-        controller.getSettings().setStack(PartyControllerEntity.SLOT_STAR, new ItemStack(ModItems.POWER_STAR));
-        ServerPlayerEntity rich = context.createMockCreativeServerPlayerInWorld();
-        ServerPlayerEntity starry = context.createMockCreativeServerPlayerInWorld();
-        rich.getInventory().insertStack(new ItemStack(Items.GOLD_NUGGET, 50));
-        starry.getInventory().insertStack(new ItemStack(Items.GOLD_NUGGET, 3));
-        starry.getInventory().insertStack(new ItemStack(ModItems.POWER_STAR, 1));
-        UUID tokenRich = UUID.randomUUID(), tokenStarry = UUID.randomUUID();
-        PartyData data = new PartyData();
-        data.addToken(tokenRich);
-        data.addToken(tokenStarry);
-        data.addStep(new TokenTurnPartyStep(tokenRich, rich.getUuid()));
-        data.addStep(new TokenTurnPartyStep(tokenStarry, starry.getUuid()));
-        controller.setPartyData(data);
-        List<PartyData.ScoreEntry> ranking = controller.computeRanking();
-        context.assertEquals(ranking.size(), 2, "two players");
-        context.assertEquals(ranking.get(0).player(), starry.getUuid(), "one star beats 50 coins");
-        context.assertEquals(ranking.get(0).coins(), 3, "coins counted");
-        context.assertEquals(ranking.get(1).coins(), 50, "coins of the second");
-        context.removeBlock(pos);
-        context.complete();
-    }
-
     private static ItemStack cartridge(TestContext context, BlockPos chestPos, int selection, ItemStack... items) {
         ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
         cartridge.set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(List.of(items)));
@@ -264,38 +235,14 @@ public class PartyLoopGameTests implements FabricGameTest {
         int[] cycle = {0};
         context.assertTrue(!CartridgeTransfers.apply(context.getWorld(), cartridge, player, () -> cycle[0], i -> cycle[0] = i),
                 "not enough coins: refused");
-        context.assertEquals(PartyControllerEntity.countItems(player, new ItemStack(Items.GOLD_NUGGET)), 10, "coins kept");
+        context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(Items.GOLD_NUGGET), player.getInventory()), 10, "coins kept");
         context.assertEquals(chest.getStack(0).getCount(), 1, "star kept");
         player.getInventory().insertStack(new ItemStack(Items.GOLD_NUGGET, 15));
         context.assertTrue(CartridgeTransfers.apply(context.getWorld(), cartridge, player, () -> cycle[0], i -> cycle[0] = i),
                 "bought");
-        context.assertEquals(PartyControllerEntity.countItems(player, new ItemStack(Items.GOLD_NUGGET)), 5, "20 coins paid");
-        context.assertEquals(PartyControllerEntity.countItems(player, new ItemStack(ModItems.POWER_STAR)), 1, "star received");
+        context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(Items.GOLD_NUGGET), player.getInventory()), 5, "20 coins paid");
+        context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(ModItems.POWER_STAR), player.getInventory()), 1, "star received");
         context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(Items.GOLD_NUGGET), chest), 20, "coins in the chest");
-        context.complete();
-    }
-
-    /** Arrival pads: own team first (team A = smaller team = pads with the smaller capacity), then any player seats. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void miniGamePadsFollowTheTeams(TestContext context) {
-        UUID p1 = UUID.randomUUID(), p2 = UUID.randomUUID(), p3 = UUID.randomUUID(), p4 = UUID.randomUUID();
-        BlockPos padSmall = new BlockPos(0, 0, 0), padBig = new BlockPos(1, 0, 0), padAny = new BlockPos(2, 0, 0);
-        Map<BlockPos, List<TeleportingTarget>> pads = new LinkedHashMap<>();
-        // The books say "team B" for the small side: capacities decide, like when the mini-game was chosen
-        pads.put(padSmall, List.of(new TeleportingTarget(TeleportingTarget.Group.PLAYER_TEAM_B, 1, 0)));
-        pads.put(padBig, List.of(new TeleportingTarget(TeleportingTarget.Group.PLAYER_TEAM_A, 2, 0)));
-        pads.put(padAny, List.of(new TeleportingTarget(TeleportingTarget.Group.PLAYERS, 0, 0)));
-        TeamDisposition disposition = new TeamDisposition(Set.of(p1), Set.of(p2, p3));
-        Map<UUID, BlockPos> assignments = MiniGameTeleports.assign(pads, disposition, List.of(p1, p2, p3, p4), Map.of());
-        context.assertEquals(assignments.get(p1), padSmall, "smaller team on the smaller pads");
-        context.assertEquals(assignments.get(p2), padBig, "bigger team");
-        context.assertEquals(assignments.get(p3), padBig, "bigger team, second seat");
-        context.assertEquals(assignments.get(p4), padAny, "not in a team: any player seat");
-        // A new player: the taken seats stay taken
-        UUID p5 = UUID.randomUUID();
-        Map<UUID, BlockPos> more = MiniGameTeleports.assign(pads, new TeamDisposition(Set.of(p1, p5), Set.of(p2, p3)),
-                List.of(p5), assignments);
-        context.assertEquals(more.get(p5), padAny, "team pad full: any player seat");
         context.complete();
     }
 

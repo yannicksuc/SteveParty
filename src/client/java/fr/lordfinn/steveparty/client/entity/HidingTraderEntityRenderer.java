@@ -14,10 +14,35 @@ import static fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderLayer
 
 
 public class HidingTraderEntityRenderer extends GeoEntityRenderer<HidingTraderEntity> {
+    /** Bald merchant (his bandana was stolen with shears), per colour: his chin scarf keeps his colour. */
+    private static final Identifier[] BALD_TEXTURES = {
+            Steveparty.id("textures/entity/hiding_trader_bald_teal.png"),
+            Steveparty.id("textures/entity/hiding_trader_bald_blue.png"),
+            Steveparty.id("textures/entity/hiding_trader_bald_pink.png"),
+            Steveparty.id("textures/entity/hiding_trader_bald_orange.png"),
+            Steveparty.id("textures/entity/hiding_trader_bald_yellow.png"),
+    };
+    /** Base texture (gold bandana), used until the bandana colour is synced. */
+    private static final Identifier BASE_TEXTURE = Steveparty.id("textures/entity/hiding_trader.png");
+    /** One texture per bandana colour, in HidingTraderEntity's BandanaColor order (the art sources). */
+    private static final Identifier[] BANDANA_TEXTURES = {
+            Steveparty.id("textures/entity/hiding_trader_teal.png"),
+            Steveparty.id("textures/entity/hiding_trader_blue.png"),
+            Steveparty.id("textures/entity/hiding_trader_pink.png"),
+            Steveparty.id("textures/entity/hiding_trader_orange.png"),
+            Steveparty.id("textures/entity/hiding_trader_yellow.png"),
+    };
 
     public HidingTraderEntityRenderer(EntityRendererFactory.Context ctx) {
         super(ctx, new DefaultedEntityGeoModel<>(Steveparty.id("hiding_trader")));
         addRenderLayer(new HidingTraderEntityRenderLayer(this));
+    }
+
+    @Override
+    public Identifier getTextureLocation(HidingTraderEntity animatable) {
+        int color = animatable.getBandanaColor();
+        if (color < 0 || color >= BANDANA_TEXTURES.length) return BASE_TEXTURE;
+        return animatable.hasBandana() ? BANDANA_TEXTURES[color] : BALD_TEXTURES[color];
     }
 
     @Override

@@ -11,7 +11,7 @@ import net.minecraft.util.Identifier;
 import java.util.List;
 
 public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenHandler> {
-    private static final Identifier TEXTURE = Steveparty.id("textures/gui/tile.png");
+    private static final Identifier TEXTURE = Steveparty.id("textures/gui/advanced_tile.png");
     private static final List<Identifier> TEXTURES_OVERLAY = List.of(
             Steveparty.id("textures/gui/tile-overlay-0.png"),
             Steveparty.id("textures/gui/tile-overlay-1.png"),
@@ -30,7 +30,7 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
             Steveparty.id("textures/gui/tile-overlay-14.png"),
             Steveparty.id("textures/gui/tile-overlay-15.png")
     );
-    private static final Identifier SIMPLE_TEXTURE = Steveparty.id("textures/gui/simple_tile.png");
+    private static final Identifier SIMPLE_TEXTURE = Steveparty.id("textures/gui/tile.png");
 
     private final boolean isSingle;
 

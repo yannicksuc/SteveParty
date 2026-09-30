@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.entities.custom;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.particles.ParticleUtils;
 import fr.lordfinn.steveparty.payloads.custom.ArrowParticlesPayload;
@@ -59,22 +59,24 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
         this.tokenUuid = token;
         this.tileOrigin = origin;
         this.tileDestination = destination;
-        BlockPos distanceAsBlockPos = destination.position().subtract(origin);
-        Vec3d distance = new Vec3d(distanceAsBlockPos.getX(), distanceAsBlockPos.getY(), distanceAsBlockPos.getZ());
+        // From where the tiles are seen (lowered, sloped, a large tile's middle), not their blocks
+        Vec3d from = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, origin);
+        Vec3d distance = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(world, destination.position()).subtract(from);
         Color color = destination.isTile() ? Color.WHITE : Color.RED;
         encodedVelocity = ParticleUtils.encodeVelocity(
                 color,
                 (float) distance.x,
                 (float) distance.y,
                 (float) distance.z);
-        start = origin.toCenterPos().add(0,0.1,0);
+        start = from.add(0, 0.475, 0);
         float size = 0.3F;
         Vec3d startGap = distance.normalize().multiply(Math.min(1.5, distance.length())).add(0,-0.4,0);
         this.setPosition(start.add(startGap));
         BlockState blockState = world.getBlockState(destination.position());
         // Board spaces use an 8-direction rotation (0 = the former HORIZONTAL_FACING=SOUTH orientation)
-        if (blockState != null && blockState.contains(TileBlock.ROTATION_8)) {
-            blockState = blockState.with(TileBlock.ROTATION_8, 0);
+        if (blockState != null && blockState.contains(AdvancedTileBlock.ROTATION_8)) {
+            // Drawn as a small level tile, whatever it lies on (its sloped/lowered look is drawn by its renderer)
+            blockState = fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.levelState(blockState.with(AdvancedTileBlock.ROTATION_8, 0));
         }
         this.setBlockState(blockState);
         Quaternionf rot = new Quaternionf();

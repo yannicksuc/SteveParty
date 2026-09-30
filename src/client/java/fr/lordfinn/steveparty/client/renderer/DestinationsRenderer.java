@@ -80,6 +80,10 @@ public class DestinationsRenderer {
 
         if (vertexConsumers != null) {
             getDestinations().forEach((pos, gradientType) -> GlowingCuboidRenderer.renderCuboids(matrixStack, vertexConsumers, pos, gradientType));
+            // Draw now, with the world's projection: left in the shared buffers, they were drawn with the hand's
+            // (its bobbing and sway when walking, running or jumping), off the blocks they mark
+            if (vertexConsumers instanceof VertexConsumerProvider.Immediate immediate)
+                immediate.draw(RenderLayer.getDebugFilledBox());
         }
     }
 

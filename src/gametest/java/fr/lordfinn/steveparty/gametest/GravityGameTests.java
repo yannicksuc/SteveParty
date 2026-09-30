@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.utils.GravityPull;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -38,6 +39,16 @@ public class GravityGameTests implements FabricGameTest {
             forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
         }
         return forge;
+    }
+
+    /**
+     * Removes a gravity source (a forge whose core has risen, a gravity core block), then completes the test. Test
+     * structures stay in the world once their test is over: a source left there would keep pulling (a risen core up to
+     * {@link DiceForgeBlockEntity#PULL_RANGE} blocks away) the entities of the tests run next to it afterwards.
+     */
+    static void removeAndComplete(TestContext context, BlockPos source) {
+        context.setBlockState(source, Blocks.AIR);
+        context.complete();
     }
 
     private static ArmorStandEntity standAt(TestContext context, Vec3d absolute) {
@@ -95,7 +106,7 @@ public class GravityGameTests implements FabricGameTest {
                 context.assertTrue(Math.abs(distance - PULL_ORBIT) < 1, "drawn to its orbit around the core: " + distance);
                 context.assertTrue(Math.abs(heavy.getX() - heavyX) < 0.01, "netherite: not drawn sideways");
                 context.assertTrue(heavy.getY() < core.y - 2, "netherite: falls");
-                context.complete();
+                removeAndComplete(context, FORGE_POS);
             });
         });
     }
@@ -126,7 +137,9 @@ public class GravityGameTests implements FabricGameTest {
     /** A placed gravity core pulls just the same, with a fixed reach and strength, and what it pulls orbits it. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "gravity_block")
     public void theGravityCoreBlockPullsToo(TestContext context) {
-        BlockPos corePos = new BlockPos(1, 10, 1); // high up: room all around (the test area has walls on its sides)
+        // High up (the test area has walls on its sides) and in the middle of the test area: only the chunks under it
+        // tick entities, what circles it must not leave them (the stand would stop there)
+        BlockPos corePos = new BlockPos(3, 10, 3);
         context.setBlockState(corePos, ModBlocks.GRAVITY_CORE.getDefaultState());
         Vec3d center = Vec3d.of(context.getAbsolutePos(corePos)).add(0.5, 0.75, 0.5);
         ArmorStandEntity stand = standAt(context, center.add(4, 0, 0));
@@ -139,7 +152,7 @@ public class GravityGameTests implements FabricGameTest {
                 Vec3d later = stand.getBoundingBox().getCenter().subtract(center);
                 double turned = Math.abs(MathHelper.wrapDegrees(Math.toDegrees(Math.atan2(later.z, later.x) - angle)));
                 context.assertTrue(turned > 15, "circling it: turned " + turned + " degrees");
-                context.complete();
+                removeAndComplete(context, corePos);
             });
         });
     }

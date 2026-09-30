@@ -9,6 +9,7 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
@@ -50,6 +51,9 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
 
     @Override
     protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        // Stencil + dye, the Stencil Hammer, a wet sponge: a new look for the tile (client-safe: decided the same way on both sides)
+        ActionResult stamped = TileStamping.onUseWithItem(state, world, pos, player, hand, hit);
+        if (stamped != null) return stamped;
         // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
         if (world.isClient) return stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS;
         return BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit);
@@ -74,6 +78,16 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
 
     @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
+            tileEntity.onPlaced();
+            // Placed while tracing with the Wrench: linked from the previous board space
+            fr.lordfinn.steveparty.board.WrenchActions.onBoardSpacePlaced(world, pos, placer, itemStack);
+        }
+    }
+
+    @Override
     public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
 
@@ -94,10 +108,10 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
     /**
      * Whether reaching this block consumes one step of a token's movement.
-     * Tiles and simple tiles count; check points deliberately do not (they are waypoints).
+     * Tiles and advanced tiles count; check points deliberately do not (they are waypoints).
      */
     public static boolean countsAsStep(Block block) {
-        return block instanceof TileBlock || block instanceof SimpleTileBlock;
+        return block instanceof ATileBlock;
     }
 
     public static BoardSpaceBlockEntity getBoardSpaceEntity(World world, BlockPos pos) {

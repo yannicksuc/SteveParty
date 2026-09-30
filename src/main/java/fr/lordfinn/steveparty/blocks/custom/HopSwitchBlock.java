@@ -112,22 +112,21 @@ public class HopSwitchBlock extends CartridgeContainer {
     }
 
     private static void sendDurationMessage(HopSwitchBlockEntity be, PlayerEntity player, boolean added) {
-        int totalTicks = be.getDurationTicks();
-        double totalSeconds = totalTicks / 20.0;
+        player.sendMessage(Text.translatable(added ? "message.steveparty.hopswitch.time.added"
+                : "message.steveparty.hopswitch.time.removed", formatDuration(be.getDurationTicks())), true);
+    }
 
-        int minutes = (int) (totalSeconds / 60);
-        double seconds = totalSeconds % 60;
-
-        // Format seconds with 1 decimal if needed
-        String secondsStr = (seconds % 1 == 0)
-                ? String.format("%d", (int) seconds)
-                : String.format("%.1f", seconds).replace('.', ',');
-
-        String formattedDuration = (minutes > 0)
-                ? String.format("%dm%ss", minutes, secondsStr)
-                : String.format("%ss", secondsStr);
-
-        player.sendMessage(Text.literal(formattedDuration), true); // optionally wrap in translatable key if needed
+    /** A duration as the player reads it: "2.5 s", "40 s", "1 min", "1 min 45 s" (decimal separator per language). */
+    public static Text formatDuration(int ticks) {
+        int tenths = Math.round(ticks / 2f);
+        int minutes = tenths / 600;
+        int wholeSeconds = (tenths % 600) / 10;
+        int tenth = tenths % 10;
+        Text seconds = tenth == 0 ? Text.literal(Integer.toString(wholeSeconds))
+                : Text.translatable("message.steveparty.hopswitch.decimal", wholeSeconds, tenth);
+        if (minutes == 0) return Text.translatable("message.steveparty.hopswitch.duration.seconds", seconds);
+        if (wholeSeconds == 0 && tenth == 0) return Text.translatable("message.steveparty.hopswitch.duration.minutes", minutes);
+        return Text.translatable("message.steveparty.hopswitch.duration.minutes_seconds", minutes, seconds);
     }
 
 

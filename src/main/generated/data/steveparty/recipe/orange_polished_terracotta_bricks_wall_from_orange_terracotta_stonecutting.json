@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "minecraft:orange_terracotta",
+  "result": {
+    "count": 1,
+    "id": "steveparty:orange_polished_terracotta_bricks_wall"
+  }
+}

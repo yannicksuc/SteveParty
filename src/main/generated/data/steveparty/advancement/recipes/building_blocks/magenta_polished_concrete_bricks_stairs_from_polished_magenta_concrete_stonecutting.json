@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:magenta_polished_concrete_bricks_stairs_from_polished_magenta_concrete_stonecutting"
+        "recipe": "steveparty:magenta_polished_concrete_bricks_stairs_from_polished_magenta_concrete_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:magenta_polished_concrete_bricks_stairs_from_polished_magenta_concrete_stonecutting"
+      "steveparty:magenta_polished_concrete_bricks_stairs_from_polished_magenta_concrete_stonecutting"
     ]
   }
 }

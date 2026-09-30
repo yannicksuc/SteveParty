@@ -21,7 +21,12 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.POP_SOUND_EVENT;
  */
 public final class Switchables {
     public static final TagKey<Block> SWITCHABLE = TagKey.of(RegistryKeys.BLOCK, Steveparty.id("switchable"));
-    /** Plastic blocks and studs: mined instantly by the wrench, faster with shears. */
+    /**
+     * Everything made of plastic (blocks, studs, fences, road signs, slabs, stairs, walls): mined instantly by the
+     * wrench, faster with shears, and switchable by the hop switch (except the road sign: it has a block entity).
+     * The one list of what is plastic, see {@code PlasticBlock.isPlastic}; which of these float is up to each block
+     * ({@code PlasticBlock.isPlasticPiece}).
+     */
     public static final TagKey<Block> PLASTIC = TagKey.of(RegistryKeys.BLOCK, Steveparty.id("plastic"));
 
     // Blocks added by the server config (see SwitchableConfig), synced to clients for the tooltip

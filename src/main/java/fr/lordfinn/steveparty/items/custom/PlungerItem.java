@@ -20,11 +20,11 @@ public class PlungerItem extends Item {
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (entity.isSilent()) {
             entity.setSilent(false);
-            user.sendMessage(Text.literal("Mob unsilenced!"), true);
+            user.sendMessage(Text.translatable("message.steveparty.plunger.unsilenced"), true);
             user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_OUT_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
         } else {
             entity.setSilent(true);
-            user.sendMessage(Text.literal("Mob silenced!"), true);
+            user.sendMessage(Text.translatable("message.steveparty.plunger.silenced"), true);
             user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_IN_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
         }
         return ActionResult.SUCCESS;

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "cartridge",
+  "ingredients": [
+    "steveparty:board_space_behavior",
+    "minecraft:ender_pearl"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:teleport_cartridge"
+  }
+}

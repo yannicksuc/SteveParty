@@ -1,5 +1,17 @@
 package fr.lordfinn.steveparty.client;
 
+import fr.lordfinn.steveparty.client.blockentity.StencilCanvasBlockEntityRenderer;
+import fr.lordfinn.steveparty.client.gui.StencilGunHud;
+import fr.lordfinn.steveparty.client.model.sign.MaterialSprites;
+import fr.lordfinn.steveparty.client.model.sign.StencilSignModelPlugin;
+import fr.lordfinn.steveparty.client.screens.StencilGunScreen;
+import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.flag.FlagPalettes;
+import fr.lordfinn.steveparty.items.custom.FlagItem;
+import fr.lordfinn.steveparty.items.custom.StencilGunItem;
+import net.minecraft.block.Block;
+
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -9,22 +21,26 @@ import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaEntityRenderer;
-import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
+import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
+import fr.lordfinn.steveparty.client.model.BrickShadeModelPlugin;
 import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
 import fr.lordfinn.steveparty.client.model.TradingStallModelPlugin;
 import fr.lordfinn.steveparty.client.particle.ArrowParticle;
 import fr.lordfinn.steveparty.client.particle.EnchantedCircularParticle;
 import fr.lordfinn.steveparty.client.particle.ForgeBeamParticle;
 import fr.lordfinn.steveparty.client.particle.HereParticle;
+import fr.lordfinn.steveparty.client.particle.KamekShapeParticle;
+import fr.lordfinn.steveparty.client.particle.StarFlareParticle;
+import fr.lordfinn.steveparty.client.particle.MulaSparkleParticle;
 import fr.lordfinn.steveparty.client.payloads.PayloadReceivers;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
+import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
 import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
 import fr.lordfinn.steveparty.client.screens.*;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
-import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -67,6 +83,7 @@ import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 import java.util.Map;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
+import fr.lordfinn.steveparty.client.utils.TileColors;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR1;
 import static fr.lordfinn.steveparty.blocks.custom.TradingStallBlock.COLOR2;
 import static fr.lordfinn.steveparty.items.ModItems.TRIPLE_JUMP_SHOES;
@@ -77,18 +94,18 @@ import static fr.lordfinn.steveparty.utils.WoolColorsUtils.*;
 @SuppressWarnings("unused")
 public class StevepartyClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("steveparty");
-    public static final PartyStepsHud PARTY_STEPS_HUD = new PartyStepsHud();
 
     /*
      * Runs on chunk-builder threads: must only READ. The color itself is computed server side
      * (ABoardSpaceBehavior#setColor) and synced through the block entity / UpdateColoredTilePayload.
      */
     private static final BlockColorProvider getTileColor = (state, world, pos, tintIndex) -> {
-        if (world == null || pos == null) return 0xFFFFFFFF;
-        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity)) return 0xFFFFFFFF;
+        if (world == null || pos == null) return TileColors.tint(TileColors.WHITE, tintIndex);
+        if (!(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity)) return TileColors.tint(TileColors.WHITE, tintIndex);
         ItemStack behaviorItemstack = BoardSpaceClientUtils.getDisplayedCartridge(tileEntity);
-        if (behaviorItemstack.isEmpty()) return 0xFFFFFFFF;
-        return behaviorItemstack.getOrDefault(ModComponents.COLOR, 0xFFFFFFFF);
+        int color = behaviorItemstack.isEmpty() ? TileColors.WHITE : behaviorItemstack.getOrDefault(ModComponents.COLOR, TileColors.WHITE);
+        // Each tinted part of the model takes its own shade of the colour (vivid ramps, see TileColors)
+        return TileColors.tint(color, tintIndex);
     };
 
     private static final BlockColorProvider getTradingStallColor = (state, world, pos, tintIndex) -> {
@@ -127,11 +144,20 @@ public class StevepartyClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ConfigurationManager.loadConfig();
         PayloadReceivers.initialize();
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
+        ModelLoadingPlugin.register(new BrickShadeModelPlugin());
+        ModelLoadingPlugin.register(new StencilSignModelPlugin());
+        StencilResourceManager.registerReloadListener();
+        MaterialSprites.registerReloadListener();
+        MobTextureColors.registerReloadListener();
+        FlagPalettes.registerReloadListener();
+        StencilGunHud.initialize();
+        fr.lordfinn.steveparty.client.board.WrenchClient.initialize();
+        fr.lordfinn.steveparty.client.hammer.StencilHammerStrikes.initialize();
         SwitchableClient.initialize();
+        fr.lordfinn.steveparty.client.token.TokenBaseRenderer.initialize();
 
         initScreens();
         initParticles();
@@ -141,20 +167,49 @@ public class StevepartyClient implements ClientModInitializer {
         DestinationsRenderer.initialize();
         initKeybinds();
 
-        HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
-        PartyStepsHud.registerKeyHandlers();
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> PartyStepsHud.saveConfigOnExit());
+        PartyHud.initialize();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
         initParticleRenderers();
+        fr.lordfinn.steveparty.client.entity.DeferredGlows.initialize();
 
        }
 
     private void initItemRenderers() {
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.STENCIL, new StencilItemRenderer());
+        // Paint can of the stencil gun: colour of the selected dye
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+            if (tintIndex != 1) return 0xFFFFFFFF;
+            StencilGunItem.Load load = StencilGunItem.selectedLoad(stack);
+            return load.color() == null ? 0xFF6B6B6B : 0xFF000000 | load.color().getEntityColor();
+        }, ModItems.STENCIL_GUN);
+
+        // Tiles: their size shows in hand and in the GUI (0 standard, 0.5 small: a 1x1 tile, 1 large: 4 faces in a 2x2)
+        for (net.minecraft.item.Item tile : java.util.List.of(ModBlocks.TILE.asItem(), ModBlocks.ADVANCED_TILE.asItem())) {
+            net.minecraft.client.item.ModelPredicateProviderRegistry.register(tile, Steveparty.id("tile_size"),
+                    (stack, world, entity, seed) -> switch (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.of(stack)) {
+                        case STANDARD -> 0f;
+                        case SMALL -> 0.5f;
+                        case LARGE -> 1f;
+                    });
+        }
+        // Bandana: one icon per colour (0, 0.25, ... 1: teal, blue, pink, orange, yellow)
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.BANDANA, Steveparty.id("bandana_color"),
+                (stack, world, entity, seed) -> fr.lordfinn.steveparty.items.custom.BandanaItem.getColor(stack) / 4f);
+        // Dyed flag: its own model, one white layer per shading level (and the stick, untinted), each level tinted
+        // with the colour of the dye's wool (FlagPalettes)
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.FLAG, Steveparty.id("dyed"),
+                (stack, world, entity, seed) -> FlagItem.getColor(stack) == FlagItem.NO_COLOR ? 0f : 1f);
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+            int color = FlagItem.getColor(stack);
+            if (color == FlagItem.NO_COLOR || tintIndex < 0 || tintIndex >= FlagPalettes.LEVELS) return 0xFFFFFFFF;
+            return 0xFF000000 | FlagPalettes.ramp(color)[tintIndex];
+        }, ModItems.FLAG);
 
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTradingStallItemColor, TRADING_STALL.asItem());
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
+        // The Mula egg is drawn (textures/item/mula_spawn_egg.png): no spawn-egg tint over it
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
 
@@ -176,14 +231,35 @@ public class StevepartyClient implements ClientModInitializer {
 
     private static void initBlockEntitiesRenderers() {
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHECK_POINT, RenderLayer.getTranslucent());
+        // Cut out: the start tile's top is made of value layers (see TileColors#tint)
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.ADVANCED_TILE, ModBlocks.TILE);
 
+        BlockEntityRendererFactories.register(ModBlockEntities.ADVANCED_TILE_ENTITY, TileBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.TILE_ENTITY, TileBlockEntityRenderer::new);
+        fr.lordfinn.steveparty.client.gui.TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.BIG_BOOK_ENTITY, TeleportationPadBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
-        BlockEntityRendererFactories.register(ModBlockEntities.TRAFFIC_SIGN_ENTITY, TrafficSignBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.EASEL_SIGN_ENTITY, StencilCanvasBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_CANVAS, StencilCanvasBlockEntityRenderer::new);
+        // Stencil signs: turned models with see-through texels (stripped logs, pebbles...)
+        for (Block sign : new Block[]{OAK_EASEL_SIGN, SPRUCE_EASEL_SIGN, BIRCH_EASEL_SIGN, JUNGLE_EASEL_SIGN, ACACIA_EASEL_SIGN,
+                DARK_OAK_EASEL_SIGN, MANGROVE_EASEL_SIGN, CHERRY_EASEL_SIGN, CRIMSON_EASEL_SIGN, WARPED_EASEL_SIGN,
+                ModBlocks.EASEL_SIGN, WOODEN_PANEL, WOODEN_CUTOUT_PANEL, ROCK_SIGN, PLASTIC_ROAD_SIGN}) {
+            BlockRenderLayerMap.INSTANCE.putBlock(sign, RenderLayer.getCutout());
+        }
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_MAKER_ENTITY, StencilMakerBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.LOOTING_BOX_ENTITY, LootingBoxBlockEntityRenderer::new);
+        // The villager block is drawn alive (reactions, looking around) by its renderer, not as a baked block
+        BlockEntityRendererFactories.register(ModBlockEntities.VILLAGER_BLOCK_ENTITY, fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer::new);
+        // It cries while it is being broken: the breaking progress of any player, as the world renderer knows it
+        fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity.miningStageProbe = pos -> {
+            var renderer = net.minecraft.client.MinecraftClient.getInstance().worldRenderer;
+            if (renderer == null) return -1;
+            var infos = ((fr.lordfinn.steveparty.client.mixin.WorldRendererBreakingAccessor) renderer)
+                    .steveparty$getBlockBreakingProgressions().get(pos.asLong());
+            return infos == null || infos.isEmpty() ? -1 : infos.last().getStage();
+        };
         BlockEntityRendererFactories.register(ModBlockEntities.DICE_FORGE_ENTITY, DiceForgeBlockEntityRenderer::new);
 
         BlockRenderLayerMap.INSTANCE.putBlock(BLUE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
@@ -198,8 +274,12 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.TRADING_STALL, TradingStallBlockEntityRenderer::new);
 
         BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.GOAL_POLE, RenderLayer.getCutout());
+        // The flag is drawn by the block entity renderer (it ripples in the wind); the baked model is the pole only
+        BlockEntityRendererFactories.register(ModBlockEntities.GOAL_POLE_ENTITY, GoalPoleFlagRenderer::new);
+        // With a wrench in hand: what each port of the base does, next to it
+        BlockEntityRendererFactories.register(ModBlockEntities.GOAL_POLE_BASE_ENTITY, GoalPoleBaseRenderer::new);
 
-        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE);
+        ColorProviderRegistry.BLOCK.register(StevepartyClient.getTileColor, TILE, ADVANCED_TILE);
         ColorProviderRegistry.BLOCK.register(StevepartyClient.getTradingStallColor, TRADING_STALL);
     }
 
@@ -210,6 +290,8 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         // The forge core is drawn by the forge: its entity is only a hitbox
         EntityRendererRegistry.register(ModEntities.FORGE_CORE, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.MULA_STAR, fr.lordfinn.steveparty.client.entity.MulaStarRenderer::new);
+        fr.lordfinn.steveparty.client.entity.MulaFoodTooltip.register();
         BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
 
     }
@@ -219,23 +301,30 @@ public class StevepartyClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.ARROW_PARTICLE, ArrowParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.ENCHANTED_CIRCULAR_PARTICLE, EnchantedCircularParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.FORGE_BEAM, ForgeBeamParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.MULA_SPARKLE, MulaSparkleParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.KAMEK_SHAPE, KamekShapeParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.STAR_FLARE, StarFlareParticle.Factory::new);
     }
 
     private static void initScreens() {
         //Initialize HUDs
-        PARTY_STEPS_HUD.initialize();
         
         //Initialize Screens
         HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
         HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HOP_SWITCH_SCREEN_HANDLER, HopSwitchScreen::new);
         HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
+        HandledScreens.<net.minecraft.screen.MerchantScreenHandler, fr.lordfinn.steveparty.client.screens.ShopStopScreen>register(
+                fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.SHOP_STOP_SCREEN_HANDLER,
+                (handler, inventory, title) -> new fr.lordfinn.steveparty.client.screens.ShopStopScreen(
+                        (fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler) handler, inventory, title));
         HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, CartridgeInventoryScreen::new);
         HandledScreens.register(MINI_GAME_PAGE_SCREEN_HANDLER, MiniGamePageScreen::new);
         HandledScreens.register(MINI_GAMES_CATALOGUE_SCREEN_HANDLER, MiniGamesCatalogueScreen::new);
         HandledScreens.register(HERE_WE_GO_BOOK_SCREEN_HANDLER, HereWeGoBookScreen::new);
         HandledScreens.register(HERE_WE_COME_BOOK_SCREEN_HANDLER, HereWeComeBookScreen::new);
         HandledScreens.register(STENCIL_MAKER_SCREEN_HANDLER, StencilMakerScreen::new);
+        HandledScreens.register(STENCIL_GUN_SCREEN_HANDLER, StencilGunScreen::new);
         HandledScreens.register(TRADING_STALL_SCREEN_HANDLER, TradingStallScreen::new);
         HandledScreens.register(CASH_REGISTER_SCREEN_HANDLER, CashRegisterScreen::new);
         HandledScreens.register(GOAL_POLE_BASE_SCREEN_HANDLER, GoalPoleBaseScreen::new);
@@ -260,7 +349,7 @@ public class StevepartyClient implements ClientModInitializer {
     /** Client caches are per server connection: drop them on disconnect. */
     private static void resetClientState() {
         PartyService.tokens.clear();
-        PartyStepsHud.clearData();
+        PartyHud.clear();
         FloatingTextRenderer.clear();
         GoalPoleFlipTracker.clear();
         SquishAnimations.clear();
@@ -271,6 +360,7 @@ public class StevepartyClient implements ClientModInitializer {
     public static void tick() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
+        if (!client.isPaused()) SquishAnimations.tick(client.world);
 
         long window = client.getWindow().getHandle();
         // Raw GLFW read (key bindings are not dispatched while a screen is open)

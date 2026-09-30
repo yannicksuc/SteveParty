@@ -19,9 +19,9 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
  * Renders the gravity (heavy) core seated in the dice forge hole, following the model animation.
  * <p>
  * If the model provides a {@value #CORE_BONE} bone, the core is drawn centered on that bone's pivot and fully
- * driven by the animations. Otherwise it is attached to the {@value #ROOT_BONE} bone: it rests in the plate hole,
- * its fall into the hole during the "core_insert" animation is computed here, then it rises to the altitude given
- * by the star fragments ({@link DiceForgeBlockEntity#getCoreAltitude}).
+ * driven by the animations. Otherwise it is attached to the {@value #ROOT_BONE} bone: it is set right into the plate
+ * hole where the player put it, pushed in (deeper than the forge) during the "core_insert" animation like a button, then
+ * rises to the altitude given by the star fragments ({@link DiceForgeBlockEntity#getCoreAltitude}).
  * <p>
  * The core has no rotation of its own: it turns with the root bone, so the core and the forge ("observatory")
  * always share the same speed and direction.
@@ -29,12 +29,8 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
     public static final String CORE_BONE = "core";
     public static final String ROOT_BONE = "root";
-    /** Core center in root bone space (px): the 8px core sits on the plate recess bottom (y = 12). */
+    /** Core center in root bone space (px): the 8px core sits on the plate recess bottom (y = 14). */
     private static final float CORE_REST_Y = DiceForgeBlockEntity.CORE_REST_HEIGHT;
-    /** Height (blocks) from which the core falls into the hole. */
-    private static final float CORE_DROP_HEIGHT = 1.25f;
-    /** Part of the insertion animation during which the core falls (the forge rises afterwards). */
-    private static final float CORE_FALL_TICKS = DiceForgeBlockEntity.CORE_INSERT_TICKS / 2f;
 
     private final BlockState coreState = ModBlocks.GRAVITY_CORE.getDefaultState();
 
@@ -46,7 +42,7 @@ public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
     public void renderForBone(MatrixStack poseStack, DiceForgeBlockEntity animatable, GeoBone bone, RenderLayer renderType,
                               VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick,
                               int packedLight, int packedOverlay, int renderColor) {
-        if (!animatable.isActivated()) return;
+        if (!animatable.isCoreInPlace()) return;
         boolean hasCoreBone = getGeoModel().getBone(CORE_BONE).isPresent();
         if (!bone.getName().equals(hasCoreBone ? CORE_BONE : ROOT_BONE)) return;
 
@@ -67,17 +63,29 @@ public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
         bufferSource.getBuffer(renderType);
     }
 
-    /** @return height of the core center above the block (blocks): resting in the hole, falling, or floating up */
+    /**
+     * Push of the core into the hole during "core_insert" (ticks after the insertion, px): it starts after the
+     * controller's 10-tick transition, in step with the forge pushed in by the animation (0.1 s, 0.25 s, 0.4 s).
+     */
+    private static final float[] PUSH_TICKS = {10, 12, 15, 18};
+    private static final float[] PUSH_PX = {0, -3, 1, 0};
+
+    /** @return height of the core center above the block (blocks): resting in the hole, pushed in, or floating up */
     public static float getCoreHeight(DiceForgeBlockEntity animatable, float partialTick) {
-        return CORE_REST_Y + getFallOffset(animatable, partialTick) + animatable.getCoreAltitude(partialTick);
+        return CORE_REST_Y + getPushOffset(animatable, partialTick) + animatable.getCoreAltitude(partialTick);
     }
 
-    /** Falling core during the first half of the insertion animation (ease-in, like a heavy object). */
-    private static float getFallOffset(DiceForgeBlockEntity animatable, float partialTick) {
-        if (animatable.getWorld() == null) return 0f;
-        float elapsed = (animatable.getWorld().getTime() - animatable.getActivationTime()) + partialTick;
-        if (elapsed >= CORE_FALL_TICKS || elapsed < 0) return 0f;
-        float t = MathHelper.clamp(elapsed / CORE_FALL_TICKS, 0f, 1f);
-        return CORE_DROP_HEIGHT * (1f - t * t);
+    /** The core pushed into the hole like a button, then bouncing back (eased between the keyframes). */
+    private static float getPushOffset(DiceForgeBlockEntity animatable, float partialTick) {
+        if (animatable.getWorld() == null || !animatable.isInsertingCore(partialTick)) return 0f;
+        float elapsed = animatable.getWorld().getTime() - animatable.getActivationTime() + partialTick;
+        for (int i = 0; i < PUSH_TICKS.length - 1; i++) {
+            if (elapsed >= PUSH_TICKS[i] && elapsed < PUSH_TICKS[i + 1]) {
+                float t = (elapsed - PUSH_TICKS[i]) / (PUSH_TICKS[i + 1] - PUSH_TICKS[i]);
+                t = t * t * (3 - 2 * t); // smoothstep
+                return MathHelper.lerp(t, PUSH_PX[i], PUSH_PX[i + 1]) / 16f;
+            }
+        }
+        return 0f;
     }
 }

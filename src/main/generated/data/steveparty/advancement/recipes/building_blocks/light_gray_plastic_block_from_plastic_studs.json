@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:light_gray_plastic_block_from_plastic_studs"
+        "recipe": "steveparty:light_gray_plastic_block_from_plastic_studs"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:light_gray_plastic_block_from_plastic_studs"
+      "steveparty:light_gray_plastic_block_from_plastic_studs"
     ]
   }
 }

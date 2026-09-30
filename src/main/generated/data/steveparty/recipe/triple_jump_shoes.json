@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:leather_boots",
+    "minecraft:rabbit_foot",
+    "minecraft:slime_ball",
+    "minecraft:slime_ball"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:triple_jump_shoes"
+  }
+}

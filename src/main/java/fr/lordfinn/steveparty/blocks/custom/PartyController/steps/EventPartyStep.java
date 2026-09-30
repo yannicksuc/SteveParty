@@ -8,9 +8,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -139,15 +137,6 @@ public class EventPartyStep extends PartyStep {
             Steveparty.SCHEDULER.cancel(continueTaskId);
             continueTaskId = null;
         }
-    }
-
-    @Override
-    public void printInfo(ServerPlayerEntity player) {
-        super.printInfo(player);
-        PartyMoment waited = getWaitedMoment();
-        if (waited != null && status == Status.IN_PROGRESS)
-            player.sendMessage(Text.translatableWithFallback("message.steveparty.event_step.waiting",
-                    "Waiting for a signal on a party bell: %s", waited.getText()), false);
     }
 
     @Override

@@ -22,6 +22,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
@@ -30,8 +31,6 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -52,9 +51,12 @@ import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity, ExtendedScreenHandlerFactory<BlockPosPayload> {
     private static final String ACTIVE_SLOT_KEY = "ActiveSlot";
     private static final String CYCLE_INDEXES_KEY = "CycleIndexes";
+    private static final String STAMP_KEY = "Stamp";
+
+    /** The look stamped on the tile itself (shown while it holds no cartridge: see TileStamping). */
+    private @Nullable fr.lordfinn.steveparty.components.TileStampComponent stamp;
 
     private int ticks = 0;
-    private SoundEvent walkedOnSound = null;
     private final Map<Integer, Integer> cycleIndexes = new HashMap<>();
     public final int INV_SIZE;
 
@@ -66,6 +68,13 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     private int activeSlot = 0;
     /** Set when loaded from disk: the power may have changed while unloaded, recheck on first server use. */
     private boolean activeSlotNeedsCheck = true;
+    /**
+     * The router driving this board space (null: none), read from the persistent state once and again whenever the
+     * routing may have changed ({@link #refreshActiveSlot}, which the routers call for every board space they take or
+     * release), instead of at every neighbour update. Server side, not saved.
+     */
+    private @Nullable BlockPos router;
+    private boolean routerKnown;
     /** Last applied cartridge / type (baseline captured on creation and load), to react only to real changes. */
     private ItemStack appliedCartridge = ItemStack.EMPTY;
     private BoardSpaceType appliedType = BoardSpaceType.DEFAULT;
@@ -82,8 +91,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private void syncToClients() {
-        if (world != null && !world.isClient)
+        if (world != null && !world.isClient) {
+            fr.lordfinn.steveparty.board.BoardPerf.boardSpaceSyncs++;
             world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
+        }
     }
 
     public DefaultedList<ItemStack> getItems() {
@@ -104,25 +115,40 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void refreshActiveSlot() {
         if (!(world instanceof ServerWorld serverWorld)) return;
         activeSlotNeedsCheck = false;
-        BlockPos routerPos = BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+        routerKnown = false; // the routing may have changed: read it again
+        BlockPos routerPos = routerOf(serverWorld);
         BlockPos powerPos = routerPos != null ? routerPos : pos;
         // Never load a chunk for this: an unloaded router keeps the last known slot, it pushes its power when it changes
         if (!serverWorld.isChunkLoaded(powerPos)) return;
-        setActiveSlot(serverWorld.getReceivedRedstonePower(powerPos));
+        setActiveSlot(powerAt(serverWorld, powerPos));
+    }
+
+    private @Nullable BlockPos routerOf(ServerWorld serverWorld) {
+        if (!routerKnown) {
+            fr.lordfinn.steveparty.board.BoardPerf.routerStateLookups++;
+            router = BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos);
+            routerKnown = true;
+        }
+        return router;
+    }
+
+    private static int powerAt(ServerWorld serverWorld, BlockPos powerPos) {
+        fr.lordfinn.steveparty.board.BoardPerf.boardSpacePowerReads++;
+        return serverWorld.getReceivedRedstonePower(powerPos);
     }
 
     /** Own neighbors changed: only relevant when this board space is not driven by a router. */
     public void onNeighborUpdate() {
         if (!(world instanceof ServerWorld serverWorld)) return;
-        if (BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos) != null) return;
+        if (routerOf(serverWorld) != null) return;
         activeSlotNeedsCheck = false;
-        setActiveSlot(serverWorld.getReceivedRedstonePower(pos));
+        setActiveSlot(powerAt(serverWorld, pos));
     }
 
     /** Pushed by a router whose power changed. */
     public void onRouterPowerChanged(BlockPos routerPos, int power) {
         if (!(world instanceof ServerWorld serverWorld)) return;
-        if (!routerPos.equals(BoardSpaceRoutersPersistentState.get(serverWorld).getRouter(pos))) return;
+        if (!routerPos.equals(routerOf(serverWorld))) return;
         activeSlotNeedsCheck = false;
         setActiveSlot(power);
     }
@@ -131,8 +157,21 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         if (slot == activeSlot) return;
         activeSlot = slot;
         super.markDirty();
-        applyActiveCartridge();
-        syncToClients(); // the GUI shows the active slot, even when the cartridge doesn't change
+        // The GUI shows the active slot: sent even when the cartridge doesn't change (once)
+        if (!applyActiveCartridge()) syncToClients();
+    }
+
+    /**
+     * Placed from an item that already holds cartridges: the loaded cartridges count as applied, but the block state
+     * still has the default type. Takes the role of the active cartridge right away.
+     */
+    public void onPlaced() {
+        if (!(world instanceof ServerWorld)) return;
+        refreshActiveSlot();
+        if (getCachedState().get(TILE_TYPE) != determineBoardSpaceType(getStack(activeSlot))) {
+            appliedCartridge = null;
+            applyActiveCartridge();
+        }
     }
 
     @Override
@@ -150,17 +189,64 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         this.setStack(getActiveSlot(), stack);
     }
 
+    // ---------------------------------------------------------------- links kept when the cartridge is replaced
+
+    /**
+     * Links of the cartridges taken out of each slot, until a cartridge without links takes their place: replacing a
+     * cartridge (another type, from the interface or a hopper) keeps the links of the board space. Server side, not saved.
+     */
+    private final Map<Integer, DestinationsComponent> removedLinks = new HashMap<>();
+
+    @Override
+    public ItemStack removeStack(int slot, int amount) {
+        rememberLinks(slot);
+        return super.removeStack(slot, amount);
+    }
+
+    @Override
+    public ItemStack removeStack(int slot) {
+        rememberLinks(slot);
+        return super.removeStack(slot);
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack) {
+        if (world instanceof ServerWorld) {
+            int wrapped = wrapSlot(slot);
+            if (stack.isEmpty()) {
+                rememberLinks(wrapped);
+            } else if (stack.getItem() instanceof CartridgeItem) {
+                DestinationsComponent own = stack.get(ModComponents.DESTINATIONS_COMPONENT);
+                DestinationsComponent kept = removedLinks.remove(wrapped);
+                if ((own == null || own.destinations().isEmpty()) && kept != null) {
+                    stack.set(ModComponents.DESTINATIONS_COMPONENT, kept);
+                }
+            }
+        }
+        super.setStack(slot, stack);
+    }
+
+    private void rememberLinks(int slot) {
+        if (!(world instanceof ServerWorld)) return;
+        ItemStack current = getStack(slot);
+        if (!(current.getItem() instanceof CartridgeItem)) return;
+        DestinationsComponent links = current.get(ModComponents.DESTINATIONS_COMPONENT);
+        if (links != null && !links.destinations().isEmpty()) removedLinks.put(wrapSlot(slot), links);
+    }
+
     /**
      * Applies the role of the active cartridge (block state type, colour, token notification) if it changed.
      * Server side; the client receives the result through the block state and the block entity data.
+     *
+     * @return true if it changed (and was sent to the clients)
      */
-    private void applyActiveCartridge() {
-        if (!(world instanceof ServerWorld serverWorld)) return;
+    private boolean applyActiveCartridge() {
+        if (!(world instanceof ServerWorld serverWorld)) return false;
         ItemStack stack = getStack(activeSlot);
         BoardSpaceType type = determineBoardSpaceType(stack);
         if (stack == appliedCartridge && type == appliedType) {
             updateBoardSpaceColor();
-            return;
+            return false;
         }
         appliedCartridge = stack;
         appliedType = type;
@@ -174,6 +260,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         updateBoardSpaceColor();
         syncToClients();
         getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
+        return true;
     }
 
     private static BoardSpaceType determineBoardSpaceType(ItemStack stack) {
@@ -189,7 +276,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     private void spawnChangeParticles(ServerWorld serverWorld) {
-        Vec3d center = pos.toCenterPos();
+        // On the tile as it is seen (lowered, sloped, a large tile's middle)
+        Vec3d center = BoardSpaces.standPos(serverWorld, pos).add(0, 0.2, 0);
         serverWorld.spawnParticles(ParticleTypes.GLOW, center.x, center.y, center.z, 10, 0.05, 0.05, 0.05, 0.2);
     }
 
@@ -223,7 +311,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public static void searchAndDisplayDestinations(ServerWorld world, BlockPos pos, ServerPlayerEntity holder) {
-        BoardSpaceBlockEntity boardSpaceEntity = TileBlock.getBoardSpaceEntity(world, pos);
+        BoardSpaceBlockEntity boardSpaceEntity = AdvancedTileBlock.getBoardSpaceEntity(world, pos);
         if (boardSpaceEntity == null) return;
         List<BoardSpaceDestination> destinations = boardSpaceEntity.getStockedDestinations();
         displayDestinations(world, pos, holder, destinations);
@@ -300,10 +388,25 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         getBoardSpaceBehavior(stack).tick(serverWorld, this, stack, ticks);
     }
 
+    public @Nullable fr.lordfinn.steveparty.components.TileStampComponent getStamp() {
+        return stamp;
+    }
+
+    /** Stamps (or, with null, clears) the tile's own look; saved and sent to the clients. */
+    public void setStamp(@Nullable fr.lordfinn.steveparty.components.TileStampComponent stamp) {
+        this.stamp = stamp;
+        super.markDirty();
+        syncToClients();
+    }
+
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
         nbt.putInt(ACTIVE_SLOT_KEY, activeSlot);
+        if (stamp != null) {
+            fr.lordfinn.steveparty.components.TileStampComponent.CODEC.encodeStart(NbtOps.INSTANCE, stamp)
+                    .ifSuccess(element -> nbt.put(STAMP_KEY, element));
+        }
         if (!cycleIndexes.isEmpty()) {
             NbtCompound cycles = new NbtCompound();
             cycleIndexes.forEach((slot, index) -> cycles.putInt(Integer.toString(slot), index));
@@ -315,7 +418,11 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
         activeSlot = nbt.getInt(ACTIVE_SLOT_KEY);
+        stamp = nbt.contains(STAMP_KEY)
+                ? fr.lordfinn.steveparty.components.TileStampComponent.CODEC.parse(NbtOps.INSTANCE, nbt.get(STAMP_KEY)).result().orElse(null)
+                : null;
         activeSlotNeedsCheck = true;
+        routerKnown = false;
         appliedCartridge = getStack(activeSlot);
         appliedType = determineBoardSpaceType(appliedCartridge);
         cycleIndexes.clear();
@@ -354,7 +461,10 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public List<MobEntity> getTokensOnMe() {
         List<MobEntity> tokens = new ArrayList<>();
         if (this.world != null) {
-            for (MobEntity entity : this.world.getEntitiesByClass(MobEntity.class, Box.of(this.getPos().toCenterPos(), 1, 1, 1), entity -> entity instanceof MobEntity)) {
+            // Around where tokens stand: the surface of a lowered tile is in the cell below
+            Vec3d stand = BoardSpaces.standPos(this.world, this.getPos());
+            Box box = new Box(stand.x - 0.5, stand.y - 0.25, stand.z - 0.5, stand.x + 0.5, stand.y + 0.75, stand.z + 0.5);
+            for (MobEntity entity : this.world.getEntitiesByClass(MobEntity.class, box, entity -> entity instanceof MobEntity)) {
                 if (entity instanceof TokenizedEntityInterface && ((TokenizedEntityInterface) entity).steveparty$isTokenized()) {
                     tokens.add(entity);
                 }
@@ -365,17 +475,27 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
         // A board space without cartridge acts as a default one: the game must go on
-        this.getBoardSpaceBehavior().onDestinationReached(this.world, this.pos, token, this, partyController);
-        partyController.nextStep();
+        ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
+        behavior.onDestinationReached(this.world, this.pos, token, this, partyController);
+        if (!behavior.keepsTurn(token)) partyController.nextStep();
     }
 
-    protected void setWalkedOnSound(SoundEvent walkedOnSound) {
-        this.walkedOnSound = walkedOnSound;
-    }
-
+    /**
+     * A token of a running party reached this board space (see PartyStep#onTileReached): the tile twinkles, and pops
+     * softly if the token goes on. Where it stops (its destination: see {@link #onDestinationReached}) or when a stop
+     * tile halts it, the landing feedback of the tile's role plays instead ({@link TileFeedback}).
+     */
     public void onTileReached(@NotNull MobEntity token, PartyControllerEntity partyControllerEntity) {
-        if (this.world == null || this.walkedOnSound == null) return;
-        this.world.playSound(null, this.pos, this.walkedOnSound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+        if (!(this.world instanceof ServerWorld serverWorld)) return;
+        Vec3d at = BoardSpaces.standPos(serverWorld, this.pos);
+        // A few twinkles in the colour of the tile's face (its cartridge's colour)
+        serverWorld.spawnParticles(new fr.lordfinn.steveparty.particles.MulaSparkleEffect(TileFeedback.tileColor(this), 0.8F,
+                fr.lordfinn.steveparty.particles.MulaSparkleEffect.TWINKLE), at.x, at.y + 0.15, at.z, 5, 0.3, 0.05, 0.3, 0.0);
+        int steps = token instanceof TokenizedEntityInterface tokenized ? tokenized.steveparty$getNbSteps() : 0;
+        // Lands (onDestinationReached): its move ends here, or a Stop space ended it (forced arrival)
+        if (steps == 0 && (ABoardSpaceBlock.countsAsStep(getCachedState().getBlock())
+                || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(serverWorld, this))) return;
+        TileFeedback.pass(serverWorld, this.pos);
     }
 
     public void setCycleIndex(int i) {

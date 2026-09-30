@@ -1,0 +1,371 @@
+{
+	"credit": "SteveParty - board of the wooden panel, in front of the post of the fence below (front: north)",
+	"textures": {
+		"planks": "minecraft:block/oak_planks",
+		"log": "minecraft:block/stripped_oak_log",
+		"log_top": "minecraft:block/stripped_oak_log_top",
+		"particle": "minecraft:block/oak_planks"
+	},
+	"elements": [
+		{
+			"from": [
+				-4,
+				1,
+				3
+			],
+			"to": [
+				8,
+				17,
+				5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0,
+						0,
+						12,
+						16
+					],
+					"texture": "#planks"
+				},
+				"south": {
+					"uv": [
+						4,
+						0,
+						16,
+						16
+					],
+					"texture": "#planks"
+				},
+				"west": {
+					"uv": [
+						3,
+						0,
+						5,
+						16
+					],
+					"texture": "#planks"
+				},
+				"up": {
+					"uv": [
+						4,
+						3,
+						16,
+						5
+					],
+					"texture": "#planks"
+				},
+				"down": {
+					"uv": [
+						4,
+						11,
+						16,
+						13
+					],
+					"texture": "#planks"
+				}
+			},
+			"name": "planks left"
+		},
+		{
+			"from": [
+				8,
+				1,
+				3
+			],
+			"to": [
+				20,
+				17,
+				5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0,
+						0,
+						12,
+						16
+					],
+					"texture": "#planks"
+				},
+				"east": {
+					"uv": [
+						11,
+						0,
+						13,
+						16
+					],
+					"texture": "#planks"
+				},
+				"south": {
+					"uv": [
+						4,
+						0,
+						16,
+						16
+					],
+					"texture": "#planks"
+				},
+				"up": {
+					"uv": [
+						4,
+						3,
+						16,
+						5
+					],
+					"texture": "#planks"
+				},
+				"down": {
+					"uv": [
+						4,
+						11,
+						16,
+						13
+					],
+					"texture": "#planks"
+				}
+			},
+			"name": "planks right"
+		},
+		{
+			"from": [
+				-4,
+				17,
+				2
+			],
+			"to": [
+				20,
+				18,
+				5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0,
+						14,
+						16,
+						15
+					],
+					"texture": "#log"
+				},
+				"east": {
+					"uv": [
+						11,
+						14,
+						14,
+						15
+					],
+					"texture": "#log"
+				},
+				"south": {
+					"uv": [
+						0,
+						14,
+						16,
+						15
+					],
+					"texture": "#log"
+				},
+				"west": {
+					"uv": [
+						2,
+						14,
+						5,
+						15
+					],
+					"texture": "#log"
+				},
+				"up": {
+					"uv": [
+						0,
+						2,
+						16,
+						5
+					],
+					"texture": "#log"
+				},
+				"down": {
+					"uv": [
+						0,
+						11,
+						16,
+						14
+					],
+					"texture": "#log"
+				}
+			},
+			"name": "top rail"
+		},
+		{
+			"from": [
+				-4,
+				0,
+				2
+			],
+			"to": [
+				20,
+				1,
+				5
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0,
+						15,
+						16,
+						16
+					],
+					"texture": "#log"
+				},
+				"east": {
+					"uv": [
+						11,
+						15,
+						14,
+						16
+					],
+					"texture": "#log"
+				},
+				"south": {
+					"uv": [
+						0,
+						15,
+						16,
+						16
+					],
+					"texture": "#log"
+				},
+				"west": {
+					"uv": [
+						2,
+						15,
+						5,
+						16
+					],
+					"texture": "#log"
+				},
+				"up": {
+					"uv": [
+						0,
+						2,
+						16,
+						5
+					],
+					"texture": "#log"
+				},
+				"down": {
+					"uv": [
+						0,
+						11,
+						16,
+						14
+					],
+					"texture": "#log"
+				}
+			},
+			"name": "bottom rail"
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [
+				75,
+				45,
+				0
+			],
+			"translation": [
+				0,
+				2.5,
+				0
+			],
+			"scale": [
+				0.375,
+				0.375,
+				0.375
+			]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [
+				75,
+				45,
+				0
+			],
+			"translation": [
+				0,
+				2.5,
+				0
+			],
+			"scale": [
+				0.375,
+				0.375,
+				0.375
+			]
+		},
+		"firstperson_righthand": {
+			"rotation": [
+				0,
+				45,
+				0
+			],
+			"scale": [
+				0.4,
+				0.4,
+				0.4
+			]
+		},
+		"firstperson_lefthand": {
+			"rotation": [
+				0,
+				225,
+				0
+			],
+			"scale": [
+				0.4,
+				0.4,
+				0.4
+			]
+		},
+		"ground": {
+			"translation": [
+				0,
+				3,
+				0
+			],
+			"scale": [
+				0.25,
+				0.25,
+				0.25
+			]
+		},
+		"gui": {
+			"rotation": [
+				20,
+				200,
+				0
+			],
+			"translation": [
+				0,
+				-0.5,
+				0
+			],
+			"scale": [
+				0.55,
+				0.55,
+				0.55
+			]
+		},
+		"fixed": {
+			"rotation": [
+				0,
+				180,
+				0
+			],
+			"scale": [
+				0.5,
+				0.5,
+				0.5
+			]
+		}
+	},
+	"gui_light": "front"
+}

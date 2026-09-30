@@ -179,12 +179,15 @@ public class GameplayRulesGameTests implements FabricGameTest {
             Item fragment = mula.getVariant().getFragmentItem();
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(fragment, 64));
 
-            // Not sneaking: regular feeding path, never tames
-            player.setSneaking(false);
-            mula.interactMob(player, Hand.MAIN_HAND);
-            context.assertTrue(!mula.isTamed(), "not tamed without sneaking");
+            // A fragment of another colour: a gentle "no", nothing used
+            Item other = mula.getVariant() == MulaEntity.MulaVariant.BLUE ? MulaEntity.MulaVariant.RED.getFragmentItem()
+                    : MulaEntity.MulaVariant.BLUE.getFragmentItem();
+            player.setStackInHand(Hand.OFF_HAND, new ItemStack(other, 8));
+            mula.interactMob(player, Hand.OFF_HAND);
+            context.assertTrue(!mula.isTamed() && player.getOffHandStack().getCount() == 8, "wrong colour: no, nothing used");
 
-            player.setSneaking(true);
+            // A plain right-click (no sneaking needed), like a bone on a wolf
+            player.setSneaking(false);
             int attempts = 0;
             while (!mula.isTamed() && attempts < 64) {
                 mula.interactMob(player, Hand.MAIN_HAND);
@@ -193,6 +196,10 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertTrue(mula.isTamed(), "tamed after " + attempts + " fragments");
             context.assertTrue(mula.isOwner(player), "owner set");
             context.assertEquals(player.getMainHandStack().getCount(), 64 - attempts, "one fragment consumed per attempt");
+            // tamed: a fragment is not used any more (the owner toggles sitting instead)
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(player.getMainHandStack().getCount(), 64 - attempts, "not used on a tamed Mula");
+            context.assertTrue(mula.isSitting(), "the owner's click makes it sit");
         } finally {
             disconnect(context, player);
         }
@@ -219,14 +226,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertTrue(!mula.isSitting(), "a stranger can't make it sit");
 
             // Food keeps feeding it, even for the owner
-            Item food = switch (mula.getVariant()) {
-                case BLUE -> Items.LAPIS_LAZULI;
-                case RED -> Items.RED_DYE;
-                case GREEN -> Items.GREEN_DYE;
-                case YELLOW -> Items.YELLOW_DYE;
-                case PURPLE -> Items.PURPLE_DYE;
-                case BLACK -> Items.COAL;
-            };
+            Item food = fr.lordfinn.steveparty.entities.custom.MulaFood.foodsOf(mula.getVariant()).iterator().next();
             context.assertTrue(mula.isMulaFood(new ItemStack(food)), food + " is food for " + mula.getVariant());
             owner.setStackInHand(Hand.MAIN_HAND, new ItemStack(food, 4));
             int hunger = mula.getHunger();

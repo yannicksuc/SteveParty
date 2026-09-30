@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_green_plastic_block": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:green_plastic_block"
+          }
+        ]
+      }
+    },
+    "has_plastic_stick": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:plastic_stick"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "steveparty:green_plastic_fence"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_green_plastic_block",
+      "has_plastic_stick",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:green_plastic_fence"
+    ]
+  }
+}

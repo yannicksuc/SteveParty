@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_mini_games_catalogue": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:mini_games_catalogue"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:mini_game_page"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_mini_games_catalogue"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:mini_game_page"
+    ]
+  }
+}

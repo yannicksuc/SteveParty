@@ -5,16 +5,12 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EventPartyStep
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFactory;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,18 +21,6 @@ public class PartyData {
     private List<UUID> tokens = new ArrayList<>();
     private int stepIndex = -1;
     private int nbTurn = 10;
-    /** Coins and stars of the players, for the HUD (sent to the clients, not saved: the controller keeps them). */
-    private ScoreBoard scores = ScoreBoard.EMPTY;
-
-    public record ScoreEntry(UUID player, String name, int coins, int stars) {}
-
-    /**
-     * @param coinItem id of the coin item ("" if none), for its icon
-     * @param starItem id of the star item ("" if none)
-     */
-    public record ScoreBoard(String coinItem, String starItem, List<ScoreEntry> entries) {
-        public static final ScoreBoard EMPTY = new ScoreBoard("", "", List.of());
-    }
 
     // Constructor
     public PartyData() {
@@ -113,16 +97,6 @@ public class PartyData {
 
         buf.writeInt(stepIndex);
         buf.writeInt(nbTurn);
-
-        buf.writeString(scores.coinItem());
-        buf.writeString(scores.starItem());
-        buf.writeInt(scores.entries().size());
-        for (ScoreEntry entry : scores.entries()) {
-            buf.writeUuid(entry.player());
-            buf.writeString(entry.name());
-            buf.writeInt(entry.coins());
-            buf.writeInt(entry.stars());
-        }
     }
 
     public static PartyData fromBuf(PacketByteBuf buf) {
@@ -144,23 +118,7 @@ public class PartyData {
 
         party.stepIndex = buf.readInt();
         party.nbTurn = buf.readInt();
-
-        String coinItem = buf.readString();
-        String starItem = buf.readString();
-        int scoreCount = buf.readInt();
-        List<ScoreEntry> entries = new ArrayList<>();
-        for (int i = 0; i < scoreCount; i++)
-            entries.add(new ScoreEntry(buf.readUuid(), buf.readString(), buf.readInt(), buf.readInt()));
-        party.scores = new ScoreBoard(coinItem, starItem, entries);
         return party;
-    }
-
-    public ScoreBoard getScores() {
-        return scores;
-    }
-
-    public void setScores(ScoreBoard scores) {
-        this.scores = scores == null ? ScoreBoard.EMPTY : scores;
     }
 
     /**
@@ -312,46 +270,5 @@ public class PartyData {
             }
         });
         return tokensWithOwners;
-    }
-
-    public Map<TokenizedEntityInterface, PlayerEntity> getAllTokensWithOwners(ServerWorld world) {
-        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = new HashMap<>();
-        getTokens().forEach(tokenUUID -> {
-            if (world.getEntity(tokenUUID) instanceof TokenizedEntityInterface token) {
-                UUID ownerUUID = token.steveparty$getTokenOwner();
-                if (world.getEntity(ownerUUID) instanceof PlayerEntity player) {
-                    tokensWithOwners.put(token, player);
-                } else {
-                    tokensWithOwners.put(token, null);
-                }
-            }
-        });
-        return tokensWithOwners;
-    }
-
-    public Text getParticipantsAsString(ServerWorld world) {
-        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = getAllTokensWithOwners(world);
-
-        MutableText result = Text.empty();
-        Iterator<Map.Entry<TokenizedEntityInterface, PlayerEntity>> iterator = tokensWithOwners.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<TokenizedEntityInterface, PlayerEntity> entry = iterator.next();
-            Text name = entry.getValue() != null
-                    ? entry.getValue().getName()
-                    : Text.literal("Disconnected User").styled(style -> style.withColor(Formatting.GRAY));
-            MutableText participantText = Text.translatable(
-                    "message.steveparty.played_by",
-                    ((Entity) entry.getKey()).getCustomName(),
-                    name
-            );
-
-            result.append(participantText);
-            if (iterator.hasNext()) {
-                result.append(Text.literal(", "));
-            }
-        }
-
-        return result;
     }
 }

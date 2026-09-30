@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:orange_polished_concrete_bricks_wall_from_orange_concrete_stonecutting"
+        "recipe": "steveparty:orange_polished_concrete_bricks_wall_from_orange_concrete_stonecutting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:orange_polished_concrete_bricks_wall_from_orange_concrete_stonecutting"
+      "steveparty:orange_polished_concrete_bricks_wall_from_orange_concrete_stonecutting"
     ]
   }
 }

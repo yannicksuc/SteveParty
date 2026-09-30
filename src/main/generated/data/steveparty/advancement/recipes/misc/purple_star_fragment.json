@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:purple_star_fragment"
+        "recipe": "steveparty:purple_star_fragment"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "minecraft:purple_star_fragment"
+      "steveparty:purple_star_fragment"
     ]
   }
 }

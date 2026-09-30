@@ -8,6 +8,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -48,8 +49,19 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
 
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
-        return this.getDefaultState()
+        BlockState state = this.getDefaultState()
                 .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+        // Placed against an already powered back: counting from the start (neighbor updates only see later changes)
+        return state.with(POWERED, isReceivingPowerFromSouth(ctx.getWorld(), ctx.getBlockPos(), state));
+    }
+
+    /** Placed by a player: the base follows the party's players when a party controller is near, else everyone. */
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+        if (!world.isClient && placer instanceof PlayerEntity && world.getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity base) {
+            base.onPlacedByPlayer();
+        }
     }
 
     @Override
@@ -76,20 +88,19 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack mainHandStack = player.getMainHandStack();
+        // Same result as the server on the client (arm swing, no item use behind the screen)
+        if (world.isClient) return mainHandStack.getItem() instanceof WrenchItem ? ActionResult.SUCCESS : ActionResult.PASS;
 
-        if (!world.isClient) {
-            BlockEntity blockEntity = world.getBlockEntity(pos);
-            if (blockEntity instanceof GoalPoleBaseBlockEntity goalPoleBaseBlockEntity) {
-                if (mainHandStack.getItem() instanceof WrenchItem) {
-                    goalPoleBaseBlockEntity.openScreen((ServerPlayerEntity) player);
-                    return ActionResult.SUCCESS;
-                } else {
-                    // Show action bar message
-                    player.sendMessage(
-                            Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD),
-                            true // action bar
-                    );
-                }
+        if (world.getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity goalPoleBaseBlockEntity) {
+            if (mainHandStack.getItem() instanceof WrenchItem) {
+                goalPoleBaseBlockEntity.openScreen((ServerPlayerEntity) player);
+                return ActionResult.SUCCESS;
+            } else if (!(mainHandStack.getItem() instanceof BlockItem)) {
+                // Show action bar message (not while building on the base, e.g. placing the pole on it)
+                player.sendMessage(
+                        Text.translatable("message.steveparty.wrench_required").formatted(Formatting.GOLD),
+                        true // action bar
+                );
             }
         }
 
@@ -112,36 +123,28 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             return;
         }
 
-        // Determine powering side (south relative to facing)
-        Direction facing = state.get(FACING);
-        Direction poweringSide = facing.rotateYClockwise().rotateYClockwise();
-
-        // Check redstone on powering side → pause/resume logic
+        // Back port: pauses or runs the base, depending on its redstone mode
         boolean isPowered = isReceivingPowerFromSouth(world, pos, state);
         if (state.get(POWERED) != isPowered) {
             world.setBlockState(pos, state.with(POWERED, isPowered), 3);
-
-            if (isPowered) {
-                goalPoleBaseBlockEntity.resumeGoal();
-            } else {
-                goalPoleBaseBlockEntity.pauseGoal();
-            }
+            goalPoleBaseBlockEntity.onBackPowerChanged();
             return;
         }
 
-        // Otherwise → power on any other side is a reset impulse.
-        // Only trigger on the rising edge, not on every neighbor update while a side stays powered.
-        boolean resetSidePowered = false;
+        // Reset: a pulse on any side but the back puts the points back to 0.
+        // Only on the rising edge, not on every neighbor update while it stays powered.
+        Direction back = state.get(FACING).getOpposite();
+        boolean resetPowered = false;
         for (Direction dir : Direction.values()) {
-            if (dir == poweringSide) continue;
+            if (dir == back) continue;
             // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
             if (world.getEmittedRedstonePower(pos.offset(dir), dir) > 0) {
-                resetSidePowered = true;
+                resetPowered = true;
                 break;
             }
         }
-        if (goalPoleBaseBlockEntity.updateResetSidePower(resetSidePowered)) {
-            goalPoleBaseBlockEntity.resetGoal();
+        if (goalPoleBaseBlockEntity.updateResetSidePower(resetPowered)) {
+            goalPoleBaseBlockEntity.reset();
         }
     }
 
@@ -170,19 +173,12 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
         if (!state.isOf(newState.getBlock())) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof GoalPoleBaseBlockEntity entity) {
-                entity.removeGoal();
+                entity.onBroken();
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }
 
-    @Override
-    public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (type == ModBlockEntities.GOAL_POLE_BASE_ENTITY) {
-            return (world1, pos, state1, blockEntity) -> ((GoalPoleBaseBlockEntity) blockEntity).tick(world1, pos, state1, blockEntity);
-        }
-        return null;
-    }
     @Override
     public boolean hasComparatorOutput(BlockState state) {
         return true;

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "C": "steveparty:plastic_pellets",
+    "P": "minecraft:light_weighted_pressure_plate",
+    "W": "#minecraft:wool_carpets"
+  },
+  "pattern": [
+    "WWW",
+    "CPC"
+  ],
+  "result": {
+    "count": 2,
+    "id": "steveparty:tile"
+  }
+}

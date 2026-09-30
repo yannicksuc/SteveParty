@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "C": "minecraft:chest",
+    "G": "minecraft:gold_ingot",
+    "R": "minecraft:comparator",
+    "T": "steveparty:tile"
+  },
+  "pattern": [
+    " R ",
+    "GTG",
+    "GCG"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:advanced_tile"
+  }
+}

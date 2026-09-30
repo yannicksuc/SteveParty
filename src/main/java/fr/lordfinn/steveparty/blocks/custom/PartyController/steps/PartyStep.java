@@ -9,10 +9,8 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
-import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -91,10 +89,6 @@ public class PartyStep {
         return ActionResult.PASS;
     }
 
-    public void printInfo(ServerPlayerEntity player) {
-        MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.party_step_info", this.getType().getTranslatedText(), this.getStatus().getTranslatedText()), MessageUtils.MessageType.CHAT);
-    }
-
     public void end(PartyControllerEntity partyControllerEntity) {
     }
 
@@ -155,7 +149,8 @@ public class PartyStep {
     public ActionResult onTileReached(@NotNull MobEntity token, @NotNull BoardSpaceBlockEntity boardSpaceEntity, PartyControllerEntity partyControllerEntity) {
         boardSpaceEntity.onTileReached(token, partyControllerEntity);
         if (boardSpaceEntity.getWorld() instanceof ServerWorld world && partyControllerEntity.getWorld() instanceof ServerWorld) {
-            if (ABoardSpaceBlock.countsAsStep(world.getBlockState(boardSpaceEntity.getPos()).getBlock())
+            if ((ABoardSpaceBlock.countsAsStep(world.getBlockState(boardSpaceEntity.getPos()).getBlock())
+                    || fr.lordfinn.steveparty.service.TokenMovementService.isForcedStop(world, boardSpaceEntity))
                     && ((TokenizedEntityInterface) token).steveparty$isTokenized()
                     && ((TokenizedEntityInterface) token).steveparty$getNbSteps() == 0) {
                 boardSpaceEntity.onDestinationReached(token, partyControllerEntity);

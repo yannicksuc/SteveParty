@@ -15,8 +15,6 @@ import software.bernie.geckolib.renderer.GeoBlockRenderer;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlock.ACTIVATED;
-
 public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBlockEntity> {
     private final DiceForgeOrbitRenderer orbitRenderer = new DiceForgeOrbitRenderer();
     private final DiceForgeConvergenceRenderer convergenceRenderer = new DiceForgeConvergenceRenderer();
@@ -36,7 +34,7 @@ public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBloc
                        int packedLight, int packedOverlay) {
         super.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
 
-        if (!blockEntity.getCachedState().get(ACTIVATED)) return;
+        if (!blockEntity.isCoreInPlace()) return;
 
         // Trail particles are spawned once per game tick (not per frame) so the density is FPS independent
         boolean spawnParticles = false;
