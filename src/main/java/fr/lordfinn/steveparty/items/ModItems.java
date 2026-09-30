@@ -183,6 +183,10 @@ public class ModItems {
             itemGroup.add(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.withSteps(-3));
             itemGroup.add(REPLAY_CARTRIDGE);
             itemGroup.add(TELEPORT_CARTRIDGE);
+            for (fr.lordfinn.steveparty.components.TeleportNetwork network : fr.lordfinn.steveparty.components.TeleportNetwork.values()) {
+                if (network == fr.lordfinn.steveparty.components.TeleportNetwork.VIOLET) continue;
+                itemGroup.add(fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
+            }
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);

@@ -196,6 +196,9 @@ public class StevepartyClient implements ClientModInitializer {
         // Bandana: one icon per colour (0, 0.25, ... 1: teal, blue, pink, orange, yellow)
         net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.BANDANA, Steveparty.id("bandana_color"),
                 (stack, world, entity, seed) -> fr.lordfinn.steveparty.items.custom.BandanaItem.getColor(stack) / 4f);
+        // Teleport Cartridge: its label in the colour of its network (0, 0.25, 0.5, 0.75: violet, green, orange, blue)
+        net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.TELEPORT_CARTRIDGE, Steveparty.id("teleport_network"),
+                (stack, world, entity, seed) -> fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem.settings(stack).network().ordinal() / 4f);
         // Dyed flag: its own model, one white layer per shading level (and the stick, untinted), each level tinted
         // with the colour of the dye's wool (FlagPalettes)
         net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.FLAG, Steveparty.id("dyed"),
