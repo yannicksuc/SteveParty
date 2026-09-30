@@ -362,35 +362,42 @@ public final class TileStampTextures {
 
     /**
      * The Hiding Trader in his open cardboard box: his head (bandana, unibrow, eyes, nose, all above the rim), the box
-     * (a tape seam down its front) and its two side flaps open at 45 degrees. On a small tile a smaller head over the
-     * box, its flaps a pixel longer. '#' darkest shade, 'b' bandana, 's' skin, 'o' eye white, 'n' nose, '+' cardboard,
+     * (a tape seam down its front) and its two side flaps open at 45 degrees; a simpler open box on a small tile.
+     * '#' darkest shade, 'b' bandana, 's' skin, 'o' eye white, 'n' nose, '+' cardboard,
      * 't' tape.
      */
     private static final String[] SHOP_BOX = {
-            ".....######.....",
-            ".....#bbbb#.....",
-            ".....######.....",
-            "#....#o##o#....#",
-            "-#...#snns#...#-",
-            ".-#..#snns#..#-.",
-            "..############..",
-            "..#++++tt++++#..",
-            "..#++++tt++++#..",
-            "..#++++tt++++#..",
-            "..#++++tt++++#..",
-            "..#++++tt++++#..",
-            "..############.."};
+            "..................",
+            "......######......",
+            "......#bbbb#......",
+            "#.....######.....#",
+            "+#....#o##o#....#+",
+            ".-#...#snns#...#-.",
+            "..-#..#snns#..#-..",
+            "...############...",
+            "...#++tttttt++#...",
+            "...#++tttttt++#...",
+            "...#++tttttt++#...",
+            "...#++tttttt++#...",
+            "...#++tttttt++#...",
+            "...#++tttttt++#...",
+            "...#++tttttt++#...",
+            "...############...",
+            "...+++##++##+++...",
+            "......##..##......"};
     private static final String[] SMALL_SHOP_BOX = {
-            "...######...",
-            "...#bbbb#...",
-            "...#o##o#...",
-            "#..#snns#..#",
-            ".#.#snns#.#.",
+            "............",
+            "....####....",
+            "#...#++#...#",
+            ".#..#tt#..#.",
+            "..#.#tt#.#..",
             "..########..",
-            "..#++tt++#..",
-            "..#++tt++#..",
-            "..#++tt++#..",
-            "..########.."};
+            "..#+tttt+#..",
+            "..#+tttt+#..",
+            "..#+tttt+#..",
+            "..#+tttt+#..",
+            "..########..",
+            "...##..##..."};
     private static final Map<Character, Float> SHOP_SHADES = Map.of(
             '#', FEATURE, 'b', 0.2f, 's', -0.5f, 'o', NUMBER, 'n', 0.5f, '+', 0.3f, 't', -0.3f, '-', 0.08f);
 
