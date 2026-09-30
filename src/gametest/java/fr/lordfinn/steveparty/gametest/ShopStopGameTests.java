@@ -214,6 +214,39 @@ public class ShopStopGameTests implements FabricGameTest {
         });
     }
 
+    /** During a party, the party HUD's live state shows the turn waiting at the shop, its steps left kept. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void partyHudShowsTheShopStop(TestContext context) {
+        withPlayer(context, owner -> {
+            Board board = board(context, owner, ModBlocks.CHECK_POINT);
+            BlockPos controllerPos = new BlockPos(8, 1, 8);
+            context.setBlockState(controllerPos, ModBlocks.PARTY_CONTROLLER);
+            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity controller = context.getBlockEntity(controllerPos);
+            fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData data = new fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData();
+            data.addToken(board.token().getUuid());
+            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep());
+            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(board.token().getUuid(), owner.getUuid()));
+            data.addStep(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep(new ArrayList<>(List.of(board.token().getUuid()))));
+            controller.setPartyData(data);
+            controller.nextStep();
+            controller.nextStep();
+            later(context, 2, () -> {
+                TokenMovementService.moveEntityOnBoard(board.token(), 2);
+                later(context, 40, () -> {
+                    ShopStopScreenHandler handler = assertShopping(context, board, owner, 2);
+                    var live = fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData.capture(controller, context.getWorld());
+                    context.assertTrue(live.shopping(), "the HUD shows the shopping");
+                    context.assertEquals(live.stepsLeft(), 2, "and the steps left");
+                    handler.onButtonClick(owner, ShopStopScreenHandler.BUY_NOTHING_BUTTON_ID);
+                    context.assertFalse(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData.capture(controller, context.getWorld()).shopping(),
+                            "the stop is over");
+                    context.setBlockState(controllerPos, Blocks.AIR);
+                    later(context, 50, () -> finish(context, board, owner));
+                });
+            });
+        });
+    }
+
     /** The limit (1 by default) is enforced: one purchase, no second one, and the stop ends by itself. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void purchaseLimitIsEnforcedAndEndsTheStop(TestContext context) {

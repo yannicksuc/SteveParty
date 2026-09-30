@@ -51,6 +51,8 @@ public class TokenTurnPartyStep extends PartyStep {
     private boolean replay;
     /** The die spent for this turn (a copy), given back with a replay. Not saved: lost across a restart. */
     private ItemStack spentDie = ItemStack.EMPTY;
+    /** Total of the dice rolled for this turn by its player, 0 until they roll (shown by the party HUD). Not saved. */
+    private int roll;
 
     public TokenTurnPartyStep(NbtCompound nbt) {
         super(nbt);
@@ -69,6 +71,7 @@ public class TokenTurnPartyStep extends PartyStep {
     public void start(PartyControllerEntity partyControllerEntity) {
         super.start(partyControllerEntity);
         absentDeadline = -1;
+        roll = 0;
         if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
             if (this.tokenUUID == null) {
                 cancelTurn(partyControllerEntity.getPartyData().getOwners(serverWorld), partyControllerEntity);
@@ -159,9 +162,21 @@ public class TokenTurnPartyStep extends PartyStep {
     /** Remembers the die spent by this turn's player (for a replay: see {@link #grantReplay}). Never consumes the roll. */
     @Override
     public ActionResult onDiceRoll(DiceEntity dice, UUID ownerUUID, int rollValue, PartyControllerEntity partyControllerEntity) {
-        if (status == Status.IN_PROGRESS && (owner == null || owner.equals(ownerUUID)))
+        if (status == Status.IN_PROGRESS && (owner == null || owner.equals(ownerUUID))) {
             spentDie = spentDie(dice);
+            roll = rollValue;
+        }
         return ActionResult.PASS;
+    }
+
+    /** @return the total rolled for this turn by its player, 0 while they have not rolled */
+    public int getRoll() {
+        return roll;
+    }
+
+    /** @return the world time at which the turn of the absent token is skipped, -1 while it is not waited for */
+    public long getAbsentDeadline() {
+        return absentDeadline;
     }
 
     /**
