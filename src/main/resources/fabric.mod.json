@@ -18,6 +18,12 @@
     ],
     "main": [
       "fr.lordfinn.steveparty.Steveparty"
+    ],
+    "rei_client": [
+      "fr.lordfinn.steveparty.client.compat.rei.SteveReiPlugin"
+    ],
+    "rei_common": [
+      "fr.lordfinn.steveparty.compat.rei.SteveReiCommonPlugin"
     ]
   },
   "mixins": [
@@ -33,5 +39,8 @@
     "minecraft": "${minecraft_version}",
     "java": ">=21",
     "geckolib": ">=${geckolib_version}"
+  },
+  "suggests": {
+    "roughlyenoughitems": "*"
   }
 }

@@ -54,6 +54,13 @@ public final class TileContents {
         return cartridges;
     }
 
+    /** A copy of the tile item {@code tile} (one) holding {@code cartridge} (one) in its first slot, as a tile taken with it. */
+    public static ItemStack holding(ItemStack tile, ItemStack cartridge) {
+        ItemStack result = tile.copyWithCount(1);
+        result.set(DataComponentTypes.CONTAINER, ContainerComponent.fromStacks(List.of(cartridge.copyWithCount(1))));
+        return result;
+    }
+
     /** The one of {@code count} cartridges shown now: each in turn, {@link #CYCLE_MS} each. */
     public static int previewedIndex(int count) {
         return count <= 1 ? 0 : (int) ((Util.getMeasuringTimeMs() / CYCLE_MS) % count);

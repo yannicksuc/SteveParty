@@ -1308,5 +1308,8 @@
   "gui.steveparty.party_controller.action.rolled": "%s rolled %s",
   "gui.steveparty.party_controller.action.start_rolls": "Dice rolls for the turn order",
   "gui.steveparty.party_controller.action.start_rolls.count": "%s/%s players rolled",
-  "gui.steveparty.party_controller.action.mini_game": "Mini-game: %s"
+  "gui.steveparty.party_controller.action.mini_game": "Mini-game: %s",
+  "rei.steveparty.cartridge_application": "Cartridge application",
+  "rei.steveparty.cartridge_application.how": "Right-click the tile with the cartridge, or put it in its slot",
+  "rei.steveparty.cartridge_application.advanced": "The Advanced Tile holds up to 16 cartridges: the redstone power picks the active one"
 }

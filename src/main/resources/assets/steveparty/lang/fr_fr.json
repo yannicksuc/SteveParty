@@ -1309,5 +1309,8 @@
   "gui.steveparty.party_controller.action.rolled": "%s a fait %s",
   "gui.steveparty.party_controller.action.start_rolls": "Lancers de dé pour l'ordre de jeu",
   "gui.steveparty.party_controller.action.start_rolls.count": "%s/%s joueurs ont lancé",
-  "gui.steveparty.party_controller.action.mini_game": "Mini-jeu : %s"
+  "gui.steveparty.party_controller.action.mini_game": "Mini-jeu : %s",
+  "rei.steveparty.cartridge_application": "Application de cartouche",
+  "rei.steveparty.cartridge_application.how": "Clic droit sur la tuile avec la cartouche, ou pose-la dans son emplacement",
+  "rei.steveparty.cartridge_application.advanced": "La Tuile avancée en contient jusqu'à 16 : la puissance de redstone choisit l'active"
 }
