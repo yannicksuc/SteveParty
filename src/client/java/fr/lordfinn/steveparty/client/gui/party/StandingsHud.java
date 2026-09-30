@@ -18,11 +18,11 @@ import java.util.UUID;
 /**
  * The standings, Mario Party style: one plate per player, best first, each with its rank (« 1er » on gold, « 2e » on
  * silver, « 3e » on bronze), its face framed with its token's colour (a crown for the first), the token's name and its
- * player's name, its points (goal poles) and the power-ups its player holds. The player whose turn it is gets a gold
- * plate, slid a little to the right.
+ * player's name, its stars and coins (the party's items, with their icons) and the power-ups its player holds. The
+ * player whose turn it is gets a gold plate, slid a little to the right.
  * <p>
- * Animated: plates glide to their new place when the ranks change, « +N » rises from the points when they go up, a
- * power-up pops when one more is held. Too many players for the room: compact rows (no player name, power-ups
+ * Animated: plates glide to their new place when the ranks change, « +N » / « -N » rises from the stars or the coins
+ * when they change, a power-up pops when one more is held. Too many players for the room: compact rows (no player name, power-ups
  * smaller, on the same line).
  */
 final class StandingsHud {
@@ -59,8 +59,8 @@ final class StandingsHud {
         int ownerColor;
         Text rankText;
         int rankWidth;
-        String points;
-        int pointsWidth;
+        final Counter stars = new Counter();
+        final Counter coins = new Counter();
         String more;
         Plate rankPlate;
         int targetY;
@@ -68,14 +68,42 @@ final class StandingsHud {
         float shownShift;
         boolean current;
         // animations
-        int lastPoints = Integer.MIN_VALUE;
-        String floater;
-        int floaterColor;
-        double floaterAt = -1000;
-        double pointsPopAt = -1000;
+        boolean firstUpdate = true;
         Map<String, Integer> lastCounts = new HashMap<>();
         double[] powerUpPopAt = new double[POWER_UPS_SHOWN];
     }
+
+    /** A number with its item: pops, and lets a « +N » / « -N » rise, when it changes. */
+    private static final class Counter {
+        String text = "0";
+        int width;
+        int last = Integer.MIN_VALUE;
+        String floater;
+        int floaterColor;
+        double floaterAt = -1000;
+        double popAt = -1000;
+
+        void update(int value, double now, TextRenderer font) {
+            text = Integer.toString(value);
+            width = font.getWidth(text);
+            if (last != Integer.MIN_VALUE && value != last) {
+                int gain = value - last;
+                floater = (gain > 0 ? "+" : "") + gain;
+                floaterColor = gain > 0 ? 0xFF2E9E2E : HudDraw.TEXT_WARN;
+                floaterAt = now;
+                popAt = now;
+            }
+            last = value;
+        }
+
+        /** Width of the item and the number. */
+        int fullWidth() {
+            return COUNTER_ICON + 1 + width;
+        }
+    }
+
+    private static final int COUNTER_ICON = 10;
+    private static final int COUNTER_GAP = 4;
 
     int width() {
         return width;
@@ -142,25 +170,17 @@ final class StandingsHud {
                 case 3 -> Plate.ORANGE;
                 default -> Plate.PURPLE;
             };
-            row.points = Integer.toString(player.points);
-            row.pointsWidth = font.getWidth(row.points);
+            // Stars and coins, animated when they change
+            row.stars.update(player.stars, now, font);
+            row.coins.update(player.coins, now, font);
+            boolean firstUpdate = row.firstUpdate;
+            row.firstUpdate = false;
             int shown = Math.min(POWER_UPS_SHOWN, player.powerUps.size());
             row.more = player.powerUps.size() > shown ? "+" + (player.powerUps.size() - shown) : null;
             int itemSize = compact ? 10 : 12;
             int powerUps = shown * itemSize + (row.more != null ? font.getWidth(row.more) + 1 : 0);
-            int points = HudDraw.ICON + 2 + row.pointsWidth;
-            rightColumn = Math.max(rightColumn, compact ? points + (powerUps > 0 ? powerUps + 3 : 0) : Math.max(points, powerUps));
-
-            // Animations of what changed
-            boolean firstUpdate = row.lastPoints == Integer.MIN_VALUE;
-            if (!firstUpdate && player.points != row.lastPoints) {
-                int gain = player.points - row.lastPoints;
-                row.floater = (gain > 0 ? "+" : "") + gain;
-                row.floaterColor = gain > 0 ? 0xFF2E9E2E : HudDraw.TEXT_WARN;
-                row.floaterAt = now;
-                row.pointsPopAt = now;
-            }
-            row.lastPoints = player.points;
+            int currencies = row.stars.fullWidth() + COUNTER_GAP + row.coins.fullWidth();
+            rightColumn = Math.max(rightColumn, compact ? currencies + (powerUps > 0 ? powerUps + 3 : 0) : Math.max(currencies, powerUps));
             Map<String, Integer> counts = new HashMap<>();
             for (int i = 0; i < player.powerUps.size(); i++) {
                 ItemStack stack = player.powerUps.get(i);
@@ -217,7 +237,7 @@ final class StandingsHud {
         int faceX = x + 2 + rankColumn + 3;
         int faceY = y + (rowHeight - faceSize) / 2;
         HudDraw.face(context, player.owner, player.name, player.color, faceX, faceY, faceSize, alpha, false);
-        if (model.hasStandings && player.rank == 1 && player.points > 0 && !compact)
+        if (model.hasStandings && player.rank == 1 && (player.stars > 0 || player.coins > 0) && !compact)
             HudDraw.icon(context, HudDraw.ICON_CROWN, faceX + faceSize - 6, faceY - 4, alpha);
         // Names
         int nameX = faceX + FACE + 4;
@@ -227,27 +247,17 @@ final class StandingsHud {
             HudDraw.text(context, row.name, nameX, y + 4, HudDraw.TEXT, alpha);
             HudDraw.text(context, row.owner, nameX, y + 13, row.ownerColor, alpha);
         }
-        // Points, and the « +N » rising from them
+        // Stars and coins (their « +N » rise at the end, above everything)
         int rightX = nameX + nameColumn + 6;
-        int pointsY = compact ? y + (rowHeight - HudDraw.ICON) / 2 : y + 3;
-        HudDraw.icon(context, HudDraw.ICON_POINTS, rightX, pointsY, alpha);
-        float pop = (float) ((now - row.pointsPopAt) / POP_TICKS);
+        int countersY = compact ? y + (rowHeight - COUNTER_ICON) / 2 : y + 2;
         MatrixStack matrices = context.getMatrices();
-        float numberX = rightX + HudDraw.ICON + 2;
-        if (pop < 1) {
-            float scale = 1 + 0.5f * (1 - HudDraw.easeOutBack(pop));
-            matrices.push();
-            matrices.translate(numberX + row.pointsWidth / 2f, pointsY + 5, 0);
-            matrices.scale(scale, scale, 1);
-            HudDraw.text(context, row.points, -row.pointsWidth / 2, -4, HudDraw.TEXT, alpha);
-            matrices.pop();
-        } else {
-            HudDraw.text(context, row.points, Math.round(numberX), pointsY + 1, HudDraw.TEXT, alpha);
-        }
+        drawCounter(context, model.starItem, row.stars, rightX, countersY, alpha, now);
+        int coinsX = rightX + row.stars.fullWidth() + COUNTER_GAP;
+        drawCounter(context, model.coinItem, row.coins, coinsX, countersY, alpha, now);
         // Power-ups
         int shown = Math.min(POWER_UPS_SHOWN, player.powerUps.size());
         int itemSize = compact ? 10 : 12;
-        int itemsX = compact ? Math.round(numberX) + row.pointsWidth + 3 : rightX;
+        int itemsX = compact ? coinsX + row.coins.fullWidth() + 3 : rightX;
         int itemsY = compact ? y + (rowHeight - itemSize) / 2 : y + rowHeight - itemSize - 1;
         if (alpha > 0.6f) {
             for (int i = 0; i < shown; i++) {
@@ -264,16 +274,46 @@ final class StandingsHud {
         }
         if (row.more != null)
             HudDraw.text(context, row.more, itemsX + shown * itemSize + 1, itemsY + (itemSize - 8) / 2 + 1, HudDraw.TEXT_SOFT, alpha);
-        // Floating « +N »
-        float floater = (float) ((now - row.floaterAt) / FLOATER_TICKS);
-        if (row.floater != null && floater < 1) {
-            int fy = Math.round(pointsY - 2 - HudDraw.easeOutCubic(floater) * 10);
-            float fade = alpha * (floater < 0.6f ? 1 : 1 - (floater - 0.6f) / 0.4f);
-            // Above the items (drawn at a depth of their own) and the next rows
+        drawFloater(context, font, row.stars, rightX, countersY, alpha, now);
+        drawFloater(context, font, row.coins, coinsX, countersY, alpha, now);
+    }
+
+    /** The currency's item (10 px) and its number, which pops when it changes. */
+    private static void drawCounter(DrawContext context, ItemStack icon, Counter counter, int x, int y, float alpha, double now) {
+        MatrixStack matrices = context.getMatrices();
+        if (alpha > 0.6f && !icon.isEmpty()) {
             matrices.push();
-            matrices.translate(0, 0, 400);
-            context.drawText(font, row.floater, Math.round(numberX + row.pointsWidth + 2), fy, HudDraw.fade(row.floaterColor, fade), true);
+            matrices.translate(x + COUNTER_ICON / 2f, y + COUNTER_ICON / 2f, 0);
+            matrices.scale(COUNTER_ICON / 16f, COUNTER_ICON / 16f, 1);
+            context.drawItem(icon, -8, -8);
             matrices.pop();
         }
+        float numberX = x + COUNTER_ICON + 1;
+        float pop = (float) ((now - counter.popAt) / POP_TICKS);
+        if (pop < 1) {
+            float scale = 1 + 0.5f * (1 - HudDraw.easeOutBack(pop));
+            matrices.push();
+            // In front of the item (drawn at a depth of its own)
+            matrices.translate(numberX + counter.width / 2f, y + 5, 200);
+            matrices.scale(scale, scale, 1);
+            HudDraw.text(context, counter.text, -counter.width / 2, -4, HudDraw.TEXT, alpha);
+            matrices.pop();
+        } else {
+            HudDraw.text(context, counter.text, Math.round(numberX), y + 1, HudDraw.TEXT, alpha);
+        }
+    }
+
+    /** The « +N » / « -N » rising from a counter that changed. */
+    private static void drawFloater(DrawContext context, TextRenderer font, Counter counter, int x, int y, float alpha, double now) {
+        float floater = (float) ((now - counter.floaterAt) / FLOATER_TICKS);
+        if (counter.floater == null || floater >= 1) return;
+        int fy = Math.round(y - 2 - HudDraw.easeOutCubic(floater) * 10);
+        float fade = alpha * (floater < 0.6f ? 1 : 1 - (floater - 0.6f) / 0.4f);
+        // Above the items (drawn at a depth of their own) and the next rows
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(0, 0, 400);
+        context.drawText(font, counter.floater, x + COUNTER_ICON + 1 + counter.width + 2, fy, HudDraw.fade(counter.floaterColor, fade), true);
+        matrices.pop();
     }
 }

@@ -36,7 +36,6 @@ final class HudDraw {
     static final Identifier ICON_SHOP = icon("shop");
     static final Identifier ICON_REPLAY = icon("replay");
     static final Identifier ICON_CLOCK = icon("clock");
-    static final Identifier ICON_POINTS = icon("flag");
     static final Identifier ICON_MINI_GAME = icon("gamepad");
     static final Identifier ICON_PREPARING = icon("gear");
     static final Identifier ICON_CROWN = icon("crown");

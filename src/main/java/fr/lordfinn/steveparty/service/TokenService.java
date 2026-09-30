@@ -28,7 +28,7 @@ public class TokenService extends PersistentState {
         if (this.tokenOwners.containsKey(entityId)) {
             this.tokenOwners.get(entityId).setOwnerUuid(ownerUUID);
         } else {
-            this.tokenOwners.put(entityId, new TokenData(ownerUUID, 0, 0));
+            this.tokenOwners.put(entityId, new TokenData(ownerUUID));
         }
     }
 
