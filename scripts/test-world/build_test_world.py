@@ -1,18 +1,28 @@
 """Generates the SteveParty test world as a datapack: a separate flat area with every feature of the mod.
 
 Writes <run-server>/world/datapacks/steveparty-test/, then in game (or through `.\\scripts\\dev.ps1 cmd`):
-    /forceload add 1936 1952 2095 2079     (once, a few seconds before: the chunks must be loaded)
+    /forceload add 1936 1952 2095 2175     (once, a few seconds before: the chunks must be loaded)
     /reload
-    /function steveparty_test:build        (terrain, board, stations, chests of every item)
+    /function steveparty_test:build        (terrain, board, stations, chests of every item, showcase; its merchant 2 s later)
     /function steveparty_test:welcome      (with the player online: kit, day, clear weather, tp to the board)
+    /forceload remove all
+    /function steveparty_test:nouveautes   (tp to the showcase of the new features)
 
-The area (x 1936..2095, z 1952..2079, floor y=99, everything built at y=100), far from the demo board:
+The area (x 1936..2095, z 1952..2175, floor y=99, everything built at y=100), far from the demo board:
   - the board (west): a start zone of 4 start tiles (a token each) feeding the loop through an entry tile, a loop of 30 tiles spaced 4 blocks apart (2 block gap, tiles are 2 blocks wide), each one turned
     toward the next tile of the path, with diagonal sides, and a shortcut: the fork tile has two destinations (the
     main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 emeralds and one is a Stop space trap driven by a router + lever);
   - the stations (east), one per 20x20 plot: dice, shops, goal pole, plastic, signs, building blocks, misc, tiles
     (on stairs, slabs, snow, carpets),
-    chests holding one of every item, and the Mulas' glass enclosure around an activated Dice Forge.
+    chests holding one of every item, and the Mulas' glass enclosure around an activated Dice Forge;
+  - the showcase of the new features (south, z 2098..2146, reached by the path south of the welcome point): a gallery
+    (each feature's cartridge on a pedestal, a title and a French explanation), a demo loop of 18 tiles going through
+    every new role (Stop, Boutique point de passage + tuile, Avancer +3, Reculer -2, Téléportation with 2 arrivals,
+    Rejouer), its own start tile, token and party controller (more than 100 blocks from the board's start tiles, so
+    each controller only finds its own board), a Hiding Trader with a trading stall and a stock chest, a sensor router
+    reading every loop tile into a comparator and a line of 15 lamps, and a chest of every new item.
+    The trader's links (stall, stock chest) live in the world's saved data, not in blocks: after each build, sneak +
+    right click the stall, then the stock chest, with the Shopkeeper Key of the showcase chest (already linked to him).
 """
 import hashlib
 import json
@@ -30,7 +40,7 @@ NS = 'steveparty_test'
 TAG = 'sp_test'
 
 Y = 100                                   # everything stands on the grass floor (y = 99)
-AREA = (1936, 1952, 2095, 2079)           # x0, z0, x1, z1: whole chunks (121..130, 122..129)
+AREA = (1936, 1952, 2095, 2175)           # x0, z0, x1, z1: whole chunks (121..130, 122..135)
 
 COLORS = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray',
           'light_gray', 'cyan', 'purple', 'blue', 'brown', 'green', 'red', 'black']
@@ -139,7 +149,9 @@ def terrain():
              'fill 2030 99 1966 2032 99 2068 dirt_path',
              'fill 2055 99 1966 2057 99 2042 dirt_path',
              'fill 2006 99 1966 2008 99 2068 dirt_path',
-             'fill 2006 99 1990 2080 99 1992 dirt_path']
+             'fill 2006 99 1990 2080 99 1992 dirt_path',
+             # from the welcome point south to the showcase of the new features
+             'fill 1945 99 2006 1947 99 2098 dirt_path']
     return cmds
 
 
@@ -714,6 +726,241 @@ def mula_station(x0=2060, z0=2020):
     return cmds
 
 
+# ---------------------------------------------------------------------------------------------------- new features
+
+# The showcase of the new features, south of the board. Its tiles and party controller are more than 100 blocks
+# (PartyControllerEntity.START_TILES_SEARCH_RADIUS, a box) from the board's start tiles and controller, so each party
+# controller only finds the start tiles of its own board.
+SC_X0, SC_Z0 = 1960, 2112            # north-west corner of the demo loop (6 x 5 tiles, 4 blocks apart)
+SC_START = (1956, 2128)              # the demo start tile, west of the loop's south-west corner
+SC_CONTROLLER = (1948, 2134)
+SC_STEP_CONTROLLER = (1952, 2134)
+SC_CHEST = (1950, 2124)
+SC_ROUTER = (1961, 2140)             # sensor router, its comparator east of it, then 15 lamps
+SC_PEN = (1986, 2110, 1996, 2122)    # the merchant's pen: x0, z0, x1, z1
+SC_STALL = (1989, 2112)
+SC_STOCK = (1994, 2112)
+SC_TRADER_HOME = (1991, 2117)
+SC_EMERALDS = (1984, 2126)
+SC_TRADER_UUID = offline_uuid('SteveParty showcase merchant')   # fixed: the Shopkeeper Key of the chest is linked to him
+
+
+def showcase_loop():
+    """The 18 loop tiles, clockwise from the south-west corner: north up the west side, east, south, west."""
+    x0, z0, x1, z1 = SC_X0, SC_Z0, SC_X0 + 20, SC_Z0 + 16
+    loop = [(x0, z) for z in range(z1, z0, -4)] + [(x, z0) for x in range(x0, x1, 4)] + \
+           [(x1, z) for z in range(z0, z1, 4)] + [(x, z1) for x in range(x1, x0, -4)]
+    assert len(loop) == 18 and len(set(loop)) == 18
+    return loop
+
+
+def rigged_dice(value):
+    return ('{id:"steveparty:default_dice",count:1,components:{"steveparty:dice-faces":[{kind:"normal",value:%d}],'
+            '"minecraft:item_name":%s}}' % (value, jtext('Dé truqué : %d' % value)))
+
+
+def showcase():
+    loop = showcase_loop()
+    owner = int_array(offline_uuid(PLAYER))
+    cx = (SC_X0 + SC_X0 + 20) / 2 + 0.5
+    # Roles of the loop tiles (index -> what it is); the others are simple tiles
+    STOP, FORWARD, SHOP_CP, TELEPORT, REPLAY, SHOP_TILE, BACK = 2, 4, 8, 10, 12, 14, 16
+    ARRIVAL_A, ARRIVAL_B = 15, 1
+    cmds = ['# Showcase of the new features: gallery, demo loop of %d tiles, merchant, sensor router' % len(loop),
+            label(cx, Y + 9, SC_Z0 - 13.5, 'NOUVEAUTÉS', 'gold', 4),
+            label(cx, Y + 7.6, SC_Z0 - 13.5, 'Les nouvelles cartouches, et un plateau de démo qui passe par toutes',
+                  'yellow', 1, False),
+            # Pointers from the welcome point, down the path
+            label(1946.5, Y + 2.8, 2008.5, 'NOUVEAUTÉS : suivre le chemin vers le sud (100 blocs)', 'aqua', 1.2),
+            label(1946.5, Y + 2.1, 2008.5, 'ou /function steveparty_test:nouveautes', 'white', 0.6, False),
+            label(1946.5, Y + 2.5, 2060.5, 'NOUVEAUTÉS : encore 40 blocs au sud', 'aqua', 1.2)]
+
+    # Gallery: each new cartridge on a pedestal, a title and a short explanation
+    gallery = [
+        ('steveparty:board_space_behavior_stop', '', 'Cartouche Stop', 'red',
+         'Arrivée forcée : un pion qui passe\ndessus s\'y arrête, ses pas restants\nsont perdus.'),
+        ('steveparty:shop_cartridge', '', 'Cartouche Boutique', 'yellow',
+         'Point de passage : arrête le pion\nqui passe le temps d\'acheter.\nTuile : ouvre la boutique à l\'arrivée.'),
+        ('steveparty:advance_back_cartridge', '"steveparty:advance-back-steps":3', 'Avancer', 'green',
+         'Le pion qui s\'arrête ici avance\nencore de quelques cases (+1 à +6,\nmolette pour régler).'),
+        ('steveparty:advance_back_cartridge', '"steveparty:advance-back-steps":-2', 'Reculer', 'light_purple',
+         'Le pion qui s\'arrête ici recule\nde quelques cases, par où il est venu\n(-1 à -6).'),
+        ('steveparty:teleport_cartridge', '', 'Téléportation', 'dark_purple',
+         'Le pion qui s\'arrête ici est envoyé\nsur une case d\'arrivée. Arrivées : Clé\nen mode Téléport (arcs violets).'),
+        ('steveparty:replay_cartridge', '', 'Rejouer', 'green',
+         'Le pion qui s\'arrête ici rejoue\naussitôt : relancer le dé et avancer\n(un seul tour en plus).'),
+        ('steveparty:board_space_redstone_router', '', 'Routeur capteur', 'aqua',
+         'Un comparateur lit le rôle de la case\noù un pion s\'arrête (niveau 1 à 15) :\nvoir les lampes sous le plateau.'),
+    ]
+    for k, (item, comp, title, col, text) in enumerate(gallery):
+        x, z = 1980 - 6 * k, SC_Z0 - 10   # read from left to right when arriving from the north (looking south)
+        cmds += show_item(x, z, item, comp)
+        cmds += [label(x + 0.5, Y + 3.9, z + 0.5, title, col, 1.0),
+                 label(x + 0.5, Y + 2.3, z + 0.5, text, 'white', 0.5, False)]
+
+    # Demo loop
+    def slot0(item, nxt, extra=''):
+        return cartridge(0, item, nxt, extra)
+
+    def put(pos, nxt, state, items, block='advanced_tile'):
+        rot = ROTATION[direction_between(pos, nxt[0])]
+        return 'setblock %d %d %d steveparty:%s[tile_type=%s,rotation_8=%d]{Items:[%s]}' % (
+            pos[0], Y, pos[1], block, state, rot, items)
+
+    tags = {}
+    for i, pos in enumerate(loop):
+        nxt = [loop[(i + 1) % len(loop)]]
+        if i == STOP:
+            cmds.append(put(pos, nxt, 'board_space_stop', slot0('board_space_behavior_stop', nxt)))
+            tags[i] = ('STOP', 'red', 'arrivée forcée')
+        elif i == FORWARD:
+            cmds.append(put(pos, nxt, 'tile_advance_back', slot0(
+                'advance_back_cartridge', nxt, ',"steveparty:advance-back-steps":3')))
+            tags[i] = ('AVANCER +3', 'green', 'repart de 3 cases')
+        elif i == SHOP_CP:
+            cmds.append('setblock %d %d %d steveparty:check_point[tile_type=board_space_shop]{Items:[%s]}'
+                        % (pos[0], Y, pos[1], slot0('shop_cartridge', nxt)))
+            tags[i] = ('BOUTIQUE', 'yellow', 'point de passage : arrête le pion qui passe')
+        elif i == TELEPORT:
+            targets = ','.join('[I;%d,%d,%d]' % (loop[t][0], Y, loop[t][1]) for t in (ARRIVAL_A, ARRIVAL_B))
+            cmds.append(put(pos, nxt, 'tile_teleport', slot0(
+                'teleport_cartridge', nxt, ',"steveparty:teleport-targets":{targets:[%s]}' % targets)))
+            tags[i] = ('TÉLÉPORTATION', 'dark_purple', 'vers A ou B (au hasard)')
+        elif i == REPLAY:
+            cmds.append(put(pos, nxt, 'tile_replay', slot0('replay_cartridge', nxt)))
+            tags[i] = ('REJOUER', 'green', 'un tour de plus')
+        elif i == SHOP_TILE:
+            cmds.append(put(pos, nxt, 'board_space_shop', slot0('shop_cartridge', nxt)))
+            tags[i] = ('BOUTIQUE', 'yellow', 'tuile : la boutique s\'ouvre à l\'arrivée')
+        elif i == BACK:
+            cmds.append(put(pos, nxt, 'tile_advance_back', slot0(
+                'advance_back_cartridge', nxt, ',"steveparty:advance-back-steps":-2')))
+            tags[i] = ('RECULER -2', 'light_purple', 'recule sur la Boutique')
+        else:
+            cmds.append(put(pos, nxt, 'default', slot0('board_space_behavior', nxt),
+                            'tile' if i % 2 else 'advanced_tile'))
+    tags[ARRIVAL_A] = ('Arrivée A', 'dark_purple', 'du téléport')
+    tags[ARRIVAL_B] = ('Arrivée B', 'dark_purple', 'du téléport')
+    tags[(FORWARD + 3) % len(loop)] = ('Arrivée du +3', 'green', '')
+    for i, (title, col, sub) in tags.items():
+        x, z = loop[i]
+        cmds.append(label(x + 0.5, Y + 2.6, z + 0.5, title, col, 0.9))
+        if sub:
+            cmds.append(label(x + 0.5, Y + 2.1, z + 0.5, sub, 'white', 0.5, False))
+
+    # Start tile, token, controllers
+    cmds += [put(SC_START, [loop[0]], 'tile_start', slot0('tile_behavior_start', [loop[0]])),
+             ('summon minecraft:pig %.1f %d %.1f {Tokenized:1b,TokenOwner:%s,PersistenceRequired:1b,'
+              'CustomNameVisible:1b,CustomName:%s}') % (SC_START[0] + 0.5, Y, SC_START[1] + 0.5, owner,
+                                                       jtext('Pion démo', 'light_purple')),
+             label(SC_START[0] + 0.5, Y + 3, SC_START[1] + 0.5, 'DÉPART', 'white', 0.9),
+             'setblock %d %d %d steveparty:party_controller[facing=south]' % (SC_CONTROLLER[0], Y, SC_CONTROLLER[1]),
+             'setblock %d %d %d minecraft:lever[face=floor,facing=south]' % (SC_CONTROLLER[0] - 1, Y, SC_CONTROLLER[1]),
+             'setblock %d %d %d steveparty:step_controller' % (SC_STEP_CONTROLLER[0], Y, SC_STEP_CONTROLLER[1]),
+             'setblock %d %d %d minecraft:lever[face=floor,facing=south]' % (SC_STEP_CONTROLLER[0] + 1, Y, SC_STEP_CONTROLLER[1]),
+             label(SC_CONTROLLER[0] + 0.5, Y + 2.2, SC_CONTROLLER[1] + 0.5, 'Party Controller (levier)', 'white', 0.7, False),
+             label(SC_STEP_CONTROLLER[0] + 0.5, Y + 1.7, SC_STEP_CONTROLLER[1] + 0.5, 'Step Controller (levier)', 'white', 0.7, False),
+             label(SC_X0 + 10.5, Y + 4.5, SC_Z0 + 8.5, 'PLATEAU DE DÉMO', 'gold', 2),
+             label(SC_X0 + 10.5, Y + 3.3, SC_Z0 + 8.5,
+                   'Levier du Party Controller = lancer la partie, puis le dé.\nLes dés truqués du coffre font tomber pile '
+                   'sur une case.', 'white', 0.7, False)]
+
+    # The chest of every new item
+    key = '{id:"steveparty:shopkeeper_key",count:1,components:{"steveparty:shopkeeper-uuid":"%s"}}' % SC_TRADER_UUID
+    stacks = ['{id:"steveparty:shop_cartridge",count:4}', '{id:"steveparty:board_space_behavior_stop",count:4}',
+              '{id:"steveparty:advance_back_cartridge",count:2,components:{"steveparty:advance-back-steps":3}}',
+              '{id:"steveparty:advance_back_cartridge",count:2,components:{"steveparty:advance-back-steps":-2}}',
+              '{id:"steveparty:replay_cartridge",count:4}', '{id:"steveparty:teleport_cartridge",count:4}',
+              '{id:"steveparty:board_space_redstone_router",count:2}', '{id:"minecraft:comparator",count:4}',
+              '{id:"minecraft:redstone_lamp",count:16}', '{id:"minecraft:redstone",count:32}',
+              '{id:"steveparty:wrench",count:1}', key,
+              '{id:"steveparty:default_dice",count:1}', '{id:"steveparty:double_dice",count:1}'] + \
+             [rigged_dice(v) for v in (1, 2, 3, 4)] + \
+             ['{id:"steveparty:advanced_tile",count:8}', '{id:"steveparty:check_point",count:2}',
+              '{id:"steveparty:tile_behavior_start",count:2}', '{id:"steveparty:board_space_behavior",count:8}',
+              '{id:"steveparty:token",count:2}', '{id:"steveparty:tokenizer_wand",count:1}',
+              '{id:"steveparty:trading_stall",count:1}', '{id:"minecraft:emerald",count:64}']
+    items = ','.join(s.replace('{', '{Slot:%db,' % slot, 1) for slot, s in enumerate(stacks))
+    cmds += ['setblock %d %d %d minecraft:chest[facing=east]{CustomName:%s,Items:[%s]}'
+             % (SC_CHEST[0], Y, SC_CHEST[1], jtext('Coffre des nouveautés'), items),
+             label(SC_CHEST[0] + 0.5, Y + 2.2, SC_CHEST[1] + 0.5, 'Coffre des nouveautés', 'gold', 0.9),
+             label(SC_CHEST[0] + 0.5, Y + 1.5, SC_CHEST[1] + 0.5,
+                   'cartouches, Clé, Clé du Marchand,\ndés truqués (1 à 4), routeur, tuiles', 'white', 0.5, False)]
+
+    # The merchant: a Hiding Trader in a pen, his trading stall (3 offers) and his stock chest
+    px0, pz0, px1, pz1 = SC_PEN
+    gate = (px0, (pz0 + pz1) // 2)
+    offers = [('minecraft:emerald', 3, 'steveparty:replay_cartridge', 1),
+              ('minecraft:emerald', 2, 'steveparty:board_space_behavior_stop', 1),
+              ('minecraft:emerald', 5, 'minecraft:golden_apple', 1)]
+    stall = []
+    for col, (price, n, sell, m) in enumerate(offers):
+        stall += ['{Slot:%db,id:"%s",count:%d}' % (col, price, n), '{Slot:%db,id:"%s",count:%d}' % (col + 18, sell, m)]
+    stock = ','.join('{Slot:%db,id:"%s",count:32}' % (k, sell) for k, (_, _, sell, _) in enumerate(offers))
+    home = SC_TRADER_HOME
+    cmds += ['fill %d %d %d %d %d %d oak_fence' % (px0, Y, pz0, px1, Y, pz1),
+             'fill %d %d %d %d %d %d air' % (px0 + 1, Y, pz0 + 1, px1 - 1, Y, pz1 - 1),
+             'setblock %d %d %d oak_fence_gate[facing=east]' % (gate[0], Y, gate[1]),
+             'setblock %d %d %d steveparty:trading_stall[facing=south,color1=4,color2=0]{Items:[%s]}'
+             % (SC_STALL[0], Y, SC_STALL[1], ','.join(stall)),
+             'setblock %d %d %d minecraft:chest[facing=south]{CustomName:%s,Items:[%s]}'
+             % (SC_STOCK[0], Y, SC_STOCK[1], jtext('Stock du marchand'), stock),
+             # The merchant of the previous build (killed with the terrain) keeps his fixed UUID until his death
+             # animation is over (20 ticks, while his chunk ticks): the new one is summoned once he is gone
+             'schedule function %s:showcase_merchant 40t' % NS,
+             'setblock %d %d %d minecraft:chest[facing=west]{CustomName:%s,Items:[%s]}'
+             % (SC_EMERALDS[0], Y, SC_EMERALDS[1], jtext('Émeraudes pour la boutique'),
+                ','.join('{Slot:%db,id:"minecraft:emerald",count:64}' % s for s in range(4))),
+             label(SC_EMERALDS[0] + 0.5, Y + 1.6, SC_EMERALDS[1] + 0.5, 'Émeraudes pour acheter', 'white', 0.6, False),
+             label((px0 + px1) / 2 + 0.5, Y + 4.6, (pz0 + pz1) / 2 + 0.5, 'BOUTIQUE DU MARCHAND', 'yellow', 1.5),
+             label((px0 + px1) / 2 + 0.5, Y + 3.2, (pz0 + pz1) / 2 + 0.5,
+                   'À faire une fois après chaque reconstruction :\nClé du Marchand (coffre des nouveautés) en main,\n'
+                   'accroupi + clic droit sur l\'étal, puis sur le coffre de stock\n(message « lié » ; recliquer = délier).',
+                   'white', 0.6, False),
+             label(SC_STALL[0] + 0.5, Y + 1.9, SC_STALL[1] + 0.5, 'Étal (prix + marchandise)', 'white', 0.55, False),
+             label(SC_STOCK[0] + 0.5, Y + 1.6, SC_STOCK[1] + 0.5, 'Coffre de stock', 'white', 0.55, False)]
+
+    # The sensor router: routes every loop tile (power 0: their slot 0), a comparator reads it into 15 lamps
+    rx, rz = SC_ROUTER
+    cmds += ['setblock %d %d %d minecraft:stone' % (rx, Y - 1, rz),
+             'setblock %d %d %d steveparty:board_space_redstone_router' % (rx, Y, rz),
+             'data merge block %d %d %d {Items:[%s]}' % (rx, Y, rz, cartridge(0, 'board_space_behavior', loop)),
+             'setblock %d %d %d minecraft:comparator[facing=west,mode=compare]' % (rx + 1, Y, rz)]
+    for k in range(1, 16):
+        x = rx + 1 + k
+        cmds += ['setblock %d %d %d minecraft:redstone_lamp' % (x, Y - 1, rz),
+                 'setblock %d %d %d minecraft:redstone_wire[east=side,west=side]' % (x, Y, rz),
+                 label(x + 0.5, Y + 0.6, rz + 1.2, str(k), 'white', 0.5, False)]
+    cmds += [label(rx + 0.5, Y + 1.8, rz + 0.5, 'Routeur capteur', 'aqua', 0.8),
+             label(rx + 0.5, Y + 1.3, rz + 0.5, 'relié aux 18 cases', 'white', 0.5, False),
+             label(rx + 9.5, Y + 3.6, rz + 0.5, 'Nombre de lampes allumées = niveau du comparateur', 'aqua', 0.8),
+             label(rx + 9.5, Y + 2.0, rz + 0.5,
+                   '15 simple · 14 bonus · 13 malus · 12 objet · 11 départ\n10 Stop · 9 Rejouer · 8 Téléportation · '
+                   '7 Avancer\n6 Reculer · 5 Boutique · 1 un pion passe', 'white', 0.7, False)]
+    return cmds
+
+
+def showcase_merchant():
+    """The showcase's merchant, under the UUID the Shopkeeper Key of the showcase chest is linked to."""
+    home = SC_TRADER_HOME
+    alive = '@e[type=steveparty:hiding_trader,tag=%s_merchant]' % TAG   # @e: living entities only
+    return [# the previous one is still dying (a UUID also finds a dead entity): try again in a second
+            'execute if entity %s unless entity %s run schedule function %s:showcase_merchant 20t'
+            % (SC_TRADER_UUID, alive, NS),
+            ('execute unless entity %s run summon steveparty:hiding_trader %.1f %d %.1f {UUID:%s,Tags:["%s_merchant"],'
+             'PersistenceRequired:1b,BandanaColor:1,Home:%dL,CustomName:%s}')
+            % (SC_TRADER_UUID, home[0] + 0.5, Y, home[1] + 0.5, int_array(SC_TRADER_UUID), TAG,
+               block_pos_long(home[0], Y, home[1]), jtext('Marchand de la démo', 'yellow'))]
+
+
+def nouveautes():
+    """Teleports the player to the showcase, looking south at the gallery and the demo loop."""
+    return ['tp %s %.1f %d %.1f 0 20' % (PLAYER, SC_X0 + 10.5, Y, SC_Z0 - 17.5),
+            'tellraw %s {"text":"[test] Nouveautés : galerie des cartouches, plateau de démo (levier du Party '
+            'Controller, dés truqués dans le coffre), boutique du marchand (2 clics avec la Clé du Marchand), '
+            'routeur capteur et ses lampes.","color":"gold"}' % PLAYER]
+
+
 # ---------------------------------------------------------------------------------------------------- every item
 
 def all_items():
@@ -723,7 +970,8 @@ def all_items():
                                'step_controller', 'board_space_behavior', 'board_space_behavior_stop',
                                'tile_behavior_start', 'inventory_cartridge', 'wrench', 'tokenizer_wand', 'token',
                                'plunger', 'mini_games_catalogue', 'mini_game_page', 'garnet_crystal_ball',
-                               'big_book', 'here_we_go_book', 'here_we_come_book']))
+                               'big_book', 'here_we_go_book', 'here_we_come_book', 'shop_cartridge',
+                               'advance_back_cartridge', 'replay_cartridge', 'teleport_cartridge']))
     faces = ['blank_dice_face'] + ['dice_face_%d' % i for i in range(1, 11)] + \
             ['premium_dice_face_%d' % i for i in range(1, 11)] + ['cursed_dice_face_%d' % i for i in range(1, 4)]
     groups.append(('Dés', ['default_dice', 'double_dice', 'triple_dice', 'dice_forge', 'gravity_core'] + faces))
@@ -800,7 +1048,11 @@ def welcome(loop):
             + ['tp %s %.1f %d %.1f %.1f 20' % (PLAYER, px, Y, pz, yaw),
                'tellraw %s {"text":"[test] Monde de test prêt : zone de départ ici (4 pions), plateau derrière (levier du Party Controller = lancer la partie, raccourci dangereux au milieu), '
                'stations à l\'est (dés, boutique, goal pole, plastique, panneaux, blocs, divers, coffres, Mulas).",'
-               '"color":"gold"}' % PLAYER])
+               '"color":"gold"}' % PLAYER,
+               'tellraw %s ["",{"text":"[test] Nouveautés (Stop, Boutique, Avancer/Reculer, Téléportation, Rejouer, '
+               'routeur capteur) : au sud par le chemin, ou ","color":"gold"},{"text":"[y aller]","color":"aqua",'
+               '"underlined":true,"clickEvent":{"action":"run_command","value":"/function %s:nouveautes"}}]'
+               % (PLAYER, NS)])
 
 
 # ---------------------------------------------------------------------------------------------------- main
@@ -814,9 +1066,12 @@ def main():
         'stations': (dice_station() + shop_station() + goal_pole_station() + plastic_station() + sign_station()
                      + building_station() + misc_station() + mula_station() + tiles_station() + tile_sizes_station() + large_tiles_station()),
         'chests': chest_cmds,
+        'showcase': showcase(),
+        'showcase_merchant': showcase_merchant(),
         'welcome': welcome(loop),
+        'nouveautes': nouveautes(),
     }
-    functions['build'] = ['function %s:%s' % (NS, f) for f in ('terrain', 'board', 'stations', 'chests')] + \
+    functions['build'] = ['function %s:%s' % (NS, f) for f in ('terrain', 'board', 'stations', 'chests', 'showcase')] + \
                          ['kill @e[type=minecraft:item,x=%d,y=60,z=%d,dx=%d,dy=200,dz=%d]'
                           % (AREA[0], AREA[1], AREA[2] - AREA[0], AREA[3] - AREA[1])]
 
