@@ -17,7 +17,7 @@ import java.util.Map;
 public class PipeModelPlugin implements ModelLoadingPlugin {
     private record Pipe(PipeKind kind, int color) {}
 
-    private static final String[] PARTS = {"body", "cap", "inner", "rim", "plain"};
+    private static final String[] PARTS = {"outer", "inner", "rim"};
 
     @Override
     public void initialize(Context context) {
@@ -37,14 +37,14 @@ public class PipeModelPlugin implements ModelLoadingPlugin {
             for (int part = 0; part < PARTS.length; part++) {
                 sprites[part] = ctx.textureGetter().apply(new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, texture(pipe.kind, pipe.color, part)));
             }
-            return new PipeBakedModel(original, sprites);
+            return new PipeBakedModel(original, pipe.kind, sprites);
         });
     }
 
     /**
-     * The texture of a part ({@link PipeGeometry#BODY} .. {@link PipeGeometry#PLAIN}) of a pipe: plastic pipes have
-     * their own ({@code block/pipe/<kind>/<color>_<part>}, the rims the plastic block's); glass pipes are all vanilla
-     * glass or stained glass.
+     * The texture of a part ({@link PipeGeometry#OUTER} .. {@link PipeGeometry#RIM}) of a pipe: plastic pipes have
+     * their own wall sheets ({@code block/pipe/<kind>/<color>_outer} and {@code _inner}, 4 x 4 tiles), the rims the
+     * plastic block's; glass pipes are all vanilla glass or stained glass.
      */
     public static Identifier texture(PipeKind kind, int color, int part) {
         return switch (kind) {

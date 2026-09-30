@@ -501,30 +501,58 @@ public class PipeGameTests implements FabricGameTest {
     }
 
     /**
-     * Every shape of pipe (straight, bend, junction, with a clamp, ends...) is drawn inside the pipe's outline: nothing
-     * sticks out where branches meet. A straight length is drawn with the tube texture only (no border at the joints).
+     * Every shape of pipe of every kind (straight, bends, junctions up to 6 ways, clamps, mouths, capped ends) is drawn
+     * cleanly: inside the pipe's outline (nothing sticks out where branches meet), no two quads on the same plane over
+     * each other (no z-fighting), texture coordinates inside the texture, the block's faces (and only them) culled
+     * against the block beside. A straight length has no rim nor clamp part.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void modelsStayInsideTheTube(TestContext context) {
-        for (int key = 0; key < PipeShape.KEYS; key++) {
-            int mask = PipeShape.maskOf(key);
-            Direction solid = PipeShape.solidOf(key);
-            if (solid != null && (mask & 1 << solid.ordinal()) != 0) continue;
-            PipeShape.Face[] faces = PipeShape.faces(mask, solid);
-            List<float[]> outline = outline(faces);
-            int finalKey = key;
-            boolean straight = solid == null && Integer.bitCount(mask) == 2 && ((mask & 3) == 3 || (mask & 12) == 12 || (mask & 48) == 48);
-            PipeGeometry.build(key, (facing, corners, uvs, sprite, cull) -> {
-                float[] center = new float[3];
-                for (float[] corner : corners) for (int i = 0; i < 3; i++) center[i] += corner[i] / 4;
-                context.assertTrue(inside(outline, center), "shape " + finalKey + ": a quad out of the tube at " + java.util.Arrays.toString(center));
-                for (float[] corner : corners) {
-                    float[] in = new float[3];
-                    for (int i = 0; i < 3; i++) in[i] = corner[i] + (center[i] - corner[i]) * 0.02f;
-                    context.assertTrue(inside(outline, in), "shape " + finalKey + ": a quad out of the tube at " + java.util.Arrays.toString(in));
+        for (PipeKind kind : PipeKind.values()) {
+            for (int key = 0; key < PipeShape.KEYS; key++) {
+                int mask = PipeShape.maskOf(key);
+                Direction solid = PipeShape.solidOf(key);
+                if (solid != null && (mask & 1 << solid.ordinal()) != 0) continue;
+                PipeShape.Face[] faces = PipeShape.faces(mask, solid);
+                List<float[]> outline = outline(faces);
+                String shape = kind + " shape " + key;
+                boolean straight = solid == null && Integer.bitCount(mask) == 2 && ((mask & 3) == 3 || (mask & 12) == 12 || (mask & 48) == 48);
+                // facing, plane, then the rectangle on the two other axes
+                List<float[]> rects = new ArrayList<>();
+                PipeGeometry.build(key, kind, (facing, corners, uvs, sprite, cull) -> {
+                    float[] center = new float[3], lo = {16, 16, 16}, hi = {0, 0, 0};
+                    for (float[] corner : corners) {
+                        for (int i = 0; i < 3; i++) {
+                            center[i] += corner[i] / 4;
+                            lo[i] = Math.min(lo[i], corner[i]);
+                            hi[i] = Math.max(hi[i], corner[i]);
+                        }
+                    }
+                    context.assertTrue(inside(outline, center), shape + ": a quad out of the tube at " + java.util.Arrays.toString(center));
+                    for (float[] corner : corners) {
+                        float[] in = new float[3];
+                        for (int i = 0; i < 3; i++) in[i] = corner[i] + (center[i] - corner[i]) * 0.02f;
+                        context.assertTrue(inside(outline, in), shape + ": a quad out of the tube at " + java.util.Arrays.toString(in));
+                    }
+                    for (float[] uv : uvs) {
+                        context.assertTrue(uv[0] >= 0 && uv[0] <= 16 && uv[1] >= 0 && uv[1] <= 16, shape + ": texture coordinates out of the texture");
+                    }
+                    int a = facing.getAxis().ordinal();
+                    boolean onFace = lo[a] == (facing.getDirection() == Direction.AxisDirection.POSITIVE ? 16 : 0);
+                    context.assertTrue(onFace == (cull == facing) && (cull == null || cull == facing), shape + ": cull face " + cull + " of a quad facing " + facing);
+                    if (straight) context.assertTrue(sprite != PipeGeometry.RIM, shape + ": a straight length is tube walls only");
+                    int b = (a + 1) % 3, c = (a + 2) % 3;
+                    rects.add(new float[]{facing.ordinal(), lo[a], lo[b], hi[b], lo[c], hi[c]});
+                });
+                for (int i = 0; i < rects.size(); i++) {
+                    for (int j = i + 1; j < rects.size(); j++) {
+                        float[] r = rects.get(i), q = rects.get(j);
+                        if (r[0] != q[0] || r[1] != q[1]) continue;
+                        boolean overlap = Math.min(r[3], q[3]) - Math.max(r[2], q[2]) > 1e-4 && Math.min(r[5], q[5]) - Math.max(r[4], q[4]) > 1e-4;
+                        context.assertFalse(overlap, shape + ": two quads over each other on the same plane (z-fighting)");
+                    }
                 }
-                if (straight) context.assertTrue(sprite == PipeGeometry.BODY || sprite == PipeGeometry.INNER, "straight length " + finalKey + ": tube texture only");
-            });
+            }
         }
         context.complete();
     }
@@ -560,21 +588,64 @@ public class PipeGameTests implements FabricGameTest {
         return false;
     }
 
-    /** The windowed pipe's wall: plastic along its edges only, the window going on to both ends of the block. */
+    /**
+     * The wall sheets (a tile per set of open sides of a face): the pixels along an open side are those of the straight
+     * length going that way, so that the tube's lines go on from block to block whatever each block's shape (bend,
+     * junction...); a windowed pipe's window goes on to the block's end.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void windowedPipesHaveNoFrameAtTheJoints(TestContext context) {
-        try (java.io.InputStream in = PipeGameTests.class.getResourceAsStream("/assets/steveparty/textures/block/pipe/windowed/red_body.png")) {
-            context.assertTrue(in != null, "texture found");
-            java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(in);
-            for (int v = 0; v < 16; v++) {
-                context.assertTrue((image.getRGB(2, v) >>> 24) == 255 && (image.getRGB(13, v) >>> 24) == 255, "plastic edges on row " + v);
+    public void pipeTexturesGoOnAcrossTheJoints(TestContext context) {
+        int[] across = {PipeGeometry.LEFT | PipeGeometry.RIGHT, PipeGeometry.TOP | PipeGeometry.BOTTOM};
+        for (PipeKind kind : new PipeKind[]{PipeKind.OPAQUE, PipeKind.WINDOWED}) {
+            for (String part : new String[]{"outer", "inner"}) {
+                String path = "/assets/steveparty/textures/block/pipe/" + kind.folder + "/red_" + part + ".png";
+                try (java.io.InputStream in = PipeGameTests.class.getResourceAsStream(path)) {
+                    context.assertTrue(in != null, path + " found");
+                    java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(in);
+                    context.assertTrue(image.getWidth() == 16 * PipeGeometry.TILES && image.getHeight() == 16 * PipeGeometry.TILES, path + ": 4 x 4 tiles");
+                    for (int open = 0; open < 16; open++) {
+                        for (int side : new int[]{PipeGeometry.LEFT, PipeGeometry.RIGHT, PipeGeometry.TOP, PipeGeometry.BOTTOM}) {
+                            if ((open & side) == 0) continue;
+                            boolean vertical = side == PipeGeometry.LEFT || side == PipeGeometry.RIGHT;
+                            int straight = vertical ? across[0] : across[1];
+                            int edge = side == PipeGeometry.LEFT || side == PipeGeometry.TOP ? 0 : 15;
+                            for (int i = 0; i < 16; i++) {
+                                int s = vertical ? edge : i, t = vertical ? i : edge;
+                                int mine = image.getRGB(open % 4 * 16 + s, open / 4 * 16 + t);
+                                int theirs = image.getRGB(straight % 4 * 16 + s, straight / 4 * 16 + t);
+                                context.assertTrue(mine == theirs, path + ": tile " + open + " does not go on like a straight length at " + s + "," + t);
+                            }
+                        }
+                    }
+                    if (kind == PipeKind.WINDOWED && part.equals("outer")) {
+                        int straight = across[1];
+                        for (int t : new int[]{0, 15}) {
+                            context.assertTrue((image.getRGB(straight % 4 * 16 + 8, straight / 4 * 16 + t) >>> 24) == 0, "the window goes on to the block's end");
+                        }
+                    }
+                } catch (java.io.IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-            for (int v : new int[]{0, 1, 14, 15}) {
-                context.assertTrue((image.getRGB(8, v) >>> 24) == 0, "the window goes on to the block's end (row " + v + ")");
-            }
-        } catch (java.io.IOException e) {
-            throw new RuntimeException(e);
         }
+        context.complete();
+    }
+
+    /**
+     * Two rims side by side hide each other's faces between them (the same for the same glass); a glass rim hides
+     * nothing (seen through), nor does a pipe's side that does not cover the face.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void rimsSideBySideHideTheirFacesBetweenThem(TestContext context) {
+        BlockState warp = pipe(RED, PipeSolid.DOWN), glass = pipe(GLASS, PipeSolid.DOWN);
+        BlockState stained = pipe(pipe(PipeKind.STAINED_GLASS, 14), PipeSolid.DOWN), windowed = pipe(pipe(PipeKind.WINDOWED, 3), PipeSolid.DOWN);
+        context.assertTrue(warp.isSideInvisible(warp, Direction.EAST), "opaque rim beside an opaque rim: hidden");
+        context.assertTrue(warp.isSideInvisible(windowed, Direction.EAST), "opaque rim beside a windowed rim: hidden");
+        context.assertTrue(glass.isSideInvisible(glass, Direction.EAST), "glass rim beside a glass rim: hidden");
+        context.assertFalse(warp.isSideInvisible(glass, Direction.EAST), "opaque rim beside a glass rim: seen through the glass");
+        context.assertFalse(glass.isSideInvisible(stained, Direction.EAST), "glass beside another glass: seen through");
+        context.assertFalse(warp.isSideInvisible(pipe(RED, PipeSolid.NONE, Direction.NORTH, Direction.SOUTH), Direction.EAST),
+                "beside a pipe's side (not covering it): drawn");
         context.complete();
     }
 

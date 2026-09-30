@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.pipe;
 
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import net.fabricmc.fabric.api.renderer.v1.Renderer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
@@ -34,13 +35,15 @@ public class PipeBakedModel implements BakedModel {
     private static final Direction[] FACES = Direction.values();
 
     private final BakedModel base;
-    /** By {@link PipeGeometry#BODY} .. {@link PipeGeometry#RIM}. */
+    private final PipeKind kind;
+    /** By {@link PipeGeometry#OUTER} .. {@link PipeGeometry#RIM}. */
     private final Sprite[] sprites;
     /** Quads of each shape key: [cull face ordinal] then [6] for the unculled ones. */
     private final Map<Integer, List<BakedQuad>[]> quads = new ConcurrentHashMap<>();
 
-    public PipeBakedModel(BakedModel base, Sprite[] sprites) {
+    public PipeBakedModel(BakedModel base, PipeKind kind, Sprite[] sprites) {
         this.base = base;
+        this.kind = kind;
         this.sprites = sprites;
     }
 
@@ -59,7 +62,7 @@ public class PipeBakedModel implements BakedModel {
         if (renderer == null) return lists;
         MeshBuilder builder = renderer.meshBuilder();
         QuadEmitter emitter = builder.getEmitter();
-        PipeGeometry.build(key, (facing, corners, uvs, sprite, cull) -> {
+        PipeGeometry.build(key, kind, (facing, corners, uvs, sprite, cull) -> {
             for (int i = 0; i < 4; i++) {
                 emitter.pos(i, corners[i][0] / 16f, corners[i][1] / 16f, corners[i][2] / 16f);
                 emitter.uv(i, uvs[i][0] / 16f, uvs[i][1] / 16f);
