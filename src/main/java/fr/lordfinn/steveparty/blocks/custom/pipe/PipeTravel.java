@@ -47,9 +47,9 @@ import java.util.UUID;
  *     included) and items go in by getting into the mouth's hollow. The traveller shrinks to fit and rides a
  *     {@link PipeCarrierEntity} along the pipes.</li>
  *     <li><b>The way</b>: to another end of the network, picked at random. At an open end (a mouth) it pops out. At a
- *     capped end (the pipe goes into a solid block: a warp) it comes out of the nearest mouth of another network
+ *     capped end (the pipe goes into a solid block: a warp) it comes out of the nearest mouth of the same colour in another network
  *     ({@link PipeNetworks#nearestMouth}), or where the cartridge of that end says ({@link PipeDestinationProvider});
- *     with nowhere to go (or a mouth blocked by a block in front of it), it goes back the way it came.</li>
+ *     with nowhere to go (or a mouth blocked by a block in front of it), it travels back through the pipes and comes out of the mouth it went in.</li>
  *     <li>Inside, nothing hurts it (walls, landing, cramming) and it does not collide; it comes out with the speed it
  *     had inside, without any fall damage from before.</li>
  * </ul>
@@ -277,7 +277,7 @@ public final class PipeTravel {
         }
     }
 
-    /** Where a capped end warps to: its cartridge's choice, else the nearest mouth of another network. */
+    /** Where a capped end warps to: its cartridge's choice, else the nearest mouth of the same colour in another network. */
     private static @Nullable PipeNetworks.End warpDestination(ServerWorld world, PipeNetworks.End capped, Entity traveller) {
         if (world.getBlockEntity(capped.pos()) instanceof PipeBlockEntity pipe) {
             PipeDestinationProvider provider = pipe.destinationProvider();

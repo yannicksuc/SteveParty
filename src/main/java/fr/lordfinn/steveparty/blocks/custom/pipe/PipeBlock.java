@@ -67,9 +67,25 @@ public class PipeBlock extends Block implements BlockEntityProvider {
         return kind;
     }
 
-    /** Index of its colour in {@code ModBlocks.COLORS}. */
+    /** Index of its colour in {@code ModBlocks.COLORS} (0 for the plain glass pipe). */
     public int color() {
         return color;
+    }
+
+    /**
+     * Its colour for the warps: a capped end only warps to a pipe of the same colour. The plastic colour for plastic
+     * pipes (opaque and windowed alike), each stained glass colour its own, the plain glass pipe its own.
+     */
+    public String warpColor() {
+        return switch (kind) {
+            case GLASS -> "glass";
+            case STAINED_GLASS -> "stained_glass/" + color;
+            default -> "plastic/" + color;
+        };
+    }
+
+    public static String warpColor(BlockState state) {
+        return state.getBlock() instanceof PipeBlock pipe ? pipe.warpColor() : "";
     }
 
     @Override

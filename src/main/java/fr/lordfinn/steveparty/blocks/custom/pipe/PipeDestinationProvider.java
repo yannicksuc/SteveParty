@@ -12,7 +12,7 @@ import java.util.function.Function;
 
 /**
  * Where a pipe warps to: asked when a traveller reaches a capped end (a warp) holding a cartridge. Without one (or
- * when it answers null) the traveller comes out of the nearest mouth of another pipe network
+ * when it answers null) the traveller comes out of the nearest mouth of the same colour in another pipe network
  * ({@link PipeNetworks#nearestMouth}).
  * <p>
  * The hook for the cartridges: a cartridge item registers how it picks the destination with {@link #register}; the

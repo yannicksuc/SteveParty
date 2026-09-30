@@ -151,9 +151,12 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
         ModelLoadingPlugin.register(new fr.lordfinn.steveparty.client.pipe.PipeModelPlugin());
         fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer.register();
-        // Glass pipes show what travels inside: only their plastic edges are drawn (windowed ones: a frame)
-        for (int kind : new int[]{fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GLASS.ordinal(), fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.WINDOWED.ordinal()})
-            for (net.minecraft.block.Block pipe : ModBlocks.PIPES[kind]) BlockRenderLayerMap.INSTANCE.putBlock(pipe, RenderLayer.getCutout());
+        // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
+        for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values()) {
+            RenderLayer layer = kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.STAINED_GLASS ? RenderLayer.getTranslucent()
+                    : kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.OPAQUE ? null : RenderLayer.getCutout();
+            if (layer != null) for (net.minecraft.block.Block pipe : ModBlocks.PIPES[kind.ordinal()]) BlockRenderLayerMap.INSTANCE.putBlock(pipe, layer);
+        }
         StencilResourceManager.registerReloadListener();
         MaterialSprites.registerReloadListener();
         MobTextureColors.registerReloadListener();

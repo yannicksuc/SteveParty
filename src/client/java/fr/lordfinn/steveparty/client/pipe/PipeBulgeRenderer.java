@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.pipe;
 
-import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
 import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -57,7 +57,7 @@ public final class PipeBulgeRenderer {
         PipeCarrierEntity.CLIENT_CARRIERS.removeIf(carrier -> carrier.isRemoved() || carrier.getWorld() != world);
         float tickDelta = context.tickCounter().getTickDelta(false);
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
-        VertexConsumer buffer = consumers.getBuffer(RenderLayer.getEntityCutoutNoCull(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
+        VertexConsumer buffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
         Vec3d camera = context.camera().getPos();
         boolean drawn = false;
         for (PipeCarrierEntity carrier : PipeCarrierEntity.CLIENT_CARRIERS) {
@@ -75,7 +75,7 @@ public final class PipeBulgeRenderer {
                 Vec3d way = points.get(i + 1).subtract(points.get(i - 1));
                 Direction.Axis axis = Direction.getFacing(way.x, way.y, way.z).getAxis();
                 Sprite sprite = client.getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE)
-                        .apply(PipeModelPlugin.bodyTexture(pipe.kind(), ModBlocks.COLORS[pipe.color()], "body"));
+                        .apply(PipeModelPlugin.texture(pipe.kind(), pipe.color(), PipeGeometry.BODY));
                 int light = WorldRenderer.getLightmapCoordinates(world, pos);
                 matrices.push();
                 matrices.translate(center.x - camera.x, center.y - camera.y, center.z - camera.z);
@@ -84,7 +84,7 @@ public final class PipeBulgeRenderer {
                 drawn = true;
             }
         }
-        if (drawn) consumers.draw(RenderLayer.getEntityCutoutNoCull(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
+        if (drawn) consumers.draw(RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
     }
 
     /** The 4 walls of a square tube along {@code axis}, {@code half} across and {@code length} long each way. */
