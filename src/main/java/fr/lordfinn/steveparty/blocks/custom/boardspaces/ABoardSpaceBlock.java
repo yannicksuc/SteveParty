@@ -70,7 +70,8 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
         if (tileEntity == null) return;
         if (state.getBlock() != newState.getBlock()) {
-            ItemScatterer.spawn(world, pos, tileEntity);
+            // Broken with Silk Touch: the cartridges stay in the tile's item
+            if (!tileEntity.keepsContents()) ItemScatterer.spawn(world, pos, tileEntity);
             world.updateComparators(pos,this);
             tileEntity.hideDestinations();
         }

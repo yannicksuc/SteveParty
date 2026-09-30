@@ -13,6 +13,7 @@
     "HeldItemRendererTokenSpellMixin",
     "InGameHudToolHudMixin",
     "ItemRendererStencilHammerFaceMixin",
+    "ItemRendererTileFaceMixin",
     "ItemRendererWandOrbitMixin",
     "LivingEntityRendererSetupTransformsMixin",
     "LivingEntityRendererShouldFlipMixin",

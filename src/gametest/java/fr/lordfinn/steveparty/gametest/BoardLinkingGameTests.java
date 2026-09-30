@@ -425,11 +425,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
         link(context, t.get(0), t.get(1));
         BoardSpaceBlockEntity source = boardSpace(context, t.get(0));
-        var registries = context.getWorld().getRegistryManager();
-        net.minecraft.nbt.NbtCompound nbt = source.createComponentlessNbtWithIdentifyingData(registries);
-        source.removeFromCopiedStackNbt(nbt);
-        ItemStack item = new ItemStack(ModBlocks.TILE);
-        net.minecraft.item.BlockItem.setBlockEntityData(item, source.getType(), nbt);
+        // As the creative pick block with Ctrl makes it: block entity data and components
+        ItemStack item = fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.copyOf(new ItemStack(ModBlocks.TILE), source, context.getWorld());
         context.setBlockState(new BlockPos(5, 0, 5), Blocks.STONE);
         withPlayer(context, true, player -> {
             player.setStackInHand(Hand.MAIN_HAND, item);

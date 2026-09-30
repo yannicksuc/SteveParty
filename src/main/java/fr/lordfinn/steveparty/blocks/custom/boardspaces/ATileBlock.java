@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
@@ -24,6 +25,14 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.tick.ScheduledTickView;
 
+import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
+import net.minecraft.text.MutableText;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -55,24 +64,101 @@ public abstract class ATileBlock extends ABoardSpaceBlock {
     public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
         tooltip.add(Text.translatable("tooltip.steveparty.tile." + tooltipKey()).formatted(Formatting.GRAY));
+        appendContentsTooltip(stack, tooltip);
         tooltip.add(Text.translatable("tooltip.steveparty.tile.size",
                 Text.translatable("tooltip.steveparty.tile.size." + TileSize.of(stack).asString())).formatted(Formatting.GRAY));
         tooltip.add(Text.translatable("tooltip.steveparty.tile.size.hint").formatted(Formatting.DARK_GRAY));
         tooltip.add(Text.translatable("tooltip.steveparty.tile.stamp.hint").formatted(Formatting.DARK_GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.tile.contents.hint").formatted(Formatting.DARK_GRAY));
     }
 
-    /** The picked tile keeps its size. */
+    /**
+     * What the tile item holds (see {@link TileContents}): its cartridges (slot, name, main setting), the one its
+     * preview shows now highlighted, and its own stamped look.
+     */
+    private static void appendContentsTooltip(ItemStack stack, List<Text> tooltip) {
+        List<TileContents.Slot> cartridges = TileContents.cartridges(stack);
+        if (!cartridges.isEmpty()) {
+            tooltip.add(Text.translatable(cartridges.size() == 1 ? "tooltip.steveparty.tile.contents.one" : "tooltip.steveparty.tile.contents",
+                    cartridges.size()).formatted(Formatting.GOLD));
+            int shown = TileContents.previewedIndex(cartridges.size());
+            for (int i = 0; i < cartridges.size(); i++) {
+                TileContents.Slot slot = cartridges.get(i);
+                boolean previewed = cartridges.size() > 1 && i == shown;
+                MutableText line = Text.literal(previewed ? "\u25B6 " : "  ")
+                        .append(Text.translatable("tooltip.steveparty.tile.contents.slot", slot.slot() + 1, slot.cartridge().getName()));
+                Text setting = mainSetting(slot.cartridge());
+                if (setting != null) line.append(Text.literal(" \u00B7 ")).append(setting);
+                tooltip.add(line.formatted(previewed ? Formatting.YELLOW : Formatting.GRAY));
+            }
+        }
+        TileStampComponent stamp = TileContents.ownStamp(stack);
+        if (stamp != null) {
+            tooltip.add(Text.translatable("tooltip.steveparty.stamped").formatted(Formatting.LIGHT_PURPLE));
+            tooltip.add(stamp.describe().copy().formatted(Formatting.GRAY));
+        }
+    }
+
+    /** The setting that tells a cartridge apart: its number of spaces, its links, its stamped look. */
+    private static @Nullable Text mainSetting(ItemStack cartridge) {
+        List<Text> parts = new ArrayList<>();
+        if (cartridge.getItem() instanceof AdvanceBackCartridgeItem) {
+            int steps = AdvanceBackCartridgeItem.steps(cartridge);
+            parts.add(Text.translatable("tooltip.steveparty.tile.contents.steps", (steps > 0 ? "+" : "") + steps));
+        }
+        int links = BoardLinks.links(cartridge).size();
+        if (links > 0) parts.add(Text.translatable("tooltip.steveparty.tile.contents.links", links));
+        if (cartridge.contains(ModComponents.TILE_STAMP)) parts.add(Text.literal("\u270E"));
+        if (parts.isEmpty()) return null;
+        MutableText text = Text.empty();
+        for (int i = 0; i < parts.size(); i++) {
+            if (i > 0) text.append(Text.literal(", "));
+            text.append(parts.get(i));
+        }
+        return text;
+    }
+
+    /**
+     * The picked tile keeps its size; in creative with Ctrl or Shift held, it is a copy of the tile with its contents
+     * (see {@link TileContents}; the vanilla pick block with Ctrl adds the same).
+     */
     @Override
     public ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state) {
-        return TileSize.with(super.getPickStack(world, pos, state), state.get(SIZE).size());
+        ItemStack stack = TileSize.with(super.getPickStack(world, pos, state), state.get(SIZE).size());
+        if (world.isClient() && TileContents.pickWithContents.getAsBoolean()
+                && world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tile) {
+            TileContents.copyOf(stack, tile, world);
+            TileSize.with(stack, state.get(SIZE).size());
+        }
+        return stack;
     }
 
-    /** A broken tile drops itself in its size. */
+    /** A broken tile drops itself in its size; broken with Silk Touch, with its cartridges and its look. */
     @Override
     protected List<ItemStack> getDroppedStacks(BlockState state, net.minecraft.loot.context.LootWorldContext.Builder builder) {
         List<ItemStack> drops = super.getDroppedStacks(state, builder);
-        for (ItemStack drop : drops) if (drop.isOf(asItem())) TileSize.with(drop, state.get(SIZE).size());
+        net.minecraft.block.entity.BlockEntity blockEntity = builder.getOptional(net.minecraft.loot.context.LootContextParameters.BLOCK_ENTITY);
+        boolean keeps = blockEntity instanceof BoardSpaceBlockEntity tile && tile.keepsContents();
+        for (ItemStack drop : drops) {
+            if (!drop.isOf(asItem())) continue;
+            if (keeps) drop.applyComponentsFrom(blockEntity.createComponentMap());
+            TileSize.with(drop, state.get(SIZE).size());
+        }
         return drops;
+    }
+
+    /** Broken by a survival player with Silk Touch: the cartridges stay in the dropped tile. */
+    @Override
+    protected boolean dropsContentsOnBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        if (!keepsContents(world, state, player) || !(world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tile)) return true;
+        tile.keepContents();
+        return false;
+    }
+
+    /** Whether {@code player} breaking the tile {@code state} gets it with its contents: Silk Touch, and a drop at all. */
+    public static boolean keepsContents(World world, BlockState state, PlayerEntity player) {
+        return !world.isClient && !player.isCreative() && player.canHarvest(state)
+                && TileContents.hasSilkTouch(world, player.getMainHandStack());
     }
 
     // ---------------------------------------------------------------- placement and support

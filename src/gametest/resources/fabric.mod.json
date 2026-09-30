@@ -18,6 +18,7 @@
       "fr.lordfinn.steveparty.gametest.BoardLinkingGameTests",
       "fr.lordfinn.steveparty.gametest.TileSupportGameTests",
       "fr.lordfinn.steveparty.gametest.TileSizeGameTests",
+      "fr.lordfinn.steveparty.gametest.TileContentsGameTests",
       "fr.lordfinn.steveparty.gametest.TileStampGameTests",
       "fr.lordfinn.steveparty.gametest.CoreGameTests",
       "fr.lordfinn.steveparty.gametest.SwitchableGameTests",

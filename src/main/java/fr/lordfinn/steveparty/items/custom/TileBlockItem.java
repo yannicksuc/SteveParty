@@ -1,14 +1,19 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileLayout;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.text.Text;
+import fr.lordfinn.steveparty.components.TileStampComponent;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 /**
  * The item of the Tile and the Advanced Tile: its size ({@link TileSize}) shows in its name. A large tile is put on the
@@ -25,6 +30,13 @@ public class TileBlockItem extends BlockItem {
         if (placement == null || TileSize.of(context.getStack()) != TileSize.LARGE) return placement;
         TileLayout layout = ATileBlock.layoutFor(placement);
         return ATileBlock.partsFree(placement.getWorld(), placement.getBlockPos(), layout) ? placement : null;
+    }
+
+    /** A tile carrying its own stamped look shows it (drawn by the client's tooltip component). */
+    @Override
+    public Optional<TooltipData> getTooltipData(ItemStack stack) {
+        TileStampComponent stamp = TileContents.ownStamp(stack);
+        return stamp == null ? Optional.empty() : Optional.of(stamp);
     }
 
     @Override
