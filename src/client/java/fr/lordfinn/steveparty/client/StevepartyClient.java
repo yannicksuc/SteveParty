@@ -327,7 +327,7 @@ public class StevepartyClient implements ClientModInitializer {
                 fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.SHOP_STOP_SCREEN_HANDLER,
                 (handler, inventory, title) -> new fr.lordfinn.steveparty.client.screens.ShopStopScreen(
                         (fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler) handler, inventory, title));
-        HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, CartridgeInventoryScreen::new);
+        HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, fr.lordfinn.steveparty.client.screens.CartridgeScreen::new);
         HandledScreens.register(MINI_GAME_PAGE_SCREEN_HANDLER, MiniGamePageScreen::new);
         HandledScreens.register(MINI_GAMES_CATALOGUE_SCREEN_HANDLER, MiniGamesCatalogueScreen::new);
         HandledScreens.register(HERE_WE_GO_BOOK_SCREEN_HANDLER, HereWeGoBookScreen::new);

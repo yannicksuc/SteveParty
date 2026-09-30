@@ -2,10 +2,11 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
-import fr.lordfinn.steveparty.components.InventoryComponent;
-import fr.lordfinn.steveparty.components.ItemStackBackedInventory;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
-import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeInventoryScreenHandler;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -15,7 +16,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -33,8 +34,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
-import static fr.lordfinn.steveparty.items.ModItems.getSettings;
-import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 
 public class InventoryCartridgeItem extends CartridgeItem {
 
@@ -87,43 +86,44 @@ public class InventoryCartridgeItem extends CartridgeItem {
     }
 
     public static int getSelectionState(ItemStack stack) {
-        return stack.getOrDefault(SELECTION_STATE, 0);
+        int state = stack.getOrDefault(SELECTION_STATE, RANDOM);
+        return state >= RANDOM && state <= CYCLE ? state : RANDOM;
+    }
+
+    // ---------------------------------------------------------------- the menu
+
+    private static final String K = MENU_KEY + "inventory.";
+    public static final int LABEL_COLOR = 0xB95D05;
+    /** Selection states: which ghost slots are used when a token lands. */
+    public static final int RANDOM = 0, ALL = 1, CYCLE = 2;
+
+    private static final List<CartridgeModule> MODULES = List.of(
+            new GhostSlotsModule("items", K + "items"),
+            new InfoModule("chest", K + "chest", 2, InventoryCartridgeItem::chest, stack -> new ItemStack(Items.CHEST)),
+            new ChoiceModule("mode", K + "mode",
+                    List.of(new ChoiceModule.Option(K + "random", -1, "message.steveparty.button_state.random"),
+                            new ChoiceModule.Option(K + "all", -1, "message.steveparty.button_state.all"),
+                            new ChoiceModule.Option(K + "cycle", -1, "message.steveparty.button_state.cycle")),
+                    InventoryCartridgeItem::getSelectionState,
+                    (edit, value) -> setSelectionState(edit.stack(), value)));
+
+    /** The chest it gives from / takes to, and how to link one. */
+    private static List<InfoModule.Line> chest(InfoModule.Context context) {
+        BlockPos pos = context.stack().getOrDefault(INVENTORY_POS, null);
+        return List.of(pos != null
+                        ? InfoModule.Line.of(Text.translatable(K + "chest.at", pos.getX(), pos.getY(), pos.getZ()))
+                        : new InfoModule.Line(Text.translatable(K + "chest.none"), InfoModule.Tone.BAD),
+                new InfoModule.Line(Text.translatable(K + "chest.hint"), InfoModule.Tone.SOFT));
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
-        if (world.isClient || !isHoldingInventoryCartridge(player)) {
-            return super.use(world, player, hand);
-        }
-
-        if (isTargetingBlock(player)) {
-            return super.use(world, player, hand); // Don't activate if targeting a block
-        }
-
-        // The cartridge screen (selection state, linked inventory) works on the main hand stack
-        openInventoryScreen(player, Hand.MAIN_HAND);
-        return ActionResult.SUCCESS;
+    public List<CartridgeModule> modules() {
+        return MODULES;
     }
 
-
-    public static void openInventoryScreen(PlayerEntity player) {
-        openInventoryScreen(player, Hand.MAIN_HAND);
-    }
-
-    public static void openInventoryScreen(PlayerEntity player, Hand hand) {
-        ItemStack cartridge = player.getStackInHand(hand);
-        if (cartridge.isEmpty() || !(cartridge.getItem() instanceof InventoryCartridgeItem)) return;
-        ItemStackBackedInventory inventory = InventoryComponent.getInventoryFromStack(cartridge, CartridgeInventoryScreenHandler.GHOST_SLOT_COUNT);
-
-        player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
-                (syncId, inventory1, playerEntity) -> new CartridgeInventoryScreenHandler(syncId, inventory1, inventory),
-                Text.empty()
-        ));
-    }
-
-    private boolean isHoldingInventoryCartridge(PlayerEntity player) {
-        ItemStack mainHandStack = player.getMainHandStack();
-        return !mainHandStack.isEmpty() && mainHandStack.getItem() instanceof InventoryCartridgeItem;
+    @Override
+    public int menuColor(ItemStack stack) {
+        return LABEL_COLOR;
     }
 
     // ========================

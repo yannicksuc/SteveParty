@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
+import net.minecraft.util.Formatting;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
 import fr.lordfinn.steveparty.components.TeleportNetwork;
@@ -92,11 +94,16 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         setColor(boardSpaceBlockEntity, TileTeleport.settings(stack).network().color());
     }
 
-    /** Empty hand: the cartridge's menu, for a player who may edit the tile. */
+    /** Empty hand: the tile's interface with its cartridge's menu, for a player who may edit the tile. */
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (world.isClient || !(player instanceof ServerPlayerEntity serverPlayer)) return ActionResult.SUCCESS;
-        TeleportCartridgeItem.openMenu(serverPlayer, pos);
+        if (!TeleportCartridgeItem.mayEdit(serverPlayer, pos)) {
+            serverPlayer.sendMessage(Text.translatable("message.steveparty.cartridge_menu.not_allowed").formatted(Formatting.RED), true);
+            return ActionResult.SUCCESS;
+        }
+        BlockState tileState = world.getBlockState(pos);
+        if (tileState.getBlock() instanceof CartridgeContainer container) container.openContainerScreen(tileState, world, pos, player);
         return ActionResult.SUCCESS;
     }
 

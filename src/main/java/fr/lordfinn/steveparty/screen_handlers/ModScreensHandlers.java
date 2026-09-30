@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers;
 
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
+
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
@@ -40,8 +42,10 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<ShopStopScreenHandler> SHOP_STOP_SCREEN_HANDLER =
             register("shop_stop_screen_handler", ShopStopScreenHandler::new, FeatureSet.empty());
 
-    public static final ScreenHandlerType<CartridgeInventoryScreenHandler> CARTRIDGE_SCREEN_HANDLER =
-            register("cartridge_screen_handler", CartridgeInventoryScreenHandler::new, FeatureSet.empty());
+    /** A cartridge's menu (opening data: where the cartridge is, see CartridgeMenus). */
+    public static final ExtendedScreenHandlerType<CartridgeScreenHandler, CartridgeRef> CARTRIDGE_SCREEN_HANDLER =
+            Registry.register(Registries.SCREEN_HANDLER, Steveparty.id("cartridge_screen_handler"),
+                    new ExtendedScreenHandlerType<>(CartridgeScreenHandler::new, CartridgeRef.PACKET_CODEC));
 
     public static final ScreenHandlerType<MiniGamePageScreenHandler> MINI_GAME_PAGE_SCREEN_HANDLER =
             register("mini_game_page_screen_handler", MiniGamePageScreenHandler::new, FeatureSet.empty());

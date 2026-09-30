@@ -19,7 +19,6 @@ import fr.lordfinn.steveparty.recipes.ModRecipes;
 import fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import fr.lordfinn.steveparty.utils.ServerNetworking;
 import fr.lordfinn.steveparty.utils.TaskScheduler;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -68,7 +67,6 @@ public class Steveparty implements ModInitializer {
         ModScoreboardCriteria.initialize();
         fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork.initialize();
         fr.lordfinn.steveparty.blocks.custom.TeleportationPadArrivals.initialize();
-        ServerNetworking.initialize();
 
         MoveTokenCommand.initialize();
         fr.lordfinn.steveparty.commands.MulaCommand.initialize();
