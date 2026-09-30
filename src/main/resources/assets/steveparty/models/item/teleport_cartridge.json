@@ -2,5 +2,25 @@
   "parent": "item/generated",
   "textures": {
     "layer0": "steveparty:item/teleport_cartridge"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "steveparty:teleport_network": 0.25
+      },
+      "model": "steveparty:item/teleport_cartridge_green"
+    },
+    {
+      "predicate": {
+        "steveparty:teleport_network": 0.5
+      },
+      "model": "steveparty:item/teleport_cartridge_orange"
+    },
+    {
+      "predicate": {
+        "steveparty:teleport_network": 0.75
+      },
+      "model": "steveparty:item/teleport_cartridge_blue"
+    }
+  ]
 }
