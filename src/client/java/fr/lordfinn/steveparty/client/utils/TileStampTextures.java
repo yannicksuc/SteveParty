@@ -375,13 +375,13 @@ public final class TileStampTextures {
             ".-#...#snns#...#-.",
             "..-#..#snns#..#-..",
             "...############...",
-            "...#++tttttt++#...",
-            "...#++tttttt++#...",
-            "...#++tttttt++#...",
-            "...#++tttttt++#...",
-            "...#++tttttt++#...",
-            "...#++tttttt++#...",
-            "...#++tttttt++#...",
+            "...#+mmmmmmmm+#...",
+            "...#+mmmmmmmm+#...",
+            "...#+mmmmmmmm+#...",
+            "...#+mmmmmmmm+#...",
+            "...#+mmmmmmmm+#...",
+            "...#+mmmmmmmm+#...",
+            "...#+mmmmmmmm+#...",
             "...############...",
             "...+++##++##+++...",
             "......##..##......"};
@@ -392,14 +392,14 @@ public final class TileStampTextures {
             ".#..#tt#..#.",
             "..#.#tt#.#..",
             "..########..",
-            "..#+tttt+#..",
-            "..#+tttt+#..",
-            "..#+tttt+#..",
-            "..#+tttt+#..",
+            "..#+mmmm+#..",
+            "..#+mmmm+#..",
+            "..#+mmmm+#..",
+            "..#+mmmm+#..",
             "..########..",
             "...##..##..."};
     private static final Map<Character, Float> SHOP_SHADES = Map.of(
-            '#', FEATURE, 'b', 0.2f, 's', -0.5f, 'o', NUMBER, 'n', 0.5f, '+', 0.3f, 't', -0.3f, '-', 0.08f);
+            '#', FEATURE, 'b', 0.2f, 's', -0.5f, 'o', NUMBER, 'n', 0.5f, '+', 0.3f, 't', -0.3f, '-', 0.08f, 'm', 0.12f);
 
     /** The shop tile's face, in the ramp of {@code rgb} (the Shop Cartridge's yellow). */
     public static Identifier shopFace(int rgb, boolean small) {
