@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.client.pipe;
 
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -20,18 +22,27 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Where a traveller goes by, the pipe swells then settles back with a small cartoon bounce: a ring of the pipe's wall,
- * a little wider than the pipe, drawn round each piece of pipe it goes through, sized from how long ago it went by
- * (from its carrier's path: nothing is sent). Only while something travels.
+ * Where a traveller goes by, the pipe swells then settles back with a small cartoon bounce: the outside walls of each
+ * piece of pipe it goes through, drawn again a little wider, sized from how long ago it went by (from its carrier's
+ * path: nothing is sent). Only while something travels. Its own walls (same quads, same texture), so that the swelling
+ * looks like the pipe whatever its kind and follows it round bends and junctions: on a straight length a ring
+ * {@link #LENGTH} long, elsewhere the whole piece (elbow, junction) swollen from its middle.
  */
 public final class PipeBulgeRenderer {
     /** How much wider the pipe gets as the traveller goes by. */
     private static final float SWELL = 0.28f;
     /** Ticks it starts swelling before the traveller gets there, and settles after. */
     private static final float BEFORE = 3, AFTER = 14;
+    /** Length of the ring on a straight length (pixels). */
+    private static final float LENGTH = 13;
+    /** Outside wall quads (corners, then texture coordinates) of each kind and shape key. */
+    private static final Map<Integer, List<float[][][]>> WALLS = new ConcurrentHashMap<>();
 
     private PipeBulgeRenderer() {}
 
@@ -57,7 +68,8 @@ public final class PipeBulgeRenderer {
         PipeCarrierEntity.CLIENT_CARRIERS.removeIf(carrier -> carrier.isRemoved() || carrier.getWorld() != world);
         float tickDelta = context.tickCounter().getTickDelta(false);
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
-        VertexConsumer buffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
+        RenderLayer layer = RenderLayer.getItemEntityTranslucentCull(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+        VertexConsumer buffer = consumers.getBuffer(layer);
         Vec3d camera = context.camera().getPos();
         boolean drawn = false;
         for (PipeCarrierEntity carrier : PipeCarrierEntity.CLIENT_CARRIERS) {
@@ -68,50 +80,60 @@ public final class PipeBulgeRenderer {
             for (int i = 1; i < points.size() - 1; i++) {
                 float swell = swell((float) ((travelled - carrier.lengthTo(i)) / speed));
                 if (swell <= 0.005f) continue;
-                Vec3d center = points.get(i);
-                BlockPos pos = BlockPos.ofFloored(center);
+                BlockPos pos = BlockPos.ofFloored(points.get(i));
                 BlockState state = world.getBlockState(pos);
                 if (!(state.getBlock() instanceof PipeBlock pipe)) continue;
                 Vec3d way = points.get(i + 1).subtract(points.get(i - 1));
                 Direction.Axis axis = Direction.getFacing(way.x, way.y, way.z).getAxis();
                 Sprite sprite = client.getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE)
-                        .apply(PipeModelPlugin.texture(pipe.kind(), pipe.color(), PipeGeometry.BODY));
+                        .apply(PipeModelPlugin.texture(pipe.kind(), pipe.color(), PipeGeometry.OUTER));
                 int light = WorldRenderer.getLightmapCoordinates(world, pos);
                 matrices.push();
-                matrices.translate(center.x - camera.x, center.y - camera.y, center.z - camera.z);
-                ring(matrices.peek(), buffer, sprite, axis, 7 / 16f * (1 + swell), 6.5f / 16f, light);
+                matrices.translate(pos.getX() - camera.x, pos.getY() - camera.y, pos.getZ() - camera.z);
+                swollen(matrices.peek(), buffer, sprite, pipe.kind(), PipeShape.key(state), axis, swell, light);
                 matrices.pop();
                 drawn = true;
             }
         }
-        if (drawn) consumers.draw(RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
+        if (drawn) consumers.draw(layer);
     }
 
-    /** The 4 walls of a square tube along {@code axis}, {@code half} across and {@code length} long each way. */
-    private static void ring(MatrixStack.Entry entry, VertexConsumer buffer, Sprite sprite, Direction.Axis axis, float half, float length, int light) {
-        int a = axis.ordinal(), b = (a + 1) % 3, c = (a + 2) % 3;
-        float u0 = sprite.getMinU() + (sprite.getMaxU() - sprite.getMinU()) / 16f, u1 = sprite.getMaxU() - (sprite.getMaxU() - sprite.getMinU()) / 16f;
-        float v0 = sprite.getMinV(), v1 = sprite.getMaxV();
-        for (int side : new int[]{b, c}) {
-            int across = side == b ? c : b;
-            for (float sign : new float[]{-1, 1}) {
-                float[][] corners = new float[4][3];
-                float[][] uv = {{u0, v0}, {u0, v1}, {u1, v1}, {u1, v0}};
-                float[] alongs = {-length, length, length, -length};
-                float[] acrosses = {-half, -half, half, half};
-                float[] normal = new float[3];
-                normal[side] = sign;
-                for (int i = 0; i < 4; i++) {
-                    corners[i][side] = sign * half;
-                    corners[i][a] = alongs[i];
-                    corners[i][across] = acrosses[i];
-                    buffer.vertex(entry, corners[i][0], corners[i][1], corners[i][2])
-                            .color(0xFFFFFFFF)
-                            .texture(uv[i][0], uv[i][1])
-                            .overlay(OverlayTexture.DEFAULT_UV)
-                            .light(light)
-                            .normal(entry, normal[0], normal[1], normal[2]);
-                }
+    /** Are all the openings of this piece of pipe (joints and ends) on {@code axis}: a straight length along it? */
+    static boolean straight(int key, Direction.Axis axis) {
+        PipeShape.Face[] faces = PipeShape.faces(PipeShape.maskOf(key), PipeShape.solidOf(key));
+        for (Direction dir : Direction.values()) {
+            PipeShape.Face face = faces[dir.ordinal()];
+            boolean open = face == PipeShape.Face.CONNECTED || face == PipeShape.Face.MOUTH || face == PipeShape.Face.CAPPED;
+            if (open && dir.getAxis() != axis) return false;
+        }
+        return true;
+    }
+
+    /** The outside walls of a pipe, {@code 1 + swell} times as wide from its middle (a ring on a straight length). */
+    private static void swollen(MatrixStack.Entry entry, VertexConsumer buffer, Sprite sprite, PipeKind kind, int key, Direction.Axis axis,
+                                float swell, int light) {
+        List<float[][][]> walls = WALLS.computeIfAbsent(kind.ordinal() * PipeShape.KEYS + key, k -> {
+            List<float[][][]> list = new ArrayList<>();
+            PipeGeometry.build(key, kind, (facing, corners, uvs, part, cull) -> {
+                if (part != PipeGeometry.OUTER) return;
+                float[][] normal = {{facing.getOffsetX(), facing.getOffsetY(), facing.getOffsetZ()}};
+                list.add(new float[][][]{corners, uvs, normal});
+            });
+            return List.copyOf(list);
+        });
+        boolean ring = straight(key, axis);
+        float[] scale = new float[3];
+        for (int i = 0; i < 3; i++) scale[i] = ring && i == axis.ordinal() ? LENGTH / 16 : 1 + swell;
+        for (float[][][] wall : walls) {
+            float[] normal = wall[2][0];
+            for (int v = 0; v < 4; v++) {
+                float[] corner = wall[0][v];
+                buffer.vertex(entry, (8 + (corner[0] - 8) * scale[0]) / 16, (8 + (corner[1] - 8) * scale[1]) / 16, (8 + (corner[2] - 8) * scale[2]) / 16)
+                        .color(0xFFFFFFFF)
+                        .texture(sprite.getFrameU(wall[1][v][0] / 16), sprite.getFrameV(wall[1][v][1] / 16))
+                        .overlay(OverlayTexture.DEFAULT_UV)
+                        .light(light)
+                        .normal(entry, normal[0], normal[1], normal[2]);
             }
         }
     }

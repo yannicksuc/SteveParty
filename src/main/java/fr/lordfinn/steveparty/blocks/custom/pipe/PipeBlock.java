@@ -29,6 +29,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
@@ -262,6 +263,17 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     @Override
     protected boolean isTransparent(BlockState state) {
         return true;
+    }
+
+    /**
+     * Faces on the block's side hidden by the pipe next to it (two rims side by side): not drawn, when that pipe
+     * covers them and can't be seen through (plastic), or is the same glass.
+     */
+    @Override
+    protected boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
+        if (!(stateFrom.getBlock() instanceof PipeBlock other)) return false;
+        if (!other.kind.isPlastic() && other != this) return false;
+        return VoxelShapes.isSideCovered(PipeShape.shape(state), PipeShape.shape(stateFrom), direction);
     }
 
     // ---------------------------------------------------------------- structures
