@@ -6,30 +6,25 @@ import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.TeleportNetwork;
 import fr.lordfinn.steveparty.components.TeleportSettingsComponent;
-import fr.lordfinn.steveparty.payloads.custom.OpenTeleportSettingsPayload;
-import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.entity.player.PlayerEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeEdit;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Optional;
-
-import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 
 /**
  * « Cartouche Téléportation »: a token landing on its tile is sent to another Teleport tile of the same network (its
- * colour: violet, green, orange or blue) on the same board, like warp pipes. Its settings are edited in its menu: right
- * click in the air with it, or on its Teleport tile with an empty hand.
+ * colour: violet, green, orange or blue) on the same board, like warp pipes. Its settings are its menu's modules
+ * ({@link #modules()}): right click in the air with it, or its tile's interface (also opened by an empty hand on it).
  */
 public class TeleportCartridgeItem extends CartridgeItem {
     public TeleportCartridgeItem(Settings settings) {
@@ -51,62 +46,62 @@ public class TeleportCartridgeItem extends CartridgeItem {
         return stack;
     }
 
-    /** Right click in the air: its menu. */
+    // ---------------------------------------------------------------- the menu
+
+    private static final String K = "gui.steveparty.cartridge_menu.teleport.";
+
+    private static void write(CartridgeEdit edit, TeleportSettingsComponent settings) {
+        edit.stack().set(ModComponents.TELEPORT_SETTINGS, settings);
+    }
+
+    private static final List<CartridgeModule> MODULES = List.of(
+            new ChoiceModule("network", K + "network",
+                    java.util.Arrays.stream(TeleportNetwork.values())
+                            .map(network -> new ChoiceModule.Option("teleport_network.steveparty." + network.asString(), network.color()))
+                            .toList(),
+                    stack -> settings(stack).network().ordinal(),
+                    (edit, value) -> write(edit, settings(edit.stack()).withNetwork(TeleportNetwork.values()[value]))),
+            new ChoiceModule("arrival", K + "arrival",
+                    List.of(new ChoiceModule.Option(K + "stay", -1, K + "stay.tooltip"),
+                            new ChoiceModule.Option(K + "push", -1, K + "push.tooltip")),
+                    stack -> settings(stack).push() ? 1 : 0,
+                    (edit, value) -> write(edit, settings(edit.stack()).withPush(value == 1))),
+            new ChoiceModule("triggers", K + "triggers",
+                    List.of(new ChoiceModule.Option("gui.steveparty.cartridge_menu.yes"), new ChoiceModule.Option("gui.steveparty.cartridge_menu.no")),
+                    stack -> settings(stack).pushTriggers() ? 0 : 1,
+                    (edit, value) -> write(edit, settings(edit.stack()).withPushTriggers(value == 0)),
+                    stack -> settings(stack).push()),
+            new ChoiceModule("pick", K + "pick",
+                    List.of(new ChoiceModule.Option(K + "random"), new ChoiceModule.Option(K + "cycle")),
+                    stack -> settings(stack).cycle() ? 1 : 0,
+                    (edit, value) -> write(edit, settings(edit.stack()).withCycle(value == 1))),
+            new InfoModule("partners", null, 1, TeleportCartridgeItem::partnersLine));
+
+    /** On a tile: how many other tiles of its network are on its board (a warning when none); in hand: a hint. */
+    private static List<InfoModule.Line> partnersLine(InfoModule.Context context) {
+        if (context.pos() == null) return List.of(new InfoModule.Line(Text.translatable(K + "hand_hint"), InfoModule.Tone.SOFT));
+        int partners = TileTeleport.partners(context.world(), context.pos()).size();
+        if (partners == 0) return List.of(new InfoModule.Line(Text.translatable(K + "alone"), InfoModule.Tone.BAD));
+        return List.of(new InfoModule.Line(partners == 1 ? Text.translatable(K + "partners.one")
+                : Text.translatable(K + "partners", partners), InfoModule.Tone.GOOD));
+    }
+
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
-        if (isTargetingBlock(player)) return super.use(world, player, hand);
-        if (player instanceof ServerPlayerEntity serverPlayer) openMenu(serverPlayer, null);
-        return ActionResult.SUCCESS;
+    public List<CartridgeModule> modules() {
+        return MODULES;
     }
 
-    // ---------------------------------------------------------------- the menu (server side)
-
-    /**
-     * May {@code player} change the Teleport Cartridge of the tile at {@code pos} (null: the one in their hand)? Like
-     * the other board edits: not a spectator, allowed to change blocks there, and in reach of the tile.
-     */
-    public static boolean mayEdit(ServerPlayerEntity player, @Nullable BlockPos pos) {
-        if (player.isSpectator() || !player.canModifyBlocks()) return false;
-        return pos == null || (player.getWorld().canPlayerModifyAt(player, pos) && ScreenHandlerChecks.isInReach(player, pos));
-    }
-
-    /** Opens the menu of the Teleport Cartridge of the tile at {@code pos} (null: the one in hand), if allowed. */
-    public static void openMenu(ServerPlayerEntity player, @Nullable BlockPos pos) {
-        if (!mayEdit(player, pos)) {
-            player.sendMessage(Text.translatable("message.steveparty.teleport_cartridge.not_allowed").formatted(Formatting.RED), true);
-            return;
-        }
-        ServerPlayNetworking.send(player, new OpenTeleportSettingsPayload(Optional.ofNullable(pos).map(BlockPos::toImmutable)));
-    }
-
-    /** The Teleport Cartridge in {@code player}'s hands (main hand first), or null. */
-    public static @Nullable ItemStack inHand(PlayerEntity player) {
-        for (Hand hand : Hand.values()) {
-            ItemStack stack = player.getStackInHand(hand);
-            if (stack.getItem() instanceof TeleportCartridgeItem) return stack;
-        }
-        return null;
+    @Override
+    public int menuColor(ItemStack stack) {
+        return settings(stack).network().color();
     }
 
     /**
-     * Server side, from the menu: writes {@code settings} in the Teleport Cartridge of the tile at {@code pos} (its
-     * active one) or in hand, if {@code player} may.
-     *
-     * @return true if written
+     * May {@code player} change the Teleport Cartridge of the tile at {@code pos} (a dye on the tile)? Like the other
+     * board edits (see {@link CartridgeRef#mayEdit}).
      */
-    public static boolean applyFromMenu(ServerPlayerEntity player, @Nullable BlockPos pos, TeleportSettingsComponent settings) {
-        if (!mayEdit(player, pos)) return false;
-        if (pos == null) {
-            ItemStack stack = inHand(player);
-            if (stack == null) return false;
-            stack.set(ModComponents.TELEPORT_SETTINGS, settings);
-            return true;
-        }
-        if (!(player.getWorld().getBlockEntity(pos) instanceof BoardSpaceBlockEntity tile)) return false;
-        ItemStack cartridge = tile.getActiveCartridgeItemStack();
-        if (!(cartridge.getItem() instanceof TeleportCartridgeItem)) return false;
-        apply(tile, cartridge, settings);
-        return true;
+    public static boolean mayEdit(ServerPlayerEntity player, BlockPos pos) {
+        return CartridgeRef.slot(pos, 0).mayEdit(player);
     }
 
     /** Writes the settings of the tile's Teleport Cartridge, then saves and sends the tile (its colour follows). */

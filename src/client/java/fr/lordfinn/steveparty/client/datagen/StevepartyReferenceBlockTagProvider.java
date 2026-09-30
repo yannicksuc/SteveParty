@@ -48,6 +48,13 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(shape);
             }
         }
+        // Plastic warp pipes: plastic too (taken apart in one hit with the wrench; they have a block entity: never
+        // switchable). Glass pipes are glass: by hand, like glass
+        for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values())
+            if (kind.isPlastic()) for (Block pipe : ModBlocks.PIPES[kind.ordinal()]) {
+                getOrCreateTagBuilder(Switchables.PLASTIC).add(pipe);
+                getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(pipe);
+            }
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,

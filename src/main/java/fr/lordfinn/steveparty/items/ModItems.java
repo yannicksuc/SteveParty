@@ -263,6 +263,9 @@ public class ModItems {
             for (Block[] shapes : new Block[][]{ModBlocks.PLASTIC_SLABS, ModBlocks.PLASTIC_STAIRS, ModBlocks.PLASTIC_WALLS}) {
                 for (Block shape : shapes) itemGroup.add(shape);
             }
+            for (Block[] pipes : ModBlocks.PIPES) {
+                for (Block pipe : pipes) itemGroup.add(pipe);
+            }
             itemGroup.add(GOAL_POLE_BASE);
             itemGroup.add(GOAL_POLE);
             itemGroup.add(FLAG);

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "glass_pipe",
+  "pattern": [
+    "G G",
+    "G G",
+    "G G"
+  ],
+  "key": {
+    "G": "minecraft:lime_stained_glass"
+  },
+  "result": {
+    "id": "steveparty:lime_stained_glass_pipe",
+    "count": 6
+  }
+}

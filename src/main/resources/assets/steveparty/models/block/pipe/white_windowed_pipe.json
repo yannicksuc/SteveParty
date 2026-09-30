@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "steveparty:block/plastic_block/white_plastic_block"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "pipe",
+  "pattern": [
+    "P P",
+    "P P",
+    "P P"
+  ],
+  "key": {
+    "P": "steveparty:white_plastic_block"
+  },
+  "result": {
+    "id": "steveparty:white_pipe",
+    "count": 6
+  }
+}

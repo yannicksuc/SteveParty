@@ -131,6 +131,38 @@ public class ModBlocks {
         }
     }
 
+    /**
+     * Warp pipes, by kind ({@link fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind#ordinal()}) then colour (the plain
+     * glass pipe: one block): never suffocating whoever travels inside.
+     */
+    public static final Block[][] PIPES = new Block[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values().length][];
+
+    static {
+        for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values()) {
+            PIPES[kind.ordinal()] = new Block[kind.count()];
+            for (int i = 0; i < kind.count(); i++) {
+                final int color = i;
+                PIPES[kind.ordinal()][i] = register(
+                        settings -> new fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock(kind, color, settings),
+                        Block.Settings.create()
+                                .mapColor(kind.colored ? DyeColor.byName(COLORS[i], DyeColor.WHITE).getMapColor() : MapColor.CLEAR)
+                                .strength(kind.isPlastic() ? 1.0f : 0.3f, 1.0f)
+                                .sounds(kind.isPlastic() ? BlockSoundGroup.BAMBOO_WOOD : BlockSoundGroup.GLASS)
+                                .nonOpaque()
+                                .suffocates((state, world, pos) -> false)
+                                .blockVision((state, world, pos) -> false)
+                                .allowsSpawning((state, world, pos, type) -> false)
+                                .pistonBehavior(PistonBehavior.BLOCK),
+                        kind.id(COLORS, i),
+                        true
+                );
+            }
+        }
+    }
+
+    /** The plain glass pipe. */
+    public static final Block GLASS_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GLASS.ordinal()][0];
+
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
     /** The vanilla terracotta a polished terracotta is made from ("default" = plain terracotta): same map colour. */

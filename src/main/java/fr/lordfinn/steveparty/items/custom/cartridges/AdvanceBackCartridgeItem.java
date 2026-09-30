@@ -3,6 +3,10 @@ package fr.lordfinn.steveparty.items.custom.cartridges;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.text.MutableText;
@@ -14,7 +18,8 @@ import java.util.List;
 
 /**
  * The Move Forward / Back cartridge: a token ending its move on its tile moves on {@link #steps} more spaces, forward
- * (1..6) or back (-1..-6). Sneak + mouse wheel with it in the main hand changes the number and the direction.
+ * (1..6) or back (-1..-6). Its menu has the direction and the number; sneak + mouse wheel with it in the main hand
+ * changes them too.
  */
 public class AdvanceBackCartridgeItem extends CartridgeItem {
     public static final int MAX_STEPS = 6;
@@ -23,6 +28,21 @@ public class AdvanceBackCartridgeItem extends CartridgeItem {
     public static final int FORWARD_COLOR = 0x2DB84C;
     public static final int BACK_COLOR = 0xE23C9A;
 
+    private static final String K = MENU_KEY + "advance.";
+    private static final List<CartridgeModule> MODULES = List.of(
+            new ChoiceModule("direction", K + "direction",
+                    List.of(new ChoiceModule.Option(K + "back"), new ChoiceModule.Option(K + "forward")),
+                    stack -> steps(stack) < 0 ? 0 : 1,
+                    (edit, value) -> edit.stack().set(ModComponents.ADVANCE_BACK_STEPS,
+                            (value == 0 ? -1 : 1) * Math.abs(steps(edit.stack())))),
+            new NumberModule("steps", K + "steps", 1, MAX_STEPS,
+                    stack -> Math.abs(steps(stack)),
+                    (edit, value) -> edit.stack().set(ModComponents.ADVANCE_BACK_STEPS,
+                            (steps(edit.stack()) < 0 ? -1 : 1) * value),
+                    stack -> color(steps(stack))),
+            new InfoModule("hint", null, 1, context -> List.of(
+                    new InfoModule.Line(Text.translatable(K + "hint"), InfoModule.Tone.SOFT))));
+
     public AdvanceBackCartridgeItem(Settings settings) {
         super(settings);
     }
@@ -30,6 +50,16 @@ public class AdvanceBackCartridgeItem extends CartridgeItem {
     @Override
     public BoardSpaceType getBoardSpaceType() {
         return BoardSpaceType.TILE_ADVANCE_BACK;
+    }
+
+    @Override
+    public List<CartridgeModule> modules() {
+        return MODULES;
+    }
+
+    @Override
+    public int menuColor(ItemStack stack) {
+        return color(steps(stack));
     }
 
     /** Spaces to move: 1..6 forward, -1..-6 back (never 0: a cartridge without setting moves 3 forward). */

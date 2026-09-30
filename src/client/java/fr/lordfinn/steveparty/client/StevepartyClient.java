@@ -149,6 +149,14 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
         ModelLoadingPlugin.register(new BrickShadeModelPlugin());
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
+        ModelLoadingPlugin.register(new fr.lordfinn.steveparty.client.pipe.PipeModelPlugin());
+        fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer.register();
+        // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
+        for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values()) {
+            RenderLayer layer = kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.STAINED_GLASS ? RenderLayer.getTranslucent()
+                    : kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.OPAQUE ? null : RenderLayer.getCutout();
+            if (layer != null) for (net.minecraft.block.Block pipe : ModBlocks.PIPES[kind.ordinal()]) BlockRenderLayerMap.INSTANCE.putBlock(pipe, layer);
+        }
         StencilResourceManager.registerReloadListener();
         MaterialSprites.registerReloadListener();
         MobTextureColors.registerReloadListener();
@@ -299,6 +307,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         // The forge core is drawn by the forge: its entity is only a hitbox
         EntityRendererRegistry.register(ModEntities.FORGE_CORE, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.PIPE_CARRIER, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.MULA_STAR, fr.lordfinn.steveparty.client.entity.MulaStarRenderer::new);
         fr.lordfinn.steveparty.client.entity.MulaFoodTooltip.register();
         BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
@@ -327,7 +336,7 @@ public class StevepartyClient implements ClientModInitializer {
                 fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.SHOP_STOP_SCREEN_HANDLER,
                 (handler, inventory, title) -> new fr.lordfinn.steveparty.client.screens.ShopStopScreen(
                         (fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler) handler, inventory, title));
-        HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, CartridgeInventoryScreen::new);
+        HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, fr.lordfinn.steveparty.client.screens.CartridgeScreen::new);
         HandledScreens.register(MINI_GAME_PAGE_SCREEN_HANDLER, MiniGamePageScreen::new);
         HandledScreens.register(MINI_GAMES_CATALOGUE_SCREEN_HANDLER, MiniGamesCatalogueScreen::new);
         HandledScreens.register(HERE_WE_GO_BOOK_SCREEN_HANDLER, HereWeGoBookScreen::new);

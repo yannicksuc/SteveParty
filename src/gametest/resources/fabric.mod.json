@@ -15,6 +15,7 @@
       "fr.lordfinn.steveparty.gametest.PartyHudGameTests",
       "fr.lordfinn.steveparty.gametest.PartyControllerDashboardGameTests",
       "fr.lordfinn.steveparty.gametest.TileTeleportGameTests",
+      "fr.lordfinn.steveparty.gametest.CartridgeMenuGameTests",
       "fr.lordfinn.steveparty.gametest.BoardLinkingGameTests",
       "fr.lordfinn.steveparty.gametest.TileSupportGameTests",
       "fr.lordfinn.steveparty.gametest.TileSizeGameTests",
@@ -53,7 +54,8 @@
       "fr.lordfinn.steveparty.gametest.LangGameTests",
       "fr.lordfinn.steveparty.gametest.StarFragmentsBlockGameTests",
       "fr.lordfinn.steveparty.gametest.VillagerBlockGameTests",
-      "fr.lordfinn.steveparty.gametest.VillagerBlockSoulGameTests"
+      "fr.lordfinn.steveparty.gametest.VillagerBlockSoulGameTests",
+      "fr.lordfinn.steveparty.gametest.PipeGameTests"
     ]
   },
   "depends": {
