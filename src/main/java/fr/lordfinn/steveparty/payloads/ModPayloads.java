@@ -29,7 +29,6 @@ public class ModPayloads {
     public static final Identifier PARTY_DATA_PAYLOAD = Steveparty.id("party-data");
     public static final Identifier PARTY_LIVE_PAYLOAD = Steveparty.id("party-live");
     public static final Identifier PARTY_DASHBOARD_PAYLOAD = Steveparty.id("party-dashboard");
-    public static final Identifier SELECTION_STATE_PAYLOAD = Steveparty.id("selection-state-payload");
     public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Steveparty.id("here-we-go-book-payload");
     public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Steveparty.id("here-we-come-book-payload");
     public static final Identifier SAVE_STENCIL_PAYLOAD = Steveparty.id("save_stencil");
@@ -48,8 +47,6 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(PartyDataPayload.ID, PartyDataPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PartyLivePayload.ID, PartyLivePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PartyDashboardPayload.ID, PartyDashboardPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(SelectionStatePayload.ID, SelectionStatePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeGoBookPayload.ID, HereWeGoBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
@@ -68,10 +65,9 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(WrenchActionPayload.ID, WrenchActionPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(OpenTeleportSettingsPayload.ID, OpenTeleportSettingsPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(TeleportSettingsPayload.ID, TeleportSettingsPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(CartridgeSettingPayload.ID, CartridgeSettingPayload.CODEC);
 
-        ServerPlayNetworking.registerGlobalReceiver(TeleportSettingsPayload.ID, (payload, context) -> {
+        ServerPlayNetworking.registerGlobalReceiver(CartridgeSettingPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> payload.handle(player));
         });

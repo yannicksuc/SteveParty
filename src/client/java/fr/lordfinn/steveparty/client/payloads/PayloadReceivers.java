@@ -80,13 +80,6 @@ public class PayloadReceivers {
                 client.setScreen(new TokenSpellScreen(mob, payload.currentSize(), payload.resize(), payload.currentColor()));
             }
         }));
-
-        // The server accepted opening a Teleport Cartridge's menu (on its tile, or the one in hand)
-        ClientPlayNetworking.registerGlobalReceiver(OpenTeleportSettingsPayload.ID, (payload, context) -> context.client().execute(() -> {
-            MinecraftClient client = context.client();
-            if (client.world == null || client.currentScreen != null) return;
-            client.setScreen(new fr.lordfinn.steveparty.client.screens.TeleportSettingsScreen(payload.tile().orElse(null)));
-        }));
     }
 
     private static Runnable summonEnchanted(ClientPlayNetworking.Context context, EnchantedCircularParticlePayload payload) {

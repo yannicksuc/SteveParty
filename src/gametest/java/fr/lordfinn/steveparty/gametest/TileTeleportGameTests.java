@@ -29,6 +29,7 @@ import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.service.TokenMovementService;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -99,6 +100,23 @@ public class TileTeleportGameTests implements FabricGameTest {
         BoardSpaceBlockEntity tile = context.getBlockEntity(pos);
         tile.setStack(0, cartridge);
         return tile;
+    }
+
+    /**
+     * The cartridge's menu (see CartridgeMenus#apply) sets all of {@code settings}, module by module, in the tile's
+     * cartridge at {@code pos} or (null) the one in the main hand.
+     *
+     * @return true if every change was accepted
+     */
+    private static boolean menu(ServerPlayerEntity player, BlockPos pos, TeleportSettingsComponent settings) {
+        fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef ref = pos == null
+                ? fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef.hand(Hand.MAIN_HAND)
+                : fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef.slot(pos, 0);
+        boolean ok = CartridgeMenus.apply(player, ref, "network", settings.network().ordinal());
+        ok &= CartridgeMenus.apply(player, ref, "arrival", settings.push() ? 1 : 0);
+        if (settings.push()) ok &= CartridgeMenus.apply(player, ref, "triggers", settings.pushTriggers() ? 0 : 1);
+        ok &= CartridgeMenus.apply(player, ref, "pick", settings.cycle() ? 1 : 0);
+        return ok;
     }
 
     private static ItemStack plain() {
@@ -454,28 +472,28 @@ public class TileTeleportGameTests implements FabricGameTest {
         try {
             Vec3d near = pos.toCenterPos().add(1.5, 0.5, 0);
             player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
-            context.assertTrue(TeleportCartridgeItem.applyFromMenu(player, pos, settings), "allowed");
+            context.assertTrue(menu(player, pos, settings), "allowed");
             context.assertEquals(TileTeleport.settings(tile.getActiveCartridgeItemStack()), settings, "written in the tile's cartridge");
             context.assertEquals(tile.getActiveCartridgeItemStack().get(ModComponents.COLOR), TeleportNetwork.ORANGE.color(), "orange tile now");
 
             TeleportSettingsComponent other = settings.withNetwork(TeleportNetwork.BLUE);
             player.changeGameMode(GameMode.ADVENTURE);
-            context.assertTrue(!TeleportCartridgeItem.applyFromMenu(player, pos, other), "adventure: refused");
+            context.assertTrue(!menu(player, pos, other), "adventure: refused");
             player.changeGameMode(GameMode.SPECTATOR);
-            context.assertTrue(!TeleportCartridgeItem.applyFromMenu(player, pos, other), "spectator: refused");
+            context.assertTrue(!menu(player, pos, other), "spectator: refused");
             player.changeGameMode(GameMode.SURVIVAL);
             Vec3d far = pos.toCenterPos().add(20, 0.5, 0);
             player.refreshPositionAndAngles(far.x, far.y, far.z, 0, 0);
-            context.assertTrue(!TeleportCartridgeItem.applyFromMenu(player, pos, other), "out of reach: refused");
+            context.assertTrue(!menu(player, pos, other), "out of reach: refused");
             context.assertEquals(TileTeleport.settings(tile.getActiveCartridgeItemStack()), settings, "unchanged");
 
             // The cartridge in hand
             ItemStack inHand = new ItemStack(ModItems.TELEPORT_CARTRIDGE);
             player.setStackInHand(Hand.MAIN_HAND, inHand);
-            context.assertTrue(TeleportCartridgeItem.applyFromMenu(player, null, other), "in hand");
+            context.assertTrue(menu(player, null, other), "in hand");
             context.assertEquals(TeleportCartridgeItem.settings(player.getMainHandStack()), other, "written in the held cartridge");
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
-            context.assertTrue(!TeleportCartridgeItem.applyFromMenu(player, null, other), "nothing in hand");
+            context.assertTrue(!menu(player, null, other), "nothing in hand");
 
             // A lime dye on the tile: the green network
             player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);

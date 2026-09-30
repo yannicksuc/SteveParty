@@ -15,6 +15,7 @@
       "fr.lordfinn.steveparty.gametest.PartyHudGameTests",
       "fr.lordfinn.steveparty.gametest.PartyControllerDashboardGameTests",
       "fr.lordfinn.steveparty.gametest.TileTeleportGameTests",
+      "fr.lordfinn.steveparty.gametest.CartridgeMenuGameTests",
       "fr.lordfinn.steveparty.gametest.BoardLinkingGameTests",
       "fr.lordfinn.steveparty.gametest.TileSupportGameTests",
       "fr.lordfinn.steveparty.gametest.TileSizeGameTests",

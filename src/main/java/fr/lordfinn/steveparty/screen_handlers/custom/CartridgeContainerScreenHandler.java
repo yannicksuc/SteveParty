@@ -49,7 +49,7 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
             ItemStack originalStack = slot.getStack();
             newStack = originalStack.copy();
             if (invSlot < this.inventory.size()) {
-                if (!this.insertItem(originalStack, this.inventory.size(), this.slots.size(), true)) {
+                if (!this.insertItem(originalStack, this.inventory.size(), realSlotsEnd(), true)) {
                     return ItemStack.EMPTY;
                 }
             } else if (!this.insertItem(originalStack, 0, this.inventory.size(), false)) {
@@ -64,6 +64,16 @@ public abstract class CartridgeContainerScreenHandler extends ScreenHandler {
         }
 
         return newStack;
+    }
+
+    /** The end of the slots shift-clicks move items between (the cartridge slots, then the player's). */
+    protected int realSlotsEnd() {
+        return this.slots.size();
+    }
+
+    /** The number of cartridge slots (they come first). */
+    public int getInventorySize() {
+        return inventory == null ? 0 : inventory.size();
     }
 
     public boolean isSingle() {
