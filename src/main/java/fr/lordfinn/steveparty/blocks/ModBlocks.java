@@ -131,6 +131,34 @@ public class ModBlocks {
         }
     }
 
+    /**
+     * Warp pipes, by kind ({@link fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind#ordinal()}) then colour: made of
+     * plastic (and glass), never suffocating whoever travels inside.
+     */
+    public static final Block[][] PIPES = new Block[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values().length][COLORS.length];
+
+    static {
+        for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values()) {
+            for (int i = 0; i < COLORS.length; i++) {
+                final int color = i;
+                PIPES[kind.ordinal()][i] = register(
+                        settings -> new fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock(kind, color, settings),
+                        Block.Settings.create()
+                                .mapColor(DyeColor.byName(COLORS[i], DyeColor.WHITE))
+                                .strength(1.0f, 1.0f)
+                                .sounds(kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GLASS ? BlockSoundGroup.GLASS : BlockSoundGroup.BAMBOO_WOOD)
+                                .nonOpaque()
+                                .suffocates((state, world, pos) -> false)
+                                .blockVision((state, world, pos) -> false)
+                                .allowsSpawning((state, world, pos, type) -> false)
+                                .pistonBehavior(PistonBehavior.BLOCK),
+                        COLORS[i] + "_" + kind.suffix,
+                        true
+                );
+            }
+        }
+    }
+
     public static final Block[] POLISHED_TERRACOTTA_BLOCKS = new Block[COLORS_WITH_DEFAULT.length];
 
     /** The vanilla terracotta a polished terracotta is made from ("default" = plain terracotta): same map colour. */

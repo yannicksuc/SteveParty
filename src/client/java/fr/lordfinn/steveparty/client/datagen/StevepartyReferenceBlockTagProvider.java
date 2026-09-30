@@ -48,6 +48,12 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(shape);
             }
         }
+        // Warp pipes: plastic too (taken apart in one hit with the wrench; they have a block entity: never switchable)
+        for (Block[] pipes : ModBlocks.PIPES)
+            for (Block pipe : pipes) {
+                getOrCreateTagBuilder(Switchables.PLASTIC).add(pipe);
+                getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(pipe);
+            }
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
                 .add(
                         ModBlocks.GOAL_POLE_BASE,

@@ -86,6 +86,20 @@ public class ModEntities {
                     .build(FORGE_CORE_KEY)
     );
 
+    /** What carries a traveller through a warp pipe (invisible, ridden). */
+    public static final RegistryKey<EntityType<?>> PIPE_CARRIER_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("pipe_carrier"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity> PIPE_CARRIER = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("pipe_carrier"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity>create(fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.25f, 0.25f)
+                    .disableSummon()
+                    .makeFireImmune()
+                    .maxTrackingRange(10)
+                    .trackingTickInterval(20)
+                    .build(PIPE_CARRIER_KEY)
+    );
+
     public static void initialize() {
         //FabricDefaultAttributeRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());

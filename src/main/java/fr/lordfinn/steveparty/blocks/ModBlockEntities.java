@@ -75,6 +75,13 @@ public class ModBlockEntities {
             Identifier.of(MOD_ID, "party_bell"),
             FabricBlockEntityTypeBuilder.create(PartyBellBlockEntity::new, ModBlocks.PARTY_BELL).build(null)
     );
+    /** Every warp pipe's (the cartridge slot of its mouths). */
+    public static final BlockEntityType<fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity> PIPE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "pipe"),
+            FabricBlockEntityTypeBuilder.create(fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity::new,
+                    java.util.Arrays.stream(ModBlocks.PIPES).flatMap(java.util.Arrays::stream).toArray(net.minecraft.block.Block[]::new)).build(null)
+    );
     public static final BlockEntityType<PodiumBlockEntity> PODIUM_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "podium"),

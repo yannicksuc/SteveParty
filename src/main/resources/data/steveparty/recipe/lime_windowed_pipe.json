@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "windowed_pipe",
+  "pattern": [
+    "P P",
+    "G G",
+    "P P"
+  ],
+  "key": {
+    "P": "steveparty:lime_plastic_block",
+    "G": "minecraft:glass"
+  },
+  "result": {
+    "id": "steveparty:lime_windowed_pipe",
+    "count": 6
+  }
+}
