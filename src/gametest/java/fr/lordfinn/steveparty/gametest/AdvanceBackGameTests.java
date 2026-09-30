@@ -302,7 +302,7 @@ public class AdvanceBackGameTests implements FabricGameTest {
         context.assertEquals(TileFeedback.tileColor(tile), AdvanceBackCartridgeItem.FORWARD_COLOR, "green");
         tile.setStack(0, AdvanceBackCartridgeItem.withSteps(-3));
         context.assertEquals(TileFeedback.landingOf(tile), Landing.BACK, "back landing");
-        context.assertEquals(TileFeedback.tileColor(tile), AdvanceBackCartridgeItem.BACK_COLOR, "purple-red");
+        context.assertEquals(TileFeedback.tileColor(tile), AdvanceBackCartridgeItem.BACK_COLOR, "pink-magenta");
         context.complete();
     }
 }

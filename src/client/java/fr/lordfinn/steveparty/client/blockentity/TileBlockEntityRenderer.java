@@ -78,7 +78,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureNeutral = Steveparty.id("block/tile_overlay_neutral");
     private static final Identifier textureExcited = Steveparty.id("block/tile_overlay_excited");
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
-    /** Rejouer / Roll Again: a die in a circular arrow, in the cartridge's colour (lime green until dyed). */
+    /** Rejouer / Roll Again: a die in a circular arrow, in the cartridge's colour (cyan until dyed). */
     private static final Identifier textureReplay = Steveparty.id("block/tile_overlay_replay");
     private static final Identifier textureAdvancedFill = Steveparty.id("block/advanced_tile_fill");
     private static final Identifier textureSimpleFill = Steveparty.id("block/tile_fill");
@@ -153,11 +153,12 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         TileStampComponent stamp = TileStamping.displayedStamp(entity, stack);
         Identifier face;
         if (stamp != null) face = TileStampTextures.get(stamp, small);
-        else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = TileStampTextures.face(inventoryFace(stack), small);
-        // A Stop tile: a STOP sign over the face in the cartridge's colour
+        // An item tile: excited (bonus), angry (malus) or blowing (nothing yet) face, in the cartridge's colour
+        else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = TileStampTextures.face(inventoryFace(stack), color, small);
+        // A Stop tile: a barred "no entry" disc in the cartridge's colour (anthracite by default)
         else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
         else if (tileType == BoardSpaceType.BOARD_SPACE_SHOP) face = TileStampTextures.get(SHOP_FACE, small);
-        // A Move Forward / Back tile: a double arrow and the number of spaces, green forward, purple-red back
+        // A Move Forward / Back tile: a double arrow and the number of spaces, green forward, pink-magenta back
         else if (tileType == BoardSpaceType.TILE_ADVANCE_BACK)
             face = TileStampTextures.advanceBack(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.steps(stack), small);
         else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.face(textureReplay, color, small);

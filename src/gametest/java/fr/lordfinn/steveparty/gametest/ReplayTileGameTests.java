@@ -109,7 +109,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         BoardSpaceBlockEntity tile = placeTile(context, new BlockPos(2, 1, 2), new ItemStack(ModItems.REPLAY_CARTRIDGE));
         context.assertEquals(tile.getCachedState().get(TILE_TYPE), BoardSpaceType.TILE_REPLAY, "a replay tile");
         context.assertEquals(TileFeedback.landingOf(tile), Landing.REPLAY, "its landing");
-        context.assertEquals(TileFeedback.tileColor(tile), ReplayBoardSpaceBehavior.COLOR, "a lime green face");
+        context.assertEquals(TileFeedback.tileColor(tile), ReplayBoardSpaceBehavior.COLOR, "a cyan face");
         context.assertEquals(new ItemStack(ModItems.REPLAY_CARTRIDGE).getMaxCount(), 64, "cartridges stack");
         context.complete();
     }

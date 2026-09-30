@@ -25,9 +25,10 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
 
 public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
 
-    public final static int NEUTRAL_COLOR = 0x951CAE;
-    public final static int GOOD_COLOR = 0x0083DF;
-    public final static int BAD_COLOR = 0xC41C24;
+    /** Item tile colours (face and sides): orange while it has nothing to give or take, blue bonus, red malus. */
+    public final static int NEUTRAL_COLOR = 0xFF9A1F;
+    public final static int GOOD_COLOR = 0x1566E0;
+    public final static int BAD_COLOR = 0xD42A2A;
 
     public InventoryInteractorTileBehavior() {
         super(BoardSpaceType.TILE_INVENTORY_INTERACTOR);

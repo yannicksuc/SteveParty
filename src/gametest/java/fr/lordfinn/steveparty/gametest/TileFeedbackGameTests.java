@@ -8,7 +8,13 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Kind;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Landing;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.Played;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior;
 import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
@@ -95,6 +101,49 @@ public class TileFeedbackGameTests implements FabricGameTest {
         }
         context.assertTrue(Registries.SOUND_EVENT.containsId(Landing.GOOD.layers().getFirst().sound().id()), "registered sound");
         context.complete();
+    }
+
+    /**
+     * Every role has its own default colour (face, particles, notice), all far apart; the Stop tile is anthracite until
+     * its cartridge is dyed.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void eachRoleHasItsOwnColour(TestContext context) {
+        BoardSpaceBlockEntity tile = placeTile(context, new BlockPos(2, 1, 2));
+        tile.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
+        context.assertEquals(TileFeedback.tileColor(tile), StopBoardSpaceBehavior.COLOR, "an anthracite Stop tile");
+        ItemStack dyed = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP);
+        dyed.set(ModComponents.COLOR, 0xB02E26);
+        tile.setStack(0, dyed);
+        context.assertEquals(TileFeedback.tileColor(tile), 0xB02E26, "a dyed Stop cartridge keeps its dye");
+        tile.setStack(0, new ItemStack(ModItems.INVENTORY_CARTRIDGE));
+        context.assertEquals(TileFeedback.tileColor(tile), InventoryInteractorTileBehavior.NEUTRAL_COLOR, "an orange item tile");
+
+        List<Integer> colours = List.of(0xFFFFFF, InventoryInteractorTileBehavior.GOOD_COLOR, InventoryInteractorTileBehavior.BAD_COLOR,
+                InventoryInteractorTileBehavior.NEUTRAL_COLOR, ShopCartridgeItem.COLOR, StopBoardSpaceBehavior.COLOR,
+                AdvanceBackCartridgeItem.FORWARD_COLOR, AdvanceBackCartridgeItem.BACK_COLOR, ReplayBoardSpaceBehavior.COLOR,
+                TileTeleport.COLOR);
+        for (int i = 0; i < colours.size(); i++) {
+            for (int j = i + 1; j < colours.size(); j++) {
+                context.assertTrue(distance(colours.get(i), colours.get(j)) > 40,
+                        String.format("#%06X and #%06X far apart", colours.get(i), colours.get(j)));
+            }
+        }
+        // The landing particles and notices use the same colours as the faces
+        context.assertEquals(Landing.BAD.accent(), InventoryInteractorTileBehavior.BAD_COLOR, "malus");
+        context.assertEquals(Landing.ITEM.accent(), InventoryInteractorTileBehavior.NEUTRAL_COLOR, "item");
+        context.assertEquals(Landing.STOP.accent(), StopBoardSpaceBehavior.COLOR, "stop");
+        context.assertEquals(Landing.ADVANCE.accent(), AdvanceBackCartridgeItem.FORWARD_COLOR, "advance");
+        context.assertEquals(Landing.BACK.accent(), AdvanceBackCartridgeItem.BACK_COLOR, "back");
+        context.assertEquals(Landing.REPLAY.accent(), ReplayBoardSpaceBehavior.COLOR, "replay");
+        context.assertEquals(Landing.SHOP.accent(), ShopCartridgeItem.COLOR, "shop");
+        context.complete();
+    }
+
+    /** Distance between two colours (RGB, weighted like the eye: green counts most). */
+    private static double distance(int a, int b) {
+        int dr = ((a >> 16) & 0xFF) - ((b >> 16) & 0xFF), dg = ((a >> 8) & 0xFF) - ((b >> 8) & 0xFF), db = (a & 0xFF) - (b & 0xFF);
+        return Math.sqrt(2 * dr * dr + 4 * dg * dg + 3 * db * db) / 3;
     }
 
     /** In a game: passing pops, the destination lands (themed, with a notice to the party), a stop tile halts. */

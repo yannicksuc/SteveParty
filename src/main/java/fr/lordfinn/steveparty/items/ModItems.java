@@ -48,7 +48,10 @@ public class ModItems {
     public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
-    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop");
+    /** Its tile's face is anthracite until dyed. */
+    public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior.COLOR));
     public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand", new Item.Settings().maxCount(1).enchantable(TOKENIZER_WAND_ENCHANTABILITY));
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
@@ -61,7 +64,7 @@ public class ModItems {
     /** Shop Cartridge: a shop stop (a check point pauses the passing token, a tile opens the shop on landing). */
     public static final Item SHOP_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.class, "shop_cartridge");
     public static final Item ADVANCE_BACK_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.class, "advance_back_cartridge");
-    /** Its tile's face is lime green until dyed. */
+    /** Its tile's face is cyan until dyed. */
     public static final Item REPLAY_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.ReplayCartridgeItem.class, "replay_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior.COLOR));

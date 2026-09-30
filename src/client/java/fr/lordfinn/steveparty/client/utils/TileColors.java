@@ -79,6 +79,12 @@ public final class TileColors {
         return (Math.round((r + m) * 255) << 16) | (Math.round((g + m) * 255) << 8) | Math.round((b + m) * 255);
     }
 
+    /** Whether {@code rgb} is a dark colour, whose pictograms are drawn light rather than in its darkest shade. */
+    public static boolean isDark(int rgb) {
+        int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+        return 0.299f * r + 0.587f * g + 0.114f * b < 100;
+    }
+
     // ---------------------------------------------------------------- tint indexes of the tile models
 
     /**
