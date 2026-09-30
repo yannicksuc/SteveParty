@@ -52,6 +52,10 @@ import java.util.function.Consumer;
  * Shop stops (Shop Cartridge): a check point stops the tokens passing through, a tile opens the shop on landing only;
  * the nearest merchant is the shop (or the one chosen with the Wrench); the purchases allowed are enforced; « Buy
  * nothing », closing, the time running out or the owner leaving end the stop and the token goes on.
+ * <p>
+ * Each test runs in a batch of its own: the shop is the nearest merchant within {@link ShopStops#SHOP_RADIUS} blocks,
+ * and the tests of a batch stand side by side, so another test's merchant would be found (or be busy with its own
+ * stop), and {@code timeRunsOut} changes a game rule of the whole world.
  */
 public class ShopStopGameTests implements FabricGameTest {
     /** The board: tile → shop space (a check point or a tile) → tile → tile. */
@@ -194,7 +198,7 @@ public class ShopStopGameTests implements FabricGameTest {
     // ---------------------------------------------------------------- check point: stops the passing tokens
 
     /** A shop check point stops a passing token, turns the check point yellow; « Buy nothing » resumes its steps. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_checkPointStopsThePassingTokenAndBuyNothingGoesOn")
     public void checkPointStopsThePassingTokenAndBuyNothingGoesOn(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -215,7 +219,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** During a party, the party HUD's live state shows the turn waiting at the shop, its steps left kept. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_partyHudShowsTheShopStop")
     public void partyHudShowsTheShopStop(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -248,7 +252,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** The limit (1 by default) is enforced: one purchase, no second one, and the stop ends by itself. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_purchaseLimitIsEnforcedAndEndsTheStop")
     public void purchaseLimitIsEnforcedAndEndsTheStop(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -267,7 +271,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** The cartridge sets the limit: with 2, two purchases, then the stop ends. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_cartridgeSetsThePurchasesAllowed")
     public void cartridgeSetsThePurchasesAllowed(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -291,7 +295,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** Closing the screen is « Buy nothing ». */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_closingTheScreenGoesOn")
     public void closingTheScreenGoesOn(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -307,7 +311,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** Only the owner shops: another player gets no screen and cannot take the merchant meanwhile. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_onlyTheOwnerShops")
     public void onlyTheOwnerShops(TestContext context) {
         withPlayer(context, owner -> {
             ServerPlayerEntity stranger = context.createMockCreativeServerPlayerInWorld();
@@ -330,7 +334,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** Nobody chooses: the time runs out and the token goes on by itself. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300, batchId = "shop_stop_timeRunsOut")
     public void timeRunsOut(TestContext context) {
         var rule = context.getWorld().getGameRules().get(ShopStops.SHOP_SECONDS);
         int before = rule.get();
@@ -349,7 +353,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** The shopper disconnects: the stop ends and the token goes on (the game never waits for them). */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_ownerLeavingEndsTheStop")
     public void ownerLeavingEndsTheStop(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -372,7 +376,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** No merchant around, or a token without owner: the token passes through. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_withoutMerchantOrOwnerTheTokenPassesThrough")
     public void withoutMerchantOrOwnerTheTokenPassesThrough(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -388,7 +392,7 @@ public class ShopStopGameTests implements FabricGameTest {
         });
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_ownerlessTokenPassesThrough")
     public void ownerlessTokenPassesThrough(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.CHECK_POINT);
@@ -407,7 +411,7 @@ public class ShopStopGameTests implements FabricGameTest {
     // ---------------------------------------------------------------- tile: landing only
 
     /** A shop tile does not stop a token passing over it. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_tilePassedOverDoesNotStop")
     public void tilePassedOverDoesNotStop(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.TILE);
@@ -424,7 +428,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** Ending the move on a shop tile opens the shop; the token stays there when the stop ends. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "shop_stop_landingOnATileOpensTheShop")
     public void landingOnATileOpensTheShop(TestContext context) {
         withPlayer(context, owner -> {
             Board board = board(context, owner, ModBlocks.TILE);
@@ -451,7 +455,7 @@ public class ShopStopGameTests implements FabricGameTest {
      * The nearest merchant is the shop, the distance counted to him or to his nearest stall; a trader without stall
      * sells nothing and is ignored; the Wrench's choice wins.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40, batchId = "shop_stop_nearestMerchantIsTheShop")
     public void nearestMerchantIsTheShop(TestContext context) {
         withPlayer(context, player -> {
             Board board = board(context, player, ModBlocks.CHECK_POINT);
@@ -469,7 +473,7 @@ public class ShopStopGameTests implements FabricGameTest {
     }
 
     /** The Wrench chooses the shop: origin on the shop space, click a stall (again: back to the nearest) or a trader. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40, batchId = "shop_stop_wrenchChoosesTheShop")
     public void wrenchChoosesTheShop(TestContext context) {
         withPlayer(context, player -> {
             Board board = board(context, player, ModBlocks.CHECK_POINT);
