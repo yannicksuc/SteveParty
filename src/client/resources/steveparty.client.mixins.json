@@ -22,6 +22,7 @@
     "MouseBackgroundDevMixin",
     "MouseScrollMixin",
     "LivingEntityRenderStateMixin",
+    "PipeMountMessageMixin",
     "PlayerEntityModelMixin",
     "PlayerEntityModelStencilHammerMixin",
     "PlayerEntityRendererStencilHammerMixin",

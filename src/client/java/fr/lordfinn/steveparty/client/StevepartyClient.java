@@ -149,6 +149,11 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
         ModelLoadingPlugin.register(new BrickShadeModelPlugin());
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
+        ModelLoadingPlugin.register(new fr.lordfinn.steveparty.client.pipe.PipeModelPlugin());
+        fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer.register();
+        // Glass pipes show what travels inside: only their plastic edges are drawn (windowed ones: a frame)
+        for (int kind : new int[]{fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GLASS.ordinal(), fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.WINDOWED.ordinal()})
+            for (net.minecraft.block.Block pipe : ModBlocks.PIPES[kind]) BlockRenderLayerMap.INSTANCE.putBlock(pipe, RenderLayer.getCutout());
         StencilResourceManager.registerReloadListener();
         MaterialSprites.registerReloadListener();
         MobTextureColors.registerReloadListener();
@@ -299,6 +304,7 @@ public class StevepartyClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         // The forge core is drawn by the forge: its entity is only a hitbox
         EntityRendererRegistry.register(ModEntities.FORGE_CORE, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.PIPE_CARRIER, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.MULA_STAR, fr.lordfinn.steveparty.client.entity.MulaStarRenderer::new);
         fr.lordfinn.steveparty.client.entity.MulaFoodTooltip.register();
         BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());
