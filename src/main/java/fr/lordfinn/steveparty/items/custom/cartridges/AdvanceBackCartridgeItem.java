@@ -19,9 +19,9 @@ import java.util.List;
 public class AdvanceBackCartridgeItem extends CartridgeItem {
     public static final int MAX_STEPS = 6;
     public static final int DEFAULT_STEPS = 3;
-    /** The tile's colours (face, sides, landing particles): green forward, purple-red back. */
-    public static final int FORWARD_COLOR = 0x3CC85A;
-    public static final int BACK_COLOR = 0xB8307A;
+    /** The tile's colours (face, sides, landing particles): green forward, pink-magenta back. */
+    public static final int FORWARD_COLOR = 0x2DB84C;
+    public static final int BACK_COLOR = 0xE23C9A;
 
     public AdvanceBackCartridgeItem(Settings settings) {
         super(settings);
@@ -71,7 +71,7 @@ public class AdvanceBackCartridgeItem extends CartridgeItem {
     public static MutableText settingText(int steps) {
         return Text.translatable(steps < 0 ? "tooltip.steveparty.advance_back.back" : "tooltip.steveparty.advance_back.forward",
                         Math.abs(steps))
-                .styled(style -> style.withColor(TextColor.fromRgb(steps < 0 ? 0xE0609F : 0x6FE38A)).withBold(true));
+                .styled(style -> style.withColor(TextColor.fromRgb(steps < 0 ? 0xF07ABB : 0x6FE38A)).withBold(true));
     }
 
     @Override

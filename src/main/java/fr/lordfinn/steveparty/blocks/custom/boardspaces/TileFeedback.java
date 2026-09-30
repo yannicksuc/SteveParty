@@ -81,13 +81,13 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.55F, 2.0F, 6),
                 new Layer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.35F, 1.35F, 6))),
         /** A penalty (item taken): a falling "womp" and red puffs. */
-        BAD("bad", 0xC41C24, List.of(
+        BAD("bad", 0xD42A2A, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.7F, 0.84F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASS, 0.7F, 0.707F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.55F, 0.53F, 8),
                 new Layer(SoundEvents.BLOCK_FIRE_EXTINGUISH, 0.15F, 1.7F, 8))),
-        /** An item tile with nothing to give or take yet: a light wooden two-step, purple sparkles. */
-        ITEM("item", 0xB05CD6, List.of(
+        /** An item tile with nothing to give or take yet: a light wooden two-step, orange sparkles. */
+        ITEM("item", 0xFF9A1F, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.335F, 3),
                 new Layer(SoundEvents.ENTITY_ITEM_PICKUP, 0.25F, 1.4F, 3))),
@@ -104,27 +104,27 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.45F, 1.26F, 6),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.55F, 1.498F, 9),
                 new Layer(SoundEvents.ENTITY_FIREWORK_ROCKET_TWINKLE_FAR, 0.3F, 1.2F, 9))),
-        /** A stop tile: a firm two-tone halt. */
-        STOP("stop", 0xFF7043, List.of(
+        /** A stop tile: a firm two-tone halt, slate grey dust. */
+        STOP("stop", 0x454B5A, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_COW_BELL, 0.5F, 0.749F, 4))),
         /** Move Forward (the token moves on): a quick rising run of chiptune notes over a piston push, green gusts. */
-        ADVANCE("advance", 0x3CC85A, List.of(
+        ADVANCE("advance", 0x2DB84C, List.of(
                 new Layer(SoundEvents.BLOCK_PISTON_EXTEND, 0.35F, 1.3F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 2.0F, 6))),
-        /** Move Back (the token goes back): the same run falling, a piston pulling back, a purple "rewind". */
-        BACK("back", 0xB8307A, List.of(
+        /** Move Back (the token goes back): the same run falling, a piston pulling back, a pink "rewind". */
+        BACK("back", 0xE23C9A, List.of(
                 new Layer(SoundEvents.BLOCK_PISTON_CONTRACT, 0.35F, 0.9F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 4),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.5F, 0.749F, 6))),
-        /** A Replay tile giving another turn: a bright rising arpeggio, then an "en-core!" two-note call; a green swirl. */
-        REPLAY("replay", 0x56C93A, List.of(
+        /** A Replay tile giving another turn: a bright rising arpeggio, then an "en-core!" two-note call; a cyan swirl. */
+        REPLAY("replay", 0x1CC6D6, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.26F, 2),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.45F, 1.498F, 4),
@@ -133,7 +133,7 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.55F, 2.0F, 13),
                 new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.6F, 1.5F, 13))),
         /** A Replay tile reached by the replay move itself: no further turn, a soft falling two-step. */
-        REPLAY_SPENT("replay_spent", 0x8FBF7F, List.of(
+        REPLAY_SPENT("replay_spent", 0x7FB8BF, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.0F, 3))),
         /** A teleport tile (warp pipe): a flute whirl going down while the token spins away (see TileTeleport). */
@@ -333,7 +333,7 @@ public final class TileFeedback {
             args[0] = name;
             System.arraycopy(noticeArgs, 0, args, 1, noticeArgs.length);
             Text notice = Text.translatable(noticeKey, args)
-                    .styled(style -> style.withColor(TextColor.fromRgb(lighten(color, 0.2F))));
+                    .styled(style -> style.withColor(TextColor.fromRgb(noticeColor(color))));
             MessageUtils.sendToPlayers(audience, notice, MessageUtils.MessageType.ACTION_BAR);
             recipients = audience.size();
         }
@@ -357,6 +357,13 @@ public final class TileFeedback {
             };
         }
         return 0.62;
+    }
+
+    /** The notice's text colour: the tile's colour a little lighter, much lighter for a dark one (the Stop anthracite). */
+    public static int noticeColor(int color) {
+        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        boolean dark = 0.299F * r + 0.587F * g + 0.114F * b < 100;
+        return lighten(color, dark ? 0.6F : 0.2F);
     }
 
     /** {@code color} moved toward white by {@code amount} (0..1). */
@@ -407,17 +414,17 @@ public final class TileFeedback {
             }
             case BACK -> {
                 world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
-                world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y + 0.2, at.z, 24, 0.3, 0.3, 0.3, 0.02);
+                world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE), at.x, y + 0.2, at.z, 10, 0.3, 0.3, 0.3, 0.0);
             }
             case REPLAY -> {
-                // A green swirl climbing around the token (the pictogram's circular arrow), and happy sparks
+                // A cyan swirl climbing around the token (the pictogram's circular arrow), and happy sparks
                 DustParticleEffect swirl = new DustParticleEffect(light, 1.2F);
                 for (int i = 0; i < 24; i++) {
                     double angle = Math.PI * 3 * i / 24;
                     world.spawnParticles(swirl, at.x + Math.cos(angle) * 0.5, y + i * 0.05, at.z + Math.sin(angle) * 0.5, 1, 0, 0, 0, 0);
                 }
-                world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, at.x, y + 0.4, at.z, 8, 0.35, 0.3, 0.35, 0.0);
-                world.spawnParticles(new MulaSparkleEffect(0xB8F57A, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y + 1.2, at.z, 6, 0.2, 0.1, 0.2, 0.0);
+                world.spawnParticles(ParticleTypes.GLOW, at.x, y + 0.4, at.z, 8, 0.35, 0.3, 0.35, 0.0);
+                world.spawnParticles(new MulaSparkleEffect(0xB8F4FF, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y + 1.2, at.z, 6, 0.2, 0.1, 0.2, 0.0);
             }
             case REPLAY_SPENT -> world.spawnParticles(new DustParticleEffect(light, 1.0F), at.x, y, at.z, 8, 0.3, 0.1, 0.3, 0.0);
             case TELEPORT -> {

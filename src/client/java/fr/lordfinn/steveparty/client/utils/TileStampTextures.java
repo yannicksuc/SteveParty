@@ -30,7 +30,8 @@ import java.util.Optional;
  *     <li>the tile's own faces (neutral, angry, excited, blow...), read from their 32x32 textures as a map of values
  *     (the base, rings darkening toward the edge, the darker features) and painted with the ramp of any colour;</li>
  *     <li>stamped looks ({@link TileStampComponent}): the dye's colour, the pattern in its darkest shade;</li>
- *     <li>the Stop tile's STOP sign ({@link #stopFace}), over the blank face in the tile's colour.</li>
+ *     <li>the role faces drawn over the blank face (its rounded bevel): Move Forward / Back ({@link #advanceBack}),
+ *     Stop ({@link #stopFace}), Teleport ({@link #teleportFace}).</li>
  * </ul>
  * Each exists at two pixel densities: 32x32 over the 2 blocks of a standard (or large) tile (28x28 drawn, 2 px margin),
  * and 16x16 over the single block of a small tile, at the block's own pixel density. Created on first use, LRU
@@ -176,7 +177,7 @@ public final class TileStampTextures {
     private static final float NUMBER = -0.95f;
 
     /**
-     * The face of a Move Forward / Back tile: the blank rounded bevel in green (forward) or purple-red (back), a double
+     * The face of a Move Forward / Back tile: the blank rounded bevel in green (forward) or pink-magenta (back), a double
      * arrow in the darkest shade and the number of spaces almost white ("3 ⏩", "⏪ 2").
      */
     public static Identifier advanceBack(int steps, boolean small) {
@@ -246,68 +247,34 @@ public final class TileStampTextures {
 
     // ---------------------------------------------------------------- the Stop face
 
-    /** Red of the Stop sign (its outline is its darkest shade). */
-    private static final int STOP_RED = 0xE53935;
-    private static final float STOP_OUTLINE = 0.62f;
-    /** "STOP" in a 3x5 pixel font, on the 32x32 face. */
-    private static final String[] STOP_TEXT = {
-            "### ### ### ###",
-            "#    #  # # # #",
-            "###  #  # # ###",
-            "  #  #  # # #  ",
-            "###  #  ### #  ",
-    };
-    /** A raised hand, on the 16x16 face (too small for the word), red all around it. */
-    private static final String[] STOP_HAND = {
-            "   #  ",
-            " # # #",
-            " # # #",
-            " #####",
-            "######",
-            " #####",
-            "  ### ",
-    };
+    /** Light ink of a pictogram on a dark colour (the Stop anthracite): its lightest shade but one. */
+    private static final float LIGHT_INK = -0.8f;
 
     /**
-     * The Stop tile's face: a red octagonal STOP sign (dark red outline, white border, the word "STOP", or a raised
-     * hand on a small tile) over the blank tile face (its rounded bevel) painted with the ramp of {@code rgb}.
+     * The Stop tile's face: a "no entry" disc barred across (the disc in the ramp's darkest shade, the bar almost white;
+     * on a dark colour such as the default anthracite, a light disc and a dark bar), 14 px wide on the blank tile face
+     * (its rounded bevel) of a standard tile, 10 px on a small one, all in the ramp of {@code rgb}.
      */
     public static Identifier stopFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("stop", rgb, small), key -> {
-            int side = small ? SMALL_SIDE : SIDE;
-            float[] frame = frame(small);
-            int[] argb = new int[side * side];
-            Map<Float, Integer> shades = new HashMap<>();
-            for (int i = 0; i < argb.length; i++) {
-                if (!Float.isNaN(frame[i])) argb[i] = 0xFF000000 | shades.computeIfAbsent(frame[i], v -> TileColors.shade(rgb, v));
-            }
-            // The octagon: 22 px wide on the 32x32 face (corners cut by 6), 14 px on the 16x16 one (cut by 4, 3 inside)
-            int size = small ? 14 : 22, offset = (side - size) / 2;
-            int[] cuts = small ? new int[]{4, 3, 3} : new int[]{6, 6, 6};
-            int[] layers = {0xFF000000 | TileColors.shade(STOP_RED, STOP_OUTLINE), 0xFFFFFFFF, 0xFF000000 | STOP_RED};
-            for (int x = 0; x < size; x++) {
-                for (int y = 0; y < size; y++) {
-                    for (int layer = 0; layer < layers.length; layer++) {
-                        if (insideOctagon(x, y, size, layer, cuts[layer])) argb[(y + offset) * side + x + offset] = layers[layer];
-                    }
-                }
-            }
-            String[] glyph = small ? STOP_HAND : STOP_TEXT;
-            int glyphX = (side - glyph[0].length() + 1) / 2, glyphY = small ? 4 :(side - glyph.length) / 2;
-            for (int j = 0; j < glyph.length; j++) {
-                for (int i = 0; i < glyph[j].length(); i++) {
-                    if (glyph[j].charAt(i) == '#') argb[(glyphY + j) * side + glyphX + i] = 0xFFFFFFFF;
-                }
-            }
-            return register(argb, side);
-        });
+        return TEXTURES.computeIfAbsent(new Key("stop", rgb, small), key -> register(stopValues(rgb, small), rgb, small));
     }
 
-    /** Whether ({@code x}, {@code y}) is in the octagon {@code inset} px inside a {@code size} square, corners cut by {@code cut}. */
-    private static boolean insideOctagon(int x, int y, int size, int inset, int cut) {
-        int low = inset, high = size - 1 - inset;
-        if (x < low || x > high || y < low || y > high) return false;
-        return Math.min(x - low, high - x) + Math.min(y - low, high - y) >= cut;
+    private static float[] stopValues(int rgb, boolean small) {
+        int side = small ? SMALL_SIDE : SIDE;
+        float[] values = frame(small).clone();
+        boolean dark = TileColors.isDark(rgb);
+        float ink = dark ? LIGHT_INK : FEATURE, counter = dark ? FEATURE : NUMBER;
+        int size = small ? 10 : 14, barWidth = small ? 6 : 8;
+        int left = (side - size) / 2, top = (side - size) / 2;
+        double centre = (size - 1) / 2.0, radius = size / 2.0 - 0.15;
+        for (int x = 0; x < size; x++) {
+            for (int y = 0; y < size; y++) {
+                if (Math.hypot(x - centre, y - centre) > radius) continue;
+                boolean bar = y >= size / 2 - 1 && y <= size / 2 && x >= (size - barWidth) / 2 && x < (size + barWidth) / 2;
+                values[(top + y) * side + left + x] = bar ? counter : ink;
+            }
+        }
+        return values;
     }
 
     // ---------------------------------------------------------------- the Teleport face
