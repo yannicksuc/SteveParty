@@ -31,7 +31,7 @@ import java.util.Optional;
  *     (the base, rings darkening toward the edge, the darker features) and painted with the ramp of any colour;</li>
  *     <li>stamped looks ({@link TileStampComponent}): the dye's colour, the pattern in its darkest shade;</li>
  *     <li>the role faces drawn over the blank face (its rounded bevel): Move Forward / Back ({@link #advanceBack}),
- *     Stop ({@link #stopFace}), Replay ({@link #replayFace}), Teleport ({@link #teleportFace}): hand-drawn pixel
+ *     Stop ({@link #stopFace}), Replay ({@link #replayFace}), Shop ({@link #shopFace}), Teleport ({@link #teleportFace}): hand-drawn pixel
  *     grids, one per size;</li>
  * </ul>
  * Each exists at two pixel densities: 32x32 over the 2 blocks of a standard (or large) tile (28x28 drawn, 2 px margin),
@@ -298,14 +298,18 @@ public final class TileStampTextures {
      * are hand-drawn pixel grids, one per size (never scaled).
      */
     private static float[] glyphValues(String[] glyph, boolean small, float ink, float counter) {
+        return glyphValues(glyph, small, Map.of('#', ink, 'o', counter));
+    }
+
+    /** The blank face with {@code glyph} centred on it, each character painted with its shade in {@code shades}. */
+    private static float[] glyphValues(String[] glyph, boolean small, Map<Character, Float> shades) {
         int side = small ? SMALL_SIDE : SIDE;
         float[] values = frame(small).clone();
         int left = (side - glyph[0].length()) / 2, top = (side - glyph.length) / 2;
         for (int row = 0; row < glyph.length; row++) {
             for (int col = 0; col < glyph[row].length(); col++) {
-                char c = glyph[row].charAt(col);
-                if (c == '#') values[(top + row) * side + left + col] = ink;
-                else if (c == 'o') values[(top + row) * side + left + col] = counter;
+                Float shade = shades.get(glyph[row].charAt(col));
+                if (shade != null) values[(top + row) * side + left + col] = shade;
             }
         }
         return values;
@@ -352,6 +356,48 @@ public final class TileStampTextures {
             boolean dark = TileColors.isDark(rgb);
             return register(glyphValues(small ? SMALL_REPLAY_ARROW : REPLAY_ARROW, small, dark ? LIGHT_INK : FEATURE, FEATURE), rgb, small);
         });
+    }
+
+    // ---------------------------------------------------------------- the Shop face
+
+    /**
+     * The Hiding Trader in his open cardboard box: his head (bandana, unibrow, eyes, nose, all above the rim), the box
+     * (a tape seam down its front) and its two side flaps open at 45 degrees. On a small tile a smaller head over the
+     * box, its flaps a pixel longer. '#' darkest shade, 'b' bandana, 's' skin, 'o' eye white, 'n' nose, '+' cardboard,
+     * 't' tape.
+     */
+    private static final String[] SHOP_BOX = {
+            "....########....",
+            "....#bbbbbb#....",
+            "....########....",
+            "#...#o#ss#o#...#",
+            "-#..#ssnnss#..#-",
+            ".-#.#ssnnss#.#-.",
+            "..############..",
+            "..#++++tt++++#..",
+            "..#++++tt++++#..",
+            "..#++++tt++++#..",
+            "..#++++tt++++#..",
+            "..#++++tt++++#..",
+            "..############.."};
+    private static final String[] SMALL_SHOP_BOX = {
+            "...######...",
+            "...#bbbb#...",
+            "...#o##o#...",
+            "#..#snns#..#",
+            ".#.#snns#.#.",
+            "..########..",
+            "..#++tt++#..",
+            "..#++tt++#..",
+            "..#++tt++#..",
+            "..########.."};
+    private static final Map<Character, Float> SHOP_SHADES = Map.of(
+            '#', FEATURE, 'b', 0.2f, 's', -0.5f, 'o', NUMBER, 'n', 0.5f, '+', 0.3f, 't', -0.3f, '-', 0.08f);
+
+    /** The shop tile's face, in the ramp of {@code rgb} (the Shop Cartridge's yellow). */
+    public static Identifier shopFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("shop", rgb, small),
+                key -> register(glyphValues(small ? SMALL_SHOP_BOX : SHOP_BOX, small, SHOP_SHADES), rgb, small));
     }
 
     // ---------------------------------------------------------------- the Teleport face
