@@ -246,6 +246,22 @@ public class PartyLoopGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** Winners designated by a redstone signal on a podium: on the podium, team, rank, else the nearest. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void podiumSignalDesignatesWinners(TestContext context) {
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID(), c = UUID.randomUUID();
+        List<UUID> players = List.of(a, b, c);
+        TeamDisposition teams = new TeamDisposition(Set.of(a), Set.of(b, c));
+        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(c), teams, 1, a), List.of(c), "on the podium wins");
+        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), null, 2, a), List.of(b), "rank 2");
+        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), null, 4, c), List.of(c), "more than the players: nearest");
+        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), teams, 1, c), List.of(a), "team A");
+        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), teams, 2, a), List.of(b, c), "team B");
+        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), teams, 9, b), List.of(b, c), "nearest and his team");
+        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), null, 9, null), List.of(), "nobody");
+        context.complete();
+    }
+
     /** A participant stepping on a podium ("first arrived") wins the mini-game being played. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void podiumEndsTheMiniGame(TestContext context) {

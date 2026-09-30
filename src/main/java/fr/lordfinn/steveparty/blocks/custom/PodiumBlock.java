@@ -111,7 +111,7 @@ public class PodiumBlock extends CartridgeContainer {
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
         // Its own pulse fed back through a wire is not a signal sent to the podium
         if (!world.isClient && !state.get(POWERED) && world.getBlockEntity(pos) instanceof PodiumBlockEntity podium)
-            podium.onRedstoneInput(world.isReceivingRedstonePower(pos));
+            podium.onRedstoneInput(world.getReceivedRedstonePower(pos));
     }
 
     @Override

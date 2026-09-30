@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.screen_handlers.custom.LootingBoxScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
@@ -26,12 +28,13 @@ import java.util.*;
  * Podium: ends the mini-game being played and names its winners.
  * <ul>
  *     <li>"First arrived" mode (default): the first participant to step on it wins.</li>
- *     <li>"On signal" mode: stepping on it does nothing; a redstone pulse ends the mini-game and the participants
- *     standing on it win (team or "last one standing" games).</li>
+ *     <li>"On signal" mode: stepping on it does nothing.</li>
  * </ul>
- * In both modes a redstone pulse ends the mini-game with the participants standing on it. The winners receive the
- * items of its inventory cartridge (from the linked chest). Out of a party it is a finish line: a pulse each time a
- * player steps on it; the comparator gives the number of players standing on it.
+ * In both modes a redstone pulse ends the mini-game, its power designating the winners (see
+ * {@link #designateWinners}): the participants standing on the podium, else a team (1, 2) or the player of that rank,
+ * else the nearest participant (and his team). The winners receive the items of its inventory cartridge (from the
+ * linked chest). Out of a party it is a finish line: a pulse each time a player steps on it; the comparator gives the
+ * number of players standing on it.
  */
 public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements TickableBlockEntity {
     private static final int CHECK_INTERVAL_TICKS = 2;
@@ -102,19 +105,64 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
     private void onArrival(ServerWorld world, ServerPlayerEntity player) {
         PodiumBlock.pulse(world, pos, getCachedState());
         if (mode != Mode.FIRST_ARRIVED) return;
-        findPlayedMiniGame(world, player.getUuid()).ifPresent(controller -> finish(world, controller, List.of(player)));
+        findPlayedMiniGame(world, player.getUuid()).ifPresent(controller -> finish(world, controller, List.of(player.getUuid())));
     }
 
-    /** Neighbor update: a rising edge ends the mini-game, the participants standing on the podium win. */
-    public void onRedstoneInput(boolean powered) {
+    /**
+     * Neighbor update: a rising edge ends the mini-game, its winners designated by {@link #designateWinners} from the
+     * received power.
+     */
+    public void onRedstoneInput(int power) {
+        boolean powered = power > 0;
         boolean risingEdge = powered && !inputPowered;
         if (powered != inputPowered) {
             inputPowered = powered;
             markDirty();
         }
         if (!risingEdge || !(this.world instanceof ServerWorld world)) return;
-        List<ServerPlayerEntity> standing = getPlayersStandingOn(world);
-        findPlayedMiniGame(world, null).ifPresent(controller -> finish(world, controller, standing));
+        findPlayedMiniGame(world, null).ifPresent(controller -> {
+            if (!(controller.getPartyData().getCurrentStep() instanceof MiniGamePartyStep miniGame)) return;
+            List<UUID> participants = new ArrayList<>();
+            controller.getPlayersInOrder().stream().filter(miniGame.getParticipants()::contains).forEach(participants::add);
+            miniGame.getParticipants().stream().filter(uuid -> !participants.contains(uuid)).forEach(participants::add);
+            List<UUID> standing = getPlayersStandingOn(world).stream().map(PlayerEntity::getUuid).toList();
+            TeamDisposition teams = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.getCatalogue());
+            UUID nearest = world.getPlayers().stream().filter(player -> participants.contains(player.getUuid()))
+                    .min(Comparator.comparingDouble(player -> player.squaredDistanceTo(pos.toCenterPos())))
+                    .map(PlayerEntity::getUuid).orElse(null);
+            finish(world, controller, designateWinners(participants, standing, teams, power, nearest));
+        });
+    }
+
+    /**
+     * Who wins when the podium receives a signal of {@code power}:
+     * <ol>
+     *     <li>participants standing on the podium: they win, whatever the power;</li>
+     *     <li>else, a team mini-game: 1 = team A, 2 = team B;</li>
+     *     <li>else, a mini-game without teams: the player of rank {@code power} in the play order (1 = the first);</li>
+     *     <li>else (power greater than the number of players, or a team game with another power): the participant the
+     *     nearest to the podium, with his team in a team mini-game.</li>
+     * </ol>
+     *
+     * @param participants the participants in the play order
+     */
+    public static List<UUID> designateWinners(List<UUID> participants, List<UUID> standing, @Nullable TeamDisposition teams,
+                                              int power, @Nullable UUID nearest) {
+        List<UUID> onPodium = standing.stream().filter(participants::contains).distinct().toList();
+        if (!onPodium.isEmpty()) return onPodium;
+        boolean teamGame = teams != null && !teams.getTeamA().isEmpty() && !teams.getTeamB().isEmpty();
+        if (teamGame && (power == 1 || power == 2)) {
+            Set<UUID> team = power == 1 ? teams.getTeamA() : teams.getTeamB();
+            return participants.stream().filter(team::contains).toList();
+        }
+        if (!teamGame && power >= 1 && power <= participants.size()) return List.of(participants.get(power - 1));
+        if (nearest == null) return List.of();
+        if (teamGame) {
+            Set<UUID> team = teams.getTeamA().contains(nearest) ? teams.getTeamA()
+                    : teams.getTeamB().contains(nearest) ? teams.getTeamB() : Set.of(nearest);
+            return participants.stream().filter(team::contains).toList();
+        }
+        return List.of(nearest);
     }
 
     public void initRedstoneInput(boolean powered) {
@@ -133,13 +181,15 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
                 .min(Comparator.comparingDouble(controller -> controller.getPos().getSquaredDistance(this.pos)));
     }
 
-    private void finish(ServerWorld world, PartyControllerEntity controller, List<ServerPlayerEntity> standing) {
+    private void finish(ServerWorld world, PartyControllerEntity controller, List<UUID> winnerIds) {
         if (!(controller.getPartyData().getCurrentStep() instanceof MiniGamePartyStep miniGame)) return;
-        List<ServerPlayerEntity> winners = standing.stream()
-                .filter(player -> miniGame.getParticipants().contains(player.getUuid())).toList();
-        if (!miniGame.finish(controller, winners.stream().map(PlayerEntity::getUuid).toList())) return;
-        for (ServerPlayerEntity winner : winners)
-            CartridgeTransfers.apply(world, getStack(0), winner, () -> cycleIndex, index -> cycleIndex = index);
+        List<UUID> winners = winnerIds.stream().filter(miniGame.getParticipants()::contains).toList();
+        if (!miniGame.finish(controller, winners)) return;
+        for (UUID uuid : winners) {
+            ServerPlayerEntity winner = world.getServer().getPlayerManager().getPlayer(uuid);
+            if (winner != null)
+                CartridgeTransfers.apply(world, getStack(0), winner, () -> cycleIndex, index -> cycleIndex = index);
+        }
         markDirty();
     }
 
