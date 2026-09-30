@@ -10,6 +10,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.payloads.custom.PartyDataPayload;
+import fr.lordfinn.steveparty.payloads.custom.PartyLivePayload;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
@@ -62,6 +63,10 @@ public class PartyControllerEntity extends BlockEntity {
     private final Set<UUID> tokensToRelease = new LinkedHashSet<>();
     /** Radius around the controller in which the players are told about the party (absent turns, exclusions...). */
     public static final int PARTY_AUDIENCE_RADIUS = 100;
+    /** How often the live state of the party (current turn, standings: see {@link PartyLiveData}) is checked. */
+    public static final int LIVE_SYNC_INTERVAL_TICKS = 5;
+    /** The live state last sent to the interested players (only a change is sent). */
+    private PartyLiveData lastLiveData = PartyLiveData.EMPTY;
 
     static {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_PARTY_CONTROLLERS.clear());
@@ -202,6 +207,8 @@ public class PartyControllerEntity extends BlockEntity {
     public void serverTick(ServerWorld serverWorld) {
         if (!tokensToRelease.isEmpty() && serverWorld.getTime() % 20 == 0)
             releasePendingTokens(serverWorld);
+        if (serverWorld.getTime() % LIVE_SYNC_INTERVAL_TICKS == 0)
+            syncLiveData(serverWorld);
         PartyStep currentStep = partyData.getCurrentStep();
         if (resumeDone) {
             // Once resumed (or started), the current step gets ticked (e.g. the countdown of an absent turn)
@@ -682,6 +689,8 @@ public class PartyControllerEntity extends BlockEntity {
 
     public void sendPacketToInterestedPlayers() {
         if (this.world instanceof ServerWorld serverWorld) {
+            // The steps changed: the live state goes with them, up to date
+            lastLiveData = partyData.isStarted() ? PartyLiveData.capture(this, serverWorld) : PartyLiveData.EMPTY;
             for (UUID playerUUID : interestedPlayers) {
                 PlayerEntity player = serverWorld.getPlayerByUuid(playerUUID);
                 if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -706,6 +715,32 @@ public class PartyControllerEntity extends BlockEntity {
 
     void sendPacketToInterestedPlayer(ServerPlayerEntity player) {
         sendPacketToInterestedPlayer(player, partyData);
+        if (partyData.isStarted() && this.world instanceof ServerWorld serverWorld) {
+            if (lastLiveData == PartyLiveData.EMPTY) lastLiveData = PartyLiveData.capture(this, serverWorld);
+            ServerPlayNetworking.send(player, new PartyLivePayload(lastLiveData));
+        }
+    }
+
+    /**
+     * Sends the live state of the party (see {@link PartyLiveData}) to the connected interested players when it
+     * changed. Checked every {@value #LIVE_SYNC_INTERVAL_TICKS} ticks while a party is running.
+     */
+    public void syncLiveData(ServerWorld serverWorld) {
+        if (!partyData.isStarted() || interestedPlayers.isEmpty()) {
+            lastLiveData = PartyLiveData.EMPTY;
+            return;
+        }
+        PartyLiveData live = PartyLiveData.capture(this, serverWorld);
+        if (live.sameAs(lastLiveData)) return;
+        lastLiveData = live;
+        PartyLivePayload payload = new PartyLivePayload(live);
+        for (ServerPlayerEntity player : getInterestedPlayersEntities())
+            ServerPlayNetworking.send(player, payload);
+    }
+
+    /** The live state last sent to the interested players ({@link PartyLiveData#EMPTY} while no party runs). */
+    public PartyLiveData getLastLiveData() {
+        return lastLiveData;
     }
 
     public void sendClearPacketToPlayer(ServerPlayerEntity player) {
