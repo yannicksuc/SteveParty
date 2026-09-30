@@ -17,8 +17,8 @@ The area (x 1936..2095, z 1952..2175, floor y=99, everything built at y=100), fa
     chests holding one of every item, and the Mulas' glass enclosure around an activated Dice Forge;
   - the showcase of the new features (south, z 2098..2146, reached by the path south of the welcome point): a gallery
     (each feature's cartridge on a pedestal, a title and a French explanation), a demo loop of 18 tiles going through
-    every new role (Stop, Boutique point de passage + tuile, Avancer +3, Reculer -2, Téléportation with 2 arrivals,
-    Rejouer), its own start tile, token and party controller (more than 100 blocks from the board's start tiles, so
+    every new role (Stop, Boutique point de passage + tuile, Avancer +3, Reculer -2, two violet Teleport tiles and two
+    green ones that push the token one space on, Rejouer), its own start tile, token and party controller (more than 100 blocks from the board's start tiles, so
     each controller only finds its own board), a Hiding Trader with a trading stall and a stock chest, a sensor router
     reading every loop tile into a comparator and a line of 15 lamps, and a chest of every new item.
     The trader's links (stall, stock chest) live in the world's saved data, not in blocks: after each build, sneak +
@@ -765,7 +765,8 @@ def showcase():
     cx = (SC_X0 + SC_X0 + 20) / 2 + 0.5
     # Roles of the loop tiles (index -> what it is); the others are simple tiles
     STOP, FORWARD, SHOP_CP, TELEPORT, REPLAY, SHOP_TILE, BACK = 2, 4, 8, 10, 12, 14, 16
-    ARRIVAL_A, ARRIVAL_B = 15, 1
+    # Teleport networks: a violet pair (the token stays on the other pipe), a green pair (pushed one space on)
+    VIOLET_PIPES, GREEN_PIPES = (TELEPORT, 15), (1, 6)
     cmds = ['# Showcase of the new features: gallery, demo loop of %d tiles, merchant, sensor router' % len(loop),
             label(cx, Y + 9, SC_Z0 - 13.5, 'NOUVEAUTÉS', 'gold', 4),
             label(cx, Y + 7.6, SC_Z0 - 13.5, 'Les nouvelles cartouches, et un plateau de démo qui passe par toutes',
@@ -786,7 +787,7 @@ def showcase():
         ('steveparty:advance_back_cartridge', '"steveparty:advance-back-steps":-2', 'Reculer', 'light_purple',
          'Le pion qui s\'arrête ici recule\nde quelques cases, par où il est venu\n(-1 à -6).'),
         ('steveparty:teleport_cartridge', '', 'Téléportation', 'dark_purple',
-         'Le pion qui s\'arrête ici est envoyé\nsur une case d\'arrivée. Arrivées : Clé\nen mode Téléport (arcs violets).'),
+         'Le pion qui s\'arrête ici part sur une\nautre case Téléportation de la même\ncouleur. Clic droit main vide : réglages.'),
         ('steveparty:replay_cartridge', '', 'Rejouer', 'aqua',
          'Le pion qui s\'arrête ici rejoue\naussitôt : relancer le dé et avancer\n(un seul tour en plus).'),
         ('steveparty:board_space_redstone_router', '', 'Routeur capteur', 'aqua',
@@ -821,11 +822,14 @@ def showcase():
             cmds.append('setblock %d %d %d steveparty:check_point[tile_type=board_space_shop]{Items:[%s]}'
                         % (pos[0], Y, pos[1], slot0('shop_cartridge', nxt)))
             tags[i] = ('BOUTIQUE', 'yellow', 'point de passage : arrête le pion qui passe')
-        elif i == TELEPORT:
-            targets = ','.join('[I;%d,%d,%d]' % (loop[t][0], Y, loop[t][1]) for t in (ARRIVAL_A, ARRIVAL_B))
+        elif i in VIOLET_PIPES:
             cmds.append(put(pos, nxt, 'tile_teleport', slot0(
-                'teleport_cartridge', nxt, ',"steveparty:teleport-targets":{targets:[%s]}' % targets)))
-            tags[i] = ('TÉLÉPORTATION', 'dark_purple', 'vers A ou B (au hasard)')
+                'teleport_cartridge', nxt, ',"steveparty:teleport-targets":{network:"violet"}')))
+            tags[i] = ('TÉLÉPORT VIOLET', 'dark_purple', 'vers l\'autre case violette, y reste')
+        elif i in GREEN_PIPES:
+            cmds.append(put(pos, nxt, 'tile_teleport', slot0(
+                'teleport_cartridge', nxt, ',"steveparty:teleport-targets":{network:"green",push:1b,push_triggers:1b}')))
+            tags[i] = ('TÉLÉPORT VERT', 'green', 'vers l\'autre case verte, puis avance d\'une case')
         elif i == REPLAY:
             cmds.append(put(pos, nxt, 'tile_replay', slot0('replay_cartridge', nxt)))
             tags[i] = ('REJOUER', 'aqua', 'un tour de plus')
@@ -839,8 +843,6 @@ def showcase():
         else:
             cmds.append(put(pos, nxt, 'default', slot0('board_space_behavior', nxt),
                             'tile' if i % 2 else 'advanced_tile'))
-    tags[ARRIVAL_A] = ('Arrivée A', 'dark_purple', 'du téléport')
-    tags[ARRIVAL_B] = ('Arrivée B', 'dark_purple', 'du téléport')
     tags[(FORWARD + 3) % len(loop)] = ('Arrivée du +3', 'green', '')
     for i, (title, col, sub) in tags.items():
         x, z = loop[i]
@@ -870,7 +872,8 @@ def showcase():
     stacks = ['{id:"steveparty:shop_cartridge",count:4}', '{id:"steveparty:board_space_behavior_stop",count:4}',
               '{id:"steveparty:advance_back_cartridge",count:2,components:{"steveparty:advance-back-steps":3}}',
               '{id:"steveparty:advance_back_cartridge",count:2,components:{"steveparty:advance-back-steps":-2}}',
-              '{id:"steveparty:replay_cartridge",count:4}', '{id:"steveparty:teleport_cartridge",count:4}',
+              '{id:"steveparty:replay_cartridge",count:4}', '{id:"steveparty:teleport_cartridge",count:2}',
+              '{id:"steveparty:teleport_cartridge",count:2,components:{"steveparty:teleport-targets":{network:"green"}}}',
               '{id:"steveparty:board_space_redstone_router",count:2}', '{id:"minecraft:comparator",count:4}',
               '{id:"minecraft:redstone_lamp",count:16}', '{id:"minecraft:redstone",count:32}',
               '{id:"steveparty:wrench",count:1}', key,
