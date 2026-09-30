@@ -153,16 +153,6 @@ public final class BoardBlueprint {
                 }
                 cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(moved, links.world()));
             }
-            // The arrivals of a teleport tile, like its links
-            fr.lordfinn.steveparty.components.TeleportTargetsComponent teleport = cartridge.get(ModComponents.TELEPORT_TARGETS);
-            if (teleport != null && !teleport.targets().isEmpty()) {
-                List<BlockPos> moved = new ArrayList<>();
-                for (BlockPos arrival : teleport.targets()) {
-                    BlockPos target = follow.apply(arrival);
-                    if (target != null) moved.add(target);
-                }
-                cartridge.set(ModComponents.TELEPORT_TARGETS, teleport.withTargets(moved));
-            }
             BlockPos chest = cartridge.get(ModComponents.INVENTORY_POS);
             if (chest != null) {
                 BlockPos target = follow.apply(chest);
@@ -204,13 +194,6 @@ public final class BoardBlueprint {
                 if (changed > 0) {
                     WrenchActions.writeLinks(player, world, container, slot, shifted);
                     moved += changed;
-                }
-                List<BlockPos> arrivals = TeleportLinks.targets(cartridge);
-                if (arrivals.stream().anyMatch(former::contains)) {
-                    List<BlockPos> shiftedArrivals = arrivals.stream().map(a -> former.contains(a) ? a.add(offset) : a).toList();
-                    LinkHistory.record(player, new TeleportLinks.TargetsChange(pos.toImmutable(), slot, arrivals, shiftedArrivals));
-                    TeleportLinks.setTargets(container, slot, shiftedArrivals);
-                    moved += (int) arrivals.stream().filter(former::contains).count();
                 }
                 BlockPos chest = cartridge.get(ModComponents.INVENTORY_POS);
                 if (chest != null && former.contains(chest)) {

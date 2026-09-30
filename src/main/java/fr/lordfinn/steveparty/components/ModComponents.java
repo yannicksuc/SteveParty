@@ -29,9 +29,12 @@ public class ModComponents {
     // Component definitions using the registerComponent method
     public static final ComponentType<DestinationsComponent> DESTINATIONS_COMPONENT =
             registerComponent("tile-behavior-component", DestinationsComponent.CODEC);
-    /** The arrivals of a Teleport Cartridge and its options (not path links: see TeleportTargetsComponent). */
-    public static final ComponentType<TeleportTargetsComponent> TELEPORT_TARGETS =
-            registerComponent("teleport-targets", TeleportTargetsComponent.CODEC);
+    /**
+     * The settings of a Teleport Cartridge (network colour, arrival...). Keeps the id of the former per-arrival lists:
+     * a cartridge saved with one loads in the default network.
+     */
+    public static final ComponentType<TeleportSettingsComponent> TELEPORT_SETTINGS =
+            registerComponent("teleport-targets", TeleportSettingsComponent.CODEC);
     public static final ComponentType<BlockOriginComponent> BLOCK_ORIGIN_COMPONENT =
             registerComponent("block-origin-component", BlockOriginComponent.CODEC);
     /** Mode, chain, edited slot and auto link of a Wrench (see WrenchState). */

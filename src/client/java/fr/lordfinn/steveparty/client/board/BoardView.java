@@ -10,8 +10,6 @@ import fr.lordfinn.steveparty.service.ShopStops;
 import net.minecraft.item.ItemStack;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BoardRevision;
-import fr.lordfinn.steveparty.board.BoardLinks;
-import fr.lordfinn.steveparty.board.TeleportLinks;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -45,8 +43,8 @@ import java.util.Map;
  * paths of a Mario Party board: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
- * gently pulsing. A teleport tile's arrivals are no paths: dashed purple arcs with sparkles riding them (a teleport tile
- * without arrival gets a purple « ! »). Only the holder sees it (client side); the links come from the block entity data the server already
+ * gently pulsing. The teleport tiles of a network are no paths: dashed arcs in the network's colour with sparkles riding
+ * them join them one to the next (a teleport tile alone in its network gets a purple « ! »). Only the holder sees it (client side); the links come from the block entity data the server already
  * sends, no packet needed.
  * <p>
  * The graph is rebuilt only when the board may have changed ({@link BoardRevision}: board space or router data or
@@ -71,8 +69,8 @@ public final class BoardView {
     static final int UNREACHED = 0xE0C8C8C8;
     static final int INACTIVE = 0x70A0A0A0;
     static final int BROKEN = 0xFFFF3030;
-    /** Teleport arcs: the dashes, and the sparkles riding them. */
-    static final int TELEPORT = 0xE0B266FF, TELEPORT_SPARKLE = 0xFFB8F6FF;
+    /** Teleport arcs: the sparkles riding them (the dashes are in the network's colour). */
+    static final int TELEPORT_SPARKLE = 0xFFB8F6FF;
     /** Chevrons: size, gap and speed (blocks, blocks per second). */
     private static final double DOT = 0.56, SPACING = 0.72, SPEED = 1.4;
     /** The Shop Cartridge's yellow. */
@@ -86,7 +84,7 @@ public final class BoardView {
     private record DrawnEdge(double ax, double ay, double az, double bx, double by, double bz, int color, boolean active, Box bounds) {
     }
 
-    /** A teleport tile's link to one of its arrivals as drawn: sampled once, purple (red toward a block that is no space). */
+    /** An arc between two teleport tiles of a network as drawn: sampled once, in the network's colour. */
     private record DrawnArc(WorldDraw.Arc arc, int color) {
     }
 
@@ -100,8 +98,8 @@ public final class BoardView {
         double distanceSq;
         /** A shop space: its « Shop » plate, gold when its merchant is around ({@link #shopLinked}). */
         boolean shop, shopLinked;
-        /** A teleport tile with no arrival that is a space: a purple « ! ». */
-        boolean teleportsNowhere;
+        /** A teleport tile alone in its network: a purple « ! ». */
+        boolean teleportAlone;
 
         Label(Vec3d anchor, @Nullable Text number, WorldDraw.Plate numberPlate, boolean deadEnd, boolean unreachable, boolean fork, boolean alone) {
             this.anchor = anchor;
@@ -207,12 +205,15 @@ public final class BoardView {
                 Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
                 drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color(edge, colors), edge.active(), bounds));
             }
-            if (node.teleports() != null) {
-                for (BlockPos arrival : node.teleports()) {
-                    Vec3d to = anchors.computeIfAbsent(arrival, pos -> WrenchOverlay.anchor(world, pos));
-                    boolean boardSpace = built.node(arrival) != null || BoardLinks.isBoardSpace(world, arrival);
-                    drawnArcs.add(new DrawnArc(new WorldDraw.Arc(from, to, TeleportLinks.arcHeight(from.distanceTo(to))),
-                            boardSpace ? TELEPORT : BROKEN));
+            if (node.teleportNetwork() != null) {
+                // Each tile of a network to the next one (the last back to the first when they are 3 or more)
+                List<BlockPos> network = built.teleportNetworkOf(node.pos());
+                int index = network.indexOf(node.pos());
+                if (index >= 0 && network.size() >= 2 && (index + 1 < network.size() || network.size() >= 3)) {
+                    BlockPos next = network.get((index + 1) % network.size());
+                    Vec3d to = anchors.computeIfAbsent(next, pos -> WrenchOverlay.anchor(world, pos));
+                    drawnArcs.add(new DrawnArc(new WorldDraw.Arc(from, to, arcHeight(from.distanceTo(to))),
+                            0xE0000000 | node.teleportNetwork().color()));
                 }
             }
             Integer distance = built.distance(node.pos());
@@ -231,7 +232,7 @@ public final class BoardView {
             if (notReached) unreachable++;
             boolean alone = !node.start() && distance == null && hasStart;
             Label label = new Label(from, number, plate, deadEnd, notReached, built.isFork(node), alone);
-            label.teleportsNowhere = node.teleportsNowhere();
+            label.teleportAlone = built.isTeleportAlone(node);
             builtLabels.add(label);
             if (world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity space) {
                 ItemStack cartridge = space.getActiveCartridgeItemStack();
@@ -254,6 +255,11 @@ public final class BoardView {
      * Where the merchant of each shop space stands: the one chosen with the Wrench (or where he was chosen), else the
      * nearest Hiding Trader around (the client doesn't know which stalls are whose: an estimate).
      */
+    /** How high the arc between two teleport tiles {@code length} blocks apart goes. */
+    private static double arcHeight(double length) {
+        return Math.clamp(0.6 + 0.2 * length, 0.8, 4.0);
+    }
+
     private static void refreshShops(ClientWorld world) {
         shopAge = 0;
         for (ShopSpace shop : shops) {
@@ -378,8 +384,8 @@ public final class BoardView {
             WorldDraw.plateLabel(matrices, consumers, camera, at, WARNING,
                     label.deadEnd ? WorldDraw.Plate.RED : WorldDraw.Plate.ORANGE, WorldDraw.PLATE_TEXT, scale * pulse);
         }
-        if (label.teleportsNowhere) {
-            // A teleport tile sending nowhere: to the left of the number
+        if (label.teleportAlone) {
+            // A teleport tile alone in its network: to the left of the number
             float pulse = 1 + 0.08f * (float) Math.sin(time * 3.0);
             org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(camera.getRotation());
             Vec3d beside = top.subtract(right.x() * plate * 1.05, right.y() * plate * 1.05, right.z() * plate * 1.05);

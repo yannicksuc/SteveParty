@@ -56,6 +56,7 @@ public class TokenMovementService {
         if (chosenToken == null) return ActionResult.PASS;
 
         AdvanceBackMoves.cancel(chosenToken); // a new move: nothing left of an extra move
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.cancelPush(chosenToken);
         // Add small delay so players can appreciate the dice roll value
         SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(chosenToken, rollValue));
         return ActionResult.SUCCESS;

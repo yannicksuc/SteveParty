@@ -2,25 +2,38 @@ package fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport;
-import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.components.TeleportNetwork;
+import fr.lordfinn.steveparty.components.TeleportSettingsComponent;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The role of a Teleport Cartridge (see {@link TileTeleport}): a token landing here is warped to one of the tile's
- * arrivals, and the turn goes on once it has reappeared there. Its move ends on the arrival without landing there,
- * unless the cartridge says so (and never on to another teleport tile). Going over the tile does nothing.
+ * The role of a Teleport Cartridge (see {@link TileTeleport}): a token landing here is warped to another Teleport tile
+ * of its network, and the turn goes on once it has reappeared there, or once it has landed one space further (the
+ * cartridge's "move on" option). Going over the tile does nothing.
+ * <p>
+ * Right click with an empty hand: the cartridge's menu (network, arrival). A dye of a network's colour switches the
+ * tile to that network.
  */
 public class TeleportTileBehavior extends ABoardSpaceBehavior {
 
@@ -28,7 +41,7 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
         super(BoardSpaceType.TILE_TELEPORT);
     }
 
-    /** The turn goes on once the token has reappeared on the arrival. */
+    /** The turn goes on once the token has reappeared on the arrival (or has been pushed one space on). */
     @Override
     public boolean keepsTurn(MobEntity token) {
         return TileTeleport.isTeleporting(token);
@@ -39,51 +52,71 @@ public class TeleportTileBehavior extends ABoardSpaceBehavior {
                                      @Nullable PartyControllerEntity partyController) {
         if (!(world instanceof ServerWorld serverWorld) || boardSpaceEntity == null) return;
         ItemStack cartridge = boardSpaceEntity.getActiveCartridgeItemStack();
-        // The notice « 🌀 X est téléporté ! » and the whirl (a plain landing without arrival: see landing())
-        TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController);
         BlockPos target = TileTeleport.pick(serverWorld, boardSpaceEntity, cartridge);
-        if (target == null) return; // no arrival: an ordinary space, the party goes on right away (keepsTurn false)
-        boolean landOnTarget = TileTeleport.settings(cartridge).landOnTarget();
+        if (target == null) {
+            // Alone in its network: an ordinary space, the party goes on right away (keepsTurn false)
+            TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.DEFAULT,
+                    TileFeedback.Landing.DEFAULT.noticeKey());
+            return;
+        }
+        // The notice « 🌀 X est téléporté ! » and the whirl
+        TileFeedback.land(serverWorld, boardSpaceEntity, token, partyController, TileFeedback.Landing.TELEPORT,
+                TileFeedback.Landing.TELEPORT.noticeKey());
+        TeleportSettingsComponent settings = TileTeleport.settings(cartridge);
         PartyStep step = partyController == null ? null : partyController.getPartyData().getCurrentStep();
         // No second move during the warp (a dice rolled meanwhile would move it again)
         if (token instanceof TokenizedEntityInterface tokenized) {
             tokenized.steveparty$setStatus(TokenStatus.clearStatus(tokenized.steveparty$getStatus(), TokenStatus.CAN_MOVE));
         }
-        TileTeleport.teleport(serverWorld, token, pos, target, () -> {
-            boolean arrivalEndsTurn = landOnTarget && landOn(serverWorld, target, token, partyController);
+        TileTeleport.teleport(serverWorld, token, pos, target, settings.network().color(), () -> {
+            // Pushed one space on: the turn goes on when it lands there (that space's landing, see BoardSpaceBlockEntity)
+            if (settings.push() && !token.isRemoved() && TileTeleport.push(serverWorld, token, target, settings.pushTriggers())) return;
             if (partyController != null && !partyController.isRemoved() && step != null
-                    && partyController.getPartyData().getCurrentStep() == step && !arrivalEndsTurn) {
+                    && partyController.getPartyData().getCurrentStep() == step) {
                 partyController.nextStep();
             }
         });
-    }
-
-    /**
-     * The cartridge's option: the arrival's role plays as if the token had landed there (a teleport tile never
-     * teleports again).
-     *
-     * @return true if that role ends the turn itself
-     */
-    private static boolean landOn(ServerWorld world, BlockPos target, MobEntity token, @Nullable PartyControllerEntity party) {
-        BoardSpaceBlockEntity arrival = ABoardSpaceBlock.getBoardSpaceEntity(world, target);
-        if (arrival == null || party == null) return false;
-        ABoardSpaceBehavior behavior = arrival.getBoardSpaceBehavior();
-        if (behavior == null || behavior instanceof TeleportTileBehavior) return false;
-        behavior.onDestinationReached(world, target, token, arrival, party);
-        return behavior.keepsTurn(token);
     }
 
     /** The teleport jingle and notice when it has somewhere to send the token, else a plain landing. */
     @Override
     public TileFeedback.Landing landing(BoardSpaceBlockEntity boardSpaceEntity, ItemStack stack) {
         World world = boardSpaceEntity.getWorld();
-        return world != null && !TileTeleport.validTargets(world, boardSpaceEntity.getPos(), stack).isEmpty()
+        return world != null && !TileTeleport.partners(world, boardSpaceEntity.getPos()).isEmpty()
                 ? TileFeedback.Landing.TELEPORT : TileFeedback.Landing.DEFAULT;
     }
 
-    /** Purple unless dyed. */
+    /** Always its network's colour. */
     @Override
     public void updateBoardSpaceColor(BoardSpaceBlockEntity boardSpaceBlockEntity, ItemStack stack) {
-        if (!stack.contains(ModComponents.COLOR)) setColor(boardSpaceBlockEntity, TileTeleport.COLOR);
+        setColor(boardSpaceBlockEntity, TileTeleport.settings(stack).network().color());
+    }
+
+    /** Empty hand: the cartridge's menu, for a player who may edit the tile. */
+    @Override
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        if (world.isClient || !(player instanceof ServerPlayerEntity serverPlayer)) return ActionResult.SUCCESS;
+        TeleportCartridgeItem.openMenu(serverPlayer, pos);
+        return ActionResult.SUCCESS;
+    }
+
+    /** A dye of one of the networks' colours switches the tile to that network (not used up); other dyes do nothing. */
+    @Override
+    public ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        if (stack == null || !(stack.getItem() instanceof DyeItem dye)) return ActionResult.PASS;
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) return ActionResult.SUCCESS;
+        TeleportNetwork network = TeleportNetwork.ofDye(dye.getColor());
+        if (network == null) {
+            serverPlayer.sendMessage(Text.translatable("message.steveparty.teleport_cartridge.dye_none"), true);
+            return ActionResult.SUCCESS;
+        }
+        BoardSpaceBlockEntity tile = getTileEntity(world, pos);
+        if (tile == null || !TeleportCartridgeItem.mayEdit(serverPlayer, pos)) return ActionResult.SUCCESS;
+        ItemStack cartridge = tile.getActiveCartridgeItemStack();
+        if (!(cartridge.getItem() instanceof TeleportCartridgeItem)) return ActionResult.SUCCESS;
+        TeleportCartridgeItem.apply(tile, cartridge, TileTeleport.settings(cartridge).withNetwork(network));
+        serverPlayer.sendMessage(Text.translatable("message.steveparty.teleport_cartridge.network", network.displayName()), true);
+        world.playSound(null, pos, SoundEvents.ITEM_DYE_USE, SoundCategory.BLOCKS, 1.0F, 1.0F);
+        return ActionResult.SUCCESS;
     }
 }

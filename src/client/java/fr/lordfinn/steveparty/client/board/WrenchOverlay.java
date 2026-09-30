@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.board.BoardLinks;
-import fr.lordfinn.steveparty.board.TeleportLinks;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.board.WrenchMode;
@@ -40,7 +39,6 @@ final class WrenchOverlay {
     static final int RED = 0xFFFF4040;
     static final int BLUE = 0xFF4CA6FF;
     static final int GOLD = 0xFFFFD83D;
-    static final int PURPLE = 0xFFB266FF;
     private static final float LABEL_SCALE = 1f / 32f;
 
     private WrenchOverlay() {
@@ -67,7 +65,7 @@ final class WrenchOverlay {
         if (origin != null && BoardLinks.container(world, origin) == null) origin = null;
 
         if (origin != null) frame(matrices, consumers, camera, world, origin,
-                state.mode() == WrenchMode.TRACE ? GREEN : state.mode() == WrenchMode.TELEPORT ? PURPLE : BLUE);
+                state.mode() == WrenchMode.TRACE ? GREEN : BLUE);
         if (wrench == main) {
             BlockPos aimed = aimed(player, world, context.tickCounter().getTickDelta(true));
             if (aimed != null) ghost(matrices, consumers, camera, world, state, origin, aimed);
@@ -99,10 +97,6 @@ final class WrenchOverlay {
         CartridgeContainerBlockEntity target = BoardLinks.container(world, aimed);
         if (target == null) return;
         Vec3d labelPos = anchor(world, aimed).add(0, 1.35, 0);
-        if (state.mode() == WrenchMode.TELEPORT) {
-            teleportGhost(matrices, consumers, camera, world, state, origin, aimed, target, labelPos);
-            return;
-        }
         if (state.mode() == WrenchMode.CUT) {
             List<BlockPos> links = BoardLinks.links(target, BoardLinks.slotOf(target, WrenchState.ACTIVE_SLOT));
             for (BlockPos link : links) ghostPath(matrices, consumers, camera, world, aimed, link, RED);
@@ -158,44 +152,6 @@ final class WrenchOverlay {
         label(matrices, consumers, camera, labelPos, text, color, LABEL_SCALE);
     }
 
-    /**
-     * Teleport mode: picking a Teleport tile (purple, or red if it is none and can't be made one), then adding (purple
-     * arc) or removing (red arc) an arrival; the Teleport tile itself: unbind.
-     */
-    private static void teleportGhost(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world,
-                                      WrenchState state, @Nullable BlockPos origin, BlockPos aimed,
-                                      CartridgeContainerBlockEntity target, Vec3d labelPos) {
-        CartridgeContainerBlockEntity from = origin == null ? null : BoardLinks.container(world, origin);
-        int slot = from == null ? 0 : BoardLinks.slotOf(from, state.slot());
-        if (from == null || !TeleportLinks.isTeleportCartridge(from.getStack(slot))) {
-            ItemStack current = target.getStack(BoardLinks.slotOf(target, WrenchState.ACTIVE_SLOT));
-            ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            boolean canPick = target instanceof BoardSpaceBlockEntity && (TeleportLinks.isTeleportCartridge(current)
-                    || (player != null && (TeleportLinks.isTeleportCartridge(player.getOffHandStack())
-                    || (current.isEmpty() && player.getAbilities().creativeMode))));
-            frame(matrices, consumers, camera, world, aimed, canPick ? PURPLE : RED);
-            label(matrices, consumers, camera, labelPos, Text.translatable(canPick ? "hud.steveparty.wrench.ghost.teleport.pick"
-                    : "hud.steveparty.wrench.ghost.teleport.not_teleport"), canPick ? PURPLE : RED, LABEL_SCALE);
-            return;
-        }
-        if (aimed.equals(origin)) {
-            label(matrices, consumers, camera, labelPos, Text.translatable("hud.steveparty.wrench.ghost.unbind"), 0xFFAAAAAA, LABEL_SCALE);
-            return;
-        }
-        if (!(target instanceof BoardSpaceBlockEntity)) {
-            label(matrices, consumers, camera, labelPos, Text.translatable("hud.steveparty.wrench.ghost.not_board_space"), RED, LABEL_SCALE);
-            return;
-        }
-        boolean linked = TeleportLinks.targets(from, slot).contains(aimed);
-        int color = linked ? RED : PURPLE;
-        Vec3d a = anchor(world, origin).add(0, 0.05, 0), b = anchor(world, aimed).add(0, 0.05, 0);
-        double phase = (world.getTime() + MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(true)) / 20.0 * 3.0;
-        WorldDraw.arc(matrices, consumers, camera, a, b, TeleportLinks.arcHeight(a.distanceTo(b)), color, 0xFFFFFFFF, phase, 0.11, 0.3);
-        frame(matrices, consumers, camera, world, aimed, color);
-        label(matrices, consumers, camera, labelPos, Text.translatable(linked ? "hud.steveparty.wrench.ghost.teleport.remove"
-                : "hud.steveparty.wrench.ghost.teleport.add"), color, LABEL_SCALE);
-    }
-
     /** The path the click would make: chevrons of the board view, bigger and faster, in the colour of what it does. */
     private static void ghostPath(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world,
                                   BlockPos from, BlockPos to, int color) {
@@ -210,7 +166,6 @@ final class WrenchOverlay {
             case GREEN -> WorldDraw.Plate.GREEN;
             case GOLD -> WorldDraw.Plate.GOLD;
             case RED -> WorldDraw.Plate.RED;
-            case PURPLE -> WorldDraw.Plate.PURPLE;
             default -> WorldDraw.Plate.TEAL;
         };
         // Readable from afar, like the board view's numbers

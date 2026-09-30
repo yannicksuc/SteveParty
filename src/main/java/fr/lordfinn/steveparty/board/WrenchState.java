@@ -23,7 +23,7 @@ public record WrenchState(WrenchMode mode, Optional<BlockPos> chainStart, int ch
     public static final WrenchState DEFAULT = new WrenchState(WrenchMode.TRACE, Optional.empty(), 0, ACTIVE_SLOT, true);
 
     public static final Codec<WrenchState> CODEC = RecordCodecBuilder.create(builder -> builder.group(
-            WrenchMode.CODEC.optionalFieldOf("mode", WrenchMode.TRACE).forGetter(WrenchState::mode),
+            WrenchMode.CODEC.lenientOptionalFieldOf("mode", WrenchMode.TRACE).forGetter(WrenchState::mode),
             BlockPos.CODEC.optionalFieldOf("chain_start").forGetter(WrenchState::chainStart),
             Codec.INT.optionalFieldOf("chain_length", 0).forGetter(WrenchState::chainLength),
             Codec.INT.optionalFieldOf("slot", ACTIVE_SLOT).forGetter(WrenchState::slot),

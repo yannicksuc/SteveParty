@@ -476,6 +476,12 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
         // A board space without cartridge acts as a default one: the game must go on
         ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
+        // Pushed here after a teleport: an ordinary space if the Teleport Cartridge says so, or if it is a teleport tile
+        if (TileTeleport.endPush(token, behavior) && this.world instanceof ServerWorld serverWorld) {
+            TileFeedback.land(serverWorld, this, token, partyController, TileFeedback.Landing.DEFAULT, TileFeedback.Landing.DEFAULT.noticeKey());
+            partyController.nextStep();
+            return;
+        }
         behavior.onDestinationReached(this.world, this.pos, token, this, partyController);
         if (!behavior.keepsTurn(token)) partyController.nextStep();
     }
