@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.recipes;
 
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.items.custom.TileBlockItem;
 import net.minecraft.item.Item;
@@ -44,6 +45,8 @@ public class TileSizeRecipe extends SpecialCraftingRecipe {
             ItemStack stack = input.getStackInSlot(i);
             if (stack.isEmpty()) continue;
             if (!(stack.getItem() instanceof TileBlockItem)) return null;
+            // A tile holding cartridges or a look (taken with Silk Touch) is not cut up: they would be lost
+            if (TileContents.holdsContents(stack)) return null;
             // One kind of tile, one size
             if (item != null && (stack.getItem() != item || TileSize.of(stack) != size)) return null;
             item = stack.getItem();

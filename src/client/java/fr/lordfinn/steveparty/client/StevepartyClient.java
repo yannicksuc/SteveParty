@@ -193,6 +193,12 @@ public class StevepartyClient implements ClientModInitializer {
                         case LARGE -> 1f;
                     });
         }
+        // Creative pick block with Ctrl (vanilla) or Shift on a tile or a large tile's part: a copy with its cartridges
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.pickWithContents = () -> {
+            net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+            return client.player != null && client.player.isCreative()
+                    && (net.minecraft.client.gui.screen.Screen.hasControlDown() || net.minecraft.client.gui.screen.Screen.hasShiftDown());
+        };
         // Bandana: one icon per colour (0, 0.25, ... 1: teal, blue, pink, orange, yellow)
         net.minecraft.client.item.ModelPredicateProviderRegistry.register(ModItems.BANDANA, Steveparty.id("bandana_color"),
                 (stack, world, entity, seed) -> fr.lordfinn.steveparty.items.custom.BandanaItem.getColor(stack) / 4f);
