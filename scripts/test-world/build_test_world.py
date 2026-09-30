@@ -52,7 +52,7 @@ DYE_RGB = {  # DyeColor.getEntityColor()
     'lime': 0x80C71F, 'pink': 0xF38BAA, 'gray': 0x474F52, 'light_gray': 0x9D9D97, 'cyan': 0x169C9C,
     'purple': 0x8932B8, 'blue': 0x3C44AA, 'brown': 0x835432, 'green': 0x5E7C16, 'red': 0xB02E26, 'black': 0x1D1D21}
 
-WHITE, GOOD, BAD = 0xE8E8E8, 0x0083DF, 0xC41C24   # InventoryInteractorTileBehavior GOOD_COLOR / BAD_COLOR
+WHITE, GOOD, BAD = 0xE8E8E8, 0x1566E0, 0xD42A2A   # InventoryInteractorTileBehavior GOOD_COLOR / BAD_COLOR
 SHORTCUT_COLOR = DYE_RGB['lime']
 
 
@@ -260,7 +260,7 @@ def board():
         if i == routed:
             # Router off (power 0): slot 0, a default tile; router powered (lever): slot 15, a stop tile
             return tile(pos, nxt_list, 'default', cartridge(0, 'board_space_behavior', nxt_list, color(WHITE)) + ',' +
-                        cartridge(15, 'board_space_behavior_stop', nxt_list, color(DYE_RGB['orange'])))
+                        cartridge(15, 'board_space_behavior_stop', nxt_list))
         items = cartridge(0, 'board_space_behavior', nxt_list, color(WHITE))
         if i == check_point:
             return 'setblock %d %d %d steveparty:check_point[tile_type=default]{Items:[%s]}' % (pos[0], Y, pos[1], items)
@@ -283,7 +283,7 @@ def board():
         if j == trap:
             cmds.append(tile(pos, nxt, 'board_space_stop',
                              inventory_cartridge(nxt, SHORTCUT_CHEST, True, 5) + ',' +
-                             cartridge(15, 'board_space_behavior_stop', nxt, color(BAD))))
+                             cartridge(15, 'board_space_behavior_stop', nxt)))
         else:
             cmds.append(tile(pos, nxt, 'tile_inventory_interactor', inventory_cartridge(nxt, SHORTCUT_CHEST, True, 5)))
 
@@ -777,7 +777,7 @@ def showcase():
 
     # Gallery: each new cartridge on a pedestal, a title and a short explanation
     gallery = [
-        ('steveparty:board_space_behavior_stop', '', 'Cartouche Stop', 'red',
+        ('steveparty:board_space_behavior_stop', '', 'Cartouche Stop', 'gray',
          'Arrivée forcée : un pion qui passe\ndessus s\'y arrête, ses pas restants\nsont perdus.'),
         ('steveparty:shop_cartridge', '', 'Cartouche Boutique', 'yellow',
          'Point de passage : arrête le pion\nqui passe le temps d\'acheter.\nTuile : ouvre la boutique à l\'arrivée.'),
@@ -787,7 +787,7 @@ def showcase():
          'Le pion qui s\'arrête ici recule\nde quelques cases, par où il est venu\n(-1 à -6).'),
         ('steveparty:teleport_cartridge', '', 'Téléportation', 'dark_purple',
          'Le pion qui s\'arrête ici est envoyé\nsur une case d\'arrivée. Arrivées : Clé\nen mode Téléport (arcs violets).'),
-        ('steveparty:replay_cartridge', '', 'Rejouer', 'green',
+        ('steveparty:replay_cartridge', '', 'Rejouer', 'aqua',
          'Le pion qui s\'arrête ici rejoue\naussitôt : relancer le dé et avancer\n(un seul tour en plus).'),
         ('steveparty:board_space_redstone_router', '', 'Routeur capteur', 'aqua',
          'Un comparateur lit le rôle de la case\noù un pion s\'arrête (niveau 1 à 15) :\nvoir les lampes sous le plateau.'),
@@ -812,7 +812,7 @@ def showcase():
         nxt = [loop[(i + 1) % len(loop)]]
         if i == STOP:
             cmds.append(put(pos, nxt, 'board_space_stop', slot0('board_space_behavior_stop', nxt)))
-            tags[i] = ('STOP', 'red', 'arrivée forcée')
+            tags[i] = ('STOP', 'gray', 'arrivée forcée')
         elif i == FORWARD:
             cmds.append(put(pos, nxt, 'tile_advance_back', slot0(
                 'advance_back_cartridge', nxt, ',"steveparty:advance-back-steps":3')))
@@ -828,7 +828,7 @@ def showcase():
             tags[i] = ('TÉLÉPORTATION', 'dark_purple', 'vers A ou B (au hasard)')
         elif i == REPLAY:
             cmds.append(put(pos, nxt, 'tile_replay', slot0('replay_cartridge', nxt)))
-            tags[i] = ('REJOUER', 'green', 'un tour de plus')
+            tags[i] = ('REJOUER', 'aqua', 'un tour de plus')
         elif i == SHOP_TILE:
             cmds.append(put(pos, nxt, 'board_space_shop', slot0('shop_cartridge', nxt)))
             tags[i] = ('BOUTIQUE', 'yellow', 'tuile : la boutique s\'ouvre à l\'arrivée')
