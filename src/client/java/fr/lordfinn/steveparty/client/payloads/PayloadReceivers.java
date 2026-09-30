@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.payloads;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.PartyService;
-import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
+import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
 import fr.lordfinn.steveparty.client.squish.SquishAnimations;
@@ -56,7 +56,8 @@ public class PayloadReceivers {
             MinecraftClient.getInstance().worldRenderer.updateBlock(world, pos, world.getBlockState(pos), world.getBlockState(pos), 3);
         }));
 
-        ClientPlayNetworking.registerGlobalReceiver(PartyDataPayload.ID, (payload, context) -> context.client().execute(() -> PartyStepsHud.updateSteps(payload.partyData())));
+        ClientPlayNetworking.registerGlobalReceiver(PartyDataPayload.ID, (payload, context) -> context.client().execute(() -> PartyHud.onPartyData(payload.partyData())));
+        ClientPlayNetworking.registerGlobalReceiver(PartyLivePayload.ID, (payload, context) -> context.client().execute(() -> PartyHud.onLiveData(payload.data())));
 
         ClientPlayNetworking.registerGlobalReceiver(FloatingTextPayload.ID, (payload, context) -> context.client().execute(() ->
         {

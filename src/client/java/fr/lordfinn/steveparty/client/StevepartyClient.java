@@ -21,7 +21,7 @@ import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaEntityRenderer;
-import fr.lordfinn.steveparty.client.gui.PartyStepsHud;
+import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.items.StencilItemRenderer;
 import fr.lordfinn.steveparty.client.model.BrickShadeModelPlugin;
 import fr.lordfinn.steveparty.client.model.ConnectedPlasticModelPlugin;
@@ -41,7 +41,6 @@ import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.items.TripleJumpShoesRenderer;
 import fr.lordfinn.steveparty.client.screens.*;
 import fr.lordfinn.steveparty.client.utils.BoardSpaceClientUtils;
-import fr.lordfinn.steveparty.client.utils.ConfigurationManager;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -95,7 +94,6 @@ import static fr.lordfinn.steveparty.utils.WoolColorsUtils.*;
 @SuppressWarnings("unused")
 public class StevepartyClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("steveparty");
-    public static final PartyStepsHud PARTY_STEPS_HUD = new PartyStepsHud();
 
     /*
      * Runs on chunk-builder threads: must only READ. The color itself is computed server side
@@ -146,7 +144,6 @@ public class StevepartyClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ConfigurationManager.loadConfig();
         PayloadReceivers.initialize();
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
@@ -170,9 +167,7 @@ public class StevepartyClient implements ClientModInitializer {
         DestinationsRenderer.initialize();
         initKeybinds();
 
-        HudRenderCallback.EVENT.register(PARTY_STEPS_HUD);
-        PartyStepsHud.registerKeyHandlers();
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> PartyStepsHud.saveConfigOnExit());
+        PartyHud.initialize();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
         initParticleRenderers();
@@ -313,7 +308,6 @@ public class StevepartyClient implements ClientModInitializer {
 
     private static void initScreens() {
         //Initialize HUDs
-        PARTY_STEPS_HUD.initialize();
         
         //Initialize Screens
         HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
@@ -354,7 +348,7 @@ public class StevepartyClient implements ClientModInitializer {
     /** Client caches are per server connection: drop them on disconnect. */
     private static void resetClientState() {
         PartyService.tokens.clear();
-        PartyStepsHud.clearData();
+        PartyHud.clear();
         FloatingTextRenderer.clear();
         GoalPoleFlipTracker.clear();
         SquishAnimations.clear();
