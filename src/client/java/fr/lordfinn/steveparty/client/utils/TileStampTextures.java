@@ -31,7 +31,8 @@ import java.util.Optional;
  *     (the base, rings darkening toward the edge, the darker features) and painted with the ramp of any colour;</li>
  *     <li>stamped looks ({@link TileStampComponent}): the dye's colour, the pattern in its darkest shade;</li>
  *     <li>the role faces drawn over the blank face (its rounded bevel): Move Forward / Back ({@link #advanceBack}),
- *     Stop ({@link #stopFace}), Teleport ({@link #teleportFace}).</li>
+ *     Stop ({@link #stopFace}), Replay ({@link #replayFace}), Teleport ({@link #teleportFace}): hand-drawn pixel
+ *     grids, one per size;</li>
  * </ul>
  * Each exists at two pixel densities: 32x32 over the 2 blocks of a standard (or large) tile (28x28 drawn, 2 px margin),
  * and 16x16 over the single block of a small tile, at the block's own pixel density. Created on first use, LRU
@@ -259,22 +260,98 @@ public final class TileStampTextures {
         return TEXTURES.computeIfAbsent(new Key("stop", rgb, small), key -> register(stopValues(rgb, small), rgb, small));
     }
 
+    /** The barred disc, drawn by hand for each size (smooth 4-2-1-2-4 and 4-2-2-4 stair steps): '#' disc, 'o' bar. */
+    private static final String[] STOP_DISC = {
+            ".....####.....",
+            "...########...",
+            "..##########..",
+            ".############.",
+            ".############.",
+            "##############",
+            "###oooooooo###",
+            "###oooooooo###",
+            "##############",
+            ".############.",
+            ".############.",
+            "..##########..",
+            "...########...",
+            ".....####....."};
+    private static final String[] SMALL_STOP_DISC = {
+            "...####...",
+            ".########.",
+            ".########.",
+            "##########",
+            "##oooooo##",
+            "##oooooo##",
+            "##########",
+            ".########.",
+            ".########.",
+            "...####..."};
+
     private static float[] stopValues(int rgb, boolean small) {
+        boolean dark = TileColors.isDark(rgb);
+        return glyphValues(small ? SMALL_STOP_DISC : STOP_DISC, small, dark ? LIGHT_INK : FEATURE, dark ? FEATURE : NUMBER);
+    }
+
+    /**
+     * The blank face with {@code glyph} centred on it: '#' painted {@code ink}, 'o' painted {@code counter}. Glyphs
+     * are hand-drawn pixel grids, one per size (never scaled).
+     */
+    private static float[] glyphValues(String[] glyph, boolean small, float ink, float counter) {
         int side = small ? SMALL_SIDE : SIDE;
         float[] values = frame(small).clone();
-        boolean dark = TileColors.isDark(rgb);
-        float ink = dark ? LIGHT_INK : FEATURE, counter = dark ? FEATURE : NUMBER;
-        int size = small ? 10 : 14, barWidth = small ? 6 : 8;
-        int left = (side - size) / 2, top = (side - size) / 2;
-        double centre = (size - 1) / 2.0, radius = size / 2.0 - 0.15;
-        for (int x = 0; x < size; x++) {
-            for (int y = 0; y < size; y++) {
-                if (Math.hypot(x - centre, y - centre) > radius) continue;
-                boolean bar = y >= size / 2 - 1 && y <= size / 2 && x >= (size - barWidth) / 2 && x < (size + barWidth) / 2;
-                values[(top + y) * side + left + x] = bar ? counter : ink;
+        int left = (side - glyph[0].length()) / 2, top = (side - glyph.length) / 2;
+        for (int row = 0; row < glyph.length; row++) {
+            for (int col = 0; col < glyph[row].length(); col++) {
+                char c = glyph[row].charAt(col);
+                if (c == '#') values[(top + row) * side + left + col] = ink;
+                else if (c == 'o') values[(top + row) * side + left + col] = counter;
             }
         }
         return values;
+    }
+
+    // ---------------------------------------------------------------- the Replay face
+
+    /** A clockwise circular arrow (2 px stroke, a 270 degree arc from 3 o'clock round to its head at 12), by hand. */
+    private static final String[] REPLAY_ARROW = {
+            ".......#......",
+            ".......##.....",
+            ".....#####....",
+            "...#######....",
+            "..###..##.....",
+            ".##....#......",
+            ".##...........",
+            "##............",
+            "##............",
+            "##..........##",
+            "##..........##",
+            ".##........##.",
+            ".##........##.",
+            "..###....###..",
+            "...########...",
+            ".....####....."};
+    private static final String[] SMALL_REPLAY_ARROW = {
+            "....#...",
+            "....##..",
+            "..#####.",
+            ".######.",
+            "###.##..",
+            "##..#...",
+            "##....##",
+            "###..###",
+            ".######.",
+            "..####.."};
+
+    /**
+     * The Replay tile's face: a circular arrow (roll again) in the ramp's darkest shade (light on a dark dyed colour)
+     * on the blank tile face (its rounded bevel), in the ramp of {@code rgb} (cyan by default).
+     */
+    public static Identifier replayFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("replay", rgb, small), key -> {
+            boolean dark = TileColors.isDark(rgb);
+            return register(glyphValues(small ? SMALL_REPLAY_ARROW : REPLAY_ARROW, small, dark ? LIGHT_INK : FEATURE, FEATURE), rgb, small);
+        });
     }
 
     // ---------------------------------------------------------------- the Teleport face
@@ -313,20 +390,8 @@ public final class TileStampTextures {
      */
     public static Identifier teleportFace(int rgb, boolean small) {
         return TEXTURES.computeIfAbsent(new Key("teleport", rgb, small), key -> {
-            int side = small ? SMALL_SIDE : SIDE;
-            float[] values = frame(small).clone();
-            String[] pipe = small ? SMALL_PIPE : PIPE;
             boolean dark = TileColors.isDark(rgb);
-            float ink = dark ? LIGHT_INK : FEATURE, highlight = dark ? FEATURE : PIPE_HIGHLIGHT;
-            // Centred on the flat middle of the face (inside the bevel)
-            int left = (side - pipe[0].length()) / 2, top = small ? 3 : 9;
-            for (int row = 0; row < pipe.length; row++) {
-                for (int col = 0; col < pipe[row].length(); col++) {
-                    char c = pipe[row].charAt(col);
-                    if (c == '#') values[(top + row) * side + left + col] = ink;
-                    else if (c == 'o') values[(top + row) * side + left + col] = highlight;
-                }
-            }
+            float[] values = glyphValues(small ? SMALL_PIPE : PIPE, small, dark ? LIGHT_INK : FEATURE, dark ? FEATURE : PIPE_HIGHLIGHT);
             return register(values, rgb, small);
         });
     }

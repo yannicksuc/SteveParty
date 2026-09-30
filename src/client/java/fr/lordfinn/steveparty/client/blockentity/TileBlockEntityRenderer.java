@@ -78,8 +78,6 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     private static final Identifier textureNeutral = Steveparty.id("block/tile_overlay_neutral");
     private static final Identifier textureExcited = Steveparty.id("block/tile_overlay_excited");
     private static final Identifier textureBlow = Steveparty.id("block/tile_overlay_blow");
-    /** Rejouer / Roll Again: a die in a circular arrow, in the cartridge's colour (cyan until dyed). */
-    private static final Identifier textureReplay = Steveparty.id("block/tile_overlay_replay");
     private static final Identifier textureAdvancedFill = Steveparty.id("block/advanced_tile_fill");
     private static final Identifier textureSimpleFill = Steveparty.id("block/tile_fill");
     /** The shop tile's face (Shop Cartridge): a shopping bag marked with an S, on the yellow rounded bevel. */
@@ -161,7 +159,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         // A Move Forward / Back tile: a double arrow and the number of spaces, green forward, pink-magenta back
         else if (tileType == BoardSpaceType.TILE_ADVANCE_BACK)
             face = TileStampTextures.advanceBack(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.steps(stack), small);
-        else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.face(textureReplay, color, small);
+        // A Replay tile: a circular arrow in the cartridge's colour (cyan by default)
+        else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.replayFace(color, small);
         // A Teleport tile: a warp pipe in the cartridge's colour (violet by default)
         else if (tileType == BoardSpaceType.TILE_TELEPORT) face = TileStampTextures.teleportFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
