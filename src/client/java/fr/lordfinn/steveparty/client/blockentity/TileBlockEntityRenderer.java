@@ -130,7 +130,19 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
             return;
         }
         // A stamped look replaces the face (the tile's own, or its cartridge's: see TileStamping)
-        TileStampComponent stamp = TileStamping.displayedStamp(entity, stack);
+        Identifier face = faceTexture(tileType, stack, TileStamping.displayedStamp(entity, stack), color, small);
+        if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction, 1f);
+        matrices.pop();
+    }
+
+    /**
+     * The face a tile of role {@code tileType} shows for its (active) {@code cartridge} (empty: none) in {@code color}:
+     * its stamped look ({@code stamp}, the tile's own or its cartridge's) or its role's pictogram. Also the face of the
+     * tile items (TileItemFace).
+     */
+    public static @org.jetbrains.annotations.Nullable Identifier faceTexture(BoardSpaceType tileType, ItemStack stack,
+                                                                            @org.jetbrains.annotations.Nullable TileStampComponent stamp,
+                                                                            int color, boolean small) {
         Identifier face;
         if (stamp != null) face = TileStampTextures.get(stamp, small);
         // An item tile: excited (bonus), angry (malus) or blowing (nothing yet) face, in the cartridge's colour
@@ -148,8 +160,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_TELEPORT) face = TileStampTextures.teleportFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
-        if (face != null) renderFace(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(face)), light, small, direction);
-        matrices.pop();
+        return face;
     }
 
     /**
@@ -280,12 +291,13 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
 
     /**
      * A tile face on top of the tile, turned toward its facing (8 directions), 1 px thick: a 32x32 face over the 2
-     * blocks of a standard tile (drawn part 28x28), or a 16x16 face over exactly the block of a small tile.
+     * blocks of a standard tile (drawn part 28x28), or a 16x16 face over exactly the block of a small tile; both
+     * {@code scale}d about the middle (the tile items draw smaller faces).
      */
-    private static void renderFace(MatrixStack matrices, VertexConsumer consumer, int light, boolean small, int direction) {
+    public static void renderFace(MatrixStack matrices, VertexConsumer consumer, int light, boolean small, int direction, float scale) {
         int side = small ? TileStampTextures.SMALL_SIDE : TileStampTextures.SIDE;
         int margin = small ? 0 : TileStampTextures.MARGIN;
-        float half = small ? 0.5f : 1f;
+        float half = (small ? 0.5f : 1f) * scale;
         float edge = half * (side - 2 * margin) / side;
         float texel = 1f / side, m = margin * texel;
         matrices.push();

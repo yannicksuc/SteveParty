@@ -388,6 +388,48 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         getBoardSpaceBehavior(stack).tick(serverWorld, this, stack, ticks);
     }
 
+    // ---------------------------------------------------------------- the tile item keeps the contents (TileContents)
+
+    /** Broken with Silk Touch: its cartridges go with its item instead of spilling out. Server side, not saved. */
+    private boolean keepContents;
+
+    /** Its cartridges go with the dropped item instead of spilling out (broken with Silk Touch). */
+    public void keepContents() {
+        keepContents = true;
+    }
+
+    public boolean keepsContents() {
+        return keepContents;
+    }
+
+    /** The item of this tile carries its cartridges (every slot, with their components) and its own stamped look. */
+    @Override
+    protected void addComponents(net.minecraft.component.ComponentMap.Builder builder) {
+        super.addComponents(builder);
+        if (!isEmpty()) builder.add(net.minecraft.component.DataComponentTypes.CONTAINER,
+                net.minecraft.component.type.ContainerComponent.fromStacks(getHeldStacks()));
+        if (stamp != null) builder.add(ModComponents.TILE_STAMP, stamp);
+    }
+
+    /** Placed from an item carrying them: its cartridges and its look back (the role is applied by {@link #onPlaced}). */
+    @Override
+    protected void readComponents(ComponentsAccess components) {
+        super.readComponents(components);
+        net.minecraft.component.type.ContainerComponent container = components.get(net.minecraft.component.DataComponentTypes.CONTAINER);
+        if (container != null) container.copyTo(getHeldStacks());
+        fr.lordfinn.steveparty.components.TileStampComponent own = components.get(ModComponents.TILE_STAMP);
+        if (own != null) stamp = own;
+        components.get(ModComponents.TILE_SIZE); // read from the block state: not kept by the block entity
+    }
+
+    /** The cartridges and the look travel as components (above), not twice in the copied block entity data. */
+    @Override
+    public void removeFromCopiedStackNbt(NbtCompound nbt) {
+        super.removeFromCopiedStackNbt(nbt);
+        nbt.remove("Items");
+        nbt.remove(STAMP_KEY);
+    }
+
     public @Nullable fr.lordfinn.steveparty.components.TileStampComponent getStamp() {
         return stamp;
     }

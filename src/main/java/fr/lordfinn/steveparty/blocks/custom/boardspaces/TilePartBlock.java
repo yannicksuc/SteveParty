@@ -153,11 +153,23 @@ public class TilePartBlock extends Block {
         return tile.onUse(world, player, hit.withBlockPos(master(state, pos)));
     }
 
-    /** Breaking a part breaks the tile (which drops itself, like when broken directly). */
+    /**
+     * Breaking a part breaks the tile (which drops itself, like when broken directly: with Silk Touch, one item holding
+     * its cartridges).
+     */
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        if (!world.isClient && tileOf(world, state, pos) != null) {
-            world.breakBlock(master(state, pos), !player.isCreative(), player);
+        BlockState tile = world.isClient ? null : tileOf(world, state, pos);
+        if (tile != null) {
+            BlockPos master = master(state, pos);
+            if (ATileBlock.keepsContents(world, tile, player)
+                    && world.getBlockEntity(master) instanceof BoardSpaceBlockEntity boardSpace) {
+                boardSpace.keepContents();
+                Block.dropStacks(tile, world, master, boardSpace, player, player.getMainHandStack());
+                world.breakBlock(master, false, player);
+            } else {
+                world.breakBlock(master, !player.isCreative(), player);
+            }
         }
         return super.onBreak(world, pos, state, player);
     }
