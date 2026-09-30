@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
@@ -48,7 +50,12 @@ import java.util.function.BooleanSupplier;
 /** Warp pipes: shapes and connections, the Wrench, going in, travelling, warps. */
 public class PipeGameTests implements FabricGameTest {
     private static final Block RED = ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][14];
-    private static final Block GLASS = ModBlocks.PIPES[PipeKind.GLASS.ordinal()][3];
+    private static final Block GLASS = ModBlocks.GLASS_PIPE;
+
+    /** A pipe of a kind and colour (index in ModBlocks.COLORS). */
+    private static Block pipe(PipeKind kind, int color) {
+        return ModBlocks.PIPES[kind.ordinal()][kind.colored ? color : 0];
+    }
 
     // ------------------------------------------------------------------ helpers
 
@@ -307,27 +314,73 @@ public class PipeGameTests implements FabricGameTest {
                 }));
     }
 
-    /** A capped end (a pipe going into the ground) warps to the nearest mouth of another pipe network. */
+    /**
+     * A capped end (a pipe going into the ground) warps to the nearest mouth of the same colour in another network
+     * (an opaque and a windowed pipe of one plastic colour are the same colour); a nearer mouth of another colour is not
+     * a warp.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void cappedEndWarpsToTheNearestOtherMouth(TestContext context) {
+    public void cappedEndWarpsToTheNearestMouthOfItsColour(TestContext context) {
+        Block lime = pipe(PipeKind.OPAQUE, 5);
         // The warp pipe: one block on the ground, a mouth on top, capped into the ground
         context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE);
-        context.setBlockState(new BlockPos(1, 2, 1), pipe(RED, PipeSolid.DOWN));
-        // The nearest other mouth, and a farther one
-        context.setBlockState(new BlockPos(4, 1, 1), Blocks.STONE);
-        context.setBlockState(new BlockPos(4, 2, 1), pipe(GLASS, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(1, 2, 1), pipe(lime, PipeSolid.DOWN));
+        // Nearer, but cyan
+        context.setBlockState(new BlockPos(3, 1, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(3, 2, 1), pipe(pipe(PipeKind.OPAQUE, 9), PipeSolid.DOWN));
+        // The nearest lime mouth (a windowed pipe), and a farther lime one
+        context.setBlockState(new BlockPos(5, 1, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(5, 2, 1), pipe(pipe(PipeKind.WINDOWED, 5), PipeSolid.DOWN));
         context.setBlockState(new BlockPos(6, 1, 6), Blocks.STONE);
-        context.setBlockState(new BlockPos(6, 2, 6), pipe(RED, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(6, 2, 6), pipe(lime, PipeSolid.DOWN));
         PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(1, 3, 1));
         pig.setAiDisabled(true);
         context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 1)), Direction.UP, pig, 0), "in");
         when(context, () -> pig.getVehicle() instanceof PipeCarrierEntity, 5, "the pig never went in", () ->
-                when(context, () -> !pig.hasVehicle() && relative(context, pig).x > 3, 60, "the pig never came out of the nearest mouth", () -> {
+                when(context, () -> !pig.hasVehicle() && relative(context, pig).x > 4, 60, "the pig never came out of the nearest lime mouth", () -> {
                     Vec3d at = relative(context, pig);
-                    context.assertTrue(Math.abs(at.x - 4.5) < 0.6 && Math.abs(at.z - 1.5) < 0.6 && at.y >= 3, "on top of the nearest mouth: " + at);
+                    context.assertTrue(Math.abs(at.x - 5.5) < 0.6 && Math.abs(at.z - 1.5) < 0.6 && at.y >= 3, "on top of the nearest lime mouth: " + at);
                     context.assertTrue(pig.getHealth() == pig.getMaxHealth(), "unhurt");
                     context.complete();
                 }));
+    }
+
+    /** Warps reach {@link PipeNetworks#WARP_RADIUS} (100) blocks: 101 blocks away is too far, 99 is fine. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void warpsReachAHundredBlocks(TestContext context) {
+        Block orange = pipe(PipeKind.OPAQUE, 1);
+        context.assertTrue(PipeNetworks.WARP_RADIUS == 100, "100 blocks");
+        context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(1, 2, 1), pipe(orange, PipeSolid.DOWN));
+        // The far pipes' chunk stays loaded (a player would be around)
+        BlockPos far = context.getAbsolutePos(new BlockPos(1, 2, 100));
+        ServerWorld world = context.getWorld();
+        world.setChunkForced(far.getX() >> 4, far.getZ() >> 4, true);
+        world.setChunkForced(far.getX() >> 4, (far.getZ() + 2) >> 4, true);
+        context.setBlockState(new BlockPos(1, 1, 102), Blocks.STONE);
+        context.setBlockState(new BlockPos(1, 2, 102), pipe(orange, PipeSolid.DOWN));
+        ItemEntity item = new ItemEntity(context.getWorld(), 0, 0, 0, new ItemStack(Items.CARROT));
+        item.setPosition(context.getAbsolute(new Vec3d(1.5, 2.9, 1.5)));
+        context.getWorld().spawnEntity(item);
+        BlockPos warp = context.getAbsolutePos(new BlockPos(1, 2, 1));
+        context.assertTrue(PipeTravel.enter(context.getWorld(), warp, Direction.UP, item, 0), "in");
+        when(context, () -> item.age > 3 && !item.hasVehicle(), 60, "never came out", () -> {
+            context.assertTrue(relative(context, item).z < 3, "101 blocks: too far, back out where it went in: " + relative(context, item));
+            context.setBlockState(new BlockPos(1, 1, 100), Blocks.STONE);
+            context.setBlockState(new BlockPos(1, 2, 100), pipe(orange, PipeSolid.DOWN));
+            context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> {
+                item.setVelocity(Vec3d.ZERO);
+                context.assertTrue(PipeTravel.enter(context.getWorld(), warp, Direction.UP, item, 0), "in again");
+                int age = item.age;
+                when(context, () -> item.age > age + 3 && !item.hasVehicle(), 60, "never came out again", () -> {
+                    Vec3d at = relative(context, item);
+                    world.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
+                    world.setChunkForced(far.getX() >> 4, (far.getZ() + 2) >> 4, false);
+                    context.assertTrue(Math.abs(at.z - 100.5) < 0.6 && Math.abs(at.x - 1.5) < 0.6, "99 blocks: out of that mouth: " + at);
+                    context.complete();
+                });
+            });
+        });
     }
 
     /** Without a capped end, a traveller comes out of one of the other mouths of the network (never where it went in). */
@@ -361,9 +414,9 @@ public class PipeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
     public void tokensSurviveTheTrip(TestContext context) {
         context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE);
-        context.setBlockState(new BlockPos(1, 2, 1), pipe(RED, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(1, 2, 1), pipe(pipe(PipeKind.OPAQUE, 6), PipeSolid.DOWN));
         context.setBlockState(new BlockPos(3, 1, 4), Blocks.STONE);
-        context.setBlockState(new BlockPos(3, 2, 4), pipe(RED, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(3, 2, 4), pipe(pipe(PipeKind.OPAQUE, 6), PipeSolid.DOWN));
         PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(1, 3, 1));
         TokenizedEntityInterface token = (TokenizedEntityInterface) pig;
         token.steveparty$setTokenized(true);
@@ -387,25 +440,142 @@ public class PipeGameTests implements FabricGameTest {
                 }));
     }
 
-    /** Nowhere to warp to: back out of the mouth it went in. */
+    /**
+     * Nowhere to warp to (no mouth of its colour near, only one of another colour and one of its colour with a block in
+     * front of it): the traveller travels back up through the pipe (still riding) and comes out of the mouth it went in.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void warpWithNowhereToGoComesBack(TestContext context) {
-        // Every mouth near: blocked by a block in front of it except the one gone into
-        context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE);
-        context.setBlockState(new BlockPos(1, 2, 1), pipe(RED, PipeSolid.DOWN));
-        context.setBlockState(new BlockPos(3, 1, 1), Blocks.STONE);
-        context.setBlockState(new BlockPos(3, 2, 1), pipe(RED, PipeSolid.DOWN));
-        context.setBlockState(new BlockPos(3, 3, 1), Blocks.STONE);
+    public void warpWithNowhereToGoTravelsBack(TestContext context) {
+        Block purple = pipe(PipeKind.STAINED_GLASS, 10);
+        context.setBlockState(new BlockPos(1, 0, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(1, 1, 1), pipe(purple, PipeSolid.DOWN, Direction.UP));
+        context.setBlockState(new BlockPos(1, 2, 1), pipe(purple, PipeSolid.NONE, Direction.DOWN, Direction.UP));
+        context.setBlockState(new BlockPos(1, 3, 1), pipe(purple, PipeSolid.NONE, Direction.DOWN));
+        context.setBlockState(new BlockPos(4, 0, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(4, 1, 1), pipe(GLASS, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(4, 0, 4), Blocks.STONE);
+        context.setBlockState(new BlockPos(4, 1, 4), pipe(purple, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(4, 2, 4), Blocks.STONE);
         ItemEntity item = new ItemEntity(context.getWorld(), 0, 0, 0, new ItemStack(Items.APPLE));
-        Vec3d at = context.getAbsolute(new Vec3d(1.5, 2.9, 1.5));
-        item.setPosition(at);
+        item.setPosition(context.getAbsolute(new Vec3d(1.5, 3.9, 1.5)));
         context.getWorld().spawnEntity(item);
-        context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 1)), Direction.UP, item, 0), "in");
-        when(context, () -> item.age > 3 && !item.hasVehicle(), 60, "never came out", () -> {
+        context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 3, 1)), Direction.UP, item, 0), "in");
+        boolean[] cameBack = {false};
+        when(context, () -> {
+            if (item.getVehicle() instanceof PipeCarrierEntity carrier && carrier.hasReturned()) cameBack[0] = true;
+            return item.age > 3 && !item.hasVehicle();
+        }, 60, "never came out", () -> {
             Vec3d out = relative(context, item);
-            context.assertTrue(Math.abs(out.x - 1.5) < 0.5 && Math.abs(out.z - 1.5) < 0.5 && out.y >= 2.9, "back out of the mouth it went in: " + out);
+            context.assertTrue(cameBack[0], "travelled back through the pipe");
+            context.assertTrue(Math.abs(out.x - 1.5) < 0.5 && Math.abs(out.z - 1.5) < 0.5 && out.y >= 3.9, "back out of the mouth it went in: " + out);
             context.complete();
         });
+    }
+
+    /**
+     * Any pipe joins any other (kinds and colours mixed) when placed against it or in front of its mouth; placed beside a
+     * pipe, it does not join it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void pipesOfAnyKindJoinWhenPlacedTowardEachOther(TestContext context) {
+        PlayerEntity player = context.createMockPlayer(GameMode.CREATIVE);
+        for (int x = 1; x <= 4; x++) for (int z = 1; z <= 2; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
+        Block windowed = pipe(PipeKind.WINDOWED, 3), stained = pipe(PipeKind.STAINED_GLASS, 13);
+        place(context, player, RED, new BlockPos(1, 0, 1), Direction.UP);
+        place(context, player, windowed, new BlockPos(1, 1, 1), Direction.EAST);
+        context.assertTrue(context.getBlockState(new BlockPos(1, 1, 1)).get(PipeShape.connection(Direction.EAST))
+                && context.getBlockState(new BlockPos(2, 1, 1)).get(PipeShape.connection(Direction.WEST)), "a windowed pipe placed against an opaque one joins it");
+        // Beside the windowed pipe (on the ground next to it): alone
+        place(context, player, GLASS, new BlockPos(2, 0, 2), Direction.UP);
+        BlockState beside = context.getBlockState(new BlockPos(2, 1, 2));
+        context.assertTrue(PipeShape.mask(beside) == 0 && !context.getBlockState(new BlockPos(2, 1, 1)).get(PipeShape.connection(Direction.SOUTH)),
+                "placed beside a pipe: not joined: " + beside);
+        // Against the glass pipe: joined; in front of the windowed pipe's mouth: joined, and not to the glass beside
+        place(context, player, stained, new BlockPos(2, 1, 2), Direction.EAST);
+        context.assertTrue(context.getBlockState(new BlockPos(3, 1, 2)).get(PipeShape.connection(Direction.WEST)), "stained glass against plain glass: joined");
+        place(context, player, stained, new BlockPos(3, 0, 1), Direction.UP);
+        BlockState front = context.getBlockState(new BlockPos(3, 1, 1));
+        context.assertTrue(front.get(PipeShape.connection(Direction.WEST)) && !front.get(PipeShape.connection(Direction.SOUTH)),
+                "in front of the windowed pipe's mouth: joined to it only: " + front);
+        context.complete();
+    }
+
+    /**
+     * Every shape of pipe (straight, bend, junction, with a clamp, ends...) is drawn inside the pipe's outline: nothing
+     * sticks out where branches meet. A straight length is drawn with the tube texture only (no border at the joints).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void modelsStayInsideTheTube(TestContext context) {
+        for (int key = 0; key < PipeShape.KEYS; key++) {
+            int mask = PipeShape.maskOf(key);
+            Direction solid = PipeShape.solidOf(key);
+            if (solid != null && (mask & 1 << solid.ordinal()) != 0) continue;
+            PipeShape.Face[] faces = PipeShape.faces(mask, solid);
+            List<float[]> outline = outline(faces);
+            int finalKey = key;
+            boolean straight = solid == null && Integer.bitCount(mask) == 2 && ((mask & 3) == 3 || (mask & 12) == 12 || (mask & 48) == 48);
+            PipeGeometry.build(key, (facing, corners, uvs, sprite, cull) -> {
+                float[] center = new float[3];
+                for (float[] corner : corners) for (int i = 0; i < 3; i++) center[i] += corner[i] / 4;
+                context.assertTrue(inside(outline, center), "shape " + finalKey + ": a quad out of the tube at " + java.util.Arrays.toString(center));
+                for (float[] corner : corners) {
+                    float[] in = new float[3];
+                    for (int i = 0; i < 3; i++) in[i] = corner[i] + (center[i] - corner[i]) * 0.02f;
+                    context.assertTrue(inside(outline, in), "shape " + finalKey + ": a quad out of the tube at " + java.util.Arrays.toString(in));
+                }
+                if (straight) context.assertTrue(sprite == PipeGeometry.BODY || sprite == PipeGeometry.INNER, "straight length " + finalKey + ": tube texture only");
+            });
+        }
+        context.complete();
+    }
+
+    /** The tube's outline (pixels): its body, its arms, rims, flanges and clamps. */
+    private static List<float[]> outline(PipeShape.Face[] faces) {
+        List<float[]> boxes = new ArrayList<>();
+        boxes.add(new float[]{1, 1, 1, 15, 15, 15});
+        for (Direction dir : Direction.values()) {
+            float across0, across1, length;
+            switch (faces[dir.ordinal()]) {
+                case CONNECTED -> { across0 = 1; across1 = 15; length = 1; }
+                case MOUTH -> { across0 = 0; across1 = 16; length = PipeShape.RIM; }
+                case CAPPED -> { across0 = 0; across1 = 16; length = PipeShape.FLANGE; }
+                case CLAMP -> { across0 = 5; across1 = 11; length = 1; }
+                default -> { continue; }
+            }
+            int axis = dir.getAxis().ordinal();
+            boolean positive = dir.getDirection() == Direction.AxisDirection.POSITIVE;
+            float[] box = {across0, across0, across0, across1, across1, across1};
+            box[axis] = positive ? 16 - length : 0;
+            box[axis + 3] = positive ? 16 : length;
+            boxes.add(box);
+        }
+        return boxes;
+    }
+
+    private static boolean inside(List<float[]> boxes, float[] point) {
+        for (float[] box : boxes) {
+            if (point[0] >= box[0] - 1e-4 && point[0] <= box[3] + 1e-4 && point[1] >= box[1] - 1e-4 && point[1] <= box[4] + 1e-4
+                    && point[2] >= box[2] - 1e-4 && point[2] <= box[5] + 1e-4) return true;
+        }
+        return false;
+    }
+
+    /** The windowed pipe's wall: plastic along its edges only, the window going on to both ends of the block. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void windowedPipesHaveNoFrameAtTheJoints(TestContext context) {
+        try (java.io.InputStream in = PipeGameTests.class.getResourceAsStream("/assets/steveparty/textures/block/pipe/windowed/red_body.png")) {
+            context.assertTrue(in != null, "texture found");
+            java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(in);
+            for (int v = 0; v < 16; v++) {
+                context.assertTrue((image.getRGB(2, v) >>> 24) == 255 && (image.getRGB(13, v) >>> 24) == 255, "plastic edges on row " + v);
+            }
+            for (int v : new int[]{0, 1, 14, 15}) {
+                context.assertTrue((image.getRGB(8, v) >>> 24) == 0, "the window goes on to the block's end (row " + v + ")");
+            }
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+        context.complete();
     }
 
     // ------------------------------------------------------------------ items
@@ -417,16 +587,20 @@ public class PipeGameTests implements FabricGameTest {
         return recipe.map(entry -> entry.value().craft(input, context.getWorld().getRegistryManager())).orElse(ItemStack.EMPTY);
     }
 
-    /** Six pipes of a plastic colour from six plastic blocks (with glass for the glass and windowed ones). */
+    /** Six pipes from six plastic blocks (with glass for the windowed ones), six glass or stained glass blocks. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void pipesAreCraftedFromPlastic(TestContext context) {
-        ItemStack p = new ItemStack(ModBlocks.PLASTIC_BLOCKS[14]), g = new ItemStack(Items.GLASS), e = ItemStack.EMPTY;
+    public void pipesAreCrafted(TestContext context) {
+        ItemStack p = new ItemStack(ModBlocks.PLASTIC_BLOCKS[14]), g = new ItemStack(Items.GLASS), s = new ItemStack(Items.RED_STAINED_GLASS), e = ItemStack.EMPTY;
         ItemStack opaque = craft(context, p, e, p, p, e, p, p, e, p);
         ItemStack windowed = craft(context, p, e, p, g.copy(), e, g.copy(), p, e, p);
-        ItemStack glass = craft(context, g.copy(), e, g.copy(), p, e, p, g.copy(), e, g.copy());
+        ItemStack glass = craft(context, g.copy(), e, g.copy(), g.copy(), e, g.copy(), g.copy(), e, g.copy());
+        ItemStack stained = craft(context, s.copy(), e, s.copy(), s.copy(), e, s.copy(), s.copy(), e, s.copy());
         context.assertTrue(opaque.isOf(RED.asItem()) && opaque.getCount() == 6, "6 red pipes: " + opaque);
-        context.assertTrue(windowed.isOf(ModBlocks.PIPES[PipeKind.WINDOWED.ordinal()][14].asItem()) && windowed.getCount() == 6, "6 red windowed pipes: " + windowed);
-        context.assertTrue(glass.isOf(ModBlocks.PIPES[PipeKind.GLASS.ordinal()][14].asItem()) && glass.getCount() == 6, "6 red glass pipes: " + glass);
+        context.assertTrue(windowed.isOf(pipe(PipeKind.WINDOWED, 14).asItem()) && windowed.getCount() == 6, "6 red windowed pipes: " + windowed);
+        context.assertTrue(glass.isOf(GLASS.asItem()) && glass.getCount() == 6, "6 glass pipes: " + glass);
+        context.assertTrue(stained.isOf(pipe(PipeKind.STAINED_GLASS, 14).asItem()) && stained.getCount() == 6, "6 red stained glass pipes: " + stained);
+        context.assertTrue(ModBlocks.PIPES[PipeKind.GLASS.ordinal()].length == 1 && ModBlocks.PIPES[PipeKind.STAINED_GLASS.ordinal()].length == 16,
+                "one glass pipe, 16 stained glass pipes");
         context.complete();
     }
 

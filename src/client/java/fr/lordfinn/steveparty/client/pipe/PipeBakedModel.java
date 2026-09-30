@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.pipe;
 
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import net.fabricmc.fabric.api.renderer.v1.Renderer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;

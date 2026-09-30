@@ -39,7 +39,7 @@ public class PipeBlockEntity extends BlockEntity implements ImplementedInventory
         return items.get(CARTRIDGE_SLOT);
     }
 
-    /** How the cartridge here picks where this pipe warps to, or null (the default: the nearest other mouth). */
+    /** How the cartridge here picks where this pipe warps to, or null (the default: the nearest other mouth of the same colour). */
     public @Nullable PipeDestinationProvider destinationProvider() {
         return PipeDestinationProvider.of(getCartridge());
     }
