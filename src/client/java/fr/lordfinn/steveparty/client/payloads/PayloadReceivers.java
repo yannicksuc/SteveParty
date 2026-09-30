@@ -58,6 +58,11 @@ public class PayloadReceivers {
 
         ClientPlayNetworking.registerGlobalReceiver(PartyDataPayload.ID, (payload, context) -> context.client().execute(() -> PartyHud.onPartyData(payload.partyData())));
         ClientPlayNetworking.registerGlobalReceiver(PartyLivePayload.ID, (payload, context) -> context.client().execute(() -> PartyHud.onLiveData(payload.data())));
+        ClientPlayNetworking.registerGlobalReceiver(PartyDashboardPayload.ID, (payload, context) -> context.client().execute(() -> {
+            if (context.player().currentScreenHandler instanceof fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler handler
+                    && handler.syncId == payload.syncId())
+                handler.setData(payload.data());
+        }));
 
         ClientPlayNetworking.registerGlobalReceiver(FloatingTextPayload.ID, (payload, context) -> context.client().execute(() ->
         {

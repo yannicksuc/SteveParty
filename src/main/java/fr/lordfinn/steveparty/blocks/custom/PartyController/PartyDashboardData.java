@@ -1,0 +1,320 @@
+package fr.lordfinn.steveparty.blocks.custom.PartyController;
+
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.board.BoardValidator;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
+import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
+import net.minecraft.util.math.BlockPos;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import static fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT;
+import static fr.lordfinn.steveparty.components.ModComponents.TP_TARGETS;
+
+/**
+ * Everything the Party Controller's dashboard shows, for one player: the state of the party (or what is missing to
+ * start one), its players with their stars and coins, the mini-games of the inserted catalogue and the settings.
+ * Server-authoritative: the dashboard's screen handler captures it twice a second while the screen is open and sends
+ * it to that player only when it changed (see {@code PartyControllerScreenHandler}). The currency items are not in
+ * it: they are the two setting slots of the screen, synced like any slot.
+ *
+ * @param phase           no party (setup), a party running, or a party over (on its END step)
+ * @param round           the current round (1-based), 0 before the first one or with no party
+ * @param rounds          the rounds of the running / ended party, else the rounds setting
+ * @param roundsSetting   the rounds the next party will have
+ * @param stepIndex       the current step (0-based), -1 without party
+ * @param stepCount       the steps of the party
+ * @param action          what is happening now (running party), empty otherwise
+ * @param actionDetail    a detail of it (the roll, the steps left...), empty for none
+ * @param currentPlayer   index in {@code players} of the token whose turn it is, -1 for none
+ * @param players         running / ended party: its tokens in the turn order; setup: the tokens bound to the start
+ *                        tiles, who would play
+ * @param board           the last check of the board around (see {@link BoardValidator})
+ * @param hasCatalogue    a mini-game catalogue is in the controller
+ * @param pages           the mini-game pages of that catalogue, in its order
+ * @param currentPage     the catalogue slot of the page of the mini-game being played, -1 for none
+ * @param canEdit         the player may change the settings and start a party (see {@link PartyControllerEntity#canEdit})
+ * @param following       the player follows this party (its HUDs)
+ * @param catalogueLocked the controller is powered: the catalogue can't be taken out
+ */
+public record PartyDashboardData(Phase phase, int round, int rounds, int roundsSetting, int stepIndex, int stepCount,
+                                 Text action, Text actionDetail, int currentPlayer,
+                                 List<PartyLiveData.Standing> players, Board board, boolean hasCatalogue,
+                                 List<Page> pages, int currentPage, boolean canEdit, boolean following,
+                                 boolean catalogueLocked) {
+
+    public enum Phase { SETUP, RUNNING, ENDED }
+
+    /** Why a party can't be started from the dashboard now ({@link #NONE}: it can). */
+    public enum Blocker { NONE, RUNNING, NO_BOARD, NO_START, NO_TOKEN, NOT_ALLOWED }
+
+    /**
+     * The board around the controller, as {@link BoardValidator} sees it.
+     *
+     * @param spaces      board spaces found
+     * @param starts      start tiles among them
+     * @param startTokens tokens bound to those start tiles (they will play)
+     * @param issues      the problems (errors and warnings; the start tiles without token: {@code starts} and {@code startTokens})
+     */
+    public record Board(int spaces, int starts, List<UUID> startTokens, List<Issue> issues) {
+        public static final Board UNKNOWN = new Board(0, 0, List.of(), List.of());
+
+        public long errors() {
+            return issues.stream().filter(Issue::error).count();
+        }
+
+        public long warnings() {
+            return issues.stream().filter(issue -> !issue.error()).count();
+        }
+    }
+
+    /** A board problem: {@code message.steveparty.board.summary.<key>} with its count. */
+    public record Issue(String key, int count, boolean error) {}
+
+    /**
+     * A page of the catalogue.
+     *
+     * @param slot   its slot in the catalogue
+     * @param page   the page itself (its name, its tooltip)
+     * @param pads   the teleportation pads it sends the players to
+     * @param books  those pads holding a « Here we come » book with at least one place: 0 and the mini-game can't be played
+     * @param played how many times the roulette chose it in this party
+     */
+    public record Page(int slot, ItemStack page, int pads, int books, int played) {}
+
+    /** Why a party can't be started now, the checks in the order a player meets them. */
+    public static Blocker launchBlocker(boolean running, Board board, boolean canEdit) {
+        if (running) return Blocker.RUNNING;
+        if (board.spaces() == 0) return Blocker.NO_BOARD;
+        if (board.starts() == 0) return Blocker.NO_START;
+        if (board.startTokens().isEmpty()) return Blocker.NO_TOKEN;
+        if (!canEdit) return Blocker.NOT_ALLOWED;
+        return Blocker.NONE;
+    }
+
+    public Blocker launchBlocker() {
+        return launchBlocker(phase == Phase.RUNNING, board, canEdit);
+    }
+
+    // ------------------------------------------------------------------ capture (server)
+
+    /** Checks the board around the controller (costly: only on demand, and every few seconds while no party runs). */
+    public static Board checkBoard(PartyControllerEntity controller, ServerWorld world) {
+        BoardValidator.Report report = BoardValidator.check(world, controller.getPos());
+        List<Issue> issues = new ArrayList<>();
+        for (BoardValidator.Issue issue : report.issues()) {
+            if (issue.severity() == BoardValidator.Severity.INFO) continue;
+            issues.add(new Issue(issue.key(), issue.positions().size(), issue.severity() == BoardValidator.Severity.ERROR));
+        }
+        return new Board(report.boardSpaces(), report.starts(), controller.findStartTokens(world), issues);
+    }
+
+    public static PartyDashboardData capture(PartyControllerEntity controller, ServerWorld world, ServerPlayerEntity player,
+                                             Board board) {
+        PartyData data = controller.getPartyData();
+        Phase phase = data.isStarted() ? Phase.RUNNING : data.isAtEnd() ? Phase.ENDED : Phase.SETUP;
+        List<PartyStep> steps = data.getSteps();
+        int stepIndex = phase == Phase.SETUP ? -1 : data.getStepIndex();
+
+        // Rounds: a round is the token turns up to its mini-game (as in the party HUD)
+        int round = 0, rounds = 0;
+        boolean generated = false;
+        for (int i = 0; i < steps.size(); i++) {
+            PartyStepType type = steps.get(i).getType();
+            if (type == PartyStepType.MINI_GAME) {
+                rounds++;
+                if (i < stepIndex) round++;
+            }
+            if (type == PartyStepType.BASIC_GAME_GENERATOR && i < stepIndex) generated = true;
+        }
+        if (phase == Phase.SETUP) {
+            round = 0;
+            rounds = data.getNbTurn();
+        } else if (!generated) {
+            round = 0;
+        } else {
+            round = Math.min(round + 1, Math.max(rounds, 1));
+        }
+
+        // Players and what is happening
+        List<UUID> tokens = phase == Phase.SETUP ? board.startTokens() : data.getTokens();
+        List<PartyLiveData.Standing> players = new ArrayList<>(tokens.size());
+        for (UUID token : tokens) players.add(PartyLiveData.standingOf(controller, world, token));
+        int currentPlayer = -1;
+        Text action = Text.empty(), detail = Text.empty();
+        PartyStep current = phase == Phase.RUNNING ? data.getCurrentStep() : null;
+        PartyLiveData live = phase == Phase.RUNNING ? PartyLiveData.capture(controller, world) : PartyLiveData.EMPTY;
+        if (current instanceof TokenTurnPartyStep turn && turn.getTokenUUID() != null) {
+            currentPlayer = tokens.indexOf(turn.getTokenUUID());
+            PartyLiveData.Standing standing = currentPlayer >= 0 ? players.get(currentPlayer) : null;
+            String name = standing != null ? standing.tokenName() : "?";
+            String owner = standing == null || standing.ownerName().isEmpty() ? name : standing.ownerName();
+            action = Text.translatable(turn.isReplay() ? "gui.steveparty.party_controller.action.replay" : "gui.steveparty.party_controller.action.turn", name);
+            if (live.absentSeconds() >= 0) {
+                detail = Text.translatable("gui.steveparty.party_controller.action.absent", live.absentSeconds());
+            } else if (live.shopping()) {
+                detail = Text.translatable("hud.steveparty.party.shopping", owner);
+            } else if (live.stepsLeft() != 0) {
+                detail = Text.translatable(live.stepsLeft() > 0 ? "gui.steveparty.party_controller.action.moving" : "gui.steveparty.party_controller.action.moving_back",
+                        Math.abs(live.stepsLeft()));
+            } else if (live.roll() > 0) {
+                detail = Text.translatable("gui.steveparty.party_controller.action.rolled", owner, live.roll());
+            } else if (standing != null && standing.owner().isEmpty()) {
+                detail = Text.translatable("hud.steveparty.party.roll.anyone", name);
+            } else {
+                detail = Text.translatable("hud.steveparty.party.roll", owner);
+            }
+        } else if (current instanceof StartRollsStep startRolls) {
+            int rolled = startRolls.rolls == null ? 0 : startRolls.rolls.size();
+            action = Text.translatable("gui.steveparty.party_controller.action.start_rolls");
+            detail = Text.translatable("gui.steveparty.party_controller.action.start_rolls.count", rolled, tokens.size());
+        } else if (current instanceof MiniGamePartyStep miniGame) {
+            ItemStack page = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
+            action = miniGame.isMiniGameChosen() && !page.isEmpty()
+                    ? Text.translatable("gui.steveparty.party_controller.action.mini_game", page.getName())
+                    : Text.translatable("hud.steveparty.party.mini_game.choosing");
+        } else if (current != null && current.getType() == PartyStepType.BASIC_GAME_GENERATOR) {
+            action = Text.translatable("hud.steveparty.party.preparing");
+        } else if (current != null) {
+            action = Text.translatable(current.getName());
+        }
+
+        // Mini-games of the catalogue: where they send the players, how many times they were played
+        List<ItemStack> stored = controller.catalogue.isEmpty() ? List.of() : MiniGamesCatalogueItem.getStoredPages(controller.catalogue);
+        int[] played = new int[stored.size()];
+        int currentPage = -1;
+        if (phase != Phase.SETUP) {
+            for (int i = 0; i < steps.size() && i <= stepIndex; i++) {
+                if (!(steps.get(i) instanceof MiniGamePartyStep miniGame)) continue;
+                int slot = miniGame.getChosenPageSlot();
+                if (slot < 0 || slot >= played.length) continue;
+                played[slot]++;
+                if (i == stepIndex && phase == Phase.RUNNING) currentPage = slot;
+            }
+        }
+        TeleportationPadBooksStorage books = stored.isEmpty() ? null : TeleportationPadStorageManager.getBooksStorage(world);
+        List<Page> pages = new ArrayList<>();
+        for (int slot = 0; slot < stored.size(); slot++) {
+            ItemStack page = stored.get(slot);
+            if (page.isEmpty()) continue;
+            List<BlockPos> pads = page.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations();
+            int withBook = 0;
+            for (BlockPos pad : pads) {
+                ItemStack book = books.getTeleportationPadBook(pad);
+                if (book != null && !book.isEmpty() && !book.getOrDefault(TP_TARGETS, List.of()).isEmpty()) withBook++;
+            }
+            pages.add(new Page(slot, page, pads.size(), withBook, played[slot]));
+        }
+
+        return new PartyDashboardData(phase, round, rounds, data.getNbTurn(), stepIndex, steps.size(), action, detail,
+                currentPlayer, players, board, !controller.catalogue.isEmpty(), pages, currentPage,
+                controller.canEdit(player), controller.getInterestedPlayers().contains(player.getUuid()),
+                controller.isCatalogueLocked());
+    }
+
+    // ------------------------------------------------------------------ network
+
+    private static final PacketCodec<RegistryByteBuf, Board> BOARD_CODEC = new PacketCodec<>() {
+        @Override
+        public Board decode(RegistryByteBuf buf) {
+            int spaces = buf.readVarInt(), starts = buf.readVarInt();
+            List<UUID> startTokens = buf.readList(b -> b.readUuid());
+            int count = buf.readVarInt();
+            List<Issue> issues = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) issues.add(new Issue(buf.readString(), buf.readVarInt(), buf.readBoolean()));
+            return new Board(spaces, starts, startTokens, issues);
+        }
+
+        @Override
+        public void encode(RegistryByteBuf buf, Board board) {
+            buf.writeVarInt(board.spaces());
+            buf.writeVarInt(board.starts());
+            buf.writeCollection(board.startTokens(), (b, uuid) -> b.writeUuid(uuid));
+            buf.writeVarInt(board.issues().size());
+            for (Issue issue : board.issues()) {
+                buf.writeString(issue.key());
+                buf.writeVarInt(issue.count());
+                buf.writeBoolean(issue.error());
+            }
+        }
+    };
+
+    private static final PacketCodec<RegistryByteBuf, List<Page>> PAGES_CODEC = new PacketCodec<>() {
+        @Override
+        public List<Page> decode(RegistryByteBuf buf) {
+            int count = buf.readVarInt();
+            List<Page> pages = new ArrayList<>(count);
+            for (int i = 0; i < count; i++)
+                pages.add(new Page(buf.readVarInt(), ItemStack.PACKET_CODEC.decode(buf), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+            return pages;
+        }
+
+        @Override
+        public void encode(RegistryByteBuf buf, List<Page> pages) {
+            buf.writeVarInt(pages.size());
+            for (Page page : pages) {
+                buf.writeVarInt(page.slot());
+                ItemStack.PACKET_CODEC.encode(buf, page.page());
+                buf.writeVarInt(page.pads());
+                buf.writeVarInt(page.books());
+                buf.writeVarInt(page.played());
+            }
+        }
+    };
+
+    public static final PacketCodec<RegistryByteBuf, PartyDashboardData> PACKET_CODEC = new PacketCodec<>() {
+        @Override
+        public PartyDashboardData decode(RegistryByteBuf buf) {
+            Phase phase = Phase.values()[Math.clamp(buf.readVarInt(), 0, Phase.values().length - 1)];
+            int round = buf.readVarInt(), rounds = buf.readVarInt(), roundsSetting = buf.readVarInt();
+            int stepIndex = buf.readVarInt() - 1, stepCount = buf.readVarInt();
+            Text action = TextCodecs.REGISTRY_PACKET_CODEC.decode(buf);
+            Text detail = TextCodecs.REGISTRY_PACKET_CODEC.decode(buf);
+            int currentPlayer = buf.readVarInt() - 1;
+            List<PartyLiveData.Standing> players = PartyLiveData.STANDINGS_CODEC.decode(buf);
+            Board board = BOARD_CODEC.decode(buf);
+            boolean hasCatalogue = buf.readBoolean();
+            List<Page> pages = PAGES_CODEC.decode(buf);
+            int currentPage = buf.readVarInt() - 1;
+            boolean canEdit = buf.readBoolean(), following = buf.readBoolean(), locked = buf.readBoolean();
+            return new PartyDashboardData(phase, round, rounds, roundsSetting, stepIndex, stepCount, action, detail,
+                    currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked);
+        }
+
+        @Override
+        public void encode(RegistryByteBuf buf, PartyDashboardData data) {
+            buf.writeVarInt(data.phase.ordinal());
+            buf.writeVarInt(data.round);
+            buf.writeVarInt(data.rounds);
+            buf.writeVarInt(data.roundsSetting);
+            buf.writeVarInt(data.stepIndex + 1);
+            buf.writeVarInt(data.stepCount);
+            TextCodecs.REGISTRY_PACKET_CODEC.encode(buf, data.action);
+            TextCodecs.REGISTRY_PACKET_CODEC.encode(buf, data.actionDetail);
+            buf.writeVarInt(data.currentPlayer + 1);
+            PartyLiveData.STANDINGS_CODEC.encode(buf, data.players);
+            BOARD_CODEC.encode(buf, data.board);
+            buf.writeBoolean(data.hasCatalogue);
+            PAGES_CODEC.encode(buf, data.pages);
+            buf.writeVarInt(data.currentPage + 1);
+            buf.writeBoolean(data.canEdit);
+            buf.writeBoolean(data.following);
+            buf.writeBoolean(data.catalogueLocked);
+        }
+    };
+}

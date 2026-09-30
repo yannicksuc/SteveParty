@@ -9,7 +9,12 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.payloads.custom.PartyDataPayload;
+import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.screen.ScreenHandler;
 import fr.lordfinn.steveparty.payloads.custom.PartyLivePayload;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -50,7 +55,7 @@ import java.util.*;
 
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
-public class PartyControllerEntity extends BlockEntity {
+public class PartyControllerEntity extends BlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     /** Server-side only registry of the loaded controllers, keyed by dimension + position. */
@@ -67,6 +72,11 @@ public class PartyControllerEntity extends BlockEntity {
     public static final int LIVE_SYNC_INTERVAL_TICKS = 5;
     /** The live state last sent to the interested players (only a change is sent). */
     private PartyLiveData lastLiveData = PartyLiveData.EMPTY;
+    /** The items counted as stars and coins by this party (one of each, never empty): see {@link PartyCurrency}. */
+    private ItemStack starItem = PartyCurrency.STAR.defaultStack();
+    private ItemStack coinItem = PartyCurrency.COIN.defaultStack();
+    /** Rounds a party may have (Settings page). */
+    public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
 
     static {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_PARTY_CONTROLLERS.clear());
@@ -162,6 +172,8 @@ public class PartyControllerEntity extends BlockEntity {
             nbt.putBoolean("isCatalogued", false);
         }
         partyData.toNbt(nbt);
+        nbt.put(PartyCurrency.STAR.nbtKey(), starItem.toNbt(wrapper));
+        nbt.put(PartyCurrency.COIN.nbtKey(), coinItem.toNbt(wrapper));
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
             tokensToRelease.forEach(uuid -> releaseNbt.add(NbtString.of(uuid.toString())));
@@ -188,6 +200,8 @@ public class PartyControllerEntity extends BlockEntity {
         if (!nbt.getBoolean("isCatalogued"))
             catalogue = ItemStack.EMPTY;
         partyData = new PartyData(nbt);
+        starItem = readCurrency(nbt, wrapper, PartyCurrency.STAR);
+        coinItem = readCurrency(nbt, wrapper, PartyCurrency.COIN);
         tokensToRelease.clear();
         nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
             try {
@@ -196,6 +210,88 @@ public class PartyControllerEntity extends BlockEntity {
             }
         });
         resumeDone = false;
+    }
+
+    private static ItemStack readCurrency(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper, PartyCurrency currency) {
+        NbtElement element = nbt.get(currency.nbtKey());
+        ItemStack stack = element == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, element).orElse(ItemStack.EMPTY);
+        return currency.template(stack);
+    }
+
+    // ------------------------------------------------------------------ settings (the dashboard's Settings page)
+
+    /** The item counted as this currency (a copy, count 1). */
+    public ItemStack getCurrency(PartyCurrency currency) {
+        return (currency == PartyCurrency.STAR ? starItem : coinItem).copy();
+    }
+
+    /**
+     * Picks the item counted as a currency: {@code picked} (its item and components, whatever its count), or the
+     * default item for an empty stack. Refused if the other currency already uses that very item.
+     *
+     * @return false if refused
+     */
+    public boolean setCurrency(PartyCurrency currency, ItemStack picked) {
+        ItemStack template = currency.template(picked);
+        if (ItemStack.areItemsAndComponentsEqual(template, currency == PartyCurrency.STAR ? coinItem : starItem)) return false;
+        if (currency == PartyCurrency.STAR) starItem = template;
+        else coinItem = template;
+        markDirty();
+        return true;
+    }
+
+    /** Sets the number of rounds of the next party: only while no party runs (the rounds are generated at its start). */
+    public boolean setRounds(int rounds) {
+        if (partyData.isStarted()) return false;
+        partyData.setNbTurn(Math.clamp(rounds, MIN_ROUNDS, MAX_ROUNDS));
+        markDirty();
+        return true;
+    }
+
+    /**
+     * Who may change the settings of this controller and start a party from its dashboard: a player allowed to build
+     * here (not in Adventure / Spectator mode, not in a protected area); once a party runs, only an operator or a
+     * Game Master (a Tokenizer Wand enchanted with Game Master in hand), so that no player changes the rules mid-game.
+     */
+    public boolean canEdit(PlayerEntity player) {
+        if (world == null || player.isSpectator() || !player.canModifyBlocks() || !world.canPlayerModifyAt(player, pos)) return false;
+        if (!partyData.isStarted()) return true;
+        return player.hasPermissionLevel(2) || fr.lordfinn.steveparty.commands.PartyCommands.holdsGameMasterWand(player);
+    }
+
+    /**
+     * Puts a catalogue in (or takes it out with an empty stack) as a slot does: nothing is given back, the caller
+     * moves the stacks.
+     */
+    public void putCatalogue(ItemStack stack) {
+        catalogue = stack;
+        markDirty();
+        if (world != null && !world.isClient && world.getBlockState(pos).getBlock() instanceof PartyController) {
+            BlockState state = world.getBlockState(pos);
+            if (state.get(PartyController.CATALOGUED) != !stack.isEmpty())
+                world.setBlockState(pos, state.with(PartyController.CATALOGUED, !stack.isEmpty()), net.minecraft.block.Block.NOTIFY_ALL);
+        }
+    }
+
+    /** The redstone power locks the catalogue in (it can't be taken out while the controller is powered). */
+    public boolean isCatalogueLocked() {
+        return world != null && world.isReceivingRedstonePower(pos);
+    }
+
+    /** The tokens that would play if a party started now: the ones bound to the start tiles around, in their order. */
+    public List<UUID> findStartTokens(ServerWorld serverWorld) {
+        List<UUID> tokens = new ArrayList<>();
+        for (BlockPos tilePos : findStartTiles(serverWorld, this.getPos())) {
+            if (!(serverWorld.getBlockEntity(tilePos) instanceof BoardSpaceBlockEntity tile)) continue;
+            String potentialUuid = tile.getActiveCartridgeItemStack().get(TB_START_BOUND_ENTITY);
+            if (potentialUuid == null) continue;
+            try {
+                UUID uuid = UUID.fromString(potentialUuid);
+                if (!tokens.contains(uuid)) tokens.add(uuid);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return tokens;
     }
 
     /**
@@ -285,19 +381,9 @@ public class PartyControllerEntity extends BlockEntity {
     }
 
     private void getTokenFromStartTiles(ServerWorld serverWorld) {
-        BlockPos pos = this.getPos();
-        List<BlockPos> startTiles = findStartTiles(serverWorld, pos);
-
+        List<UUID> tokens = findStartTokens(serverWorld);
         partyData.reset();
-
-        for (BlockPos tilePos : startTiles) {
-            BlockEntity tileEntity = serverWorld.getBlockEntity(tilePos);
-            if (tileEntity instanceof BoardSpaceBlockEntity tile) {
-                String potentialUuid = tile.getActiveCartridgeItemStack().get(TB_START_BOUND_ENTITY);
-                if (potentialUuid == null) continue;
-                partyData.addToken(UUID.fromString(potentialUuid));
-            }
-        }
+        tokens.forEach(partyData::addToken);
     }
 
     private void sendStartGameInfos() {
@@ -752,33 +838,21 @@ public class PartyControllerEntity extends BlockEntity {
         ServerPlayNetworking.send(player, payload);
     }
 
-    public void printPartyInfo(PlayerEntity player) {
-        PartyStep currentStep = partyData.getCurrentStep();
-        ServerWorld world = (ServerWorld) this.world;
-        printGameStatus((ServerPlayerEntity) player);
-        if (!getPartyData().isStarted())
-            return;
-        //Print list of player with their tokens :
-        printListOfParticipants(world, (ServerPlayerEntity) player);
-        //Print game info
-        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.game_info", partyData.getStepIndex(), partyData.getSteps().size()), MessageUtils.MessageType.CHAT);
+    // ------------------------------------------------------------------ dashboard (right click)
 
-
-        //Print current step info
-        if (currentStep != null) {
-            MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.current_step"), MessageUtils.MessageType.CHAT);
-            currentStep.printInfo((ServerPlayerEntity) player);
-        }
+    @Override
+    public BlockPosPayload getScreenOpeningData(ServerPlayerEntity player) {
+        return new BlockPosPayload(pos);
     }
 
-    private void printGameStatus(ServerPlayerEntity player) {
-        if (!this.partyData.isStarted())
-            MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.game_status_off"), MessageUtils.MessageType.CHAT);
+    @Override
+    public Text getDisplayName() {
+        return Text.translatable("block.steveparty.party_controller");
     }
 
-    public void printListOfParticipants(ServerWorld world, ServerPlayerEntity player) {
-        Text participants = partyData.getParticipantsAsString(world);
-        MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.participants", partyData.getTokens().size()).append(participants), MessageUtils.MessageType.CHAT);
+    @Override
+    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+        return new PartyControllerScreenHandler(syncId, playerInventory, this);
     }
 
     public Set<UUID> getInterestedPlayers() {

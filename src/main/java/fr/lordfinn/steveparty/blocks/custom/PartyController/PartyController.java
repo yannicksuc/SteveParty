@@ -15,8 +15,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
@@ -105,28 +103,12 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
             }
             ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
             if (success != null) return success;
-        } else {
-            PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
-            if (entity != null) {
-                if (!entity.getInterestedPlayers().contains(player.getUuid())) {
-                    world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
-                    entity.addInterestedPlayer((ServerPlayerEntity) player);
-                } else {
-                    entity.removeInterestedPlayer((ServerPlayerEntity) player);
-                    world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 1.0F, 1.0F);
-                }
-            }
-            printPartyInfo(world, pos, player);
+        } else if (world.getBlockEntity(pos) instanceof PartyControllerEntity entity) {
+            // The dashboard: the party, its players, its mini-games, its settings (and following it)
+            player.openHandledScreen(entity);
         }
 
         return ActionResult.SUCCESS;
-    }
-
-    private void printPartyInfo(World world, BlockPos pos, PlayerEntity player) {
-        PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
-        if (entity != null) {
-            entity.printPartyInfo(player);
-        }
     }
 
     @Override

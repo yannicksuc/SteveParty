@@ -1,9 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
-import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlock;
-import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
@@ -27,7 +24,6 @@ import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,12 +32,11 @@ import java.util.UUID;
 
 /**
  * The live state of a party sent to its party HUDs ({@link PartyLiveData}): the current turn (roll, steps left), and
- * the standings (names, colours, owners, goal pole points, power-ups). Each test in a batch of its own: the goal pole
- * bases count for the nearest party controller, and the mock players share one name.
+ * the standings (names, colours, owners, stars, coins, power-ups). Each test in a batch of its own: the mock players
+ * share one name.
  */
 public class PartyHudGameTests implements FabricGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 5);
-    private static final BlockPos BASE = new BlockPos(3, 1, 5);
 
     private static PigEntity spawnToken(TestContext context, BlockPos pos, UUID owner) {
         PigEntity pig = context.spawnMob(EntityType.PIG, pos);
@@ -129,20 +124,33 @@ public class PartyHudGameTests implements FabricGameTest {
     }
 
     /**
-     * The standings: the owner's points on the goal pole bases of this party, and the power-ups they hold (Double and
-     * Triple dice, forged dice; a plain die is no power-up), one stack per kind with the number held.
+     * The standings: the party's stars and coins in the owner's inventory (the items picked in the controller's
+     * settings, same components), and the power-ups they hold (Double and Triple dice, forged dice; a plain die is no
+     * power-up), one stack per kind with the number held.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_standings")
-    public void standingsCountTheGoalPolePointsAndThePowerUps(TestContext context) {
+    public void standingsCountTheStarsCoinsAndPowerUps(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         try {
             PigEntity pig = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
             PartyControllerEntity controller = startParty(context, pig.getUuid(), UUID.randomUUID());
-            context.setBlockState(BASE, ModBlocks.GOAL_POLE_BASE.getDefaultState().with(GoalPoleBaseBlock.FACING, Direction.NORTH));
-            GoalPoleNetwork.processPending();
-            GoalPoleBaseBlockEntity base = context.getBlockEntity(BASE);
-            context.assertTrue(base.linkedParty() == controller, "the base counts for this party");
-            base.credit(player.getNameForScoreboard(), 4, null);
+            player.getInventory().setStack(10, new ItemStack(Items.NETHER_STAR, 2));
+            player.getInventory().setStack(11, new ItemStack(Items.NETHER_STAR));
+            player.getInventory().setStack(12, new ItemStack(Items.GOLD_NUGGET, 20));
+            ItemStack renamed = new ItemStack(Items.GOLD_NUGGET, 5);
+            renamed.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Fake coin"));
+            player.getInventory().setStack(13, renamed);
+
+            PartyLiveData live = capture(context, controller);
+            context.assertTrue(live.starItem().isOf(Items.NETHER_STAR) && live.coinItem().isOf(Items.GOLD_NUGGET), "the default currencies, for the icons");
+            PartyLiveData.Standing standing = live.standings().getFirst();
+            context.assertEquals(standing.stars(), 3, "the nether stars held");
+            context.assertEquals(standing.coins(), 20, "the plain gold nuggets held (not the renamed ones)");
+            context.assertEquals(live.standings().get(1).stars(), 0, "an unknown owner holds nothing");
+
+            // Other items picked: the counts follow
+            controller.setCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN, renamed);
+            context.assertEquals(capture(context, controller).standings().getFirst().coins(), 5, "the renamed nuggets are the coins now");
 
             ItemStack forged = DiceFacesComponent.createDie(List.of(new ItemStack(ModItems.DICE_FACES.get(1))));
             player.getInventory().setStack(0, new ItemStack(ModItems.DOUBLE_DICE, 2));
@@ -152,9 +160,7 @@ public class PartyHudGameTests implements FabricGameTest {
             player.getInventory().setStack(6, forged);
             player.getInventory().setStack(7, new ItemStack(Items.DIAMOND, 12));
 
-            PartyLiveData.Standing standing = capture(context, controller).standings().getFirst();
-            context.assertEquals(standing.points(), 4, "the goal pole points of its owner");
-            List<ItemStack> powerUps = standing.powerUps();
+            List<ItemStack> powerUps = capture(context, controller).standings().getFirst().powerUps();
             context.assertEquals(powerUps.size(), 3, "three kinds of power-ups: " + powerUps);
             context.assertTrue(powerUps.getFirst().isOf(ModItems.DOUBLE_DICE) && powerUps.getFirst().getCount() == 3,
                     "the Double dice, counted together, first (the most numerous)");
@@ -162,7 +168,6 @@ public class PartyHudGameTests implements FabricGameTest {
             context.assertTrue(powerUps.stream().anyMatch(stack -> ItemStack.areItemsAndComponentsEqual(stack, forged)), "the forged die");
             context.assertTrue(!PartyLiveData.isPowerUp(new ItemStack(ModItems.DEFAULT_DICE)), "a plain die is no power-up");
 
-            context.setBlockState(BASE, Blocks.AIR);
             context.setBlockState(CONTROLLER, Blocks.AIR);
             context.complete();
         } finally {
@@ -170,14 +175,15 @@ public class PartyHudGameTests implements FabricGameTest {
         }
     }
 
-    /** Ranks: the most points first, equal points share their rank. */
+    /** Ranks: the most stars first, the most coins between equal stars; the same stars and coins share their rank. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void ranksShareTies(TestContext context) {
+    public void ranksByStarsThenCoinsAndShareTies(TestContext context) {
         List<PartyLiveData.Standing> standings = new ArrayList<>();
-        for (int points : new int[]{3, 5, 3, 0})
-            standings.add(new PartyLiveData.Standing(UUID.randomUUID(), "", Optional.empty(), "", -1, true, points, List.of()));
+        int[][] held = {{3, 10}, {5, 0}, {3, 10}, {0, 50}, {3, 12}};
+        for (int[] starsCoins : held)
+            standings.add(new PartyLiveData.Standing(UUID.randomUUID(), "", Optional.empty(), "", -1, true, starsCoins[0], starsCoins[1], List.of()));
         int[] ranks = PartyLiveData.ranks(standings);
-        context.assertTrue(java.util.Arrays.equals(ranks, new int[]{2, 1, 2, 4}), "ranks " + java.util.Arrays.toString(ranks));
+        context.assertTrue(java.util.Arrays.equals(ranks, new int[]{3, 1, 3, 5, 2}), "ranks " + java.util.Arrays.toString(ranks));
         context.complete();
     }
 

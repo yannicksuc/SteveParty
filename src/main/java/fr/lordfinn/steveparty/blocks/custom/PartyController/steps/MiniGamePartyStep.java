@@ -45,6 +45,8 @@ public class MiniGamePartyStep extends PartyStep {
      * « Here we come » book and the index of the condition he fills. No initializer, see above.
      */
     private Map<UUID, Destination> destinations;
+    /** The catalogue slot of the page the roulette chose, plus one (0: none yet). No initializer, see above. */
+    private int chosenPageSlot;
 
     /** A place taken by a player in the current mini-game: condition {@code targetIndex} of the book on {@code pad}. */
     public record Destination(BlockPos pad, int targetIndex) {}
@@ -70,6 +72,7 @@ public class MiniGamePartyStep extends PartyStep {
         super.start(partyControllerEntity);
         cancelRoulette();
         miniGameChosen = false;
+        chosenPageSlot = 0;
         destinations.clear();
 
         // Step 1: Ensure the world is a ServerWorld
@@ -142,6 +145,11 @@ public class MiniGamePartyStep extends PartyStep {
     /** @return true once the roulette chose the mini-game (the « Here we go » books can send players to it). */
     public boolean isMiniGameChosen() {
         return miniGameChosen;
+    }
+
+    /** @return the catalogue slot of the page the roulette chose for this mini-game, -1 before it chose (or if unknown). */
+    public int getChosenPageSlot() {
+        return chosenPageSlot - 1;
     }
 
     /** Places taken by the players in the current mini-game (live view). */
@@ -221,6 +229,14 @@ public class MiniGamePartyStep extends PartyStep {
         // Store the final selection
         MiniGamesCatalogueItem.setCurrentMiniGamePage(partyControllerEntity.catalogue, chosenMiniGame);
         miniGameChosen = true;
+        List<ItemStack> pages = MiniGamesCatalogueItem.getStoredPages(partyControllerEntity.catalogue);
+        chosenPageSlot = 0;
+        for (int slot = 0; slot < pages.size(); slot++) {
+            if (ItemStack.areEqual(pages.get(slot), chosenMiniGame)) {
+                chosenPageSlot = slot + 1;
+                break;
+            }
+        }
         partyControllerEntity.markDirty();
 
         // Play a celebratory sound for selection
@@ -358,6 +374,7 @@ public class MiniGamePartyStep extends PartyStep {
     public void fromNbt(NbtCompound nbt) {
         super.fromNbt(nbt);
         this.miniGameChosen = nbt.getBoolean("MiniGameChosen");
+        this.chosenPageSlot = nbt.contains("ChosenPage") ? nbt.getInt("ChosenPage") + 1 : 0;
         if (destinations == null)
             destinations = new HashMap<>();
         destinations.clear();
@@ -392,6 +409,8 @@ public class MiniGamePartyStep extends PartyStep {
             nbtCompound.put("Tokens", tokensNbtList);
         if (miniGameChosen)
             nbtCompound.putBoolean("MiniGameChosen", true);
+        if (chosenPageSlot > 0)
+            nbtCompound.putInt("ChosenPage", chosenPageSlot - 1);
         if (destinations != null && !destinations.isEmpty()) {
             NbtList destinationsNbt = new NbtList();
             destinations.forEach((player, destination) -> {

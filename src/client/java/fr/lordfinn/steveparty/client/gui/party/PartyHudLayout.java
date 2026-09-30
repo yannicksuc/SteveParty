@@ -59,7 +59,7 @@ public final class PartyHudLayout {
     public enum Hud {
         /** The turn bar at the top: round, turn order, what is happening. */
         TURN_BAR(Anchor.TOP, 0, MARGIN),
-        /** The standings: rank, points and power-ups of each player. */
+        /** The standings: rank, stars, coins and power-ups of each player. */
         STANDINGS(Anchor.TOP_LEFT, MARGIN, MARGIN);
 
         final Anchor defaultAnchor;

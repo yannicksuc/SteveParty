@@ -4,16 +4,12 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepFactory;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -240,46 +236,5 @@ public class PartyData {
             }
         });
         return tokensWithOwners;
-    }
-
-    public Map<TokenizedEntityInterface, PlayerEntity> getAllTokensWithOwners(ServerWorld world) {
-        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = new HashMap<>();
-        getTokens().forEach(tokenUUID -> {
-            if (world.getEntity(tokenUUID) instanceof TokenizedEntityInterface token) {
-                UUID ownerUUID = token.steveparty$getTokenOwner();
-                if (world.getEntity(ownerUUID) instanceof PlayerEntity player) {
-                    tokensWithOwners.put(token, player);
-                } else {
-                    tokensWithOwners.put(token, null);
-                }
-            }
-        });
-        return tokensWithOwners;
-    }
-
-    public Text getParticipantsAsString(ServerWorld world) {
-        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = getAllTokensWithOwners(world);
-
-        MutableText result = Text.empty();
-        Iterator<Map.Entry<TokenizedEntityInterface, PlayerEntity>> iterator = tokensWithOwners.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<TokenizedEntityInterface, PlayerEntity> entry = iterator.next();
-            Text name = entry.getValue() != null
-                    ? entry.getValue().getName()
-                    : Text.translatable("message.steveparty.disconnected_player").styled(style -> style.withColor(Formatting.GRAY));
-            MutableText participantText = Text.translatable(
-                    "message.steveparty.played_by",
-                    ((Entity) entry.getKey()).getCustomName(),
-                    name
-            );
-
-            result.append(participantText);
-            if (iterator.hasNext()) {
-                result.append(Text.literal(", "));
-            }
-        }
-
-        return result;
     }
 }
