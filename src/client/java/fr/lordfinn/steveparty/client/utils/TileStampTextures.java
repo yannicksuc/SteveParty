@@ -279,54 +279,55 @@ public final class TileStampTextures {
 
     // ---------------------------------------------------------------- the Teleport face
 
-    /** The cyan heart of the warp swirl (and of the teleport sparkles). */
-    private static final int TELEPORT_CYAN = 0x5FE6FF;
+    /** A warp pipe seen from the side (rim over its body), '#' in the darkest shade, 'o' its light highlight. */
+    private static final String[] PIPE = {
+            "##############",
+            "#oo###########",
+            "#oo###########",
+            "##############",
+            "..#oo#######..",
+            "..#oo#######..",
+            "..#oo#######..",
+            "..#oo#######..",
+            "..#oo#######..",
+            "..#oo#######..",
+            "..#oo#######..",
+            "..#oo#######..",
+            "..##########.."};
+    private static final String[] SMALL_PIPE = {
+            "##########",
+            "#o########",
+            "##########",
+            ".#o######.",
+            ".#o######.",
+            ".#o######.",
+            ".#o######.",
+            ".#o######.",
+            ".########."};
+    /** The pipe's highlight: a light shade of the colour. */
+    private static final float PIPE_HIGHLIGHT = -0.5f;
 
     /**
-     * The Teleport tile's face: a warp swirl (two light arms turning into a cyan and white heart, a dark rim) on the blank
-     * tile face (its rounded bevel), all in the ramp of {@code rgb} (purple by default, a dye changes it); four little
-     * sparkles in the corners of the 32x32 face.
+     * The Teleport tile's face: a warp pipe on the blank tile face (its rounded bevel), all in the ramp of {@code rgb}
+     * (violet by default, a dye changes it): the pipe in the darkest shade with a light highlight down its rim and body.
      */
     public static Identifier teleportFace(int rgb, boolean small) {
         return TEXTURES.computeIfAbsent(new Key("teleport", rgb, small), key -> {
             int side = small ? SMALL_SIDE : SIDE;
-            float[] frame = frame(small);
-            int[] argb = new int[side * side];
-            Map<Float, Integer> shades = new HashMap<>();
-            for (int i = 0; i < argb.length; i++) {
-                if (!Float.isNaN(frame[i])) argb[i] = 0xFF000000 | shades.computeIfAbsent(frame[i], v -> TileColors.shade(rgb, v));
-            }
-            double centre = (side - 1) / 2.0, radius = small ? 6.6 : 11.0;
-            double coreWhite = small ? 1.0 : 1.6, coreCyan = small ? 1.9 : 2.9;
-            int rim = 0xFF000000 | TileColors.shade(rgb, FEATURE), dark = 0xFF000000 | TileColors.shade(rgb, 0.42f);
-            int light = 0xFF000000 | TileColors.shade(rgb, -0.5f), cyan = 0xFF000000 | TileColors.shade(TELEPORT_CYAN, -0.3f);
-            int paleCyan = 0xFF000000 | TileColors.shade(TELEPORT_CYAN, -0.4f);
-            for (int x = 0; x < side; x++) {
-                for (int y = 0; y < side; y++) {
-                    double dx = x - centre, dy = y - centre, d = Math.sqrt(dx * dx + dy * dy);
-                    if (d > radius) continue;
-                    int colour;
-                    if (d > radius - 1.2) colour = rim;
-                    else if (d < coreWhite) colour = 0xFFFFFFFF;
-                    else if (d < coreCyan) colour = paleCyan;
-                    else {
-                        // Two arms winding in: the spiral coordinate grows with the angle and the distance
-                        double u = Math.atan2(dy, dx) / (2 * Math.PI) * 2 + d / radius * 1.25;
-                        boolean arm = u - Math.floor(u) < 0.45;
-                        colour = !arm ? dark : d < radius * 0.42 ? cyan : light;
-                    }
-                    argb[y * side + x] = colour;
+            float[] values = frame(small).clone();
+            String[] pipe = small ? SMALL_PIPE : PIPE;
+            boolean dark = TileColors.isDark(rgb);
+            float ink = dark ? LIGHT_INK : FEATURE, highlight = dark ? FEATURE : PIPE_HIGHLIGHT;
+            // Centred on the flat middle of the face (inside the bevel)
+            int left = (side - pipe[0].length()) / 2, top = small ? 3 : 9;
+            for (int row = 0; row < pipe.length; row++) {
+                for (int col = 0; col < pipe[row].length(); col++) {
+                    char c = pipe[row].charAt(col);
+                    if (c == '#') values[(top + row) * side + left + col] = ink;
+                    else if (c == 'o') values[(top + row) * side + left + col] = highlight;
                 }
             }
-            if (!small) {
-                for (int[] star : new int[][]{{6, 6}, {25, 7}, {6, 25}, {25, 24}}) {
-                    argb[star[1] * side + star[0]] = 0xFFFFFFFF;
-                    for (int[] o : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-                        argb[(star[1] + o[1]) * side + star[0] + o[0]] = paleCyan;
-                    }
-                }
-            }
-            return register(argb, side);
+            return register(values, rgb, small);
         });
     }
 
