@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.entities.custom.BoxedTraderBoxes;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
+import fr.lordfinn.steveparty.items.custom.BoxCostumeBlock;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -364,6 +365,97 @@ public class BoxedTraderGameTests implements FabricGameTest {
             context.assertFalse(worn.isEmpty(), "right click puts it on");
             context.assertTrue(BoxCostumeItem.getBlock(worn).isOf(Blocks.OAK_PLANKS), "keeps its block");
         });
+    }
+
+    /** A survival player hidden in a Box Costume, on the ground at this place of the test structure. */
+    private static ServerPlayerEntity hiddenPlayerAt(TestContext context, Vec3d relative) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        player.changeGameMode(GameMode.SURVIVAL);
+        Vec3d pos = context.getAbsolute(relative);
+        player.setPosition(pos);
+        player.setOnGround(true);
+        player.equipStack(EquipmentSlot.CHEST, BoxCostumeItem.create(Blocks.GOLD_BLOCK.getDefaultState()));
+        player.setSneaking(true);
+        return player;
+    }
+
+    private static void costumeTicks(ServerPlayerEntity player, int ticks) {
+        for (int i = 0; i < ticks; i++) BoxCostumeBlock.tick(player, true);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void aHiddenPlayerWhoStopsBecomesABlockOfTheGrid(TestContext context) {
+        floor(context);
+        ServerPlayerEntity player = hiddenPlayerAt(context, new Vec3d(3.3, 1, 2.8));
+        Vec3d start = player.getPos();
+        Vec3d centre = context.getAbsolute(new Vec3d(3.5, 1, 2.5));
+        try {
+            costumeTicks(player, BoxCostumeBlock.STILL_TICKS - 2);
+            context.assertTrue(player.getPos().equals(start), "not pushed before 2 s");
+            context.assertFalse(BoxCostumeBlock.isBlockAligned(player), "nor a block off the grid");
+            // He walks a little: the wait starts again
+            player.setPosition(start.add(0.05, 0, 0));
+            costumeTicks(player, BoxCostumeBlock.STILL_TICKS - 2);
+            context.assertTrue(player.getPos().equals(start.add(0.05, 0, 0)), "moving restarts the 2 s");
+            costumeTicks(player, 40);
+            context.assertTrue(player.getPos().squaredDistanceTo(centre) < 1e-12, "pushed to the centre of his cell: " + player.getPos() + " / " + centre);
+            context.assertTrue(BoxCostumeBlock.isBlockAligned(player), "a block of the grid");
+            net.minecraft.util.math.Box cube = new net.minecraft.util.math.Box(BlockPos.ofFloored(centre));
+            context.assertTrue(player.getBoundingBox().equals(cube), "his box is the cell's cube: " + player.getBoundingBox());
+            context.assertTrue(player.isCollidable() && !player.isPushable(), "a hard obstacle, not pushed");
+        } catch (RuntimeException e) {
+            disconnect(context, player);
+            throw e;
+        }
+        // Something dropped on him lands on the cube
+        ArmorStandEntity stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, new Vec3d(3.5, 3, 2.5));
+        context.waitAndRun(30, () -> {
+            try {
+                context.assertTrue(Math.abs(stand.getY() - (centre.y + 1)) < 0.01, "the armour stand stands on him: y " + stand.getY() + ", his feet " + centre.y);
+                // He stands up: an ordinary player again
+                player.setSneaking(false);
+                costumeTicks(player, 1);
+                context.assertFalse(BoxCostumeBlock.isBlockAligned(player), "standing: no longer a block");
+                context.assertTrue(Math.abs(player.getBoundingBox().getLengthX() - 0.6) < 1e-4 && !player.isCollidable(), "his usual size, no obstacle");
+            } catch (RuntimeException e) {
+                disconnect(context, player);
+                throw e;
+            }
+            context.waitAndRun(30, () -> checks(context, player,
+                    () -> context.assertTrue(Math.abs(stand.getY() - centre.y) < 0.01, "the armour stand fell to the ground: y " + stand.getY())));
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aHiddenPlayerOffTheGridOrOnABadCellIsNoBlock(TestContext context) {
+        floor(context);
+        // In water
+        context.setBlockState(new BlockPos(5, 1, 5), Blocks.WATER);
+        ServerPlayerEntity wet = hiddenPlayerAt(context, new Vec3d(5.3, 1, 5.3));
+        // On a slab: not on the full top face of a block
+        context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE_SLAB);
+        ServerPlayerEntity onSlab = hiddenPlayerAt(context, new Vec3d(1.3, 1.5, 1.3));
+        // A fence post in the cell
+        context.setBlockState(new BlockPos(1, 1, 5), Blocks.OAK_FENCE);
+        ServerPlayerEntity fenced = hiddenPlayerAt(context, new Vec3d(1.9, 1, 5.9));
+        // In the air (jumping as a block)
+        ServerPlayerEntity jumping = hiddenPlayerAt(context, new Vec3d(3.3, 1, 3.3));
+        jumping.setOnGround(false);
+        // On a good cell but not sneaking
+        ServerPlayerEntity standing = hiddenPlayerAt(context, new Vec3d(5.3, 1, 1.3));
+        standing.setSneaking(false);
+        List<ServerPlayerEntity> players = List.of(wet, onSlab, fenced, jumping, standing);
+        try {
+            for (ServerPlayerEntity player : players) {
+                Vec3d start = player.getPos();
+                costumeTicks(player, BoxCostumeBlock.STILL_TICKS * 3);
+                context.assertTrue(player.getPos().equals(start), "not pushed: " + start + " -> " + player.getPos());
+                context.assertFalse(BoxCostumeBlock.isBlockAligned(player) || player.isCollidable(), "not a block at " + start);
+            }
+        } finally {
+            players.forEach(player -> disconnect(context, player));
+        }
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
