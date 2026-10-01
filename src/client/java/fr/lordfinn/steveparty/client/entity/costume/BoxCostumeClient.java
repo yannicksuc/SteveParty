@@ -128,6 +128,7 @@ public final class BoxCostumeClient {
                 BOXES.put(player, box);
             }
             box.block = BoxCostumeItem.getBlock(costume);
+            box.pos = player.getBlockPos();
             if (hidden != box.hidden) {
                 box.hidden = hidden;
                 box.hiddenTicks = 0;

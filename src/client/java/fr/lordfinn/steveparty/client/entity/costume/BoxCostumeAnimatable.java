@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.client.entity.costume;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceCache;
@@ -42,11 +44,19 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
     int closeSoundTicks = -1, placeSoundTicks = -1, openSoundTicks = -1;
     int walkSwitchTicks = 0;
     BlockState block = Blocks.GOLD_BLOCK.getDefaultState();
+    @Nullable
+    BlockPos pos = null;
     /** As last drawn: how far up the wearer's body the box is (0 on the ground, 1 worn) and how open its arm holes are (0-1). */
     float lift = 1.0F, armHole = 1.0F;
 
     public BlockState getBlock() {
         return block;
+    }
+
+    /** @return where the wearer is (biome tints of the box), null for the item icon. */
+    @Nullable
+    public BlockPos getPos() {
+        return pos;
     }
 
     public boolean isHidden() {

@@ -52,7 +52,7 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
             public void renderForBone(MatrixStack poseStack, BoxCostumeAnimatable animatable, GeoBone bone, RenderLayer renderType,
                                       VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight,
                                       int packedOverlay, int renderColor) {
-                boxBones.renderBone(poseStack, bone, bufferSource, packedLight, renderColor, animatable.getBlock());
+                boxBones.renderBone(poseStack, bone, bufferSource, packedLight, renderColor, animatable.getBlock(), animatable.getPos());
             }
         });
     }
