@@ -30,6 +30,9 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
     private static final Set<String> MERCHANT_BONES = Set.of("head", "right_arm", "left_arm", "right_left", "left_leg", "peek_eyes");
     private static final String BODY_BONE = "body", BOX_BONE = "cube_box";
     private static final String ARM_HOLE_BONE = "arm_hole_right";
+    private static final String FLAP_BONE_PREFIX = "cube_flap";
+    /** Flaps of the item icon: 115 degrees from closed (the merchant's hang at 200). */
+    private static final float ICON_FLAP_ANGLE = (float) Math.toRadians(115.0);
     /** The merchant lifts his box by 4 px when he is out. */
     public static final float MERCHANT_LIFT = 4.0F;
     /**
@@ -49,7 +52,7 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
             public void renderForBone(MatrixStack poseStack, BoxCostumeAnimatable animatable, GeoBone bone, RenderLayer renderType,
                                       VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight,
                                       int packedOverlay, int renderColor) {
-                boxBones.renderBone(poseStack, bone, bufferSource, packedLight, renderColor, animatable.getBlock());
+                boxBones.renderBone(poseStack, bone, bufferSource, packedLight, renderColor, animatable.getBlock(), animatable.getPos());
             }
         });
     }
@@ -75,6 +78,17 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
                                   VertexConsumerProvider bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick,
                                   int packedLight, int packedOverlay, int renderColor) {
         if (MERCHANT_BONES.contains(bone.getName())) return;
+        if (waistFit <= 0.0F && bone.getName().startsWith(FLAP_BONE_PREFIX)) {
+            // The item icon: flaps standing open instead of hanging wide, so the whole box fits a slot
+            float rotX = bone.getRotX(), rotZ = bone.getRotZ();
+            if (rotX != 0.0F) bone.setRotX(Math.copySign(ICON_FLAP_ANGLE, rotX));
+            if (rotZ != 0.0F) bone.setRotZ(Math.copySign(ICON_FLAP_ANGLE, rotZ));
+            super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender, partialTick, packedLight,
+                    packedOverlay, renderColor);
+            bone.setRotX(rotX);
+            bone.setRotZ(rotZ);
+            return;
+        }
         if (!BOX_BONE.equals(bone.getName()) || waistFit <= 0.0F) {
             super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender, partialTick, packedLight,
                     packedOverlay, renderColor);

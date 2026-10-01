@@ -27,6 +27,6 @@ public class HidingTraderEntityRenderLayer extends GeoRenderLayer<HidingTraderEn
         // scale), children bones get their own call: applying the bone transform again here would double the
         // flap rotations and every animated offset of the box.
         boxBones.renderBone(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(),
-                animatable.isBoxGlitched() ? null : animatable.getBlockState());
+                animatable.isBoxGlitched() ? null : animatable.getBlockState(), animatable.getBlockPos());
     }
 }

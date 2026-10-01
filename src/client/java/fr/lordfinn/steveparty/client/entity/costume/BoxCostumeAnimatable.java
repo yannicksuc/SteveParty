@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.client.entity.costume;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceCache;
@@ -13,18 +15,21 @@ import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.RenderUtil;
 
 /**
- * Client: the animated box of one Box Costume wearer (or of the item icon), played with the Hiding Trader's own
- * animations: "closed" when the wearer hides (the box drops to the ground and closes, then "hidden" holds it), a quick
- * pop straight back up when they come out, into "walk" or "idle" (the box up to the chin). Only the box bones are drawn.
+ * Client: the animated box of one Box Costume wearer (or of the item icon), on the Hiding Trader's model: its own
+ * "costume_close" when the wearer hides (one continuous motion: the box drops at once, the flaps fold over it, then it
+ * holds as a block), "costume_open" when they stand up (flaps flipping open, the box rising straight back), then the
+ * merchant's "walk" or "idle" (the box up to the chin). Only the box bones are drawn; the wearer's body follows the
+ * box's height (see BoxCostumeClient#bodySquash).
  */
 public class BoxCostumeAnimatable implements GeoAnimatable {
     static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("walk");
-    static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
+    static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("costume_close");
+    static final RawAnimation OPEN_ANIM = RawAnimation.begin().thenPlay("costume_open");
     static final RawAnimation HIDDEN_ANIM = RawAnimation.begin().thenPlayAndHold("hidden");
 
-    /** Ticks the box takes to pop up to the wearer's chin, flaps flipping open, when he comes out. */
-    static final int POP_TICKS = 4;
+    /** Short blend between animations: hiding and standing up start at once. */
+    static final int TRANSITION_TICKS = 2;
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     /** Hiding in the box (sneaking with the costume on). */
@@ -39,11 +44,19 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
     int closeSoundTicks = -1, placeSoundTicks = -1, openSoundTicks = -1;
     int walkSwitchTicks = 0;
     BlockState block = Blocks.GOLD_BLOCK.getDefaultState();
+    @Nullable
+    BlockPos pos = null;
     /** As last drawn: how far up the wearer's body the box is (0 on the ground, 1 worn) and how open its arm holes are (0-1). */
     float lift = 1.0F, armHole = 1.0F;
 
     public BlockState getBlock() {
         return block;
+    }
+
+    /** @return where the wearer is (biome tints of the box), null for the item icon. */
+    @Nullable
+    public BlockPos getPos() {
+        return pos;
     }
 
     public boolean isHidden() {
@@ -60,7 +73,7 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "Box", POP_TICKS, this::animate));
+        controllers.add(new AnimationController<>(this, "Box", TRANSITION_TICKS, this::animate));
     }
 
     private PlayState animate(AnimationState<BoxCostumeAnimatable> event) {
@@ -71,8 +84,11 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
             // Already hidden when first seen: closed at once, without the closing
             return event.setAndContinue(current == null ? HIDDEN_ANIM : CLOSED_ANIM);
         }
-        // Coming out: no "open" (the merchant's box stays 0.85 s on the ground before it rises, the wearer's torso would
-        // show above it): the controller's short transition pops the box straight up, flaps flipping open
+        if (current == null) return event.setAndContinue(walking ? WALK_ANIM : IDLE_ANIM);
+        // Standing up, then walk / idle: chained here rather than queued (see HidingTraderEntity#idleAnimController)
+        if (current == CLOSED_ANIM || current == HIDDEN_ANIM || (current == OPEN_ANIM && !controller.hasAnimationFinished())) {
+            return event.setAndContinue(OPEN_ANIM);
+        }
         return event.setAndContinue(walking ? WALK_ANIM : IDLE_ANIM);
     }
 

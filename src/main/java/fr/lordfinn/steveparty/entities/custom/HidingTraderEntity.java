@@ -36,6 +36,7 @@ import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -64,6 +65,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.MerchantInventory;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
+import net.minecraft.world.EmptyBlockView;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -580,6 +582,11 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             if (!this.getWorld().isClient) giveBandana(player, held);
             return ActionResult.SUCCESS;
         }
+        // A block in hand for a merchant whose box lost its look: his new box, shop or not
+        if (isBoxGlitched() && !hidden && boxBlockOf(held) != null) {
+            if (!this.getWorld().isClient) giveBoxBlock(player, held);
+            return ActionResult.SUCCESS;
+        }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity) {
             // One customer at a time: never rebuild the offers under another player's screen
             if (isBusyFor(player)) {
@@ -1032,6 +1039,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public @Nullable EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
         if (getBandanaColor() < 0) rollBandanaColor();
+        // From his spawn egg: a random box (see HidingTraderBoxes)
+        if (spawnReason == SpawnReason.SPAWN_ITEM_USE || spawnReason == SpawnReason.DISPENSER) {
+            setBlockState(HidingTraderBoxes.pick(this.random));
+        }
         return super.initialize(world, difficulty, spawnReason, entityData);
     }
 
@@ -1068,9 +1079,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     /**
-     * Closed as a block when no player is within {@link #OPEN_RANGE} (spectators and sneaking players don't count;
-     * a Bandana wearer makes him come out even while sneaking, he just ignores him), when leashed, or for a while after
-     * his bandana was stolen.
+     * Closed as a block when no player is within {@link #OPEN_RANGE} (spectators, sneaking players and Box Costume
+     * wearers don't count; a Bandana wearer makes him come out even while sneaking, he just ignores him), when leashed,
+     * or for a while after a theft.
      */
     private boolean computeHiding() {
         // A board token is a still pawn: out of his box, whoever is around
@@ -1081,9 +1092,12 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 entity -> entity instanceof PlayerEntity player && drawsHimOut(player)) == null;
     }
 
-    /** Whether this player, within {@link #OPEN_RANGE}, makes him come out: not a spectator, and not sneaking unless he wears a Bandana. */
+    /**
+     * Whether this player, within {@link #OPEN_RANGE}, makes him come out: not a spectator, not in a Box Costume, and
+     * not sneaking unless he wears a Bandana.
+     */
     public static boolean drawsHimOut(PlayerEntity player) {
-        return !player.isSpectator() && (!player.isSneaking() || wearsBandana(player));
+        return !player.isSpectator() && !wearsBoxCostume(player) && (!player.isSneaking() || wearsBandana(player));
     }
 
     /** @return whether he is closed as a block (state of the last tick). */
@@ -1106,11 +1120,19 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     /**
      * Players the merchant pays attention to (looks at, waves at, is happy to see, peeks at): not spectators, and not
-     * players wearing a Bandana on their head, he simply doesn't care about them. They still make him come out and can
-     * still trade.
+     * players wearing a Bandana on their head, he simply doesn't care about them (they still make him come out), nor
+     * players in a Box Costume (see {@link #wearsBoxCostume}). All can still trade.
      */
     public static boolean isAttentionTarget(@Nullable PlayerEntity player) {
-        return player != null && !player.isSpectator() && !wearsBandana(player);
+        return player != null && !player.isSpectator() && !wearsBandana(player) && !wearsBoxCostume(player);
+    }
+
+    /**
+     * A player in a Box Costume (hidden in it or not) is one of his kind to him: he doesn't notice him at all, neither
+     * comes out for him nor looks at him.
+     */
+    public static boolean wearsBoxCostume(PlayerEntity player) {
+        return !BoxCostumeItem.getWorn(player).isEmpty();
     }
 
     public static boolean wearsBandana(PlayerEntity player) {
@@ -1256,16 +1278,40 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         nextFunAge = this.age + SHOCK_TICKS + THEFT_HIDE_TICKS;
     }
 
-    /** A Box Costume on a merchant whose box lost its look: his box takes the costume's block, the item is used up, he is delighted. */
-    private void giveBox(PlayerEntity player, ItemStack costume) {
-        setBlockState(BoxCostumeItem.getBlock(costume));
+    /**
+     * @return the box a held item would give him: the default state of its block, if it is a full block that can be a
+     * box (see {@link #isValidBoxBlock}); null for anything else
+     */
+    @Nullable
+    public static BlockState boxBlockOf(ItemStack stack) {
+        if (!(stack.getItem() instanceof BlockItem blockItem)) return null;
+        BlockState state = blockItem.getBlock().getDefaultState();
+        return isValidBoxBlock(state) && state.isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN) ? state : null;
+    }
+
+    /** A block on a merchant whose box lost its look: it becomes his box, one is used up, he is delighted. */
+    private void giveBoxBlock(PlayerEntity player, ItemStack block) {
+        BlockState state = boxBlockOf(block);
+        if (state == null) return;
+        setBlockState(state);
+        block.decrementUnlessCreative(1, player);
+        boxRestored();
+    }
+
+    private void boxRestored() {
         setBoxGlitched(false);
-        costume.decrementUnlessCreative(1, player);
         this.getWorld().playSoundFromEntity(null, this, blockState.getSoundGroup().getPlaceSound(), SoundCategory.NEUTRAL, 1.0F, 1.0F);
         this.getNavigation().stop();
         triggerAnim(IDLE_CONTROLLER, GIVE_BACK_ANIM);
         funBusyUntil = this.age + FUN_BUSY_TICKS;
         nextFunAge = Math.max(nextFunAge, this.age + OPEN_FUN_MIN_TICKS);
+    }
+
+    /** A Box Costume on a merchant whose box lost its look: his box takes the costume's block, the item is used up, he is delighted. */
+    private void giveBox(PlayerEntity player, ItemStack costume) {
+        setBlockState(BoxCostumeItem.getBlock(costume));
+        costume.decrementUnlessCreative(1, player);
+        boxRestored();
     }
 
     /** A Bandana on a bald merchant: he puts it on (its colour becomes his), the item is used up, he is delighted. */
