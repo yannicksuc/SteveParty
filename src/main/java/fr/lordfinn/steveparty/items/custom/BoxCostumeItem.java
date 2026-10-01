@@ -34,8 +34,11 @@ public class BoxCostumeItem extends Item {
     /** Monsters notice a player hidden in the box from this fraction of their usual range (2 blocks at least). */
     public static final double HIDDEN_DETECTION_FACTOR = 0.1;
 
+    /** The look of a costume that wasn't taken from a merchant (creative tab, /give) or whose block can't be a box: a beehive. */
+    public static final BlockState DEFAULT_BLOCK = Blocks.BEEHIVE.getDefaultState();
+
     public BoxCostumeItem(Settings settings) {
-        super(settings.component(ModComponents.BOX_BLOCK, Blocks.GOLD_BLOCK.getDefaultState())
+        super(settings.component(ModComponents.BOX_BLOCK, DEFAULT_BLOCK)
                 .component(DataComponentTypes.EQUIPPABLE, EquippableComponent.builder(EquipmentSlot.CHEST)
                         .equipSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER)
                         .build()));
@@ -47,10 +50,10 @@ public class BoxCostumeItem extends Item {
         return stack;
     }
 
-    /** The block the box looks like (gold, the merchant's default, if the stored one can't be a box). */
+    /** The block the box looks like ({@link #DEFAULT_BLOCK} if the stored one can't be a box). */
     public static BlockState getBlock(ItemStack stack) {
         BlockState block = stack.get(ModComponents.BOX_BLOCK);
-        return HidingTraderEntity.isValidBoxBlock(block) ? block : Blocks.GOLD_BLOCK.getDefaultState();
+        return HidingTraderEntity.isValidBoxBlock(block) ? block : DEFAULT_BLOCK;
     }
 
     public static boolean isBoxCostume(ItemStack stack) {

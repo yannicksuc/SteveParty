@@ -173,7 +173,7 @@ public class ModItems {
             for (int color = 0; color < BandanaItem.COLOR_NAMES.length; color++) {
                 itemGroup.add(BandanaItem.create(color));
             }
-            itemGroup.add(fr.lordfinn.steveparty.items.custom.BoxCostumeItem.create(net.minecraft.block.Blocks.GOLD_BLOCK.getDefaultState()));
+            itemGroup.add(new ItemStack(BOX_COSTUME));
             // Every tile in its 3 sizes
             for (net.minecraft.item.ItemConvertible tile : List.of(TILE, ADVANCED_TILE)) {
                 for (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize size : fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.values()) {

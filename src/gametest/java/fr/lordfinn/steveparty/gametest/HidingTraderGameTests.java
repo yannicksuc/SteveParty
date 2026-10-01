@@ -316,7 +316,8 @@ public class HidingTraderGameTests implements FabricGameTest {
         HidingTraderEntity loaded = ModEntities.HIDING_TRADER_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
         loaded.readNbt(saved);
         context.assertTrue(loaded.getBlockState().isOf(Blocks.GOLD_BLOCK), "air from NBT refused");
-        context.assertTrue(BoxCostumeItem.getBlock(BoxCostumeItem.create(Blocks.AIR.getDefaultState())).isOf(Blocks.GOLD_BLOCK), "costume of air: gold");
+        context.assertTrue(BoxCostumeItem.getBlock(BoxCostumeItem.create(Blocks.AIR.getDefaultState())).isOf(Blocks.BEEHIVE), "costume of air: its default beehive");
+        context.assertTrue(BoxCostumeItem.getBlock(new ItemStack(ModItems.BOX_COSTUME)).isOf(Blocks.BEEHIVE), "plain costume: a beehive");
         context.complete();
     }
 
