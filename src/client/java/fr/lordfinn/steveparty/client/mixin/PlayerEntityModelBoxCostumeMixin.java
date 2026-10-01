@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.mixin;
 
 import fr.lordfinn.steveparty.client.access.BoxCostumeRenderState;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeAnimatable;
+import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeClient;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeRenderer;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
@@ -59,7 +60,10 @@ public class PlayerEntityModelBoxCostumeMixin {
         PlayerEntityModel model = (PlayerEntityModel) (Object) this;
         float lift = box.getLift();
         // Where the box's arm holes are now, in the player model's space (origin 24 px above the feet, y down)
-        float holeY = STEVEPARTY$FEET_Y - (STEVEPARTY$HOLE_HEIGHT + (BoxCostumeRenderer.MERCHANT_LIFT + BoxCostumeRenderer.WAIST_LIFT) * lift) * STEVEPARTY$MODEL_PX;
+        // (the body is squashed from the feet while the box drops or rises: heights are divided by that squash)
+        float squash = BoxCostumeClient.bodySquash(lift);
+        float holeY = STEVEPARTY$FEET_Y - (STEVEPARTY$HOLE_HEIGHT + (BoxCostumeRenderer.MERCHANT_LIFT + BoxCostumeRenderer.WAIST_LIFT) * lift)
+                * STEVEPARTY$MODEL_PX / squash;
         float wallX = STEVEPARTY$WALL * (1.0F + BoxCostumeRenderer.WAIST_WIDENING * lift) * STEVEPARTY$MODEL_PX;
         // The two arms sway out of step, like his
         float out = STEVEPARTY$ARM_OUT + MathHelper.sin(state.age * STEVEPARTY$ARM_SWAY_SPEED) * STEVEPARTY$ARM_SWAY;

@@ -20,5 +20,7 @@ public class PlayerEntityRendererBoxCostumeMixin {
     private void steveparty$boxCostume(AbstractClientPlayerEntity player, PlayerEntityRenderState state, float tickDelta, CallbackInfo ci) {
         BoxCostumeAnimatable box = BoxCostumeClient.boxOf(player);
         ((BoxCostumeRenderState) state).steveparty$setBoxCostume(box, BoxCostumeClient.isInsideBox(box));
+        // Hiding in the box: no name tag at all (nor the score under it), from the first tick, for anyone
+        if (box != null && box.isHidden()) state.displayName = null;
     }
 }

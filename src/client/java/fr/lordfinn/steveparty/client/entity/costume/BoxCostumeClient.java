@@ -38,10 +38,12 @@ import java.util.WeakHashMap;
 public final class BoxCostumeClient {
     /** The merchant ducks into his box in 0.3 s ("closed"): the wearer disappears inside it then. */
     public static final int DUCK_TICKS = 6;
-    /** Sounds of the merchant's animations: flaps closing at 0.58 s of "closed", the block 10 ticks later; popping out as the box pops up. */
-    private static final int CLOSE_SOUND_TICKS = 12, PLACE_SOUND_DELAY = 10, OPEN_SOUND_TICKS = 1;
-    /** The wearer is only drawn once the box is this far up his body: his torso never shows above a box still low. */
-    private static final float SHOWN_FROM_LIFT = 0.75F;
+    /** The merchant's sounds, on the costume's animations: flaps folding (0.3 s), the block when the last one slaps shut; popping out as the box rises. */
+    private static final int CLOSE_SOUND_TICKS = 5, PLACE_SOUND_DELAY = 5, OPEN_SOUND_TICKS = 2;
+    /** The wearer is no longer drawn once the box is (nearly) on the ground: he is squashed inside it by then. */
+    private static final float INSIDE_LIFT = 0.04F;
+    /** Height of the wearer's body, squashed into the box on the ground (head under the flaps), as a share of his own. */
+    private static final float SQUASHED = 0.42F;
     /** Walking: limb speed above 0.08 for 2 ticks, standing: below 0.03 for 5 ticks (the merchant's hysteresis). */
     private static final float WALK_START = 0.08F, WALK_STOP = 0.03F;
     private static final Identifier VIEW_TEXTURE = Steveparty.id("textures/misc/box_costume_view.png");
@@ -95,11 +97,19 @@ public final class BoxCostumeClient {
     }
 
     /**
-     * Not drawn, only his box: ducked inside, or the box (as last drawn) still too low on its way down or up. In step
-     * with the box, so the torso never shows between hidden and worn.
+     * Not drawn, only his box: the box (as last drawn) is on the ground, or he has been hidden long enough. Until
+     * then he is drawn sinking into it (see {@link #bodySquash}): hiding and standing up are one continuous motion.
      */
     public static boolean isInsideBox(@Nullable BoxCostumeAnimatable box) {
-        return box != null && (isDucked(box) || box.lift < SHOWN_FROM_LIFT);
+        return box != null && (isDucked(box) || box.lift < INSIDE_LIFT);
+    }
+
+    /**
+     * Vertical scale of the wearer's body for a box this far up (0 on the ground, 1 worn): he shrinks into the box
+     * as it drops, head under its rim before the flaps fold, and grows back out of it as it rises.
+     */
+    public static float bodySquash(float lift) {
+        return MathHelper.lerp(MathHelper.clamp(lift, 0.0F, 1.0F), SQUASHED, 1.0F);
     }
 
     private static void tick(ClientWorld world) {
@@ -179,7 +189,7 @@ public final class BoxCostumeClient {
         matrices.pop();
     }
 
-    /** First person, hidden in the box: the view from inside, through the box's arm hole. */
+    /** First person, hidden in the box: the view from inside, through a rectangular slot (nothing shows on the box itself). */
     private static void renderView(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || !client.options.getPerspective().isFirstPerson() || client.options.hudHidden) return;

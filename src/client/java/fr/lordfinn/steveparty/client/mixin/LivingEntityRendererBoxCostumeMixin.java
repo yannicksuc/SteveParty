@@ -16,7 +16,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Draws a Box Costume wearer's box. Once he is fully inside it (hidden, closed on the ground), only the box is drawn:
- * no player model, held items, armour nor name tag.
+ * the whole vanilla render is skipped, so no player model, held item, armour, cape, stuck arrow nor name tag (also
+ * cleared on the render state by PlayerEntityRendererBoxCostumeMixin). While the box drops or rises, his body is
+ * squashed with it.
  */
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererBoxCostumeMixin {
@@ -32,6 +34,12 @@ public abstract class LivingEntityRendererBoxCostumeMixin {
         @SuppressWarnings({"rawtypes", "unchecked"})
         Vec3d offset = ((LivingEntityRenderer) (Object) this).getPositionOffset(state);
         BoxCostumeClient.renderWorn(player, box, offset, matrices, vertexConsumers, light);
-        if (costume.steveparty$isInBox()) ci.cancel();
+        if (costume.steveparty$isInBox()) {
+            ci.cancel();
+            return;
+        }
+        // Sinking into / rising out of the box with it (from the feet): never a box hanging with nobody in it
+        float squash = BoxCostumeClient.bodySquash(box.getLift());
+        if (squash < 1.0F) matrices.scale(1.0F, squash, 1.0F);
     }
 }
