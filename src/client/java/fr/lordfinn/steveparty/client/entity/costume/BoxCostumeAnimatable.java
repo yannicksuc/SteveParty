@@ -14,15 +14,17 @@ import software.bernie.geckolib.util.RenderUtil;
 
 /**
  * Client: the animated box of one Box Costume wearer (or of the item icon), played with the Hiding Trader's own
- * animations: "closed" when the wearer hides (the box drops to the ground and closes, then "hidden" holds it), "open"
- * when they come out, then "walk" or "idle" (the box at the waist). Only the box bones are drawn.
+ * animations: "closed" when the wearer hides (the box drops to the ground and closes, then "hidden" holds it), a quick
+ * pop straight back up when they come out, into "walk" or "idle" (the box up to the chin). Only the box bones are drawn.
  */
 public class BoxCostumeAnimatable implements GeoAnimatable {
-    static final RawAnimation OPEN_ANIM = RawAnimation.begin().thenPlay("open");
     static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");
     static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("walk");
     static final RawAnimation CLOSED_ANIM = RawAnimation.begin().thenPlayAndHold("closed");
     static final RawAnimation HIDDEN_ANIM = RawAnimation.begin().thenPlayAndHold("hidden");
+
+    /** Ticks the box takes to pop up to the wearer's chin, flaps flipping open, when he comes out. */
+    static final int POP_TICKS = 4;
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     /** Hiding in the box (sneaking with the costume on). */
@@ -31,6 +33,8 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
     boolean walking = false;
     /** Ticks since the wearer started hiding (0 when out). */
     int hiddenTicks = 0;
+    /** Yaw of the box closed on the ground: the quarter turn nearest to the wearer's body yaw when it closed. */
+    float hiddenYaw = 0.0F;
     /** Client ticks before the sounds of the box closing / opening, -1 when idle. */
     int closeSoundTicks = -1, placeSoundTicks = -1, openSoundTicks = -1;
     int walkSwitchTicks = 0;
@@ -56,7 +60,7 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "Box", 3, this::animate));
+        controllers.add(new AnimationController<>(this, "Box", POP_TICKS, this::animate));
     }
 
     private PlayState animate(AnimationState<BoxCostumeAnimatable> event) {
@@ -67,11 +71,8 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
             // Already hidden when first seen: closed at once, without the closing
             return event.setAndContinue(current == null ? HIDDEN_ANIM : CLOSED_ANIM);
         }
-        if (current == null) return event.setAndContinue(walking ? WALK_ANIM : IDLE_ANIM);
-        // "open" then "idle" are chained here rather than queued (see HidingTraderEntity#idleAnimController)
-        if (current == CLOSED_ANIM || current == HIDDEN_ANIM || (current == OPEN_ANIM && !controller.hasAnimationFinished())) {
-            return event.setAndContinue(OPEN_ANIM);
-        }
+        // Coming out: no "open" (the merchant's box stays 0.85 s on the ground before it rises, the wearer's torso would
+        // show above it): the controller's short transition pops the box straight up, flaps flipping open
         return event.setAndContinue(walking ? WALK_ANIM : IDLE_ANIM);
     }
 
