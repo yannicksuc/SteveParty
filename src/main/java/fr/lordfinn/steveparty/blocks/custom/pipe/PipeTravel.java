@@ -17,13 +17,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -56,8 +50,9 @@ import java.util.function.Predicate;
  *     included) and items go in by getting into the mouth's hollow. The traveller shrinks to fit and rides a
  *     {@link PipeCarrierEntity} along the pipes.</li>
  *     <li><b>The way</b>: to another end of the network, picked at random. At an open end (a mouth) it pops out. At a
- *     capped end (the pipe goes into a solid block: a warp) it comes out of the nearest mouth of the same colour in another network
- *     ({@link PipeNetworks#nearestMouth}), or where the cartridge of that end says ({@link PipeDestinationProvider});
+ *     capped end (the pipe goes into a solid block: a warp) it comes out of the nearest mouth of the colour of that
+ *     capped end in another network, within 100 blocks ({@link PipeNetworks#nearestMouth}), or where the cartridge of
+ *     that end says ({@link PipeDestinationProvider});
  *     with nowhere to go (or a mouth blocked by a block in front of it), it travels back through the pipes and comes out of the mouth it went in.</li>
  *     <li>Inside, nothing hurts it (walls, landing, cramming) and it does not collide; it comes out with the speed it
  *     had inside, without any fall damage from before.</li>
@@ -107,14 +102,16 @@ public final class PipeTravel {
     /**
      * What a gate does with a player.
      *
-     * @param pearl whether it costs an ender pearl (see {@link #canPay}); without one the player comes back out
-     * @param go    sends the player on (once paid for); false if it could not: the player comes back out, nothing is taken
+     * @param go sends the player on; false if it could not: the player comes back out of the mouth
      */
-    public record Passage(boolean pearl, Predicate<ServerPlayerEntity> go) {}
+    public record Passage(Predicate<ServerPlayerEntity> go) {
+        /** As {@link #Passage(Predicate)} ({@code unused}: nothing any more). */
+        public Passage(boolean unused, Predicate<ServerPlayerEntity> go) {
+            this(go);
+        }
+    }
 
     private static final List<Gate> GATES = new ArrayList<>();
-    /** Rules letting players travel for free (see {@link #ridesFree}). */
-    public static final List<Predicate<ServerPlayerEntity>> FREE_RIDERS = new ArrayList<>();
     /** The passages of the players on their way into a gate, by carrier. */
     private static final Map<UUID, Passage> PASSAGES = new HashMap<>();
 
@@ -503,9 +500,9 @@ public final class PipeTravel {
     }
 
     /**
-     * Where a capped end warps to: its cartridge's choice, else the nearest mouth of the same colour in another
-     * network: within {@link PipeNetworks#WARP_RADIUS} blocks, or for a player, failing that, the nearest one loaded
-     * however far (a far warp, see {@link #isFar}).
+     * Where a capped end warps to: its cartridge's choice, else the nearest mouth of the colour of that capped end
+     * (the last block reached, whatever the colour of the mouth it went in) in another network, within
+     * {@link PipeNetworks#WARP_RADIUS} blocks, in a loaded chunk of the same dimension. Nothing farther, for anyone.
      */
     private static @Nullable Destination warpDestination(ServerWorld world, PipeNetworks.End capped, Entity traveller) {
         if (world.getBlockEntity(capped.pos()) instanceof PipeBlockEntity pipe) {
@@ -520,7 +517,6 @@ public final class PipeTravel {
         PipeNetworks.Network own = networks.network(capped.pos());
         if (own == null) return null;
         PipeNetworks.End near = networks.nearestMouth(capped.pos(), own, PipeNetworks.WARP_RADIUS);
-        if (near == null && traveller instanceof ServerPlayerEntity) near = networks.nearestMouth(capped.pos(), own, Double.MAX_VALUE);
         return near == null ? null : new Destination(world, near);
     }
 
@@ -530,70 +526,21 @@ public final class PipeTravel {
         return !world.getBlockState(front).getCollisionShape(world, front).isEmpty();
     }
 
-    // ---------------------------------------------------------------- far warps: an ender pearl
-
-    /**
-     * A far warp: to another dimension, to a chunk that is not loaded, or more than {@link PipeNetworks#WARP_RADIUS}
-     * blocks away. It costs an ender pearl ({@link #canPay}); the others are free.
-     */
-    public static boolean isFar(ServerWorld from, BlockPos fromPos, ServerWorld to, BlockPos toPos) {
-        if (from != to) return true;
-        if (!to.getChunkManager().isChunkLoaded(ChunkSectionPos.getSectionCoord(toPos.getX()), ChunkSectionPos.getSectionCoord(toPos.getZ()))) return true;
-        return fromPos.getSquaredDistance(toPos) > PipeNetworks.WARP_RADIUS * PipeNetworks.WARP_RADIUS;
-    }
-
-    /** Those who travel for free: in creative, or let through by a {@link #FREE_RIDERS} rule (the players of a party). */
-    public static boolean ridesFree(ServerPlayerEntity player) {
-        if (player.getAbilities().creativeMode) return true;
-        for (Predicate<ServerPlayerEntity> rule : FREE_RIDERS) if (rule.test(player)) return true;
-        return false;
-    }
-
-    /** @return true if the traveller can take a warp that costs an ender pearl: a player, free rider or holding one. */
-    public static boolean canPay(Entity traveller) {
-        if (!(traveller instanceof ServerPlayerEntity player)) return false;
-        return ridesFree(player) || player.getInventory().count(Items.ENDER_PEARL) > 0;
-    }
-
-    /** Takes the ender pearl of a warp that costs one (nothing from a free rider). */
-    public static void pay(Entity traveller) {
-        if (!(traveller instanceof ServerPlayerEntity player) || ridesFree(player)) return;
-        PlayerInventory inventory = player.getInventory();
-        for (int slot = 0; slot < inventory.size(); slot++) {
-            ItemStack stack = inventory.getStack(slot);
-            if (stack.isOf(Items.ENDER_PEARL)) {
-                stack.decrement(1);
-                player.playSoundToPlayer(SoundEvents.ENTITY_ENDER_EYE_DEATH, SoundCategory.PLAYERS, 0.6F, 1.4F);
-                return;
-            }
-        }
-    }
-
-    private static void refuse(Entity traveller) {
-        if (traveller instanceof ServerPlayerEntity player) {
-            player.sendMessage(Text.translatable("message.steveparty.pipe.needs_pearl").formatted(Formatting.RED), true);
-        }
-    }
-
     // ---------------------------------------------------------------- gates
 
-    /** A gate's passage at the end of its short trip into the mouth: through, or back out if it can't be paid or done. */
+    /** A gate's passage at the end of its short trip into the mouth: through, or back out if it can't be done. */
     private static void pass(ServerWorld world, PipeCarrierEntity carrier, Entity traveller, Passage passage) {
         PipeNetworks.End origin = carrier.origin();
-        if (traveller instanceof ServerPlayerEntity player && (!passage.pearl() || canPay(player))) {
+        if (traveller instanceof ServerPlayerEntity player) {
             Vec3d here = carrier.getPos();
             carrier.setDismountAt(here);
             traveller.stopRiding();
             carrier.discard();
             world.playSound(null, here.x, here.y, here.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.BLOCKS, 0.4F, 1.6F);
-            if (passage.go().test(player)) {
-                if (passage.pearl()) pay(player);
-                return;
-            }
+            if (passage.go().test(player)) return;
             if (origin != null && player.getWorld() == world) exit(world, null, traveller, origin);
             return;
         }
-        if (passage.pearl()) refuse(traveller);
         world.playSound(null, carrier.getX(), carrier.getY(), carrier.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.BLOCKS, 0.7F, 0.6F);
         if (origin != null) exit(world, carrier, traveller, origin);
         else carrier.discard();
@@ -657,18 +604,11 @@ public final class PipeTravel {
     }
 
     /**
-     * From a capped end to another pipe's mouth: out of this carrier, into a new one there. A far warp
-     * ({@link #isFar}) takes an ender pearl.
+     * From a capped end to another pipe's mouth: out of this carrier, into a new one there.
      *
      * @return false if it could not be done (the traveller still rides its carrier)
      */
     private static boolean warp(ServerWorld world, PipeCarrierEntity carrier, Entity traveller, PipeNetworks.End from, Destination to) {
-        boolean far = isFar(world, from.pos(), to.world(), to.mouth().pos());
-        if (far && !canPay(traveller)) {
-            refuse(traveller);
-            return false;
-        }
-        // Now the chunk may be loaded to look at the mouth
         if (PipeShape.mouth(to.world().getBlockState(to.mouth().pos()), to.mouth().dir()) == null || blocked(to.world(), to.mouth())) return false;
         double speed = carrier.speed();
         Vec3d here = Vec3d.ofCenter(from.pos());
@@ -681,7 +621,6 @@ public final class PipeTravel {
             if (origin != null) exit(world, null, traveller, origin);
             return true;
         }
-        if (far) pay(traveller);
         return true;
     }
 
@@ -702,12 +641,8 @@ public final class PipeTravel {
         traveller.requestTeleport(at.x, at.y, at.z);
         Vec3d velocity = Vec3d.of(dir.getVector()).multiply(MathHelper.clamp(speed, 0.3, 1.2));
         if (dir == Direction.UP) velocity = new Vec3d(0, Math.max(velocity.y, 0.5), 0);
-        if (!(traveller instanceof PlayerEntity) && dir.getAxis().isVertical()) {
-            // Mobs and items hop off to a side instead of coming down in the mouth
-            double angle = world.random.nextDouble() * Math.PI * 2, push = 0.12 + world.random.nextDouble() * 0.08;
-            velocity = velocity.add(Math.cos(angle) * push, 0, Math.sin(angle) * push);
-        }
-        // A player: straight out, nothing sideways; thrown up, it comes down on the mouth, closed to it (see barred)
+        // Straight out, nothing sideways (players, mobs and items alike): thrown up, it comes down on the mouth,
+        // closed to it (see barred)
         BARRED.put(traveller, new Bar(end.pos().toImmutable(), dir, world.getTime(), at.y));
         traveller.setVelocity(velocity);
         traveller.velocityModified = true;

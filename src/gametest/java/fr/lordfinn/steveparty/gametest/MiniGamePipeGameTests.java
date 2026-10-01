@@ -64,7 +64,7 @@ import java.util.function.BooleanSupplier;
 /**
  * The pipes of the mini-games: a pipe's colour gives its role, pages link and re-role pipes, the players come out of
  * the pipes of their team in order (positive players team A, negative ones team B), a party sends its players out of
- * them and brings them back, entry and exit pipes work out of a party, and far warps take an ender pearl.
+ * them and brings them back, entry and exit pipes work out of a party, and nothing warps beyond 100 blocks.
  */
 public class MiniGamePipeGameTests implements FabricGameTest {
     private static final int WHITE = 0, ORANGE = 1, YELLOW = 4, CYAN = 9, PURPLE = 10, BLUE = 11, GREEN = 13, RED = 14, BLACK = 15;
@@ -421,7 +421,6 @@ public class MiniGamePipeGameTests implements FabricGameTest {
 
             when(context, () -> near(context, good, blue) && near(context, bad1, red1) && near(context, bad2, red2) && near(context, bad3, red1)
                     && near(context, watcher, white), 60, "they never all came out of their pipes", () -> {
-                context.assertTrue(PipeTravel.ridesFree(bad1), "the players of a party travel for free");
                 // The exit pipe: back where it stood, before the others
                 context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> {
                     context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(yellow), Direction.UP, bad2, 0), "into the exit pipe");
@@ -438,7 +437,6 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                                 context.assertTrue(all[i].getPos().distanceTo(starts.get(i)) < 0.01, "player " + i + " is back: " + all[i].getPos());
                                 context.assertTrue(!MiniGamePipes.isInParty(all[i].getUuid()) && !step.isAway(all[i].getUuid()), "player " + i + " left the mini-game");
                             }
-                            context.assertTrue(!PipeTravel.ridesFree(bad1), "no longer free");
                         } finally {
                             remove(context, all);
                             context.removeBlock(controllerPos);
@@ -457,46 +455,36 @@ public class MiniGamePipeGameTests implements FabricGameTest {
     // ------------------------------------------------------------------ entry and exit, out of a party
 
     /**
-     * An entry pipe sends to the players pipes, each in turn, for an ender pearl; without one the player comes back
-     * out. The exit pipe brings back to the entry pipe, for free. Creative players pay nothing.
+     * An entry pipe sends to the players pipes, each in turn; the exit pipe brings back to the entry pipe. Nothing is
+     * taken from the player.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
-    public void entryPipeTakesAPearlAndTheExitPipeBringsBack(TestContext context) {
+    public void entryPipeSendsToThePlayersPipesAndTheExitPipeBringsBack(TestContext context) {
         ServerWorld world = context.getWorld();
         BlockPos black = mouth(context, BLACK, 1, 1), green1 = mouth(context, GREEN, 4, 5), green2 = mouth(context, GREEN, 6, 5), yellow = mouth(context, YELLOW, 6, 1);
         page(context, new ItemStack(ModItems.MINI_GAME_PAGE), black, green1, green2, yellow);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
+        player.getInventory().insertStack(new ItemStack(Items.ENDER_PEARL, 2));
         BlockPos entry = context.getAbsolutePos(black);
         Runnable cleanup = () -> remove(context, player);
 
-        // No pearl: in, and back out of the same mouth
         context.assertTrue(PipeTravel.enter(world, entry, Direction.UP, player, 0), "into the entry pipe");
-        when(context, () -> player.age > 2 && !PipeTravel.isTravelling(player), 20, "never came back out", () -> guarded(context, cleanup, () -> {
-            context.assertTrue(near(context, player, black), "no pearl: back out of the entry pipe: " + context.getRelative(player.getPos()));
-            player.getInventory().insertStack(new ItemStack(Items.ENDER_PEARL, 2));
+        when(context, () -> near(context, player, green1), 30, "never came out of the first players pipe", () -> guarded(context, cleanup, () -> {
+            // The exit pipe: back out of the entry pipe
             context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> guarded(context, cleanup, () -> {
-                context.assertTrue(PipeTravel.enter(world, entry, Direction.UP, player, 0), "in again, with pearls");
-                when(context, () -> near(context, player, green1), 30, "never came out of the first players pipe", () -> guarded(context, cleanup, () -> {
-                    context.assertEquals(player.getInventory().count(Items.ENDER_PEARL), 1, "one pearl taken");
-                    // The exit pipe: back out of the entry pipe, for free
+                context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(yellow), Direction.UP, player, 0), "into the exit pipe");
+                when(context, () -> near(context, player, black), 30, "the exit pipe never brought back to the entry", () -> guarded(context, cleanup, () -> {
+                    // Again: the second players pipe this time
                     context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> guarded(context, cleanup, () -> {
-                        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(yellow), Direction.UP, player, 0), "into the exit pipe");
-                        when(context, () -> near(context, player, black), 30, "the exit pipe never brought back to the entry", () -> guarded(context, cleanup, () -> {
-                            context.assertEquals(player.getInventory().count(Items.ENDER_PEARL), 1, "the way back is free");
-                            // Again: the second players pipe this time; in creative nothing is taken
-                            player.changeGameMode(GameMode.CREATIVE);
-                            context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> guarded(context, cleanup, () -> {
-                                context.assertTrue(PipeTravel.enter(world, entry, Direction.UP, player, 0), "in a third time");
-                                when(context, () -> near(context, player, green2), 30, "never came out of the second players pipe", () -> {
-                                    try {
-                                        context.assertEquals(player.getInventory().count(Items.ENDER_PEARL), 1, "creative: free");
-                                    } finally {
-                                        cleanup.run();
-                                    }
-                                    context.complete();
-                                });
-                            }));
-                        }));
+                        context.assertTrue(PipeTravel.enter(world, entry, Direction.UP, player, 0), "in again");
+                        when(context, () -> near(context, player, green2), 30, "never came out of the second players pipe", () -> {
+                            try {
+                                context.assertEquals(player.getInventory().count(Items.ENDER_PEARL), 2, "nothing was taken");
+                            } finally {
+                                cleanup.run();
+                            }
+                            context.complete();
+                        });
                     }));
                 }));
             }));
@@ -530,46 +518,11 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         });
     }
 
-    // ------------------------------------------------------------------ the ender pearl of far warps
+    // ------------------------------------------------------------------ no warp beyond 100 blocks
 
-    /** Free within 100 blocks in a loaded chunk of the same dimension; beyond, elsewhere or unloaded: an ender pearl, players only. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void farWarpsTakeAnEnderPearl(TestContext context) {
-        ServerWorld world = context.getWorld();
-        BlockPos here = context.getAbsolutePos(new BlockPos(1, 2, 1));
-        context.assertTrue(!PipeTravel.isFar(world, here, world, here.add(3, 0, 3)), "next door: free");
-        context.assertTrue(PipeTravel.isFar(world, here, world, here.add(0, 0, 101)), "101 blocks: far");
-        context.assertTrue(PipeTravel.isFar(world, here, world, here.add(60, 80, 60)), "more than 100 blocks in a straight line: far");
-        // Near, but in a chunk that is not loaded (if there is one around)
-        for (int dx = 16; dx <= 96; dx += 16) {
-            BlockPos near = here.add(dx, 0, 0);
-            boolean loaded = world.getChunkManager().isChunkLoaded(near.getX() >> 4, near.getZ() >> 4);
-            context.assertEquals(PipeTravel.isFar(world, here, world, near), !loaded, dx + " blocks away, chunk loaded: " + loaded);
-        }
-        ServerWorld nether = world.getServer().getWorld(World.NETHER);
-        if (nether != null) context.assertTrue(PipeTravel.isFar(world, here, nether, here), "another dimension: far");
-
-        ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
-        try {
-            context.assertTrue(!PipeTravel.canPay(player), "survival without a pearl: can't");
-            player.getInventory().insertStack(new ItemStack(Items.ENDER_PEARL, 2));
-            context.assertTrue(PipeTravel.canPay(player), "with a pearl: can");
-            PipeTravel.pay(player);
-            context.assertEquals(player.getInventory().count(Items.ENDER_PEARL), 1, "one pearl taken");
-            player.changeGameMode(GameMode.CREATIVE);
-            player.getInventory().clear();
-            context.assertTrue(PipeTravel.canPay(player), "creative: free");
-            PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(3, 2, 3));
-            context.assertTrue(!PipeTravel.canPay(pig), "mobs never take far warps");
-        } finally {
-            remove(context, player);
-        }
-        context.complete();
-    }
-
-    /** A warp of more than 100 blocks: back out without a pearl, through with one (and it is taken). */
+    /** A mouth of its colour more than 100 blocks away is no warp, for a player either (whatever it carries): back out. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
-    public void warpBeyondAHundredBlocksNeedsAPearl(TestContext context) {
+    public void noWarpBeyondAHundredBlocksForAPlayerEither(TestContext context) {
         ServerWorld world = context.getWorld();
         Block magenta = pipe(PipeKind.STAINED_GLASS, 2);
         context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE);
@@ -580,6 +533,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         context.setBlockState(new BlockPos(1, 2, 120), magenta.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN));
         BlockPos warp = context.getAbsolutePos(new BlockPos(1, 2, 1));
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
+        player.getInventory().insertStack(new ItemStack(Items.ENDER_PEARL));
         Runnable cleanup = () -> {
             remove(context, player);
             world.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
@@ -588,26 +542,18 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         };
         PipeNetworks.Network own = PipeNetworks.of(world).network(warp);
         guarded(context, cleanup, () -> {
-            context.assertTrue(PipeNetworks.of(world).nearestMouth(warp, own, PipeNetworks.WARP_RADIUS) == null, "no free warp within 100 blocks");
+            context.assertTrue(PipeNetworks.of(world).nearestMouth(warp, own, PipeNetworks.WARP_RADIUS) == null, "no mouth of its colour within 100 blocks");
             context.assertTrue(PipeTravel.enter(world, warp, Direction.UP, player, 0), "in");
         });
-        when(context, () -> player.age > 3 && !PipeTravel.isTravelling(player), 60, "never came back out", () -> guarded(context, cleanup, () -> {
-            context.assertTrue(context.getRelative(player.getPos()).z < 4, "no pearl: back out where it went in: " + context.getRelative(player.getPos()));
-            player.getInventory().insertStack(new ItemStack(Items.ENDER_PEARL));
-            context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> guarded(context, cleanup, () -> {
-                context.assertTrue(PipeTravel.enter(world, warp, Direction.UP, player, 0), "in again, with a pearl");
-                when(context, () -> !PipeTravel.isTravelling(player) && context.getRelative(player.getPos()).z > 100, 60, "never came out of the far pipe", () -> {
-                    try {
-                        Vec3d at = context.getRelative(player.getPos());
-                        context.assertTrue(Math.abs(at.z - 120.5) < 1.2 && Math.abs(at.x - 1.5) < 1.2, "out of the far mouth: " + at);
-                        context.assertEquals(player.getInventory().count(Items.ENDER_PEARL), 0, "the pearl was taken");
-                    } finally {
-                        cleanup.run();
-                    }
-                    context.complete();
-                });
-            }));
-        }));
+        when(context, () -> player.age > 3 && !PipeTravel.isTravelling(player), 60, "never came back out", () -> {
+            try {
+                context.assertTrue(context.getRelative(player.getPos()).z < 4, "back out where it went in: " + context.getRelative(player.getPos()));
+                context.assertEquals(player.getInventory().count(Items.ENDER_PEARL), 1, "nothing was taken");
+            } finally {
+                cleanup.run();
+            }
+            context.complete();
+        });
     }
 
     // ------------------------------------------------------------------ what was removed

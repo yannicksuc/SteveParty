@@ -708,6 +708,66 @@ public class PipeGameTests implements FabricGameTest {
                 }));
     }
 
+    /**
+     * Mobs and items too come straight up out of an upward mouth (no hop to a side), come down on it and stay out of
+     * it, unhurt.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void mobsAndItemsPopStraightUpAndStayOut(TestContext context) {
+        BlockPos exit = twoUpwardMouths(context);
+        BlockPos exitAbs = context.getAbsolutePos(exit), in = context.getAbsolutePos(new BlockPos(1, 2, 1));
+        PigEntity pig = context.spawnEntity(EntityType.PIG, new Vec3d(1.5, 3, 1.5));
+        // It falls, but does not walk off
+        pig.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0);
+        Vec3d drop = context.getAbsolute(new Vec3d(1.5, 3.2, 1.5));
+        ItemEntity item = new ItemEntity(context.getWorld(), drop.x, drop.y, drop.z, new ItemStack(Items.DIAMOND));
+        item.setVelocity(Vec3d.ZERO);
+        context.getWorld().spawnEntity(item);
+        context.assertTrue(PipeTravel.enter(context.getWorld(), in, Direction.UP, pig, 0) && PipeTravel.enter(context.getWorld(), in, Direction.UP, item, 0), "in");
+        when(context, () -> exitAbs.equals(ARRIVALS.get(pig)) && exitAbs.equals(ARRIVALS.get(item)), 60, "never came out", () -> {
+            for (Entity entity : List.of(pig, item)) {
+                Vec3d velocity = entity.getVelocity();
+                context.assertTrue(velocity.y > 0.4 && velocity.horizontalLength() < 1e-6, "straight up, nothing sideways: " + velocity);
+            }
+            context.waitAndRun(60, () -> {
+                for (Entity entity : List.of(pig, item)) {
+                    Vec3d at = relative(context, entity);
+                    context.assertTrue(!PipeTravel.isTravelling(entity) && PipeTravel.barred(entity, exitAbs, Direction.UP), "come down, not taken in again: " + entity);
+                    context.assertTrue(Math.abs(at.x - 3.5) < 0.5 && Math.abs(at.z - 1.5) < 0.5 && at.y >= 2.7 && at.y <= 3.01, "on the mouth it came out of: " + at);
+                }
+                context.assertTrue(pig.getHealth() == pig.getMaxHealth(), "unhurt");
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * The colour of the capped end reached says where the warp leads, not the colour of the mouth gone in: in by a red
+     * mouth, down to a yellow capped end, out of the nearest yellow mouth; a nearer red mouth is no way out.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void theCappedEndsColourSaysWhereTheWarpLeads(TestContext context) {
+        Block yellow = pipe(PipeKind.STAINED_GLASS, 4);
+        context.assertTrue(!PipeBlock.warpColor(yellow.getDefaultState()).equals(PipeBlock.warpColor(RED.getDefaultState())), "two colours");
+        // In by a red mouth on top, a yellow end going into the ground under it
+        context.setBlockState(new BlockPos(1, 0, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(1, 1, 1), pipe(yellow, PipeSolid.DOWN, Direction.UP));
+        context.setBlockState(new BlockPos(1, 2, 1), pipe(RED, PipeSolid.NONE, Direction.DOWN));
+        // A red mouth nearby, a yellow one farther
+        context.setBlockState(new BlockPos(3, 0, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(3, 1, 1), pipe(RED, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(6, 0, 5), Blocks.STONE);
+        BlockPos yellowMouth = new BlockPos(6, 1, 5);
+        context.setBlockState(yellowMouth, pipe(yellow, PipeSolid.DOWN));
+        ItemEntity item = floating(context, new Vec3d(1.5, 3.2, 1.5));
+        context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 1)), Direction.UP, item, 0), "in by the red mouth");
+        when(context, () -> ARRIVALS.get(item) != null && !item.hasVehicle(), 60, "never came out", () -> {
+            context.assertTrue(context.getAbsolutePos(yellowMouth).equals(ARRIVALS.get(item)),
+                    "out of the yellow mouth: " + context.getRelativePos(ARRIVALS.get(item)));
+            context.complete();
+        });
+    }
+
     /** The mouth a traveller came out of opens to it again once it has landed somewhere else: a fall on it goes in. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void theMouthOpensAgainOnceLandedElsewhere(TestContext context) {
