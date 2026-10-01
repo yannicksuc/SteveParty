@@ -36,9 +36,9 @@ import java.util.function.Predicate;
  *     <li><b>Arrivals</b>: the players of a mini-game come out of the pipes of their role, one after the other in
  *     each pipe in turn ({@link #distribute}, {@link #emerge}).</li>
  *     <li><b>Entry</b>, out of a party: a player going in an entry pipe comes out of the page's players pipes, each in
- *     turn. It costs an ender pearl (not in creative).</li>
+ *     turn.</li>
  *     <li><b>Exit</b>: a player going in an exit pipe goes back where it came from: in a party, where it stood before
- *     the mini-game; out of a party, out of the entry pipe it came by (else the page's first entry pipe). Free.</li>
+ *     the mini-game; out of a party, out of the entry pipe it came by (else the page's first entry pipe).</li>
  * </ul>
  * Only players are concerned: mobs and items travel through these pipes like through any other. Nothing is scanned:
  * the pages are asked when a player goes in a mouth ({@link PipeTravel.Gate}).
@@ -63,7 +63,6 @@ public final class MiniGamePipes {
     public static void initialize() {
         PipeTravel.registerGate(MiniGamePipes::passage);
         // The players of a party's mini-game travel for free
-        PipeTravel.FREE_RIDERS.add(player -> isInParty(player.getUuid()));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             VISITS.clear();
             IN_PARTY.clear();
@@ -208,13 +207,13 @@ public final class MiniGamePipes {
         for (MiniGamePagesState.Linked linked : links) {
             MiniGamePageData page = linked.page();
             if (linked.link().role() == MiniGamePipeRole.EXIT) {
-                if (isInParty(id)) return new PipeTravel.Passage(false, IN_PARTY.get(id).leave());
+                if (isInParty(id)) return new PipeTravel.Passage(IN_PARTY.get(id).leave());
                 Visit visit = VISITS.get(id);
                 MiniGamePipeLink back = visit != null && visit.page().equals(page.id())
                         ? new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY)
                         : page.pipes(MiniGamePipeRole.ENTRY).stream().findFirst().orElse(null);
                 if (back == null) continue;
-                return new PipeTravel.Passage(false, traveller -> {
+                return new PipeTravel.Passage(traveller -> {
                     if (!emerge(server, back, traveller)) return false;
                     VISITS.remove(traveller.getUuid());
                     return true;
@@ -223,7 +222,7 @@ public final class MiniGamePipes {
             if (linked.link().role() == MiniGamePipeRole.ENTRY && !isInParty(id)) {
                 List<MiniGamePipeLink> arrivals = page.pipes(MiniGamePipeRole.PLAYERS);
                 if (arrivals.isEmpty()) continue;
-                return new PipeTravel.Passage(true, traveller -> {
+                return new PipeTravel.Passage(traveller -> {
                     // The players pipes each in turn; a pipe that is no more is skipped
                     int first = NEXT_ARRIVAL.getOrDefault(page.id(), 0);
                     for (int i = 0; i < arrivals.size(); i++) {

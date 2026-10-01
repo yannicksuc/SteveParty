@@ -29,7 +29,7 @@ public final class PipeNetworks {
     public static final int MAX_PIPES = 4096;
     /**
      * A capped end warps for free to the nearest mouth of the same colour of another network within this distance
-     * (blocks, loaded chunks); a player can go farther for an ender pearl (see {@code PipeTravel#isFar}).
+     * (blocks, loaded chunks); nothing warps farther.
      */
     public static final double WARP_RADIUS = 100;
 
@@ -172,8 +172,8 @@ public final class PipeNetworks {
     }
 
     /**
-     * The warp from a capped end: the nearest mouth (open end) of a pipe of the same colour ({@link PipeBlock#warpColor})
-     * in another network, within {@code radius} blocks of {@code from} (between block centres), among the loaded
+     * The warp from a capped end: the nearest mouth (open end) of a pipe of the colour of the capped end's block
+     * {@code from} ({@link PipeBlock#warpColor}: the last block reached, not the mouth gone in) in another network, within {@code radius} blocks of {@code from} (between block centres), among the loaded
      * pipes; ties go to the lowest position.
      */
     public @Nullable End nearestMouth(BlockPos from, Network own, double radius) {
