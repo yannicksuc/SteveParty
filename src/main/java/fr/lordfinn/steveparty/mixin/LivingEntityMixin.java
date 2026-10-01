@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Collection;
 
@@ -33,6 +34,14 @@ public abstract class LivingEntityMixin extends Entity {
             for (StatusEffectInstance statusEffectInstance : effects) {
                 ((StatusEffectExtension) statusEffectInstance.getEffectType().value()).steveparty$onRemoved((LivingEntity) (Object) this);
             }
+        }
+    }
+
+    /** A player hidden in a Box Costume: mobs notice him from much closer, like a mob wearing its own head. */
+    @Inject(method = "getAttackDistanceScalingFactor", at = @At("RETURN"), cancellable = true)
+    private void steveparty$hiddenInBox(Entity entity, CallbackInfoReturnable<Double> cir) {
+        if ((Object) this instanceof PlayerEntity player && fr.lordfinn.steveparty.items.custom.BoxCostumeItem.isHiddenInBox(player)) {
+            cir.setReturnValue(cir.getReturnValueD() * fr.lordfinn.steveparty.items.custom.BoxCostumeItem.HIDDEN_DETECTION_FACTOR);
         }
     }
 

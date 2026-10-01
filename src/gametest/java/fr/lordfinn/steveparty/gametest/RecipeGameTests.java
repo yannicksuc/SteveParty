@@ -75,6 +75,7 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("green_star_fragment", "dropped by the green Mula"),
             Map.entry("black_star_fragment", "dropped by the black Mula"),
             Map.entry("bandana", "shorn off a Hiding Trader"),
+            Map.entry("box_costume", "shorn off a Hiding Trader who lost his bandana"),
             Map.entry("villager_block", "a villager pushed down by a piston"),
             Map.entry("mula_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             // The 10 fixed-wood easel signs are kept for the worlds that have them: the material easel sign replaced them

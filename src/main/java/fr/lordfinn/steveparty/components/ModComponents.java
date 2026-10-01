@@ -120,6 +120,10 @@ public class ModComponents {
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 
+    /** Block a Box Costume looks like: the one the Hiding Trader's box looked like when it was taken from him. */
+    public static final ComponentType<net.minecraft.block.BlockState> BOX_BLOCK =
+            registerComponent("box-block", net.minecraft.block.BlockState.CODEC);
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();
