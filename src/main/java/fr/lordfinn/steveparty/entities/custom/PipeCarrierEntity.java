@@ -49,6 +49,8 @@ public class PipeCarrierEntity extends Entity {
     private @Nullable PipeNetworks.End target, origin;
     /** Whether it has been sent back once already (warp or exit impossible). */
     private boolean returned;
+    /** How many times its way was worked out again because the pipes changed (server side). */
+    private int reroutes;
     /** Where the traveller is put down when it gets off (server side). */
     private @Nullable Vec3d dismountAt;
 
@@ -137,6 +139,11 @@ public class PipeCarrierEntity extends Entity {
 
     public boolean hasReturned() {
         return returned;
+    }
+
+    /** One more new way because the pipes changed: false after a few (it gets out then). */
+    public boolean reroute() {
+        return ++reroutes <= 3;
     }
 
     public void markReturned() {

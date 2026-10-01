@@ -49,6 +49,7 @@ import java.util.function.BooleanSupplier;
 
 /** Warp pipes: shapes and connections, the Wrench, going in, travelling, warps. */
 public class PipeGameTests implements FabricGameTest {
+
     private static final Block RED = ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][14];
     private static final Block GLASS = ModBlocks.GLASS_PIPE;
 
@@ -647,6 +648,206 @@ public class PipeGameTests implements FabricGameTest {
         context.assertFalse(warp.isSideInvisible(pipe(RED, PipeSolid.NONE, Direction.NORTH, Direction.SOUTH), Direction.EAST),
                 "beside a pipe's side (not covering it): drawn");
         context.complete();
+    }
+
+    // ------------------------------------------------------------------ coming out, falling in, pipes changed
+
+    /**
+     * Out of an upward mouth, a player pops off to the side it looks; landing back on that mouth (falling, sneaking)
+     * does not take it in again before it has left the space above it; once it has, a fall takes it in again.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void outOfAMouthNotBackInBeforeLeavingIt(TestContext context) {
+        for (int x = 1; x <= 3; x++) context.setBlockState(new BlockPos(x, 0, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(1, 2, 1), pipe(RED, PipeSolid.NONE, Direction.DOWN));
+        context.setBlockState(new BlockPos(1, 1, 1), pipe(RED, PipeSolid.NONE, Direction.UP, Direction.EAST));
+        context.setBlockState(new BlockPos(2, 1, 1), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST));
+        context.setBlockState(new BlockPos(3, 1, 1), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.UP));
+        BlockPos exit = new BlockPos(3, 2, 1);
+        context.setBlockState(exit, pipe(RED, PipeSolid.NONE, Direction.DOWN));
+        BlockPos exitAbs = context.getAbsolutePos(exit);
+        ServerPlayerEntity player = player(context, new Vec3d(1.5, 3, 1.5), 0);
+        context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 1)), Direction.UP, player, 0), "in");
+        when(context, () -> player.getVehicle() instanceof PipeCarrierEntity, 5, "never went in", () ->
+                when(context, () -> !player.hasVehicle(), 60, "never came out", () -> {
+                    Vec3d at = relative(context, player);
+                    context.assertTrue(Math.abs(at.x - 3.5) < 0.1 && at.y >= 3 - 1e-3, "on top of the other mouth: " + at);
+                    Vec3d velocity = player.getVelocity();
+                    context.assertTrue(velocity.y > 0.4 && velocity.horizontalLength() > 0.15 && velocity.z > 0,
+                            "pops up, and off to the side it looks (south): " + velocity);
+                    context.assertTrue(PipeTravel.barred(player, exitAbs, Direction.UP), "that mouth is barred to it");
+                    // Falling back on it from high above, still in the space above it: not in
+                    context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> {
+                        Vec3d top = context.getAbsolute(new Vec3d(3.5, 3, 1.5));
+                        player.requestTeleport(top.x, top.y, top.z);
+                        player.fallDistance = 6;
+                        context.assertFalse(PipeTravel.fallOnto(context.getWorld(), player), "falling back in the mouth it came out of: not in");
+                        context.assertFalse(PipeTravel.land(context.getWorld(), exitAbs, context.getBlockState(exit), player, 6), "nor by landing on it");
+                        // Gone off (beside the pipe), then falling on it again: in
+                        Vec3d away = context.getAbsolute(new Vec3d(5.5, 1, 1.5));
+                        player.requestTeleport(away.x, away.y, away.z);
+                        context.waitAndRun(2, () -> {
+                            context.assertFalse(PipeTravel.barred(player, exitAbs, Direction.UP), "no more barred once it has gone off");
+                            player.requestTeleport(top.x, top.y, top.z);
+                            player.fallDistance = 6;
+                            context.assertTrue(PipeTravel.fallOnto(context.getWorld(), player), "a fall on it takes it in again");
+                            context.complete();
+                        });
+                    });
+                }));
+    }
+
+    /**
+     * A fall of 3 blocks or more onto an upward mouth always takes the traveller in, unhurt, even landing on its rim
+     * with its middle over the block beside it; a small fall there does not.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void fallingThreeBlocksOnAMouthAlwaysGoesIn(TestContext context) {
+        for (int x = 0; x <= 4; x++) for (int z = 0; z <= 4; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
+        context.setBlockState(new BlockPos(2, 1, 2), pipe(RED, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(3, 1, 2), Blocks.STONE);
+        context.setBlockState(new BlockPos(2, 1, 4), pipe(RED, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(3, 1, 4), Blocks.STONE);
+        // Its middle over the stone beside the pipe, its side over the pipe's rim
+        PigEntity high = context.spawnEntity(EntityType.PIG, new Vec3d(3.1, 7, 2.5));
+        PigEntity low = context.spawnEntity(EntityType.PIG, new Vec3d(3.1, 3.5, 4.5));
+        for (PigEntity pig : List.of(high, low)) pig.setVelocity(Vec3d.ZERO);
+        when(context, () -> PipeTravel.isTravelling(high), 40, "the pig that fell 5 blocks on the rim did not go in", () -> {
+            context.assertTrue(high.getHealth() == high.getMaxHealth(), "unhurt: " + high.getHealth());
+            when(context, () -> low.isOnGround(), 30, "the other pig never landed", () -> {
+                context.assertFalse(PipeTravel.isTravelling(low), "a fall of 1.5 blocks on the rim beside: not in");
+                context.complete();
+            });
+        });
+    }
+
+    /** A pipe lengthened past the mouth a traveller is heading for, on the way: it comes out of the new end. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void aMouthLengthenedOnTheWayIsWhereItComesOut(TestContext context) {
+        straightRun(context, 1, 5, 2, 2);
+        ItemEntity item = new ItemEntity(context.getWorld(), 0, 0, 0, new ItemStack(Items.GOLD_INGOT));
+        item.setPosition(context.getAbsolute(new Vec3d(0.8, 2.5, 2.5)));
+        item.setNoGravity(true);
+        context.getWorld().spawnEntity(item);
+        context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 2)), Direction.WEST, item, 0), "in");
+        when(context, () -> item.getVehicle() instanceof PipeCarrierEntity, 5, "never went in", () -> {
+            context.setBlockState(new BlockPos(5, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST));
+            context.setBlockState(new BlockPos(6, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST));
+            when(context, () -> !item.hasVehicle(), 60, "never came out", () -> {
+                Vec3d at = relative(context, item);
+                context.assertTrue(at.x > 6.9 && Math.abs(at.z - 2.5) < 0.2, "out of the new east mouth (not inside the new pipe): " + at);
+                context.complete();
+            });
+        });
+    }
+
+    /** Pipes added between two trips: the second goes the new way (the network is worked out again). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void aNetworkChangedBetweenTripsIsUsedAsItIs(TestContext context) {
+        straightRun(context, 1, 4, 2, 2);
+        BlockPos west = context.getAbsolutePos(new BlockPos(1, 2, 2));
+        ItemEntity first = new ItemEntity(context.getWorld(), 0, 0, 0, new ItemStack(Items.IRON_INGOT));
+        first.setPosition(context.getAbsolute(new Vec3d(0.8, 2.5, 2.5)));
+        first.setNoGravity(true);
+        context.getWorld().spawnEntity(first);
+        context.assertTrue(PipeTravel.enter(context.getWorld(), west, Direction.WEST, first, 0), "in");
+        when(context, () -> first.age > 3 && !first.hasVehicle(), 40, "the first never came out", () -> {
+            context.assertTrue(relative(context, first).x > 4.9, "out of the east mouth: " + relative(context, first));
+            first.discard();
+            context.setBlockState(new BlockPos(4, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST));
+            context.setBlockState(new BlockPos(5, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST));
+            context.setBlockState(new BlockPos(6, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST));
+            ItemEntity second = new ItemEntity(context.getWorld(), 0, 0, 0, new ItemStack(Items.IRON_INGOT));
+            second.setPosition(context.getAbsolute(new Vec3d(0.8, 2.5, 2.5)));
+            second.setNoGravity(true);
+            context.getWorld().spawnEntity(second);
+            context.assertTrue(PipeTravel.enter(context.getWorld(), west, Direction.WEST, second, 0), "the second in");
+            when(context, () -> second.age > 3 && !second.hasVehicle(), 40, "the second never came out", () -> {
+                Vec3d at = relative(context, second);
+                context.assertTrue(at.x > 6.9, "out of the new east mouth: " + at);
+                context.complete();
+            });
+        });
+    }
+
+    /** A floating item (no gravity), at {@code relative}. */
+    private static ItemEntity floating(TestContext context, Vec3d relative) {
+        Vec3d at = context.getAbsolute(relative);
+        ItemEntity item = new ItemEntity(context.getWorld(), at.x, at.y, at.z, new ItemStack(Items.SLIME_BALL));
+        item.setVelocity(Vec3d.ZERO);
+        item.setNoGravity(true);
+        context.getWorld().spawnEntity(item);
+        return item;
+    }
+
+    /** The mouth each traveller last came out of. */
+    private static final java.util.Map<Entity, BlockPos> ARRIVALS = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    static {
+        PipeTravel.ARRIVED.register((world, entity, mouth, opening) -> ARRIVALS.put(entity, mouth.toImmutable()));
+    }
+
+    /** Sends a new item through the warp at {@code warp}: it must come out of the mouth at {@code mouth} (relative). */
+    private static void warpThrough(TestContext context, BlockPos warp, BlockPos mouth, String what, Runnable then) {
+        ItemEntity item = floating(context, context.getRelative(Vec3d.ofCenter(warp).add(0, 0.4, 0)));
+        context.assertTrue(PipeTravel.enter(context.getWorld(), warp, Direction.UP, item, 0), "in");
+        when(context, () -> item.age > 3 && !item.hasVehicle(), 60, "never came out", () -> {
+            BlockPos out = ARRIVALS.get(item);
+            Vec3d at = relative(context, item);
+            context.assertTrue(context.getAbsolutePos(mouth).equals(out) && Math.abs(at.x - (mouth.getX() + 0.5)) < 0.6 && at.y >= mouth.getY() + 1 - 1e-3,
+                    what + ": came out of " + (out == null ? null : context.getRelativePos(out)) + " at " + at);
+            item.discard();
+            then.run();
+        });
+    }
+
+    /** A warp mouth lengthened upward, then shortened back: each warp comes out of its top as it is then. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
+    public void warpsComeOutOfTheMouthAsItIsNow(TestContext context) {
+        Block lime = pipe(PipeKind.OPAQUE, 5);
+        context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE);
+        context.setBlockState(new BlockPos(1, 2, 1), pipe(lime, PipeSolid.DOWN));
+        context.setBlockState(new BlockPos(5, 1, 1), Blocks.STONE);
+        BlockPos destination = new BlockPos(5, 2, 1);
+        context.setBlockState(destination, pipe(lime, PipeSolid.DOWN));
+        BlockPos warp = context.getAbsolutePos(new BlockPos(1, 2, 1));
+        warpThrough(context, warp, destination, "out on top of the destination", () -> {
+            // Lengthened by a pipe on top: its old mouth goes into the ground now (a warp), the new top is the mouth
+            context.setBlockState(destination, pipe(lime, PipeSolid.DOWN, Direction.UP));
+            context.setBlockState(destination.up(), pipe(lime, PipeSolid.NONE, Direction.DOWN));
+            warpThrough(context, warp, destination.up(), "out on top of the lengthened pipe", () -> {
+                // Shortened back
+                context.setBlockState(destination.up(), Blocks.AIR);
+                context.assertTrue(mouth(context.getBlockState(destination), Direction.UP), "a mouth on top again");
+                warpThrough(context, warp, destination, "out on top of the shortened pipe", context::complete);
+            });
+        });
+    }
+
+    /**
+     * Out of a downward mouth with the ground one block under it: a player (taller than the gap) stands on the ground,
+     * not in it; with room, it hangs just under the mouth.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void downwardMouthExitNeverInTheGround(TestContext context) {
+        context.setBlockState(new BlockPos(1, 4, 1), pipe(RED, PipeSolid.NONE, Direction.EAST));
+        context.setBlockState(new BlockPos(2, 4, 1), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.DOWN));
+        BlockPos down = new BlockPos(2, 3, 1);
+        context.setBlockState(down, pipe(RED, PipeSolid.NONE, Direction.UP));
+        context.setBlockState(new BlockPos(2, 1, 1), Blocks.STONE);
+        context.assertTrue(mouth(context.getBlockState(down), Direction.DOWN), "a mouth facing down");
+        ServerPlayerEntity player = player(context, new Vec3d(0.4, 3.6, 1.5), -90);
+        PipeNetworks.End end = new PipeNetworks.End(context.getAbsolutePos(down), Direction.DOWN, false);
+        Vec3d roomy = context.getRelative(PipeTravel.standPos(context.getWorld(), context.spawnEntity(EntityType.CHICKEN, new BlockPos(5, 1, 5)), end));
+        context.assertTrue(Math.abs(roomy.y - (3 - EntityType.CHICKEN.getHeight() - 0.01)) < 1e-3, "a small one hangs just under the mouth: " + roomy);
+        context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 4, 1)), Direction.WEST, player, 0), "in");
+        when(context, () -> player.getVehicle() instanceof PipeCarrierEntity, 5, "never went in", () ->
+                when(context, () -> !player.hasVehicle(), 60, "never came out", () -> {
+                    Vec3d at = relative(context, player);
+                    context.assertTrue(Math.abs(at.x - 2.5) < 0.1 && Math.abs(at.z - 1.5) < 0.1, "under the mouth: " + at);
+                    context.assertTrue(at.y >= 2 - 1e-3 && at.y < 2.1, "standing on the ground under it, not in it: " + at);
+                    context.complete();
+                }));
     }
 
     // ------------------------------------------------------------------ items
