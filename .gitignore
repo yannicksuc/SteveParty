@@ -121,6 +121,7 @@ run/
 
 # Local dev server (gradle/dev-server.gradle) and dev launcher state (scripts/dev.ps1)
 run-server/
+run2/
 .dev-launch/
 
 # Mula preview videos (the art sources, rendered locally)

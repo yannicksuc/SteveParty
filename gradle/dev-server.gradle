@@ -15,6 +15,8 @@ ext.devServer = [
         rconPort    : devPort + 10,
         rconPassword: 'steveparty-dev', // loopback-only dev server, not a secret
         player      : 'LordFinn',
+        // A second dev player (offline account) to watch the first one: ./gradlew runClientJoin2 (run2/)
+        player2     : 'Steve2',
         runDir      : 'run-server',
 ]
 
@@ -30,6 +32,13 @@ loom {
             runDir "run"
             programArgs "--username", devServer.player, "--quickPlayMultiplayer", "localhost:${devServer.port}"
             // Started in the background: don't grab the mouse until the window really has the focus (MouseBackgroundDevMixin)
+            vmArg "-Dsteveparty.dev.backgroundClient=true"
+        }
+        clientJoin2 {
+            client()
+            name "Client 2 (join dev server)"
+            runDir "run2"
+            programArgs "--username", devServer.player2, "--quickPlayMultiplayer", "localhost:${devServer.port}"
             vmArg "-Dsteveparty.dev.backgroundClient=true"
         }
     }
