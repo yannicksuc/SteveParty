@@ -49,6 +49,9 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaDances;
+import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaHome;
 import fr.lordfinn.steveparty.utils.GravityPull;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.world.ServerWorld;
@@ -667,37 +670,41 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         return new Vec3d(pos.getX() + 0.5, pos.getY() + CORE_REST_HEIGHT + coreAltitude, pos.getZ() + 0.5);
     }
 
-    /** Mulas dance round a forge: up to this many, the others wait their turn nearby. */
-    private static final int MAX_DANCERS = 8;
     private static final double DANCE_RANGE = 11;
 
     /**
      * Once a second, only with its core in: the Mulas within {@link MulaHome#RADIUS} blocks now live here (MulaHome:
      * they don't leave its area; not one its owner is leading, not one living at another forge), and those within
      * {@value #DANCE_RANGE} blocks (not sitting, not scared) get their place in the forge's dance, in the order of their
-     * ids (stable), up to {@value #MAX_DANCERS}. The dance itself is computed by each from the time.
+     * ids (stable). Up to {@link MulaDances#CAP} dance at once; the others watch from round the dance, and the turns
+     * move on at each new dance ({@link MulaDances#turnStart}) so everyone dances. The dance itself is computed by each
+     * from the time.
      */
     private void conductMulas() {
-        double r = fr.lordfinn.steveparty.entities.custom.MulaHome.RADIUS;
+        double r = MulaHome.RADIUS;
         double cx = pos.getX() + 0.5, cz = pos.getZ() + 0.5;
-        java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> around = world.getEntitiesByClass(
-                fr.lordfinn.steveparty.entities.custom.MulaEntity.class,
-                new net.minecraft.util.math.Box(pos).expand(r, fr.lordfinn.steveparty.entities.custom.MulaHome.ABOVE, r),
+        java.util.List<MulaEntity> around = world.getEntitiesByClass(MulaEntity.class,
+                new net.minecraft.util.math.Box(pos).expand(r, MulaHome.ABOVE, r),
                 m -> m.isAlive() && !m.isToken() && !m.isBursting() && !m.isLedByOwner() && !m.isLeashed()
                         && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= r * r);
         if (around.isEmpty()) return;
-        java.util.List<fr.lordfinn.steveparty.entities.custom.MulaEntity> dancers = new java.util.ArrayList<>();
+        java.util.List<MulaEntity> dancers = new java.util.ArrayList<>();
         for (var m : around) {
-            if (m.homeForge() != null && !m.homeForge().equals(pos)
-                    && fr.lordfinn.steveparty.entities.custom.MulaHome.holds(world, m.homeForge())) continue;
+            if (m.homeForge() != null && !m.homeForge().equals(pos) && MulaHome.holds(world, m.homeForge())) continue;
             m.setHomeForge(pos);
             if (!m.isSitting() && !m.getMulaBrain().isShy() && (m.getX() - cx) * (m.getX() - cx) + (m.getZ() - cz) * (m.getZ() - cz) <= DANCE_RANGE * DANCE_RANGE) {
                 dancers.add(m);
             }
         }
         dancers.sort(java.util.Comparator.comparingInt(net.minecraft.entity.Entity::getId));
-        int count = Math.min(MAX_DANCERS, dancers.size());
-        for (int i = 0; i < count; i++) dancers.get(i).assignDance(pos, i, count);
+        int eligible = dancers.size();
+        int count = Math.min(MulaDances.CAP, eligible);
+        int start = MulaDances.turnStart(world.getTime(), eligible);
+        for (int j = 0; j < eligible; j++) {
+            MulaEntity m = dancers.get((start + j) % eligible);
+            if (j < count) m.assignDance(pos, j, count);
+            else m.assignSpectator(pos, j - count, eligible - count);
+        }
     }
 
     /**

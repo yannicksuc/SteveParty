@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.entities.custom.goals;
 
+import fr.lordfinn.steveparty.entities.custom.MulaDances;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
+import fr.lordfinn.steveparty.entities.custom.MulaHome;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.Goal;
@@ -16,7 +18,7 @@ import java.util.EnumSet;
 /**
  * The Mula's behaviours beyond wandering and following, each a goal holding the MOVE control, so they exclude each
  * other by priority (MulaEntity#initGoals):
- * sit 0, {@link Shy} 1, follow owner 2, {@link Dance} 3, {@link OrbitOwner} 4, {@link Curious} 5, {@link Play} 6,
+ * sit 0, {@link Shy} 1, follow owner 2, {@link Dance} / {@link Spectate} 3, {@link OrbitOwner} 4, {@link Curious} 5, {@link Play} 6,
  * {@link Shiny} 6, {@link Sky} 7, wander (flocks) 8.
  * They read what is around from {@link MulaBrain} (refreshed rarely) and steer the move control towards points
  * computed from formulas: no pathfinding, nothing allocated per tick.
@@ -85,7 +87,7 @@ public final class MulaGoals {
 
         @Override
         public void stop() {
-            mula.stopDancing();
+            if (mula.isDancing()) mula.stopDancing(); // not when it now watches (its turn is over)
         }
 
         @Override
@@ -129,6 +131,83 @@ public final class MulaGoals {
         private double joinX, joinY, joinZ;
         private long joinStart;
         private int joinTicks;
+    }
+
+    /**
+     * Not its turn to dance (more Mulas than dance at once, DiceForgeBlockEntity#conductMulas): it steps back to its
+     * spectator spot round the dance (MulaDances#spectatorSpot, just above the ground), hovers there facing the core,
+     * cheers once on arrival (happy hop) then on the beat (client, MulaEffects#spectatorTick). No wandering into the
+     * dancers meanwhile.
+     */
+    public static final class Spectate extends Goal {
+        private final MulaEntity mula;
+        private final double[] spot = new double[3];
+        /** The spot (index | count << 16) the target was computed for, and whether it has cheered on arrival. */
+        private int spotFor = -1;
+        private boolean arrived;
+
+        public Spectate(MulaEntity mula) {
+            this.mula = mula;
+            setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        }
+
+        @Override
+        public boolean canStart() {
+            return mula.isSpectating() && mula.getWorld().getTime() - mula.danceAssignedTick() < 60 && !mula.isSitting();
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return canStart();
+        }
+
+        @Override
+        public void start() {
+            mula.getNavigation().stop();
+            spotFor = -1;
+        }
+
+        @Override
+        public void stop() {
+            if (mula.isSpectating()) mula.stopDancing(); // not when it now dances (its turn has come)
+        }
+
+        @Override
+        public boolean shouldRunEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            BlockPos forge = mula.danceForge();
+            if (forge == null) return;
+            int key = mula.danceSlot() | mula.danceCount() << 16;
+            if (key != spotFor) {
+                spotFor = key;
+                arrived = false;
+                MulaDances.spectatorSpot(mula.danceSlot(), mula.danceCount(), spot);
+                double x = forge.getX() + 0.5 + spot[0], z = forge.getZ() + 0.5 + spot[2];
+                // on the ground round the forge (a slope, a step), never below the forge's own level
+                double ground = groundBelow(mula.getWorld(), x, forge.getY() + 6, z);
+                spot[0] = x;
+                spot[1] = (Double.isNaN(ground) ? forge.getY() : Math.max(forge.getY(), ground)) + spot[1];
+                spot[2] = z;
+                MulaHome.clamp(forge, spot);
+            }
+            double cx = forge.getX() + 0.5, cy = forge.getY() + 2.4, cz = forge.getZ() + 0.5;
+            double d2 = mula.squaredDistanceTo(spot[0], spot[1], spot[2]);
+            if (d2 > 0.04) fly(mula, spot[0], spot[1], spot[2], d2 > 4 ? 0.35 : 0.15, false);
+            mula.getLookControl().lookAt(cx, cy, cz, 10, 10);
+            if (d2 < 0.36) {
+                float yaw = (float) (MathHelper.atan2(cz - mula.getZ(), cx - mula.getX()) * MathHelper.DEGREES_PER_RADIAN) - 90f;
+                mula.setYaw(yaw);
+                mula.setBodyYaw(yaw);
+                if (!arrived) {
+                    arrived = true;
+                    mula.playAnimation("happy_hop");
+                }
+            }
+        }
     }
 
     // ------------------------------------------------------------------------------------------ on a lead at night
