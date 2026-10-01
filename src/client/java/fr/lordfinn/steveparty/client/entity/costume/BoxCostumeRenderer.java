@@ -21,7 +21,7 @@ import java.util.Set;
  * wearer's feet, facing like his body.
  * <p>
  * Worn, the merchant's own lift of his box ({@code body} raised by 4 px when out) carries it up a player's body; the
- * fit to a player (widened, a bit higher: only the head and the top of the chest show above the rim) grows with that
+ * fit to a player (widened, higher: only the head shows above the rim) grows with that
  * lift, so the box closed on the ground stays exactly a block. The wearer's limbs follow the box (see
  * PlayerEntityModelBoxCostumeMixin): arms through its arm holes, short legs under it, like the merchant's.
  */
@@ -32,8 +32,11 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
     private static final String ARM_HOLE_BONE = "arm_hole_right";
     /** The merchant lifts his box by 4 px when he is out. */
     public static final float MERCHANT_LIFT = 4.0F;
-    /** Fully worn: the box widened around a player's body, and 1 px higher than the merchant's (floor at 5 px, rim at 20 px). */
-    public static final float WAIST_WIDENING = 0.25F, WAIST_LIFT = 1.0F;
+    /**
+     * Fully worn: the box widened around a player's body, and 3.5 px higher than the merchant's (floor at 7.5 px, rim
+     * at 22.5 px: right under the chin, the whole torso inside).
+     */
+    public static final float WAIST_WIDENING = 0.25F, WAIST_LIFT = 3.5F;
 
     private final BlockTexturedBones boxBones = new BlockTexturedBones();
     /** Scale of the waist fit: 1 for a player, 0 for the item icon (the merchant's box as is). */

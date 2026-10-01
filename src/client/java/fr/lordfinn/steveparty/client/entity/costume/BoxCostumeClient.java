@@ -38,8 +38,10 @@ import java.util.WeakHashMap;
 public final class BoxCostumeClient {
     /** The merchant ducks into his box in 0.3 s ("closed"): the wearer disappears inside it then. */
     public static final int DUCK_TICKS = 6;
-    /** Sounds of the merchant's animations: flaps closing at 0.58 s of "closed", the block 10 ticks later, popping out at 0.9 s of "open". */
-    private static final int CLOSE_SOUND_TICKS = 12, PLACE_SOUND_DELAY = 10, OPEN_SOUND_TICKS = 18;
+    /** Sounds of the merchant's animations: flaps closing at 0.58 s of "closed", the block 10 ticks later; popping out as the box pops up. */
+    private static final int CLOSE_SOUND_TICKS = 12, PLACE_SOUND_DELAY = 10, OPEN_SOUND_TICKS = 1;
+    /** The wearer is only drawn once the box is this far up his body: his torso never shows above a box still low. */
+    private static final float SHOWN_FROM_LIFT = 0.75F;
     /** Walking: limb speed above 0.08 for 2 ticks, standing: below 0.03 for 5 ticks (the merchant's hysteresis). */
     private static final float WALK_START = 0.08F, WALK_STOP = 0.03F;
     private static final Identifier VIEW_TEXTURE = Steveparty.id("textures/misc/box_costume_view.png");
@@ -92,6 +94,14 @@ public final class BoxCostumeClient {
         return box != null && box.hidden && box.hiddenTicks >= DUCK_TICKS;
     }
 
+    /**
+     * Not drawn, only his box: ducked inside, or the box (as last drawn) still too low on its way down or up. In step
+     * with the box, so the torso never shows between hidden and worn.
+     */
+    public static boolean isInsideBox(@Nullable BoxCostumeAnimatable box) {
+        return box != null && (isDucked(box) || box.lift < SHOWN_FROM_LIFT);
+    }
+
     private static void tick(ClientWorld world) {
         BOXES.keySet().removeIf(player -> player.getWorld() != world || player.isRemoved() || BoxCostumeItem.getWorn(player).isEmpty());
         for (AbstractClientPlayerEntity player : world.getPlayers()) {
@@ -104,12 +114,14 @@ public final class BoxCostumeClient {
                 box = new BoxCostumeAnimatable();
                 box.hidden = hidden;
                 box.hiddenTicks = hidden ? DUCK_TICKS : 0;
+                box.hiddenYaw = quarterYaw(player.bodyYaw);
                 BOXES.put(player, box);
             }
             box.block = BoxCostumeItem.getBlock(costume);
             if (hidden != box.hidden) {
                 box.hidden = hidden;
                 box.hiddenTicks = 0;
+                if (hidden) box.hiddenYaw = quarterYaw(player.bodyYaw);
                 box.closeSoundTicks = hidden ? CLOSE_SOUND_TICKS : -1;
                 box.placeSoundTicks = -1;
                 box.openSoundTicks = hidden ? -1 : OPEN_SOUND_TICKS;
@@ -125,6 +137,10 @@ public final class BoxCostumeClient {
             }
             tickSounds(world, player, box);
         }
+    }
+
+    private static float quarterYaw(float yaw) {
+        return Math.round(yaw / 90.0F) * 90.0F;
     }
 
     private static void tickSounds(ClientWorld world, PlayerEntity player, BoxCostumeAnimatable box) {
@@ -146,15 +162,18 @@ public final class BoxCostumeClient {
 
     /**
      * Draws a wearer's box, from LivingEntityRenderer#render (same origin: the entity position moved by the model
-     * offset, undone here so the box stays on the ground). Hidden, the box is a block on the ground turned to the
-     * nearest quarter, like the merchant's.
+     * offset, undone here so the box stays on the ground). Worn, it follows the body's yaw; hidden, it is a block on
+     * the ground, on the quarter turn nearest to the body's yaw when it closed, like the merchant's.
      */
     public static void renderWorn(PlayerEntityRenderState state, BoxCostumeAnimatable box, @Nullable Vec3d modelOffset, MatrixStack matrices,
                                   VertexConsumerProvider vertexConsumers, int light) {
         matrices.push();
         if (modelOffset != null) matrices.translate(-modelOffset.x, -modelOffset.y, -modelOffset.z);
         matrices.scale(state.baseScale, state.baseScale, state.baseScale);
-        float yaw = box.hidden ? Math.round(state.bodyYaw / 90.0F) * 90.0F : state.bodyYaw;
+        // On the ground the box is a block: it keeps the quarter turn it was closed on, however the wearer turns inside
+        // (turning it with him made its top and bottom faces jump by quarter turns). It turns to / from the body's
+        // yaw as it drops / rises.
+        float yaw = box.lift >= 1.0F ? state.bodyYaw : MathHelper.lerpAngleDegrees(Math.max(box.lift, 0.0F), box.hiddenYaw, state.bodyYaw);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - yaw));
         renderBox(matrices, box, vertexConsumers, light, MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(false), 1.0F);
         matrices.pop();

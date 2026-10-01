@@ -19,6 +19,6 @@ public class PlayerEntityRendererBoxCostumeMixin {
             at = @At("TAIL"))
     private void steveparty$boxCostume(AbstractClientPlayerEntity player, PlayerEntityRenderState state, float tickDelta, CallbackInfo ci) {
         BoxCostumeAnimatable box = BoxCostumeClient.boxOf(player);
-        ((BoxCostumeRenderState) state).steveparty$setBoxCostume(box, BoxCostumeClient.isDucked(box));
+        ((BoxCostumeRenderState) state).steveparty$setBoxCostume(box, BoxCostumeClient.isInsideBox(box));
     }
 }

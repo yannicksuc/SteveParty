@@ -16,9 +16,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Box Costume: the wearer's limbs are placed like the merchant's around his box.
  * <ul>
- * <li>Arms: detached from the shoulders, they come out of the box's side arm holes, horizontal, and follow the box
- * (its height, its width, its holes opening and closing). They still swing and use items, with a smaller sweep;
- * whatever they hold stays visible outside the box.</li>
+ * <li>Arms: detached from the shoulders, they come out of the box's side arm holes and hang down and outward along
+ * it at the merchant's relaxed angle, a little forward, with his slow sway, and follow the box (its height, its
+ * width, its holes opening and closing). They swing softly while walking and still rise to use an item; whatever
+ * they hold stays visible outside the box.</li>
  * <li>Legs: short ones under the box (feet on the ground), so they never stick out of it while walking.</li>
  * </ul>
  */
@@ -32,13 +33,23 @@ public class PlayerEntityModelBoxCostumeMixin {
     private static final float STEVEPARTY$HOLE_HEIGHT = 8.0F, STEVEPARTY$WALL = 8.0F;
     /** The arm starts this far inside the wall (model px). */
     @Unique
-    private static final float STEVEPARTY$ARM_INSIDE = 2.5F;
-    /** Share of the vanilla arm swing kept (a full swing would cut through the box). */
+    private static final float STEVEPARTY$ARM_INSIDE = 0.5F;
+    /**
+     * Rest pose of the arms, like the merchant's (his idle: 20 to 27.5 degrees out from hanging straight down, a
+     * 4 s sway), a bit more open for a player's longer arm to clear the box, and slightly forward.
+     */
     @Unique
-    private static final float STEVEPARTY$ARM_SWING = 0.4F;
-    /** Legs shortened to fit under the box: 12 px long, feet at 24 px (model px, y down). */
+    private static final float STEVEPARTY$ARM_OUT = 0.61F, STEVEPARTY$ARM_SWAY = 0.065F, STEVEPARTY$ARM_SWAY_SPEED = 0.0785F,
+            STEVEPARTY$ARM_FORWARD = 0.12F;
+    /**
+     * Share of the vanilla arm pitch kept up to {@link #STEVEPARTY$ARM_FREE_PITCH} (the walking swing: the merchant's
+     * is soft); beyond it (aiming, blocking, eating...) the rest is kept whole, so the arm still rises.
+     */
     @Unique
-    private static final float STEVEPARTY$LEG_SCALE = 0.4F, STEVEPARTY$LEG_LENGTH = 12.0F, STEVEPARTY$FEET_Y = 24.0F;
+    private static final float STEVEPARTY$ARM_SWING = 0.35F, STEVEPARTY$ARM_FREE_PITCH = 1.0F;
+    /** Legs shortened to reach from the ground to the box: 12 px long, feet at 24 px (model px, y down). */
+    @Unique
+    private static final float STEVEPARTY$LEG_SCALE = 0.68F, STEVEPARTY$LEG_LENGTH = 12.0F, STEVEPARTY$FEET_Y = 24.0F;
 
     @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("TAIL"))
     private void steveparty$limbsAroundTheBox(PlayerEntityRenderState state, CallbackInfo ci) {
@@ -50,19 +61,24 @@ public class PlayerEntityModelBoxCostumeMixin {
         // Where the box's arm holes are now, in the player model's space (origin 24 px above the feet, y down)
         float holeY = STEVEPARTY$FEET_Y - (STEVEPARTY$HOLE_HEIGHT + (BoxCostumeRenderer.MERCHANT_LIFT + BoxCostumeRenderer.WAIST_LIFT) * lift) * STEVEPARTY$MODEL_PX;
         float wallX = STEVEPARTY$WALL * (1.0F + BoxCostumeRenderer.WAIST_WIDENING * lift) * STEVEPARTY$MODEL_PX;
-        steveparty$armThroughHole(model.rightArm, -(wallX - STEVEPARTY$ARM_INSIDE), holeY, MathHelper.HALF_PI, box.getArmHole());
-        steveparty$armThroughHole(model.leftArm, wallX - STEVEPARTY$ARM_INSIDE, holeY, -MathHelper.HALF_PI, box.getArmHole());
+        // The two arms sway out of step, like his
+        float out = STEVEPARTY$ARM_OUT + MathHelper.sin(state.age * STEVEPARTY$ARM_SWAY_SPEED) * STEVEPARTY$ARM_SWAY;
+        float otherOut = STEVEPARTY$ARM_OUT + MathHelper.sin(state.age * STEVEPARTY$ARM_SWAY_SPEED + 0.6F) * STEVEPARTY$ARM_SWAY;
+        steveparty$armThroughHole(model.rightArm, -(wallX - STEVEPARTY$ARM_INSIDE), holeY, out, box.getArmHole());
+        steveparty$armThroughHole(model.leftArm, wallX - STEVEPARTY$ARM_INSIDE, holeY, -otherOut, box.getArmHole());
         steveparty$shortLeg(model.rightLeg);
         steveparty$shortLeg(model.leftLeg);
     }
 
-    /** The arm lies horizontal through the hole (rolled a quarter turn, the 4 px wide arm centred on the hole). */
+    /** The arm comes out of the hole (its shoulder end in the hole) and hangs outward by {@code roll}. */
     @Unique
     private static void steveparty$armThroughHole(ModelPart arm, float pivotX, float holeY, float roll, float scale) {
         arm.pivotX = pivotX;
-        arm.pivotY = holeY + 1.0F;
+        arm.pivotY = holeY;
         arm.pivotZ = 0.0F;
-        arm.pitch *= STEVEPARTY$ARM_SWING;
+        float pitch = Math.abs(arm.pitch);
+        arm.pitch = Math.signum(arm.pitch) * (Math.min(pitch, STEVEPARTY$ARM_FREE_PITCH) * STEVEPARTY$ARM_SWING
+                + Math.max(pitch - STEVEPARTY$ARM_FREE_PITCH, 0.0F)) - STEVEPARTY$ARM_FORWARD;
         arm.yaw *= STEVEPARTY$ARM_SWING;
         arm.roll = roll + arm.roll * STEVEPARTY$ARM_SWING;
         // Shrinks into the hole as it closes (with what it holds)
