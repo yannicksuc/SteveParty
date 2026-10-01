@@ -24,8 +24,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * The Hiding Trader's box, taken with shears from a merchant who already lost his bandana. It keeps the block look his
- * box had ({@link ModComponents#BOX_BLOCK}) and is worn in the chest slot (vanilla equippable, right click to put it
+ * The look of the Hiding Trader's box, taken with shears from a merchant who already lost his bandana (he keeps a box
+ * with the missing texture, until a costume is given back to him). It keeps the block look his box had
+ * ({@link ModComponents#BOX_BLOCK}) and is worn in the chest slot (vanilla equippable, right click to put it
  * on): around the waist while walking, and the wearer hides inside it, closed like a block on the ground, while
  * sneaking (see {@link #isHiddenInBox}). Monsters hardly notice a player hidden in it.
  */

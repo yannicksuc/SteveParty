@@ -60,12 +60,17 @@ public class HidingTraderGameTests implements FabricGameTest {
 
     /** Runs the checks, always disconnecting the mock player (a stray player would open other tests' traders). */
     private static void checks(TestContext context, ServerPlayerEntity player, Runnable checks) {
+        checks(context, player, checks, true);
+    }
+
+    /** @param complete false when the checks go on (and complete the test) after the player left */
+    private static void checks(TestContext context, ServerPlayerEntity player, Runnable checks, boolean complete) {
         try {
             checks.run();
         } finally {
             disconnect(context, player);
         }
-        context.complete();
+        if (complete) context.complete();
     }
 
     private static List<ItemEntity> droppedCostumes(TestContext context, HidingTraderEntity trader) {
@@ -106,30 +111,30 @@ public class HidingTraderGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void shearsDoNothingOnAClosedOrBoxlessMerchant(TestContext context) {
+    public void shearsDoNothingOnAClosedOrGlitchedMerchant(TestContext context) {
         floor(context);
         HidingTraderEntity closed = trader(context);
-        HidingTraderEntity boxless = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(5, 1, 3));
+        HidingTraderEntity glitched = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(5, 1, 3));
         ServerPlayerEntity player = playerNear(context, closed);
         closed.startTheftHiding(0);
-        boxless.setHasBandana(false);
-        boxless.setHasBox(false);
+        glitched.setHasBandana(false);
+        glitched.setBoxGlitched(true);
         context.waitAndRun(3, () -> checks(context, player, () -> {
             context.assertTrue(closed.isHidden(), "closed");
-            context.assertFalse(boxless.isHidden(), "the boxless one is open");
+            context.assertFalse(glitched.isHidden(), "the one with the glitched box is open");
             player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SHEARS));
             closed.interact(player, Hand.MAIN_HAND);
-            context.assertTrue(closed.hasBandana() && closed.hasBox(), "closed: keeps his bandana and his box");
-            boxless.interact(player, Hand.MAIN_HAND);
-            context.assertFalse(boxless.hasBandana() || boxless.hasBox(), "boxless: still bald and boxless");
+            context.assertTrue(closed.hasBandana() && !closed.isBoxGlitched(), "closed: keeps his bandana and his box's look");
+            glitched.interact(player, Hand.MAIN_HAND);
+            context.assertTrue(!glitched.hasBandana() && glitched.isBoxGlitched(), "glitched: still bald, box still glitched");
             context.assertEquals(player.getMainHandStack().getDamage(), 0, "shears not used");
-            context.assertTrue(droppedBandanas(context, closed).isEmpty() && droppedBandanas(context, boxless).isEmpty()
-                    && droppedCostumes(context, closed).isEmpty(), "nothing dropped");
+            context.assertTrue(droppedBandanas(context, closed).isEmpty() && droppedBandanas(context, glitched).isEmpty()
+                    && droppedCostumes(context, closed).isEmpty() && droppedCostumes(context, glitched).isEmpty(), "nothing dropped");
         }));
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
-    public void shearingTwiceTakesTheBandanaThenTheBox(TestContext context) {
+    public void shearingTwiceTakesTheBandanaThenTheLookOfTheBox(TestContext context) {
         floor(context);
         HidingTraderEntity trader = trader(context);
         trader.setBlockState(Blocks.OAK_PLANKS.getDefaultState());
@@ -139,7 +144,7 @@ public class HidingTraderGameTests implements FabricGameTest {
             try {
                 trader.interact(player, Hand.MAIN_HAND);
                 context.assertFalse(trader.hasBandana(), "first shear: the bandana");
-                context.assertTrue(trader.hasBox(), "keeps his box");
+                context.assertFalse(trader.isBoxGlitched(), "his box keeps its look");
             } catch (RuntimeException e) {
                 disconnect(context, player);
                 throw e;
@@ -149,7 +154,7 @@ public class HidingTraderGameTests implements FabricGameTest {
                     context.assertTrue(trader.isHidden(), "hidden after the theft");
                     // Shears on the closed box: nothing
                     trader.interact(player, Hand.MAIN_HAND);
-                    context.assertTrue(trader.hasBox(), "closed: keeps his box");
+                    context.assertFalse(trader.isBoxGlitched(), "closed: his box keeps its look");
                     // The theft cooldown is over: he comes out again
                     trader.startTheftHiding(-HidingTraderEntity.THEFT_HIDE_TICKS - 1);
                 } catch (RuntimeException e) {
@@ -159,41 +164,42 @@ public class HidingTraderGameTests implements FabricGameTest {
                 context.waitAndRun(2, () -> checks(context, player, () -> {
                     context.assertFalse(trader.isHidden(), "out again");
                     trader.interact(player, Hand.MAIN_HAND);
-                    context.assertFalse(trader.hasBox(), "second shear: the box");
+                    context.assertTrue(trader.isBoxGlitched(), "second shear: the look of his box");
                     List<ItemEntity> costumes = droppedCostumes(context, trader);
                     context.assertEquals(costumes.size(), 1, "one costume dropped");
                     context.assertTrue(BoxCostumeItem.getBlock(costumes.getFirst().getStack()).isOf(Blocks.OAK_PLANKS), "of his block");
-                    // Nothing on him went out of range: still a valid block look and bandana colour
+                    // Only the flag changed: his block (sounds, the costume given back) and bandana colour stay valid
                     context.assertTrue(HidingTraderEntity.isValidBoxBlock(trader.getBlockState()) && trader.getBlockState().isOf(Blocks.OAK_PLANKS),
-                            "block look kept: " + trader.getBlockState());
+                            "block kept: " + trader.getBlockState());
                     context.assertTrue(trader.getBandanaColor() >= 0 && trader.getBandanaColor() < HidingTraderEntity.BANDANA_COLORS, "bandana colour in range");
                     context.assertEquals(player.getMainHandStack().getDamage(), 2, "shears used twice");
                     trader.interact(player, Hand.MAIN_HAND);
                     context.assertEquals(droppedCostumes(context, trader).size(), 1, "a third shear takes nothing more");
                     context.assertEquals(player.getMainHandStack().getDamage(), 2, "nor uses the shears");
-                }));
+                    context.waitAndRun(HidingTraderEntity.SHOCK_TICKS + 3, () -> {
+                        context.assertTrue(trader.isHidden(), "he still hides in his glitched box");
+                        context.complete();
+                    });
+                }, false));
             });
         });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aBoxlessMerchantCannotHideAndBuildsANewBox(TestContext context) {
+    public void aBoxCostumeGivesTheBoxItsLookBack(TestContext context) {
         floor(context);
         HidingTraderEntity trader = trader(context);
         trader.setHasBandana(false);
-        trader.setHasBox(false);
-        // Forced to hide (like after a theft), but nothing to hide in
-        trader.startTheftHiding(0);
-        context.waitAndRun(3, () -> {
-            context.assertFalse(trader.isHidden(), "no box: can't hide");
-            trader.regrowBox();
-            context.assertTrue(trader.hasBox(), "a new box");
-            context.assertTrue(trader.getBlockState().isOf(Blocks.STONE), "made of the block under his feet: " + trader.getBlockState());
-            context.waitAndRun(2, () -> {
-                context.assertTrue(trader.isHidden(), "hides in it again");
-                context.complete();
-            });
-        });
+        trader.setBoxGlitched(true);
+        ServerPlayerEntity player = playerNear(context, trader);
+        context.waitAndRun(3, () -> checks(context, player, () -> {
+            context.assertFalse(trader.isHidden(), "open, glitched box or not");
+            player.setStackInHand(Hand.MAIN_HAND, BoxCostumeItem.create(Blocks.BRICKS.getDefaultState()));
+            trader.interact(player, Hand.MAIN_HAND);
+            context.assertFalse(trader.isBoxGlitched(), "his box has a look again");
+            context.assertTrue(trader.getBlockState().isOf(Blocks.BRICKS), "the costume's block: " + trader.getBlockState());
+            context.assertTrue(player.getMainHandStack().isEmpty(), "costume used up");
+        }));
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
@@ -215,12 +221,12 @@ public class HidingTraderGameTests implements FabricGameTest {
     public void boxStateIsSaved(TestContext context) {
         HidingTraderEntity trader = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(1, 1, 1));
         trader.setBlockState(Blocks.BRICKS.getDefaultState());
-        trader.setHasBox(false);
+        trader.setBoxGlitched(true);
         NbtCompound saved = trader.writeNbt(new NbtCompound());
         HidingTraderEntity loaded = ModEntities.HIDING_TRADER_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
         loaded.readNbt(saved);
-        context.assertFalse(loaded.hasBox(), "still boxless");
-        context.assertTrue(loaded.getBlockState().isOf(Blocks.BRICKS), "block look kept");
+        context.assertTrue(loaded.isBoxGlitched(), "box still glitched");
+        context.assertTrue(loaded.getBlockState().isOf(Blocks.BRICKS), "block kept");
         context.complete();
     }
 
