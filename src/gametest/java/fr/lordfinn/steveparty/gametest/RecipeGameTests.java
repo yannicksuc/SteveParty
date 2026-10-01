@@ -115,6 +115,23 @@ public class RecipeGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** The Telescope: a spyglass on a copper ingot on three sticks; not without the spyglass. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void telescopeIsMadeFromASpyglass(TestContext context) {
+        ItemStack e = ItemStack.EMPTY;
+        ItemStack telescope = result(context, 3, 3,
+                e, new ItemStack(Items.SPYGLASS), e,
+                e, new ItemStack(Items.COPPER_INGOT), e,
+                new ItemStack(Items.STICK), new ItemStack(Items.STICK), new ItemStack(Items.STICK));
+        context.assertTrue(telescope.isOf(ModBlocks.TELESCOPE.asItem()) && telescope.getCount() == 1, "telescope, got " + telescope);
+        ItemStack without = result(context, 3, 3,
+                e, new ItemStack(Items.AMETHYST_SHARD), e,
+                e, new ItemStack(Items.COPPER_INGOT), e,
+                new ItemStack(Items.STICK), new ItemStack(Items.STICK), new ItemStack(Items.STICK));
+        context.assertTrue(!without.isOf(ModBlocks.TELESCOPE.asItem()), "no telescope without a spyglass");
+        context.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void formerlyCreativeOnlyItemsAreCraftable(TestContext context) {
         ItemStack e = ItemStack.EMPTY;

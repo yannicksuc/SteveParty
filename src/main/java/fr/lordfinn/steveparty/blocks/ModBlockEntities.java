@@ -158,6 +158,12 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(DiceForgeBlockEntity::new, ModBlocks.DICE_FORGE).build(null)
     );
 
+    public static final BlockEntityType<TelescopeBlockEntity> TELESCOPE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "telescope"),
+            FabricBlockEntityTypeBuilder.create(TelescopeBlockEntity::new, ModBlocks.TELESCOPE).build(null)
+    );
+
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

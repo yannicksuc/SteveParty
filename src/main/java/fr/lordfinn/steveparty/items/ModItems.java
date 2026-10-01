@@ -323,6 +323,7 @@ public class ModItems {
             itemGroup.add(POWER_STAR);
             itemGroup.add(GRAVITY_CORE);
             itemGroup.add(DICE_FORGE);
+            itemGroup.add(TELESCOPE);
             for (Item item : DICE_FACES) {
                 itemGroup.add(item);
             }

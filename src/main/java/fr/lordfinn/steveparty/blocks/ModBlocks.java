@@ -604,6 +604,16 @@ public class ModBlocks {
                     .requiresTool(),
             "dice_forge", true);
 
+    /** A copper telescope on a tripod: to replay the past nights of shooting stars and find where the Mulas came down. */
+    public static final Block TELESCOPE = register(TelescopeBlock::new,
+            Block.Settings.create()
+                    .mapColor(MapColor.ORANGE)
+                    .strength(1.0f, 3.0f)
+                    .sounds(BlockSoundGroup.COPPER)
+                    .nonOpaque()
+                    .pistonBehavior(PistonBehavior.DESTROY),
+            "telescope", true);
+
     // ---------------------------------------------------------------- stencil signs
 
     /** Easel sign of any planks (the wood is kept by the block entity and the item). */

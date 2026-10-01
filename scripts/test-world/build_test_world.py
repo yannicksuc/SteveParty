@@ -718,6 +718,9 @@ def mula_station(x0=2060, z0=2020):
         cmds.append('summon steveparty:mula %.1f %d %.1f {Variant:%d,Hunger:%d,PersistenceRequired:1b}'
                     % (x, Y, z, variant, hunger))
     cmds.append(label(gx0 - 1.5, Y + 2.5, gz0 + 8.5, 'Mulas (6 couleurs, faim 0 à 40) + Dice Forge', 'white', 0.8, False))
+    # a Telescope outside, under the open sky (at night: /mula ephemeride start, wait for a wave, then look through it)
+    cmds.append('setblock %d %d %d steveparty:telescope[rotation=4]' % (gx0 - 3, Y, gz0 + 4))
+    cmds.append(label(gx0 - 2.5, Y + 2.5, gz0 + 4.5, 'Télescope (la nuit) : rejouer la nuit', 'white', 0.7, False))
     return cmds
 
 
@@ -974,7 +977,7 @@ def all_items():
             ['premium_dice_face_%d' % i for i in range(1, 11)] + ['cursed_dice_face_%d' % i for i in range(1, 4)]
     groups.append(('Dés', ['default_dice', 'double_dice', 'triple_dice', 'dice_forge', 'gravity_core'] + faces))
     stars = ['%s_star_fragment' % c for c in ['blue', 'purple', 'red', 'yellow', 'green', 'black']]
-    groups.append(('Mulas et étoiles', ['mula_spawn_egg', 'power_star'] + stars +
+    groups.append(('Mulas et étoiles', ['mula_spawn_egg', 'telescope', 'power_star'] + stars +
                    ['%s_star_fragments_block' % c for c in ['blue', 'green', 'red', 'yellow', 'purple', 'black']]))
     groups.append(('Boutique et divers', ['trading_stall', 'cash_register', 'looting_box', 'villager_block',
                                           'shopkeeper_key', 'bandana', 'goal_pole_base', 'goal_pole', 'flag',

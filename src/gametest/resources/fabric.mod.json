@@ -42,6 +42,7 @@
       "fr.lordfinn.steveparty.gametest.MulaHomeGameTests",
       "fr.lordfinn.steveparty.gametest.MulaLiftGameTests",
       "fr.lordfinn.steveparty.gametest.MulaEphemerideGameTests",
+      "fr.lordfinn.steveparty.gametest.TelescopeGameTests",
       "fr.lordfinn.steveparty.gametest.StencilGameTests",
       "fr.lordfinn.steveparty.gametest.TokenSpellGameTests",
       "fr.lordfinn.steveparty.gametest.TokenBaseGameTests",
