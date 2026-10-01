@@ -12,6 +12,7 @@ import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -31,8 +32,10 @@ import java.util.Optional;
  *     (the base, rings darkening toward the edge, the darker features) and painted with the ramp of any colour;</li>
  *     <li>stamped looks ({@link TileStampComponent}): the dye's colour, the pattern in its darkest shade;</li>
  *     <li>the role faces drawn over the blank face (its rounded bevel): Move Forward / Back ({@link #advanceBack}),
- *     Stop ({@link #stopFace}), Replay ({@link #replayFace}), Shop ({@link #shopFace}), Teleport ({@link #teleportFace}): hand-drawn pixel
- *     grids, one per size;</li>
+ *     Stop ({@link #stopFace}), Replay ({@link #replayFace}), Shop ({@link #shopFace}): hand-drawn pixel grids, one per
+ *     size;</li>
+ *     <li>the Teleport face ({@link #teleportFace}): a portal over the whole flat of the blank face, a few images of it
+ *     shown in turn (its rings drifting);</li>
  * </ul>
  * Each exists at two pixel densities: 32x32 over the 2 blocks of a standard (or large) tile (28x28 drawn, 2 px margin),
  * and 16x16 over the single block of a small tile, at the block's own pixel density. Created on first use, LRU
@@ -409,6 +412,64 @@ public final class TileStampTextures {
 
     // ---------------------------------------------------------------- the Teleport face
 
+    /** Images of the portal's drift (its rings one pixel further in at each) and how long each one shows. */
+    public static final int PORTAL_FRAMES = 6;
+    private static final long PORTAL_FRAME_MS = 450;
+    /**
+     * The portal's rings, from a corner of the flat of the face toward its middle: two pixels of deep colour, a soft
+     * edge, two light pixels and a soft edge again (concentric diamonds: straight 45 degree steps at every size).
+     */
+    private static final float[] PORTAL_RINGS = {0.42f, 0.42f, 0.14f, -0.42f, -0.42f, 0.14f};
+    /** The sparkle in the middle of the portal: almost white. */
+    private static final float PORTAL_SPARKLE = -0.9f;
+
+    /**
+     * The Teleport tile's face: a Nether-portal-like window over the whole flat of the blank tile face (inside its
+     * rounded bevel), deep rings and light ones in concentric diamonds around a sparkle, all in the ramp of
+     * {@code rgb} (violet by default: the colour of its network). The rings drift slowly toward the middle: a few
+     * images, each drawn once and kept, the one to show picked by the time.
+     */
+    public static Identifier teleportFace(int rgb, boolean small) {
+        return teleportFace(rgb, small, (int) (Util.getMeasuringTimeMs() / PORTAL_FRAME_MS % PORTAL_FRAMES));
+    }
+
+    /** The image {@code frame} (0 to {@link #PORTAL_FRAMES} - 1) of the Teleport tile's face. */
+    public static Identifier teleportFace(int rgb, boolean small, int frame) {
+        int image = Math.floorMod(frame, PORTAL_FRAMES);
+        return TEXTURES.computeIfAbsent(new Key("teleport:" + image, rgb, small), key -> register(portalValues(frame(small), small, image), rgb, small));
+    }
+
+    /**
+     * The blank face {@code blank} with the portal over its flat (the pixels of its base, inside the bevel): each
+     * pixel takes the ring of its distance to the nearest corner of the flat, counted along both axes (diamonds),
+     * {@code frame} pixels further out; the middle is the sparkle. On a standard face a light ring around a deep
+     * heart, and another in the corners; on a small one a single light ring.
+     */
+    private static float[] portalValues(float[] blank, boolean small, int frame) {
+        int side = small ? SMALL_SIDE : SIDE;
+        float[] values = blank.clone();
+        int min = side, max = -1;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] != 0) continue;
+            min = Math.min(min, Math.min(i % side, i / side));
+            max = Math.max(max, Math.max(i % side, i / side));
+        }
+        if (max < 0) return values;
+        int phase = small ? 4 : 0;
+        int middle = max - min - 1;
+        for (int x = min; x <= max; x++) {
+            for (int y = min; y <= max; y++) {
+                if (values[y * side + x] != 0) continue;
+                int distance = Math.min(x - min, max - x) + Math.min(y - min, max - y);
+                values[y * side + x] = distance >= middle ? PORTAL_SPARKLE
+                        : PORTAL_RINGS[Math.floorMod(distance + phase - frame, PORTAL_RINGS.length)];
+            }
+        }
+        return values;
+    }
+
+    // ---------------------------------------------------------------- the pipe pictogram (for a pipe cartridge to come)
+
     /** A warp pipe seen from the side (rim over its body), '#' in the darkest shade, 'o' its light highlight. */
     private static final String[] PIPE = {
             "##############",
@@ -438,11 +499,11 @@ public final class TileStampTextures {
     private static final float PIPE_HIGHLIGHT = -0.5f;
 
     /**
-     * The Teleport tile's face: a warp pipe on the blank tile face (its rounded bevel), all in the ramp of {@code rgb}
-     * (violet by default, a dye changes it): the pipe in the darkest shade with a light highlight down its rim and body.
+     * A warp pipe on the blank tile face (its rounded bevel), all in the ramp of {@code rgb}: the pipe in the darkest
+     * shade with a light highlight down its rim and body. No tile shows it yet: the face of a pipe cartridge to come.
      */
-    public static Identifier teleportFace(int rgb, boolean small) {
-        return TEXTURES.computeIfAbsent(new Key("teleport", rgb, small), key -> {
+    public static Identifier pipeFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("pipe", rgb, small), key -> {
             boolean dark = TileColors.isDark(rgb);
             float[] values = glyphValues(small ? SMALL_PIPE : PIPE, small, dark ? LIGHT_INK : FEATURE, dark ? FEATURE : PIPE_HIGHLIGHT);
             return register(values, rgb, small);
