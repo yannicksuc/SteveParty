@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "G G",
+    "GPG",
+    "G G"
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "P": "minecraft:paper"
+  },
+  "result": {
+    "id": "steveparty:golden_minigame_pipe",
+    "count": 1
+  }
+}

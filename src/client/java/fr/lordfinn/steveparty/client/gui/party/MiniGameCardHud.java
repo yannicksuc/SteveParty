@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGameText;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -109,7 +110,7 @@ public final class MiniGameCardHud {
             pictureHeight = hasPicture ? size[1] : 0;
             width = pictureWidth + 2 * PAD;
             description = page.description().isEmpty() ? List.of()
-                    : MiniGamePageTooltipComponent.wrap(font, Text.literal(page.description()), pictureWidth, MAX_DESCRIPTION_LINES);
+                    : MiniGamePageTooltipComponent.wrap(font, MiniGameText.parse(page.description()), pictureWidth, MAX_DESCRIPTION_LINES);
             height = PAD + 12 + (hasPicture ? pictureHeight + 2 + 4 : 0) + 13 + (description.isEmpty() ? 0 : 3 + 10 * description.size()) + PAD;
             if (width <= screenWidth - 16 && height <= screenHeight - ROOM_ABOVE - ROOM_BELOW) break;
         }

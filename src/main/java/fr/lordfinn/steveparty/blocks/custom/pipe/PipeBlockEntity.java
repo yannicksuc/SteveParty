@@ -27,7 +27,11 @@ public class PipeBlockEntity extends BlockEntity implements ImplementedInventory
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(1, ItemStack.EMPTY);
 
     public PipeBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.PIPE_ENTITY, pos, state);
+        this(ModBlockEntities.PIPE_ENTITY, pos, state);
+    }
+
+    protected PipeBlockEntity(net.minecraft.block.entity.BlockEntityType<? extends PipeBlockEntity> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
     }
 
     @Override

@@ -50,6 +50,7 @@ public class PipeModelPlugin implements ModelLoadingPlugin {
         return switch (kind) {
             case GLASS -> Identifier.ofVanilla("block/glass");
             case STAINED_GLASS -> Identifier.ofVanilla("block/" + ModBlocks.COLORS[color] + "_stained_glass");
+            case GOLDEN, SUPER_GOLDEN, MEGA_GOLDEN -> Steveparty.id("block/pipe/" + kind.folder + "/gold_" + PARTS[part]);
             default -> part == PipeGeometry.RIM ? Steveparty.id("block/plastic_block/" + ModBlocks.COLORS[color] + "_plastic_block")
                     : Steveparty.id("block/pipe/" + kind.folder + "/" + ModBlocks.COLORS[color] + "_" + PARTS[part]);
         };

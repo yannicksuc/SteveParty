@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_mini_games_catalogue": {
+    "has_board_space_behavior": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:mini_games_catalogue"
+            "items": "steveparty:board_space_behavior"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_mini_games_catalogue"
+      "has_board_space_behavior"
     ]
   ],
   "rewards": {

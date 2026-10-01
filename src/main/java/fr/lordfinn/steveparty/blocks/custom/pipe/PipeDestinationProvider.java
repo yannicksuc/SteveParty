@@ -27,6 +27,16 @@ public interface PipeDestinationProvider {
     @Nullable Exit destination(ServerWorld world, BlockPos cappedEnd, Entity traveller);
 
     /**
+     * As {@link #destination(ServerWorld, BlockPos, Entity)}, knowing the mouth the traveller went in by (the Golden
+     * Mini-game Pipe sends by the colour of that mouth).
+     *
+     * @param enteredBy the mouth it went in by, null when not known
+     */
+    default @Nullable Exit destination(ServerWorld world, BlockPos cappedEnd, Entity traveller, PipeNetworks.@Nullable End enteredBy) {
+        return destination(world, cappedEnd, traveller);
+    }
+
+    /**
      * A mouth: the pipe block and the side it opens on.
      *
      * @param dimension its dimension, null for the one of the capped end

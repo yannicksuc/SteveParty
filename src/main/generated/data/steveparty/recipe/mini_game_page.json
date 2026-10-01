@@ -1,12 +1,17 @@
 {
-  "type": "minecraft:crafting_shapeless",
+  "type": "minecraft:crafting_shaped",
   "category": "misc",
-  "ingredients": [
-    "minecraft:paper",
-    "minecraft:cyan_dye"
+  "key": {
+    "C": "steveparty:board_space_behavior",
+    "P": "minecraft:paper"
+  },
+  "pattern": [
+    " P ",
+    "PCP",
+    " P "
   ],
   "result": {
-    "count": 1,
+    "count": 4,
     "id": "steveparty:mini_game_page"
   }
 }

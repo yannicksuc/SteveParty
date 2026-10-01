@@ -61,6 +61,8 @@ public final class MiniGamePageNetworking {
                 ModPayloads.runInPacketOrder(context.player(), () -> upload(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PipeRole.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () -> pipeRole(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PipeOrder.ID, (payload, context) ->
+                ModPayloads.runInPacketOrder(context.player(), () -> pipeOrder(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Request.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () ->
                         send(context.player(), new MiniGamePagePayloads.Data(MiniGamePages.get(context.player().server, payload.page())))));
@@ -150,6 +152,14 @@ public final class MiniGamePageNetworking {
         if (payload.role() < 0) return MiniGamePages.removeLink(player.server, payload.page(), payload.mouth());
         MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(payload.role());
         return role != null && MiniGamePages.setLinkRole(player.server, payload.page(), payload.mouth(), role);
+    }
+
+    /** A role's players sent in turn or at random, chosen in the editor. @return true if it was done */
+    public static boolean pipeOrder(ServerPlayerEntity player, MiniGamePagePayloads.PipeOrder payload) {
+        MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(payload.role());
+        if (role == null || !role.hasOrder() || editable(player, payload.hand(), payload.page()) == null) return false;
+        MiniGamePages.setRandom(player.server, payload.page(), role, payload.random());
+        return true;
     }
 
     /** A button of the editor. @return true if it was done */

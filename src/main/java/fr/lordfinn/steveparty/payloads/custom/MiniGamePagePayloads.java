@@ -38,6 +38,7 @@ public final class MiniGamePagePayloads {
         PayloadTypeRegistry.playC2S().register(Action.ID, Action.CODEC);
         PayloadTypeRegistry.playC2S().register(Upload.ID, Upload.CODEC);
         PayloadTypeRegistry.playC2S().register(PipeRole.ID, PipeRole.CODEC);
+        PayloadTypeRegistry.playC2S().register(PipeOrder.ID, PipeOrder.CODEC);
         PayloadTypeRegistry.playC2S().register(Request.ID, Request.CODEC);
         PayloadTypeRegistry.playC2S().register(ImageRequest.ID, ImageRequest.CODEC);
     }
@@ -212,6 +213,27 @@ public final class MiniGamePagePayloads {
             buf.writeByte(payload.role);
         }, buf -> new PipeRole(buf.readEnumConstant(Hand.class), buf.readUuid(),
                 GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier()), buf.readBlockPos()), buf.readByte()));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * How the players of a role are sent to its pipes, for the page {@code page} held in {@code hand}.
+     *
+     * @param role   ordinal of the {@link fr.lordfinn.steveparty.minigame.MiniGamePipeRole}
+     * @param random true: a pipe picked at random; false: each pipe in turn
+     */
+    public record PipeOrder(Hand hand, UUID page, int role, boolean random) implements CustomPayload {
+        public static final Id<PipeOrder> ID = id("pipe_order");
+        public static final PacketCodec<PacketByteBuf, PipeOrder> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeEnumConstant(payload.hand);
+            buf.writeUuid(payload.page);
+            buf.writeByte(payload.role);
+            buf.writeBoolean(payload.random);
+        }, buf -> new PipeOrder(buf.readEnumConstant(Hand.class), buf.readUuid(), buf.readByte(), buf.readBoolean()));
 
         @Override
         public Id<? extends CustomPayload> getId() {

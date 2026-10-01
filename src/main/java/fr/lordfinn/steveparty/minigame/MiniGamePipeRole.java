@@ -28,7 +28,7 @@ public enum MiniGamePipeRole {
     TEAM_C(0xA85CE0, "purple"),
     /** Orange pipes. */
     TEAM_D(0xE08A1E, "orange"),
-    /** A way in, out of a party: who goes in comes out of the {@link #PLAYERS} pipes. Black pipes. */
+    /** The default arrival of those who come by a Golden Mini-game Pipe, out of a party. Black pipes. */
     ENTRY(0x4A4A4A, "black"),
     /** The way out of the mini-game: who goes in goes back where it came from. Yellow pipes. */
     EXIT(0xF2C230, "yellow");
@@ -57,9 +57,14 @@ public enum MiniGamePipeRole {
         return Text.translatable(translationKey());
     }
 
-    /** @return true if players are sent to these pipes (not a way in or out). */
+    /** @return true if the players of a mini-game are sent to these pipes (not the default arrival, nor the way out). */
     public boolean isArrival() {
         return this != ENTRY && this != EXIT;
+    }
+
+    /** @return true if someone comes out of these pipes (all but the way out): they are used each in turn, or at random. */
+    public boolean hasOrder() {
+        return this != EXIT;
     }
 
     /** The role of team {@code index} (0: A ... 3: D). */
@@ -83,6 +88,8 @@ public enum MiniGamePipeRole {
     public static MiniGamePipeRole ofPipe(BlockState state) {
         if (!(state.getBlock() instanceof PipeBlock pipe)) return PLAYERS;
         if (pipe.kind() == PipeKind.GLASS) return SPECTATORS;
+        // A golden pipe has no role of its own: who comes by it goes to the default arrival
+        if (pipe.kind().isGolden()) return ENTRY;
         String color = ModBlocks.COLORS[Math.floorMod(pipe.color(), ModBlocks.COLORS.length)];
         for (MiniGamePipeRole role : VALUES) {
             if (role.pipeColors.contains(color)) return role;

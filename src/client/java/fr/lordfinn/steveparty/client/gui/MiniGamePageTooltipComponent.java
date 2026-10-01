@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGameText;
 import net.fabricmc.fabric.api.client.rendering.v1.TooltipComponentCallback;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -82,7 +83,7 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         int height = data.image() != null ? PICTURE_HEIGHT + 3 : 0;
         height += 10 * lines(textRenderer, modesText(data), 2).size() + 10;
         if (!data.isPlayable()) height += 10;
-        if (!data.description().isEmpty()) height += 2 + 10 * lines(textRenderer, Text.literal(data.description()), MAX_DESCRIPTION_LINES).size();
+        if (!data.description().isEmpty()) height += 2 + 10 * lines(textRenderer, MiniGameText.parse(data.description()), MAX_DESCRIPTION_LINES).size();
         return height + 2;
     }
 
@@ -115,7 +116,7 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         }
         if (!data.description().isEmpty()) {
             top += 2;
-            for (OrderedText line : lines(textRenderer, Text.literal(data.description()), MAX_DESCRIPTION_LINES)) {
+            for (OrderedText line : lines(textRenderer, MiniGameText.parse(data.description()), MAX_DESCRIPTION_LINES)) {
                 context.drawText(textRenderer, line, x, top, COLOR_DESCRIPTION, true);
                 top += 10;
             }

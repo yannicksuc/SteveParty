@@ -24,10 +24,17 @@ import java.util.UUID;
  * @param description free text, lines split by {@code \n}
  * @param image       its picture, null for none
  * @param modes       the team layouts the mini-game accepts (never empty)
+ * @param description free text with the markup of {@link MiniGameText}, lines split by {@code \n}
  * @param pipeLinks   the pipe mouths of the mini-game, with their roles
+ * @param randomRoles the roles whose players are sent to a pipe picked at random (the others: each pipe in turn)
+ * @param intro       the shots of the introduction shown before the players leave, empty for none
  */
 public record MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
-                               Set<MiniGameMode> modes, int minPlayers, int maxPlayers, List<MiniGamePipeLink> pipeLinks) {
+                               Set<MiniGameMode> modes, int minPlayers, int maxPlayers, List<MiniGamePipeLink> pipeLinks,
+                               Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro) {
+    /** The version of the saved form: 2 added the random roles, the introduction and the text markup. */
+    public static final int FORMAT = 2;
+    public static final int MAX_INTRO_SHOTS = 32;
     public static final int MAX_TITLE_LENGTH = 40;
     public static final int MAX_DESCRIPTION_LENGTH = 400;
     public static final int MAX_DESCRIPTION_LINES = 8;
@@ -45,17 +52,26 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         description = cleanDescription(description);
         EnumSet<MiniGameMode> accepted = EnumSet.noneOf(MiniGameMode.class);
         if (modes != null) accepted.addAll(modes);
-        if (accepted.isEmpty()) accepted = EnumSet.allOf(MiniGameMode.class);
+        if (accepted.isEmpty()) accepted = EnumSet.of(MiniGameMode.FREE_FOR_ALL);
         modes = Collections.unmodifiableSet(accepted);
         minPlayers = Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, minPlayers));
         maxPlayers = Math.max(minPlayers, Math.min(MAX_PLAYERS, maxPlayers));
         pipeLinks = pipeLinks == null ? List.of()
                 : List.copyOf(pipeLinks.size() > MAX_PIPE_LINKS ? pipeLinks.subList(0, MAX_PIPE_LINKS) : pipeLinks);
+        EnumSet<MiniGamePipeRole> random = EnumSet.noneOf(MiniGamePipeRole.class);
+        if (randomRoles != null) random.addAll(randomRoles);
+        randomRoles = Collections.unmodifiableSet(random);
+        intro = intro == null ? List.of() : List.copyOf(intro.size() > MAX_INTRO_SHOTS ? intro.subList(0, MAX_INTRO_SHOTS) : intro);
     }
 
-    /** A page nobody wrote yet: no title, every mode, any number of players. */
+    public MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
+                            Set<MiniGameMode> modes, int minPlayers, int maxPlayers, List<MiniGamePipeLink> pipeLinks) {
+        this(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, Set.of(), List.of());
+    }
+
+    /** A page nobody wrote yet: no title, free for all only (the other ways to play are ticked by who writes it), any number of players. */
     public static MiniGamePageData empty(UUID id) {
-        return new MiniGamePageData(id, "", "", null, EnumSet.allOf(MiniGameMode.class), MIN_PLAYERS, MAX_PLAYERS, List.of());
+        return new MiniGamePageData(id, "", "", null, EnumSet.of(MiniGameMode.FREE_FOR_ALL), MIN_PLAYERS, MAX_PLAYERS, List.of());
     }
 
     /** @return true if nothing was written on the page yet. */
@@ -115,27 +131,45 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     }
 
     public MiniGamePageData withId(UUID newId) {
-        return new MiniGamePageData(newId, title, description, image, modes, minPlayers, maxPlayers, pipeLinks);
+        return new MiniGamePageData(newId, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
     }
 
     public MiniGamePageData withTexts(String newTitle, String newDescription) {
-        return new MiniGamePageData(id, newTitle, newDescription, image, modes, minPlayers, maxPlayers, pipeLinks);
+        return new MiniGamePageData(id, newTitle, newDescription, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
     }
 
     public MiniGamePageData withImage(@Nullable MiniGamePageImage newImage) {
-        return new MiniGamePageData(id, title, description, newImage, modes, minPlayers, maxPlayers, pipeLinks);
+        return new MiniGamePageData(id, title, description, newImage, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
     }
 
     public MiniGamePageData withModes(Set<MiniGameMode> newModes) {
-        return new MiniGamePageData(id, title, description, image, newModes, minPlayers, maxPlayers, pipeLinks);
+        return new MiniGamePageData(id, title, description, image, newModes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
     }
 
     public MiniGamePageData withPlayers(int min, int max) {
-        return new MiniGamePageData(id, title, description, image, modes, min, max, pipeLinks);
+        return new MiniGamePageData(id, title, description, image, modes, min, max, pipeLinks, randomRoles, intro);
     }
 
     public MiniGamePageData withPipeLinks(List<MiniGamePipeLink> links) {
-        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, links);
+        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, links, randomRoles, intro);
+    }
+
+    /** The players of {@code role} are sent to a pipe picked at random ({@code random}), or to each pipe in turn. */
+    public MiniGamePageData withRandom(MiniGamePipeRole role, boolean random) {
+        EnumSet<MiniGamePipeRole> roles = EnumSet.noneOf(MiniGamePipeRole.class);
+        roles.addAll(randomRoles);
+        if (random) roles.add(role);
+        else roles.remove(role);
+        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, roles, intro);
+    }
+
+    public MiniGamePageData withIntro(List<MiniGameIntroShot> shots) {
+        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, shots);
+    }
+
+    /** @return true if the players of {@code role} are sent to a pipe picked at random. */
+    public boolean isRandom(MiniGamePipeRole role) {
+        return randomRoles.contains(role);
     }
 
     // ------------------------------------------------------------------ cleaning
@@ -169,6 +203,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
 
     public NbtCompound toNbt() {
         NbtCompound nbt = new NbtCompound();
+        nbt.putInt("Format", FORMAT);
         nbt.putUuid("Id", id);
         nbt.putString("Title", title);
         nbt.putString("Description", description);
@@ -181,6 +216,16 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
             pipeLinks.forEach(link -> links.add(link.toNbt()));
             nbt.put("PipeLinks", links);
         }
+        if (!randomRoles.isEmpty()) {
+            int mask = 0;
+            for (MiniGamePipeRole role : randomRoles) mask |= 1 << role.ordinal();
+            nbt.putInt("RandomRoles", mask);
+        }
+        if (!intro.isEmpty()) {
+            NbtList shots = new NbtList();
+            intro.forEach(shot -> shots.add(shot.toNbt()));
+            nbt.put("Intro", shots);
+        }
         return nbt;
     }
 
@@ -192,9 +237,22 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
             MiniGamePipeLink link = MiniGamePipeLink.fromNbt(linksNbt.getCompound(i));
             if (link != null) links.add(link);
         }
+        List<MiniGameIntroShot> shots = new ArrayList<>();
+        NbtList shotsNbt = nbt.getList("Intro", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < shotsNbt.size(); i++) {
+            MiniGameIntroShot shot = MiniGameIntroShot.fromNbt(shotsNbt.getCompound(i));
+            if (shot != null) shots.add(shot);
+        }
         return new MiniGamePageData(nbt.getUuid("Id"), nbt.getString("Title"), nbt.getString("Description"),
                 nbt.contains("Image", NbtElement.COMPOUND_TYPE) ? MiniGamePageImage.fromNbt(nbt.getCompound("Image")) : null,
-                MiniGameMode.fromMask(nbt.getInt("Modes")), nbt.getInt("MinPlayers"), nbt.getInt("MaxPlayers"), links);
+                MiniGameMode.fromMask(nbt.getInt("Modes")), nbt.getInt("MinPlayers"), nbt.getInt("MaxPlayers"), links,
+                rolesFromMask(nbt.getInt("RandomRoles")), shots);
+    }
+
+    private static Set<MiniGamePipeRole> rolesFromMask(int mask) {
+        EnumSet<MiniGamePipeRole> roles = EnumSet.noneOf(MiniGamePipeRole.class);
+        for (MiniGamePipeRole role : MiniGamePipeRole.values()) if ((mask & (1 << role.ordinal())) != 0) roles.add(role);
+        return roles;
     }
 
     private void write(PacketByteBuf buf) {
@@ -208,6 +266,11 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         buf.writeByte(maxPlayers);
         buf.writeVarInt(pipeLinks.size());
         pipeLinks.forEach(link -> link.write(buf));
+        int mask = 0;
+        for (MiniGamePipeRole role : randomRoles) mask |= 1 << role.ordinal();
+        buf.writeVarInt(mask);
+        buf.writeVarInt(intro.size());
+        intro.forEach(shot -> shot.write(buf));
     }
 
     private static MiniGamePageData read(PacketByteBuf buf) {
@@ -220,6 +283,10 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         int count = Math.min(buf.readVarInt(), MAX_PIPE_LINKS);
         List<MiniGamePipeLink> links = new ArrayList<>(count);
         for (int i = 0; i < count; i++) links.add(MiniGamePipeLink.read(buf));
-        return new MiniGamePageData(id, title, description, image, MiniGameMode.fromMask(modes), min, max, links);
+        Set<MiniGamePipeRole> random = rolesFromMask(buf.readVarInt());
+        int shotCount = Math.min(buf.readVarInt(), MAX_INTRO_SHOTS);
+        List<MiniGameIntroShot> shots = new ArrayList<>(shotCount);
+        for (int i = 0; i < shotCount; i++) shots.add(MiniGameIntroShot.read(buf));
+        return new MiniGamePageData(id, title, description, image, MiniGameMode.fromMask(modes), min, max, links, random, shots);
     }
 }
