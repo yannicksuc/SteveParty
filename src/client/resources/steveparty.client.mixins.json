@@ -12,6 +12,7 @@
     "FallingBlockEntityRendererVillagerMixin",
     "GameRendererFovMixin",
     "GameRendererStencilHammerShakeMixin",
+    "GameRendererTelescopeMixin",
     "HeldItemRendererStencilHammerMixin",
     "HeldItemRendererTokenSpellMixin",
     "InGameHudToolHudMixin",

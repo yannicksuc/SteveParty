@@ -187,6 +187,17 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
                         .offerTo(recipeExporter);
 
+                // The Telescope: a spyglass on a copper mount and a tripod of sticks
+                createShaped(RecipeCategory.DECORATIONS, ModBlocks.TELESCOPE)
+                        .pattern(" S ")
+                        .pattern(" C ")
+                        .pattern("TTT")
+                        .input('S', Items.SPYGLASS)
+                        .input('C', Items.COPPER_INGOT)
+                        .input('T', Items.STICK)
+                        .criterion(hasItem(Items.SPYGLASS), conditionsFromItem(Items.SPYGLASS))
+                        .offerTo(recipeExporter);
+
                 // Shop: a register of gold and iron (buttons for keys, a chest for the drawer), and the shopkeeper's
                 // key, a gold key with a star fragment of any colour for its bow
                 createShaped(RecipeCategory.DECORATIONS, ModBlocks.CASH_REGISTER)

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "S": "minecraft:spyglass",
+    "T": "minecraft:stick"
+  },
+  "pattern": [
+    " S ",
+    " C ",
+    "TTT"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:telescope"
+  }
+}

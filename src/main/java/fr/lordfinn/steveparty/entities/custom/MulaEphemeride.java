@@ -143,7 +143,7 @@ public final class MulaEphemeride {
         if (e.sited.add(player.getUuid())) {
             double d = MIN_SITE + random.nextDouble() * (MAX_SITE - MIN_SITE);
             BlockPos site = BlockPos.ofFloored(player.getX() + dirX * d, ground, player.getZ() + dirZ * d);
-            MulaSpawnSites.get(world).add(site, world.getTime(), group(random));
+            MulaSpawnSites.get(world).add(site, world.getTime(), e.day, group(random));
         }
     }
 
