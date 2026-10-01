@@ -32,6 +32,9 @@ public class PlayerEntityModelBoxCostumeMixin {
     /** The box model: arm holes centred 8 px above its floor, on its side walls 8 px from its centre. */
     @Unique
     private static final float STEVEPARTY$HOLE_HEIGHT = 8.0F, STEVEPARTY$WALL = 8.0F;
+    /** Fully worn, the arms come out 1 px below the centre of the (6 px high) holes. */
+    @Unique
+    private static final float STEVEPARTY$ARM_BELOW_HOLE = 1.0F;
     /** The arm starts this far inside the wall (model px). */
     @Unique
     private static final float STEVEPARTY$ARM_INSIDE = 0.5F;
@@ -48,9 +51,9 @@ public class PlayerEntityModelBoxCostumeMixin {
      */
     @Unique
     private static final float STEVEPARTY$ARM_SWING = 0.35F, STEVEPARTY$ARM_FREE_PITCH = 1.0F;
-    /** Legs shortened to reach from the ground to the box: 12 px long, feet at 24 px (model px, y down). */
+    /** Legs a little shortened, reaching from the ground to the box: 12 px long, feet at 24 px (model px, y down). */
     @Unique
-    private static final float STEVEPARTY$LEG_SCALE = 0.68F, STEVEPARTY$LEG_LENGTH = 12.0F, STEVEPARTY$FEET_Y = 24.0F;
+    private static final float STEVEPARTY$LEG_SCALE = 0.86F, STEVEPARTY$LEG_LENGTH = 12.0F, STEVEPARTY$FEET_Y = 24.0F;
 
     @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("TAIL"))
     private void steveparty$limbsAroundTheBox(PlayerEntityRenderState state, CallbackInfo ci) {
@@ -62,7 +65,7 @@ public class PlayerEntityModelBoxCostumeMixin {
         // Where the box's arm holes are now, in the player model's space (origin 24 px above the feet, y down)
         // (the body is squashed from the feet while the box drops or rises: heights are divided by that squash)
         float squash = BoxCostumeClient.bodySquash(lift);
-        float holeY = STEVEPARTY$FEET_Y - (STEVEPARTY$HOLE_HEIGHT + (BoxCostumeRenderer.MERCHANT_LIFT + BoxCostumeRenderer.WAIST_LIFT) * lift)
+        float holeY = STEVEPARTY$FEET_Y - (STEVEPARTY$HOLE_HEIGHT + (BoxCostumeRenderer.MERCHANT_LIFT + BoxCostumeRenderer.WAIST_LIFT - STEVEPARTY$ARM_BELOW_HOLE) * lift)
                 * STEVEPARTY$MODEL_PX / squash;
         float wallX = STEVEPARTY$WALL * (1.0F + BoxCostumeRenderer.WAIST_WIDENING * lift) * STEVEPARTY$MODEL_PX;
         // The two arms sway out of step, like his
