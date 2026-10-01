@@ -60,7 +60,7 @@ public class ModComponents {
             registerComponent("owner", Codec.STRING);
     public static final ComponentType<Integer> COLOR =
             registerComponent("color", Codec.INT);
-    /** Colour of a Bandana item (0-4: teal, blue, pink, orange, yellow, like the Hiding Trader's BandanaColor). */
+    /** Colour of a Bandana item (0-4: teal, blue, pink, orange, yellow, like the Boxed Trader's BandanaColor). */
     public static final ComponentType<Integer> BANDANA_COLOR =
             registerComponent("bandana-color", Codec.intRange(0, 4));
     public static final ComponentType<ItemStack> SOCKETED_STORY =
@@ -120,7 +120,7 @@ public class ModComponents {
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 
-    /** Block a Box Costume looks like: the one the Hiding Trader's box looked like when it was taken from him. */
+    /** Block a Box Costume looks like: the one the Boxed Trader's box looked like when it was taken from him. */
     public static final ComponentType<net.minecraft.block.BlockState> BOX_BLOCK =
             registerComponent("box-block", net.minecraft.block.BlockState.CODEC);
 

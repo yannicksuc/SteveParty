@@ -35,8 +35,8 @@ public class ModScreensHandlers {
     public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
             register("router_screen_handler", RouterScreenHandler::new, FeatureSet.empty());
 
-    public static final ScreenHandlerType<CustomizableMerchantScreenHandler> HIDING_TRADER_SCREEN_HANDLER =
-            register("hiding_trader_screen_handler", CustomizableMerchantScreenHandler::new, FeatureSet.empty());
+    public static final ScreenHandlerType<CustomizableMerchantScreenHandler> BOXED_TRADER_SCREEN_HANDLER =
+            register("boxed_trader_screen_handler", CustomizableMerchantScreenHandler::new, FeatureSet.empty());
 
     /** The merchant's screen opened by a shop stop (with « Buy nothing », the time left and the purchases allowed). */
     public static final ScreenHandlerType<ShopStopScreenHandler> SHOP_STOP_SCREEN_HANDLER =

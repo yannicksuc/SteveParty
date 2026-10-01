@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.BlockState;
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * The look of the Hiding Trader's box, taken with shears from a merchant who already lost his bandana (he keeps a box
+ * The look of the Boxed Trader's box, taken with shears from a merchant who already lost his bandana (he keeps a box
  * with the missing texture, until a costume is given back to him). It keeps the block look his box had
  * ({@link ModComponents#BOX_BLOCK}) and is worn in the chest slot (vanilla equippable, right click to put it
  * on): around the waist while walking, and the wearer hides inside it, closed like a block on the ground, while
@@ -46,14 +46,14 @@ public class BoxCostumeItem extends Item {
 
     public static ItemStack create(BlockState block) {
         ItemStack stack = new ItemStack(ModItems.BOX_COSTUME);
-        if (HidingTraderEntity.isValidBoxBlock(block)) stack.set(ModComponents.BOX_BLOCK, block);
+        if (BoxedTraderEntity.isValidBoxBlock(block)) stack.set(ModComponents.BOX_BLOCK, block);
         return stack;
     }
 
     /** The block the box looks like ({@link #DEFAULT_BLOCK} if the stored one can't be a box). */
     public static BlockState getBlock(ItemStack stack) {
         BlockState block = stack.get(ModComponents.BOX_BLOCK);
-        return HidingTraderEntity.isValidBoxBlock(block) ? block : DEFAULT_BLOCK;
+        return BoxedTraderEntity.isValidBoxBlock(block) ? block : DEFAULT_BLOCK;
     }
 
     public static boolean isBoxCostume(ItemStack stack) {

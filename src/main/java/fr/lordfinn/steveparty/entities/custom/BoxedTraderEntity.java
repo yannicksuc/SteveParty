@@ -82,7 +82,7 @@ import java.util.List;
 import java.util.OptionalInt;
 import java.util.UUID;
 
-public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
+public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
 
     private final TradeOfferList tradeOffers = new TradeOfferList();
     private VendorLinkPersistentState vendorLinkPersistentState;
@@ -118,24 +118,24 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private UUID ownerUuid = null;
     /** Ticks between two synchronizations of the owner with the persistent link state. */
     private static final int OWNER_SYNC_INTERVAL = 20;
-    private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.STRING);
-    /** Number of bandana colours (textures hiding_trader_<colour>.png, see the art sources). */
+    private static final TrackedData<String> BLOCK_STATE = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.STRING);
+    /** Number of bandana colours (textures boxed_trader_<colour>.png, see the art sources). */
     public static final int BANDANA_COLORS = 5;
     public static final String BANDANA_COLOR_NBT = "BandanaColor";
     /** Bandana colour 0-4 (teal, blue, pink, orange, yellow), -1 until picked. */
-    private static final TrackedData<Integer> BANDANA_COLOR = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> BANDANA_COLOR = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.INTEGER);
     public static final String HAS_BANDANA_NBT = "HasBandana";
     /** False once his bandana was stolen with shears (bald), until a player gives him one back. */
-    private static final TrackedData<Boolean> HAS_BANDANA = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> HAS_BANDANA = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     public static final String HIDE_START_NBT = "HideStart";
     /** World time from which he stays closed for {@link #THEFT_HIDE_TICKS} (after a theft), Long.MIN_VALUE if none. */
-    private static final TrackedData<Long> HIDE_START = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.LONG);
+    private static final TrackedData<Long> HIDE_START = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.LONG);
     public static final String BOX_GLITCHED_NBT = "BoxGlitched";
     /**
      * True once his box's look was taken with shears (he was already bald): he keeps his box, but it is drawn with
      * the purple and black missing texture, until a player gives him a Box Costume back.
      */
-    private static final TrackedData<Boolean> BOX_GLITCHED = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> BOX_GLITCHED = DataTracker.registerData(BoxedTraderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     /** After a theft: closed for 20 s, ignoring players. */
     public static final int THEFT_HIDE_TICKS = 400;
     /** fun_shocked (1.3 s) plays before he hides. */
@@ -157,7 +157,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     /** Server: age until which a little animation is playing (no wandering meanwhile). */
     private int funBusyUntil = 0;
 
-    public HidingTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
+    public BoxedTraderEntity(EntityType<? extends MerchantEntity> type, World world) {
         super(type, world);
         // Wandering (unassigned merchants): never into water or fire, lava is already forbidden
         this.setPathfindingPenalty(PathNodeType.WATER, -1.0F);
@@ -229,8 +229,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (BLOCK_STATE.equals(data)) {
             String blockStateJson = this.dataTracker.get(BLOCK_STATE);
             JsonElement jsonElement = JsonParser.parseString(blockStateJson);
-            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
-                    .filter(HidingTraderEntity::isValidBoxBlock)
+            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(BoxedTraderEntity::printWarnForFailDecodeBlockState)
+                    .filter(BoxedTraderEntity::isValidBoxBlock)
                     .ifPresent(decodedBlockState -> this.blockState = decodedBlockState);
         }
     }
@@ -247,8 +247,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(1, new HidingTraderGoals.WanderNearHomeGoal(this, 0.55, 60));
-        this.goalSelector.add(2, new HidingTraderGoals.LookAtAttentionTargetGoal(this, (float) OPEN_RANGE));
+        this.goalSelector.add(1, new BoxedTraderGoals.WanderNearHomeGoal(this, 0.55, 60));
+        this.goalSelector.add(2, new BoxedTraderGoals.LookAtAttentionTargetGoal(this, (float) OPEN_RANGE));
     }
 
     @Override
@@ -264,7 +264,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                             public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity clicker) {
                                 // Re-check the stock right before the result can be taken (the stock may have
                                 // been removed since the offer was displayed).
-                                if (slotIndex == OUTPUT_ID && !HidingTraderEntity.this.canTakeCurrentTrade(this)) {
+                                if (slotIndex == OUTPUT_ID && !BoxedTraderEntity.this.canTakeCurrentTrade(this)) {
                                     return;
                                 }
                                 super.onSlotClick(slotIndex, button, actionType, clicker);
@@ -273,7 +273,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                             @Override
                             public boolean canUse(PlayerEntity player) {
                                 // Closes the screen when the customer dies, leaves or goes out of reach
-                                return super.canUse(player) && HidingTraderEntity.this.isValidCustomer(player);
+                                return super.canUse(player) && BoxedTraderEntity.this.isValidCustomer(player);
                             }
                         }, name));
         if (opened.isEmpty()) {
@@ -302,7 +302,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                 (syncId, playerInventory, playerx) -> new ShopStopScreenHandler(syncId, playerInventory, this, limit) {
                     @Override
                     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity clicker) {
-                        if (slotIndex == OUTPUT_ID && !HidingTraderEntity.this.canTakeCurrentTrade(this)) {
+                        if (slotIndex == OUTPUT_ID && !BoxedTraderEntity.this.canTakeCurrentTrade(this)) {
                             return;
                         }
                         super.onSlotClick(slotIndex, button, actionType, clicker);
@@ -311,7 +311,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
                     @Override
                     public boolean canUse(PlayerEntity player) {
                         // No reach: the shopper stays by the board (the stop ends on its own when they leave)
-                        return HidingTraderEntity.this.isValidCustomer(player);
+                        return BoxedTraderEntity.this.isValidCustomer(player);
                     }
                 }, this.getDisplayName()));
         if (opened.isEmpty() || !(player.currentScreenHandler instanceof ShopStopScreenHandler handler)) {
@@ -643,7 +643,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (nbt.contains("blockState")) {
             String blockStateJson = nbt.getString("blockState");
             JsonElement jsonElement = JsonParser.parseString(blockStateJson);
-            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
+            BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(BoxedTraderEntity::printWarnForFailDecodeBlockState)
                     .ifPresent(this::setBlockState);
         }
         if (nbt.containsUuid("ShopOwner")) {
@@ -678,7 +678,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         nbt.putBoolean("isInvisible", this.isInvisible());
         if (blockState != null) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
-            result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> nbt.putString("blockState", jsonElement.toString()));
+            result.resultOrPartial(BoxedTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> nbt.putString("blockState", jsonElement.toString()));
         }
         if (ownerUuid != null) {
             nbt.putUuid("ShopOwner", ownerUuid);
@@ -817,12 +817,12 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        AnimationController<HidingTraderEntity> idle = new AnimationController<>(this, IDLE_CONTROLLER, 5, this::idleAnimController)
+        AnimationController<BoxedTraderEntity> idle = new AnimationController<>(this, IDLE_CONTROLLER, 5, this::idleAnimController)
                 .receiveTriggeredAnimations();
         for (String anim : OPEN_FUN_ANIMS) idle.triggerableAnim(anim, RawAnimation.begin().thenPlay(anim));
         idle.triggerableAnim(HAPPY_ANIM, RawAnimation.begin().thenPlay(HAPPY_ANIM));
         idle.triggerableAnim(SHOCKED_ANIM, RawAnimation.begin().thenPlay(SHOCKED_ANIM));
-        AnimationController<HidingTraderEntity> stare = new AnimationController<>(this, STARE_CONTROLLER, 2, this::closedAnimController)
+        AnimationController<BoxedTraderEntity> stare = new AnimationController<>(this, STARE_CONTROLLER, 2, this::closedAnimController)
                 .receiveTriggeredAnimations();
         for (String anim : HIDDEN_FUN_ANIMS) stare.triggerableAnim(anim, RawAnimation.begin().thenPlay(anim));
         controllers.add(idle
@@ -979,10 +979,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
     }
 
-    private PlayState idleAnimController(AnimationState<HidingTraderEntity> event) {
+    private PlayState idleAnimController(AnimationState<BoxedTraderEntity> event) {
         // A board token: no animation at all (a random one is cut too), the model rests in its default pose
         if (TokenBase.isToken(this)) return PlayState.STOP;
-        AnimationController<HidingTraderEntity> controller = event.getController();
+        AnimationController<BoxedTraderEntity> controller = event.getController();
         if (!hidden) {
             // A little random animation: let it play, "idle" resumes after it (it ends on idle's first frame)
             if (controller.isPlayingTriggeredAnimation()) return PlayState.CONTINUE;
@@ -1000,9 +1000,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         return PlayState.STOP;
     }
 
-    private PlayState closedAnimController(AnimationState<HidingTraderEntity> event) {
+    private PlayState closedAnimController(AnimationState<BoxedTraderEntity> event) {
         if (TokenBase.isToken(this)) return PlayState.STOP;
-        AnimationController<HidingTraderEntity> controller = event.getController();
+        AnimationController<BoxedTraderEntity> controller = event.getController();
         if (hidden) {
             if (controller.isPlayingTriggeredAnimation()) return PlayState.CONTINUE;
             RawAnimation current = controller.getCurrentRawAnimation();
@@ -1039,9 +1039,9 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     @Override
     public @Nullable EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
         if (getBandanaColor() < 0) rollBandanaColor();
-        // From his spawn egg: a random box (see HidingTraderBoxes)
+        // From his spawn egg: a random box (see BoxedTraderBoxes)
         if (spawnReason == SpawnReason.SPAWN_ITEM_USE || spawnReason == SpawnReason.DISPENSER) {
-            setBlockState(HidingTraderBoxes.pick(this.random));
+            setBlockState(BoxedTraderBoxes.pick(this.random));
         }
         return super.initialize(world, difficulty, spawnReason, entityData);
     }
@@ -1329,7 +1329,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     private void syncBlockData(BlockState blockState) {
         if (!this.getWorld().isClient) {
             DataResult<JsonElement> result = BlockState.CODEC.encodeStart(JsonOps.INSTANCE, blockState);
-            result.resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> this.dataTracker.set(BLOCK_STATE, jsonElement.toString()));
+            result.resultOrPartial(BoxedTraderEntity::printWarnForFailDecodeBlockState).ifPresent(jsonElement -> this.dataTracker.set(BLOCK_STATE, jsonElement.toString()));
         }
     }
 

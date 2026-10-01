@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.client.entity;
 
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Draws the cubes of the Hiding Trader's box bones ({@code cube*}) with the faces of a block: each face of a cube takes
+ * Draws the cubes of the Boxed Trader's box bones ({@code cube*}) with the faces of a block: each face of a cube takes
  * the sprites (and tints) of the same face of the block model. Shared by the merchant and the Box Costume. Render thread only.
  * <p>
  * A block without a usable look (air, an invisible block, a model whose sprites are missing) is drawn as the
@@ -72,7 +72,7 @@ public final class BlockTexturedBones {
                            @Nullable BlockState blockState, @Nullable BlockPos pos) {
         if (bone.isHidden() || !isBoxBone(bone)) return;
         boolean glitched = blockState == null;
-        BlockState state = HidingTraderEntity.isValidBoxBlock(blockState) ? blockState : FALLBACK;
+        BlockState state = BoxedTraderEntity.isValidBoxBlock(blockState) ? blockState : FALLBACK;
         BakedModel model = glitched ? null : MinecraftClient.getInstance().getBlockRenderManager().getModel(state);
         // Layers are resolved lazily, once per face direction, for this call only
         Arrays.fill(faceLayers, null);

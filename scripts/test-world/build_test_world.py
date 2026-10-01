@@ -19,7 +19,7 @@ The area (x 1936..2095, z 1952..2175, floor y=99, everything built at y=100), fa
     (each feature's cartridge on a pedestal, a title and a French explanation), a demo loop of 18 tiles going through
     every new role (Stop, Boutique point de passage + tuile, Avancer +3, Reculer -2, two violet Teleport tiles and two
     green ones that push the token one space on, Rejouer), its own start tile, token and party controller (more than 100 blocks from the board's start tiles, so
-    each controller only finds its own board), a Hiding Trader with a trading stall and a stock chest, a sensor router
+    each controller only finds its own board), a Boxed Trader with a trading stall and a stock chest, a sensor router
     reading every loop tile into a comparator and a line of 15 lamps, and a chest of every new item.
     The trader's links (stall, stock chest) live in the world's saved data, not in blocks: after each build, sneak +
     right click the stall, then the stock chest, with the Shopkeeper Key of the showcase chest (already linked to him).
@@ -388,14 +388,14 @@ def shop_station(x0=2035, z0=1970):
              'setblock %d %d %d steveparty:villager_block' % (x0 + 15, Y, z0 + 8),
              label(x0 + 15.5, Y + 1.8, z0 + 8.5, 'Villager Block', 'white', 0.7, False)]
     cmds += show_item(x0 + 5, z0 + 8, 'steveparty:shopkeeper_key', caption='Clé de marchand')
-    # The hiding traders' pen (one per bandana colour)
+    # The boxed traders' pen (one per bandana colour)
     px0, pz0, px1, pz1 = x0 + 2, z0 + 11, x0 + 17, z0 + 18
     cmds += ['fill %d %d %d %d %d %d oak_fence' % (px0, Y, pz0, px1, Y, pz1),
              'fill %d %d %d %d %d %d air' % (px0 + 1, Y, pz0 + 1, px1 - 1, Y, pz1 - 1),
-             label((px0 + px1) / 2 + 0.5, Y + 3, (pz0 + pz1) / 2 + 0.5, 'Hiding Traders (bandanas)', 'white', 0.9, False)]
+             label((px0 + px1) / 2 + 0.5, Y + 3, (pz0 + pz1) / 2 + 0.5, 'Boxed Traders (bandanas)', 'white', 0.9, False)]
     for k in range(5):
         x, z = px0 + 2 + 3 * k, pz0 + 3
-        cmds.append('summon steveparty:hiding_trader %.1f %d %.1f {PersistenceRequired:1b,BandanaColor:%d,Home:%dL}'
+        cmds.append('summon steveparty:boxed_trader %.1f %d %.1f {PersistenceRequired:1b,BandanaColor:%d,Home:%dL}'
                     % (x + 0.5, Y, z + 0.5, k, block_pos_long(x, Y, z)))
     return cmds
 
@@ -885,7 +885,7 @@ def showcase():
              label(SC_CHEST[0] + 0.5, Y + 1.5, SC_CHEST[1] + 0.5,
                    'cartouches, Clé, Clé du Marchand,\ndés truqués (1 à 4), routeur, tuiles', 'white', 0.5, False)]
 
-    # The merchant: a Hiding Trader in a pen, his trading stall (3 offers) and his stock chest
+    # The merchant: a Boxed Trader in a pen, his trading stall (3 offers) and his stock chest
     px0, pz0, px1, pz1 = SC_PEN
     gate = (px0, (pz0 + pz1) // 2)
     offers = [('minecraft:emerald', 3, 'steveparty:replay_cartridge', 1),
@@ -941,11 +941,11 @@ def showcase():
 def showcase_merchant():
     """The showcase's merchant, under the UUID the Shopkeeper Key of the showcase chest is linked to."""
     home = SC_TRADER_HOME
-    alive = '@e[type=steveparty:hiding_trader,tag=%s_merchant]' % TAG   # @e: living entities only
+    alive = '@e[type=steveparty:boxed_trader,tag=%s_merchant]' % TAG   # @e: living entities only
     return [# the previous one is still dying (a UUID also finds a dead entity): try again in a second
             'execute if entity %s unless entity %s run schedule function %s:showcase_merchant 20t'
             % (SC_TRADER_UUID, alive, NS),
-            ('execute unless entity %s run summon steveparty:hiding_trader %.1f %d %.1f {UUID:%s,Tags:["%s_merchant"],'
+            ('execute unless entity %s run summon steveparty:boxed_trader %.1f %d %.1f {UUID:%s,Tags:["%s_merchant"],'
              'PersistenceRequired:1b,BandanaColor:1,Home:%dL,CustomName:%s}')
             % (SC_TRADER_UUID, home[0] + 0.5, Y, home[1] + 0.5, int_array(SC_TRADER_UUID), TAG,
                block_pos_long(home[0], Y, home[1]), jtext('Marchand de la démo', 'yellow'))]

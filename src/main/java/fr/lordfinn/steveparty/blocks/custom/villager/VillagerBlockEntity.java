@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerReaction.P;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -576,7 +576,7 @@ public class VillagerBlockEntity extends BlockEntity implements GameEventListene
                     && drop.getOwner() instanceof PlayerEntity) item = e;
             else if (e instanceof CatEntity && d2 < 25) cat = e;
             else if (e instanceof IronGolemEntity && d2 < 64) golem = e;
-            else if ((e instanceof VillagerEntity || e instanceof HidingTraderEntity) && d2 < 25) villager = e;
+            else if ((e instanceof VillagerEntity || e instanceof BoxedTraderEntity) && d2 < 25) villager = e;
             else if (e instanceof WanderingTraderEntity && d2 < 36) trader = e;
         }
         if (cousin != null && world.getRandom().nextBoolean()) {

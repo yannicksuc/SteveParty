@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.mixin;
 
 import com.mojang.authlib.GameProfile;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static fr.lordfinn.steveparty.blocks.ModBlocks.VILLAGER_BLOCK;
-import static fr.lordfinn.steveparty.entities.ModEntities.HIDING_TRADER_ENTITY;
+import static fr.lordfinn.steveparty.entities.ModEntities.BOXED_TRADER_ENTITY;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class PlayerFallMixin extends PlayerEntity {
@@ -27,7 +27,7 @@ public abstract class PlayerFallMixin extends PlayerEntity {
         super(world, pos, yaw, gameProfile);
     }
 
-    /** Minimum fall distance (blocks) to reveal a hiding trader, for a block of hardness 0. */
+    /** Minimum fall distance (blocks) to reveal a boxed trader, for a block of hardness 0. */
     @Unique
     private static final float BASE_REQUIRED_FALL = 10.0F;
     /** Extra fall distance (blocks) required per point of hardness of the block under the villager block. */
@@ -71,7 +71,7 @@ public abstract class PlayerFallMixin extends PlayerEntity {
                 world.breakBlock(belowPos, false);
 
                 // Invoque l'entité personnalisée
-                HidingTraderEntity trader = new HidingTraderEntity(HIDING_TRADER_ENTITY, world);
+                BoxedTraderEntity trader = new BoxedTraderEntity(BOXED_TRADER_ENTITY, world);
                 trader.refreshPositionAndAngles(belowPos.getX() + 0.5, belowPos.getY() + 1, belowPos.getZ() + 0.5, 0, 0);
                 trader.setBlockState(belowState);
 

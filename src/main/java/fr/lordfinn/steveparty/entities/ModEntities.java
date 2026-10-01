@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.entities;
 
 import fr.lordfinn.steveparty.Steveparty;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.entities.custom.DirectionDisplayEntity;
 import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
@@ -27,13 +27,13 @@ public class ModEntities {
                     .build(DICE_ENTITY_KEY)
     );
 
-    public static final RegistryKey<EntityType<?>> HIDING_TRADER_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("hiding_trader"));
-    public static final EntityType<HidingTraderEntity> HIDING_TRADER_ENTITY = Registry.register(Registries.ENTITY_TYPE,
-            Steveparty.id("hiding_trader"),
+    public static final RegistryKey<EntityType<?>> BOXED_TRADER_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("boxed_trader"));
+    public static final EntityType<BoxedTraderEntity> BOXED_TRADER_ENTITY = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("boxed_trader"),
             EntityType.Builder
-                    .create(HidingTraderEntity::new, SpawnGroup.MISC)
+                    .create(BoxedTraderEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1.5f)
-                    .build(HIDING_TRADER_ENTITY_KEY)
+                    .build(BOXED_TRADER_ENTITY_KEY)
     );
 
     public static final RegistryKey<EntityType<?>> DIRECTION_DISPLAY_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("direction_display"));
@@ -101,9 +101,12 @@ public class ModEntities {
     );
 
     public static void initialize() {
+        // The Boxed Trader was the Hiding Trader: worlds saved before the rename keep their merchants and spawn eggs
+        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader"), Steveparty.id("boxed_trader"));
+        fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader_spawn_egg"), Steveparty.id("boxed_trader_spawn_egg"));
         //FabricDefaultAttributeRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
-        FabricDefaultAttributeRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
     }
 }

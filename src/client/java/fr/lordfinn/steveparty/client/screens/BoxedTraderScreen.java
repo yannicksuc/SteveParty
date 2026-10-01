@@ -5,8 +5,8 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.text.Text;
 
-public class HidingTraderScreen extends MerchantScreen {
-    public HidingTraderScreen(MerchantScreenHandler handler, PlayerInventory inventory, Text title) {
+public class BoxedTraderScreen extends MerchantScreen {
+    public BoxedTraderScreen(MerchantScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
 }

@@ -11,7 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
@@ -56,7 +56,7 @@ import java.util.UUID;
  * by default) or when the owner leaves: a paused token walks its remaining steps, a landing ends the turn.
  * <p>
  * The shop is the merchant chosen with the Wrench (cartridge {@link ModComponents#SHOP_LINK}), else the nearest one
- * within {@value #SHOP_RADIUS} blocks: a Hiding Trader with trading stalls, the distance counted to him or to his
+ * within {@value #SHOP_RADIUS} blocks: a Boxed Trader with trading stalls, the distance counted to him or to his
  * nearest stall. No shop, a token without owner or whose owner is offline: nothing happens, the token goes on. Only the
  * owner shops; the players around get a notice. Stops live in memory (a server stop ends them).
  */
@@ -143,18 +143,18 @@ public final class ShopStops {
 
     /**
      * The shop of a Shop Cartridge on the space at {@code space}: the merchant chosen with the Wrench (if he is here),
-     * else the nearest Hiding Trader with trading stalls, the distance counted to him or to his nearest stall.
+     * else the nearest Boxed Trader with trading stalls, the distance counted to him or to his nearest stall.
      */
-    public static @Nullable HidingTraderEntity findShop(ServerWorld world, BlockPos space, ItemStack cartridge) {
+    public static @Nullable BoxedTraderEntity findShop(ServerWorld world, BlockPos space, ItemStack cartridge) {
         ShopLinkComponent link = cartridge.get(ModComponents.SHOP_LINK);
         if (link != null) {
-            return world.getEntity(link.trader()) instanceof HidingTraderEntity trader && trader.isAlive() ? trader : null;
+            return world.getEntity(link.trader()) instanceof BoxedTraderEntity trader && trader.isAlive() ? trader : null;
         }
         Vec3d at = Vec3d.ofCenter(space);
         VendorLinkPersistentState links = VendorLinkPersistentState.get(world.getServer());
-        HidingTraderEntity best = null;
+        BoxedTraderEntity best = null;
         double bestDistance = (double) SHOP_RADIUS * SHOP_RADIUS;
-        for (HidingTraderEntity trader : world.getEntitiesByClass(HidingTraderEntity.class, new Box(space).expand(SHOP_RADIUS + 16),
+        for (BoxedTraderEntity trader : world.getEntitiesByClass(BoxedTraderEntity.class, new Box(space).expand(SHOP_RADIUS + 16),
                 trader -> trader.isAlive() && !fr.lordfinn.steveparty.entities.TokenBase.isToken(trader))) {
             List<BlockPos> stalls = stallsOf(world, links, trader);
             if (stalls.isEmpty()) continue; // a merchant sells what his stalls offer
@@ -169,7 +169,7 @@ public final class ShopStops {
     }
 
     /** The trading stalls of {@code trader} in its world. */
-    public static List<BlockPos> stallsOf(ServerWorld world, @Nullable VendorLinkPersistentState links, HidingTraderEntity trader) {
+    public static List<BlockPos> stallsOf(ServerWorld world, @Nullable VendorLinkPersistentState links, BoxedTraderEntity trader) {
         List<BlockPos> stalls = new ArrayList<>();
         if (links == null) return stalls;
         for (BlockPos pos : links.getLinkedPositionsIn(trader.getUuid(), world.getRegistryKey())) {
@@ -218,7 +218,7 @@ public final class ShopStops {
         for (Stop other : STOPS.values()) {
             if (other.owner.equals(ownerUuid)) return false; // already shopping with another token
         }
-        HidingTraderEntity trader = findShop(world, space.getPos(), cartridge);
+        BoxedTraderEntity trader = findShop(world, space.getPos(), cartridge);
         if (trader == null) {
             MessageUtils.sendToPlayer(owner, Text.translatable("message.steveparty.shop_stop.closed").formatted(Formatting.GRAY),
                     MessageUtils.MessageType.ACTION_BAR);
@@ -286,7 +286,7 @@ public final class ShopStops {
             ServerPlayerEntity owner = server.getPlayerManager().getPlayer(stop.owner);
             if (owner == null || owner.isDisconnected() || !owner.isAlive() || owner.getWorld() != world
                     || !(world.getEntity(stop.token) instanceof MobEntity mob) || !mob.isAlive()
-                    || !(world.getEntity(stop.trader) instanceof HidingTraderEntity trader) || !trader.isAlive()) {
+                    || !(world.getEntity(stop.trader) instanceof BoxedTraderEntity trader) || !trader.isAlive()) {
                 end(stop, End.LEFT);
                 continue;
             }
@@ -317,7 +317,7 @@ public final class ShopStops {
     }
 
     /** Gold sparkles on the merchant and his stalls: where the shop is. */
-    private static void sparkle(ServerWorld world, Stop stop, HidingTraderEntity trader) {
+    private static void sparkle(ServerWorld world, Stop stop, BoxedTraderEntity trader) {
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, trader.getX(), trader.getY() + trader.getHeight() + 0.3, trader.getZ(),
                 4, 0.4, 0.3, 0.4, 0.0);
         for (BlockPos stall : stallsOf(world, VendorLinkPersistentState.get(world.getServer()), trader)) {
@@ -336,7 +336,7 @@ public final class ShopStops {
         if (owner != null && stop.handler != null && owner.currentScreenHandler == stop.handler) {
             owner.closeHandledScreen(); // back in onScreenClosed: nothing more, the stop is gone
         }
-        if (world.getEntity(stop.trader) instanceof HidingTraderEntity trader) trader.removeStatusEffect(StatusEffects.GLOWING);
+        if (world.getEntity(stop.trader) instanceof BoxedTraderEntity trader) trader.removeStatusEffect(StatusEffects.GLOWING);
         Text who = owner != null ? owner.getDisplayName() : stop.tokenName;
         int purchases = stop.handler == null ? 0 : stop.handler.getPurchases();
         Text message = switch (how) {

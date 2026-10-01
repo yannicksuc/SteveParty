@@ -16,7 +16,7 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 import java.util.Set;
 
 /**
- * Draws a Box Costume with the Hiding Trader's model and animations: only his box (walls and flaps with the faces of
+ * Draws a Box Costume with the Boxed Trader's model and animations: only his box (walls and flaps with the faces of
  * the costume's block, arm holes and inner shadow with his texture), never the merchant himself. Drawn from the
  * wearer's feet, facing like his body.
  * <p>
@@ -46,7 +46,7 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
     private float waistFit = 1.0F;
 
     public BoxCostumeRenderer() {
-        super(new DefaultedEntityGeoModel<>(Steveparty.id("hiding_trader")));
+        super(new DefaultedEntityGeoModel<>(Steveparty.id("boxed_trader")));
         addRenderLayer(new GeoRenderLayer<>(this) {
             @Override
             public void renderForBone(MatrixStack poseStack, BoxCostumeAnimatable animatable, GeoBone bone, RenderLayer renderType,

@@ -8,19 +8,19 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
-/** AI goals of the Hiding Trader. */
-public final class HidingTraderGoals {
-    private HidingTraderGoals() {
+/** AI goals of the Boxed Trader. */
+public final class BoxedTraderGoals {
+    private BoxedTraderGoals() {
     }
 
     /**
      * Looks at the nearest player he cares about: never while hidden, never at spectators nor at players wearing a
-     * Bandana (he doesn't care about them, see {@link HidingTraderEntity#isAttentionTarget}).
+     * Bandana (he doesn't care about them, see {@link BoxedTraderEntity#isAttentionTarget}).
      */
     public static class LookAtAttentionTargetGoal extends LookAtEntityGoal {
-        private final HidingTraderEntity trader;
+        private final BoxedTraderEntity trader;
 
-        public LookAtAttentionTargetGoal(HidingTraderEntity trader, float range) {
+        public LookAtAttentionTargetGoal(BoxedTraderEntity trader, float range) {
             super(trader, PlayerEntity.class, range, 1.0F);
             this.trader = trader;
         }
@@ -35,19 +35,19 @@ public final class HidingTraderGoals {
         @Override
         public boolean shouldContinue() {
             return !trader.isHidden() && this.target instanceof PlayerEntity player
-                    && HidingTraderEntity.isAttentionTarget(player) && super.shouldContinue();
+                    && BoxedTraderEntity.isAttentionTarget(player) && super.shouldContinue();
         }
     }
 
     /**
      * A merchant not assigned to a shop wanders a little around his home (short trips with pauses, at most
-     * {@link HidingTraderEntity#WANDER_RADIUS} blocks away), only while he is out and free (no customer, no little
+     * {@link BoxedTraderEntity#WANDER_RADIUS} blocks away), only while he is out and free (no customer, no little
      * animation playing). Vanilla wander cadence; water and big drops are avoided by his pathfinding penalties.
      */
     public static class WanderNearHomeGoal extends WanderAroundGoal {
-        private final HidingTraderEntity trader;
+        private final BoxedTraderEntity trader;
 
-        public WanderNearHomeGoal(HidingTraderEntity trader, double speed, int chance) {
+        public WanderNearHomeGoal(BoxedTraderEntity trader, double speed, int chance) {
             super(trader, speed, chance);
             this.trader = trader;
         }
@@ -67,7 +67,7 @@ public final class HidingTraderGoals {
             Vec3d target = NoPenaltyTargeting.find(this.mob, 5, 2);
             BlockPos home = trader.getHome();
             if (target == null || home == null) return null;
-            double radius = HidingTraderEntity.WANDER_RADIUS;
+            double radius = BoxedTraderEntity.WANDER_RADIUS;
             return target.squaredDistanceTo(Vec3d.ofBottomCenter(home)) <= radius * radius ? target : null;
         }
     }

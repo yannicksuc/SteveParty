@@ -1,0 +1,53 @@
+package fr.lordfinn.steveparty.client.entity;
+
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
+import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.model.DefaultedEntityGeoModel;
+import software.bernie.geckolib.renderer.GeoEntityRenderer;
+
+import static fr.lordfinn.steveparty.client.entity.BoxedTraderEntityRenderLayer.CUBE_BONE_ID;
+
+
+public class BoxedTraderEntityRenderer extends GeoEntityRenderer<BoxedTraderEntity> {
+    /** Bald merchant (his bandana was stolen with shears), per colour: his chin scarf keeps his colour. */
+    private static final Identifier[] BALD_TEXTURES = {
+            Steveparty.id("textures/entity/boxed_trader_bald_teal.png"),
+            Steveparty.id("textures/entity/boxed_trader_bald_blue.png"),
+            Steveparty.id("textures/entity/boxed_trader_bald_pink.png"),
+            Steveparty.id("textures/entity/boxed_trader_bald_orange.png"),
+            Steveparty.id("textures/entity/boxed_trader_bald_yellow.png"),
+    };
+    /** Base texture (gold bandana), used until the bandana colour is synced. */
+    private static final Identifier BASE_TEXTURE = Steveparty.id("textures/entity/boxed_trader.png");
+    /** One texture per bandana colour, in BoxedTraderEntity's BandanaColor order (the art sources). */
+    private static final Identifier[] BANDANA_TEXTURES = {
+            Steveparty.id("textures/entity/boxed_trader_teal.png"),
+            Steveparty.id("textures/entity/boxed_trader_blue.png"),
+            Steveparty.id("textures/entity/boxed_trader_pink.png"),
+            Steveparty.id("textures/entity/boxed_trader_orange.png"),
+            Steveparty.id("textures/entity/boxed_trader_yellow.png"),
+    };
+
+    public BoxedTraderEntityRenderer(EntityRendererFactory.Context ctx) {
+        super(ctx, new DefaultedEntityGeoModel<>(Steveparty.id("boxed_trader")));
+        addRenderLayer(new BoxedTraderEntityRenderLayer(this));
+    }
+
+    @Override
+    public Identifier getTextureLocation(BoxedTraderEntity animatable) {
+        int color = animatable.getBandanaColor();
+        if (color < 0 || color >= BANDANA_TEXTURES.length) return BASE_TEXTURE;
+        return animatable.hasBandana() ? BANDANA_TEXTURES[color] : BALD_TEXTURES[color];
+    }
+
+    @Override
+    public void renderCubesOfBone(MatrixStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, int renderColor) {
+        if (bone.getName().startsWith(CUBE_BONE_ID)) return;
+        super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, renderColor);
+    }
+}

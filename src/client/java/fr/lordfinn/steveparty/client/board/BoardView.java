@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.service.ShopStops;
 import net.minecraft.item.ItemStack;
@@ -253,7 +253,7 @@ public final class BoardView {
 
     /**
      * Where the merchant of each shop space stands: the one chosen with the Wrench (or where he was chosen), else the
-     * nearest Hiding Trader around (the client doesn't know which stalls are whose: an estimate).
+     * nearest Boxed Trader around (the client doesn't know which stalls are whose: an estimate).
      */
     /** How high the arc between two teleport tiles {@code length} blocks apart goes. */
     private static double arcHeight(double length) {
@@ -265,9 +265,9 @@ public final class BoardView {
         for (ShopSpace shop : shops) {
             ShopLinkComponent link = shop.link;
             Vec3d at = Vec3d.ofCenter(shop.pos);
-            HidingTraderEntity nearest = null;
+            BoxedTraderEntity nearest = null;
             double best = Double.MAX_VALUE;
-            for (HidingTraderEntity trader : world.getEntitiesByClass(HidingTraderEntity.class, new Box(shop.pos).expand(ShopStops.SHOP_RADIUS),
+            for (BoxedTraderEntity trader : world.getEntitiesByClass(BoxedTraderEntity.class, new Box(shop.pos).expand(ShopStops.SHOP_RADIUS),
                     trader -> link == null || trader.getUuid().equals(link.trader()))) {
                 double distance = trader.squaredDistanceTo(at);
                 if (distance < best) {

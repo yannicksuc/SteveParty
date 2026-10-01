@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * The shop chosen for a Shop Cartridge with the Wrench (without it, the nearest merchant is the shop).
  *
- * @param trader the Hiding Trader selling there
+ * @param trader the Boxed Trader selling there
  * @param anchor what was clicked to choose it (the trader's position then, a trading stall, a cash register): where
  *               the board view draws the link
  */

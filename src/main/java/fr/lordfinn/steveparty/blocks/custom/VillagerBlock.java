@@ -52,7 +52,7 @@ import java.util.Map;
 
 /**
  * A villager squashed into a block (a piston pushed it down), its face on the top. Falls like sand; a player landing
- * on it from high enough reveals a hiding trader (PlayerFallMixin).
+ * on it from high enough reveals a boxed trader (PlayerFallMixin).
  * <p>
  * It is alive: its {@link VillagerBlockEntity} reacts to what happens around it (players, mobs, weather, music...),
  * and its renderer animates it (it is drawn by the block entity renderer, not as a baked block, see

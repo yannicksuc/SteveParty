@@ -17,7 +17,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.blockentity.*;
 import fr.lordfinn.steveparty.client.debug.RecipeExporter;
-import fr.lordfinn.steveparty.client.entity.HidingTraderEntityRenderer;
+import fr.lordfinn.steveparty.client.entity.BoxedTraderEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DiceEntityRenderer;
 import fr.lordfinn.steveparty.client.entity.DirectionDisplayRenderer;
 import fr.lordfinn.steveparty.client.entity.MulaEntityRenderer;
@@ -234,7 +234,7 @@ public class StevepartyClient implements ClientModInitializer {
         ColorProviderRegistry.ITEM.register(StevepartyClient.getTokenIemColor, ModItems.TOKEN);
         // The Mula egg is drawn (textures/item/mula_spawn_egg.png): no spawn-egg tint over it
         ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.MULA_SPAWN_EGG);
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.HIDING_TRADER_SPAWN_EGG);
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> 0xFFFFFFFF, ModItems.BOXED_TRADER_SPAWN_EGG);
         TRIPLE_JUMP_SHOES.renderProviderHolder.setValue(new GeoRenderProvider() {
             private TripleJumpShoesRenderer renderer;
 
@@ -313,7 +313,7 @@ public class StevepartyClient implements ClientModInitializer {
     private static void initEntitiesRenderers() {
         EntityRendererRegistry.register(ModEntities.DICE_ENTITY, DiceEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.DIRECTION_DISPLAY_ENTITY, DirectionDisplayRenderer::new);
-        EntityRendererRegistry.register(ModEntities.HIDING_TRADER_ENTITY, HidingTraderEntityRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntityRenderer::new);
         EntityRendererRegistry.register(ModEntities.MULA_ENTITY, MulaEntityRenderer::new);
         // The forge core is drawn by the forge: its entity is only a hitbox
         EntityRendererRegistry.register(ModEntities.FORGE_CORE, net.minecraft.client.render.entity.EmptyEntityRenderer::new);
@@ -341,7 +341,7 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
         HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HOP_SWITCH_SCREEN_HANDLER, HopSwitchScreen::new);
-        HandledScreens.register(HIDING_TRADER_SCREEN_HANDLER, HidingTraderScreen::new);
+        HandledScreens.register(BOXED_TRADER_SCREEN_HANDLER, BoxedTraderScreen::new);
         HandledScreens.<net.minecraft.screen.MerchantScreenHandler, fr.lordfinn.steveparty.client.screens.ShopStopScreen>register(
                 fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.SHOP_STOP_SCREEN_HANDLER,
                 (handler, inventory, title) -> new fr.lordfinn.steveparty.client.screens.ShopStopScreen(
