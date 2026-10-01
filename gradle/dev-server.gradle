@@ -75,6 +75,8 @@ tasks.register('prepareDevServer') {
                 'difficulty'               : 'peaceful',
                 'spawn-protection'         : 0,
                 'function-permission-level': 4,
+                // Command blocks work on the dev server (builds and mini-game tests use them)
+                'enable-command-block'     : true,
                 // Lets scripts/dev.ps1 stop the server gracefully (save-all flush + stop) instead of killing it
                 'enable-rcon'              : true,
                 'rcon.port'                : devServer.rconPort,
