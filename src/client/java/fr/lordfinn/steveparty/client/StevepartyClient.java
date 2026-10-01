@@ -178,6 +178,9 @@ public class StevepartyClient implements ClientModInitializer {
         initKeybinds();
 
         PartyHud.initialize();
+        fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.initialize();
+        fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud.initialize();
+        fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent.register();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
         initParticleRenderers();
@@ -342,7 +345,6 @@ public class StevepartyClient implements ClientModInitializer {
                 (handler, inventory, title) -> new fr.lordfinn.steveparty.client.screens.ShopStopScreen(
                         (fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler) handler, inventory, title));
         HandledScreens.register(CARTRIDGE_SCREEN_HANDLER, fr.lordfinn.steveparty.client.screens.CartridgeScreen::new);
-        HandledScreens.register(MINI_GAME_PAGE_SCREEN_HANDLER, MiniGamePageScreen::new);
         HandledScreens.register(MINI_GAMES_CATALOGUE_SCREEN_HANDLER, MiniGamesCatalogueScreen::new);
         HandledScreens.register(HERE_WE_GO_BOOK_SCREEN_HANDLER, HereWeGoBookScreen::new);
         HandledScreens.register(HERE_WE_COME_BOOK_SCREEN_HANDLER, HereWeComeBookScreen::new);
@@ -373,6 +375,7 @@ public class StevepartyClient implements ClientModInitializer {
     private static void resetClientState() {
         PartyService.tokens.clear();
         PartyHud.clear();
+        fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.clear();
         FloatingTextRenderer.clear();
         GoalPoleFlipTracker.clear();
         SquishAnimations.clear();

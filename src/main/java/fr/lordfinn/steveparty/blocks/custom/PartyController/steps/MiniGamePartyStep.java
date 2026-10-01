@@ -10,6 +10,11 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
+import fr.lordfinn.steveparty.minigame.MiniGameMode;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
@@ -148,6 +153,9 @@ public class MiniGamePartyStep extends PartyStep {
         sendStartMessage(partyControllerEntity);
 
         // Step 3: Check if there are mini-games to play, exit early if none
+        hidePreview(partyControllerEntity);
+        // The pages show the title they have now
+        MiniGamesCatalogueItem.refreshPages(serverWorld.getServer(), partyControllerEntity.catalogue);
         List<ItemStack> miniGames = partyControllerEntity.getMiniGames();
         if (miniGames.isEmpty()) {
             partyControllerEntity.nextStep();
@@ -213,6 +221,7 @@ public class MiniGamePartyStep extends PartyStep {
         super.end(partyControllerEntity);
         cancelRoulette();
         cancelFlow();
+        hidePreview(partyControllerEntity);
         // However the mini-game ends (podium, step controller...), the players go back where they were
         returnPlayers(partyControllerEntity);
     }
@@ -259,8 +268,8 @@ public class MiniGamePartyStep extends PartyStep {
             teleportParticipants(controller);
             return;
         }
-        MessageUtils.sendToPlayers(players, Text.literal(String.valueOf(seconds)).styled(style -> style.withColor(0xFFA500).withBold(true)),
-                MessageUtils.MessageType.TITLE);
+        // The countdown shows on the card of the mini-game
+        showPreview(controller, seconds);
         playSoundToPlayers(players, SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), SoundCategory.PLAYERS, 1f, 1f);
         flowTaskId = UUID.randomUUID();
         Steveparty.SCHEDULER.schedule(flowTaskId, 20, () -> {
@@ -271,6 +280,7 @@ public class MiniGamePartyStep extends PartyStep {
 
     private void teleportParticipants(PartyControllerEntity controller) {
         phase = Phase.PLAYING;
+        hidePreview(controller);
         if (controller.getWorld() instanceof ServerWorld world) {
             for (ServerPlayerEntity player : getOnlineParticipants(controller)) {
                 // Same places as the « Here we go » books in mini-game mode: team, capacity, fill priority
@@ -288,6 +298,45 @@ public class MiniGamePartyStep extends PartyStep {
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
+    }
+
+    // ---------------------------------------------------------------- the card of the mini-game
+
+    /** Those who see the card: the party's audience and the players of the mini-game. */
+    private List<ServerPlayerEntity> previewAudience(PartyControllerEntity controller) {
+        List<ServerPlayerEntity> audience = new ArrayList<>(controller.getInterestedPlayersEntities());
+        for (ServerPlayerEntity player : getOnlineParticipants(controller)) {
+            if (!audience.contains(player)) audience.add(player);
+        }
+        return audience;
+    }
+
+    /**
+     * Shows the card of the mini-game drawn (picture, title, how it is played) to the audience.
+     *
+     * @param countdown seconds before the departure, 0 while the countdown has not started
+     */
+    private void showPreview(PartyControllerEntity controller, int countdown) {
+        if (controller.getWorld() == null || controller.getWorld().getServer() == null) return;
+        ItemStack page = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
+        if (page.isEmpty()) return;
+        MiniGamePageData data = MiniGamePages.of(controller.getWorld().getServer(), page);
+        if (data == null) data = MiniGamePageData.empty(MiniGamePageData.NO_ID);
+        if (!data.hasTitle()) data = data.withTexts(page.getName().getString(), data.description());
+        MiniGameMode mode = MiniGameMode.of(MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue));
+        MiniGamePagePayloads.Preview payload = new MiniGamePagePayloads.Preview(true, data, mode.ordinal(), countdown);
+        for (ServerPlayerEntity player : previewAudience(controller)) {
+            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Preview.ID)) ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /** The card goes away (the players leave for the mini-game, or it is called off). */
+    private void hidePreview(PartyControllerEntity controller) {
+        if (controller.getWorld() == null || controller.getWorld().getServer() == null) return;
+        MiniGamePagePayloads.Preview payload = new MiniGamePagePayloads.Preview(false, MiniGamePageData.empty(MiniGamePageData.NO_ID), 0, 0);
+        for (ServerPlayerEntity player : previewAudience(controller)) {
+            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Preview.ID)) ServerPlayNetworking.send(player, payload);
+        }
     }
 
     /** Teleports a participant onto their arrival pad, remembering where they stood (once). */
@@ -456,7 +505,7 @@ public class MiniGamePartyStep extends PartyStep {
         MessageUtils.sendToPlayers(
                 players,
                 formatMiniGameMessage(chosenMiniGame, true),
-                MessageUtils.MessageType.TITLE
+                MessageUtils.MessageType.ACTION_BAR
         );
 
         // Store the final selection
@@ -471,6 +520,8 @@ public class MiniGamePartyStep extends PartyStep {
             }
         }
         partyControllerEntity.markDirty();
+        // The mini-game drawn is shown on its card, until the players leave for it
+        showPreview(partyControllerEntity, 0);
 
         // Play a celebratory sound for selection
         playSoundToPlayers(players, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1f, 1);
@@ -531,6 +582,7 @@ public class MiniGamePartyStep extends PartyStep {
             List<ItemStack> applicableMiniGames = new ArrayList<>();
 
             for (ItemStack miniGamePageStack : miniGames) {
+                if (!pageAccepts(world.getServer(), miniGamePageStack, disposition)) continue;
                 // Extract teleporting targets from the mini-game stack
                 TeleportationPadBooksStorage storage = TeleportationPadStorageManager.getBooksStorage(world);
                 List<TeleportingTarget> teleportingTargets = new ArrayList<>();
@@ -554,6 +606,16 @@ public class MiniGamePartyStep extends PartyStep {
         }
 
         return teamDispositionsToMiniGames;
+    }
+
+    /**
+     * What the page says of its mini-game: the team layouts and the numbers of players it accepts.
+     *
+     * @return false if the page refuses these teams (a page nothing was written on accepts everything)
+     */
+    public static boolean pageAccepts(MinecraftServer server, ItemStack page, TeamDisposition disposition) {
+        MiniGamePageData data = MiniGamePages.of(server, page);
+        return data == null || data.accepts(disposition.teamA.size() + disposition.teamB.size(), MiniGameMode.of(disposition));
     }
 
     // Check if the mini-game can accept the current team disposition based on teleporting targets

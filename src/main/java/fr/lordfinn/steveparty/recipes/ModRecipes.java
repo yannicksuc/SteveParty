@@ -12,6 +12,9 @@ public class ModRecipes {
             Steveparty.id("material_shaped"), new MaterialShapedRecipe.Serializer());
     public static final RecipeSerializer<StencilCopyRecipe> STENCIL_COPY = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_stencil_copy"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(StencilCopyRecipe::new));
+    /** Mini-game page + paper: linked copies of the page. */
+    public static final RecipeSerializer<MiniGamePageCopyRecipe> MINI_GAME_PAGE_COPY = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("crafting_special_mini_game_page_copy"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(MiniGamePageCopyRecipe::new));
     /** The flag from 3 wools: the wool's colour is the flag's (mixed when the wools differ). */
     public static final FlagFromWoolRecipe.Serializer FLAG_FROM_WOOL = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("flag_from_wool"), new FlagFromWoolRecipe.Serializer());

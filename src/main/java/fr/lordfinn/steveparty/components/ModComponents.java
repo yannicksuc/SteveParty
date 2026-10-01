@@ -87,6 +87,9 @@ public class ModComponents {
             registerComponent("current-minigame", ItemStack.CODEC);
     public static final ComponentType<TeamDisposition> TEAM_DISPOSITION =
             registerComponent("team-disposition", TeamDisposition.CODEC);
+    /** Mini-game page: the id of its content, kept by the server (see MiniGamePages). */
+    public static final ComponentType<MiniGamePageRef> MINI_GAME_PAGE =
+            registerComponent("mini-game-page", MiniGamePageRef.CODEC);
     public static final ComponentType<List<Byte>> STENCIL_PIXELS =
             registerComponent("stencil-pixels", Codec.list(Codec.BYTE));
     /** Block (planks, rock...) a material sign is made of. */
