@@ -82,6 +82,7 @@ public class PipeBlock extends Block implements BlockEntityProvider {
         return switch (kind) {
             case GLASS -> "glass";
             case STAINED_GLASS -> "stained_glass/" + color;
+            case GOLDEN, SUPER_GOLDEN, MEGA_GOLDEN -> kind.folder;
             default -> "plastic/" + color;
         };
     }
@@ -280,7 +281,7 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     @Override
     protected boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
         if (!(stateFrom.getBlock() instanceof PipeBlock other)) return false;
-        if (!other.kind.isPlastic() && other != this) return false;
+        if (other.kind.isGlass() && other != this) return false;
         return VoxelShapes.isSideCovered(PipeShape.shape(state), PipeShape.shape(stateFrom), direction);
     }
 

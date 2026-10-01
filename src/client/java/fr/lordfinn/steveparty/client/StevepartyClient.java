@@ -151,10 +151,13 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
         ModelLoadingPlugin.register(new fr.lordfinn.steveparty.client.pipe.PipeModelPlugin());
         fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer.register();
+        BlockEntityRendererFactories.register(ModBlockEntities.GOLDEN_PIPE_ENTITY, fr.lordfinn.steveparty.client.pipe.GoldenPipeNotchRenderer::new);
+        fr.lordfinn.steveparty.client.pipe.GoldenPipeNotchRenderer.registerHint();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
         for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values()) {
             RenderLayer layer = kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.STAINED_GLASS ? RenderLayer.getTranslucent()
-                    : kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.OPAQUE ? null : RenderLayer.getCutout();
+                    : kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.OPAQUE || kind.isGolden() ? null
+                    : RenderLayer.getCutout();
             if (layer != null) for (net.minecraft.block.Block pipe : ModBlocks.PIPES[kind.ordinal()]) BlockRenderLayerMap.INSTANCE.putBlock(pipe, layer);
         }
         StencilResourceManager.registerReloadListener();

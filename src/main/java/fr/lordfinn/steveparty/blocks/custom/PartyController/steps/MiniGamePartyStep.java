@@ -7,7 +7,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGameIntro;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
+import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
@@ -35,6 +37,8 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.List;
@@ -262,7 +266,12 @@ public class MiniGamePartyStep extends PartyStep {
         if (!isStillActive(controller)) return;
         List<ServerPlayerEntity> players = getOnlineParticipants(controller);
         if (seconds <= 0) {
-            depart(controller);
+            // The introduction of the page, if it has one, then the departure
+            MiniGamePageData page = controller.getWorld() == null || controller.getWorld().getServer() == null ? null
+                    : MiniGamePages.of(controller.getWorld().getServer(), MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+            MiniGameIntro.play(page, previewAudience(controller), () -> {
+                if (isStillActive(controller)) depart(controller);
+            });
             return;
         }
         // The countdown shows on the card of the mini-game
@@ -291,7 +300,7 @@ public class MiniGamePartyStep extends PartyStep {
             participants.stream().filter(uuid -> !order.contains(uuid)).forEach(order::add);
             List<UUID> spectators = controller.getInterestedPlayersEntities().stream().map(ServerPlayerEntity::getUuid)
                     .filter(uuid -> !participants.contains(uuid)).toList();
-            Map<UUID, MiniGamePipeLink> pipes = page == null ? Map.of() : MiniGamePipes.distribute(page, teams, order, spectators);
+            Map<UUID, MiniGamePipeLink> pipes = page == null ? Map.of() : MiniGamePipes.distribute(page, teams, order, spectators, new Random());
             Map<MiniGamePipeLink, Integer> queues = new HashMap<>();
             for (UUID uuid : order) {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
@@ -318,12 +327,30 @@ public class MiniGamePartyStep extends PartyStep {
                     });
                 }
             });
-            MessageUtils.sendToPlayers(getOnlineParticipants(controller),
-                    Text.translatableWithFallback("message.steveparty.minigame.go", "Go!").styled(style -> style.withColor(0x55FF55).withBold(true)),
-                    MessageUtils.MessageType.TITLE);
+            announce(controller, page);
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
+    }
+
+    /**
+     * The mini-game starts: its title in big on the screen (« Go! » under it), and in the chat its title and, when
+     * it has one, its description, for the players and the audience.
+     */
+    private void announce(PartyControllerEntity controller, @Nullable MiniGamePageData page) {
+        ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
+        String name = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
+        Text go = Text.translatableWithFallback("message.steveparty.minigame.go", "Go!").styled(style -> style.withColor(0x55FF55).withBold(true));
+        Text title = name.isEmpty() ? go : Text.literal(name).styled(style -> style.withColor(0xFFC52E).withBold(true));
+        for (ServerPlayerEntity player : previewAudience(controller)) {
+            if (!name.isEmpty()) player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.SubtitleS2CPacket(go));
+            player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.TitleS2CPacket(title));
+            if (name.isEmpty()) continue;
+            player.sendMessage(Text.translatable("message.steveparty.minigame.title", title), false);
+            if (page != null && !MiniGameText.strip(page.description()).isBlank()) {
+                player.sendMessage(MiniGameText.parse(page.description(), Style.EMPTY.withColor(Formatting.GRAY)), false);
+            }
+        }
     }
 
     /** {@code uuid} is away in this mini-game (free pipes, the exit pipe) for as long as it is this party's step. */

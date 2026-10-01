@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "steveparty:block/pipe/super_golden/gold_rim"
+  }
+}

@@ -76,6 +76,13 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlockEntity::new,
                     java.util.Arrays.stream(ModBlocks.PIPES).flatMap(java.util.Arrays::stream).toArray(net.minecraft.block.Block[]::new)).build(null)
     );
+    /** The Golden Mini-game Pipe's: it shows the page it holds. */
+    public static final BlockEntityType<fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlockEntity> GOLDEN_PIPE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(MOD_ID, "golden_pipe"),
+            FabricBlockEntityTypeBuilder.create(fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlockEntity::new,
+                    ModBlocks.GOLDEN_MINIGAME_PIPE, ModBlocks.SUPER_GOLDEN_MINIGAME_PIPE, ModBlocks.MEGA_GOLDEN_MINIGAME_PIPE).build(null)
+    );
     public static final BlockEntityType<PodiumBlockEntity> PODIUM_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(MOD_ID, "podium"),

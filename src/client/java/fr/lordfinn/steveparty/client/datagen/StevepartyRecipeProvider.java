@@ -255,11 +255,14 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .criterion(hasItem(ModBlocks.TILE), conditionsFromItem(ModBlocks.TILE))
                         .offerTo(recipeExporter);
 
-                // A page for the catalogue: paper dyed like the page
-                createShapeless(RecipeCategory.MISC, ModItems.MINI_GAME_PAGE)
-                        .input(Items.PAPER)
-                        .input(Items.CYAN_DYE)
-                        .criterion(hasItem(ModItems.MINI_GAMES_CATALOGUE), conditionsFromItem(ModItems.MINI_GAMES_CATALOGUE))
+                // Pages for the catalogue: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)
+                createShaped(RecipeCategory.MISC, ModItems.MINI_GAME_PAGE, 4)
+                        .pattern(" P ")
+                        .pattern("PCP")
+                        .pattern(" P ")
+                        .input('P', Items.PAPER)
+                        .input('C', ModItems.BOARD_SPACE_BEHAVIOR)
+                        .criterion(hasItem(ModItems.BOARD_SPACE_BEHAVIOR), conditionsFromItem(ModItems.BOARD_SPACE_BEHAVIOR))
                         .offerTo(recipeExporter);
             }
 

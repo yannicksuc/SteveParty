@@ -136,6 +136,31 @@ public class MiniGamePageGameTests implements FabricGameTest {
         context.assertTrue(loaded.isImageUsed("0123456789abcdef0123456789abcdef", null), "the picture is known as used");
         context.assertTrue(!loaded.isImageUsed("0123456789abcdef0123456789abcdef", id), "but by no other page");
 
+        // The introduction's shots, the roles sent at random and the text markup come back too
+        MiniGamePageData advanced = page.withTexts("Titre", "&lRègles&r : &cattention&r && bonne chance")
+                .withRandom(fr.lordfinn.steveparty.minigame.MiniGamePipeRole.PLAYERS, true)
+                .withIntro(List.of(new fr.lordfinn.steveparty.minigame.MiniGameIntroShot(World.OVERWORLD, new net.minecraft.util.math.Vec3d(1.5, 80, -3.25), 45, 30, 60, "Vue d'&6ensemble"),
+                        new fr.lordfinn.steveparty.minigame.MiniGameIntroShot(World.NETHER, new net.minecraft.util.math.Vec3d(0, 64, 0), -400, 120, 100000, "")));
+        MiniGamePageData reloaded = MiniGamePageData.fromNbt(advanced.toNbt());
+        context.assertEquals(reloaded, advanced, "the advanced page comes back the same");
+        context.assertEquals(advanced.toNbt().getInt("Format"), MiniGamePageData.FORMAT, "the saved form says its version");
+        context.assertEquals(reloaded.intro().size(), 2, "two shots");
+        context.assertTrue(reloaded.intro().get(1).pitch() == 90 && reloaded.intro().get(1).ticks() == fr.lordfinn.steveparty.minigame.MiniGameIntroShot.MAX_TICKS,
+                "a shot keeps sane values");
+        context.assertTrue(page.intro().isEmpty() && page.randomRoles().isEmpty(), "none by default");
+        NbtCompound old = page.toNbt();
+        old.remove("Format");
+        context.assertEquals(MiniGamePageData.fromNbt(old), page, "a page saved before these were added loads as it was");
+        net.minecraft.text.Text shown = fr.lordfinn.steveparty.minigame.MiniGameText.parse(advanced.description());
+        context.assertEquals(shown.getString(), "Règles : attention & bonne chance", "the markup is not shown");
+        context.assertTrue(shown.getSiblings().get(0).getStyle().isBold() && !shown.getSiblings().get(1).getStyle().isBold(), "&l bold until &r");
+        context.assertEquals(shown.getSiblings().get(2).getStyle().getColor(), net.minecraft.text.TextColor.fromFormatting(net.minecraft.util.Formatting.RED), "&c red");
+        context.assertEquals(fr.lordfinn.steveparty.minigame.MiniGameText.wrap("un deux trois quatre cinq six", 10), List.of("un deux", "trois", "quatre", "cinq six"),
+                "long lines are cut at the spaces");
+        net.minecraft.network.PacketByteBuf advancedBuf = new net.minecraft.network.PacketByteBuf(io.netty.buffer.Unpooled.buffer());
+        MiniGamePageData.PACKET_CODEC.encode(advancedBuf, advanced);
+        context.assertEquals(MiniGamePageData.PACKET_CODEC.decode(advancedBuf), advanced, "and crosses the network the same");
+
         // The network form too
         net.minecraft.network.PacketByteBuf buf = new net.minecraft.network.PacketByteBuf(io.netty.buffer.Unpooled.buffer());
         MiniGamePageData.PACKET_CODEC.encode(buf, page);
@@ -151,7 +176,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
         context.assertTrue(page.title().length() <= MiniGamePageData.MAX_TITLE_LENGTH, "title cut");
         context.assertTrue(!page.title().contains("\n") && !page.title().contains("§"), "title on one line, no formatting code");
         context.assertTrue(page.description().split("\n").length <= MiniGamePageData.MAX_DESCRIPTION_LINES, "description lines cut");
-        context.assertEquals(page.modes(), EnumSet.allOf(MiniGameMode.class), "no mode ticked: every mode");
+        context.assertEquals(page.modes(), EnumSet.of(MiniGameMode.FREE_FOR_ALL), "no mode ticked: free for all");
         context.assertEquals(page.minPlayers(), 9, "min kept");
         context.assertEquals(page.maxPlayers(), 9, "max raised to min");
         context.assertTrue(page.pipeLinks().isEmpty(), "no pipe link yet");
@@ -455,8 +480,11 @@ public class MiniGamePageGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void pagesAcceptTheLayoutsTheyTick(TestContext context) {
         MiniGamePageData page = MiniGamePageData.empty(UUID.randomUUID());
+        // A new page: free for all only, the other ways to play are ticked by who writes it
+        context.assertEquals(page.modes(), EnumSet.of(MiniGameMode.FREE_FOR_ALL), "a new page ticks free for all only");
         for (MiniGameMode mode : MiniGameMode.values()) {
-            context.assertTrue(page.accepts(1, mode) && page.accepts(MiniGamePageData.MAX_PLAYERS, mode), "a blank page accepts " + mode);
+            context.assertEquals(page.accepts(1, mode) && page.accepts(MiniGamePageData.MAX_PLAYERS, mode), mode == MiniGameMode.FREE_FOR_ALL,
+                    "a blank page and " + mode);
         }
         MiniGamePageData duel = page.withModes(EnumSet.of(MiniGameMode.TWO_TEAMS, MiniGameMode.FOUR_TEAMS)).withPlayers(2, 4);
         context.assertTrue(duel.accepts(4, MiniGameMode.TWO_TEAMS), "2 teams, 4 players");

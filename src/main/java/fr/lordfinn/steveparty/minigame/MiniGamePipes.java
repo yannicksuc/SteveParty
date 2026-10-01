@@ -1,17 +1,21 @@
 package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
+import fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipeDestinationProvider;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
+import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -24,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -35,16 +40,27 @@ import java.util.function.Predicate;
  *     ({@link MiniGamePipeRole#ofPipe}); another click unlinks it ({@link #click}).</li>
  *     <li><b>Arrivals</b>: the players of a mini-game come out of the pipes of their role, one after the other in
  *     each pipe in turn ({@link #distribute}, {@link #emerge}).</li>
- *     <li><b>Entry</b>, out of a party: a player going in an entry pipe comes out of the page's players pipes, each in
- *     turn.</li>
+ *     <li><b>The Golden Mini-game Pipe</b>, out of a party: programmed with the page, it is the way into the
+ *     mini-game. A player whose trip through the pipes ends in it (a capped end) comes out of the mini-game's pipes of
+ *     the role of the colour of the mouth it went in by: by a green mouth out of a players pipe, by a blue one out of
+ *     a team A pipe... A player who goes in the golden pipe's own mouth, or by a colour the page has no pipe for,
+ *     comes out of the default arrival: the first role with a pipe among {@link #DEFAULT_ARRIVALS} (the entry pipes
+ *     first). Each role's pipes in turn, or at random if the page says so. However far, in any dimension.</li>
  *     <li><b>Exit</b>: a player going in an exit pipe goes back where it came from: in a party, where it stood before
- *     the mini-game; out of a party, out of the entry pipe it came by (else the page's first entry pipe).</li>
+ *     the mini-game; out of a party, out of the mouth it went in by to come.</li>
  * </ul>
  * Only players are concerned: mobs and items travel through these pipes like through any other. Nothing is scanned:
  * the pages are asked when a player goes in a mouth ({@link PipeTravel.Gate}).
  */
 public final class MiniGamePipes {
-    /** A player in a mini-game out of a party: the page, and the entry pipe it came by. */
+    /**
+     * Where those who come by a golden pipe without a role of their own arrive: the first of these roles the page has
+     * a pipe of. The entry pipes are there for that; then where one watches from, then where one plays.
+     */
+    public static final List<MiniGamePipeRole> DEFAULT_ARRIVALS = List.of(MiniGamePipeRole.ENTRY, MiniGamePipeRole.SPECTATORS,
+            MiniGamePipeRole.PLAYERS, MiniGamePipeRole.TEAM_A, MiniGamePipeRole.TEAM_B, MiniGamePipeRole.TEAM_C, MiniGamePipeRole.TEAM_D);
+
+    /** A player in a mini-game out of a party: the page, and the mouth it went in by to come. */
     private record Visit(UUID page, GlobalPos mouth, Direction opening) {
     }
 
@@ -54,15 +70,16 @@ public final class MiniGamePipes {
     }
 
     private static final Map<UUID, Seat> IN_PARTY = new HashMap<>();
-    /** The next players pipe an entry sends to, by page. */
-    private static final Map<UUID, Integer> NEXT_ARRIVAL = new HashMap<>();
+    /** The next pipe of each role a golden pipe sends to, by page. */
+    private static final Map<UUID, Map<MiniGamePipeRole, Integer>> NEXT_ARRIVAL = new HashMap<>();
 
     private MiniGamePipes() {
     }
 
     public static void initialize() {
         PipeTravel.registerGate(MiniGamePipes::passage);
-        // The players of a party's mini-game travel for free
+        // A page in a pipe's slot (a Golden Mini-game Pipe): where its capped end sends
+        PipeDestinationProvider.register(ModItems.MINI_GAME_PAGE, GoldenRoute::new);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             VISITS.clear();
             IN_PARTY.clear();
@@ -103,14 +120,15 @@ public final class MiniGamePipes {
         MinecraftServer server = player.server;
         GlobalPos mouth = GlobalPos.create(world.getRegistryKey(), pos.toImmutable());
         boolean wasLinked = MiniGamePages.get(server, id).linkIndex(mouth) >= 0;
-        MiniGamePipeLink link = MiniGamePages.toggleLink(server, id, mouth, opening, MiniGamePipeRole.ofPipe(state));
+        MiniGamePipeLink link = MiniGamePages.toggleLink(server, id, MiniGamePipeLink.of(mouth, opening, state));
+        // The feedback of a cartridge picking a destination: its sounds, its message in the action bar
         if (link != null) {
-            player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.linked", link.role().text(),
-                    MiniGamePages.get(server, id).pipes(link.role()).size()).formatted(Formatting.GREEN), true);
-            world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 1.0F, 1.3F);
+            player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.linked", pos.getX(), pos.getY(), pos.getZ(),
+                    link.role().text()), true);
+            world.playSound(null, pos, ModSounds.SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
         } else if (wasLinked) {
-            player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.unlinked").formatted(Formatting.YELLOW), true);
-            world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_BREAK, SoundCategory.BLOCKS, 0.8F, 0.9F);
+            player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.unlinked", pos.getX(), pos.getY(), pos.getZ()), true);
+            world.playSound(null, pos, ModSounds.CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
         } else {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.full", MiniGamePageData.MAX_PIPE_LINKS)
                     .formatted(Formatting.RED), true);
@@ -131,15 +149,17 @@ public final class MiniGamePipes {
 
     /**
      * Which pipe each one comes out of. The players of a role go one after the other into each pipe of that role in
-     * turn: the pipes in the order they were linked to the page, the players in the order given (the turn order).
-     * Never random. Those whose role has no pipe use the players pipes; they are left out if there is none either.
+     * turn: the pipes in the order they were linked to the page, the players in the order given (the turn order);
+     * or, for the roles the page says so ({@link MiniGamePageData#isRandom}), each into a pipe of the role picked at
+     * random. Those whose role has no pipe use the players pipes; they are left out if there is none either.
      *
      * @param players    the players of the mini-game, in turn order
      * @param spectators those who watch (they use the spectators pipes, and are left out without any)
+     * @param random     picks the pipes of the random roles
      * @return the pipe of each one, in the order they leave
      */
     public static Map<UUID, MiniGamePipeLink> distribute(MiniGamePageData page, @Nullable TeamDisposition teams,
-                                                         List<UUID> players, List<UUID> spectators) {
+                                                         List<UUID> players, List<UUID> spectators, Random random) {
         Map<UUID, MiniGamePipeLink> pipes = new LinkedHashMap<>();
         Map<MiniGamePipeRole, Integer> next = new HashMap<>();
         for (UUID player : players) {
@@ -147,13 +167,20 @@ public final class MiniGamePipes {
             if (page.pipes(role).isEmpty()) role = MiniGamePipeRole.PLAYERS;
             List<MiniGamePipeLink> ofRole = page.pipes(role);
             if (ofRole.isEmpty()) continue;
-            pipes.put(player, ofRole.get((next.merge(role, 1, Integer::sum) - 1) % ofRole.size()));
+            pipes.put(player, pick(page, role, ofRole, next, random));
         }
         List<MiniGamePipeLink> watching = page.pipes(MiniGamePipeRole.SPECTATORS);
         for (int i = 0; i < spectators.size() && !watching.isEmpty(); i++) {
-            if (!pipes.containsKey(spectators.get(i))) pipes.put(spectators.get(i), watching.get(i % watching.size()));
+            if (!pipes.containsKey(spectators.get(i))) pipes.put(spectators.get(i), pick(page, MiniGamePipeRole.SPECTATORS, watching, next, random));
         }
         return pipes;
+    }
+
+    /** The next pipe of a role: each in turn, or any of them for a role the page sends at random. */
+    private static MiniGamePipeLink pick(MiniGamePageData page, MiniGamePipeRole role, List<MiniGamePipeLink> ofRole,
+                                         Map<MiniGamePipeRole, Integer> next, Random random) {
+        if (page.isRandom(role)) return ofRole.get(random.nextInt(ofRole.size()));
+        return ofRole.get((next.merge(role, 1, Integer::sum) - 1) % ofRole.size());
     }
 
     /**
@@ -164,10 +191,8 @@ public final class MiniGamePipes {
     public static boolean emerge(MinecraftServer server, MiniGamePipeLink link, ServerPlayerEntity player) {
         ServerWorld world = server.getWorld(link.mouth().dimension());
         if (world == null) return false;
-        BlockPos pos = link.mouth().pos();
-        BlockState state = world.getBlockState(pos);
-        Direction opening = PipeShape.mouth(state, link.opening()) != null ? link.opening() : mouthOf(state, pos, net.minecraft.util.math.Vec3d.ofCenter(pos));
-        return opening != null && PipeTravel.emerge(world, new PipeNetworks.End(pos, opening, false), player, PipeTravel.BASE_SPEED);
+        Direction opening = openingOf(world, link);
+        return opening != null && PipeTravel.emerge(world, new PipeNetworks.End(link.mouth().pos(), opening, false), player, PipeTravel.BASE_SPEED);
     }
 
     // ------------------------------------------------------------------ party
@@ -195,46 +220,111 @@ public final class MiniGamePipes {
         return seat != null;
     }
 
-    // ------------------------------------------------------------------ entry and exit
+    // ------------------------------------------------------------------ the golden pipe and the exit
 
-    /** What a linked mouth does with a player going in it: see the class. */
+    /** The mouth a linked pipe opens on now (its chunk is loaded to look), null if it has none any more. */
+    private static @Nullable Direction openingOf(ServerWorld world, MiniGamePipeLink link) {
+        BlockState state = world.getBlockState(link.mouth().pos());
+        return PipeShape.mouth(state, link.opening()) != null ? link.opening() : mouthOf(state, link.mouth().pos(), net.minecraft.util.math.Vec3d.ofCenter(link.mouth().pos()));
+    }
+
+    /**
+     * The pipe of the mini-game a player coming by a golden pipe comes out of.
+     *
+     * @param enteredBy the pipe of the mouth it went in by, null for the golden pipe's own mouth
+     * @param inReach   the pipes the golden pipe sends as far as (see {@link GoldenPipeBlock.Reach})
+     * @param random    picks among the pipes of a role the page sends at random
+     * @return null if the page has no pipe to arrive by, or none of its role in reach
+     */
+    public static @Nullable MiniGamePipeLink goldenArrival(MiniGamePageData page, @Nullable BlockState enteredBy,
+                                                         Predicate<MiniGamePipeLink> inReach, Random random) {
+        MiniGamePipeRole role = enteredBy == null ? null : MiniGamePipeRole.ofPipe(enteredBy);
+        if (role == null || !role.isArrival() || page.pipes(role).isEmpty()) {
+            role = null;
+            for (MiniGamePipeRole fallback : DEFAULT_ARRIVALS) {
+                if (!page.pipes(fallback).isEmpty()) {
+                    role = fallback;
+                    break;
+                }
+            }
+        }
+        if (role == null) return null;
+        List<MiniGamePipeLink> reachable = page.pipes(role).stream().filter(inReach).toList();
+        if (reachable.isEmpty()) return null;
+        return pick(page, role, reachable, NEXT_ARRIVAL.computeIfAbsent(page.id(), id -> new HashMap<>()), random);
+    }
+
+    /**
+     * The pipe a player coming by the golden pipe at {@code golden} comes out of; when the mini-game is too far for
+     * that pipe, the player is told which golden pipe it takes.
+     */
+    private static @Nullable MiniGamePipeLink arrivalFrom(ServerWorld world, BlockPos golden, MiniGamePageData page, @Nullable BlockState enteredBy,
+                                                         ServerPlayerEntity player) {
+        GoldenPipeBlock.Reach reach = GoldenPipeBlock.reachOf(world.getBlockState(golden));
+        MiniGamePipeLink link = goldenArrival(page, enteredBy, pipe -> GoldenPipeBlock.reaches(reach, world, golden, pipe.mouth()), new Random());
+        if (link == null && goldenArrival(page, enteredBy, pipe -> true, new Random()) != null) {
+            // There are pipes to arrive by, but none this pipe reaches
+            boolean elsewhere = page.pipeLinks().stream().noneMatch(pipe -> pipe.mouth().dimension().equals(world.getRegistryKey()));
+            player.sendMessage(Text.translatable("message.steveparty.golden_minigame_pipe.too_far."
+                    + (reach == GoldenPipeBlock.Reach.DIMENSION || elsewhere ? "mega" : "super")).formatted(Formatting.RED), true);
+        }
+        return link;
+    }
+
+    /** Where the capped end of a golden pipe programmed with a page sends a player: see the class. */
+    private record GoldenRoute(ItemStack page) implements PipeDestinationProvider {
+        @Override
+        public @Nullable Exit destination(ServerWorld world, BlockPos cappedEnd, Entity traveller) {
+            return destination(world, cappedEnd, traveller, null);
+        }
+
+        @Override
+        public @Nullable Exit destination(ServerWorld world, BlockPos cappedEnd, Entity traveller, PipeNetworks.@Nullable End enteredBy) {
+            if (!(traveller instanceof ServerPlayerEntity player) || isInParty(player.getUuid())) return null;
+            MinecraftServer server = world.getServer();
+            MiniGamePageData data = MiniGamePages.of(server, page);
+            if (data == null) return null;
+            // By the golden pipe's own mouth: no colour to go by
+            BlockState entered = enteredBy == null || enteredBy.pos().equals(cappedEnd) ? null : world.getBlockState(enteredBy.pos());
+            MiniGamePipeLink link = arrivalFrom(world, cappedEnd, data, entered, player);
+            ServerWorld there = link == null ? null : server.getWorld(link.mouth().dimension());
+            Direction opening = there == null ? null : openingOf(there, link);
+            if (opening == null) return null;
+            if (enteredBy != null) {
+                VISITS.put(player.getUuid(), new Visit(data.id(), GlobalPos.create(world.getRegistryKey(), enteredBy.pos()), enteredBy.dir()));
+            }
+            return new Exit(link.mouth().dimension(), link.mouth().pos(), opening);
+        }
+    }
+
+    /**
+     * What a mouth does with a player going in it: the own mouth of a programmed golden pipe sends to the default
+     * arrival of its mini-game; an exit pipe sends back (see the class).
+     */
     private static PipeTravel.@Nullable Passage passage(ServerWorld world, BlockPos mouth, Direction opening, ServerPlayerEntity player) {
         MinecraftServer server = world.getServer();
-        GlobalPos here = GlobalPos.create(world.getRegistryKey(), mouth);
-        List<MiniGamePagesState.Linked> links = MiniGamePages.linksAt(server, here);
-        if (links.isEmpty()) return null;
         UUID id = player.getUuid();
-        for (MiniGamePagesState.Linked linked : links) {
-            MiniGamePageData page = linked.page();
-            if (linked.link().role() == MiniGamePipeRole.EXIT) {
-                if (isInParty(id)) return new PipeTravel.Passage(IN_PARTY.get(id).leave());
-                Visit visit = VISITS.get(id);
-                MiniGamePipeLink back = visit != null && visit.page().equals(page.id())
-                        ? new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY)
-                        : page.pipes(MiniGamePipeRole.ENTRY).stream().findFirst().orElse(null);
-                if (back == null) continue;
-                return new PipeTravel.Passage(traveller -> {
-                    if (!emerge(server, back, traveller)) return false;
-                    VISITS.remove(traveller.getUuid());
-                    return true;
-                });
-            }
-            if (linked.link().role() == MiniGamePipeRole.ENTRY && !isInParty(id)) {
-                List<MiniGamePipeLink> arrivals = page.pipes(MiniGamePipeRole.PLAYERS);
-                if (arrivals.isEmpty()) continue;
-                return new PipeTravel.Passage(traveller -> {
-                    // The players pipes each in turn; a pipe that is no more is skipped
-                    int first = NEXT_ARRIVAL.getOrDefault(page.id(), 0);
-                    for (int i = 0; i < arrivals.size(); i++) {
-                        int index = (first + i) % arrivals.size();
-                        if (!emerge(server, arrivals.get(index), traveller)) continue;
-                        NEXT_ARRIVAL.put(page.id(), index + 1);
-                        VISITS.put(traveller.getUuid(), new Visit(page.id(), here, opening));
-                        return true;
-                    }
-                    return false;
-                });
-            }
+        GlobalPos here = GlobalPos.create(world.getRegistryKey(), mouth);
+        MiniGamePageData programmed = MiniGamePages.of(server, GoldenPipeBlock.pageAt(world, mouth));
+        if (programmed != null && !isInParty(id) && DEFAULT_ARRIVALS.stream().anyMatch(role -> !programmed.pipes(role).isEmpty())) {
+            return new PipeTravel.Passage(traveller -> {
+                MiniGamePipeLink link = arrivalFrom(world, mouth, programmed, null, traveller);
+                if (link == null || !emerge(server, link, traveller)) return false;
+                VISITS.put(traveller.getUuid(), new Visit(programmed.id(), here, opening));
+                return true;
+            });
+        }
+        for (MiniGamePagesState.Linked linked : MiniGamePages.linksAt(server, here)) {
+            if (linked.link().role() != MiniGamePipeRole.EXIT) continue;
+            if (isInParty(id)) return new PipeTravel.Passage(IN_PARTY.get(id).leave());
+            Visit visit = VISITS.get(id);
+            if (visit == null || !visit.page().equals(linked.page().id())) continue;
+            MiniGamePipeLink back = new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY);
+            return new PipeTravel.Passage(traveller -> {
+                if (!emerge(server, back, traveller)) return false;
+                VISITS.remove(traveller.getUuid());
+                return true;
+            });
         }
         return null;
     }

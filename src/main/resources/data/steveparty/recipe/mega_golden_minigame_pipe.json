@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "steveparty:super_golden_minigame_pipe",
+    "steveparty:power_star",
+    "steveparty:power_star",
+    "minecraft:ender_eye"
+  ],
+  "result": {
+    "id": "steveparty:mega_golden_minigame_pipe",
+    "count": 1
+  }
+}

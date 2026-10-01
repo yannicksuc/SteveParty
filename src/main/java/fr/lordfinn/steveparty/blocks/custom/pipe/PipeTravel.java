@@ -105,10 +105,6 @@ public final class PipeTravel {
      * @param go sends the player on; false if it could not: the player comes back out of the mouth
      */
     public record Passage(Predicate<ServerPlayerEntity> go) {
-        /** As {@link #Passage(Predicate)} ({@code unused}: nothing any more). */
-        public Passage(boolean unused, Predicate<ServerPlayerEntity> go) {
-            this(go);
-        }
     }
 
     private static final List<Gate> GATES = new ArrayList<>();
@@ -391,7 +387,8 @@ public final class PipeTravel {
             if (!(end.pos().equals(mouth) && end.dir() == opening)) others.add(end);
         }
         if (others.isEmpty()) return;
-        PipeNetworks.End target = others.get(world.random.nextInt(others.size()));
+        PipeNetworks.End target = programmedEnd(world, entity, others);
+        if (target == null) target = others.get(world.random.nextInt(others.size()));
         List<Vec3d> points = route(network, origin, target);
         if (points.isEmpty()) return;
         PipeCarrierEntity carrier = PipeCarrierEntity.create(world, points, MathHelper.clamp(speed, BASE_SPEED, MAX_SPEED), target, origin);
@@ -403,6 +400,18 @@ public final class PipeTravel {
         Vec3d at = face(mouth, opening, 0.5);
         world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.BLOCKS, 1.0F, 0.6F);
         world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_PUFFER_FISH_BLOW_OUT, SoundCategory.BLOCKS, 0.6F, 1.5F);
+    }
+
+    /**
+     * A capped end that says where it sends (a programmed Golden Mini-game Pipe): a player always goes to it rather
+     * than to an end picked at random, so that every mouth of the network leads there.
+     */
+    private static PipeNetworks.@Nullable End programmedEnd(ServerWorld world, Entity entity, List<PipeNetworks.End> ends) {
+        if (!(entity instanceof ServerPlayerEntity)) return null;
+        for (PipeNetworks.End end : ends) {
+            if (end.capped() && world.getBlockEntity(end.pos()) instanceof PipeBlockEntity pipe && pipe.destinationProvider() != null) return end;
+        }
+        return null;
     }
 
     /** The points along the pipes from the end {@code from} (its opening) to the end {@code to}. */
@@ -443,7 +452,7 @@ public final class PipeTravel {
         }
         if (now.capped() != target.capped()) target = new PipeNetworks.End(target.pos(), target.dir(), now.capped());
         if (target.capped()) {
-            Destination warp = warpDestination(world, target, traveller);
+            Destination warp = warpDestination(world, target, traveller, carrier.origin());
             if (warp == null || !warp(world, carrier, traveller, target, warp)) goBack(world, carrier, traveller);
         } else if (blocked(world, target) && !carrier.hasReturned()) {
             goBack(world, carrier, traveller);
@@ -504,10 +513,10 @@ public final class PipeTravel {
      * (the last block reached, whatever the colour of the mouth it went in) in another network, within
      * {@link PipeNetworks#WARP_RADIUS} blocks, in a loaded chunk of the same dimension. Nothing farther, for anyone.
      */
-    private static @Nullable Destination warpDestination(ServerWorld world, PipeNetworks.End capped, Entity traveller) {
+    private static @Nullable Destination warpDestination(ServerWorld world, PipeNetworks.End capped, Entity traveller, PipeNetworks.@Nullable End enteredBy) {
         if (world.getBlockEntity(capped.pos()) instanceof PipeBlockEntity pipe) {
             PipeDestinationProvider provider = pipe.destinationProvider();
-            PipeDestinationProvider.Exit exit = provider == null ? null : provider.destination(world, capped.pos(), traveller);
+            PipeDestinationProvider.Exit exit = provider == null ? null : provider.destination(world, capped.pos(), traveller, enteredBy);
             if (exit != null) {
                 ServerWorld there = exit.dimension() == null ? world : world.getServer().getWorld(exit.dimension());
                 if (there != null) return new Destination(there, new PipeNetworks.End(exit.pos(), exit.opening(), false));

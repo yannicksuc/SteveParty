@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.client.minigame.PageImagePicker;
+import fr.lordfinn.steveparty.client.renderer.DestinationsRenderer;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImage;
@@ -38,8 +39,11 @@ import java.util.UUID;
  * picture is sent as soon as it is picked. A player who may not build only reads the page.
  * <p>
  * The « Pipes » tab shows the pipes linked to the page (a click on a pipe mouth, page in hand) as cards in a column
- * per role: a click on a card gives it the next role, dragging it to another column that role, a right click unlinks
- * it. Under the columns, what is missing for the mini-game to be played in each of the ways it ticks.
+ * per role, each with a mark in the colour of its pipe: dragging a card to another column gives it that role, a
+ * right click unlinks it, a click shows where the pipe is (it blinks in the world for a few seconds). The small
+ * button of a column says how its players are sent to its pipes: each in turn, or at random. Under the columns, what
+ * is missing for the mini-game to be played in each of the ways it ticks; on the Page tab, the ways to play that miss
+ * pipes carry a « ! ».
  */
 public class MiniGamePageEditorScreen extends Screen {
     private static final String KEY = "gui.steveparty.mini_game_page.";
@@ -49,6 +53,8 @@ public class MiniGamePageEditorScreen extends Screen {
     private static final int PICTURE_WIDTH = 144, PICTURE_HEIGHT = 81;
     private static final int FIELD_BODY = 0xFF3B4247, PICTURE_BODY = 0xFF1E2327;
     private static final int ROW = 16;
+    /** Width of the tooltips drawn here: about forty characters. */
+    private static final int TOOLTIP_WIDTH = 200;
 
     private final Hand hand;
     private final UUID page;
@@ -88,6 +94,13 @@ public class MiniGamePageEditorScreen extends Screen {
     private @Nullable MiniGamePipeLink held;
     private boolean dragged;
     private double pressX, pressY;
+    /** What the tooltips of the ways to play were made for (the pipes and the ways ticked). */
+    private int modeTooltipsKey;
+    /** Ticks a located pipe blinks in the world. */
+    private static final int LOCATE_TICKS = 100;
+    private static final int ORDER_BUTTON = 9;
+    /** The codes of the description's formatting buttons: bold, italic, four colours, back to plain. */
+    private static final String[] FORMAT_CODES = {"&l", "&o", "&c", "&6", "&a", "&b", "&r"};
 
     public MiniGamePageEditorScreen(Hand hand, MiniGamePageData data, boolean canEdit, boolean linked, @Nullable String status) {
         super(Text.translatable(KEY + "title"));
@@ -175,13 +188,30 @@ public class MiniGamePageEditorScreen extends Screen {
         descriptionBox.active = canEdit;
         addDrawableChild(descriptionBox);
 
+        // The description's formatting: each button writes its code where the cursor is
+        for (int i = 0; i < FORMAT_CODES.length; i++) {
+            String code = FORMAT_CODES[i];
+            Formatting formatting = Formatting.byCode(code.charAt(1));
+            PartyButton button = new PartyButton(rx + COLUMN - (FORMAT_CODES.length - i) * 10 + 1, y + TOP + 30, 9, 9, Text.empty(), b -> insertCode(code));
+            button.content((context, renderer, centerX, centerY, color) -> {
+                if (formatting != null && formatting.isColor() && formatting.getColorValue() != null) {
+                    context.fill(centerX - 2, centerY - 2, centerX + 3, centerY + 3, 0xFF000000 | formatting.getColorValue());
+                } else {
+                    Text letter = Text.translatable(KEY + "format." + code.charAt(1) + ".letter").styled(style -> formatting == null || formatting == Formatting.RESET ? style : style.withFormatting(formatting));
+                    context.drawText(renderer, letter, centerX - renderer.getWidth(letter) / 2, centerY - 4, color, false);
+                }
+            });
+            button.setTooltip(Tooltip.of(Text.translatable(KEY + "format." + code.charAt(1)).append("\n")
+                    .append(Text.translatable(KEY + "format.hint", code).formatted(Formatting.GRAY))));
+            button.active = canEdit;
+            addDrawableChild(button);
+        }
+
         // ---- Right: type of mini-game (several can be ticked)
         int modesY = y + TOP + 112;
         for (MiniGameMode mode : MiniGameMode.values()) {
             int i = mode.ordinal();
             PartyButton button = new PartyButton(rx + (i % 2) * 75, modesY + (i / 2) * (ROW + 2), 73, ROW, mode.text(), b -> toggle(mode));
-            button.setTooltip(Tooltip.of(Text.translatable(mode.translationKey() + ".hint").append("\n")
-                    .append(Text.translatable(KEY + "field.type.hint").formatted(Formatting.GRAY))));
             button.setSelected(modes.contains(mode));
             button.active = canEdit;
             modeButtons[i] = addDrawableChild(button);
@@ -198,12 +228,60 @@ public class MiniGamePageEditorScreen extends Screen {
             if (minPlayers > maxPlayers) minPlayers = maxPlayers;
         });
 
+        modeTooltipsKey = 0;
         if (canEdit && !opened && saved.title().isEmpty()) setInitialFocus(titleField);
 
         if (!opened && client != null && client.player != null) {
             opened = true;
             client.player.playSound(SoundEvents.ITEM_BOOK_PAGE_TURN, 0.8F, 1.0F);
         }
+    }
+
+    /** Writes a formatting code in the description, where its cursor is. */
+    private void insertCode(String code) {
+        if (descriptionBox == null || !canEdit) return;
+        setFocused(descriptionBox);
+        for (char c : code.toCharArray()) descriptionBox.charTyped(c, 0);
+    }
+
+    /**
+     * The tooltips of the ways to play: what each is, the pipes it needs and those that are missing. Made again only
+     * when the pipes or the ways ticked change.
+     */
+    private void refreshModeTooltips(MiniGamePageData data) {
+        int key = 31 * data.pipeLinks().hashCode() + modes.hashCode() + 1;
+        if (key == modeTooltipsKey || modeButtons[0] == null) return;
+        modeTooltipsKey = key;
+        for (MiniGameMode mode : MiniGameMode.values()) {
+            net.minecraft.text.MutableText text = Text.translatable(mode.translationKey() + ".hint").append("\n")
+                    .append(Text.translatable(mode.translationKey() + ".pipes").formatted(Formatting.GRAY));
+            List<MiniGamePipeRole> missing = data.missing(mode);
+            if (!missing.isEmpty()) {
+                net.minecraft.text.MutableText roles = Text.empty();
+                for (int i = 0; i < missing.size(); i++) roles.append(i == 0 ? "" : ", ").append(missing.get(i).text());
+                text.append("\n").append(Text.translatable(KEY + "field.type.missing", roles).formatted(Formatting.RED));
+            }
+            text.append("\n").append(Text.translatable(KEY + "field.type.hint").formatted(Formatting.DARK_GRAY));
+            modeButtons[mode.ordinal()].setTooltip(Tooltip.of(text));
+        }
+    }
+
+    /** A « ! » on the corner of each way to play whose pipes are missing: red when it is ticked, grey otherwise. */
+    private void drawModeWarnings(DrawContext context, MiniGamePageData data) {
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 100);
+        for (MiniGameMode mode : MiniGameMode.values()) {
+            PartyButton button = modeButtons[mode.ordinal()];
+            if (button == null || data.missing(mode).isEmpty()) continue;
+            int left = button.getX() + button.getWidth() - 6, top = button.getY() - 2;
+            int body = modes.contains(mode) ? 0xFFD8323F : 0xFF8A8A8A;
+            context.fill(left + 1, top, left + 6, top + 9, 0xFF000000);
+            context.fill(left, top + 1, left + 7, top + 8, 0xFF000000);
+            context.fill(left + 1, top + 1, left + 6, top + 8, body);
+            context.fill(left + 3, top + 2, left + 4, top + 5, 0xFFFFFFFF);
+            context.fill(left + 3, top + 6, left + 4, top + 7, 0xFFFFFFFF);
+        }
+        context.getMatrices().pop();
     }
 
     private void keepTexts() {
@@ -340,8 +418,10 @@ public class MiniGamePageEditorScreen extends Screen {
         MiniGamePageData data = current();
         MiniGamePageImage image = pendingImage != null ? pendingImage : data.image();
         if (removeButton != null) removeButton.active = canEdit && image != null;
+        if (!pipesTab) refreshModeTooltips(data);
         super.render(context, mouseX, mouseY, delta);
         if (pipesTab) drawPipesOverlay(context, mouseX, mouseY);
+        else drawModeWarnings(context, data);
     }
 
     @Override
@@ -463,8 +543,14 @@ public class MiniGamePageEditorScreen extends Screen {
             int color = 0xFF000000 | role.color();
             context.fill(cx + 1, cy + 1, cx + COLUMN_WIDTH - 1, cy + HEADER, color);
             String count = pipes.isEmpty() ? "" : String.valueOf(pipes.size());
-            context.drawText(textRenderer, fit(role.text(), COLUMN_WIDTH - 6 - textRenderer.getWidth(count)), cx + 3, cy + 2, textOn(role.color()), false);
-            context.drawText(textRenderer, count, cx + COLUMN_WIDTH - 3 - textRenderer.getWidth(count), cy + 2, textOn(role.color()), false);
+            int right = cx + COLUMN_WIDTH - 3;
+            if (role.hasOrder()) {
+                // How its players are sent to its pipes: each in turn, or at random
+                drawOrderButton(context, cx + COLUMN_WIDTH - 1 - ORDER_BUTTON, cy + 1, data.isRandom(role), orderButtonAt(mouseX, mouseY) == column);
+                right -= ORDER_BUTTON + 1;
+            }
+            context.drawText(textRenderer, fit(role.text(), right - cx - 5 - textRenderer.getWidth(count)), cx + 3, cy + 2, textOn(role.color()), false);
+            context.drawText(textRenderer, count, right - textRenderer.getWidth(count), cy + 2, textOn(role.color()), false);
             for (int row = 0; row < CARDS_SHOWN && row + scroll[column] < pipes.size(); row++) {
                 MiniGamePipeLink link = pipes.get(row + scroll[column]);
                 if (link.equals(held) && dragged) continue;
@@ -506,17 +592,74 @@ public class MiniGamePageEditorScreen extends Screen {
         }
     }
 
-    private void drawCard(DrawContext context, MiniGamePipeLink link, int left, int top, boolean hovered) {
-        PartyGui.Theme theme = hovered && canEdit ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON;
-        PartyGui.button(context, left, top, COLUMN_WIDTH - 5, CARD - 1, theme, false);
-        context.fill(left + 2, top + 2, left + 5, top + CARD - 3, 0xFF000000 | link.role().color());
-        // « x y z », or « x z » when that is too long for the card (the tooltip has it all)
-        Text text = cardText(link);
-        if (textRenderer.getWidth(text) > COLUMN_WIDTH - 15) text = Text.literal(link.mouth().pos().getX() + " " + link.mouth().pos().getZ());
-        context.drawText(textRenderer, fit(text, COLUMN_WIDTH - 15), left + 7, top + 2, 0xFF2E2E2E, false);
+    /** The column whose order button is under the mouse, -1 for none. */
+    private int orderButtonAt(double mouseX, double mouseY) {
+        for (int column = 0; column < COLUMNS.length; column++) {
+            if (!COLUMNS[column].hasOrder()) continue;
+            int left = columnX(column) + COLUMN_WIDTH - 1 - ORDER_BUTTON, top = columnY(column) + 1;
+            if (mouseX >= left && mouseX < left + ORDER_BUTTON && mouseY >= top && mouseY < top + ORDER_BUTTON + 1) return column;
+        }
+        return -1;
     }
 
-    /** Over everything: the card being dragged, or the tooltip of the card under the mouse. */
+    /** The small square button of a column: three steps for « each in turn », a dice face for « at random ». */
+    private void drawOrderButton(DrawContext context, int left, int top, boolean random, boolean hovered) {
+        PartyGui.Theme theme = hovered && canEdit ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON;
+        PartyGui.button(context, left, top, ORDER_BUTTON, ORDER_BUTTON + 1, theme, false);
+        int ink = 0xFF2E2E2E;
+        if (random) {
+            // The five of a dice
+            for (int[] dot : new int[][]{{2, 2}, {6, 2}, {4, 4}, {2, 6}, {6, 6}}) PartyGui.pixel(context, left + dot[0], top + dot[1], ink);
+        } else {
+            // First, second, third
+            context.fill(left + 2, top + 2, left + 4, top + 3, ink);
+            context.fill(left + 2, top + 4, left + 6, top + 5, ink);
+            context.fill(left + 2, top + 6, left + 7, top + 7, ink);
+        }
+    }
+
+    /** The colour of the pipe a card stands for (0xRRGGBB): the pipe's, whatever its role; its role's when not known. */
+    private static int pipeColor(MiniGamePipeLink link) {
+        if (link.kind() == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GLASS) return 0xD6ECF2;
+        if (link.color() == MiniGamePipeLink.UNKNOWN_COLOR) return link.role().color();
+        net.minecraft.util.DyeColor dye = net.minecraft.util.DyeColor.byName(fr.lordfinn.steveparty.blocks.ModBlocks.COLORS[link.color()], null);
+        return dye == null ? link.role().color() : dye.getEntityColor() & 0xFFFFFF;
+    }
+
+    private void drawCard(DrawContext context, MiniGamePipeLink link, int left, int top, boolean hovered) {
+        PartyGui.Theme theme = hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON;
+        PartyGui.button(context, left, top, COLUMN_WIDTH - 5, CARD - 1, theme, false);
+        // The mark of its pipe: plain for plastic, a window in a windowed pipe, half see-through for glass
+        int color = 0xFF000000 | pipeColor(link);
+        int markLeft = left + 2, markTop = top + 2, markRight = left + 6, markBottom = top + CARD - 3;
+        context.fill(markLeft, markTop, markRight, markBottom, color);
+        switch (link.kind()) {
+            case WINDOWED -> context.fill(markLeft + 1, markTop + 2, markRight - 1, markBottom - 2, 0xFFEAF6FA);
+            case GLASS, STAINED_GLASS -> {
+                int half = markTop + (markBottom - markTop) / 2;
+                for (int py = half; py < markBottom; py++) {
+                    for (int px = markLeft; px < markRight; px++) {
+                        PartyGui.pixel(context, px, py, ((px - markLeft) + (py - half)) % 2 == 0 ? 0xFFFFFFFF : 0xFFB9B9B9);
+                    }
+                }
+            }
+            default -> {
+            }
+        }
+        // « x y z », or « x z » when that is too long for the card (the tooltip has it all)
+        Text text = cardText(link);
+        if (textRenderer.getWidth(text) > COLUMN_WIDTH - 16) text = Text.literal(link.mouth().pos().getX() + " " + link.mouth().pos().getZ());
+        context.drawText(textRenderer, fit(text, COLUMN_WIDTH - 16), left + 8, top + 2, 0xFF2E2E2E, false);
+    }
+
+    /** A tooltip whose long lines are cut (about forty characters wide). */
+    private void drawWrappedTooltip(DrawContext context, List<Text> lines, int mouseX, int mouseY) {
+        List<OrderedText> wrapped = new java.util.ArrayList<>();
+        for (Text line : lines) wrapped.addAll(textRenderer.wrapLines(line, TOOLTIP_WIDTH));
+        context.drawOrderedTooltip(textRenderer, wrapped, mouseX, mouseY);
+    }
+
+    /** Over everything: the card being dragged, or the tooltip of what is under the mouse. */
     private void drawPipesOverlay(DrawContext context, int mouseX, int mouseY) {
         if (held != null && dragged) {
             context.getMatrices().push();
@@ -525,14 +668,32 @@ public class MiniGamePageEditorScreen extends Screen {
             context.getMatrices().pop();
             return;
         }
+        int order = orderButtonAt(mouseX, mouseY);
+        if (order >= 0) {
+            boolean random = current().isRandom(COLUMNS[order]);
+            List<Text> lines = new java.util.ArrayList<>();
+            lines.add(Text.translatable(KEY + (random ? "pipes.order.random" : "pipes.order.in_turn")).formatted(Formatting.GOLD));
+            lines.add(Text.translatable(KEY + (random ? "pipes.order.random.hint" : "pipes.order.in_turn.hint")).formatted(Formatting.GRAY));
+            if (canEdit) lines.add(Text.translatable(KEY + "pipes.order.change").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
+            drawWrappedTooltip(context, lines, mouseX, mouseY);
+            return;
+        }
         MiniGamePipeLink link = cardAt(mouseX, mouseY);
         if (link == null) return;
         List<Text> lines = new java.util.ArrayList<>();
         lines.add(Text.empty().append(link.role().text()).styled(style -> style.withColor(link.role() == MiniGamePipeRole.ENTRY ? 0xB8B8B8 : link.role().color())));
         lines.add(Text.translatable(KEY + "pipes.card.position", cardText(link), link.mouth().dimension().getValue().getPath()).formatted(Formatting.GRAY));
         lines.add(Text.translatable(link.role().translationKey() + ".hint").formatted(Formatting.GRAY));
-        if (canEdit) lines.add(Text.translatable(KEY + "pipes.card.hint").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
-        context.drawTooltip(textRenderer, lines, mouseX, mouseY);
+        lines.add(Text.translatable(KEY + (canEdit ? "pipes.card.hint" : "pipes.card.hint.read_only")).formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
+        drawWrappedTooltip(context, lines, mouseX, mouseY);
+    }
+
+    /** Shows where a linked pipe is: it blinks in the world for a few seconds (seen through the menu, and once it is closed). */
+    private void locate(MiniGamePipeLink link) {
+        DestinationsRenderer.locate(link.mouth(), LOCATE_TICKS);
+        if (client != null && client.player != null) client.player.playSound(fr.lordfinn.steveparty.sounds.ModSounds.SELECT_SOUND_EVENT, 1.0F, 1.4F);
+        boolean here = client != null && client.world != null && client.world.getRegistryKey().equals(link.mouth().dimension());
+        setStatus(Text.translatable(KEY + (here ? "status.located" : "status.located_elsewhere"), cardText(link)), false);
     }
 
     private void setRole(MiniGamePipeLink link, @Nullable MiniGamePipeRole role) {
@@ -543,7 +704,16 @@ public class MiniGamePageEditorScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (pipesTab && canEdit) {
+        if (pipesTab) {
+            int order = orderButtonAt(mouseX, mouseY);
+            if (order >= 0 && button == 0) {
+                if (canEdit) {
+                    MiniGamePipeRole role = COLUMNS[order];
+                    send(new MiniGamePagePayloads.PipeOrder(hand, page, role.ordinal(), !current().isRandom(role)));
+                    if (client != null) client.getSoundManager().play(net.minecraft.client.sound.PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                }
+                return true;
+            }
             MiniGamePipeLink link = cardAt(mouseX, mouseY);
             if (link != null && button == 1) {
                 setRole(link, null);
@@ -576,9 +746,8 @@ public class MiniGamePageEditorScreen extends Screen {
                 int column = columnAt(mouseX, mouseY);
                 if (column >= 0) setRole(link, COLUMNS[column]);
             } else {
-                // A click: the next role (Shift: the one before), in the order of the columns
-                int column = java.util.Arrays.asList(COLUMNS).indexOf(link.role());
-                setRole(link, COLUMNS[Math.floorMod(column + (hasShiftDown() ? -1 : 1), COLUMNS.length)]);
+                // A click: where the pipe is
+                locate(link);
             }
             dragged = false;
             return true;

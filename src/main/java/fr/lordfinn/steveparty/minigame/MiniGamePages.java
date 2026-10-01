@@ -151,6 +151,16 @@ public final class MiniGamePages {
      * @return the link made, null if the pipe was unlinked (or the page has no room left)
      */
     public static @Nullable MiniGamePipeLink toggleLink(MinecraftServer server, UUID id, GlobalPos mouth, Direction opening, MiniGamePipeRole role) {
+        return toggleLink(server, id, new MiniGamePipeLink(mouth, opening, role));
+    }
+
+    /**
+     * Links a pipe mouth to the page as {@code link} says, or unlinks it if it already is.
+     *
+     * @return the link made, null if the pipe was unlinked (or the page has no room left)
+     */
+    public static @Nullable MiniGamePipeLink toggleLink(MinecraftServer server, UUID id, MiniGamePipeLink link) {
+        GlobalPos mouth = link.mouth();
         MiniGamePageData data = get(server, id);
         List<MiniGamePipeLink> links = new ArrayList<>(data.pipeLinks());
         int index = data.linkIndex(mouth);
@@ -159,7 +169,7 @@ public final class MiniGamePages {
             links.remove(index);
         } else {
             if (links.size() >= MiniGamePageData.MAX_PIPE_LINKS) return null;
-            added = new MiniGamePipeLink(mouth, opening, role);
+            added = link;
             links.add(added);
         }
         update(server, data.withPipeLinks(links));
@@ -175,6 +185,11 @@ public final class MiniGamePages {
         links.set(index, links.get(index).withRole(role));
         update(server, data.withPipeLinks(links));
         return true;
+    }
+
+    /** The players of a role are sent to a pipe picked at random, or to each pipe in turn. */
+    public static void setRandom(MinecraftServer server, UUID id, MiniGamePipeRole role, boolean random) {
+        update(server, get(server, id).withRandom(role, random));
     }
 
     /** Unlinks a pipe. @return false if it was not linked */

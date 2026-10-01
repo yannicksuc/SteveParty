@@ -36,7 +36,8 @@ public final class PartyGui {
     /** Inset (fields, boxes): dark top-left edge like the slots of the mod's textures. */
     private static final int INSET_EDGE = 0xFF354A55;
     private static final int INSET_EDGE_ERROR = 0xFFB3202A;
-    private static final int INSET_EDGE_FOCUS = 0xFFFFFFFF;
+    /** A focused field: its own edging turns gold, like the mod's selected plates. */
+    private static final int INSET_EDGE_FOCUS = 0xFFFFC52E;
 
     private PartyGui() {}
 
@@ -82,21 +83,20 @@ public final class PartyGui {
 
     /**
      * Sunken box (text fields, info boxes): dark rounded top-left edge like the slots of the mod's textures, and
-     * a white bottom-right edge. The edge turns red on {@code error} and white when {@code focused}.
+     * a white bottom-right edge. The dark edge turns red on {@code error}. When {@code focused}, the whole edging
+     * (the rounded top-left edge and the bottom-right one) turns gold: the same shape, the same single pixel, no frame
+     * added inside.
      */
     public static void inset(DrawContext context, int x, int y, int w, int h, int body, boolean focused, boolean error) {
-        int edge = error ? INSET_EDGE_ERROR : INSET_EDGE;
+        int edge = error ? INSET_EDGE_ERROR : focused ? INSET_EDGE_FOCUS : INSET_EDGE;
+        int low = focused ? INSET_EDGE_FOCUS : 0xFFFFFFFF;
         context.fill(x + 1, y + 1, x + w, y + h, body);
         context.fill(x + 2, y, x + w, y + 1, edge);
         context.fill(x, y + 2, x + 1, y + h, edge);
         pixel(context, x + 1, y + 1, edge);
-        context.fill(x + 1, y + h, x + w + 1, y + h + 1, 0xFFFFFFFF);
-        context.fill(x + w, y + 1, x + w + 1, y + h, 0xFFFFFFFF);
-        if (focused) {
-            context.drawBorder(x + 1, y + 1, w - 1, h - 1, error ? INSET_EDGE_ERROR : INSET_EDGE_FOCUS);
-        } else if (error) {
-            context.drawBorder(x + 1, y + 1, w - 1, h - 1, 0xFFE0707A);
-        }
+        context.fill(x + 1, y + h, x + w + 1, y + h + 1, low);
+        context.fill(x + w, y + 1, x + w + 1, y + h, low);
+        if (error && !focused) context.drawBorder(x + 1, y + 1, w - 1, h - 1, 0xFFE0707A);
     }
 
     /** A title plate straddling the top edge of a panel: bevelled, in the block's colour, with a shadowed title. */

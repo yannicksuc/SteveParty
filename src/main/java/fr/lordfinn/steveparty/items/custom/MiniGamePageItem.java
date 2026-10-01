@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
+import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -35,6 +36,9 @@ public class MiniGamePageItem extends Item {
     /** What the tooltip of a page shows under its name: the page's picture and summary (drawn by the client). */
     public record PageTooltip(UUID page) implements TooltipData {
     }
+
+    /** Characters per line of its tooltip. */
+    public static final int TOOLTIP_WIDTH = 40;
 
     public MiniGamePageItem(Settings settings) {
         super(settings);
@@ -87,9 +91,13 @@ public class MiniGamePageItem extends Item {
         if (ref != null && ref.linked()) {
             tooltip.add(Text.translatable("tooltip.steveparty.mini_game_page.linked").formatted(Formatting.AQUA));
         }
-        tooltip.add(Text.translatable(ref == null ? "tooltip.steveparty.mini_game_page.blank" : "tooltip.steveparty.mini_game_page.open")
-                .formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.mini_game_page.link").formatted(Formatting.GRAY));
+        // Long lines are cut: a tooltip is no wider than about forty characters
+        for (String key : new String[]{ref == null ? "tooltip.steveparty.mini_game_page.blank" : "tooltip.steveparty.mini_game_page.open",
+                "tooltip.steveparty.mini_game_page.link"}) {
+            for (String line : MiniGameText.wrap(Text.translatable(key).getString(), TOOLTIP_WIDTH)) {
+                tooltip.add(Text.literal(line).formatted(Formatting.GRAY));
+            }
+        }
         if (ref != null && type.isAdvanced()) {
             tooltip.add(Text.literal(ref.id().toString()).formatted(Formatting.DARK_GRAY));
         }

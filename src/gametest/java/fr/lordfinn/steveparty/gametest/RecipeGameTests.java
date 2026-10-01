@@ -157,7 +157,11 @@ public class RecipeGameTests implements FabricGameTest {
                 gold, new ItemStack(ModBlocks.TILE), gold, gold, new ItemStack(Items.CHEST), gold);
         context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
 
-        context.assertTrue(result(context, 2, 1, new ItemStack(Items.PAPER), new ItemStack(Items.CYAN_DYE)).isOf(ModItems.MINI_GAME_PAGE), "mini game page");
+        // Mini-game pages: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)
+        ItemStack paper = new ItemStack(Items.PAPER), none = ItemStack.EMPTY;
+        ItemStack pages = result(context, 3, 3, none, paper, none, paper, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), paper, none, paper, none);
+        context.assertTrue(pages.isOf(ModItems.MINI_GAME_PAGE) && pages.getCount() == 4, "4 mini game pages, got " + pages);
+        context.assertTrue(result(context, 2, 1, new ItemStack(Items.PAPER), new ItemStack(Items.CYAN_DYE)).isEmpty(), "no longer from paper and dye");
         context.complete();
     }
 

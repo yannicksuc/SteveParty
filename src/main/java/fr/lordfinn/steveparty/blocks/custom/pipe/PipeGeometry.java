@@ -56,7 +56,7 @@ public final class PipeGeometry {
     private PipeGeometry() {}
 
     public static void build(int key, PipeKind kind, Out out) {
-        boolean glass = !kind.isPlastic();
+        boolean glass = kind.isGlass();
         int mask = PipeShape.maskOf(key);
         PipeShape.Face[] faces = PipeShape.faces(mask, PipeShape.solidOf(key));
         for (Direction dir : Direction.values()) {
