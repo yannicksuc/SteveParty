@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:stonecutting",
+  "group": "polished_terracotta_tiles",
+  "ingredient": "steveparty:polished_purple_terracotta",
+  "result": {
+    "components": {
+      "minecraft:block_state": {
+        "color_a": "purple",
+        "color_b": "purple"
+      }
+    },
+    "count": 1,
+    "id": "steveparty:polished_terracotta_tiles"
+  }
+}

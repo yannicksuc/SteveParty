@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "polished_concrete_tiles_light_gray",
+  "key": {
+    "A": "steveparty:polished_light_gray_concrete",
+    "B": "steveparty:polished_black_concrete"
+  },
+  "pattern": [
+    "AB",
+    "BA"
+  ],
+  "result": {
+    "components": {
+      "minecraft:block_state": {
+        "color_a": "light_gray",
+        "color_b": "black"
+      }
+    },
+    "count": 4,
+    "id": "steveparty:polished_concrete_tiles"
+  }
+}

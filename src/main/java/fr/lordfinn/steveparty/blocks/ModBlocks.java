@@ -9,7 +9,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.switchable.SwitchedOffBlock;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
 import fr.lordfinn.steveparty.items.custom.EpicWithGlintBlockItem;
+import fr.lordfinn.steveparty.items.custom.PolishedTilesItem;
 import fr.lordfinn.steveparty.registry.RegistryAliases;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.NoteBlockInstrument;
@@ -356,6 +358,28 @@ public class ModBlocks {
             );
         }
     }
+
+    // Decorative tilings: a 2x2 checker of two colours of polished concrete / terracotta, the colours in the state.
+    // As hard as the polished block they are made of.
+    public static final Block POLISHED_CONCRETE_TILES = register(PolishedTilesBlock.Concrete::new,
+            Block.Settings.create()
+                    .mapColor(PolishedTilesBlock::mapColor)
+                    .strength(1.8f, 1.8f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .solid()
+                    .requiresTool(),
+            "polished_concrete_tiles", true, PolishedTilesItem::new);
+    public static final Block POLISHED_TERRACOTTA_TILES = register(PolishedTilesBlock.Terracotta::new,
+            Block.Settings.create()
+                    .mapColor(PolishedTilesBlock::mapColor)
+                    .instrument(NoteBlockInstrument.BASEDRUM)
+                    .strength(1.25f, 4.2f)
+                    .sounds(BlockSoundGroup.STONE)
+                    .solid()
+                    .requiresTool(),
+            "polished_terracotta_tiles", true, PolishedTilesItem::new);
+    public static final PolishedTilesBlock[] POLISHED_TILES = {
+            (PolishedTilesBlock) POLISHED_CONCRETE_TILES, (PolishedTilesBlock) POLISHED_TERRACOTTA_TILES};
 
     public static final Block TRADING_STALL = register(TradingStallBlock::new,
             Block.Settings.create()

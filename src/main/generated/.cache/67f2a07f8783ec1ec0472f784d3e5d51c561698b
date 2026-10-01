@@ -1,13 +1,13 @@
-// 1.21.3	2026-09-26T06:39:23.9171703	SteveParty/Tags for minecraft:block
-aa6f21ed0c259579a1ffcef1d9fdd701507becbb data\minecraft\tags\block\walls.json
-0566c2b54cf47118369025bece69d3f6cb408887 data\minecraft\tags\block\needs_iron_tool.json
-6b331e761382d40f61ab090ebd7f678039200cf7 data\minecraft\tags\block\stairs.json
-d33ce7ffc7713aa157bf3b45c00181f42d6b57d6 data\steveparty\tags\block\switchable.json
-2aa51523df7f49afc4d1fa21a56e10aef3b00c5b data\minecraft\tags\block\fences.json
-2d9e4a9c31f0e6ba9a6789894e0f782af5fa75c1 data\minecraft\tags\block\mineable\axe.json
-b280b1ca69d6b0fb9f238ccb0f01b51d95427803 data\steveparty\tags\block\plastic.json
-ca72aa0b82f924cc7f367f6cb2c1c906b848f696 data\minecraft\tags\block\slabs.json
-302e9330f1642a9e8c37cf1bd5a41c532c12c5ad data\minecraft\tags\block\climbable.json
-549620de5b3b1a7a6ed25c205732bd1816cbfc82 data\minecraft\tags\block\mineable\pickaxe.json
+// 1.21.3	2026-10-01T19:39:07.1080357	SteveParty/Tags for minecraft:block
+6129ee591fcc62c8712838867f1e8757d796573a data\minecraft\tags\block\mineable\pickaxe.json
+ccfa777ed635a85d3b282947d8e0bc802dd03ea8 data\minecraft\tags\block\needs_diamond_tool.json
 7fb218b32664c20cbd1581fd4883ac4a6b3be4c8 data\minecraft\tags\block\needs_stone_tool.json
-f0d68c538fc2075460a539bc6f5a4ffffdbf8198 data\minecraft\tags\block\needs_diamond_tool.json
+302e9330f1642a9e8c37cf1bd5a41c532c12c5ad data\minecraft\tags\block\climbable.json
+d33ce7ffc7713aa157bf3b45c00181f42d6b57d6 data\steveparty\tags\block\switchable.json
+ca72aa0b82f924cc7f367f6cb2c1c906b848f696 data\minecraft\tags\block\slabs.json
+0566c2b54cf47118369025bece69d3f6cb408887 data\minecraft\tags\block\needs_iron_tool.json
+f1d66641cce7117be0788ba9e4282cd80f8ea501 data\steveparty\tags\block\plastic.json
+03514464a18ebe894bfe48016162247fa04a1498 data\minecraft\tags\block\mineable\axe.json
+6b331e761382d40f61ab090ebd7f678039200cf7 data\minecraft\tags\block\stairs.json
+2aa51523df7f49afc4d1fa21a56e10aef3b00c5b data\minecraft\tags\block\fences.json
+aa6f21ed0c259579a1ffcef1d9fdd701507becbb data\minecraft\tags\block\walls.json

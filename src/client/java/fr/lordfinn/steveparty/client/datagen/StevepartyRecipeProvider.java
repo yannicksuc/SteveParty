@@ -5,8 +5,21 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor;
+import net.minecraft.advancement.AdvancementRequirements;
+import net.minecraft.advancement.AdvancementRewards;
+import net.minecraft.advancement.criterion.RecipeUnlockedCriterion;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.recipe.RawShapedRecipe;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.recipe.ShapedRecipe;
+import net.minecraft.recipe.StonecuttingRecipe;
+import net.minecraft.recipe.book.CraftingRecipeCategory;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import java.util.Map;
 import net.minecraft.data.server.recipe.CookingRecipeJsonBuilder;
 import net.minecraft.data.server.recipe.RecipeExporter;
 import net.minecraft.data.server.recipe.RecipeGenerator;
@@ -155,6 +168,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
 
                 generatePolishedConcrete();
                 generatePolishedTerracotta();
+                generatePolishedTiles();
                 generatePlasticBlocks();
                 generateSurvivalRecipes();
             }
@@ -411,6 +425,43 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                     for (Block input : new Block[]{terracotta, polished, bricks})
                         offerStonecuttingVariants(bricksVariants, input);
                 }
+            }
+
+            /**
+             * Polished tiles, for each material: the 2x2 checker « A B / B A » of two different polished blocks gives
+             * 4 tiles in colours (A, B) (A top-left: (B, A) is the other recipe), and the stonecutter cuts a polished
+             * block into the single-colour tiles (4 same polished blocks in a square are the bricks). One unlock
+             * advancement per colour, on its stonecutter recipe: having the polished block of a colour shows every
+             * recipe using it.
+             */
+            private void generatePolishedTiles() {
+                for (PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES) {
+                    String name = Registries.BLOCK.getId(tiles).getPath();
+                    for (PolishedTilesColor a : tiles.colors()) {
+                        Block polished = tiles.polished(a);
+                        RegistryKey<Recipe<?>> cutting = polishedTilesRecipe(name + "_" + a.asString() + "_stonecutting");
+                        AdvancementRewards.Builder unlocked = AdvancementRewards.Builder.recipe(cutting);
+                        for (PolishedTilesColor b : tiles.colors()) {
+                            if (a == b) continue;
+                            RegistryKey<Recipe<?>> checker = polishedTilesRecipe(name + "_" + a.asString() + "_" + b.asString());
+                            exporter.accept(checker, new ShapedRecipe(name + "_" + a.asString(), CraftingRecipeCategory.BUILDING,
+                                    RawShapedRecipe.create(Map.of('A', Ingredient.ofItem(polished), 'B', Ingredient.ofItem(tiles.polished(b))), "AB", "BA"),
+                                    tiles.stack(a, b, 4), true), null);
+                            unlocked.addRecipe(checker).addRecipe(polishedTilesRecipe(name + "_" + b.asString() + "_" + a.asString()));
+                        }
+                        exporter.accept(cutting, new StonecuttingRecipe(name, Ingredient.ofItem(polished), tiles.stack(a, a, 1)),
+                                exporter.getAdvancementBuilder()
+                                        .criterion("has_the_recipe", RecipeUnlockedCriterion.create(cutting))
+                                        .criterion(hasItem(polished), conditionsFromItem(polished))
+                                        .rewards(unlocked)
+                                        .criteriaMerger(AdvancementRequirements.CriterionMerger.OR)
+                                        .build(cutting.getValue().withPrefixedPath("recipes/building_blocks/")));
+                    }
+                }
+            }
+
+            private static RegistryKey<Recipe<?>> polishedTilesRecipe(String name) {
+                return RegistryKey.of(RegistryKeys.RECIPE, Steveparty.id(name));
             }
 
             // {stairs, slab, wall}: a slab is half a block, so the stonecutter gives two

@@ -1,0 +1,62 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_polished_pink_concrete": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:polished_pink_concrete"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:polished_concrete_tiles_pink_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_polished_pink_concrete"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:polished_concrete_tiles_pink_stonecutting",
+      "steveparty:polished_concrete_tiles_pink_white",
+      "steveparty:polished_concrete_tiles_white_pink",
+      "steveparty:polished_concrete_tiles_pink_orange",
+      "steveparty:polished_concrete_tiles_orange_pink",
+      "steveparty:polished_concrete_tiles_pink_magenta",
+      "steveparty:polished_concrete_tiles_magenta_pink",
+      "steveparty:polished_concrete_tiles_pink_light_blue",
+      "steveparty:polished_concrete_tiles_light_blue_pink",
+      "steveparty:polished_concrete_tiles_pink_yellow",
+      "steveparty:polished_concrete_tiles_yellow_pink",
+      "steveparty:polished_concrete_tiles_pink_lime",
+      "steveparty:polished_concrete_tiles_lime_pink",
+      "steveparty:polished_concrete_tiles_pink_gray",
+      "steveparty:polished_concrete_tiles_gray_pink",
+      "steveparty:polished_concrete_tiles_pink_light_gray",
+      "steveparty:polished_concrete_tiles_light_gray_pink",
+      "steveparty:polished_concrete_tiles_pink_cyan",
+      "steveparty:polished_concrete_tiles_cyan_pink",
+      "steveparty:polished_concrete_tiles_pink_purple",
+      "steveparty:polished_concrete_tiles_purple_pink",
+      "steveparty:polished_concrete_tiles_pink_blue",
+      "steveparty:polished_concrete_tiles_blue_pink",
+      "steveparty:polished_concrete_tiles_pink_brown",
+      "steveparty:polished_concrete_tiles_brown_pink",
+      "steveparty:polished_concrete_tiles_pink_green",
+      "steveparty:polished_concrete_tiles_green_pink",
+      "steveparty:polished_concrete_tiles_pink_red",
+      "steveparty:polished_concrete_tiles_red_pink",
+      "steveparty:polished_concrete_tiles_pink_black",
+      "steveparty:polished_concrete_tiles_black_pink"
+    ]
+  }
+}

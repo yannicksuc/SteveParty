@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:stonecutting",
+  "group": "polished_concrete_tiles",
+  "ingredient": "steveparty:polished_pink_concrete",
+  "result": {
+    "components": {
+      "minecraft:block_state": {
+        "color_a": "pink",
+        "color_b": "pink"
+      }
+    },
+    "count": 1,
+    "id": "steveparty:polished_concrete_tiles"
+  }
+}

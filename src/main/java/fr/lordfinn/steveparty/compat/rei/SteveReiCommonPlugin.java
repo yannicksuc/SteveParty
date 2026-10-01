@@ -22,5 +22,8 @@ public class SteveReiCommonPlugin implements REICommonPlugin {
             // Exact: every component (sizes stay apart in the list)
             return context.isExact() ? role * 31L + stack.getComponentChanges().hashCode() : role;
         }, ModBlocks.TILE.asItem(), ModBlocks.ADVANCED_TILE.asItem());
+        // Polished tiles: one item per material, each pair of colours is its own entry with its own recipe
+        registry.register((context, stack) -> stack.getComponentChanges().hashCode(),
+                ModBlocks.POLISHED_CONCRETE_TILES.asItem(), ModBlocks.POLISHED_TERRACOTTA_TILES.asItem());
     }
 }

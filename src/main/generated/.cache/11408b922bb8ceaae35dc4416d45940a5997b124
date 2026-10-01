@@ -1,6 +1,6 @@
-// 1.21.3	2026-09-26T06:39:23.8941641	SteveParty/Tags for minecraft:item
-f016863193c6ef046ae56b15dc67cbba14ce9cc7 data\minecraft\tags\item\slabs.json
-26138ea8c991022a47d8c2850427e8ef95710d0a data\minecraft\tags\item\walls.json
+// 1.21.3	2026-10-01T19:39:07.0942568	SteveParty/Tags for minecraft:item
+e79de4a504317bc74e515a1d2414e6f284b6e014 data\steveparty\tags\item\dice_faces.json
 d54992eb4d456ac5743643f31e9212d221d24731 data\minecraft\tags\item\stairs.json
 2aa51523df7f49afc4d1fa21a56e10aef3b00c5b data\minecraft\tags\item\fences.json
-e79de4a504317bc74e515a1d2414e6f284b6e014 data\steveparty\tags\item\dice_faces.json
+f016863193c6ef046ae56b15dc67cbba14ce9cc7 data\minecraft\tags\item\slabs.json
+26138ea8c991022a47d8c2850427e8ef95710d0a data\minecraft\tags\item\walls.json
