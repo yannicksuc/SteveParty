@@ -45,6 +45,14 @@ public abstract class LivingEntityMixin extends Entity {
         }
     }
 
+    /** A player who is a block of the grid in his Box Costume is not pushed around by those bumping into him. */
+    @Inject(method = "isPushable", at = @At("HEAD"), cancellable = true)
+    private void steveparty$boxCostumeBlock(CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof PlayerEntity player && fr.lordfinn.steveparty.items.custom.BoxCostumeBlock.isBlockAligned(player)) {
+            cir.setReturnValue(false);
+        }
+    }
+
     @Inject(method = "jump", at = @At("TAIL"))
     private void onJump(CallbackInfo ci) {
         if (this.getWorld().isClient && (Object) this instanceof PlayerEntity player) {
