@@ -10,8 +10,9 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Read-only lines (a description, a link, a hint), wrapped to the module's width and cut at {@link #lines()} lines,
- * with an optional item icon on their left. Computed by the client when drawn.
+ * Read-only lines (a description, a link, a hint) with an optional item icon on their left. The client wraps them to
+ * the module's width on as many lines as they need and gives the module that height; {@link #lines()} is only the
+ * height reserved where fonts can't be measured.
  */
 public final class InfoModule extends CartridgeModule {
     public static final int LINE_H = 10;

@@ -26,7 +26,8 @@ import java.util.List;
  * {@link fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus}): its shell with its modules and, only
  * when a module needs it (the Inventory Cartridge's ghost slots), the player's inventory under it.
  * <p>
- * The layout is computed from the cartridge's modules on both sides, so the slots are at the same place.
+ * With the inventory the shell has a fixed size and the ghost slots are its first module, so the slots never depend on
+ * the texts (measured by the client only); without it there are no slots, and the screen takes the shell's size.
  */
 public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMenuHost, GhostSlotHost {
     private final CartridgeRef ref;
@@ -34,7 +35,6 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
     private final ItemStack holder;
     private final Item holderItem;
     private final List<CartridgeModule> modules;
-    private final CartridgeLayout layout;
     private final boolean withInventory;
     private final int backgroundWidth, backgroundHeight, shellX;
     private int ghostStart = -1;
@@ -48,21 +48,22 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
         this.modules = CartridgeMenus.modules(holder);
         int ghost = CartridgeLayout.indexOf(modules, GhostSlotsModule.class);
         this.withInventory = ghost >= 0;
-        this.layout = CartridgeLayout.of(modules, withInventory ? CartridgeLayout.MAX_CONTENT_WITH_INVENTORY : CartridgeLayout.MAX_CONTENT_ALONE);
-        this.backgroundWidth = Math.max(layout.width(), withInventory ? CartridgeLayout.INVENTORY_W : 0);
-        this.backgroundHeight = layout.height() + (withInventory ? CartridgeLayout.INVENTORY_GAP + CartridgeLayout.INVENTORY_H : 0);
-        this.shellX = (backgroundWidth - layout.width()) / 2;
+        // With the inventory: a shell of a fixed size (the slots can't move when the texts take more lines)
+        this.backgroundWidth = withInventory ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0;
+        this.backgroundHeight = withInventory ? CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP + CartridgeLayout.INVENTORY_H : 0;
+        this.shellX = 0;
 
         if (withInventory) {
+            if (ghost != 0) throw new IllegalStateException("the ghost slots must be a cartridge's first module");
             GhostSlotsModule module = (GhostSlotsModule) modules.get(ghost);
             Inventory ghosts = player.getWorld().isClient ? new SimpleInventory(GhostSlotsModule.COUNT)
                     : new CartridgeGhostInventory(() -> ref.resolve(player), () -> ref.commit(player.getWorld()));
             ghostStart = slots.size();
             for (int i = 0; i < GhostSlotsModule.COUNT; i++) {
-                addSlot(new GhostSlot(ghosts, i, shellX + layout.x(ghost) + module.slotX(i), layout.y(ghost) + module.slotY(i), () -> true));
+                addSlot(new GhostSlot(ghosts, i, shellX + CartridgeLayout.PAD_X + module.slotX(i), CartridgeLayout.TOP + module.slotY(i), () -> true));
             }
             int invX = (backgroundWidth - CartridgeLayout.INVENTORY_W) / 2;
-            int invY = layout.height() + CartridgeLayout.INVENTORY_GAP;
+            int invY = CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP;
             for (int row = 0; row < 3; row++) {
                 for (int col = 0; col < 9; col++) {
                     addSlot(new Slot(playerInventory, col + row * 9 + 9, invX + 8 + col * 18, invY + 17 + row * 18));
@@ -82,10 +83,6 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
         return modules;
     }
 
-    public CartridgeLayout layout() {
-        return layout;
-    }
-
     public boolean withInventory() {
         return withInventory;
     }
@@ -98,7 +95,7 @@ public class CartridgeScreenHandler extends ScreenHandler implements CartridgeMe
         return backgroundHeight;
     }
 
-    /** The shell's left edge in the screen (it is centred over the inventory). */
+    /** The shell's left edge in the screen. */
     public int shellX() {
         return shellX;
     }
