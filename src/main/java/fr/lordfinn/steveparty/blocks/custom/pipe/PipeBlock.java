@@ -47,6 +47,7 @@ import java.util.List;
  *     <li>A block placed next to it never changes it; a pipe placed next to it joins it if that pipe joins it.</li>
  *     <li>At most one solid block per pipe: the Wrench cycles which one among the solid neighbours, then none.</li>
  *     <li>What goes in a mouth travels to another end of the network ({@link PipeTravel}).</li>
+ *     <li>A click with a mini-game page links the pipe to the page, or unlinks it.</li>
  * </ul>
  */
 public class PipeBlock extends Block implements BlockEntityProvider {
@@ -218,6 +219,13 @@ public class PipeBlock extends Block implements BlockEntityProvider {
                 PipeSolid solid = cycleSolid(world, pos, state);
                 world.playSound(null, pos, SoundEvents.BLOCK_BAMBOO_WOOD_HIT, SoundCategory.BLOCKS, 1f, 1.3f);
                 player.sendMessage(Text.translatable("message.steveparty.pipe.solid." + solid.asString()), true);
+            }
+            return ActionResult.SUCCESS;
+        }
+        // A mini-game page: the pipe is linked to it (or unlinked)
+        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem) {
+            if (world instanceof ServerWorld serverWorld && player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
+                fr.lordfinn.steveparty.minigame.MiniGamePipes.click(serverPlayer, hand, serverWorld, pos);
             }
             return ActionResult.SUCCESS;
         }

@@ -53,12 +53,6 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(BoardSpaceRedstoneRouterBlockEntity::new, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER).build(null)
     );
 
-    public static final BlockEntityType<TeleportationPadBlockEntity> BIG_BOOK_ENTITY = Registry.register(
-            Registries.BLOCK_ENTITY_TYPE,
-            Identifier.of (MOD_ID, "big_book_entity"),
-            FabricBlockEntityTypeBuilder.create(TeleportationPadBlockEntity::new, ModBlocks.TELEPORTATION_PAD).build(null)
-    );
-
     public static final BlockEntityType<PartyControllerEntity> PARTY_CONTROLLER_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "party_controller_entity"),

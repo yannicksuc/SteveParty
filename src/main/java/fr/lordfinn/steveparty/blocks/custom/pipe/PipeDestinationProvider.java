@@ -26,8 +26,16 @@ public interface PipeDestinationProvider {
      */
     @Nullable Exit destination(ServerWorld world, BlockPos cappedEnd, Entity traveller);
 
-    /** A mouth: the pipe block and the side it opens on. */
-    record Exit(BlockPos pos, Direction opening) {}
+    /**
+     * A mouth: the pipe block and the side it opens on.
+     *
+     * @param dimension its dimension, null for the one of the capped end
+     */
+    record Exit(@Nullable net.minecraft.registry.RegistryKey<net.minecraft.world.World> dimension, BlockPos pos, Direction opening) {
+        public Exit(BlockPos pos, Direction opening) {
+            this(null, pos, opening);
+        }
+    }
 
     Map<net.minecraft.item.Item, Function<net.minecraft.item.ItemStack, PipeDestinationProvider>> BY_ITEM = new HashMap<>();
 

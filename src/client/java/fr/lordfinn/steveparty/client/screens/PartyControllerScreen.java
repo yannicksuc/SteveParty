@@ -187,8 +187,8 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             case MINI_GAMES -> {
                 if (!data.hasCatalogue()) return new Badge(true, Text.translatable(KEY + "badge.no_catalogue"));
                 if (data.pages().isEmpty()) return new Badge(true, Text.translatable(KEY + "badge.empty_catalogue"));
-                long noBook = data.pages().stream().filter(p -> p.books() == 0).count();
-                if (noBook > 0) return new Badge(false, Text.translatable(KEY + "badge.no_book", noBook));
+                long notPlayable = data.pages().stream().filter(p -> p.playable() == 0).count();
+                if (notPlayable > 0) return new Badge(false, Text.translatable(KEY + "badge.no_pipes", notPlayable));
                 return null;
             }
             default -> {
@@ -430,13 +430,13 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 : new Check(Check.OK, free > 0 ? Text.translatable(KEY + "check.tokens.free", tokens, free) : Text.translatable(KEY + "check.tokens.ok", tokens),
                 Text.translatable(KEY + "check.tokens.hint"), Page.PLAYERS));
         // The mini-games
-        long noBook = data.pages().stream().filter(p -> p.books() == 0).count();
+        long notPlayable = data.pages().stream().filter(p -> p.playable() == 0).count();
         if (!data.hasCatalogue()) {
             checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.none"), Text.translatable(KEY + "check.catalogue.none.hint"), Page.MINI_GAMES));
         } else if (data.pages().isEmpty()) {
             checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.empty"), Text.translatable(KEY + "check.catalogue.empty.hint"), Page.MINI_GAMES));
-        } else if (noBook > 0) {
-            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.no_book", data.pages().size(), noBook), Text.translatable(KEY + "check.catalogue.no_book.hint"), Page.MINI_GAMES));
+        } else if (notPlayable > 0) {
+            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.no_pipes", data.pages().size(), notPlayable), Text.translatable(KEY + "check.catalogue.no_pipes.hint"), Page.MINI_GAMES));
         } else {
             checks.add(new Check(Check.OK, Text.translatable(KEY + "check.catalogue.ok", data.pages().size()), Text.translatable(KEY + "check.catalogue.ok.hint"), Page.MINI_GAMES));
         }
@@ -655,13 +655,13 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             if (index >= total) continue;
             PartyDashboardData.Page page = data.pages().get(index);
             if (page.slot() == data.currentPage()) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFFFC52E);
-            else if (page.books() == 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFE0707A);
+            else if (page.playable() == 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFE0707A);
             else if (page.played() > 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFF8FCF7A);
             context.drawItem(page.page(), cx + 1, cy + 1);
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 200);
             if (page.played() > 0) PartyGui.statusIcon(context, cx + 10, cy + 1, true);
-            if (page.books() == 0) PartyGui.statusIcon(context, cx + 10, cy + 10, false);
+            if (page.playable() == 0) PartyGui.statusIcon(context, cx + 10, cy + 10, false);
             context.getMatrices().pop();
         }
         if (maxScroll > 0)
@@ -672,9 +672,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         context.drawText(textRenderer, Text.translatable(KEY + "mini_games.legend.played"), PAD + 10, ly, PartyGui.TEXT_SOFT, false);
         int lx = PAD + 10 + textRenderer.getWidth(Text.translatable(KEY + "mini_games.legend.played")) + 10;
         PartyGui.statusIcon(context, lx, ly, false);
-        context.drawText(textRenderer, Text.translatable(KEY + "mini_games.legend.no_book"), lx + 10, ly, PartyGui.TEXT_SOFT, false);
+        context.drawText(textRenderer, Text.translatable(KEY + "mini_games.legend.no_pipes"), lx + 10, ly, PartyGui.TEXT_SOFT, false);
         if (data.currentPage() >= 0) {
-            int lx2 = lx + 10 + textRenderer.getWidth(Text.translatable(KEY + "mini_games.legend.no_book")) + 10;
+            int lx2 = lx + 10 + textRenderer.getWidth(Text.translatable(KEY + "mini_games.legend.no_pipes")) + 10;
             context.fill(lx2, ly, lx2 + 7, ly + 7, 0xFFFFC52E);
             context.drawText(textRenderer, Text.translatable(KEY + "mini_games.legend.current"), lx2 + 10, ly, PartyGui.TEXT_SOFT, false);
         }
@@ -788,10 +788,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             List<Text> lines = new ArrayList<>(Screen.getTooltipFromItem(client, hoveredPage.page()));
             lines.add(hoveredPage.played() == 0 ? Text.translatable(KEY + "mini_games.page.not_played").formatted(Formatting.GRAY)
                     : Text.translatable(KEY + "mini_games.page.played", hoveredPage.played()).formatted(Formatting.GREEN));
-            if (hoveredPage.books() == 0) {
-                lines.add(Text.translatable(hoveredPage.pads() == 0 ? KEY + "mini_games.page.no_pad" : KEY + "mini_games.page.no_book").formatted(Formatting.RED));
+            if (hoveredPage.playable() == 0) {
+                lines.add(Text.translatable(hoveredPage.pipes() == 0 ? KEY + "mini_games.page.no_pipe" : KEY + "mini_games.page.not_playable").formatted(Formatting.RED));
             } else {
-                lines.add(Text.translatable(KEY + "mini_games.page.books", hoveredPage.books(), hoveredPage.pads()).formatted(Formatting.GRAY));
+                lines.add(Text.translatable(KEY + "mini_games.page.pipes", hoveredPage.pipes()).formatted(Formatting.GRAY));
             }
             if (data != null && hoveredPage.slot() == data.currentPage())
                 lines.add(Text.translatable(KEY + "mini_games.page.current").formatted(Formatting.GOLD));

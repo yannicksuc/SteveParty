@@ -4,20 +4,16 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.AdvancedTileBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
-import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
-import fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
+import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import fr.lordfinn.steveparty.items.custom.teleportation_books.TeleportingTarget;
-import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
-import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -26,6 +22,8 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -34,8 +32,9 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 import java.util.*;
 import java.util.List;
@@ -45,11 +44,13 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
 import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
 
 /**
- * A mini-game: teams from the colour of the board spaces the tokens stand on, a compatible page of the catalogue
- * drawn by a roulette, then:
+ * A mini-game: teams from the board spaces the tokens stand on (positive: team A, negative: team B, see
+ * {@link TeamDispositionGenerator}), a page of the catalogue that can be played by them drawn by a roulette, then:
  * <ol>
  *     <li>the "mini-game chosen" party bells ring (a waiting bell pauses here),</li>
- *     <li>a 3 second countdown, and the players are teleported onto the arrival pads of the page, by team,</li>
+ *     <li>a 3 second countdown, and the players come out of the pipes linked to the page, by team: one after the
+ *     other in each pipe of their role in turn, in turn order ({@link MiniGamePipes#distribute}); the audience
+ *     comes out of the spectators pipes,</li>
  *     <li>the mini-game is played until a podium names the winners (or a step controller goes on),</li>
  *     <li>the winners are announced, and the players are brought back where they were.</li>
  * </ol>
@@ -60,36 +61,32 @@ public class MiniGamePartyStep extends PartyStep {
 
     public enum Phase { ROULETTE, CHOSEN_WAIT, COUNTDOWN, PLAYING, FINISHED }
 
-    /** Where a teleported player stood before the mini-game. */
-    private record ReturnPos(double x, double y, double z, float yaw, float pitch) {}
+    /** Ticks between two players coming out of the same pipe. */
+    private static final int EMERGE_GAP_TICKS = 8;
+
+    /** Where a player sent to the mini-game stood before it. */
+    private record ReturnPos(RegistryKey<World> dimension, double x, double y, double z, float yaw, float pitch) {}
 
     // No initializer: it would run after super(nbt) and wipe what fromNbt just read
     private List<UUID> tokens;
     private boolean miniGameChosen; // no initializer, see above
     private Phase phase;
-    /** Players taking part (owners of the tokens), and their arrival pads. */
+    /** Players taking part (owners of the tokens), in turn order. */
     private List<UUID> participants;
     private Map<UUID, ReturnPos> returnPositions;
     private List<UUID> winners;
     private UUID rouletteTaskId = null;
     private UUID flowTaskId = null;
-    /**
-     * Where each player was sent by a « Here we go » book (mini-game mode) during this mini-game: the pad of the
-     * « Here we come » book and the index of the condition he fills. No initializer, see above.
-     */
-    private Map<UUID, Destination> destinations;
+    /** The players still waiting for their turn to come out of a pipe. */
+    private final List<UUID> emergeTasks = new ArrayList<>();
     /** The catalogue slot of the page the roulette chose, plus one (0: none yet). No initializer, see above. */
     private int chosenPageSlot;
-
-    /** A place taken by a player in the current mini-game: condition {@code targetIndex} of the book on {@code pad}. */
-    public record Destination(BlockPos pad, int targetIndex) {}
 
     public MiniGamePartyStep(List<UUID> tokens) {
         if (tokens == null)
             tokens = new ArrayList<>();
         this.tokens = tokens;
         initCollections();
-        this.destinations = new HashMap<>();
         setType(PartyStepType.MINI_GAME);
     }
 
@@ -97,8 +94,6 @@ public class MiniGamePartyStep extends PartyStep {
         super(nbt);
         if (this.tokens == null)
             this.tokens = new ArrayList<>();
-        if (this.destinations == null)
-            this.destinations = new HashMap<>();
         initCollections();
     }
 
@@ -142,7 +137,6 @@ public class MiniGamePartyStep extends PartyStep {
         winners.clear();
         // Players still away from a previous run of this step (restart) keep their original return position
         chosenPageSlot = 0;
-        destinations.clear();
 
         // Step 1: Ensure the world is a ServerWorld
         if (!(partyControllerEntity.getWorld() instanceof ServerWorld serverWorld)) {
@@ -162,15 +156,14 @@ public class MiniGamePartyStep extends PartyStep {
             return;
         }
 
-        // Step 4: Get the tokens with their owners and determine their statuses
-        Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners = getTokensWithOwners(partyControllerEntity, serverWorld);
-        List<ABoardSpaceBehavior.Status> statuses = getTokenStatuses(serverWorld, tokensWithOwners);
-        tokensWithOwners.values().forEach(player -> {
-            if (!participants.contains(player.getUuid())) participants.add(player.getUuid());
+        // Step 4: The players in turn order, with the kind of tile their token stands on
+        List<TeamDispositionGenerator.Seat> seats = seats(partyControllerEntity, serverWorld);
+        seats.forEach(seat -> {
+            if (!participants.contains(seat.player())) participants.add(seat.player());
         });
 
-        // Step 5: Assign mini-games to team dispositions
-        Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = assignMiniGamesToTeamDispositions(tokensWithOwners, statuses, miniGames, serverWorld);
+        // Step 5: The ways to make teams, each with the mini-games that can be played that way
+        Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions = assignMiniGamesToTeamDispositions(seats, miniGames, serverWorld.getServer());
         if (miniGamesToTeamDispositions.isEmpty()) {
             MessageUtils.sendToPlayers(partyControllerEntity.getInterestedPlayersEntities(),
                     Text.translatableWithFallback("message.steveparty.no_compatible_minigame",
@@ -212,6 +205,8 @@ public class MiniGamePartyStep extends PartyStep {
             default -> {
                 // ROULETTE (chosen, but saved before the bells rang): ring them now. CHOSEN_WAIT / PLAYING: wait.
                 if (phase == Phase.ROULETTE) onMiniGameChosen(partyControllerEntity);
+                // Those away in the mini-game are known again as such (free pipes, the exit pipe)
+                if (phase == Phase.PLAYING) returnPositions.keySet().forEach(uuid -> seat(partyControllerEntity, uuid));
             }
         }
     }
@@ -221,6 +216,8 @@ public class MiniGamePartyStep extends PartyStep {
         super.end(partyControllerEntity);
         cancelRoulette();
         cancelFlow();
+        emergeTasks.forEach(Steveparty.SCHEDULER::cancel);
+        emergeTasks.clear();
         hidePreview(partyControllerEntity);
         // However the mini-game ends (podium, step controller...), the players go back where they were
         returnPlayers(partyControllerEntity);
@@ -238,7 +235,7 @@ public class MiniGamePartyStep extends PartyStep {
     /** The roulette chose the mini-game: ring the bells, then (unless a bell waits) the countdown. */
     private void onMiniGameChosen(PartyControllerEntity controller) {
         TeamDisposition disposition = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue);
-        int value = disposition == null || disposition.teamA.isEmpty() ? 1 : 2;
+        int value = disposition == null || disposition.isFreeForAll() ? 1 : disposition.teamCount();
         phase = Phase.CHOSEN_WAIT;
         controller.markDirty();
         if (controller.ringMoment(PartyMoment.MINIGAME_CHOSEN, value)) {
@@ -265,7 +262,7 @@ public class MiniGamePartyStep extends PartyStep {
         if (!isStillActive(controller)) return;
         List<ServerPlayerEntity> players = getOnlineParticipants(controller);
         if (seconds <= 0) {
-            teleportParticipants(controller);
+            depart(controller);
             return;
         }
         // The countdown shows on the card of the mini-game
@@ -278,26 +275,86 @@ public class MiniGamePartyStep extends PartyStep {
         });
     }
 
-    private void teleportParticipants(PartyControllerEntity controller) {
+    /**
+     * The departure: every participant comes out of a pipe of its role, the audience out of the spectators pipes
+     * (see {@link MiniGamePipes#distribute}). Those who share a pipe come out one after the other.
+     */
+    public void depart(PartyControllerEntity controller) {
         phase = Phase.PLAYING;
         hidePreview(controller);
         if (controller.getWorld() instanceof ServerWorld world) {
-            for (ServerPlayerEntity player : getOnlineParticipants(controller)) {
-                // Same places as the « Here we go » books in mini-game mode: team, capacity, fill priority
-                HereWeGoBookItem.Destination destination = HereWeGoBookItem.getMiniGameDestination(player, controller);
-                if (destination.pos() == null) {
-                    if (destination.failure() != null)
-                        MessageUtils.sendToPlayer(player, destination.failure(), MessageUtils.MessageType.CHAT);
-                    continue;
+            MinecraftServer server = world.getServer();
+            MiniGamePageData page = MiniGamePages.of(server, MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+            TeamDisposition teams = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue);
+            List<UUID> order = new ArrayList<>();
+            controller.getPlayersInOrder().stream().filter(participants::contains).forEach(order::add);
+            participants.stream().filter(uuid -> !order.contains(uuid)).forEach(order::add);
+            List<UUID> spectators = controller.getInterestedPlayersEntities().stream().map(ServerPlayerEntity::getUuid)
+                    .filter(uuid -> !participants.contains(uuid)).toList();
+            Map<UUID, MiniGamePipeLink> pipes = page == null ? Map.of() : MiniGamePipes.distribute(page, teams, order, spectators);
+            Map<MiniGamePipeLink, Integer> queues = new HashMap<>();
+            for (UUID uuid : order) {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+                if (player != null && !pipes.containsKey(uuid)) {
+                    MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED),
+                            MessageUtils.MessageType.CHAT);
                 }
-                sendToPad(player, world, destination.pos());
             }
+            pipes.forEach((uuid, link) -> {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+                if (player == null) return;
+                returnPositions.putIfAbsent(uuid, new ReturnPos(player.getWorld().getRegistryKey(), player.getX(), player.getY(), player.getZ(),
+                        player.getYaw(), player.getPitch()));
+                seat(controller, uuid);
+                int wait = queues.merge(link, 1, Integer::sum) - 1;
+                if (wait == 0) {
+                    comeOut(server, link, uuid);
+                } else {
+                    UUID task = UUID.randomUUID();
+                    emergeTasks.add(task);
+                    Steveparty.SCHEDULER.schedule(task, wait * EMERGE_GAP_TICKS, () -> {
+                        emergeTasks.remove(task);
+                        if (isStillActive(controller)) comeOut(server, link, uuid);
+                    });
+                }
+            });
             MessageUtils.sendToPlayers(getOnlineParticipants(controller),
                     Text.translatableWithFallback("message.steveparty.minigame.go", "Go!").styled(style -> style.withColor(0x55FF55).withBold(true)),
                     MessageUtils.MessageType.TITLE);
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
+    }
+
+    /** {@code uuid} is away in this mini-game (free pipes, the exit pipe) for as long as it is this party's step. */
+    private void seat(PartyControllerEntity controller, UUID uuid) {
+        MiniGamePipes.enterParty(uuid, leaving -> leaveEarly(controller, leaving), () -> isStillActive(controller));
+    }
+
+    private void comeOut(MinecraftServer server, MiniGamePipeLink link, UUID uuid) {
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+        if (player == null) return;
+        if (!MiniGamePipes.emerge(server, link, player)) {
+            MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED),
+                    MessageUtils.MessageType.CHAT);
+        }
+    }
+
+    /**
+     * A player leaves the mini-game before its end (the exit pipe): back where it stood before it. The mini-game
+     * goes on for the others.
+     *
+     * @return false if the player is not away in this mini-game
+     */
+    public boolean leaveEarly(PartyControllerEntity controller, ServerPlayerEntity player) {
+        ReturnPos back = returnPositions.remove(player.getUuid());
+        MiniGamePipes.leaveParty(player.getUuid());
+        if (back == null) return false;
+        ServerWorld world = player.server.getWorld(back.dimension());
+        if (world == null) return false;
+        MiniGameTeleports.teleport(player, world, new Vec3d(back.x(), back.y(), back.z()), back.yaw(), back.pitch());
+        controller.markDirty();
+        return true;
     }
 
     // ---------------------------------------------------------------- the card of the mini-game
@@ -337,14 +394,6 @@ public class MiniGamePartyStep extends PartyStep {
         for (ServerPlayerEntity player : previewAudience(controller)) {
             if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Preview.ID)) ServerPlayNetworking.send(player, payload);
         }
-    }
-
-    /** Teleports a participant onto their arrival pad, remembering where they stood (once). */
-    private void sendToPad(ServerPlayerEntity player, ServerWorld world, BlockPos pad) {
-        if (player.getWorld() != world) return;
-        returnPositions.putIfAbsent(player.getUuid(),
-                new ReturnPos(player.getX(), player.getY(), player.getZ(), player.getYaw(), player.getPitch()));
-        MiniGameTeleports.teleport(player, world, MiniGameTeleports.standingPos(world, pad), player.getYaw(), player.getPitch());
     }
 
     // ---------------------------------------------------------------- end of the mini-game
@@ -396,14 +445,18 @@ public class MiniGamePartyStep extends PartyStep {
         });
     }
 
-    /** Brings every teleported participant still online back where they stood before the mini-game. */
+    /** Brings everyone sent to the mini-game and still online back where they stood before it. */
     private void returnPlayers(PartyControllerEntity controller) {
+        participants.forEach(MiniGamePipes::leaveParty);
         if (returnPositions.isEmpty() || !(controller.getWorld() instanceof ServerWorld world)) return;
         for (Map.Entry<UUID, ReturnPos> entry : returnPositions.entrySet()) {
+            MiniGamePipes.leaveParty(entry.getKey());
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(entry.getKey());
-            if (player == null) continue;
             ReturnPos back = entry.getValue();
-            MiniGameTeleports.teleport(player, world, new Vec3d(back.x(), back.y(), back.z()), back.yaw(), back.pitch());
+            ServerWorld there = world.getServer().getWorld(back.dimension());
+            if (player == null || there == null) continue;
+            if (player.hasVehicle()) player.stopRiding();
+            MiniGameTeleports.teleport(player, there, new Vec3d(back.x(), back.y(), back.z()), back.yaw(), back.pitch());
         }
         returnPositions.clear();
         controller.markDirty();
@@ -424,7 +477,7 @@ public class MiniGamePartyStep extends PartyStep {
         tokens.remove(tokenUUID);
     }
 
-    /** @return true once the roulette chose the mini-game (the « Here we go » books can send players to it). */
+    /** @return true once the roulette chose the mini-game. */
     public boolean isMiniGameChosen() {
         return miniGameChosen;
     }
@@ -434,9 +487,9 @@ public class MiniGamePartyStep extends PartyStep {
         return chosenPageSlot - 1;
     }
 
-    /** Places taken by the players in the current mini-game (live view). */
-    public Map<UUID, Destination> getDestinations() {
-        return destinations;
+    /** @return true if {@code player} was sent to this mini-game and is not back yet. */
+    public boolean isAway(UUID player) {
+        return returnPositions.containsKey(player);
     }
 
     private void cancelRoulette() {
@@ -454,8 +507,17 @@ public class MiniGamePartyStep extends PartyStep {
                 MessageUtils.MessageType.CHAT);
     }
 
-    private Map<TokenizedEntityInterface, PlayerEntity> getTokensWithOwners(PartyControllerEntity partyControllerEntity, ServerWorld serverWorld) {
-        return partyControllerEntity.getPartyData().getTokensWithOwners(serverWorld);
+    /** The players with a token in the world, in turn order, each with the kind of tile its token stands on. */
+    private static List<TeamDispositionGenerator.Seat> seats(PartyControllerEntity controller, ServerWorld world) {
+        List<TeamDispositionGenerator.Seat> seats = new ArrayList<>();
+        for (UUID tokenId : controller.getPartyData().getTokens()) {
+            if (!(world.getEntity(tokenId) instanceof TokenizedEntityInterface token)) continue;
+            UUID owner = token.steveparty$getTokenOwner();
+            if (owner == null || !(world.getEntity(owner) instanceof PlayerEntity)) continue;
+            if (seats.stream().anyMatch(seat -> seat.player().equals(owner))) continue;
+            seats.add(new TeamDispositionGenerator.Seat(owner, tokenStatus((MobEntity) token)));
+        }
+        return seats;
     }
 
     private TeamDisposition chooseRandomDisposition(Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
@@ -539,132 +601,41 @@ public class MiniGamePartyStep extends PartyStep {
                         .styled(style -> style.withColor(0xFFA500))); // Orange end
     }
 
-    private static void logMinigamesDispositions(Map<TeamDisposition, List<ItemStack>> miniGamesToTeamDispositions) {
-        for (Map.Entry<TeamDisposition, List<ItemStack>> entry : miniGamesToTeamDispositions.entrySet()) {
-            TeamDisposition disposition = entry.getKey();
-            List<ItemStack> applicableMiniGames = entry.getValue();
-            Steveparty.LOGGER.info("Disposition: {}", disposition);
-            Steveparty.LOGGER.info("Applicable mini-games: {}",
-                    applicableMiniGames.stream()
-                            .map(item -> item.getName().toString())
-                            .reduce("", (result, name) -> result + " | " + name));
-        }
+    private static ABoardSpaceBehavior.Status tokenStatus(MobEntity token) {
+        BoardSpaceBlockEntity boardSpaceEntity = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(token);
+        if (boardSpaceEntity == null) return ABoardSpaceBehavior.Status.NEUTRAL;
+        ItemStack stack = boardSpaceEntity.getActiveCartridgeItemStack();
+        ABoardSpaceBehavior behavior = boardSpaceEntity.getBoardSpaceBehavior(stack);
+        return behavior == null ? ABoardSpaceBehavior.Status.NEUTRAL : behavior.getStatus(boardSpaceEntity, stack);
     }
 
-    private static List<ABoardSpaceBehavior.Status> getTokenStatuses(ServerWorld serverWorld, Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners) {
-        List<ABoardSpaceBehavior.Status> statuses = new ArrayList<>();
-        tokensWithOwners.keySet().forEach(token -> {
-            ABoardSpaceBehavior.Status status = ABoardSpaceBehavior.Status.NEUTRAL;
-            MobEntity modToken = ((MobEntity) token);
-            BoardSpaceBlockEntity boardSpaceEntity = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(modToken);
-            ItemStack stack;
-            if (boardSpaceEntity != null) {
-                stack = boardSpaceEntity.getActiveCartridgeItemStack();
-                ABoardSpaceBehavior behavior = boardSpaceEntity.getBoardSpaceBehavior(stack);
-                if (behavior != null) {
-                    status = behavior.getStatus(boardSpaceEntity, stack);
-                }
-            }
-            statuses.add(status);
-        });
-        return statuses;
-    }
-
+    /**
+     * The ways to make teams with these players, each with the pages of the catalogue that can be played that way
+     * ({@link #pagePlayable}); the ways no page can be played in are left out.
+     *
+     * @param seats the players in turn order
+     */
     public static Map<TeamDisposition, List<ItemStack>> assignMiniGamesToTeamDispositions(
-            Map<TokenizedEntityInterface, PlayerEntity> tokensWithOwners,
-            List<ABoardSpaceBehavior.Status> statuses,
-            List<ItemStack> miniGames, ServerWorld world) {
-
-        Set<TeamDisposition> teamDispositions = TeamDispositionGenerator.generateTeamDispositions(tokensWithOwners, statuses);
-        Map<TeamDisposition, List<ItemStack>> teamDispositionsToMiniGames = new HashMap<>();
-
-        for (TeamDisposition disposition : teamDispositions) {
+            List<TeamDispositionGenerator.Seat> seats, List<ItemStack> miniGames, MinecraftServer server) {
+        Map<TeamDisposition, List<ItemStack>> teamDispositionsToMiniGames = new LinkedHashMap<>();
+        for (TeamDisposition disposition : TeamDispositionGenerator.generateTeamDispositions(seats)) {
             List<ItemStack> applicableMiniGames = new ArrayList<>();
-
-            for (ItemStack miniGamePageStack : miniGames) {
-                if (!pageAccepts(world.getServer(), miniGamePageStack, disposition)) continue;
-                // Extract teleporting targets from the mini-game stack
-                TeleportationPadBooksStorage storage = TeleportationPadStorageManager.getBooksStorage(world);
-                List<TeleportingTarget> teleportingTargets = new ArrayList<>();
-                miniGamePageStack.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations()
-                        .forEach(pos -> {
-                            ItemStack book = storage.getTeleportationPadBook(pos);
-                            if (book != null && !book.isEmpty()) {
-                                List<TeleportingTarget> targets = book.getOrDefault(TP_TARGETS, List.of());
-                                teleportingTargets.addAll(targets);
-                            }
-                        });
-                // Check if the mini-game fits the team disposition
-                if (doesMiniGameFitTeamDisposition(disposition, teleportingTargets)) {
-                    applicableMiniGames.add(miniGamePageStack);
-                }
+            for (ItemStack page : miniGames) {
+                if (pagePlayable(server, page, disposition)) applicableMiniGames.add(page);
             }
-
-            if (!applicableMiniGames.isEmpty()) {
-                teamDispositionsToMiniGames.put(disposition, applicableMiniGames);
-            }
+            if (!applicableMiniGames.isEmpty()) teamDispositionsToMiniGames.put(disposition, applicableMiniGames);
         }
-
         return teamDispositionsToMiniGames;
     }
 
     /**
-     * What the page says of its mini-game: the team layouts and the numbers of players it accepts.
-     *
-     * @return false if the page refuses these teams (a page nothing was written on accepts everything)
+     * @return true if the page's mini-game can be played by these teams: the page ticks that team layout, accepts
+     * that many players, and has a pipe for each team to come out of (the players pipes without teams)
      */
-    public static boolean pageAccepts(MinecraftServer server, ItemStack page, TeamDisposition disposition) {
+    public static boolean pagePlayable(MinecraftServer server, ItemStack page, TeamDisposition disposition) {
         MiniGamePageData data = MiniGamePages.of(server, page);
-        return data == null || data.accepts(disposition.teamA.size() + disposition.teamB.size(), MiniGameMode.of(disposition));
+        return data != null && data.isPlayable(disposition.size(), MiniGameMode.of(disposition));
     }
-
-    // Check if the mini-game can accept the current team disposition based on teleporting targets
-    private static boolean doesMiniGameFitTeamDisposition(TeamDisposition disposition, List<TeleportingTarget> teleportingTargets) {
-        // Track how many players from each group (A or B) are available to fill the teleportation targets
-        int teamAPlayersCount = disposition.teamA.size();
-        int teamBPlayersCount = disposition.teamB.size();
-
-        int teamACapacity = 0;
-        int teamBCapacity = 0;
-        int teamBothCapacity = 0;
-
-        // Iterate through all teleporting targets
-        for (TeleportingTarget target : teleportingTargets) {
-            TeleportingTarget.Group targetGroup = target.getGroup();
-            int fillCapacity = target.getCheckedFillCapacity(); // Required number of players for this group
-
-            // Check each type of group
-            switch (targetGroup) {
-                case PLAYER_TEAM_A:
-                    teamACapacity += fillCapacity;
-                    break;
-                case PLAYER_TEAM_B:
-                    teamBCapacity += fillCapacity;
-                    break;
-                case EVERYONE:
-                case PLAYERS:
-                    teamBothCapacity += fillCapacity;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Swap them because team A in the disposition is always smaller
-        if (teamACapacity > teamBCapacity) {
-            int temp = teamACapacity;
-            teamACapacity = teamBCapacity;
-            teamBCapacity = temp;
-        }
-
-        teamAPlayersCount -= teamACapacity;
-        teamBPlayersCount -= teamBCapacity;
-
-        int playersRest = (teamAPlayersCount + teamBPlayersCount) - teamBothCapacity;
-
-        return playersRest <= 0;
-    }
-
 
     @Override
     public void fromNbt(NbtCompound nbt) {
@@ -685,24 +656,15 @@ public class MiniGamePartyStep extends PartyStep {
         for (String key : returnsNbt.getKeys()) {
             try {
                 NbtCompound back = returnsNbt.getCompound(key);
-                returnPositions.put(UUID.fromString(key), new ReturnPos(back.getDouble("X"), back.getDouble("Y"),
+                Identifier dimension = Identifier.tryParse(back.getString("Dimension"));
+                returnPositions.put(UUID.fromString(key), new ReturnPos(
+                        dimension == null || back.getString("Dimension").isEmpty() ? World.OVERWORLD : RegistryKey.of(RegistryKeys.WORLD, dimension),
+                        back.getDouble("X"), back.getDouble("Y"),
                         back.getDouble("Z"), back.getFloat("Yaw"), back.getFloat("Pitch")));
             } catch (IllegalArgumentException ignored) {
             }
         }
         this.chosenPageSlot = nbt.contains("ChosenPage") ? nbt.getInt("ChosenPage") + 1 : 0;
-        if (destinations == null)
-            destinations = new HashMap<>();
-        destinations.clear();
-        nbt.getList("Destinations", NbtElement.COMPOUND_TYPE).forEach(element -> {
-            NbtCompound entry = (NbtCompound) element;
-            try {
-                destinations.put(UUID.fromString(entry.getString("Player")),
-                        new Destination(BlockPos.fromLong(entry.getLong("Pad")), entry.getInt("Target")));
-            } catch (IllegalArgumentException ignored) {
-                // corrupted entry
-            }
-        });
         if (nbt.contains("Tokens")) {
             if (tokens == null)
                 tokens = new ArrayList<>();
@@ -732,6 +694,7 @@ public class MiniGamePartyStep extends PartyStep {
             NbtCompound returnsNbt = new NbtCompound();
             returnPositions.forEach((uuid, back) -> {
                 NbtCompound backNbt = new NbtCompound();
+                backNbt.putString("Dimension", back.dimension().getValue().toString());
                 backNbt.putDouble("X", back.x());
                 backNbt.putDouble("Y", back.y());
                 backNbt.putDouble("Z", back.z());
@@ -743,17 +706,6 @@ public class MiniGamePartyStep extends PartyStep {
         }
         if (chosenPageSlot > 0)
             nbtCompound.putInt("ChosenPage", chosenPageSlot - 1);
-        if (destinations != null && !destinations.isEmpty()) {
-            NbtList destinationsNbt = new NbtList();
-            destinations.forEach((player, destination) -> {
-                NbtCompound entry = new NbtCompound();
-                entry.putString("Player", player.toString());
-                entry.putLong("Pad", destination.pad().asLong());
-                entry.putInt("Target", destination.targetIndex());
-                destinationsNbt.add(entry);
-            });
-            nbtCompound.put("Destinations", destinationsNbt);
-        }
         return nbtCompound;
     }
 

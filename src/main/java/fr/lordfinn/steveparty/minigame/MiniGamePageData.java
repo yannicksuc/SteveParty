@@ -72,6 +72,44 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         return layout != null && modes.contains(layout) && playerCount >= minPlayers && playerCount <= maxPlayers;
     }
 
+    /** The pipes of a role, in the order they were linked. */
+    public List<MiniGamePipeLink> pipes(MiniGamePipeRole role) {
+        List<MiniGamePipeLink> found = new ArrayList<>();
+        for (MiniGamePipeLink link : pipeLinks) if (link.role() == role) found.add(link);
+        return found;
+    }
+
+    /** The roles the mini-game has no pipe of, among those it needs to be played in {@code mode}. */
+    public List<MiniGamePipeRole> missing(MiniGameMode mode) {
+        List<MiniGamePipeRole> missing = new ArrayList<>();
+        for (MiniGamePipeRole role : MiniGamePipeRole.needed(mode)) {
+            if (pipes(role).isEmpty()) missing.add(role);
+        }
+        return missing;
+    }
+
+    /** @return true if the players of a mini-game played in {@code mode} all have a pipe to come out of. */
+    public boolean hasPipesFor(MiniGameMode mode) {
+        return mode != null && missing(mode).isEmpty();
+    }
+
+    /** @return true if the party controller can draw this mini-game for that many players split that way. */
+    public boolean isPlayable(int playerCount, MiniGameMode layout) {
+        return accepts(playerCount, layout) && hasPipesFor(layout);
+    }
+
+    /** @return true if the mini-game can be played in at least one of the modes it ticks. */
+    public boolean isPlayable() {
+        for (MiniGameMode mode : modes) if (hasPipesFor(mode)) return true;
+        return false;
+    }
+
+    /** The index of the link to the pipe at {@code mouth}, -1 if it is not linked. */
+    public int linkIndex(net.minecraft.util.math.GlobalPos mouth) {
+        for (int i = 0; i < pipeLinks.size(); i++) if (pipeLinks.get(i).isAt(mouth)) return i;
+        return -1;
+    }
+
     public boolean hasTitle() {
         return !title.isEmpty();
     }

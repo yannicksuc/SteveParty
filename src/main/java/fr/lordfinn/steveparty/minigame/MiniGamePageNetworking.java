@@ -59,6 +59,8 @@ public final class MiniGamePageNetworking {
                 ModPayloads.runInPacketOrder(context.player(), () -> action(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(Upload.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () -> upload(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PipeRole.ID, (payload, context) ->
+                ModPayloads.runInPacketOrder(context.player(), () -> pipeRole(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Request.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () ->
                         send(context.player(), new MiniGamePagePayloads.Data(MiniGamePages.get(context.player().server, payload.page())))));
@@ -90,17 +92,28 @@ public final class MiniGamePageNetworking {
                 send(player, new MiniGamePagePayloads.Open(hand, MiniGamePageData.empty(MiniGamePageData.NO_ID), false, false));
                 return;
             }
-            if (stack.getCount() > 1) {
-                ItemStack others = stack.split(stack.getCount() - 1);
-                MiniGamePages.ensureId(stack);
-                player.getInventory().offerOrDrop(others);
-            } else {
-                MiniGamePages.ensureId(stack);
-            }
+            ensureSinglePage(player, hand);
         }
         MiniGamePages.refresh(player.server, stack);
         MiniGamePageRef ref = stack.get(ModComponents.MINI_GAME_PAGE);
         send(player, new MiniGamePagePayloads.Open(hand, MiniGamePages.get(player.server, ref.id()), canEdit, ref.linked()));
+    }
+
+    /**
+     * Gives the page held in {@code hand} its id if it has none. Of a stack of new pages only one becomes that page:
+     * it stays in hand, the others go back to the inventory.
+     *
+     * @return the page's id
+     */
+    public static UUID ensureSinglePage(ServerPlayerEntity player, Hand hand) {
+        ItemStack stack = player.getStackInHand(hand);
+        if (MiniGamePages.idOf(stack) == null && stack.getCount() > 1) {
+            ItemStack others = stack.split(stack.getCount() - 1);
+            UUID id = MiniGamePages.ensureId(stack);
+            player.getInventory().offerOrDrop(others);
+            return id;
+        }
+        return MiniGamePages.ensureId(stack);
     }
 
     // ------------------------------------------------------------------ checks
@@ -129,6 +142,14 @@ public final class MiniGamePageNetworking {
         MiniGamePages.update(player.server, data);
         MiniGamePages.refresh(player.server, stack);
         return true;
+    }
+
+    /** A linked pipe moved to another role in the editor, or unlinked there. @return true if it was done */
+    public static boolean pipeRole(ServerPlayerEntity player, MiniGamePagePayloads.PipeRole payload) {
+        if (editable(player, payload.hand(), payload.page()) == null) return false;
+        if (payload.role() < 0) return MiniGamePages.removeLink(player.server, payload.page(), payload.mouth());
+        MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(payload.role());
+        return role != null && MiniGamePages.setLinkRole(player.server, payload.page(), payload.mouth(), role);
     }
 
     /** A button of the editor. @return true if it was done */

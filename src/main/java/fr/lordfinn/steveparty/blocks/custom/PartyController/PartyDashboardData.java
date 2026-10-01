@@ -6,11 +6,10 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.board.BoardValidator;
-import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGameMode;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
-import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
-import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -24,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static fr.lordfinn.steveparty.components.ModComponents.DESTINATIONS_COMPONENT;
-import static fr.lordfinn.steveparty.components.ModComponents.TP_TARGETS;
 
 /**
  * Everything the Party Controller's dashboard shows, for one player: the state of the party (or what is missing to
@@ -96,7 +93,13 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
      * @param books  those pads holding a « Here we come » book with at least one place: 0 and the mini-game can't be played
      * @param played how many times the roulette chose it in this party
      */
-    public record Page(int slot, ItemStack page, int pads, int books, int played) {}
+    /**
+     * A page of the catalogue.
+     *
+     * @param pipes    the pipes linked to the page
+     * @param playable the number of ways it can be played among those it ticks (0: it can't be drawn)
+     */
+    public record Page(int slot, ItemStack page, int pipes, int playable, int played) {}
 
     /** Why a party can't be started now, the checks in the order a player meets them. */
     public static Blocker launchBlocker(boolean running, Board board, boolean canEdit) {
@@ -196,7 +199,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             action = Text.translatable(current.getName());
         }
 
-        // Mini-games of the catalogue: where they send the players, how many times they were played
+        // Mini-games of the catalogue: their pipes, how many times they were played
         List<ItemStack> stored = controller.catalogue.isEmpty() ? List.of() : MiniGamesCatalogueItem.getStoredPages(controller.catalogue);
         int[] played = new int[stored.size()];
         int currentPage = -1;
@@ -209,20 +212,18 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                 if (i == stepIndex && phase == Phase.RUNNING) currentPage = slot;
             }
         }
-        TeleportationPadBooksStorage books = stored.isEmpty() ? null : TeleportationPadStorageManager.getBooksStorage(world);
         List<Page> pages = new ArrayList<>();
         for (int slot = 0; slot < stored.size(); slot++) {
             ItemStack page = stored.get(slot);
             if (page.isEmpty()) continue;
             // The title the page has now (the stack is a copy)
             if (world.getServer() != null) MiniGamePages.refresh(world.getServer(), page);
-            List<BlockPos> pads = page.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations();
-            int withBook = 0;
-            for (BlockPos pad : pads) {
-                ItemStack book = books.getTeleportationPadBook(pad);
-                if (book != null && !book.isEmpty() && !book.getOrDefault(TP_TARGETS, List.of()).isEmpty()) withBook++;
+            MiniGamePageData content = world.getServer() == null ? null : MiniGamePages.of(world.getServer(), page);
+            int pipes = content == null ? 0 : content.pipeLinks().size(), playable = 0;
+            if (content != null) {
+                for (MiniGameMode mode : content.modes()) if (content.hasPipesFor(mode)) playable++;
             }
-            pages.add(new Page(slot, page, pads.size(), withBook, played[slot]));
+            pages.add(new Page(slot, page, pipes, playable, played[slot]));
         }
 
         return new PartyDashboardData(phase, round, rounds, data.getNbTurn(), stepIndex, steps.size(), action, detail,
@@ -274,8 +275,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             for (Page page : pages) {
                 buf.writeVarInt(page.slot());
                 ItemStack.PACKET_CODEC.encode(buf, page.page());
-                buf.writeVarInt(page.pads());
-                buf.writeVarInt(page.books());
+                buf.writeVarInt(page.pipes());
+                buf.writeVarInt(page.playable());
                 buf.writeVarInt(page.played());
             }
         }

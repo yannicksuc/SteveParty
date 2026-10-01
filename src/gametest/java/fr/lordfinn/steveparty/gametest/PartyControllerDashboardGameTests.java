@@ -258,7 +258,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             PartyDashboardData.Page first = data.pages().getFirst(), second = data.pages().get(1);
             context.assertTrue(first.slot() == 0 && first.played() == 0, "the race was not played");
             context.assertTrue(second.slot() == 2 && second.played() == 1, "the battle was played once");
-            context.assertTrue(second.pads() == 0 && second.books() == 0, "no pad, no « Here we come » book");
+            context.assertTrue(second.pipes() == 0 && second.playable() == 0, "no pipe linked: it can't be drawn");
 
             party.setStepIndex(3);
             for (int i = 0; i < SYNC_INTERVAL && handler.getSentCount() < 3; i++) handler.sendContentUpdates();

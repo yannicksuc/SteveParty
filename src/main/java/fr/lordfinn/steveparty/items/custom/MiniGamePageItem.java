@@ -8,6 +8,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
 import net.minecraft.item.tooltip.TooltipType;
@@ -27,9 +28,10 @@ import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
 /**
  * A page of the mini-games catalogue. The item only carries the id of the page ({@link MiniGamePageRef}): what the
  * page says (title, description, picture, accepted team layouts, players) is kept by the server
- * ({@link MiniGamePages}), so every copy of a page shows the same thing. Right-clicked in hand, it opens its editor.
+ * ({@link MiniGamePages}), so every copy of a page shows the same thing. Right-clicked in hand, it opens its editor;
+ * a click on a pipe mouth links that pipe to the page, or unlinks it (see {@code PipeBlock}, {@code MiniGamePipes#click}).
  */
-public class MiniGamePageItem extends AbstractDestinationsSelectorItem {
+public class MiniGamePageItem extends Item {
     /** What the tooltip of a page shows under its name: the page's picture and summary (drawn by the client). */
     public record PageTooltip(UUID page) implements TooltipData {
     }
@@ -67,6 +69,8 @@ public class MiniGamePageItem extends AbstractDestinationsSelectorItem {
     @Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
         if (world.isClient || world.getServer() == null || (world.getTime() + slot) % 20 != 0) return;
+        // Pages no longer keep positions of their own: the pipes are on the page's content
+        if (stack.contains(ModComponents.DESTINATIONS_COMPONENT)) stack.remove(ModComponents.DESTINATIONS_COMPONENT);
         MiniGamePages.refresh(world.getServer(), stack);
     }
 
@@ -85,7 +89,7 @@ public class MiniGamePageItem extends AbstractDestinationsSelectorItem {
         }
         tooltip.add(Text.translatable(ref == null ? "tooltip.steveparty.mini_game_page.blank" : "tooltip.steveparty.mini_game_page.open")
                 .formatted(Formatting.GRAY));
-        super.appendTooltip(stack, context, tooltip, type);
+        tooltip.add(Text.translatable("tooltip.steveparty.mini_game_page.link").formatted(Formatting.GRAY));
         if (ref != null && type.isAdvanced()) {
             tooltip.add(Text.literal(ref.id().toString()).formatted(Formatting.DARK_GRAY));
         }

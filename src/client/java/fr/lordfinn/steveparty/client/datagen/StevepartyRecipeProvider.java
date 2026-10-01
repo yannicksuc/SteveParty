@@ -213,21 +213,6 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .criterion(hasItem(ModBlocks.CASH_REGISTER), conditionsFromItem(ModBlocks.CASH_REGISTER))
                         .offerTo(recipeExporter);
 
-                // Teleportation books: an ender pearl bound in a book, with a compass to go somewhere, a lead to
-                // bring the others along
-                createShapeless(RecipeCategory.TOOLS, ModItems.HERE_WE_GO_BOOK)
-                        .input(Items.BOOK)
-                        .input(Items.ENDER_PEARL)
-                        .input(Items.COMPASS)
-                        .criterion(hasItem(Items.ENDER_PEARL), conditionsFromItem(Items.ENDER_PEARL))
-                        .offerTo(recipeExporter);
-                createShapeless(RecipeCategory.TOOLS, ModItems.HERE_WE_COME_BOOK)
-                        .input(Items.BOOK)
-                        .input(Items.ENDER_PEARL)
-                        .input(Items.LEAD)
-                        .criterion(hasItem(Items.ENDER_PEARL), conditionsFromItem(Items.ENDER_PEARL))
-                        .offerTo(recipeExporter);
-
                 createShapeless(RecipeCategory.COMBAT, ModItems.TRIPLE_JUMP_SHOES)
                         .input(Items.LEATHER_BOOTS)
                         .input(Items.RABBIT_FOOT)

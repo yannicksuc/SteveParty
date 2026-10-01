@@ -18,8 +18,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
-import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeComeBookItem.handleHereWeComeBookPayload;
-import static fr.lordfinn.steveparty.items.custom.teleportation_books.HereWeGoBookItem.handleHereWeGoBookPayload;
 
 public class ModPayloads {
     public static final Identifier ARROW_PARTICLES_PAYLOAD = Steveparty.id("arrow-particles");
@@ -29,8 +27,6 @@ public class ModPayloads {
     public static final Identifier PARTY_DATA_PAYLOAD = Steveparty.id("party-data");
     public static final Identifier PARTY_LIVE_PAYLOAD = Steveparty.id("party-live");
     public static final Identifier PARTY_DASHBOARD_PAYLOAD = Steveparty.id("party-dashboard");
-    public static final Identifier HERE_WE_GO_BOOK_PAYLOAD = Steveparty.id("here-we-go-book-payload");
-    public static final Identifier HERE_WE_COME_BOOK_PAYLOAD = Steveparty.id("here-we-come-book-payload");
     public static final Identifier SAVE_STENCIL_PAYLOAD = Steveparty.id("save_stencil");
     public static final Identifier GOAL_POLE_BASE_PAYLOAD = Steveparty.id("goal-pole-base-payload");
     public static final Identifier GOAL_POLE_PAYLOAD = Steveparty.id("goal-pole-payload");
@@ -47,8 +43,6 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(PartyDataPayload.ID, PartyDataPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PartyLivePayload.ID, PartyLivePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PartyDashboardPayload.ID, PartyDashboardPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(HereWeGoBookPayload.ID, HereWeGoBookPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(HereWeComeBookPayload.ID, HereWeComeBookPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(StencilGunScrollPayload.ID, StencilGunScrollPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ShopCartridgeScrollPayload.ID, ShopCartridgeScrollPayload.CODEC);
@@ -91,16 +85,6 @@ public class ModPayloads {
         ServerPlayNetworking.registerGlobalReceiver(CartridgeSlotScrollPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> CartridgeSlotScrollPayload.handle(payload, player));
-        });
-
-        ServerPlayNetworking.registerGlobalReceiver(HereWeGoBookPayload.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
-            runInPacketOrder(player, () -> handleHereWeGoBookPayload(player, payload.state()));
-        });
-
-        ServerPlayNetworking.registerGlobalReceiver(HereWeComeBookPayload.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
-            runInPacketOrder(player, () -> handleHereWeComeBookPayload(player, payload.teleportingTargets()));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(SaveStencilPayload.ID, (payload, context) -> {

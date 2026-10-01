@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.gametest;
 
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -119,7 +118,8 @@ public class MiniGamePageGameTests implements FabricGameTest {
         MiniGamePageData page = new MiniGamePageData(id, "Course de cochons", "Premier arrivé gagne.\nAttention à la lave !",
                 new MiniGamePageImage("0123456789abcdef0123456789abcdef", 640, 360, 45678, "LordFinn", uploader),
                 EnumSet.of(MiniGameMode.FREE_FOR_ALL, MiniGameMode.THREE_TEAMS), 2, 6,
-                List.of(new MiniGamePipeLink(GlobalPos.create(World.NETHER, new BlockPos(4, 70, -12)), MiniGamePipeLink.Role.ARRIVAL, 2)));
+                List.of(new MiniGamePipeLink(GlobalPos.create(World.NETHER, new BlockPos(4, 70, -12)), net.minecraft.util.math.Direction.EAST,
+                        fr.lordfinn.steveparty.minigame.MiniGamePipeRole.TEAM_B)));
         MiniGamePageData blank = MiniGamePageData.empty(UUID.randomUUID());
 
         MiniGamePagesState state = new MiniGamePagesState();
@@ -479,17 +479,6 @@ public class MiniGamePageGameTests implements FabricGameTest {
         context.assertEquals(MiniGameMode.of(freeForAll), MiniGameMode.FREE_FOR_ALL, "no team A: free for all");
         context.assertEquals(MiniGameMode.of(oneVsThree), MiniGameMode.TWO_TEAMS, "1 vs 3: two teams");
 
-        // The roulette only keeps the pages that accept the teams of the moment
-        MinecraftServer server = context.getWorld().getServer();
-        ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
-        context.assertTrue(MiniGamePartyStep.pageAccepts(server, stack, oneVsThree), "a page never opened accepts everything");
-        UUID id = MiniGamePages.ensureId(stack);
-        context.assertTrue(MiniGamePartyStep.pageAccepts(server, stack, freeForAll), "a page nothing was written on too");
-        MiniGamePages.update(server, MiniGamePages.get(server, id).withModes(EnumSet.of(MiniGameMode.TWO_TEAMS)).withPlayers(2, 4));
-        context.assertTrue(MiniGamePartyStep.pageAccepts(server, stack, oneVsThree), "two teams of 4 players: accepted");
-        context.assertTrue(!MiniGamePartyStep.pageAccepts(server, stack, freeForAll), "free for all: refused");
-        MiniGamePages.update(server, MiniGamePages.get(server, id).withPlayers(2, 3));
-        context.assertTrue(!MiniGamePartyStep.pageAccepts(server, stack, oneVsThree), "4 players for 3 at most: refused");
         context.complete();
     }
 }
