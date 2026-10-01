@@ -58,12 +58,18 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         BlockPos pos = boardSpace == null ? null : boardSpace.getPos();
         this.panel = new CartridgePanel(MinecraftClient.getInstance(), handler::selectedStack, () -> pos, () -> handler.syncId,
                 () -> pos != null && CartridgeRef.slot(pos, handler.getSelectedSlot()).mayEdit(inventory.player),
-                CartridgeLayout.MAX_CONTENT_BESIDE_TILE, TILE_H);
-        this.backgroundWidth = BoardSpaceScreenHandler.MENU_X + panel.width();
+                CartridgeLayout.MAX_CONTENT_BESIDE_TILE, 0, TILE_H);
     }
 
+    /**
+     * The menu takes the window's width left by the tile part (its columns shrink in a narrow window) and its height
+     * under the tile's top (its modules scroll when they are taller).
+     */
     @Override
     protected void init() {
+        int top = (height - backgroundHeight) / 2;
+        panel.setAvailable(width - BoardSpaceScreenHandler.MENU_X - CartridgeScreen.MARGIN, height - top - CartridgeScreen.MARGIN);
+        backgroundWidth = BoardSpaceScreenHandler.MENU_X + panel.width();
         super.init();
         panel.setOrigin(x + BoardSpaceScreenHandler.MENU_X, y);
     }
@@ -72,17 +78,14 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
     protected void handledScreenTick() {
         super.handledScreenTick();
         panel.setSlotLabel(isSingle ? null : Text.translatable(CartridgeItem.MENU_KEY + "slot", handler.getSelectedSlot() + 1));
-        if (panel.refresh()) {
-            // Another cartridge: its layout (the width may change)
-            int width = BoardSpaceScreenHandler.MENU_X + panel.width();
-            if (width != backgroundWidth) {
-                backgroundWidth = width;
-                init(client, this.width, this.height);
-            } else {
-                panel.setOrigin(x + BoardSpaceScreenHandler.MENU_X, y);
-            }
-        }
-        panel.tick();
+        // Another cartridge, or texts on more lines: the shell's size may change
+        if (panel.tick() && client != null) init(client, this.width, this.height);
+    }
+
+    /** The menu may be taller than the tile part: a click on it is not a click outside (it would drop the item held). */
+    @Override
+    protected boolean isClickOutsideBounds(double mouseX, double mouseY, int left, int top, int button) {
+        return super.isClickOutsideBounds(mouseX, mouseY, left, top, button) && !panel.isMouseOver(mouseX, mouseY);
     }
 
     @Override

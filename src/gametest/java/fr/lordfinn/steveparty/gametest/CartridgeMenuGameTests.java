@@ -25,7 +25,17 @@ import fr.lordfinn.steveparty.payloads.custom.CartridgeSettingPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.GhostSlot;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import io.netty.buffer.Unpooled;
+import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
@@ -78,25 +88,188 @@ public class CartridgeMenuGameTests implements FabricGameTest {
         context.getWorld().getServer().getPlayerManager().remove(player);
     }
 
-    /** Every cartridge: modules with unique ids, laid out in one column beside a tile and within 240 × 320 in hand. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void everyCartridgeDeclaresModulesThatFit(TestContext context) {
-        for (Item item : CARTRIDGES) {
-            List<CartridgeModule> modules = ((CartridgeItem) item).modules();
-            String name = item.toString();
-            context.assertTrue(!modules.isEmpty(), name + ": has modules");
-            Set<String> ids = new HashSet<>();
-            for (CartridgeModule module : modules) context.assertTrue(ids.add(module.id()), name + ": unique id " + module.id());
-            CartridgeLayout beside = CartridgeLayout.of(modules, CartridgeLayout.MAX_CONTENT_BESIDE_TILE);
-            context.assertEquals(beside.columns(), 1, name + ": one column beside the tile");
-            context.assertTrue(beside.height() <= 183, name + ": not taller than the tile");
-            boolean ghosts = CartridgeLayout.indexOf(modules, GhostSlotsModule.class) >= 0;
-            CartridgeLayout inHand = CartridgeLayout.of(modules, ghosts ? CartridgeLayout.MAX_CONTENT_WITH_INVENTORY : CartridgeLayout.MAX_CONTENT_ALONE);
-            int height = inHand.height() + (ghosts ? CartridgeLayout.INVENTORY_GAP + CartridgeLayout.INVENTORY_H : 0);
-            context.assertTrue(height <= 240 && inHand.width() <= 320, name + ": fits the smallest GUI in hand (" + inHand.width() + "x" + height + ")");
+    // ------------------------------------------------------------------ texts: do they fit?
+
+    private static JsonObject lang(String code) {
+        try (InputStream in = CartridgeMenuGameTests.class.getResourceAsStream("/assets/steveparty/lang/" + code + ".json")) {
+            if (in == null) throw new AssertionError("no lang file " + code);
+            return JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        } catch (java.io.IOException e) {
+            throw new AssertionError(e);
         }
-        // The ghost slots are the Inventory Cartridge's first module: the tile's interface places them there
+    }
+
+    /**
+     * The width of {@code text} in the game's default font, glyph by glyph (the server has no font): the advance of
+     * each ASCII glyph, 6 for a letter with an accent, 9 (more than any) for the other symbols.
+     */
+    private static int width(String text) {
+        int width = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if ("i!.,:;|'".indexOf(c) >= 0) width += 2;
+            else if ("l`".indexOf(c) >= 0) width += 3;
+            else if (" It[]îï".indexOf(c) >= 0) width += 4;
+            else if ("fk<>(){}*\"".indexOf(c) >= 0) width += 5;
+            else if ("@~".indexOf(c) >= 0) width += 7;
+            else if (c < 0x7F || Character.isLetter(c) || c == '°') width += 6;
+            else width += 9;
+        }
+        return Math.max(0, width - 1);
+    }
+
+    /** The lines {@code text} takes in {@code max} pixels, wrapped on its spaces like the game does. */
+    private static int lines(String text, int max) {
+        int lines = 1, line = 0;
+        for (String word : text.split(" ")) {
+            int w = width(word);
+            if (line > 0 && line + 4 + w > max) {
+                lines++;
+                line = w;
+            } else {
+                line += (line > 0 ? 4 : 0) + w;
+            }
+        }
+        return lines;
+    }
+
+    /** {@code text} in the language {@code lang} (its translation keys and their arguments resolved). */
+    private static String resolve(Text text, JsonObject lang) {
+        StringBuilder out = new StringBuilder();
+        if (text.getContent() instanceof TranslatableTextContent translatable) {
+            String pattern = lang.has(translatable.getKey()) ? lang.get(translatable.getKey()).getAsString() : translatable.getKey();
+            for (Object arg : translatable.getArgs()) {
+                String value = arg instanceof Text nested ? resolve(nested, lang) : String.valueOf(arg);
+                pattern = pattern.replaceFirst("%(\\d+\\$)?[sd]", java.util.regex.Matcher.quoteReplacement(value));
+            }
+            out.append(pattern);
+        } else {
+            out.append(text.copyContentOnly().getString());
+        }
+        for (Text sibling : text.getSiblings()) out.append(resolve(sibling, lang));
+        return out.toString();
+    }
+
+    private static String translate(JsonObject lang, String key, TestContext context) {
+        context.assertTrue(lang.has(key), "missing text " + key);
+        return lang.get(key).getAsString();
+    }
+
+    /**
+     * The height the menu gives a module for {@code stack} (the client measures the same with the font): its title,
+     * and its widgets or its texts wrapped on as many lines as they need.
+     */
+    private static int measuredHeight(CartridgeModule module, ItemStack stack, InfoModule.Context info, JsonObject lang, int columnW) {
+        int label = module.labelKey() == null ? 0 : CartridgeModule.LABEL_H;
+        return label + switch (module) {
+            case ChoiceModule choice -> choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
+            case NumberModule number -> NumberModule.ROW_H;
+            case ColorModule color -> {
+                int perRow = (columnW + ColorModule.GAP) / (ColorModule.SWATCH + ColorModule.GAP);
+                int rows = (ColorModule.DEFAULT + perRow) / perRow;
+                yield rows * ColorModule.SWATCH + (rows - 1) * ColorModule.GAP;
+            }
+            case GhostSlotsModule ghosts -> Math.max(54, 26 + 10 * lines(lang.get(CartridgeItem.MENU_KEY + "inventory.wheel").getAsString(), columnW - 60));
+            case InfoModule infoModule -> {
+                int width = columnW - (infoModule.hasIcon() ? InfoModule.ICON + 4 : 0), count = 0;
+                for (InfoModule.Line line : infoModule.content(info)) count += lines(resolve(line.text(), lang), width);
+                yield Math.max(count * InfoModule.LINE_H, infoModule.hasIcon() ? InfoModule.ICON + 2 : 0);
+            }
+            default -> module.height();
+        };
+    }
+
+    /**
+     * Every cartridge, in French and in English, in every state of its texts: the one-line texts (short name, module
+     * titles, buttons) fit their box without being cut, and with its texts wrapped on all the lines they need the menu
+     * fits the smallest GUI (320 × 240) in hand and beside a tile, without scrolling.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void everyCartridgeTextFitsInFrenchAndEnglish(TestContext context) {
+        BoardSpaceBlockEntity teleportTile = tile(context, ModBlocks.TILE, new ItemStack(ModItems.TELEPORT_CARTRIDGE));
+        int columnW = CartridgeLayout.COLUMN_W;
+        for (String code : List.of("fr_fr", "en_us")) {
+            JsonObject lang = lang(code);
+            for (Item item : CARTRIDGES) {
+                List<CartridgeModule> modules = ((CartridgeItem) item).modules();
+                String id = Registries.ITEM.getId(item).getPath();
+                String name = code + " " + id;
+                context.assertTrue(!modules.isEmpty(), name + ": has modules");
+                Set<String> ids = new HashSet<>();
+                for (CartridgeModule module : modules) context.assertTrue(ids.add(module.id()), name + ": unique id " + module.id());
+
+                // The label: icon (22) + name + lightning button (17), in a one-column shell
+                int labelRoom = CartridgeLayout.width(1, columnW) - 12 - 22 - 21;
+                String shortName = translate(lang, CartridgeItem.MENU_KEY + "name." + id, context);
+                context.assertTrue(width(shortName) <= labelRoom - width("n°16") - 4, name + ": short name « " + shortName + " » fits beside a slot number");
+
+                // The states its texts depend on
+                List<ItemStack> states = new java.util.ArrayList<>(List.of(new ItemStack(item)));
+                ItemStack other = new ItemStack(item);
+                other.set(ModComponents.INVENTORY_POS, new BlockPos(-29999999, -64, -29999999));
+                other.set(ModComponents.SHOP_LINK, new fr.lordfinn.steveparty.components.ShopLinkComponent(java.util.UUID.randomUUID(), new BlockPos(-29999999, -64, -29999999)));
+                other.set(ModComponents.TB_START_OWNER, java.util.UUID.randomUUID().toString());
+                other.set(ModComponents.TB_START_BOUND_ENTITY, java.util.UUID.randomUUID().toString());
+                states.add(other);
+                for (ItemStack stack : states) {
+                    for (BlockPos pos : new BlockPos[]{null, teleportTile.getPos()}) {
+                        InfoModule.Context info = new InfoModule.Context(stack, context.getWorld(), pos);
+                        int[] heights = new int[modules.size()];
+                        for (int i = 0; i < heights.length; i++) {
+                            CartridgeModule module = modules.get(i);
+                            heights[i] = measuredHeight(module, stack, info, lang, columnW);
+                            if (module.labelKey() != null) {
+                                String title = translate(lang, module.labelKey(), context);
+                                int titleRoom = columnW - 19;
+                                if (module instanceof ChoiceModule choice && choice.swatches()) {
+                                    for (ChoiceModule.Option option : choice.options()) {
+                                        context.assertTrue(width(title + ": " + translate(lang, option.key(), context)) <= titleRoom,
+                                                name + ": title « " + title + " » with its choice fits");
+                                    }
+                                } else {
+                                    context.assertTrue(width(title) <= titleRoom, name + ": title « " + title + " » fits (" + width(title) + " > " + titleRoom + ")");
+                                }
+                            }
+                            if (module instanceof ChoiceModule choice && !choice.swatches()) {
+                                int n = choice.options().size();
+                                int room = (columnW - (n - 1) * 3) / n - 6;
+                                for (ChoiceModule.Option option : choice.options()) {
+                                    String text = translate(lang, option.key(), context);
+                                    context.assertTrue(width(text) <= room, name + ": button « " + text + " » fits (" + width(text) + " > " + room + ")");
+                                }
+                            }
+                        }
+                        boolean ghosts = CartridgeLayout.indexOf(modules, GhostSlotsModule.class) >= 0;
+                        // Beside a tile: one column, within the height under the tile's top (240 high: 28 above)
+                        CartridgeLayout beside = CartridgeLayout.of(modules, CartridgeLayout.MAX_CONTENT_BESIDE_TILE, heights, 1, columnW);
+                        context.assertTrue(beside.height() <= 240 - 28 - 4, name + ": fits beside the tile without scrolling (" + beside.height() + ")");
+                        // In hand: alone, or over the inventory in the shell of a fixed size (two columns)
+                        if (ghosts) {
+                            CartridgeLayout inHand = CartridgeLayout.of(modules, CartridgeLayout.MAX_CONTENT_WITH_INVENTORY, heights, 2, columnW);
+                            context.assertTrue(inHand.height() <= CartridgeLayout.SHELL_H_WITH_INVENTORY && inHand.width() <= 320,
+                                    name + ": fits over the inventory (" + inHand.width() + "x" + inHand.height() + ")");
+                        } else {
+                            CartridgeLayout inHand = CartridgeLayout.of(modules, CartridgeLayout.MAX_CONTENT_ALONE, heights, 2, columnW);
+                            context.assertTrue(inHand.height() <= 240 - 8 && inHand.width() <= 320 - 8,
+                                    name + ": fits in hand (" + inHand.width() + "x" + inHand.height() + ")");
+                        }
+                    }
+                }
+            }
+            // The empty slot's hint: all its lines in the empty shell
+            int hint = lines(translate(lang, CartridgeItem.MENU_KEY + "empty.hint", context), columnW);
+            context.assertTrue(hint * InfoModule.LINE_H <= 183 - CartridgeLayout.TOP - CartridgeLayout.BOTTOM, code + ": empty hint fits");
+        }
+        // The ghost slots are the Inventory Cartridge's first module: the screen handlers place them there
         context.assertTrue(((CartridgeItem) ModItems.INVENTORY_CARTRIDGE).modules().getFirst() instanceof GhostSlotsModule, "ghost slots first");
+        // A narrow window: a narrower column, and one column only when a second would not fit (the shell scrolls)
+        List<CartridgeModule> teleport = ((CartridgeItem) ModItems.TELEPORT_CARTRIDGE).modules();
+        int[] tall = new int[teleport.size()];
+        java.util.Arrays.fill(tall, 60);
+        CartridgeLayout narrow = CartridgeLayout.of(teleport, 100, tall, 1, CartridgeLayout.MIN_COLUMN_W);
+        context.assertEquals(narrow.columns(), 1, "one column when there is no room for two");
+        context.assertEquals(narrow.width(), CartridgeLayout.width(1, CartridgeLayout.MIN_COLUMN_W), "a narrow shell");
+        context.assertEquals(CartridgeLayout.of(teleport, 100, tall, 2, columnW).columns(), 2, "two columns when there is room");
         context.complete();
     }
 

@@ -20,38 +20,55 @@ import net.minecraft.text.Text;
  * inventory under it when a module needs it (the Inventory Cartridge's ghost slots take their items from it).
  */
 public class CartridgeScreen extends HandledScreen<CartridgeScreenHandler> {
+    /** Kept free around the shell, in the window. */
+    static final int MARGIN = 4;
     private final CartridgePanel panel;
 
     public CartridgeScreen(CartridgeScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.backgroundWidth = handler.backgroundWidth();
-        this.backgroundHeight = handler.backgroundHeight();
         MinecraftClient client = MinecraftClient.getInstance();
+        boolean fixed = handler.withInventory();
         this.panel = new CartridgePanel(client, () -> handler.ref().resolve(inventory.player), () -> handler.ref().pos().orElse(null),
                 () -> handler.syncId, () -> handler.ref().mayEdit(inventory.player),
-                handler.withInventory() ? CartridgeLayout.MAX_CONTENT_WITH_INVENTORY : CartridgeLayout.MAX_CONTENT_ALONE, 0);
+                fixed ? CartridgeLayout.MAX_CONTENT_WITH_INVENTORY : CartridgeLayout.MAX_CONTENT_ALONE,
+                fixed ? CartridgeLayout.SHELL_W_WITH_INVENTORY : 0, fixed ? CartridgeLayout.SHELL_H_WITH_INVENTORY : 0);
+    }
+
+    /** With the inventory: the handler's fixed size (its slots); alone: the shell's own size, within the window. */
+    private void fit() {
+        if (handler.withInventory()) {
+            panel.setAvailable(CartridgeLayout.SHELL_W_WITH_INVENTORY, CartridgeLayout.SHELL_H_WITH_INVENTORY);
+            backgroundWidth = handler.backgroundWidth();
+            backgroundHeight = handler.backgroundHeight();
+        } else {
+            panel.setAvailable(width - 2 * MARGIN, height - 2 * MARGIN);
+            backgroundWidth = panel.width();
+            backgroundHeight = panel.height();
+        }
     }
 
     @Override
     protected void init() {
+        fit();
         super.init();
         panel.setOrigin(x + handler.shellX(), y);
         titleX = -10000; // the label of the shell shows the name
         playerInventoryTitleX = (backgroundWidth - CartridgeLayout.INVENTORY_W) / 2 + 8;
-        playerInventoryTitleY = handler.layout().height() + CartridgeLayout.INVENTORY_GAP + 6;
+        playerInventoryTitleY = CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP + 6;
     }
 
     @Override
     protected void handledScreenTick() {
         super.handledScreenTick();
-        panel.tick();
+        // The texts may take more or fewer lines (a chest linked, a network joined...): the shell follows
+        if (panel.tick() && client != null) init(client, width, height);
     }
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         panel.render(context, mouseX, mouseY);
         if (handler.withInventory()) drawInventoryPanel(context, x + (backgroundWidth - CartridgeLayout.INVENTORY_W) / 2,
-                y + handler.layout().height() + CartridgeLayout.INVENTORY_GAP);
+                y + CartridgeLayout.SHELL_H_WITH_INVENTORY + CartridgeLayout.INVENTORY_GAP);
     }
 
     /** The player's inventory: the light panel of the mod's inventories, its 3 rows and the hotbar. */
