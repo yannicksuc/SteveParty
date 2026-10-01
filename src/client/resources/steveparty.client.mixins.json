@@ -6,6 +6,7 @@
   "client": [
     "BipedEntityModelPipeSwimMixin",
     "BossBarHudAccessor",
+    "CameraPipeViewMixin",
     "ClientPlayerInteractionManagerVillagerPunchMixin",
     "EntityRenderDispatcherPipePoseMixin",
     "FallingBlockEntityRendererVillagerMixin",

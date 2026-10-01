@@ -69,14 +69,14 @@ public final class PipeTravel {
     public static final double BASE_SPEED = 0.6, MAX_SPEED = 3.0;
     /** Speed toward a mouth from which a player goes in without sneaking (blocks per tick, a fall of about 2 blocks). */
     public static final double FAST_ENTRY = 0.55;
-    /** Ticks after coming out before going in again. */
+    /** Ticks after coming out of a mouth before a click takes one back into it. */
     public static final int COOLDOWN = 20;
     /** A fall of this many blocks or more onto an upward mouth (anywhere on its top) always goes in. */
     public static final float FALL_ENTRY = 3;
-    /** How far out of a mouth (blocks) one that came out of it has to go before falling, sneaking or flying back in. */
-    public static final int CLEAR = 3;
-    /** Sideways push of a player popping out of an upward mouth (blocks per tick), so that it lands beside it. */
-    public static final double SIDE_POP = 0.22;
+    /** A mouth stays closed to the one that came out of it while it stands on it or this many blocks in front of it. */
+    public static final int CLEAR = 1;
+    /** Gone this far (blocks) without ever landing, it is forgotten by the mouth it came out of. */
+    private static final double FORGOTTEN = 24;
     /** Largest size of a traveller inside (blocks): bigger ones shrink to it. */
     public static final double ROOM = 0.7;
     private static final Identifier SHRINK = Steveparty.id("pipe_travel");
@@ -124,13 +124,33 @@ public final class PipeTravel {
 
     private record Entry(BlockPos mouth, Direction opening, double speed) {}
 
-    /** The mouth something came out of: not back in by itself before it has left the space in front ({@link #zone}). */
-    private record Bar(BlockPos mouth, Direction opening) {}
+    /**
+     * The mouth something came out of, closed to it (see {@link #barred}).
+     * <ul>
+     *     <li>{@code landed}: it has touched the ground since (before that, it is still in the air from being thrown
+     *     out: {@link #launched});</li>
+     *     <li>{@code sneakFree}: a player has stood on (or in front of) the mouth without sneaking since it landed: a
+     *     new press of sneak takes it in again.</li>
+     * </ul>
+     */
+    private static final class Bar {
+        final BlockPos mouth;
+        final Direction opening;
+        final long since;
+        /** Height of its feet when it came out. */
+        final double height;
+        boolean landed, sneakFree;
+
+        Bar(BlockPos mouth, Direction opening, long since, double height) {
+            this.mouth = mouth;
+            this.opening = opening;
+            this.since = since;
+            this.height = height;
+        }
+    }
 
     /** Entities going in at the end of the tick (not while they move). */
     private static final Map<ServerWorld, Map<Entity, Entry>> ENTRIES = new HashMap<>();
-    /** When each traveller last came out (world time). */
-    private static final Map<UUID, Long> LEFT_AT = new HashMap<>();
     /** Travellers just out, and the mouth they came out of. */
     private static final Map<Entity, Bar> BARRED = new HashMap<>();
 
@@ -143,7 +163,6 @@ public final class PipeTravel {
                 || source.isOf(DamageTypes.CRAMMING)));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             ENTRIES.clear();
-            LEFT_AT.clear();
             BARRED.clear();
             PASSAGES.clear();
         });
@@ -156,12 +175,24 @@ public final class PipeTravel {
     }
 
     /**
-     * Out of a mouth, something does not go back into it by itself (falling, flying, sneaking: anything but a right
-     * click) before it has left the space in front of it: the mouth's block and {@link #CLEAR} blocks out.
+     * The mouth a traveller came out of is closed to it: thrown straight out of it, it does not go back in by itself
+     * (falling back on it, flying, still holding sneak), it lands on it. The mouth opens to it again once it has
+     * landed anywhere else (off the mouth and the {@link #CLEAR} block in front of it), from where a new fall takes it
+     * in like any other; or, standing on it, by a new press of sneak, or a click after {@link #COOLDOWN} ticks. Every
+     * other mouth stays open to it.
      */
     public static boolean barred(Entity entity, BlockPos mouth, Direction opening) {
         Bar bar = BARRED.get(entity);
-        return bar != null && bar.mouth().equals(mouth) && bar.opening() == opening;
+        return bar != null && bar.mouth.equals(mouth) && bar.opening == opening;
+    }
+
+    /**
+     * Still in the air since it was thrown out of a pipe: landing on the mouth of another pipe takes it in whatever
+     * the height of the fall, and landing about as high as it came out (or higher) does not hurt it.
+     */
+    public static boolean launched(Entity entity) {
+        Bar bar = BARRED.get(entity);
+        return bar != null && !bar.landed;
     }
 
     /** The mouth's block and the space {@link #CLEAR} blocks in front of it. */
@@ -169,12 +200,10 @@ public final class PipeTravel {
         return new Box(mouth).stretch(opening.getOffsetX() * CLEAR, opening.getOffsetY() * CLEAR, opening.getOffsetZ() * CLEAR);
     }
 
-    /** Players, mobs and items; not riding anything nor carrying anyone, and not just out of a pipe. */
+    /** Players, mobs and items; not riding anything nor carrying anyone. */
     public static boolean canTravel(ServerWorld world, Entity entity) {
         if (!(entity instanceof LivingEntity || entity instanceof ItemEntity) || entity instanceof ArmorStandEntity) return false;
-        if (!entity.isAlive() || entity.isSpectator() || entity.hasVehicle() || entity.hasPassengers()) return false;
-        Long left = LEFT_AT.get(entity.getUuid());
-        return left == null || world.getTime() - left >= COOLDOWN;
+        return entity.isAlive() && !entity.isSpectator() && !entity.hasVehicle() && !entity.hasPassengers();
     }
 
     /**
@@ -185,6 +214,9 @@ public final class PipeTravel {
      */
     public static boolean enter(ServerWorld world, BlockPos mouth, Direction opening, Entity entity, double speed) {
         if (!canTravel(world, entity) || PipeShape.mouth(world.getBlockState(mouth), opening) == null) return false;
+        // Not straight back into the mouth it just came out of
+        Bar bar = BARRED.get(entity);
+        if (bar != null && bar.mouth.equals(mouth) && bar.opening == opening && world.getTime() - bar.since < COOLDOWN) return false;
         ENTRIES.computeIfAbsent(world, w -> new LinkedHashMap<>()).putIfAbsent(entity, new Entry(mouth.toImmutable(), opening, speed));
         return true;
     }
@@ -192,10 +224,20 @@ public final class PipeTravel {
     private static void tick(ServerWorld world) {
         Map<Entity, Entry> entries = ENTRIES.remove(world);
         if (entries != null) entries.forEach((entity, entry) -> start(world, entity, entry.mouth(), entry.opening(), entry.speed()));
-        if (!BARRED.isEmpty()) BARRED.entrySet().removeIf(bar -> {
-            Entity entity = bar.getKey();
+        if (!BARRED.isEmpty()) BARRED.entrySet().removeIf(entry -> {
+            Entity entity = entry.getKey();
+            Bar bar = entry.getValue();
             if (entity.getWorld() != world) return entity.isRemoved() || !(entity.getWorld() instanceof ServerWorld);
-            return entity.isRemoved() || entity.hasVehicle() || !entity.getBoundingBox().intersects(zone(bar.getValue().mouth(), bar.getValue().opening()));
+            if (entity.isRemoved() || entity.hasVehicle()) return true;
+            boolean near = entity.getBoundingBox().intersects(zone(bar.mouth, bar.opening));
+            if (entity.isOnGround() || entity.isTouchingWater()) {
+                // Landed: elsewhere, the mouth is open to it again; on it, a new press of sneak will take it in
+                bar.landed = true;
+                if (!near) return true;
+                if (!entity.isSneaking()) bar.sneakFree = true;
+                return false;
+            }
+            return !near && entity.squaredDistanceTo(Vec3d.ofCenter(bar.mouth)) > FORGOTTEN * FORGOTTEN;
         });
         for (ServerPlayerEntity player : world.getPlayers()) {
             if (player.isSneaking()) sneak(world, player);
@@ -270,13 +312,19 @@ public final class PipeTravel {
     }
 
     /**
-     * Landing after a fall of {@link #FALL_ENTRY} blocks or more: anywhere on the top of an upward mouth under it (the
-     * one nearest its middle), it goes in, whatever block it is said to land on (that may be the one beside the pipe).
+     * Landing after a fall of {@link #FALL_ENTRY} blocks or more, or of any height when it was thrown out of a pipe
+     * and has not landed since ({@link #launched}): anywhere on the top of an upward mouth under it (the one nearest
+     * its middle, never the one it came out of), it goes in, whatever block it is said to land on (that may be the
+     * one beside the pipe). Thrown out of a pipe and landing elsewhere about as high as it came out (on its mouth...),
+     * it is not hurt either.
      *
-     * @return true if it goes in (no fall damage)
+     * @return true if the fall does not hurt (it goes in, or lands from being thrown out)
      */
     public static boolean fallOnto(ServerWorld world, Entity entity) {
         if (entity.hasVehicle() || entity.isSpectator()) return false;
+        Bar bar = BARRED.get(entity);
+        boolean launched = bar != null && !bar.landed;
+        if (!launched && entity.fallDistance < FALL_ENTRY) return false;
         Box box = entity.getBoundingBox();
         int y = MathHelper.floor(entity.getY() - 0.2);
         BlockPos best = null;
@@ -295,7 +343,8 @@ public final class PipeTravel {
             }
         }
         double speed = Math.max(-entity.getVelocity().y, Math.sqrt(2 * 0.08 * entity.fallDistance));
-        return best != null && enter(world, best, Direction.UP, entity, speed);
+        if (best != null && enter(world, best, Direction.UP, entity, speed)) return true;
+        return launched && entity.getY() >= bar.height - 1.5;
     }
 
     /** A sneaking player: in the mouth it stands in, or the one it looks at up close. */
@@ -304,7 +353,7 @@ public final class PipeTravel {
         BlockPos feet = BlockPos.ofFloored(player.getX(), player.getY() + 0.01, player.getZ());
         BlockState under = world.getBlockState(feet);
         if (PipeShape.mouth(under, Direction.UP) != null && player.getBoundingBox().expand(0, 0.01, 0).intersects(hollow(feet, Direction.UP))) {
-            if (!barred(player, feet, Direction.UP)) enter(world, feet, Direction.UP, player, 0);
+            if (!barred(player, feet, Direction.UP) || BARRED.get(player).sneakFree) enter(world, feet, Direction.UP, player, 0);
             return;
         }
         // Where it looks (its yaw and pitch: the server does not keep a player's head turned like the client does)
@@ -314,7 +363,7 @@ public final class PipeTravel {
         if (blockHit.getType() != HitResult.Type.BLOCK) return;
         BlockPos pos = blockHit.getBlockPos();
         Direction mouth = mouthFacing(world.getBlockState(pos), pos, player.getEyePos());
-        if (mouth != null && !barred(player, pos, mouth)) enter(world, pos, mouth, player, 0);
+        if (mouth != null && (!barred(player, pos, mouth) || BARRED.get(player).sneakFree)) enter(world, pos, mouth, player, 0);
     }
 
     private static void start(ServerWorld world, Entity entity, BlockPos mouth, Direction opening, double speed) {
@@ -451,7 +500,6 @@ public final class PipeTravel {
         traveller.stopRiding();
         carrier.discard();
         traveller.requestTeleport(at.x, at.y - traveller.getHeight() / 2, at.z);
-        LEFT_AT.put(traveller.getUuid(), world.getTime());
     }
 
     /**
@@ -639,7 +687,7 @@ public final class PipeTravel {
 
     /**
      * Out of the mouth {@code end}: standing in front of it (on top of an upward one, under a downward one), thrown
-     * out at the speed it had inside (popping up out of an upward one).
+     * straight out along the mouth's axis at the speed it had inside (popping straight up out of an upward one).
      */
     private static void exit(ServerWorld world, @Nullable PipeCarrierEntity carrier, Entity traveller, PipeNetworks.End end) {
         double speed = carrier == null ? BASE_SPEED : carrier.speed();
@@ -654,23 +702,16 @@ public final class PipeTravel {
         traveller.requestTeleport(at.x, at.y, at.z);
         Vec3d velocity = Vec3d.of(dir.getVector()).multiply(MathHelper.clamp(speed, 0.3, 1.2));
         if (dir == Direction.UP) velocity = new Vec3d(0, Math.max(velocity.y, 0.5), 0);
-        if (dir.getAxis().isVertical()) {
-            // Off to a side instead of falling back in: mobs and items hop off anywhere, a player the way it looks
-            double angle, push;
-            if (traveller instanceof PlayerEntity && dir == Direction.UP) {
-                angle = (traveller.getYaw() + 90) * MathHelper.RADIANS_PER_DEGREE;
-                push = SIDE_POP;
-            } else {
-                angle = world.random.nextDouble() * Math.PI * 2;
-                push = traveller instanceof PlayerEntity ? 0 : 0.12 + world.random.nextDouble() * 0.08;
-            }
+        if (!(traveller instanceof PlayerEntity) && dir.getAxis().isVertical()) {
+            // Mobs and items hop off to a side instead of coming down in the mouth
+            double angle = world.random.nextDouble() * Math.PI * 2, push = 0.12 + world.random.nextDouble() * 0.08;
             velocity = velocity.add(Math.cos(angle) * push, 0, Math.sin(angle) * push);
         }
-        BARRED.put(traveller, new Bar(end.pos().toImmutable(), dir));
+        // A player: straight out, nothing sideways; thrown up, it comes down on the mouth, closed to it (see barred)
+        BARRED.put(traveller, new Bar(end.pos().toImmutable(), dir, world.getTime(), at.y));
         traveller.setVelocity(velocity);
         traveller.velocityModified = true;
         traveller.fallDistance = 0;
-        LEFT_AT.put(traveller.getUuid(), world.getTime());
         world.playSound(null, face.x, face.y, face.z, SoundEvents.ENTITY_PUFFER_FISH_BLOW_UP, SoundCategory.BLOCKS, 0.7F, 1.3F);
         world.playSound(null, face.x, face.y, face.z, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.BLOCKS, 1.0F, 1.2F);
         ARRIVED.invoker().onArrived(world, traveller, end.pos(), dir);
