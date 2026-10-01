@@ -73,7 +73,7 @@ if (-not $Seul) {
 Write-Host "== Attente de la connexion de : $($players -join ', ')..."
 $joined = $false
 for ($i = 0; $i -lt 100; $i++) {
-    $list = (& $dev cmd "list" 2>&1 | Out-String)
+    $list = (& $dev cmd "list" *>&1 | Out-String) # dev.ps1 prints with Write-Host: all streams
     if (-not ($players | Where-Object { $list -notmatch $_ })) { $joined = $true; break }
     Start-Sleep 3
 }
