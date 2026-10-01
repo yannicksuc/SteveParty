@@ -36,10 +36,10 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
     /** The merchant lifts his box by 4 px when he is out. */
     public static final float MERCHANT_LIFT = 4.0F;
     /**
-     * Fully worn: the box widened around a player's body, and 3.5 px higher than the merchant's (floor at 7.5 px, rim
-     * at 22.5 px: right under the chin, the whole torso inside).
+     * Fully worn: the box widened around a player's body, and 5.5 px higher than the merchant's (floor at 9.5 px, rim
+     * at 24.5 px: over the chin, the whole torso inside).
      */
-    public static final float WAIST_WIDENING = 0.25F, WAIST_LIFT = 3.5F;
+    public static final float WAIST_WIDENING = 0.25F, WAIST_LIFT = 5.5F;
 
     private final BlockTexturedBones boxBones = new BlockTexturedBones();
     /** Scale of the waist fit: 1 for a player, 0 for the item icon (the merchant's box as is). */
