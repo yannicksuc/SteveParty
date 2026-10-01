@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
@@ -43,7 +42,7 @@ import static fr.lordfinn.steveparty.Steveparty.SCHEDULER;
  *     <li><b>land</b>: a token stops on its destination (or is halted by a stop tile): a short jingle, a burst of
  *     particles and a ring pulse, themed by the tile's role ({@link Landing}, from its behaviour), and a notice in
  *     the action bar of the party's players;</li>
- *     <li><b>ambient</b>: outside a game, a player walking onto a tile, or a token moved onto one: the same soft pop,
+ *     <li><b>ambient</b>: outside a game, a token moved onto a tile (players walking make no sound): the same soft pop,
  *     only when it steps onto another tile and at most once per {@link #AMBIENT_COOLDOWN_TICKS}; no notice.</li>
  * </ul>
  * Vanilla sounds only (note blocks, chimes... layered and pitched). Particles go through
@@ -196,14 +195,7 @@ public final class TileFeedback {
             }
             return ActionResult.PASS;
         });
-        // Players walking on the board (a few block lookups per player and tick)
-        ServerTickEvents.END_WORLD_TICK.register(world -> {
-            for (ServerPlayerEntity player : world.getPlayers()) {
-                if (player.isSpectator()) continue;
-                if (!player.isOnGround()) continue; // jumping over a tile: decided where it lands
-                ambientStep(world, player, BoardSpaces.boardSpacePosAt(world, player.getBlockPos()));
-            }
-        });
+        // A player walking on the board makes no sound: only tokens pop
     }
 
     /**
