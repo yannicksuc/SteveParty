@@ -35,6 +35,8 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
     int closeSoundTicks = -1, placeSoundTicks = -1, openSoundTicks = -1;
     int walkSwitchTicks = 0;
     BlockState block = Blocks.GOLD_BLOCK.getDefaultState();
+    /** As last drawn: how far up the wearer's body the box is (0 on the ground, 1 worn) and how open its arm holes are (0-1). */
+    float lift = 1.0F, armHole = 1.0F;
 
     public BlockState getBlock() {
         return block;
@@ -42,6 +44,14 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
 
     public boolean isHidden() {
         return hidden;
+    }
+
+    public float getLift() {
+        return lift;
+    }
+
+    public float getArmHole() {
+        return armHole;
     }
 
     @Override

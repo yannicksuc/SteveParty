@@ -12,9 +12,11 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -33,7 +35,8 @@ import java.util.List;
  * the sprite of the same face of the block model. Shared by the merchant and the Box Costume. Render thread only.
  * <p>
  * A block without a usable look (air, an invisible block, a model whose sprites are missing) is drawn as the
- * merchant's default gold block: never the purple and black missing texture.
+ * merchant's default gold block: the purple and black missing texture only shows when asked for (no block at all: the
+ * merchant whose box lost its look).
  */
 public final class BlockTexturedBones {
     public static final String CUBE_BONE_PREFIX = "cube";
@@ -51,13 +54,14 @@ public final class BlockTexturedBones {
 
     /**
      * Draws the cubes of {@code bone} (the pose stack already transformed for it by GeckoLib) with {@code blockState}'s
-     * faces.
+     * faces, or with the missing texture on every face if {@code blockState} is null.
      */
     public void renderBone(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider bufferSource, int packedLight, int renderColor,
-                           BlockState blockState) {
+                           @Nullable BlockState blockState) {
         if (bone.isHidden() || !isBoxBone(bone)) return;
+        boolean glitched = blockState == null;
         BlockState state = HidingTraderEntity.isValidBoxBlock(blockState) ? blockState : FALLBACK;
-        BakedModel model = MinecraftClient.getInstance().getBlockRenderManager().getModel(state);
+        BakedModel model = glitched ? null : MinecraftClient.getInstance().getBlockRenderManager().getModel(state);
         // Buffers are resolved lazily, once per face direction, for this call only
         Arrays.fill(faceConsumers, null);
         for (GeoCube cube : bone.getCubes()) {
@@ -83,11 +87,11 @@ public final class BlockTexturedBones {
         }
     }
 
-    private VertexConsumer getFaceConsumer(Direction direction, VertexConsumerProvider bufferSource, BlockState state, BakedModel model) {
+    private VertexConsumer getFaceConsumer(Direction direction, VertexConsumerProvider bufferSource, BlockState state, @Nullable BakedModel model) {
         int index = direction == null ? DIRECTIONS.length : direction.ordinal();
         VertexConsumer consumer = faceConsumers[index];
         if (consumer == null) {
-            Sprite sprite = getSprite(direction, model, state);
+            Sprite sprite = model == null ? missingSprite() : getSprite(direction, model, state);
             consumer = sprite.getTextureSpecificVertexConsumer(bufferSource.getBuffer(RenderLayer.getEntityCutout(sprite.getAtlasId())));
             faceConsumers[index] = consumer;
         }
@@ -109,6 +113,11 @@ public final class BlockTexturedBones {
         List<BakedQuad> general = model.getQuads(state, null, random);
         Sprite particle = model.getParticleSprite();
         return !isMissing(particle) || general.isEmpty() ? particle : general.getFirst().getSprite();
+    }
+
+    /** The vanilla purple and black checker, from the block atlas. */
+    private static Sprite missingSprite() {
+        return MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE).apply(MissingSprite.getMissingSpriteId());
     }
 
     private static boolean isMissing(Sprite sprite) {
