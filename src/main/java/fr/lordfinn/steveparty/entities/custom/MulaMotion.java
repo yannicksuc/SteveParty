@@ -66,6 +66,10 @@ public final class MulaMotion {
 	/** How fast the halo follows its target each tick: a soft swell instead of a flash. */
 	private static final float HALO_EASE = 0.18f;
 	private float speed;
+	/** A spectator's little cheer on the beat: a hop and waving hands over {@value #CHEER_TICKS} ticks. */
+	private static final int CHEER_TICKS = 12;
+	private int cheerTicks;
+	private float cheer, prevCheer;
 	private boolean flying;
 	private int ticksInState;
 	private boolean ticked;
@@ -117,6 +121,8 @@ public final class MulaMotion {
 		prevShake = shake;
 		prevFlare = flare;
 		prevAbsorbGlow = absorbGlow;
+		prevCheer = cheer;
+		cheer = cheerTicks > 0 ? (float) (CHEER_TICKS - --cheerTicks) / CHEER_TICKS : 0f;
 		prevVisualScale = visualScale < 0 ? scale : visualScale;
 
 		// fly / hover, from the smoothed speed, with hysteresis and a minimum time in each state
@@ -259,6 +265,11 @@ public final class MulaMotion {
 		flareTarget = Math.max(flareTarget, 0.55f);
 	}
 
+	/** Watching a dance: a little cheer (hop, hands waving). */
+	public void cheer() {
+		cheerTicks = CHEER_TICKS;
+	}
+
 	/** A meal's light has sunk in: a warm glow spreads from its heart and fades over 2 s. */
 	public void absorbGlow() {
 		absorbTarget = 1f;
@@ -337,6 +348,12 @@ public final class MulaMotion {
 		out.scaleY = 1 + s;
 		out.scaleXZ = 1 - 0.5f * s;
 		out.handFlutter = 6f * rel * MathHelper.sin(p - 1.4f) * (1f + 1.2f * ex);
+		float c = MathHelper.lerp(partialTick, prevCheer, cheer);
+		if (c > 0f) {
+			float lift = MathHelper.sin(c * MathHelper.PI);
+			out.posY += 2.5f * lift;
+			out.handFlutter += 28f * lift * MathHelper.sin(c * 3f * MathHelper.TAU);
+		}
 		out.eyeWiden = 1f + 0.15f * ex;
 		out.coreScale = 1f + 0.45f * full + (0.05f + 0.12f * full) * (2f * glow(partialTick) - 1f)
 				+ 0.35f * absorbGlow(partialTick);

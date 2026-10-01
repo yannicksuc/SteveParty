@@ -188,7 +188,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private static final TrackedData<Integer> FEED_COUNT =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	/** A wild Mula resting on a flower in the morning (plays the sit animation). */
-	/** Dancing round a Dice Forge: -1, or slot | count << 4 | locked << 8 (locked: on its figure, moved by formula). */
+	/**
+	 * Round a Dice Forge: -1, or slot | count << 7 | locked << 14 | spectator << 15 (locked: on its figure, moved by
+	 * formula; spectator: resting this turn, watching from spectator spot slot of count, see MulaDances#spectatorSpot).
+	 */
 	private static final TrackedData<Integer> DANCE =
 			DataTracker.registerData(MulaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<java.util.Optional<net.minecraft.util.math.BlockPos>> DANCE_FORGE =
@@ -422,7 +425,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			currentSpecial = null;
 			stopTriggeredAnim(MAIN_CONTROLLER, null);
 		}
-		if (isDancing()) stopDancing();
+		if (isDancing() || isSpectating()) stopDancing();
 		if (isShaking()) this.dataTracker.set(SHAKING, false);
 		if (isResting()) setResting(false);
 	}
@@ -476,6 +479,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.goalSelector.add(1, new MulaGoals.Tethered(this));
 		this.goalSelector.add(2, new FollowOwnerWhileFlyingGoal(this, 1.0, 3.0f, 20.0f));
 		this.goalSelector.add(3, new MulaGoals.Dance(this));
+		this.goalSelector.add(3, new MulaGoals.Spectate(this));
 		this.goalSelector.add(4, new MulaGoals.OrbitOwner(this));
 		this.goalSelector.add(5, new MulaGoals.Curious(this));
 		this.goalSelector.add(6, new MulaGoals.Play(this));
@@ -501,7 +505,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private long danceChangeTick;
 	/** Server: when the forge last counted it among its dancers. */
 	private long danceAssignedTick = Long.MIN_VALUE;
-	private final double[] danceOut = new double[4], danceTmp = new double[4];
+	private final double[] danceOut = new double[4], danceTmp = new double[8];
+	/** The DANCE value's fields (see DANCE). */
+	private static final int DANCE_SLOT = 0x7F, DANCE_COUNT_SHIFT = 7, DANCE_PLACE = 0x3FFF,
+			DANCE_LOCKED = 1 << 14, DANCE_SPECTATOR = 1 << 15;
 	/** Client: ticks left to catch up with its place in the dance after locking onto it. */
 	private int lockBlendTicks;
 
@@ -510,10 +517,21 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (isToken()) return; // a board pawn does not dance
 		int current = this.dataTracker.get(DANCE);
 		boolean sameForge = forge.equals(this.dataTracker.get(DANCE_FORGE).orElse(null));
-		int locked = sameForge && current >= 0 ? current & 0x100 : 0;
-		int value = slot | count << 4 | locked;
-		if (!sameForge || (current & 0xFF) != (value & 0xFF)) {
-			noteDanceChange(sameForge ? current : -1);
+		boolean wasDancing = sameForge && current >= 0 && (current & DANCE_SPECTATOR) == 0;
+		int value = slot | count << DANCE_COUNT_SHIFT | (wasDancing ? current & DANCE_LOCKED : 0);
+		if (!wasDancing || (current & DANCE_PLACE) != (value & DANCE_PLACE)) {
+			noteDanceChange(wasDancing ? current : -1);
+			this.dataTracker.set(DANCE_FORGE, java.util.Optional.of(forge));
+			this.dataTracker.set(DANCE, value);
+		}
+		danceAssignedTick = this.getWorld().getTime();
+	}
+
+	/** Server, from the Dice Forge conducting: not its turn to dance, it watches from spectator spot index of count. */
+	public void assignSpectator(net.minecraft.util.math.BlockPos forge, int index, int count) {
+		if (isToken()) return;
+		int value = Math.min(index, DANCE_SLOT) | Math.min(count, DANCE_SLOT) << DANCE_COUNT_SHIFT | DANCE_SPECTATOR;
+		if (this.dataTracker.get(DANCE) != value || !forge.equals(this.dataTracker.get(DANCE_FORGE).orElse(null))) {
 			this.dataTracker.set(DANCE_FORGE, java.util.Optional.of(forge));
 			this.dataTracker.set(DANCE, value);
 		}
@@ -521,8 +539,9 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private void noteDanceChange(int previous) {
-		prevDanceSlot = previous >= 0 ? previous & 0xF : 0;
-		prevDanceCount = previous >= 0 ? (previous >> 4) & 0xF : 0;
+		boolean danced = previous >= 0 && (previous & DANCE_SPECTATOR) == 0;
+		prevDanceSlot = danced ? previous & DANCE_SLOT : 0;
+		prevDanceCount = danced ? (previous >> DANCE_COUNT_SHIFT) & DANCE_SLOT : 0;
 		danceChangeTick = this.getWorld().getTime();
 	}
 
@@ -534,33 +553,45 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	/** Server: reached its place in the figure: from now on it is moved by the formula (on every side). */
 	public void lockDance() {
 		int current = this.dataTracker.get(DANCE);
-		if (current >= 0) this.dataTracker.set(DANCE, current | 0x100);
+		if (current >= 0 && (current & DANCE_SPECTATOR) == 0) this.dataTracker.set(DANCE, current | DANCE_LOCKED);
 	}
 
 	public boolean isDancing() {
-		return this.dataTracker.get(DANCE) >= 0 && this.dataTracker.get(DANCE_FORGE).isPresent();
+		int value = this.dataTracker.get(DANCE);
+		return value >= 0 && (value & DANCE_SPECTATOR) == 0 && this.dataTracker.get(DANCE_FORGE).isPresent();
+	}
+
+	/** Resting this turn (more Mulas than dance at once): it watches the dance from its spectator spot. */
+	public boolean isSpectating() {
+		int value = this.dataTracker.get(DANCE);
+		return value >= 0 && (value & DANCE_SPECTATOR) != 0 && this.dataTracker.get(DANCE_FORGE).isPresent();
 	}
 
 	public boolean isDanceLocked() {
-		return isDancing() && (this.dataTracker.get(DANCE) & 0x100) != 0;
+		return isDancing() && (this.dataTracker.get(DANCE) & DANCE_LOCKED) != 0;
 	}
 
 	public long danceAssignedTick() {
 		return danceAssignedTick;
 	}
 
-	/** The forge it dances around, or null. */
+	/** When its slot or count last changed (its place is blended from the previous one for a few seconds). */
+	public long danceChangeTick() {
+		return danceChangeTick;
+	}
+
+	/** The forge it dances around (or watches), or null. */
 	public @Nullable net.minecraft.util.math.BlockPos danceForge() {
 		return this.dataTracker.get(DANCE_FORGE).orElse(null);
 	}
 
-	/** Its place among the dancers (0-based) and how many they are. */
+	/** Its place among the dancers (0-based) and how many they are; spectating: its spot and how many watch. */
 	public int danceSlot() {
-		return Math.max(0, this.dataTracker.get(DANCE)) & 0xF;
+		return Math.max(0, this.dataTracker.get(DANCE)) & DANCE_SLOT;
 	}
 
 	public int danceCount() {
-		return (Math.max(0, this.dataTracker.get(DANCE)) >> 4) & 0xF;
+		return (Math.max(0, this.dataTracker.get(DANCE)) >> DANCE_COUNT_SHIFT) & DANCE_SLOT;
 	}
 
 	/** Server: dancing round another forge than this one (counted by it less than 2 s ago). */
@@ -579,8 +610,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	 */
 	public void dancePosition(float partialTick, double[] out) {
 		net.minecraft.util.math.BlockPos forge = this.dataTracker.get(DANCE_FORGE).orElse(this.getBlockPos());
-		int value = Math.max(0, this.dataTracker.get(DANCE));
-		MulaDances.position(forge, value & 0xF, (value >> 4) & 0xF, prevDanceSlot, prevDanceCount, danceChangeTick,
+		MulaDances.position(forge, danceSlot(), danceCount(), prevDanceSlot, prevDanceCount, danceChangeTick,
 				this.getWorld().getTime(), partialTick, out, danceTmp);
 		double cx = forge.getX() + 0.5, cy = forge.getY() + 2.4, cz = forge.getZ() + 0.5;
 		if (this.getWorld().getBlockEntity(forge) instanceof fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity be) {
@@ -1061,8 +1091,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (DANCE.equals(data) && this.getWorld() != null && this.getWorld().isClient && this.age > 0) {
 			// someone joined or left the dance: blend from its previous place (the server does the same)
 			int now = this.dataTracker.get(DANCE);
-			if (now >= 0 && (now & 0xFF) != (lastSeenDance & 0xFF)) noteDanceChange(lastSeenDance);
-			if (now >= 0 && (now & 0x100) != 0 && (lastSeenDance < 0 || (lastSeenDance & 0x100) == 0)) lockBlendTicks = 8;
+			boolean dancing = now >= 0 && (now & DANCE_SPECTATOR) == 0;
+			boolean danced = lastSeenDance >= 0 && (lastSeenDance & DANCE_SPECTATOR) == 0;
+			if (dancing && (!danced || (now & DANCE_PLACE) != (lastSeenDance & DANCE_PLACE))) {
+				noteDanceChange(lastSeenDance);
+			}
+			if (dancing && (now & DANCE_LOCKED) != 0 && (!danced || (lastSeenDance & DANCE_LOCKED) == 0)) lockBlendTicks = 8;
 			lastSeenDance = now;
 		}
 		super.onTrackedDataSet(data);
@@ -1162,6 +1196,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (isDanceLocked()) {
 			followDance();
 			effects.danceTick();
+		} else if (isSpectating()) {
+			effects.spectatorTick(danceSlot());
 		}
 		if ((this.age & 3) == 0) {
 			// a player close by holding its food: it turns to them, eyes wide (all players see the same: it only

@@ -224,6 +224,17 @@ public final class MulaEffects {
         if (time % 160 == 80) shower(6);
     }
 
+    /**
+     * Client, every tick while it watches a dance (not its turn): on the dance's beat its halo pulses with the dancers',
+     * and every other beat it cheers, neighbours taking turns like a little wave round the dance.
+     */
+    void spectatorTick(int spot) {
+        long time = mula.getWorld().getTime();
+        if (time % 20 != 0) return;
+        mula.getMotion().beat();
+        if ((time / 20 + spot) % 2 == 0) mula.getMotion().cheer();
+    }
+
     /** Client, every tick while it carries its holder into the night sky: a sparkling trail, twinkling happily. */
     void carryTick() {
         if (!visible()) return;
