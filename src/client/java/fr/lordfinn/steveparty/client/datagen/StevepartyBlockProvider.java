@@ -5,7 +5,17 @@ import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
 import net.minecraft.block.Block;
+import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor;
 import net.minecraft.data.client.BlockStateModelGenerator;
+import net.minecraft.data.client.BlockStateVariant;
+import net.minecraft.data.client.BlockStateVariantMap;
+import net.minecraft.data.client.Models;
+import net.minecraft.data.client.TextureMap;
+import net.minecraft.data.client.VariantSettings;
+import net.minecraft.data.client.VariantsBlockStateSupplier;
+import net.minecraft.util.Identifier;
 import net.minecraft.data.client.ItemModelGenerator;
 import net.minecraft.data.client.TexturedModel;
 import net.minecraft.data.family.BlockFamily;
@@ -71,6 +81,27 @@ public class StevepartyBlockProvider extends FabricModelProvider {
                     .family(POLISHED_BRICKS_CONCRETE_FAMILY_LIST.get(i));
         }
         blockStateModelGenerator.registerSingleton(ModBlocks.VILLAGER_BLOCK, TexturedModel.CUBE_BOTTOM_TOP);
+        for (PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES) registerPolishedTiles(blockStateModelGenerator, tiles);
+    }
+
+    /**
+     * Polished tiles: one plain cube model per pair of colours, block/polished_&lt;material&gt;_tiles/&lt;a&gt;_&lt;b&gt;, over
+     * the texture of the same name (the art sources).
+     */
+    private static void registerPolishedTiles(BlockStateModelGenerator generator, PolishedTilesBlock tiles) {
+        generator.blockStateCollector.accept(VariantsBlockStateSupplier.create(tiles)
+                .coordinate(BlockStateVariantMap.create(tiles.colorA(), tiles.colorB()).register((a, b) -> {
+                    Identifier id = polishedTilesModel(tiles, a, b);
+                    Models.CUBE_ALL.upload(id, TextureMap.all(id), generator.modelCollector);
+                    return BlockStateVariant.create().put(VariantSettings.MODEL, id);
+                })));
+        // The item draws the model of its colours (PolishedTilesItemModel): this one only gives the way a block is held
+        PolishedTilesColor first = tiles.colors().getFirst();
+        generator.registerParentedItemModel(tiles, polishedTilesModel(tiles, first, first));
+    }
+
+    private static Identifier polishedTilesModel(PolishedTilesBlock tiles, PolishedTilesColor a, PolishedTilesColor b) {
+        return Steveparty.id("block/polished_" + tiles.material() + "_tiles/" + a.asString() + "_" + b.asString());
     }
 
     @Override

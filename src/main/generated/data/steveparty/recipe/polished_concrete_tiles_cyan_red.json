@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "polished_concrete_tiles_cyan",
+  "key": {
+    "A": "steveparty:polished_cyan_concrete",
+    "B": "steveparty:polished_red_concrete"
+  },
+  "pattern": [
+    "AB",
+    "BA"
+  ],
+  "result": {
+    "components": {
+      "minecraft:block_state": {
+        "color_a": "cyan",
+        "color_b": "red"
+      }
+    },
+    "count": 4,
+    "id": "steveparty:polished_concrete_tiles"
+  }
+}

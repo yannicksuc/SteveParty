@@ -3,7 +3,13 @@ package fr.lordfinn.steveparty.client.datagen;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootTableProvider;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
 import net.minecraft.block.Block;
+import net.minecraft.loot.LootPool;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.entry.ItemEntry;
+import net.minecraft.loot.function.CopyStateLootFunction;
+import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
 import net.minecraft.registry.RegistryWrapper;
 
 import java.util.concurrent.CompletableFuture;
@@ -59,5 +65,11 @@ public class ModBlockLootTableProvider extends FabricBlockLootTableProvider {
         for (Block[] slabs : new Block[][]{ModBlocks.POLISHED_CONCRETE_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS})
             for (Block block : slabs)
                 addDrop(block, slabDrops(block));
+        // Polished tiles: the item keeps the two colours of the block (its block_state component)
+        for (PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES)
+            addDrop(tiles, LootTable.builder().pool(addSurvivesExplosionCondition(tiles, LootPool.builder()
+                    .rolls(ConstantLootNumberProvider.create(1))
+                    .with(ItemEntry.builder(tiles).apply(CopyStateLootFunction.builder(tiles)
+                            .addProperty(tiles.colorA()).addProperty(tiles.colorB()))))));
     }
 }

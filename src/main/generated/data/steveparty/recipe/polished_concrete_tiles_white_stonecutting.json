@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:stonecutting",
+  "group": "polished_concrete_tiles",
+  "ingredient": "steveparty:polished_white_concrete",
+  "result": {
+    "count": 1,
+    "id": "steveparty:polished_concrete_tiles"
+  }
+}

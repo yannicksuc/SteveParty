@@ -115,6 +115,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 ModBlocks.POLISHED_CONCRETE_BRICKS_STAIRS, ModBlocks.POLISHED_CONCRETE_BRICKS_SLABS, ModBlocks.POLISHED_CONCRETE_BRICKS_WALLS})
             for (Block b : variants)
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
+        for (Block tiles : ModBlocks.POLISHED_TILES) getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(tiles);
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
                         ModBlocks.SPRUCE_EASEL_SIGN,

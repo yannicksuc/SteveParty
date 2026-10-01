@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "polished_concrete_tiles_lime",
+  "key": {
+    "A": "steveparty:polished_lime_concrete",
+    "B": "steveparty:polished_purple_concrete"
+  },
+  "pattern": [
+    "AB",
+    "BA"
+  ],
+  "result": {
+    "components": {
+      "minecraft:block_state": {
+        "color_a": "lime",
+        "color_b": "purple"
+      }
+    },
+    "count": 4,
+    "id": "steveparty:polished_concrete_tiles"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "polished_concrete_tiles_white",
+  "key": {
+    "A": "steveparty:polished_white_concrete",
+    "B": "steveparty:polished_green_concrete"
+  },
+  "pattern": [
+    "AB",
+    "BA"
+  ],
+  "result": {
+    "components": {
+      "minecraft:block_state": {
+        "color_a": "white",
+        "color_b": "green"
+      }
+    },
+    "count": 4,
+    "id": "steveparty:polished_concrete_tiles"
+  }
+}

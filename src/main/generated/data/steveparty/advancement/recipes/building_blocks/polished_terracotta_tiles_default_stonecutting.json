@@ -1,0 +1,64 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_polished_default_terracotta": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:polished_default_terracotta"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:polished_terracotta_tiles_default_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_polished_default_terracotta"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:polished_terracotta_tiles_default_stonecutting",
+      "steveparty:polished_terracotta_tiles_default_white",
+      "steveparty:polished_terracotta_tiles_white_default",
+      "steveparty:polished_terracotta_tiles_default_orange",
+      "steveparty:polished_terracotta_tiles_orange_default",
+      "steveparty:polished_terracotta_tiles_default_magenta",
+      "steveparty:polished_terracotta_tiles_magenta_default",
+      "steveparty:polished_terracotta_tiles_default_light_blue",
+      "steveparty:polished_terracotta_tiles_light_blue_default",
+      "steveparty:polished_terracotta_tiles_default_yellow",
+      "steveparty:polished_terracotta_tiles_yellow_default",
+      "steveparty:polished_terracotta_tiles_default_lime",
+      "steveparty:polished_terracotta_tiles_lime_default",
+      "steveparty:polished_terracotta_tiles_default_pink",
+      "steveparty:polished_terracotta_tiles_pink_default",
+      "steveparty:polished_terracotta_tiles_default_gray",
+      "steveparty:polished_terracotta_tiles_gray_default",
+      "steveparty:polished_terracotta_tiles_default_light_gray",
+      "steveparty:polished_terracotta_tiles_light_gray_default",
+      "steveparty:polished_terracotta_tiles_default_cyan",
+      "steveparty:polished_terracotta_tiles_cyan_default",
+      "steveparty:polished_terracotta_tiles_default_purple",
+      "steveparty:polished_terracotta_tiles_purple_default",
+      "steveparty:polished_terracotta_tiles_default_blue",
+      "steveparty:polished_terracotta_tiles_blue_default",
+      "steveparty:polished_terracotta_tiles_default_brown",
+      "steveparty:polished_terracotta_tiles_brown_default",
+      "steveparty:polished_terracotta_tiles_default_green",
+      "steveparty:polished_terracotta_tiles_green_default",
+      "steveparty:polished_terracotta_tiles_default_red",
+      "steveparty:polished_terracotta_tiles_red_default",
+      "steveparty:polished_terracotta_tiles_default_black",
+      "steveparty:polished_terracotta_tiles_black_default"
+    ]
+  }
+}

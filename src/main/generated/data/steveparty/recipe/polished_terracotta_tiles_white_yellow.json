@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "polished_terracotta_tiles_white",
+  "key": {
+    "A": "steveparty:polished_white_terracotta",
+    "B": "steveparty:polished_yellow_terracotta"
+  },
+  "pattern": [
+    "AB",
+    "BA"
+  ],
+  "result": {
+    "components": {
+      "minecraft:block_state": {
+        "color_a": "white",
+        "color_b": "yellow"
+      }
+    },
+    "count": 4,
+    "id": "steveparty:polished_terracotta_tiles"
+  }
+}

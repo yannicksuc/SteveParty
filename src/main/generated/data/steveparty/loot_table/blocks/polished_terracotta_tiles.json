@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "block": "steveparty:polished_terracotta_tiles",
+              "function": "minecraft:copy_state",
+              "properties": [
+                "color_a",
+                "color_b"
+              ]
+            }
+          ],
+          "name": "steveparty:polished_terracotta_tiles"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ]
+}

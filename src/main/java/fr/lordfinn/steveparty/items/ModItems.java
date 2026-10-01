@@ -305,6 +305,9 @@ public class ModItems {
                     itemGroup.add(block);
                 }
             }
+            for (fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES) {
+                for (ItemStack stack : tiles.creativeStacks()) itemGroup.add(stack);
+            }
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);
             itemGroup.add(BOXED_TRADER_SPAWN_EGG);

@@ -1,0 +1,772 @@
+{
+  "variants": {
+    "color_a=black,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/black_black"
+    },
+    "color_a=black,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/black_blue"
+    },
+    "color_a=black,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/black_brown"
+    },
+    "color_a=black,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/black_cyan"
+    },
+    "color_a=black,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/black_gray"
+    },
+    "color_a=black,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/black_green"
+    },
+    "color_a=black,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/black_light_blue"
+    },
+    "color_a=black,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/black_light_gray"
+    },
+    "color_a=black,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/black_lime"
+    },
+    "color_a=black,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/black_magenta"
+    },
+    "color_a=black,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/black_orange"
+    },
+    "color_a=black,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/black_pink"
+    },
+    "color_a=black,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/black_purple"
+    },
+    "color_a=black,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/black_red"
+    },
+    "color_a=black,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/black_white"
+    },
+    "color_a=black,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/black_yellow"
+    },
+    "color_a=blue,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_black"
+    },
+    "color_a=blue,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_blue"
+    },
+    "color_a=blue,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_brown"
+    },
+    "color_a=blue,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_cyan"
+    },
+    "color_a=blue,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_gray"
+    },
+    "color_a=blue,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_green"
+    },
+    "color_a=blue,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_light_blue"
+    },
+    "color_a=blue,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_light_gray"
+    },
+    "color_a=blue,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_lime"
+    },
+    "color_a=blue,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_magenta"
+    },
+    "color_a=blue,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_orange"
+    },
+    "color_a=blue,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_pink"
+    },
+    "color_a=blue,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_purple"
+    },
+    "color_a=blue,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_red"
+    },
+    "color_a=blue,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_white"
+    },
+    "color_a=blue,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/blue_yellow"
+    },
+    "color_a=brown,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_black"
+    },
+    "color_a=brown,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_blue"
+    },
+    "color_a=brown,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_brown"
+    },
+    "color_a=brown,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_cyan"
+    },
+    "color_a=brown,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_gray"
+    },
+    "color_a=brown,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_green"
+    },
+    "color_a=brown,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_light_blue"
+    },
+    "color_a=brown,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_light_gray"
+    },
+    "color_a=brown,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_lime"
+    },
+    "color_a=brown,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_magenta"
+    },
+    "color_a=brown,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_orange"
+    },
+    "color_a=brown,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_pink"
+    },
+    "color_a=brown,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_purple"
+    },
+    "color_a=brown,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_red"
+    },
+    "color_a=brown,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_white"
+    },
+    "color_a=brown,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/brown_yellow"
+    },
+    "color_a=cyan,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_black"
+    },
+    "color_a=cyan,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_blue"
+    },
+    "color_a=cyan,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_brown"
+    },
+    "color_a=cyan,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_cyan"
+    },
+    "color_a=cyan,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_gray"
+    },
+    "color_a=cyan,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_green"
+    },
+    "color_a=cyan,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_light_blue"
+    },
+    "color_a=cyan,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_light_gray"
+    },
+    "color_a=cyan,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_lime"
+    },
+    "color_a=cyan,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_magenta"
+    },
+    "color_a=cyan,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_orange"
+    },
+    "color_a=cyan,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_pink"
+    },
+    "color_a=cyan,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_purple"
+    },
+    "color_a=cyan,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_red"
+    },
+    "color_a=cyan,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_white"
+    },
+    "color_a=cyan,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/cyan_yellow"
+    },
+    "color_a=gray,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_black"
+    },
+    "color_a=gray,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_blue"
+    },
+    "color_a=gray,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_brown"
+    },
+    "color_a=gray,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_cyan"
+    },
+    "color_a=gray,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_gray"
+    },
+    "color_a=gray,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_green"
+    },
+    "color_a=gray,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_light_blue"
+    },
+    "color_a=gray,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_light_gray"
+    },
+    "color_a=gray,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_lime"
+    },
+    "color_a=gray,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_magenta"
+    },
+    "color_a=gray,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_orange"
+    },
+    "color_a=gray,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_pink"
+    },
+    "color_a=gray,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_purple"
+    },
+    "color_a=gray,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_red"
+    },
+    "color_a=gray,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_white"
+    },
+    "color_a=gray,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/gray_yellow"
+    },
+    "color_a=green,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/green_black"
+    },
+    "color_a=green,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/green_blue"
+    },
+    "color_a=green,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/green_brown"
+    },
+    "color_a=green,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/green_cyan"
+    },
+    "color_a=green,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/green_gray"
+    },
+    "color_a=green,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/green_green"
+    },
+    "color_a=green,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/green_light_blue"
+    },
+    "color_a=green,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/green_light_gray"
+    },
+    "color_a=green,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/green_lime"
+    },
+    "color_a=green,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/green_magenta"
+    },
+    "color_a=green,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/green_orange"
+    },
+    "color_a=green,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/green_pink"
+    },
+    "color_a=green,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/green_purple"
+    },
+    "color_a=green,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/green_red"
+    },
+    "color_a=green,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/green_white"
+    },
+    "color_a=green,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/green_yellow"
+    },
+    "color_a=light_blue,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_black"
+    },
+    "color_a=light_blue,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_blue"
+    },
+    "color_a=light_blue,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_brown"
+    },
+    "color_a=light_blue,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_cyan"
+    },
+    "color_a=light_blue,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_gray"
+    },
+    "color_a=light_blue,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_green"
+    },
+    "color_a=light_blue,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_light_blue"
+    },
+    "color_a=light_blue,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_light_gray"
+    },
+    "color_a=light_blue,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_lime"
+    },
+    "color_a=light_blue,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_magenta"
+    },
+    "color_a=light_blue,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_orange"
+    },
+    "color_a=light_blue,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_pink"
+    },
+    "color_a=light_blue,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_purple"
+    },
+    "color_a=light_blue,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_red"
+    },
+    "color_a=light_blue,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_white"
+    },
+    "color_a=light_blue,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/light_blue_yellow"
+    },
+    "color_a=light_gray,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_black"
+    },
+    "color_a=light_gray,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_blue"
+    },
+    "color_a=light_gray,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_brown"
+    },
+    "color_a=light_gray,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_cyan"
+    },
+    "color_a=light_gray,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_gray"
+    },
+    "color_a=light_gray,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_green"
+    },
+    "color_a=light_gray,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_light_blue"
+    },
+    "color_a=light_gray,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_light_gray"
+    },
+    "color_a=light_gray,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_lime"
+    },
+    "color_a=light_gray,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_magenta"
+    },
+    "color_a=light_gray,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_orange"
+    },
+    "color_a=light_gray,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_pink"
+    },
+    "color_a=light_gray,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_purple"
+    },
+    "color_a=light_gray,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_red"
+    },
+    "color_a=light_gray,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_white"
+    },
+    "color_a=light_gray,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/light_gray_yellow"
+    },
+    "color_a=lime,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_black"
+    },
+    "color_a=lime,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_blue"
+    },
+    "color_a=lime,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_brown"
+    },
+    "color_a=lime,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_cyan"
+    },
+    "color_a=lime,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_gray"
+    },
+    "color_a=lime,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_green"
+    },
+    "color_a=lime,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_light_blue"
+    },
+    "color_a=lime,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_light_gray"
+    },
+    "color_a=lime,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_lime"
+    },
+    "color_a=lime,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_magenta"
+    },
+    "color_a=lime,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_orange"
+    },
+    "color_a=lime,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_pink"
+    },
+    "color_a=lime,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_purple"
+    },
+    "color_a=lime,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_red"
+    },
+    "color_a=lime,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_white"
+    },
+    "color_a=lime,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/lime_yellow"
+    },
+    "color_a=magenta,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_black"
+    },
+    "color_a=magenta,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_blue"
+    },
+    "color_a=magenta,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_brown"
+    },
+    "color_a=magenta,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_cyan"
+    },
+    "color_a=magenta,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_gray"
+    },
+    "color_a=magenta,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_green"
+    },
+    "color_a=magenta,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_light_blue"
+    },
+    "color_a=magenta,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_light_gray"
+    },
+    "color_a=magenta,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_lime"
+    },
+    "color_a=magenta,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_magenta"
+    },
+    "color_a=magenta,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_orange"
+    },
+    "color_a=magenta,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_pink"
+    },
+    "color_a=magenta,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_purple"
+    },
+    "color_a=magenta,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_red"
+    },
+    "color_a=magenta,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_white"
+    },
+    "color_a=magenta,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/magenta_yellow"
+    },
+    "color_a=orange,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_black"
+    },
+    "color_a=orange,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_blue"
+    },
+    "color_a=orange,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_brown"
+    },
+    "color_a=orange,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_cyan"
+    },
+    "color_a=orange,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_gray"
+    },
+    "color_a=orange,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_green"
+    },
+    "color_a=orange,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_light_blue"
+    },
+    "color_a=orange,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_light_gray"
+    },
+    "color_a=orange,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_lime"
+    },
+    "color_a=orange,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_magenta"
+    },
+    "color_a=orange,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_orange"
+    },
+    "color_a=orange,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_pink"
+    },
+    "color_a=orange,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_purple"
+    },
+    "color_a=orange,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_red"
+    },
+    "color_a=orange,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_white"
+    },
+    "color_a=orange,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/orange_yellow"
+    },
+    "color_a=pink,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_black"
+    },
+    "color_a=pink,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_blue"
+    },
+    "color_a=pink,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_brown"
+    },
+    "color_a=pink,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_cyan"
+    },
+    "color_a=pink,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_gray"
+    },
+    "color_a=pink,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_green"
+    },
+    "color_a=pink,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_light_blue"
+    },
+    "color_a=pink,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_light_gray"
+    },
+    "color_a=pink,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_lime"
+    },
+    "color_a=pink,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_magenta"
+    },
+    "color_a=pink,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_orange"
+    },
+    "color_a=pink,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_pink"
+    },
+    "color_a=pink,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_purple"
+    },
+    "color_a=pink,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_red"
+    },
+    "color_a=pink,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_white"
+    },
+    "color_a=pink,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/pink_yellow"
+    },
+    "color_a=purple,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_black"
+    },
+    "color_a=purple,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_blue"
+    },
+    "color_a=purple,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_brown"
+    },
+    "color_a=purple,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_cyan"
+    },
+    "color_a=purple,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_gray"
+    },
+    "color_a=purple,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_green"
+    },
+    "color_a=purple,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_light_blue"
+    },
+    "color_a=purple,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_light_gray"
+    },
+    "color_a=purple,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_lime"
+    },
+    "color_a=purple,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_magenta"
+    },
+    "color_a=purple,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_orange"
+    },
+    "color_a=purple,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_pink"
+    },
+    "color_a=purple,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_purple"
+    },
+    "color_a=purple,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_red"
+    },
+    "color_a=purple,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_white"
+    },
+    "color_a=purple,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/purple_yellow"
+    },
+    "color_a=red,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/red_black"
+    },
+    "color_a=red,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/red_blue"
+    },
+    "color_a=red,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/red_brown"
+    },
+    "color_a=red,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/red_cyan"
+    },
+    "color_a=red,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/red_gray"
+    },
+    "color_a=red,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/red_green"
+    },
+    "color_a=red,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/red_light_blue"
+    },
+    "color_a=red,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/red_light_gray"
+    },
+    "color_a=red,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/red_lime"
+    },
+    "color_a=red,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/red_magenta"
+    },
+    "color_a=red,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/red_orange"
+    },
+    "color_a=red,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/red_pink"
+    },
+    "color_a=red,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/red_purple"
+    },
+    "color_a=red,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/red_red"
+    },
+    "color_a=red,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/red_white"
+    },
+    "color_a=red,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/red_yellow"
+    },
+    "color_a=white,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/white_black"
+    },
+    "color_a=white,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/white_blue"
+    },
+    "color_a=white,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/white_brown"
+    },
+    "color_a=white,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/white_cyan"
+    },
+    "color_a=white,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/white_gray"
+    },
+    "color_a=white,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/white_green"
+    },
+    "color_a=white,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/white_light_blue"
+    },
+    "color_a=white,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/white_light_gray"
+    },
+    "color_a=white,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/white_lime"
+    },
+    "color_a=white,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/white_magenta"
+    },
+    "color_a=white,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/white_orange"
+    },
+    "color_a=white,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/white_pink"
+    },
+    "color_a=white,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/white_purple"
+    },
+    "color_a=white,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/white_red"
+    },
+    "color_a=white,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/white_white"
+    },
+    "color_a=white,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/white_yellow"
+    },
+    "color_a=yellow,color_b=black": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_black"
+    },
+    "color_a=yellow,color_b=blue": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_blue"
+    },
+    "color_a=yellow,color_b=brown": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_brown"
+    },
+    "color_a=yellow,color_b=cyan": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_cyan"
+    },
+    "color_a=yellow,color_b=gray": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_gray"
+    },
+    "color_a=yellow,color_b=green": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_green"
+    },
+    "color_a=yellow,color_b=light_blue": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_light_blue"
+    },
+    "color_a=yellow,color_b=light_gray": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_light_gray"
+    },
+    "color_a=yellow,color_b=lime": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_lime"
+    },
+    "color_a=yellow,color_b=magenta": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_magenta"
+    },
+    "color_a=yellow,color_b=orange": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_orange"
+    },
+    "color_a=yellow,color_b=pink": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_pink"
+    },
+    "color_a=yellow,color_b=purple": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_purple"
+    },
+    "color_a=yellow,color_b=red": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_red"
+    },
+    "color_a=yellow,color_b=white": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_white"
+    },
+    "color_a=yellow,color_b=yellow": {
+      "model": "steveparty:block/polished_concrete_tiles/yellow_yellow"
+    }
+  }
+}

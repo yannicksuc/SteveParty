@@ -149,6 +149,7 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new TradingStallModelPlugin());
         ModelLoadingPlugin.register(new ConnectedPlasticModelPlugin());
         ModelLoadingPlugin.register(new BrickShadeModelPlugin());
+        ModelLoadingPlugin.register(new fr.lordfinn.steveparty.client.model.PolishedTilesItemModel.Plugin());
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
         ModelLoadingPlugin.register(new fr.lordfinn.steveparty.client.pipe.PipeModelPlugin());
         fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer.register();
