@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnParty
 import fr.lordfinn.steveparty.board.BoardValidator;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadBooksStorage;
 import fr.lordfinn.steveparty.persistent_state.TeleportationPadStorageManager;
 import net.minecraft.item.ItemStack;
@@ -184,7 +185,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             action = Text.translatable("gui.steveparty.party_controller.action.start_rolls");
             detail = Text.translatable("gui.steveparty.party_controller.action.start_rolls.count", rolled, tokens.size());
         } else if (current instanceof MiniGamePartyStep miniGame) {
-            ItemStack page = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
+            ItemStack page = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue).copy();
+            if (world.getServer() != null) MiniGamePages.refresh(world.getServer(), page);
             action = miniGame.isMiniGameChosen() && !page.isEmpty()
                     ? Text.translatable("gui.steveparty.party_controller.action.mini_game", page.getName())
                     : Text.translatable("hud.steveparty.party.mini_game.choosing");
@@ -212,6 +214,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         for (int slot = 0; slot < stored.size(); slot++) {
             ItemStack page = stored.get(slot);
             if (page.isEmpty()) continue;
+            // The title the page has now (the stack is a copy)
+            if (world.getServer() != null) MiniGamePages.refresh(world.getServer(), page);
             List<BlockPos> pads = page.getOrDefault(DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT).destinations();
             int withBook = 0;
             for (BlockPos pad : pads) {

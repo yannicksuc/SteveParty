@@ -51,6 +51,7 @@ public class MiniGamesCatalogueItem extends Item {
     public static void openInventoryScreen(ServerPlayerEntity player, Hand hand) {
         ItemStack catalogue = player.getStackInHand(hand);
         if (catalogue.isEmpty() || !(catalogue.getItem() instanceof MiniGamesCatalogueItem)) return;
+        refreshPages(player.server, catalogue);
         ItemStackBackedInventory inventory = InventoryComponent.getInventoryFromStack(catalogue, MiniGamesCatalogueScreenHandler.SIZE);
 
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
@@ -58,6 +59,17 @@ public class MiniGamesCatalogueItem extends Item {
                 Text.translatable("title.steveparty.mini_game_catalogue")
         ));
     }
+
+    /** Brings the titles kept on the catalogue's pages up to date with what the pages say now. */
+    public static void refreshPages(net.minecraft.server.MinecraftServer server, ItemStack catalogue) {
+        InventoryComponent inventory = catalogue.get(ModComponents.INVENTORY_COMPONENT);
+        if (inventory == null || server == null) return;
+        List<ItemStack> pages = inventory.getItems();
+        boolean changed = false;
+        for (ItemStack page : pages) changed |= fr.lordfinn.steveparty.minigame.MiniGamePages.refresh(server, page);
+        if (changed) catalogue.set(ModComponents.INVENTORY_COMPONENT, new InventoryComponent(pages));
+    }
+
     public static List<ItemStack> getStoredPages(ItemStack catalogue) {
         if (catalogue.contains(ModComponents.INVENTORY_COMPONENT)) {
             InventoryComponent inventory = catalogue.get(ModComponents.INVENTORY_COMPONENT);

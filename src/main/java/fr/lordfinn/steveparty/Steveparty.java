@@ -59,6 +59,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.stencil.StencilLibrary.initialize();
         ModLootTableModifiers.initialize();
         ModPayloads.initialize();
+        fr.lordfinn.steveparty.minigame.MiniGamePageNetworking.initialize();
         SwitchableConfig.initialize();
         ModEntities.initialize();
         ModEvents.initialize();
@@ -80,6 +81,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.entities.custom.MulaEphemeride.initialize();
         fr.lordfinn.steveparty.commands.PartyCommands.initialize();
         fr.lordfinn.steveparty.commands.BoardCommands.initialize();
+        fr.lordfinn.steveparty.commands.MiniGamePageCommand.initialize();
         fr.lordfinn.steveparty.board.WrenchActions.initialize();
         new TokenMovementService();
         fr.lordfinn.steveparty.service.ShopStops.initialize();
