@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipePose;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
@@ -40,6 +41,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -848,6 +851,66 @@ public class PipeGameTests implements FabricGameTest {
                     context.assertTrue(at.y >= 2 - 1e-3 && at.y < 2.1, "standing on the ground under it, not in it: " + at);
                     context.complete();
                 }));
+    }
+
+    // ------------------------------------------------------------------ pose (drawn by the client)
+
+    private static Vector3f turned(Quaternionf rotation, float x, float y, float z) {
+        return rotation.transform(new Vector3f(x, y, z));
+    }
+
+    private static boolean near(Vector3f v, float x, float y, float z) {
+        return Math.abs(v.x - x) < 1e-3 && Math.abs(v.y - y) < 1e-3 && Math.abs(v.z - z) < 1e-3;
+    }
+
+    /**
+     * Head first along the pipe: belly down in a level pipe, upright going up (facing the way it came from), head down
+     * going down; eased through a bend (halfway at the corner, untouched before the turn starts, no jump); squashed
+     * going in, at a bend, stretched on a fast straight run and popping out.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void travellersLieAlongThePipe(TestContext context) {
+        List<Vec3d> upAfterEast = List.of(new Vec3d(0, 0, 0), new Vec3d(1, 0, 0), new Vec3d(2, 0, 0), new Vec3d(2, 1, 0),
+                new Vec3d(2, 2, 0), new Vec3d(3, 2, 0));
+        List<Vec3d> downAfterEast = List.of(new Vec3d(0, 0, 0), new Vec3d(1, 0, 0), new Vec3d(1, -1, 0), new Vec3d(1, -2, 0));
+        double[] up = PipePose.lengths(upAfterEast), down = PipePose.lengths(downAfterEast);
+        Vector3f facing = new Vector3f(0, 0, 1);
+        Quaternionf q = new Quaternionf();
+        PipePose.orientation(upAfterEast, up, 0.3, facing, false, q);
+        context.assertTrue(near(turned(q, 0, 1, 0), 1, 0, 0) && near(turned(q, 0, 0, 1), 0, -1, 0), "level east: head east, belly down");
+        PipePose.orientation(upAfterEast, up, 0.3, facing, true, q);
+        context.assertTrue(near(turned(q, 0, 0, 1), 1, 0, 0) && near(turned(q, 0, 1, 0), 0, 1, 0), "on four legs, level east: snout east, back up");
+        PipePose.orientation(upAfterEast, up, 2.5, facing, true, q);
+        context.assertTrue(near(turned(q, 0, 0, 1), 0, 1, 0) && near(turned(q, 0, 1, 0), -1, 0, 0), "on four legs, going up: snout up");
+        context.assertTrue(PipePose.lengthwise(0.9f, 0.9f) && PipePose.lengthwise(0.9f, 1.4f) && !PipePose.lengthwise(0.6f, 1.8f),
+                "a pig and a cow are long, a player tall");
+        PipePose.orientation(upAfterEast, up, 2.5, facing, false, q);
+        context.assertTrue(near(turned(q, 0, 1, 0), 0, 1, 0) && near(turned(q, 0, 0, 1), 1, 0, 0), "going up: upright, facing east");
+        PipePose.orientation(downAfterEast, down, 1.5, facing, false, q);
+        context.assertTrue(near(turned(q, 0, 1, 0), 0, -1, 0) && near(turned(q, 0, 0, 1), -1, 0, 0), "going down: head down");
+        PipePose.orientation(upAfterEast, up, 2 - PipePose.TURN - 0.01, facing, false, q);
+        context.assertTrue(near(turned(q, 0, 1, 0), 1, 0, 0), "before the turn: still level");
+        PipePose.orientation(upAfterEast, up, 2, facing, false, q);
+        float half = (float) Math.sqrt(0.5);
+        context.assertTrue(near(turned(q, 0, 1, 0), half, half, 0), "at the corner: halfway: " + turned(q, 0, 1, 0));
+        Quaternionf before = PipePose.orientation(upAfterEast, up, 1.999, facing, false, new Quaternionf());
+        Quaternionf after = PipePose.orientation(upAfterEast, up, 2.001, facing, false, new Quaternionf());
+        context.assertTrue(turned(before, 0, 1, 0).distance(turned(after, 0, 1, 0)) < 0.01, "no jump at the corner");
+        PipePose.orientation(upAfterEast, up, 1.8, facing, false, q);
+        float rising = turned(q, 0, 1, 0).y;
+        context.assertTrue(rising > 0.01 && rising < half, "turning up before the corner: " + rising);
+
+        List<Vec3d> straight = List.of(new Vec3d(0, 0, 0), new Vec3d(40, 0, 0));
+        double[] run = PipePose.lengths(straight);
+        context.assertTrue(PipePose.stretch(straight, run, 0, PipeTravel.BASE_SPEED) < 0.6, "flattened going in");
+        float slow = PipePose.stretch(straight, run, 20, PipeTravel.BASE_SPEED), fast = PipePose.stretch(straight, run, 20, PipeTravel.MAX_SPEED);
+        context.assertTrue(slow > 1.03 && fast > slow && fast <= 1 + PipePose.RUN + 1e-3, "longer the faster: " + slow + ", " + fast);
+        context.assertTrue(PipePose.stretch(straight, run, 40, PipeTravel.BASE_SPEED) > slow + 0.2, "stretched popping out");
+        List<Vec3d> bend = List.of(new Vec3d(0, 0, 0), new Vec3d(10, 0, 0), new Vec3d(10, 5, 0));
+        double[] bendLengths = PipePose.lengths(bend);
+        context.assertTrue(PipePose.stretch(bend, bendLengths, 10, PipeTravel.BASE_SPEED) < slow - 0.25, "squashed into the bend");
+        context.assertTrue(PipePose.exitWobble(0) > 1.2 && PipePose.exitWobble(20) == 1, "a wobble once out, then still");
+        context.complete();
     }
 
     // ------------------------------------------------------------------ items
