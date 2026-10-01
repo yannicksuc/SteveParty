@@ -156,7 +156,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
             face = TileStampTextures.advanceBack(fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.steps(stack), small);
         // A Replay tile: a circular arrow in the cartridge's colour (cyan by default)
         else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.replayFace(color, small);
-        // A Teleport tile: a warp pipe in the cartridge's colour (violet by default)
+        // A Teleport tile: a portal (its rings drifting) in the colour of its network (violet by default)
         else if (tileType == BoardSpaceType.TILE_TELEPORT) face = TileStampTextures.teleportFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
