@@ -42,6 +42,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.joml.Quaternionf;
+import org.joml.Vector3d;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -980,6 +981,42 @@ public class PipeGameTests implements FabricGameTest {
         double[] bendLengths = PipePose.lengths(bend);
         context.assertTrue(PipePose.stretch(bend, bendLengths, 10, PipeTravel.BASE_SPEED) < slow - 0.25, "squashed into the bend");
         context.assertTrue(PipePose.exitWobble(0) > 1.2 && PipePose.exitWobble(20) == 1, "a wobble once out, then still");
+
+        // Folding round the bend: each part of the body is turned the way of the pipe where it is
+        Quaternionf part = new Quaternionf();
+        PipePose.bend(straight, run, 20, 0.5, facing, part);
+        context.assertTrue(near(turned(part, 0, 1, 0), 0, 1, 0) && near(turned(part, 0, 0, 1), 0, 0, 1), "a straight run: no fold");
+        PipePose.bend(upAfterEast, up, 2, PipePose.TURN, facing, part);
+        context.assertTrue(near(turned(part, 0, 1, 0), 0, half, -half), "at the corner, the head is turned up from the trunk: " + turned(part, 0, 1, 0));
+        PipePose.bend(upAfterEast, up, 2, -PipePose.TURN, facing, part);
+        context.assertTrue(near(turned(part, 0, 1, 0), 0, half, half), "the legs still lie in the level pipe: " + turned(part, 0, 1, 0));
+        PipePose.orientation(upAfterEast, up, 2, facing, false, q);
+        PipePose.bend(upAfterEast, up, 2, PipePose.TURN, facing, part);
+        context.assertTrue(near(turned(q.mul(part, new Quaternionf()), 0, 1, 0), 0, 1, 0), "the head points up the pipe it is in");
+
+        // Its middle glides round the corner
+        Vector3d middle = new Vector3d();
+        PipePose.position(upAfterEast, up, 1.5, middle);
+        context.assertTrue(middle.distance(1.5, 0, 0) < 1e-6, "on the pipe's line on a straight run: " + middle);
+        PipePose.position(upAfterEast, up, 2, middle);
+        context.assertTrue(middle.x < 2 - 0.05 && middle.y > 0.05 && middle.distance(2, 0, 0) < PipePose.TURN, "inside the corner, not on its point: " + middle);
+        Vector3d turnBefore = PipePose.position(upAfterEast, up, 2 - PipePose.TURN - 0.001, new Vector3d());
+        Vector3d turnAfter = PipePose.position(upAfterEast, up, 2 - PipePose.TURN + 0.001, new Vector3d());
+        context.assertTrue(turnBefore.distance(turnAfter) < 0.003, "no jump where the turn starts");
+        PipePose.position(upAfterEast, up, 99, middle);
+        context.assertTrue(middle.distance(3, 2, 0) < 1e-6, "the end of the path at most: " + middle);
+
+        // The view follows the pipe
+        float[] heading = new float[2];
+        PipePose.heading(upAfterEast, up, 0.3, 123, heading);
+        context.assertTrue(Math.abs(heading[0] + 90) < 1e-3 && heading[1] == 0, "level east: looking east, level");
+        PipePose.heading(upAfterEast, up, 2.5, 123, heading);
+        context.assertTrue(Math.abs(heading[0] + 90) < 1e-3 && heading[1] == -PipePose.VIEW_PITCH, "going up: still toward the east, looking up (not straight up)");
+        PipePose.heading(upAfterEast, up, 2, 123, heading);
+        context.assertTrue(Math.abs(heading[1] + PipePose.VIEW_PITCH / 2) < 1e-3, "halfway up at the corner: " + heading[1]);
+        List<Vec3d> upOnly = List.of(new Vec3d(0, 0, 0), new Vec3d(0, 5, 0));
+        PipePose.heading(upOnly, PipePose.lengths(upOnly), 2, 123, heading);
+        context.assertTrue(heading[0] == 123, "no level pipe: the yaw it had");
         context.complete();
     }
 
