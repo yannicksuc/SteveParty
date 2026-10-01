@@ -151,6 +151,7 @@ public class StevepartyClient implements ClientModInitializer {
         ModelLoadingPlugin.register(new StencilSignModelPlugin());
         ModelLoadingPlugin.register(new fr.lordfinn.steveparty.client.pipe.PipeModelPlugin());
         fr.lordfinn.steveparty.client.pipe.PipeBulgeRenderer.register();
+        fr.lordfinn.steveparty.client.pipe.PipeTravellerPose.register();
         // What travels inside shows through glass pipes (like glass and stained glass) and windowed ones
         for (fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind kind : fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.values()) {
             RenderLayer layer = kind == fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.STAINED_GLASS ? RenderLayer.getTranslucent()

@@ -4,8 +4,10 @@
   "package": "fr.lordfinn.steveparty.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "BipedEntityModelPipeSwimMixin",
     "BossBarHudAccessor",
     "ClientPlayerInteractionManagerVillagerPunchMixin",
+    "EntityRenderDispatcherPipePoseMixin",
     "FallingBlockEntityRendererVillagerMixin",
     "GameRendererFovMixin",
     "GameRendererStencilHammerShakeMixin",
@@ -30,7 +32,12 @@
     "TokenBaseLivingEntityRendererMixin",
     "TokenBaseRenderStateMixin",
     "WindowBackgroundDevMixin",
-    "WorldRendererBreakingAccessor"
+    "WorldRendererBreakingAccessor",
+    "DrownedModelPipeSwimMixin",
+    "PiglinModelPipeSwimMixin",
+    "SkeletonModelPipeSwimMixin",
+    "ZombieModelPipeSwimMixin",
+    "ZombieVillagerModelPipeSwimMixin"
   ],
   "injectors": {
     "defaultRequire": 1

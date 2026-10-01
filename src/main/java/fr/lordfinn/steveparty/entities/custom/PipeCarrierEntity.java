@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks;
+import fr.lordfinn.steveparty.blocks.custom.pipe.PipePose;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import net.minecraft.entity.Entity;
@@ -49,6 +50,8 @@ public class PipeCarrierEntity extends Entity {
     private @Nullable PipeNetworks.End target, origin;
     /** Whether it has been sent back once already (warp or exit impossible). */
     private boolean returned;
+    /** How many times its way was worked out again because the pipes changed (server side). */
+    private int reroutes;
     /** Where the traveller is put down when it gets off (server side). */
     private @Nullable Vec3d dismountAt;
 
@@ -89,8 +92,7 @@ public class PipeCarrierEntity extends Entity {
         List<Vec3d> read = new ArrayList<>();
         for (int i = 0; i + 2 < list.size(); i += 3) read.add(new Vec3d(list.getDouble(i), list.getDouble(i + 1), list.getDouble(i + 2)));
         points = List.copyOf(read);
-        lengths = new double[points.size()];
-        for (int i = 1; i < points.size(); i++) lengths[i] = lengths[i - 1] + points.get(i).distanceTo(points.get(i - 1));
+        lengths = PipePose.lengths(points);
         speed = path.getDouble("Speed");
         travelled = 0;
     }
@@ -112,6 +114,11 @@ public class PipeCarrierEntity extends Entity {
 
     public double length() {
         return lengths.length == 0 ? 0 : lengths[lengths.length - 1];
+    }
+
+    /** Distance from the start to each point (not to be changed). */
+    public double[] lengths() {
+        return lengths;
     }
 
     /** Distance from the start to point {@code i}. */
@@ -137,6 +144,11 @@ public class PipeCarrierEntity extends Entity {
 
     public boolean hasReturned() {
         return returned;
+    }
+
+    /** One more new way because the pipes changed: false after a few (it gets out then). */
+    public boolean reroute() {
+        return ++reroutes <= 3;
     }
 
     public void markReturned() {
