@@ -11,17 +11,20 @@ import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
+import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.CustomizableMerchantScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
 import net.minecraft.entity.*;
+import net.minecraft.entity.ai.NoPenaltyTargeting;
 import net.minecraft.entity.ai.pathing.PathNodeType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -44,6 +47,7 @@ import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -125,6 +129,20 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
     public static final String HIDE_START_NBT = "HideStart";
     /** World time from which he stays closed for {@link #THEFT_HIDE_TICKS} (after a theft), Long.MIN_VALUE if none. */
     private static final TrackedData<Long> HIDE_START = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.LONG);
+    public static final String HAS_BOX_NBT = "HasBox";
+    /** False once his box was taken with shears (he was already bald), until he builds a new one. */
+    private static final TrackedData<Boolean> HAS_BOX = DataTracker.registerData(HidingTraderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final String BOX_REGROW_NBT = "BoxRegrowAt";
+    /** Without his box, he builds a new one after 60 s. */
+    public static final int BOX_REGROW_TICKS = 1200;
+    /** Server: world time at which he builds a new box, Long.MIN_VALUE if none. */
+    private long boxRegrowAt = Long.MIN_VALUE;
+    /** How long he runs away after his box was taken (no wandering nor little animation meanwhile). */
+    private static final int FLEE_TICKS = 60;
+    /** Server: age at which he runs away from where his box was taken (-1: none), and from where. */
+    private int fleeAtAge = -1;
+    @Nullable
+    private Vec3d fleeFrom = null;
     /** After a theft: closed for 20 s, ignoring players. */
     public static final int THEFT_HIDE_TICKS = 400;
     /** fun_shocked (1.3 s) plays before he hides. */
@@ -209,6 +227,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         builder.add(BANDANA_COLOR, -1);
         builder.add(HAS_BANDANA, true);
         builder.add(HIDE_START, Long.MIN_VALUE);
+        builder.add(HAS_BOX, true);
     }
 
     @Override
@@ -218,6 +237,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             String blockStateJson = this.dataTracker.get(BLOCK_STATE);
             JsonElement jsonElement = JsonParser.parseString(blockStateJson);
             BlockState.CODEC.parse(JsonOps.INSTANCE, jsonElement).resultOrPartial(HidingTraderEntity::printWarnForFailDecodeBlockState)
+                    .filter(HidingTraderEntity::isValidBoxBlock)
                     .ifPresent(decodedBlockState -> this.blockState = decodedBlockState);
         }
     }
@@ -557,6 +577,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
             if (!this.getWorld().isClient) stealBandana(player, held, hand);
             return ActionResult.SUCCESS;
         }
+        if (held.isOf(Items.SHEARS) && !hasBandana() && hasBox() && !hidden) {
+            if (!this.getWorld().isClient) stealBox(player, held, hand);
+            return ActionResult.SUCCESS;
+        }
         if (held.isOf(ModItems.BANDANA) && !hasBandana() && !hidden) {
             if (!this.getWorld().isClient) giveBandana(player, held);
             return ActionResult.SUCCESS;
@@ -632,6 +656,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         if (nbt.contains(HOME_NBT, NbtElement.LONG_TYPE)) {
             home = BlockPos.fromLong(nbt.getLong(HOME_NBT));
         }
+        if (nbt.contains(HAS_BOX_NBT, NbtElement.BYTE_TYPE)) {
+            setHasBox(nbt.getBoolean(HAS_BOX_NBT));
+        }
+        boxRegrowAt = nbt.contains(BOX_REGROW_NBT, NbtElement.LONG_TYPE) ? nbt.getLong(BOX_REGROW_NBT) : Long.MIN_VALUE;
         if (nbt.contains(BANDANA_COLOR_NBT, NbtElement.NUMBER_TYPE)) {
             setBandanaColor(nbt.getInt(BANDANA_COLOR_NBT));
         } else if (getBandanaColor() < 0) {
@@ -664,6 +692,10 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
         if (home != null) {
             nbt.putLong(HOME_NBT, home.asLong());
+        }
+        nbt.putBoolean(HAS_BOX_NBT, hasBox());
+        if (boxRegrowAt != Long.MIN_VALUE) {
+            nbt.putLong(BOX_REGROW_NBT, boxRegrowAt);
         }
         return super.writeNbt(nbt);
     }
@@ -850,6 +882,7 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         }
         if (!this.getWorld().isClient && !TokenBase.isToken(this)) {
             tickFunAnimations();
+            tickBoxTheft();
         }
         if (!this.getWorld().isClient && this.hasCustomer()) {
             PlayerEntity customer = this.getCustomer();
@@ -1029,9 +1062,19 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         return blockState;
     }
 
+    /**
+     * Sets the block his box looks like. A state without a block look (air, an invisible block like a barrier or a
+     * light, a moving piston...) is refused: the box would render with the missing texture.
+     */
     public void setBlockState(BlockState blockState) {
+        if (!isValidBoxBlock(blockState)) return;
         this.blockState = blockState;
         syncBlockData(blockState);
+    }
+
+    /** A block his box can look like: anything rendered as a block model (not air nor an invisible block). */
+    public static boolean isValidBoxBlock(@Nullable BlockState state) {
+        return state != null && !state.isAir() && state.getRenderType() == BlockRenderType.MODEL;
     }
 
     /**
@@ -1043,6 +1086,8 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         // A board token is a still pawn: out of his box, whoever is around
         if (TokenBase.isToken(this)) return false;
         World world = this.getWorld();
+        // Without his box, he has nowhere to hide
+        if (!hasBox()) return false;
         if (world == null || isLeashed() || isTheftHidden()) return true;
         return world.getClosestPlayer(this.getX(), this.getY(), this.getZ(), OPEN_RANGE,
                 entity -> entity instanceof PlayerEntity player && drawsHimOut(player)) == null;
@@ -1191,6 +1236,78 @@ public class HidingTraderEntity extends MerchantEntity implements GeoEntity {
         triggerAnim(IDLE_CONTROLLER, SHOCKED_ANIM);
         startTheftHiding(SHOCK_TICKS);
         nextFunAge = this.age + SHOCK_TICKS + THEFT_HIDE_TICKS;
+    }
+
+    public boolean hasBox() {
+        return this.dataTracker.get(HAS_BOX);
+    }
+
+    public void setHasBox(boolean hasBox) {
+        this.dataTracker.set(HAS_BOX, hasBox);
+    }
+
+    /**
+     * Shears on an open merchant who has no bandana left: his box comes off as a Box Costume of his block. He is
+     * shocked, then (unless he is tied to a shop or leashed) runs away from the thief. He can't hide any more until he
+     * builds a new box ({@link #BOX_REGROW_TICKS} later); he still trades meanwhile.
+     */
+    private void stealBox(PlayerEntity player, ItemStack shears, Hand hand) {
+        if (!(this.getWorld() instanceof ServerWorld world)) return;
+        this.dropStack(world, BoxCostumeItem.create(blockState), 1.0F);
+        world.playSoundFromEntity(null, this, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.PLAYERS, 1.0F, 0.8F);
+        world.playSoundFromEntity(null, this, blockState.getSoundGroup().getBreakSound(), SoundCategory.NEUTRAL, 1.0F, 1.0F);
+        world.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, blockState), this.getX(), this.getY() + 0.6, this.getZ(),
+                30, 0.35, 0.3, 0.35, 0.1);
+        if (!player.isInCreativeMode()) shears.damage(1, player, LivingEntity.getSlotForHand(hand));
+        setHasBox(false);
+        boxRegrowAt = world.getTime() + BOX_REGROW_TICKS;
+        if (this.getCustomer() != null) releaseCustomer(this.getCustomer());
+        this.getNavigation().stop();
+        bonkStarsTick = -1;
+        triggerAnim(IDLE_CONTROLLER, SHOCKED_ANIM);
+        funBusyUntil = this.age + SHOCK_TICKS + FLEE_TICKS;
+        nextFunAge = Math.max(nextFunAge, funBusyUntil + OPEN_FUN_MIN_TICKS);
+        fleeAtAge = this.age + SHOCK_TICKS;
+        fleeFrom = player.getPos();
+    }
+
+    /** Server: runs away once shocked by the theft of his box, then builds a new box when it's time. */
+    private void tickBoxTheft() {
+        if (fleeAtAge >= 0 && this.age >= fleeAtAge) {
+            fleeAtAge = -1;
+            if (fleeFrom != null && !assigned && !isLeashed() && !this.hasCustomer()) {
+                Vec3d target = NoPenaltyTargeting.findFrom(this, 8, 3, fleeFrom);
+                if (target != null) this.getNavigation().startMovingTo(target.x, target.y, target.z, 1.0);
+            }
+            fleeFrom = null;
+        }
+        // Boxless without a date (set from a command, an old save...): a new box in 60 s too
+        if (!hasBox() && boxRegrowAt == Long.MIN_VALUE) boxRegrowAt = this.getWorld().getTime() + BOX_REGROW_TICKS;
+        if (!hasBox() && this.getWorld().getTime() >= boxRegrowAt && !this.hasCustomer()) {
+            regrowBox();
+        }
+    }
+
+    /**
+     * Builds a new box: out of the block under his feet if it can be one (a full opaque block without block entity),
+     * else out of the same block as before. A little laugh: he's proud of it.
+     */
+    public void regrowBox() {
+        if (!(this.getWorld() instanceof ServerWorld world)) return;
+        BlockPos below = this.getBlockPos().down();
+        BlockState ground = world.getBlockState(below);
+        if (isValidBoxBlock(ground) && ground.isOpaqueFullCube() && !ground.hasBlockEntity()) setBlockState(ground);
+        setHasBox(true);
+        boxRegrowAt = Long.MIN_VALUE;
+        world.playSoundFromEntity(null, this, blockState.getSoundGroup().getPlaceSound(), SoundCategory.NEUTRAL, 1.0F, 1.0F);
+        world.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, blockState), this.getX(), this.getY() + 0.4, this.getZ(),
+                20, 0.35, 0.2, 0.35, 0.1);
+        if (!hidden) {
+            this.getNavigation().stop();
+            triggerAnim(IDLE_CONTROLLER, GIVE_BACK_ANIM);
+            funBusyUntil = this.age + FUN_BUSY_TICKS;
+            nextFunAge = Math.max(nextFunAge, this.age + OPEN_FUN_MIN_TICKS);
+        }
     }
 
     /** A Bandana on a bald merchant: he puts it on (its colour becomes his), the item is used up, he is delighted. */

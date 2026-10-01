@@ -88,6 +88,7 @@ public class ModItems {
     public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
     /** The Hiding Trader's bandana (stolen with shears), wearable on the head. */
     public static final Item BANDANA = register(BandanaItem.class, "bandana", new Item.Settings().maxCount(1));
+    public static final Item BOX_COSTUME = register(fr.lordfinn.steveparty.items.custom.BoxCostumeItem.class, "box_costume", new Item.Settings().maxCount(1));
     public static final Item PARTY_CARD_TURNS = registerCard(PartyCardItem.CardType.TURNS);
     public static final Item PARTY_CARD_MINIGAME = registerCard(PartyCardItem.CardType.MINIGAME);
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
@@ -175,6 +176,7 @@ public class ModItems {
             for (int color = 0; color < BandanaItem.COLOR_NAMES.length; color++) {
                 itemGroup.add(BandanaItem.create(color));
             }
+            itemGroup.add(fr.lordfinn.steveparty.items.custom.BoxCostumeItem.create(net.minecraft.block.Blocks.GOLD_BLOCK.getDefaultState()));
             // Every tile in its 3 sizes
             for (net.minecraft.item.ItemConvertible tile : List.of(TILE, ADVANCED_TILE)) {
                 for (fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize size : fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize.values()) {

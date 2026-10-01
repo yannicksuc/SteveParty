@@ -1,127 +1,29 @@
 package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
-import software.bernie.geckolib.cache.object.*;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
-import software.bernie.geckolib.util.RenderUtil;
 
-import java.util.List;
-
+/** Draws the merchant's box bones with the faces of his block (see {@link BlockTexturedBones}). */
 public class HidingTraderEntityRenderLayer extends GeoRenderLayer<HidingTraderEntity> {
-    public static final String CUBE_BONE_ID = "cube";
-    Identifier textureId;
-    Random random = Random.create();
+    public static final String CUBE_BONE_ID = BlockTexturedBones.CUBE_BONE_PREFIX;
+    private final BlockTexturedBones boxBones = new BlockTexturedBones();
 
     public HidingTraderEntityRenderLayer(HidingTraderEntityRenderer renderer) {
         super(renderer);
-        textureId = MinecraftClient.getInstance().getBlockRenderManager().getModel(Blocks.GRASS_BLOCK.getDefaultState()).getParticleSprite().getAtlasId();
     }
-
-
-    // Per-call caches / scratch objects (render thread only)
-    private final VertexConsumer[] faceConsumers = new VertexConsumer[DIRECTIONS.length + 1];
-    private final Vector4f scratchPosition = new Vector4f();
-    private final Vector3f scratchNormal = new Vector3f();
-    private static final Direction[] DIRECTIONS = Direction.values();
 
     @Override
     public void renderForBone(MatrixStack poseStack, HidingTraderEntity animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay, int renderColor) {
-        if (!bone.getName().startsWith(CUBE_BONE_ID)) return;
-        RenderLayer type = getRenderer().getRenderType(animatable, textureId, bufferSource, partialTick);
-        if (type == null) return;
-        BlockState blockState = animatable.getBlockState();
-        BakedModel blockModel = MinecraftClient.getInstance().getBlockRenderManager().getModel(blockState);
-        // Buffers are resolved lazily, once per face direction, for this call only
-        java.util.Arrays.fill(faceConsumers, null);
+        if (!BlockTexturedBones.isBoxBone(bone) || !animatable.hasBox()) return;
         // GeckoLib calls this with the pose stack already transformed for this bone (position, pivot, rotation,
         // scale), children bones get their own call: applying the bone transform again here would double the
         // flap rotations and every animated offset of the box.
-        renderCubesOfBone(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(), blockState, blockModel);
+        boxBones.renderBone(poseStack, bone, bufferSource, packedLight, renderer.getRenderColor(animatable, partialTick, packedLight).getColor(),
+                animatable.getBlockState());
     }
-
-    private void renderCubesOfBone(MatrixStack poseStack, GeoBone bone, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
-        if (!bone.isHidden()) {
-            for (GeoCube cube : bone.getCubes()) {
-                poseStack.push();
-                this.renderCube(poseStack, cube, buffer, packedLight, renderColor, blockState, blockModel);
-                poseStack.pop();
-            }
-
-        }
-    }
-
-    private void renderCube(MatrixStack poseStack, GeoCube cube, VertexConsumerProvider buffer, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
-        RenderUtil.translateToPivotPoint(poseStack, cube);
-        RenderUtil.rotateMatrixAroundCube(poseStack, cube);
-        RenderUtil.translateAwayFromPivotPoint(poseStack, cube);
-        Matrix3f normalisedPoseState = poseStack.peek().getNormalMatrix();
-        Matrix4f poseState = poseStack.peek().getPositionMatrix();
-        GeoQuad[] var9 = cube.quads();
-
-        for (GeoQuad quad : var9) {
-            if (quad != null) {
-                Vector3f normal = normalisedPoseState.transform(scratchNormal.set(quad.normal()));
-                RenderUtil.fixInvertedFlatCube(cube, normal);
-                this.createVerticesOfQuad(quad, poseState, normal, buffer, packedLight, renderColor, blockState, blockModel);
-            }
-        }
-
-    }
-
-    private void createVerticesOfQuad(GeoQuad quad, Matrix4f poseState, Vector3f normal, VertexConsumerProvider bufferSource, int packedLight, int renderColor, BlockState blockState, BakedModel blockModel) {
-        GeoVertex[] var8 = quad.vertices();
-        VertexConsumer vertexConsumer = getFaceConsumer(quad.direction(), bufferSource, blockState, blockModel);
-
-        for (GeoVertex vertex : var8) {
-            Vector3f position = vertex.position();
-            Vector4f vector4f = poseState.transform(scratchPosition.set(position.x(), position.y(), position.z(), 1.0F));
-            vertexConsumer.vertex(vector4f.x(), vector4f.y(), vector4f.z(), renderColor, vertex.texU(), vertex.texV(), OverlayTexture.DEFAULT_UV, packedLight, normal.x(), normal.y(), normal.z());
-        }
-    }
-
-    private VertexConsumer getFaceConsumer(Direction direction, VertexConsumerProvider bufferSource, BlockState blockState, BakedModel blockModel) {
-        int index = direction == null ? DIRECTIONS.length : direction.ordinal();
-        VertexConsumer consumer = faceConsumers[index];
-        if (consumer == null) {
-            Sprite quadSprite = getQuadSpriteForDirection(direction, blockModel, blockState);
-            consumer = quadSprite.getTextureSpecificVertexConsumer(bufferSource.getBuffer(RenderLayer.getEntityCutout(quadSprite.getAtlasId())));
-            faceConsumers[index] = consumer;
-        }
-        return consumer;
-    }
-
-
-    // Helper method to get the correct sprite for each face direction
-    private Sprite getQuadSpriteForDirection(Direction direction, BakedModel bakedModel, BlockState blockState) {
-        // Get quads for the specified direction (face)
-        List<BakedQuad> quads = bakedModel.getQuads(blockState, direction, random);
-
-        // If there are no quads for this face, return a default texture
-        if (quads.isEmpty()) {
-            return bakedModel.getParticleSprite();
-        }
-
-        // Get the first quad's sprite (assuming all quads for a face share the same sprite)
-        BakedQuad quad = quads.getFirst();
-        return quad.getSprite();
-    }
-
 }

@@ -2,7 +2,9 @@ package fr.lordfinn.steveparty.client.entity;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -33,6 +35,9 @@ public class HidingTraderEntityRenderer extends GeoEntityRenderer<HidingTraderEn
             Steveparty.id("textures/entity/hiding_trader_yellow.png"),
     };
 
+    /** Root of the box: its walls, flaps, arm holes, peeking eyes and shadow. */
+    public static final String BOX_BONE = "cube_box";
+
     public HidingTraderEntityRenderer(EntityRendererFactory.Context ctx) {
         super(ctx, new DefaultedEntityGeoModel<>(Steveparty.id("hiding_trader")));
         addRenderLayer(new HidingTraderEntityRenderLayer(this));
@@ -43,6 +48,13 @@ public class HidingTraderEntityRenderer extends GeoEntityRenderer<HidingTraderEn
         int color = animatable.getBandanaColor();
         if (color < 0 || color >= BANDANA_TEXTURES.length) return BASE_TEXTURE;
         return animatable.hasBandana() ? BANDANA_TEXTURES[color] : BALD_TEXTURES[color];
+    }
+
+    /** Without his box (taken with shears), the whole box with its flaps, holes and shadow is gone. */
+    @Override
+    public void renderRecursively(MatrixStack poseStack, HidingTraderEntity animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+        if (BOX_BONE.equals(bone.getName()) && !animatable.hasBox()) return;
+        super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, renderColor);
     }
 
     @Override

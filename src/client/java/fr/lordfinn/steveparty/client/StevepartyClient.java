@@ -166,6 +166,7 @@ public class StevepartyClient implements ClientModInitializer {
         fr.lordfinn.steveparty.client.hammer.StencilHammerStrikes.initialize();
         SwitchableClient.initialize();
         fr.lordfinn.steveparty.client.token.TokenBaseRenderer.initialize();
+        fr.lordfinn.steveparty.client.entity.costume.BoxCostumeClient.initialize();
 
         initScreens();
         initParticles();
