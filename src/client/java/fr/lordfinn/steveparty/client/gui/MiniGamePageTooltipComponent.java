@@ -81,6 +81,7 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         if (data == null || data.isBlank()) return 0;
         int height = data.image() != null ? PICTURE_HEIGHT + 3 : 0;
         height += 10 * lines(textRenderer, modesText(data), 2).size() + 10;
+        if (!data.isPlayable()) height += 10;
         if (!data.description().isEmpty()) height += 2 + 10 * lines(textRenderer, Text.literal(data.description()), MAX_DESCRIPTION_LINES).size();
         return height + 2;
     }
@@ -108,6 +109,10 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         }
         context.drawText(textRenderer, playersText(data), x, top, COLOR_DESCRIPTION, true);
         top += 10;
+        if (!data.isPlayable()) {
+            context.drawText(textRenderer, Text.translatable("tooltip.steveparty.mini_game_page.not_playable"), x, top, 0xFFFF7A7A, true);
+            top += 10;
+        }
         if (!data.description().isEmpty()) {
             top += 2;
             for (OrderedText line : lines(textRenderer, Text.literal(data.description()), MAX_DESCRIPTION_LINES)) {

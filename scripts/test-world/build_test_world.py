@@ -533,12 +533,7 @@ def building_station(x0=2060, z0=1995):
 
 def misc_station(x0=2010, z0=2020):
     cmds = ['# Misc station'] + plot_title(x0, z0, 'DIVERS')
-    cmds += ['setblock %d %d %d steveparty:big_book' % (x0 + 4, Y, z0 + 4),
-             label(x0 + 4.5, Y + 2.5, z0 + 4.5, 'Big Book / pad de téléportation', 'white', 0.7, False),
-             'setblock %d %d %d steveparty:big_book' % (x0 + 10, Y, z0 + 4),
-             label(x0 + 10.5, Y + 2.5, z0 + 4.5, 'Big Book', 'white', 0.7, False)]
-    items = [('here_we_go_book', 'Here We Go'), ('here_we_come_book', 'Here We Come'),
-             ('garnet_crystal_ball', 'Garnet Crystal Ball'), ('mini_games_catalogue', 'Catalogue'),
+    items = [('garnet_crystal_ball', 'Garnet Crystal Ball'), ('mini_games_catalogue', 'Catalogue'),
              ('mini_game_page', 'Page de mini-jeu'), ('triple_jump_shoes', 'Triple Jump Shoes'),
              ('plunger', 'Plunger'), ('power_star', 'Power Star'), ('tokenizer_wand', 'Tokenizer Wand'),
              ('token', 'Token'), ('wrench', 'Wrench'), ('stencil_gun', 'Stencil Gun'), ('flag', 'Drapeau'),
@@ -973,7 +968,7 @@ def all_items():
                                'step_controller', 'board_space_behavior', 'board_space_behavior_stop',
                                'tile_behavior_start', 'inventory_cartridge', 'wrench', 'tokenizer_wand', 'token',
                                'plunger', 'mini_games_catalogue', 'mini_game_page', 'garnet_crystal_ball',
-                               'big_book', 'here_we_go_book', 'here_we_come_book', 'shop_cartridge',
+                               'shop_cartridge',
                                'advance_back_cartridge', 'replay_cartridge', 'teleport_cartridge']))
     faces = ['blank_dice_face'] + ['dice_face_%d' % i for i in range(1, 11)] + \
             ['premium_dice_face_%d' % i for i in range(1, 11)] + ['cursed_dice_face_%d' % i for i in range(1, 4)]

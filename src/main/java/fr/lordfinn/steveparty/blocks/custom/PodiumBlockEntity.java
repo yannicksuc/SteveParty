@@ -186,7 +186,7 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
      * Who wins when the podium receives a signal of {@code power}:
      * <ol>
      *     <li>participants standing on the podium: they win, whatever the power;</li>
-     *     <li>else, a team mini-game: 1 = team A, 2 = team B;</li>
+     *     <li>else, a team mini-game: 1 = team A, 2 = team B, 3 = team C, 4 = team D;</li>
      *     <li>else, a mini-game without teams: the player of rank {@code power} in the play order (1 = the first);</li>
      *     <li>else (power greater than the number of players, or a team game with another power): the participant the
      *     nearest to the podium, with his team in a team mini-game.</li>
@@ -198,16 +198,16 @@ public class PodiumBlockEntity extends CartridgeContainerBlockEntity implements 
                                               int power, @Nullable UUID nearest) {
         List<UUID> onPodium = standing.stream().filter(participants::contains).distinct().toList();
         if (!onPodium.isEmpty()) return onPodium;
-        boolean teamGame = teams != null && !teams.getTeamA().isEmpty() && !teams.getTeamB().isEmpty();
-        if (teamGame && (power == 1 || power == 2)) {
-            Set<UUID> team = power == 1 ? teams.getTeamA() : teams.getTeamB();
+        boolean teamGame = teams != null && !teams.isFreeForAll();
+        if (teamGame && power >= 1 && power <= 4 && !teams.teams().get(power - 1).isEmpty()) {
+            Set<UUID> team = teams.teams().get(power - 1);
             return participants.stream().filter(team::contains).toList();
         }
         if (!teamGame && power >= 1 && power <= participants.size()) return List.of(participants.get(power - 1));
         if (nearest == null) return List.of();
         if (teamGame) {
-            Set<UUID> team = teams.getTeamA().contains(nearest) ? teams.getTeamA()
-                    : teams.getTeamB().contains(nearest) ? teams.getTeamB() : Set.of(nearest);
+            int index = teams.teamOf(nearest);
+            Set<UUID> team = index < 0 ? Set.of(nearest) : teams.teams().get(index);
             return participants.stream().filter(team::contains).toList();
         }
         return List.of(nearest);

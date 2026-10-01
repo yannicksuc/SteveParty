@@ -67,7 +67,7 @@ public class Steveparty implements ModInitializer {
         ModRecipes.initialize();
         ModScoreboardCriteria.initialize();
         fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork.initialize();
-        fr.lordfinn.steveparty.blocks.custom.TeleportationPadArrivals.initialize();
+        fr.lordfinn.steveparty.minigame.MiniGamePipes.initialize();
         fr.lordfinn.steveparty.blocks.custom.pipe.PipeNetworks.initialize();
         fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel.initialize();
         fr.lordfinn.steveparty.items.custom.BoxCostumeItem.initialize();

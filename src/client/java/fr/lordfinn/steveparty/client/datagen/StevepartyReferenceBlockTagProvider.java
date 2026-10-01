@@ -117,7 +117,6 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                 getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE).add(b);
         getOrCreateTagBuilder(BlockTags.AXE_MINEABLE)
                 .add(
-                        ModBlocks.TELEPORTATION_PAD,
                         ModBlocks.SPRUCE_EASEL_SIGN,
                         ModBlocks.OAK_EASEL_SIGN,
                         ModBlocks.BIRCH_EASEL_SIGN,
@@ -147,7 +146,6 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.STENCIL_MAKER
                 );
         getOrCreateTagBuilder(BlockTags.NEEDS_DIAMOND_TOOL)
-                .add(ModBlocks.TELEPORTATION_PAD)
                 .add(ModBlocks.GRAVITY_CORE);
         getOrCreateTagBuilder(BlockTags.CLIMBABLE)
                 .add(GOAL_POLE);

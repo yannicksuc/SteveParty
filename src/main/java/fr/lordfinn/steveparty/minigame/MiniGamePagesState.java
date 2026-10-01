@@ -8,7 +8,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.util.math.GlobalPos;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,6 +30,8 @@ public class MiniGamePagesState extends PersistentState {
             (nbt, registries) -> fromNbt(nbt), null);
 
     private final Map<UUID, MiniGamePageData> pages = new LinkedHashMap<>();
+    /** Index of the linked pipes, null when it has to be worked out again. */
+    private @Nullable Map<GlobalPos, List<Linked>> byMouth;
 
     public static MiniGamePagesState get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager().getOrCreate(TYPE, ID);
@@ -40,7 +47,25 @@ public class MiniGamePagesState extends PersistentState {
 
     public void put(MiniGamePageData data) {
         if (data.equals(pages.put(data.id(), data))) return;
+        byMouth = null;
         markDirty();
+    }
+
+    /** A pipe mouth linked to a page. */
+    public record Linked(MiniGamePageData page, MiniGamePipeLink link) {
+    }
+
+    /** The links to the pipe at {@code mouth}, over every page (worked out again only after a page changed). */
+    public List<Linked> linksAt(GlobalPos mouth) {
+        if (byMouth == null) {
+            byMouth = new HashMap<>();
+            for (MiniGamePageData page : pages.values()) {
+                for (MiniGamePipeLink link : page.pipeLinks()) {
+                    byMouth.computeIfAbsent(link.mouth(), key -> new ArrayList<>(1)).add(new Linked(page, link));
+                }
+            }
+        }
+        return byMouth.getOrDefault(mouth, List.of());
     }
 
     /** @return true if a page other than {@code except} shows the picture {@code hash}. */

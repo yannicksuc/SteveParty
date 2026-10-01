@@ -98,7 +98,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
         if (world.isClient) return ActionResult.PASS;
         if (player.isSneaking()) {
             if (world.isReceivingRedstonePower(pos)) {
-                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("block.steveparty.big_book.catalogue_cannot_be_taken_when_powered").withColor(Color.RED.getColor()), MessageUtils.MessageType.CHAT);
+                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.party_controller.catalogue_locked").withColor(Color.RED.getColor()), MessageUtils.MessageType.CHAT);
                 return ActionResult.PASS;
             }
             ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);

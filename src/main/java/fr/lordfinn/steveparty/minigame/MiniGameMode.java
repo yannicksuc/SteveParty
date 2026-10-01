@@ -49,7 +49,9 @@ public enum MiniGameMode {
 
     /** The layout of the teams drawn by the party controller (no team: free for all). */
     public static MiniGameMode of(TeamDisposition disposition) {
-        return disposition == null || disposition.getTeamA().isEmpty() ? FREE_FOR_ALL : TWO_TEAMS;
+        if (disposition == null || disposition.isFreeForAll()) return FREE_FOR_ALL;
+        MiniGameMode mode = ofTeams(disposition.teamCount());
+        return mode == null ? TWO_TEAMS : mode;
     }
 
     public static int toMask(Set<MiniGameMode> modes) {

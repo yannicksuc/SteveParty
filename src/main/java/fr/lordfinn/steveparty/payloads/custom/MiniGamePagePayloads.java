@@ -7,7 +7,10 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.GlobalPos;
 
 import java.util.UUID;
 
@@ -34,6 +37,7 @@ public final class MiniGamePagePayloads {
         PayloadTypeRegistry.playC2S().register(Edit.ID, Edit.CODEC);
         PayloadTypeRegistry.playC2S().register(Action.ID, Action.CODEC);
         PayloadTypeRegistry.playC2S().register(Upload.ID, Upload.CODEC);
+        PayloadTypeRegistry.playC2S().register(PipeRole.ID, PipeRole.CODEC);
         PayloadTypeRegistry.playC2S().register(Request.ID, Request.CODEC);
         PayloadTypeRegistry.playC2S().register(ImageRequest.ID, ImageRequest.CODEC);
     }
@@ -186,6 +190,28 @@ public final class MiniGamePagePayloads {
             buf.writeVarInt(payload.total);
             buf.writeByteArray(payload.bytes);
         }, buf -> new Upload(buf.readEnumConstant(Hand.class), buf.readUuid(), buf.readVarInt(), buf.readVarInt(), buf.readByteArray(CHUNK_SIZE)));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * The role of a pipe linked to the page {@code page} held in {@code hand}, changed in the editor.
+     *
+     * @param role ordinal of its new {@link fr.lordfinn.steveparty.minigame.MiniGamePipeRole}, -1 to unlink the pipe
+     */
+    public record PipeRole(Hand hand, UUID page, GlobalPos mouth, int role) implements CustomPayload {
+        public static final Id<PipeRole> ID = id("pipe_role");
+        public static final PacketCodec<PacketByteBuf, PipeRole> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeEnumConstant(payload.hand);
+            buf.writeUuid(payload.page);
+            buf.writeIdentifier(payload.mouth.dimension().getValue());
+            buf.writeBlockPos(payload.mouth.pos());
+            buf.writeByte(payload.role);
+        }, buf -> new PipeRole(buf.readEnumConstant(Hand.class), buf.readUuid(),
+                GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier()), buf.readBlockPos()), buf.readByte()));
 
         @Override
         public Id<? extends CustomPayload> getId() {

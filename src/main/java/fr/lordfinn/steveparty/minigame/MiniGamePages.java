@@ -14,7 +14,12 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.GlobalPos;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -135,6 +140,57 @@ public final class MiniGamePages {
         MiniGamePageData copy = get(server, id).withId(UUID.randomUUID());
         update(server, copy);
         return copy;
+    }
+
+    // ------------------------------------------------------------------ pipes
+
+    /**
+     * Links the pipe mouth to the page, or unlinks it if it already is.
+     *
+     * @param role the role it gets when it is linked
+     * @return the link made, null if the pipe was unlinked (or the page has no room left)
+     */
+    public static @Nullable MiniGamePipeLink toggleLink(MinecraftServer server, UUID id, GlobalPos mouth, Direction opening, MiniGamePipeRole role) {
+        MiniGamePageData data = get(server, id);
+        List<MiniGamePipeLink> links = new ArrayList<>(data.pipeLinks());
+        int index = data.linkIndex(mouth);
+        MiniGamePipeLink added = null;
+        if (index >= 0) {
+            links.remove(index);
+        } else {
+            if (links.size() >= MiniGamePageData.MAX_PIPE_LINKS) return null;
+            added = new MiniGamePipeLink(mouth, opening, role);
+            links.add(added);
+        }
+        update(server, data.withPipeLinks(links));
+        return added;
+    }
+
+    /** Changes the role of a linked pipe (its place among the page's pipes is kept). @return false if it is not linked */
+    public static boolean setLinkRole(MinecraftServer server, UUID id, GlobalPos mouth, MiniGamePipeRole role) {
+        MiniGamePageData data = get(server, id);
+        int index = data.linkIndex(mouth);
+        if (index < 0) return false;
+        List<MiniGamePipeLink> links = new ArrayList<>(data.pipeLinks());
+        links.set(index, links.get(index).withRole(role));
+        update(server, data.withPipeLinks(links));
+        return true;
+    }
+
+    /** Unlinks a pipe. @return false if it was not linked */
+    public static boolean removeLink(MinecraftServer server, UUID id, GlobalPos mouth) {
+        MiniGamePageData data = get(server, id);
+        int index = data.linkIndex(mouth);
+        if (index < 0) return false;
+        List<MiniGamePipeLink> links = new ArrayList<>(data.pipeLinks());
+        links.remove(index);
+        update(server, data.withPipeLinks(links));
+        return true;
+    }
+
+    /** The pages the pipe at {@code mouth} is linked to, with its role in each. */
+    public static List<MiniGamePagesState.Linked> linksAt(MinecraftServer server, GlobalPos mouth) {
+        return MiniGamePagesState.get(server).linksAt(mouth);
     }
 
     // ------------------------------------------------------------------ rights

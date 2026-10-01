@@ -51,8 +51,6 @@ public class LangGameTests implements FabricGameTest {
             "message.steveparty.hopswitch.time.added", "message.steveparty.hopswitch.time.removed",
             "message.steveparty.hopswitch.duration.seconds", "message.steveparty.hopswitch.duration.minutes",
             "message.steveparty.hopswitch.duration.minutes_seconds", "message.steveparty.hopswitch.decimal",
-            "gui.steveparty.group.everyone", "gui.steveparty.group.players", "gui.steveparty.group.spectators",
-            "gui.steveparty.group.player_team_a", "gui.steveparty.group.player_team_b",
             "scoreboard.steveparty.goal_pole", "scoreboard.steveparty.goal_pole_source");
 
     @GameTest(templateName = EMPTY_STRUCTURE)

@@ -47,7 +47,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
             context.assertEquals(new ItemStack(item).getMaxCount(), 64, item + " max count");
         }
         for (Item item : List.of(ModItems.MINI_GAMES_CATALOGUE, ModItems.WRENCH, ModItems.TOKENIZER_WAND,
-                ModItems.SHOPKEEPER_KEY, ModItems.HERE_WE_GO_BOOK, ModItems.HERE_WE_COME_BOOK)) {
+                ModItems.SHOPKEEPER_KEY)) {
             context.assertEquals(new ItemStack(item).getMaxCount(), 1, item + " max count");
         }
         context.complete();
