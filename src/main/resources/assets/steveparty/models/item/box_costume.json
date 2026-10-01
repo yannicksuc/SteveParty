@@ -2,7 +2,7 @@
   "parent": "builtin/entity",
   "gui_light": "side",
   "textures": {
-    "particle": "minecraft:block/gold_block"
+    "particle": "minecraft:block/beehive_side"
   },
   "display": {
     "gui": {
