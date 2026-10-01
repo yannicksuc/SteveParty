@@ -27,7 +27,10 @@ import java.util.Set;
 public final class PipeNetworks {
     /** A network stops growing there (and at unloaded chunks). */
     public static final int MAX_PIPES = 4096;
-    /** A capped end warps to the nearest mouth of the same colour of another network within this distance (blocks, loaded chunks). */
+    /**
+     * A capped end warps for free to the nearest mouth of the same colour of another network within this distance
+     * (blocks, loaded chunks); a player can go farther for an ender pearl (see {@code PipeTravel#isFar}).
+     */
     public static final double WARP_RADIUS = 100;
 
     private static final Map<ServerWorld, PipeNetworks> WORLDS = new HashMap<>();
@@ -170,13 +173,13 @@ public final class PipeNetworks {
 
     /**
      * The warp from a capped end: the nearest mouth (open end) of a pipe of the same colour ({@link PipeBlock#warpColor})
-     * in another network, within {@link #WARP_RADIUS} blocks of {@code from} (between block centres), among the loaded
+     * in another network, within {@code radius} blocks of {@code from} (between block centres), among the loaded
      * pipes; ties go to the lowest position.
      */
-    public @Nullable End nearestMouth(BlockPos from, Network own) {
+    public @Nullable End nearestMouth(BlockPos from, Network own, double radius) {
         String color = PipeBlock.warpColor(world.getBlockState(from));
         End best = null;
-        double bestDistance = WARP_RADIUS * WARP_RADIUS;
+        double bestDistance = radius >= 1.0E9 ? Double.MAX_VALUE : radius * radius;
         for (BlockPos pos : loaded) {
             double distance = pos.getSquaredDistance(from);
             if (distance > bestDistance || own.contains(pos)) continue;

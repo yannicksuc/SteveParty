@@ -17,7 +17,13 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -38,7 +44,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Travelling through pipes.
@@ -83,6 +91,37 @@ public final class PipeTravel {
         void onArrived(ServerWorld world, Entity entity, BlockPos mouth, Direction opening);
     }
 
+    /** A mouth to come out of, in its world. */
+    public record Destination(ServerWorld world, PipeNetworks.End mouth) {}
+
+    /**
+     * A mouth that sends the players going in it somewhere of its own (the ways in and out of the mini-games)
+     * instead of along the pipes. Asked each time a player goes in a mouth.
+     */
+    @FunctionalInterface
+    public interface Gate {
+        /** @return what happens to {@code player} going in this mouth, null if it is no gate for it (it travels on). */
+        @Nullable Passage passage(ServerWorld world, BlockPos mouth, Direction opening, ServerPlayerEntity player);
+    }
+
+    /**
+     * What a gate does with a player.
+     *
+     * @param pearl whether it costs an ender pearl (see {@link #canPay}); without one the player comes back out
+     * @param go    sends the player on (once paid for); false if it could not: the player comes back out, nothing is taken
+     */
+    public record Passage(boolean pearl, Predicate<ServerPlayerEntity> go) {}
+
+    private static final List<Gate> GATES = new ArrayList<>();
+    /** Rules letting players travel for free (see {@link #ridesFree}). */
+    public static final List<Predicate<ServerPlayerEntity>> FREE_RIDERS = new ArrayList<>();
+    /** The passages of the players on their way into a gate, by carrier. */
+    private static final Map<UUID, Passage> PASSAGES = new HashMap<>();
+
+    public static void registerGate(Gate gate) {
+        GATES.add(gate);
+    }
+
     private record Entry(BlockPos mouth, Direction opening, double speed) {}
 
     /** The mouth something came out of: not back in by itself before it has left the space in front ({@link #zone}). */
@@ -106,6 +145,7 @@ public final class PipeTravel {
             ENTRIES.clear();
             LEFT_AT.clear();
             BARRED.clear();
+            PASSAGES.clear();
         });
     }
 
@@ -279,6 +319,25 @@ public final class PipeTravel {
 
     private static void start(ServerWorld world, Entity entity, BlockPos mouth, Direction opening, double speed) {
         if (entity.isRemoved() || entity.hasVehicle() || PipeShape.mouth(world.getBlockState(mouth), opening) == null) return;
+        PipeNetworks.End origin = new PipeNetworks.End(mouth, opening, false);
+        // A gate (a mini-game's way in or out): a player goes in, and from there where the gate sends it
+        if (entity instanceof ServerPlayerEntity player) {
+            for (Gate gate : GATES) {
+                Passage passage = gate.passage(world, mouth, opening, player);
+                if (passage == null) continue;
+                PipeCarrierEntity carrier = PipeCarrierEntity.create(world, List.of(face(mouth, opening, 0.5), Vec3d.ofCenter(mouth)),
+                        MathHelper.clamp(speed, BASE_SPEED, MAX_SPEED), origin, origin);
+                world.spawnEntity(carrier);
+                if (!entity.startRiding(carrier, true)) {
+                    carrier.discard();
+                    return;
+                }
+                PASSAGES.put(carrier.getUuid(), passage);
+                Vec3d at = face(mouth, opening, 0.5);
+                world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.BLOCKS, 1.0F, 0.6F);
+                return;
+            }
+        }
         PipeNetworks.Network network = PipeNetworks.of(world).network(mouth);
         if (network == null) return;
         List<PipeNetworks.End> others = new ArrayList<>();
@@ -287,7 +346,6 @@ public final class PipeTravel {
         }
         if (others.isEmpty()) return;
         PipeNetworks.End target = others.get(world.random.nextInt(others.size()));
-        PipeNetworks.End origin = new PipeNetworks.End(mouth, opening, false);
         List<Vec3d> points = route(network, origin, target);
         if (points.isEmpty()) return;
         PipeCarrierEntity carrier = PipeCarrierEntity.create(world, points, MathHelper.clamp(speed, BASE_SPEED, MAX_SPEED), target, origin);
@@ -322,8 +380,13 @@ public final class PipeTravel {
     public static void arrive(ServerWorld world, PipeCarrierEntity carrier) {
         Entity traveller = carrier.getFirstPassenger();
         PipeNetworks.End target = carrier.target();
+        Passage passage = PASSAGES.remove(carrier.getUuid());
         if (traveller == null || target == null) {
             carrier.discard();
+            return;
+        }
+        if (passage != null) {
+            pass(world, carrier, traveller, passage);
             return;
         }
         // The pipes may have changed on the way: the end as it is now
@@ -334,12 +397,8 @@ public final class PipeTravel {
         }
         if (now.capped() != target.capped()) target = new PipeNetworks.End(target.pos(), target.dir(), now.capped());
         if (target.capped()) {
-            PipeNetworks.End warp = warpDestination(world, target, traveller);
-            if (warp != null && !blocked(world, warp)) {
-                warp(world, carrier, traveller, target, warp);
-            } else {
-                goBack(world, carrier, traveller);
-            }
+            Destination warp = warpDestination(world, target, traveller);
+            if (warp == null || !warp(world, carrier, traveller, target, warp)) goBack(world, carrier, traveller);
         } else if (blocked(world, target) && !carrier.hasReturned()) {
             goBack(world, carrier, traveller);
         } else {
@@ -395,24 +454,133 @@ public final class PipeTravel {
         LEFT_AT.put(traveller.getUuid(), world.getTime());
     }
 
-    /** Where a capped end warps to: its cartridge's choice, else the nearest mouth of the same colour in another network. */
-    private static @Nullable PipeNetworks.End warpDestination(ServerWorld world, PipeNetworks.End capped, Entity traveller) {
+    /**
+     * Where a capped end warps to: its cartridge's choice, else the nearest mouth of the same colour in another
+     * network: within {@link PipeNetworks#WARP_RADIUS} blocks, or for a player, failing that, the nearest one loaded
+     * however far (a far warp, see {@link #isFar}).
+     */
+    private static @Nullable Destination warpDestination(ServerWorld world, PipeNetworks.End capped, Entity traveller) {
         if (world.getBlockEntity(capped.pos()) instanceof PipeBlockEntity pipe) {
             PipeDestinationProvider provider = pipe.destinationProvider();
             PipeDestinationProvider.Exit exit = provider == null ? null : provider.destination(world, capped.pos(), traveller);
-            if (exit != null && PipeShape.mouth(world.getBlockState(exit.pos()), exit.opening()) != null) {
-                return new PipeNetworks.End(exit.pos(), exit.opening(), false);
+            if (exit != null) {
+                ServerWorld there = exit.dimension() == null ? world : world.getServer().getWorld(exit.dimension());
+                if (there != null) return new Destination(there, new PipeNetworks.End(exit.pos(), exit.opening(), false));
             }
         }
         PipeNetworks networks = PipeNetworks.of(world);
         PipeNetworks.Network own = networks.network(capped.pos());
-        return own == null ? null : networks.nearestMouth(capped.pos(), own);
+        if (own == null) return null;
+        PipeNetworks.End near = networks.nearestMouth(capped.pos(), own, PipeNetworks.WARP_RADIUS);
+        if (near == null && traveller instanceof ServerPlayerEntity) near = networks.nearestMouth(capped.pos(), own, Double.MAX_VALUE);
+        return near == null ? null : new Destination(world, near);
     }
 
     /** A block in front of the mouth (nothing can come out). */
     private static boolean blocked(ServerWorld world, PipeNetworks.End end) {
         BlockPos front = end.pos().offset(end.dir());
         return !world.getBlockState(front).getCollisionShape(world, front).isEmpty();
+    }
+
+    // ---------------------------------------------------------------- far warps: an ender pearl
+
+    /**
+     * A far warp: to another dimension, to a chunk that is not loaded, or more than {@link PipeNetworks#WARP_RADIUS}
+     * blocks away. It costs an ender pearl ({@link #canPay}); the others are free.
+     */
+    public static boolean isFar(ServerWorld from, BlockPos fromPos, ServerWorld to, BlockPos toPos) {
+        if (from != to) return true;
+        if (!to.getChunkManager().isChunkLoaded(ChunkSectionPos.getSectionCoord(toPos.getX()), ChunkSectionPos.getSectionCoord(toPos.getZ()))) return true;
+        return fromPos.getSquaredDistance(toPos) > PipeNetworks.WARP_RADIUS * PipeNetworks.WARP_RADIUS;
+    }
+
+    /** Those who travel for free: in creative, or let through by a {@link #FREE_RIDERS} rule (the players of a party). */
+    public static boolean ridesFree(ServerPlayerEntity player) {
+        if (player.getAbilities().creativeMode) return true;
+        for (Predicate<ServerPlayerEntity> rule : FREE_RIDERS) if (rule.test(player)) return true;
+        return false;
+    }
+
+    /** @return true if the traveller can take a warp that costs an ender pearl: a player, free rider or holding one. */
+    public static boolean canPay(Entity traveller) {
+        if (!(traveller instanceof ServerPlayerEntity player)) return false;
+        return ridesFree(player) || player.getInventory().count(Items.ENDER_PEARL) > 0;
+    }
+
+    /** Takes the ender pearl of a warp that costs one (nothing from a free rider). */
+    public static void pay(Entity traveller) {
+        if (!(traveller instanceof ServerPlayerEntity player) || ridesFree(player)) return;
+        PlayerInventory inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.size(); slot++) {
+            ItemStack stack = inventory.getStack(slot);
+            if (stack.isOf(Items.ENDER_PEARL)) {
+                stack.decrement(1);
+                player.playSoundToPlayer(SoundEvents.ENTITY_ENDER_EYE_DEATH, SoundCategory.PLAYERS, 0.6F, 1.4F);
+                return;
+            }
+        }
+    }
+
+    private static void refuse(Entity traveller) {
+        if (traveller instanceof ServerPlayerEntity player) {
+            player.sendMessage(Text.translatable("message.steveparty.pipe.needs_pearl").formatted(Formatting.RED), true);
+        }
+    }
+
+    // ---------------------------------------------------------------- gates
+
+    /** A gate's passage at the end of its short trip into the mouth: through, or back out if it can't be paid or done. */
+    private static void pass(ServerWorld world, PipeCarrierEntity carrier, Entity traveller, Passage passage) {
+        PipeNetworks.End origin = carrier.origin();
+        if (traveller instanceof ServerPlayerEntity player && (!passage.pearl() || canPay(player))) {
+            Vec3d here = carrier.getPos();
+            carrier.setDismountAt(here);
+            traveller.stopRiding();
+            carrier.discard();
+            world.playSound(null, here.x, here.y, here.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.BLOCKS, 0.4F, 1.6F);
+            if (passage.go().test(player)) {
+                if (passage.pearl()) pay(player);
+                return;
+            }
+            if (origin != null && player.getWorld() == world) exit(world, null, traveller, origin);
+            return;
+        }
+        if (passage.pearl()) refuse(traveller);
+        world.playSound(null, carrier.getX(), carrier.getY(), carrier.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.BLOCKS, 0.7F, 0.6F);
+        if (origin != null) exit(world, carrier, traveller, origin);
+        else carrier.discard();
+    }
+
+    /**
+     * {@code traveller} comes out of the mouth {@code mouth} of {@code world}, wherever it is now: it is brought
+     * inside the pipe (to another dimension too, for a player; the chunk is loaded for it) and rides out of it like
+     * any traveller. Nothing is asked for: the caller checked what there is to pay.
+     *
+     * @return false if there is no such mouth, or the traveller can't be brought there
+     */
+    public static boolean emerge(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed) {
+        if (traveller.isRemoved() || PipeShape.mouth(world.getBlockState(mouth.pos()), mouth.dir()) == null) return false;
+        if (traveller.hasVehicle()) traveller.stopRiding();
+        Vec3d center = Vec3d.ofCenter(mouth.pos());
+        double feet = center.y - traveller.getHeight() / 2;
+        if (traveller.getWorld() != world) {
+            if (!(traveller instanceof ServerPlayerEntity player)) return false;
+            player.teleport(world, center.x, feet, center.z, Set.of(), player.getYaw(), player.getPitch(), false);
+            if (player.getWorld() != world) return false;
+        } else {
+            traveller.requestTeleport(center.x, feet, center.z);
+        }
+        traveller.fallDistance = 0;
+        PipeNetworks.End end = new PipeNetworks.End(mouth.pos().toImmutable(), mouth.dir(), false);
+        PipeCarrierEntity next = PipeCarrierEntity.create(world, List.of(center, face(end.pos(), end.dir(), 0.5)),
+                MathHelper.clamp(speed, BASE_SPEED, MAX_SPEED), end, end);
+        next.markReturned();
+        world.spawnEntity(next);
+        if (!traveller.startRiding(next, true)) {
+            next.discard();
+            exit(world, null, traveller, end);
+        }
+        return true;
     }
 
     /** Back to where it came in (once). */
@@ -440,24 +608,33 @@ public final class PipeTravel {
         world.playSound(null, carrier.getX(), carrier.getY(), carrier.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.BLOCKS, 0.7F, 0.6F);
     }
 
-    /** From a capped end to another pipe's mouth: out of this carrier, into a new one there. */
-    private static void warp(ServerWorld world, PipeCarrierEntity carrier, Entity traveller, PipeNetworks.End from, PipeNetworks.End to) {
+    /**
+     * From a capped end to another pipe's mouth: out of this carrier, into a new one there. A far warp
+     * ({@link #isFar}) takes an ender pearl.
+     *
+     * @return false if it could not be done (the traveller still rides its carrier)
+     */
+    private static boolean warp(ServerWorld world, PipeCarrierEntity carrier, Entity traveller, PipeNetworks.End from, Destination to) {
+        boolean far = isFar(world, from.pos(), to.world(), to.mouth().pos());
+        if (far && !canPay(traveller)) {
+            refuse(traveller);
+            return false;
+        }
+        // Now the chunk may be loaded to look at the mouth
+        if (PipeShape.mouth(to.world().getBlockState(to.mouth().pos()), to.mouth().dir()) == null || blocked(to.world(), to.mouth())) return false;
         double speed = carrier.speed();
         Vec3d here = Vec3d.ofCenter(from.pos());
         world.playSound(null, here.x, here.y, here.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.BLOCKS, 0.4F, 1.6F);
-        Vec3d center = Vec3d.ofCenter(to.pos());
-        carrier.setDismountAt(center);
+        carrier.setDismountAt(here);
         traveller.stopRiding();
         carrier.discard();
-        traveller.requestTeleport(center.x, center.y - traveller.getHeight() / 2, center.z);
-        List<Vec3d> points = List.of(center, face(to.pos(), to.dir(), 0.5));
-        PipeCarrierEntity next = PipeCarrierEntity.create(world, points, speed, to, to);
-        next.markReturned();
-        world.spawnEntity(next);
-        if (!traveller.startRiding(next, true)) {
-            next.discard();
-            exit(world, null, traveller, to);
+        if (!emerge(to.world(), to.mouth(), traveller, speed)) {
+            PipeNetworks.End origin = carrier.origin();
+            if (origin != null) exit(world, null, traveller, origin);
+            return true;
         }
+        if (far) pay(traveller);
+        return true;
     }
 
     /**
