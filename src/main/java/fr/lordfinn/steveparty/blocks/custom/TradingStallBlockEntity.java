@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import net.minecraft.block.Block;
@@ -96,11 +96,11 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
             World world = this.getWorld();
             if (world != null) {
                 Box searchBox = new Box(this.getPos().add(-5, -5, -5).toCenterPos(), this.getPos().add(5, 5, 5).toCenterPos());
-                Predicate<HidingTraderEntity> predicate = trader -> trader.getBlockState().getBlock() == block;
+                Predicate<BoxedTraderEntity> predicate = trader -> trader.getBlockState().getBlock() == block;
 
-                List<HidingTraderEntity> nearbyTraders = world.getEntitiesByClass(HidingTraderEntity.class, searchBox, predicate);
+                List<BoxedTraderEntity> nearbyTraders = world.getEntitiesByClass(BoxedTraderEntity.class, searchBox, predicate);
 
-                for (HidingTraderEntity trader : nearbyTraders) {
+                for (BoxedTraderEntity trader : nearbyTraders) {
                     BlockPos stallPos = this.getPos();
                     if (trader.getPos().distanceTo(new Vec3d(stallPos.getX(), stallPos.getY(), stallPos.getZ())) <= 5) {
                         TraderStallRegistry.linkTraderToStall(trader.getUuid(), stallPos);

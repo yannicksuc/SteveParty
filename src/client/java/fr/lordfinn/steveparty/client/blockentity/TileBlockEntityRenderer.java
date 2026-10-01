@@ -149,7 +149,7 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_INVENTORY_INTERACTOR) face = TileStampTextures.face(inventoryFace(stack), color, small);
         // A Stop tile: a barred "no entry" disc in the cartridge's colour (anthracite by default)
         else if (tileType == BoardSpaceType.BOARD_SPACE_STOP) face = TileStampTextures.stopFace(color, small);
-        // A shop tile: the Hiding Trader peeking out of his open cardboard box (the box alone on a small tile)
+        // A shop tile: the Boxed Trader peeking out of his open cardboard box (the box alone on a small tile)
         else if (tileType == BoardSpaceType.BOARD_SPACE_SHOP) face = TileStampTextures.shopFace(color, small);
         // A Move Forward / Back tile: a double arrow and the number of spaces, green forward, pink-magenta back
         else if (tileType == BoardSpaceType.TILE_ADVANCE_BACK)

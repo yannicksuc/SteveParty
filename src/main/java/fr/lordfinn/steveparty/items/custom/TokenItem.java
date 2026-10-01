@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.EntityDataComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
@@ -53,7 +53,7 @@ public class TokenItem extends Item {
 
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-        if (entity instanceof HidingTraderEntity merchant) {
+        if (entity instanceof BoxedTraderEntity merchant) {
             return handleMerchantInteraction(stack, user, merchant, hand);
         }
 
@@ -64,7 +64,7 @@ public class TokenItem extends Item {
         return ActionResult.PASS;
     }
 
-    private ActionResult handleMerchantInteraction(ItemStack stack, PlayerEntity user, HidingTraderEntity merchant, Hand hand) {
+    private ActionResult handleMerchantInteraction(ItemStack stack, PlayerEntity user, BoxedTraderEntity merchant, Hand hand) {
         World world = user.getWorld();
 
         if (!world.isClient) {

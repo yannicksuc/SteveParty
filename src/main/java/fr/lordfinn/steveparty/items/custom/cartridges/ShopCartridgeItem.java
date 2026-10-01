@@ -25,7 +25,7 @@ import java.util.List;
  *     <li>in a check point: a token passing through pauses there while its owner shops;</li>
  *     <li>in a tile: the shop opens when a token ends its move there (passing tokens are not stopped).</li>
  * </ul>
- * The shop is the nearest merchant (a Hiding Trader, or the trader of the nearest trading stall), or the one chosen
+ * The shop is the nearest merchant (a Boxed Trader, or the trader of the nearest trading stall), or the one chosen
  * with the Wrench. The cartridge sets how many items may be bought per stop ({@link #purchases}): its menu, or sneak +
  * mouse wheel with it in the main hand.
  */

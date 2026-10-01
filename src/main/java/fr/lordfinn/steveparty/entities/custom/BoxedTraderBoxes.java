@@ -29,30 +29,30 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The boxes a Hiding Trader spawned from his spawn egg can come in, read from the data file
- * {@code data/steveparty/hiding_trader/box_blocks.json} (a datapack can replace it).
+ * The boxes a Boxed Trader spawned from his spawn egg can come in, read from the data file
+ * {@code data/steveparty/boxed_trader/box_blocks.json} (a datapack can replace it).
  * <p>
  * {@code "boxes"} is a list of lines. Each line has the same chance, whatever it holds; a line is one block, or a
  * group (a block tag, or a list of blocks and tags) out of which one member is then picked at random. A block is
  * written like in commands, with its state if needed: {@code "minecraft:barrel[facing=up]"}; a tag with a {@code #}.
- * Members that can't be a box (see {@link HidingTraderEntity#isValidBoxBlock}) are left out.
+ * Members that can't be a box (see {@link BoxedTraderEntity#isValidBoxBlock}) are left out.
  */
-public final class HidingTraderBoxes {
-    public static final Identifier FILE = Steveparty.id("hiding_trader/box_blocks.json");
+public final class BoxedTraderBoxes {
+    public static final Identifier FILE = Steveparty.id("boxed_trader/box_blocks.json");
     /** Lines as written in the file. */
     private static List<List<String>> entries = List.of();
     /** Lines resolved to block states (tags are only bound once the data is loaded): null until first asked. */
     @Nullable
     private static List<List<BlockState>> lines = null;
 
-    private HidingTraderBoxes() {
+    private BoxedTraderBoxes() {
     }
 
     public static void initialize() {
         ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
             @Override
             public Identifier getFabricId() {
-                return Steveparty.id("hiding_trader_boxes");
+                return Steveparty.id("boxed_trader_boxes");
             }
 
             @Override
@@ -76,7 +76,7 @@ public final class HidingTraderBoxes {
                 read.add(members);
             }
         } catch (Exception e) {
-            Steveparty.LOGGER.error("Can't read the Hiding Trader boxes {}", FILE, e);
+            Steveparty.LOGGER.error("Can't read the Boxed Trader boxes {}", FILE, e);
         }
         return read;
     }
@@ -108,12 +108,12 @@ public final class HidingTraderBoxes {
         try {
             add(BlockArgumentParser.block(Registries.BLOCK, member, false).blockState(), into);
         } catch (CommandSyntaxException e) {
-            Steveparty.LOGGER.warn("Unknown Hiding Trader box {}: {}", member, e.getMessage());
+            Steveparty.LOGGER.warn("Unknown Boxed Trader box {}: {}", member, e.getMessage());
         }
     }
 
     private static void add(BlockState state, List<BlockState> into) {
-        if (HidingTraderEntity.isValidBoxBlock(state) && !into.contains(state)) into.add(state);
+        if (BoxedTraderEntity.isValidBoxBlock(state) && !into.contains(state)) into.add(state);
     }
 
     /** A random box: a line (all equal), then one of its members; the merchant's gold block if there is no line. */

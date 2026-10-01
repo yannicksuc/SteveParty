@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.entities.ModEntities;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -27,7 +27,7 @@ public class DecisionsGameTests implements FabricGameTest {
     /** A dead trader releases its shop: owner and links are forgotten. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void deadTraderForgetsOwnerAndLinks(TestContext context) {
-        HidingTraderEntity trader = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(1, 2, 1));
+        BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(1, 2, 1));
         VendorLinkPersistentState links = VendorLinkPersistentState.get(context.getWorld().getServer());
         GlobalPos stall = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(new BlockPos(3, 2, 3)));
         links.setOwner(trader.getUuid(), UUID.randomUUID());

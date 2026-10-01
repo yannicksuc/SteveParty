@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.EquippableComponent;
@@ -18,7 +18,7 @@ import net.minecraft.util.math.MathHelper;
 import java.util.List;
 
 /**
- * The Hiding Trader's bandana, stolen with shears (or given back to him). Its colour (0-4, the merchant's
+ * The Boxed Trader's bandana, stolen with shears (or given back to him). Its colour (0-4, the merchant's
  * BandanaColor: teal, blue, pink, orange, yellow) lives in {@link ModComponents#BANDANA_COLOR}. It can be worn on the
  * head (vanilla equippable component, one equipment model per colour): no armour, a soft cloth sound, and merchants
  * simply ignore the players wearing one.
@@ -54,7 +54,7 @@ public class BandanaItem extends Item {
     }
 
     private static int clamp(int color) {
-        return MathHelper.clamp(color, 0, HidingTraderEntity.BANDANA_COLORS - 1);
+        return MathHelper.clamp(color, 0, BoxedTraderEntity.BANDANA_COLORS - 1);
     }
 
     @Override

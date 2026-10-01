@@ -8,7 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.ModEntities;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.persistent_state.ShopProtection;
@@ -228,7 +228,7 @@ public class ShopGameTests implements FabricGameTest {
         context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
         BlockPos stallPos = context.getAbsolutePos(stallRelative);
         GlobalPos stallGlobalPos = GlobalPos.create(context.getWorld().getRegistryKey(), stallPos);
-        HidingTraderEntity trader = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(3, 1, 3));
+        BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(3, 1, 3));
         VendorLinkPersistentState state = VendorLinkPersistentState.get(context.getWorld().getServer());
         ShopkeeperKeyItem keyItem = (ShopkeeperKeyItem) ModItems.SHOPKEEPER_KEY;
 
@@ -517,7 +517,7 @@ public class ShopGameTests implements FabricGameTest {
         chest.setStack(0, new ItemStack(Items.DIAMOND, 10));
         CashRegisterBlockEntity register = context.getBlockEntity(registerPos);
 
-        HidingTraderEntity trader = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(2, 1, 2));
+        BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(2, 1, 2));
         VendorLinkPersistentState links = VendorLinkPersistentState.get(context.getWorld().getServer());
         for (BlockPos pos : List.of(stallPos, chestPos, registerPos)) {
             links.linkBlock(trader.getUuid(), GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(pos)));
@@ -568,18 +568,18 @@ public class ShopGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void hidingTraderBandanaColorIsRandomSavedAndNeverRerolled(TestContext context) {
+    public void boxedTraderBandanaColorIsRandomSavedAndNeverRerolled(TestContext context) {
         ServerWorld world = context.getWorld();
         // Summoned (initialize): a colour is picked
-        HidingTraderEntity summoned = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        BoxedTraderEntity summoned = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
         summoned.initialize(world, world.getLocalDifficulty(summoned.getBlockPos()), SpawnReason.COMMAND, null);
         int color = summoned.getBandanaColor();
-        context.assertTrue(color >= 0 && color < HidingTraderEntity.BANDANA_COLORS, "colour 0-4 after spawn, got " + color);
+        context.assertTrue(color >= 0 && color < BoxedTraderEntity.BANDANA_COLORS, "colour 0-4 after spawn, got " + color);
         // Saved, then loaded many times: always the same colour
         NbtCompound saved = summoned.writeNbt(new NbtCompound());
-        context.assertEquals(saved.getInt(HidingTraderEntity.BANDANA_COLOR_NBT), color, "colour saved");
+        context.assertEquals(saved.getInt(BoxedTraderEntity.BANDANA_COLOR_NBT), color, "colour saved");
         for (int i = 0; i < 20; i++) {
-            HidingTraderEntity loaded = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+            BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.LOAD);
             loaded.readNbt(saved);
             context.assertEquals(loaded.getBandanaColor(), color, "colour kept on reload " + i);
             loaded.initialize(world, world.getLocalDifficulty(loaded.getBlockPos()), SpawnReason.LOAD, null);
@@ -587,21 +587,21 @@ public class ShopGameTests implements FabricGameTest {
         }
         // Summon with NBT: the given colour is used
         NbtCompound given = new NbtCompound();
-        given.putInt(HidingTraderEntity.BANDANA_COLOR_NBT, 3);
-        HidingTraderEntity fromNbt = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        given.putInt(BoxedTraderEntity.BANDANA_COLOR_NBT, 3);
+        BoxedTraderEntity fromNbt = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
         fromNbt.readNbt(given);
         context.assertEquals(fromNbt.getBandanaColor(), 3, "BandanaColor from NBT");
         // Trader saved before bandanas existed: gets one when loaded
         NbtCompound legacy = summoned.writeNbt(new NbtCompound());
-        legacy.remove(HidingTraderEntity.BANDANA_COLOR_NBT);
-        HidingTraderEntity old = ModEntities.HIDING_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+        legacy.remove(BoxedTraderEntity.BANDANA_COLOR_NBT);
+        BoxedTraderEntity old = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.LOAD);
         old.readNbt(legacy);
-        context.assertTrue(old.getBandanaColor() >= 0 && old.getBandanaColor() < HidingTraderEntity.BANDANA_COLORS, "legacy trader gets a colour");
+        context.assertTrue(old.getBandanaColor() >= 0 && old.getBandanaColor() < BoxedTraderEntity.BANDANA_COLORS, "legacy trader gets a colour");
         // Spawned from code without initialize() nor NBT (villager block fall): picked on its first tick
-        HidingTraderEntity spawned = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(1, 1, 1));
+        BoxedTraderEntity spawned = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(1, 1, 1));
         context.waitAndRun(2, () -> {
             int c = spawned.getBandanaColor();
-            context.assertTrue(c >= 0 && c < HidingTraderEntity.BANDANA_COLORS, "colour picked on the first tick, got " + c);
+            context.assertTrue(c >= 0 && c < BoxedTraderEntity.BANDANA_COLORS, "colour picked on the first tick, got " + c);
             context.complete();
         });
     }

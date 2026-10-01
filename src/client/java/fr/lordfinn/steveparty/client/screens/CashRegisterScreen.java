@@ -23,7 +23,7 @@ public class CashRegisterScreen extends HandledScreen<CashRegisterScreenHandler>
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, TEXTURE);
-        int x = (this.width - this.backgroundWidth) / 2; //12 is the size of the additional hiding trader slot
+        int x = (this.width - this.backgroundWidth) / 2; //12 is the size of the additional boxed trader slot
         int y = (this.height - this.backgroundHeight) / 2;
         context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground,
                 TEXTURE, x, y, 0,0,

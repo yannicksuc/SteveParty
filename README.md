@@ -47,8 +47,8 @@ Welcome to the **SteveParty Mod**! This mod enhances your Minecraft experience b
     - [AttractionSimulation](#attractionsimulation)
     - [DiceEntity](#diceentity)
     - [DirectionDisplayEntity](#directiondisplayentity)
-    - [HidingTraderEntity](#hidingtraderentity)
-    - [HidingTraderScreen](#hidingtraderscreen)
+    - [BoxedTraderEntity](#boxedtraderentity)
+    - [BoxedTraderScreen](#boxedtraderscreen)
     - [Tile](#tile)
     - [CheckPoint](#checkpoint)
     - [PartyController](#partycontroller)
@@ -93,7 +93,7 @@ The dev server lives in `run-server/` and is prepared automatically before each 
 port 25580 (RCON 25590). Change the settings in that file.
 
 ## 🌟 Features
-- Custom entities like `HidingTraderEntity` and `DiceEntity`.
+- Custom entities like `BoxedTraderEntity` and `DiceEntity`.
 - Unique gameplay mechanics involving tokens and party steps.
 - Enhanced interactions with blocks and items.
 - Custom sound effects and particle systems.
@@ -110,7 +110,7 @@ port 25580 (RCON 25590). Change the settings in that file.
 - **Purpose**: Enhances the trading functionality of merchants by integrating with cash registers.
 
 ### PlayerFallMixin
-- **Purpose**: Modifies player fall behavior to spawn a `HidingTraderEntity` when landing on a specific block.
+- **Purpose**: Modifies player fall behavior to spawn a `BoxedTraderEntity` when landing on a specific block.
 
 ### StatusEffectMixin
 - **Purpose**: Extends the `StatusEffect` class to allow custom actions when effects are removed.
@@ -223,11 +223,11 @@ port 25580 (RCON 25590). Change the settings in that file.
 ### DirectionDisplayEntity
 - **Purpose**: Represents a display entity that indicates direction.
 
-### HidingTraderEntity
+### BoxedTraderEntity
 - **Purpose**: Represents a custom trader entity in the game.
 
-### HidingTraderScreen
-- **Purpose**: Represents the screen interface for trading with the hiding trader.
+### BoxedTraderScreen
+- **Purpose**: Represents the screen interface for trading with the boxed trader.
 
 ### Tile
 - **Purpose**: Represents a custom tile block in the game.

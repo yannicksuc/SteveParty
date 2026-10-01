@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
@@ -464,7 +464,7 @@ public final class WrenchActions {
 
     public static void initialize() {
         // A click on a trading stall or a cash register with the Wrench whose origin holds a Shop Cartridge: the shop of
-        // that stall / register (its Hiding Trader) is the cartridge's shop, instead of the nearest merchant
+        // that stall / register (its Boxed Trader) is the cartridge's shop, instead of the nearest merchant
         net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
             ItemStack wrench = player.getMainHandStack();
@@ -481,11 +481,11 @@ public final class WrenchActions {
             recorded(serverPlayer, world, wrench, () -> linkShopFromBlock(serverPlayer, (ServerWorld) world, shop, clicked));
             return ActionResult.SUCCESS;
         });
-        // A click on a Hiding Trader with the same Wrench: that trader is the cartridge's shop
+        // A click on a Boxed Trader with the same Wrench: that trader is the cartridge's shop
         net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (hand != net.minecraft.util.Hand.MAIN_HAND || player.isSpectator()) return ActionResult.PASS;
             ItemStack wrench = player.getMainHandStack();
-            if (!isWrench(wrench) || !(entity instanceof HidingTraderEntity trader)) return ActionResult.PASS;
+            if (!isWrench(wrench) || !(entity instanceof BoxedTraderEntity trader)) return ActionResult.PASS;
             ShopOrigin shop = shopOrigin(wrench, world);
             if (shop == null) return ActionResult.PASS;
             if (world.isClient) return ActionResult.SUCCESS;
@@ -553,7 +553,7 @@ public final class WrenchActions {
                 ? new ShopOrigin(container, slot) : null;
     }
 
-    /** A trading stall or cash register clicked: the Hiding Trader it belongs to (Shopkeeper Key links) becomes the shop. */
+    /** A trading stall or cash register clicked: the Boxed Trader it belongs to (Shopkeeper Key links) becomes the shop. */
     private static void linkShopFromBlock(ServerPlayerEntity player, ServerWorld world, ShopOrigin origin, BlockPos clicked) {
         VendorLinkPersistentState links = VendorLinkPersistentState.get(world.getServer());
         java.util.Set<UUID> traders = links == null ? java.util.Set.of()
@@ -564,7 +564,7 @@ public final class WrenchActions {
             return;
         }
         // Several traders sharing the block: the loaded one first, else any (sorted: the same one every time)
-        UUID trader = traders.stream().filter(uuid -> world.getEntity(uuid) instanceof HidingTraderEntity)
+        UUID trader = traders.stream().filter(uuid -> world.getEntity(uuid) instanceof BoxedTraderEntity)
                 .findFirst().orElse(traders.stream().sorted().findFirst().orElseThrow());
         linkShop(player, world, origin, new ShopLinkComponent(trader, clicked));
     }
@@ -591,7 +591,7 @@ public final class WrenchActions {
         BoardLinks.trail(world, pos, shop.anchor(), SHOP_COLOR);
         net.minecraft.entity.Entity trader = world.getEntity(shop.trader());
         say(player, Text.translatable("message.steveparty.wrench.shop.linked", BoardText.pos(pos),
-                trader != null ? trader.getDisplayName() : Text.translatable("entity.steveparty.hiding_trader")));
+                trader != null ? trader.getDisplayName() : Text.translatable("entity.steveparty.boxed_trader")));
         world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.PLAYERS, 0.6f, 1.2f);
     }
 

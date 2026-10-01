@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.minecraft.entity.Entity;
@@ -50,7 +50,7 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
             }
         }
 
-        if (entity instanceof HidingTraderEntity trader) {
+        if (entity instanceof BoxedTraderEntity trader) {
             // The first player linking a key owns the trader; afterwards only that player can link keys to it
             if (!trader.claimOrCheckOwner(user)) {
                 sendNotOwner(user);

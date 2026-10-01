@@ -364,7 +364,7 @@ public final class TileStampTextures {
     // ---------------------------------------------------------------- the Shop face
 
     /**
-     * The Hiding Trader in his open cardboard box: his head (bandana, unibrow, eyes, nose, all above the rim), the box
+     * The Boxed Trader in his open cardboard box: his head (bandana, unibrow, eyes, nose, all above the rim), the box
      * (a tape seam down its front) and its two side flaps open at 45 degrees; a simpler open box on a small tile.
      * '#' darkest shade, 'b' bandana, 's' skin, 'o' eye white, 'n' nose, '+' cardboard,
      * 't' tape.

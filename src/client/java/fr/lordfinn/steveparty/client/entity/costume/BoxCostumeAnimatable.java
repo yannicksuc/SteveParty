@@ -15,7 +15,7 @@ import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.RenderUtil;
 
 /**
- * Client: the animated box of one Box Costume wearer (or of the item icon), on the Hiding Trader's model: its own
+ * Client: the animated box of one Box Costume wearer (or of the item icon), on the Boxed Trader's model: its own
  * "costume_close" when the wearer hides (one continuous motion: the box drops at once, the flaps fold over it, then it
  * holds as a block), "costume_open" when they stand up (flaps flipping open, the box rising straight back), then the
  * merchant's "walk" or "idle" (the box up to the chin). Only the box bones are drawn; the wearer's body follows the
@@ -85,7 +85,7 @@ public class BoxCostumeAnimatable implements GeoAnimatable {
             return event.setAndContinue(current == null ? HIDDEN_ANIM : CLOSED_ANIM);
         }
         if (current == null) return event.setAndContinue(walking ? WALK_ANIM : IDLE_ANIM);
-        // Standing up, then walk / idle: chained here rather than queued (see HidingTraderEntity#idleAnimController)
+        // Standing up, then walk / idle: chained here rather than queued (see BoxedTraderEntity#idleAnimController)
         if (current == CLOSED_ANIM || current == HIDDEN_ANIM || (current == OPEN_ANIM && !controller.hasAnimationFinished())) {
             return event.setAndContinue(OPEN_ANIM);
         }

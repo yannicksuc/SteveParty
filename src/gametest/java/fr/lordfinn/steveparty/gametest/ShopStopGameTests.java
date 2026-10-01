@@ -12,7 +12,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
-import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
@@ -63,7 +63,7 @@ public class ShopStopGameTests implements FabricGameTest {
             MIDDLE = new BlockPos(5, 1, 1), END = new BlockPos(7, 1, 1);
     private static final BlockPos STALL = new BlockPos(1, 1, 5), CHEST = new BlockPos(3, 1, 5), TRADER = new BlockPos(6, 1, 5);
 
-    private record Board(CowEntity token, HidingTraderEntity trader, BoardSpaceBlockEntity shop) {
+    private record Board(CowEntity token, BoxedTraderEntity trader, BoardSpaceBlockEntity shop) {
         TokenizedEntityInterface tokenized() {
             return (TokenizedEntityInterface) token;
         }
@@ -89,7 +89,7 @@ public class ShopStopGameTests implements FabricGameTest {
         link(context, SHOP, MIDDLE, new ItemStack(ModItems.SHOP_CARTRIDGE));
         link(context, MIDDLE, END, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
 
-        HidingTraderEntity trader = merchant(context, TRADER, STALL, CHEST);
+        BoxedTraderEntity trader = merchant(context, TRADER, STALL, CHEST);
         CowEntity cow = context.spawnEntity(EntityType.COW, START);
         TokenizedEntityInterface token = (TokenizedEntityInterface) cow;
         token.steveparty$setTokenized(true);
@@ -99,8 +99,8 @@ public class ShopStopGameTests implements FabricGameTest {
         return new Board(cow, trader, context.getBlockEntity(SHOP));
     }
 
-    /** A Hiding Trader with a trading stall (a diamond for an emerald) and a stock chest. */
-    private static HidingTraderEntity merchant(TestContext context, BlockPos at, BlockPos stallPos, BlockPos chestPos) {
+    /** A Boxed Trader with a trading stall (a diamond for an emerald) and a stock chest. */
+    private static BoxedTraderEntity merchant(TestContext context, BlockPos at, BlockPos stallPos, BlockPos chestPos) {
         context.setBlockState(stallPos, ModBlocks.TRADING_STALL);
         context.setBlockState(chestPos, Blocks.CHEST);
         TradingStallBlockEntity stall = context.getBlockEntity(stallPos);
@@ -108,7 +108,7 @@ public class ShopStopGameTests implements FabricGameTest {
         stall.setStack(18, new ItemStack(Items.DIAMOND));
         Inventory chest = context.getBlockEntity(chestPos);
         chest.setStack(0, new ItemStack(Items.DIAMOND, 10));
-        HidingTraderEntity trader = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, at);
+        BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, at);
         VendorLinkPersistentState links = VendorLinkPersistentState.get(context.getWorld().getServer());
         for (BlockPos pos : List.of(stallPos, chestPos)) {
             links.linkBlock(trader.getUuid(), GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(pos)));
@@ -460,10 +460,10 @@ public class ShopStopGameTests implements FabricGameTest {
         withPlayer(context, player -> {
             Board board = board(context, player, ModBlocks.CHECK_POINT);
             // The board's merchant: stall at (1,1,5), 4.5 blocks away. A closer one by his stall, a closer one without stall
-            HidingTraderEntity byStall = merchant(context, new BlockPos(8, 1, 8), new BlockPos(3, 1, 3), new BlockPos(8, 1, 7));
-            HidingTraderEntity noStall = context.spawnEntity(ModEntities.HIDING_TRADER_ENTITY, new BlockPos(3, 1, 2));
+            BoxedTraderEntity byStall = merchant(context, new BlockPos(8, 1, 8), new BlockPos(3, 1, 3), new BlockPos(8, 1, 7));
+            BoxedTraderEntity noStall = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(3, 1, 2));
             BlockPos shop = context.getAbsolutePos(SHOP);
-            HidingTraderEntity found = ShopStops.findShop(context.getWorld(), shop, board.cartridge());
+            BoxedTraderEntity found = ShopStops.findShop(context.getWorld(), shop, board.cartridge());
             context.assertTrue(found == byStall, "the merchant whose stall is nearest");
             context.assertTrue(found != noStall, "a trader without stall is no shop");
             board.cartridge().set(ModComponents.SHOP_LINK, new ShopLinkComponent(board.trader().getUuid(), board.trader().getBlockPos()));

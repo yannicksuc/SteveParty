@@ -72,7 +72,7 @@ public class ModItems {
     public static final Item FLAG = register(FlagItem.class, "flag");
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
     public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
-    public static final Item HIDING_TRADER_SPAWN_EGG = register(fr.lordfinn.steveparty.items.custom.HidingTraderSpawnEggItem.class, "hiding_trader_spawn_egg");
+    public static final Item BOXED_TRADER_SPAWN_EGG = register(fr.lordfinn.steveparty.items.custom.BoxedTraderSpawnEggItem.class, "boxed_trader_spawn_egg");
     public static final Item BLUE_STAR_FRAGMENT = register(Item.class, "blue_star_fragment");
     public static final Item PURPLE_STAR_FRAGMENT = register(Item.class, "purple_star_fragment");
     public static final Item RED_STAR_FRAGMENT = register(Item.class, "red_star_fragment");
@@ -83,7 +83,7 @@ public class ModItems {
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
     /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
     public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
-    /** The Hiding Trader's bandana (stolen with shears), wearable on the head. */
+    /** The Boxed Trader's bandana (stolen with shears), wearable on the head. */
     public static final Item BANDANA = register(BandanaItem.class, "bandana", new Item.Settings().maxCount(1));
     public static final Item BOX_COSTUME = register(fr.lordfinn.steveparty.items.custom.BoxCostumeItem.class, "box_costume", new Item.Settings().maxCount(1));
     public static final Item PARTY_CARD_TURNS = registerCard(PartyCardItem.CardType.TURNS);
@@ -307,7 +307,7 @@ public class ModItems {
             }
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);
-            itemGroup.add(HIDING_TRADER_SPAWN_EGG);
+            itemGroup.add(BOXED_TRADER_SPAWN_EGG);
             itemGroup.add(BLUE_STAR_FRAGMENTS_BLOCK);
             itemGroup.add(PURPLE_STAR_FRAGMENTS_BLOCK);
             itemGroup.add(RED_STAR_FRAGMENTS_BLOCK);
