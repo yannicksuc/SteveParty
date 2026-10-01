@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "steveparty:item/hiding_trader_spawn_egg"
+  }
+}

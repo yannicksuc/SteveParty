@@ -2,12 +2,14 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.custom.HidingTraderBoxes;
 import fr.lordfinn.steveparty.entities.custom.HidingTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.EquippableComponent;
@@ -200,6 +202,107 @@ public class HidingTraderGameTests implements FabricGameTest {
             context.assertTrue(trader.getBlockState().isOf(Blocks.BRICKS), "the costume's block: " + trader.getBlockState());
             context.assertTrue(player.getMainHandStack().isEmpty(), "costume used up");
         }));
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aBlockGivesAGlitchedBoxANewLookInsteadOfTrading(TestContext context) {
+        floor(context);
+        HidingTraderEntity trader = trader(context);
+        trader.setHasBandana(false);
+        trader.setBoxGlitched(true);
+        ServerPlayerEntity player = playerNear(context, trader);
+        context.waitAndRun(3, () -> checks(context, player, () -> {
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.TORCH, 3));
+            trader.interact(player, Hand.MAIN_HAND);
+            context.assertTrue(trader.isBoxGlitched(), "a torch is no box");
+            context.assertEquals(player.getMainHandStack().getCount(), 3, "torch kept");
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.MELON, 3));
+            trader.interact(player, Hand.MAIN_HAND);
+            context.assertFalse(trader.isBoxGlitched(), "his box has a look again");
+            context.assertTrue(trader.getBlockState().isOf(Blocks.MELON), "the block given: " + trader.getBlockState());
+            context.assertEquals(player.getMainHandStack().getCount(), 2, "one melon used up");
+            context.assertTrue(player.currentScreenHandler == player.playerScreenHandler, "no shop opened");
+            // His box is fine again: a block in hand is just a block
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.STONE, 3));
+            trader.interact(player, Hand.MAIN_HAND);
+            context.assertTrue(trader.getBlockState().isOf(Blocks.MELON), "box kept");
+            context.assertEquals(player.getMainHandStack().getCount(), 3, "stone kept");
+        }));
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void heDoesNotNoticePlayersInABoxCostume(TestContext context) {
+        // Checked on the rules themselves: a neighbouring test's player within 15 blocks would open a real trader
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        checks(context, player, () -> {
+            player.changeGameMode(GameMode.SURVIVAL);
+            context.assertTrue(HidingTraderEntity.drawsHimOut(player) && HidingTraderEntity.isAttentionTarget(player), "noticed without it");
+            player.equipStack(EquipmentSlot.CHEST, BoxCostumeItem.create(Blocks.GOLD_BLOCK.getDefaultState()));
+            context.assertFalse(HidingTraderEntity.drawsHimOut(player), "standing in a Box Costume: he doesn't come out");
+            context.assertFalse(HidingTraderEntity.isAttentionTarget(player), "nor pays attention");
+            player.setSneaking(true);
+            context.assertFalse(HidingTraderEntity.drawsHimOut(player) || HidingTraderEntity.isAttentionTarget(player), "nor sneaking in it");
+            player.setSneaking(false);
+            player.equipStack(EquipmentSlot.HEAD, BandanaItem.create(1));
+            context.assertFalse(HidingTraderEntity.drawsHimOut(player), "the costume wins over the bandana");
+        });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void spawnEggBoxesAreDrawnPerLineThenPerMember(TestContext context) {
+        List<List<BlockState>> lines = HidingTraderBoxes.lines();
+        context.assertEquals(lines.size(), 31, "lines of box_blocks.json");
+        for (List<BlockState> line : lines) {
+            for (BlockState state : line) context.assertTrue(HidingTraderEntity.isValidBoxBlock(state), "valid box: " + state);
+        }
+        java.util.function.Function<net.minecraft.block.Block, List<BlockState>> lineOf = block -> lines.stream()
+                .filter(line -> line.stream().anyMatch(state -> state.isOf(block))).findFirst().orElseThrow();
+        context.assertEquals(lineOf.apply(Blocks.WHITE_WOOL).size(), 16, "wool colours");
+        context.assertEquals(lineOf.apply(Blocks.RED_GLAZED_TERRACOTTA).size(), 16, "glazed terracotta colours");
+        context.assertEquals(lineOf.apply(Blocks.FIRE_CORAL_BLOCK).size(), 5, "live coral blocks");
+        context.assertEquals(lineOf.apply(Blocks.CHISELED_COPPER).size(), 4, "chiseled copper oxidation stages");
+        context.assertEquals(lineOf.apply(Blocks.IRON_BLOCK).size(), 9, "storage blocks");
+        context.assertTrue(lineOf.apply(Blocks.OAK_LOG).size() >= 10 && lineOf.apply(Blocks.OAK_LOG).stream().anyMatch(state -> state.isOf(Blocks.WARPED_STEM)), "logs and stems");
+        context.assertTrue(lineOf.apply(Blocks.OAK_PLANKS).size() >= 11, "planks");
+        context.assertEquals(lineOf.apply(Blocks.CHISELED_TUFF).size(), 1, "chiseled tuff alone");
+        context.assertTrue(lineOf.apply(Blocks.BARREL).getFirst().get(net.minecraft.block.BarrelBlock.FACING) == net.minecraft.util.math.Direction.UP, "barrel lid up");
+        // Each line has the same chance, whatever its size; inside a line, each member too
+        net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(42);
+        int draws = 31 * 2000;
+        java.util.Map<List<BlockState>, Integer> perLine = new java.util.HashMap<>();
+        java.util.Map<BlockState, Integer> perWool = new java.util.HashMap<>();
+        for (int i = 0; i < draws; i++) {
+            BlockState picked = HidingTraderBoxes.pick(random);
+            List<BlockState> line = lines.stream().filter(candidate -> candidate.contains(picked)).findFirst().orElseThrow();
+            perLine.merge(line, 1, Integer::sum);
+            if (line.contains(Blocks.WHITE_WOOL.getDefaultState())) perWool.merge(picked, 1, Integer::sum);
+        }
+        for (List<BlockState> line : lines) {
+            int count = perLine.getOrDefault(line, 0);
+            context.assertTrue(count > 1700 && count < 2300, "line " + line.getFirst() + " drawn " + count + " times out of " + draws);
+        }
+        context.assertEquals(perWool.size(), 16, "every wool colour drawn");
+        for (int count : perWool.values()) context.assertTrue(count > 60 && count < 200, "a wool colour drawn " + count + " times");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aMerchantFromHisSpawnEggGetsARandomBox(TestContext context) {
+        floor(context);
+        java.util.Set<net.minecraft.block.Block> seen = new java.util.HashSet<>();
+        for (int i = 0; i < 12; i++) {
+            HidingTraderEntity trader = ModEntities.HIDING_TRADER_ENTITY.spawnFromItemStack(context.getWorld(), new ItemStack(ModItems.HIDING_TRADER_SPAWN_EGG),
+                    null, context.getAbsolutePos(new BlockPos(3, 1, 3)), SpawnReason.SPAWN_ITEM_USE, false, false);
+            context.assertTrue(trader != null, "spawned");
+            BlockState box = trader.getBlockState();
+            context.assertTrue(HidingTraderBoxes.lines().stream().anyMatch(line -> line.contains(box)), "a box of the list: " + box);
+            seen.add(box.getBlock());
+            trader.discard();
+        }
+        context.assertTrue(seen.size() >= 4, "random boxes: " + seen);
+        HidingTraderEntity summoned = trader(context);
+        context.assertTrue(summoned.getBlockState().isOf(Blocks.GOLD_BLOCK), "summoned otherwise: his gold box");
+        context.complete();
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
