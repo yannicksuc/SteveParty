@@ -192,6 +192,9 @@ public class DiceGameTests implements FabricGameTest {
             context.assertTrue(thrown.stream().allMatch(DiceEntity::isRolling), "still rolling meanwhile");
             thrown.getLast().damage(world, world.getDamageSources().playerAttack(player), 1F);
             context.assertTrue(thrown.stream().noneMatch(DiceEntity::isRolling) && thrown.getFirst().isRollFinished(), "then the thrower's hit stops them");
+            // The finished dice are unchanged: the next hit makes them go away at once
+            thrown.getFirst().damage(world, world.getDamageSources().playerAttack(player), 1F);
+            context.assertTrue(thrown.stream().allMatch(DiceEntity::isRemoved), "a hit on the finished dice makes them go away");
             context.complete();
         });
     }
