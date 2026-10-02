@@ -65,6 +65,10 @@ public final class MiniGamePageNetworking {
                 ModPayloads.runInPacketOrder(context.player(), () -> pipeOrder(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PodiumUnlink.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () -> podiumUnlink(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestQuery.ID, (payload, context) ->
+                ModPayloads.runInPacketOrder(context.player(), () -> testQuery(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestAction.ID, (payload, context) ->
+                ModPayloads.runInPacketOrder(context.player(), () -> testAction(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Request.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () ->
                         send(context.player(), new MiniGamePagePayloads.Data(MiniGamePages.get(context.player().server, payload.page())))));
@@ -160,6 +164,33 @@ public final class MiniGamePageNetworking {
     public static boolean podiumUnlink(ServerPlayerEntity player, MiniGamePagePayloads.PodiumUnlink payload) {
         if (editable(player, payload.hand(), payload.page()) == null) return false;
         return MiniGamePages.removePodiumLinks(player.server, payload.page(), java.util.List.of(payload.pos()));
+    }
+
+    private static MiniGamePagePayloads.TestStatus testStatus(UUID page, MiniGameTest.Plan plan) {
+        return new MiniGamePagePayloads.TestStatus(page, plan.status().ordinal(), plan.players().size(), plan.mode() == null ? -1 : plan.mode().ordinal());
+    }
+
+    /** The editor asks whether its page can be tested now (the state of its « Test » button). */
+    public static void testQuery(ServerPlayerEntity player, MiniGamePagePayloads.TestQuery payload) {
+        if (!payload.page().equals(MiniGamePages.idOf(player.getStackInHand(payload.hand())))) return;
+        send(player, testStatus(payload.page(), MiniGameTest.check(player.server, payload.page())));
+    }
+
+    /**
+     * The « Test » button of the editor: starts the test of the page with those near its pipes, or stops it.
+     *
+     * @return what became of it: {@code READY} when a test started, {@code RUNNING} when one was stopped, else why
+     * nothing started; null if the player may not (not holding the page, not allowed to build)
+     */
+    public static MiniGameTest.@Nullable Status testAction(ServerPlayerEntity player, MiniGamePagePayloads.TestAction payload) {
+        if (editable(player, payload.hand(), payload.page()) == null) return null;
+        if (!payload.start()) {
+            MiniGameTest.stop(payload.page());
+            return MiniGameTest.Status.RUNNING;
+        }
+        MiniGameTest.Status status = MiniGameTest.start(player.server, payload.page(), player, MiniGameTest.COUNTDOWN_SECONDS);
+        if (status != MiniGameTest.Status.READY) send(player, testStatus(payload.page(), MiniGameTest.check(player.server, payload.page())));
+        return status;
     }
 
     /** A role's players sent in turn or at random, chosen in the editor. @return true if it was done */

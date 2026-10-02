@@ -1809,5 +1809,20 @@
   "gui.steveparty.mini_game_page.podiums.card.step_controller": "Contrôleur de pas %s",
   "gui.steveparty.mini_game_page.podiums.card.step_controller.hint": "Une impulsion de redstone dessus agit sur la partie qui joue ce mini-jeu, même très loin ou dans une autre dimension : haut = le termine (places telles quelles, gains payés), côté = recommence l'étape, bas = revient d'une étape. Aucune partie ne le joue : rien ne se passe.",
   "label.steveparty.step_controller.linked": "Lié : %s",
-  "gui.steveparty.goal_pole_base.players.party.meaning.page": "Page liée : les joueurs de son mini-jeu, où qu'il soit"
+  "gui.steveparty.goal_pole_base.players.party.meaning.page": "Page liée : les joueurs de son mini-jeu, où qu'il soit",
+  "gui.steveparty.mini_game_page.test": "Tester",
+  "gui.steveparty.mini_game_page.test.stop": "Arrêter le test",
+  "gui.steveparty.mini_game_page.test.tooltip.unknown": "Demande au serveur si ce mini-jeu peut être testé…",
+  "gui.steveparty.mini_game_page.test.tooltip.ready": "Joue ce mini-jeu maintenant, sans partie, avec les %1$s joueurs près de ses tuyaux (%2$s) : chacun prend le rôle du tuyau le plus proche, à 5 blocs au plus. Rien n'est payé, et tout le monde revient à la fin.",
+  "gui.steveparty.mini_game_page.test.tooltip.running": "Ce mini-jeu est en cours de test. Arrêter le test ramène tout le monde où il était.",
+  "gui.steveparty.mini_game_page.test.tooltip.no_pipe": "Test impossible : aucune façon de jouer cochée n'a ses tuyaux (voir l'onglet Tuyaux).",
+  "gui.steveparty.mini_game_page.test.tooltip.nobody": "Test impossible : personne n'est à 5 blocs ou moins d'un tuyau de joueurs ou d'équipe de cette page.",
+  "gui.steveparty.mini_game_page.test.tooltip.not_enough": "Test impossible : les joueurs près des tuyaux ne conviennent à aucune façon de jouer cochée (nombre de joueurs de la page, au moins un joueur par équipe).",
+  "gui.steveparty.mini_game_page.test.tooltip.party_playing": "Test impossible : une partie joue ce mini-jeu.",
+  "hud.steveparty.minigame.test": "Test du mini-jeu : %s",
+  "hud.steveparty.minigame.results.test": "Test : aucun gain",
+  "message.steveparty.minigame.test.start": "Test du mini-jeu lancé (%2$s, joueurs : %1$s).",
+  "message.steveparty.minigame.test.stopped": "Le test a été arrêté.",
+  "message.steveparty.minigame.test.no_gain": "Test : aucun gain n'est payé.",
+  "message.steveparty.minigame.test.ignored": "Tu es près d'un tuyau « %1$s », qui ne sert pas en « %2$s » : tu ne joues pas ce test."
 }

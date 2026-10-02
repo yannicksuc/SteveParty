@@ -1808,5 +1808,20 @@
   "gui.steveparty.mini_game_page.podiums.card.step_controller": "Step Controller %s",
   "gui.steveparty.mini_game_page.podiums.card.step_controller.hint": "A redstone pulse into it acts on the party playing this mini-game, however far and in any dimension: up = ends it (places as they stand, gains paid), side = restarts the step, down = goes back a step. No party playing it: nothing happens.",
   "label.steveparty.step_controller.linked": "Linked: %s",
-  "gui.steveparty.goal_pole_base.players.party.meaning.page": "Linked page: the players of its mini-game, wherever it is"
+  "gui.steveparty.goal_pole_base.players.party.meaning.page": "Linked page: the players of its mini-game, wherever it is",
+  "gui.steveparty.mini_game_page.test": "Test",
+  "gui.steveparty.mini_game_page.test.stop": "Stop the test",
+  "gui.steveparty.mini_game_page.test.tooltip.unknown": "Asking the server whether this mini-game can be tested…",
+  "gui.steveparty.mini_game_page.test.tooltip.ready": "Plays this mini-game now, without any party, with the %1$s players near its pipes (%2$s): each takes the role of the nearest pipe within 5 blocks. Nothing is paid, and everyone comes back at the end.",
+  "gui.steveparty.mini_game_page.test.tooltip.running": "This mini-game is being tested. Stopping the test brings everyone back where they were.",
+  "gui.steveparty.mini_game_page.test.tooltip.no_pipe": "Can't be tested: no way to play ticked has its pipes (see the Pipes tab).",
+  "gui.steveparty.mini_game_page.test.tooltip.nobody": "Can't be tested: nobody is within 5 blocks of a players or team pipe of this page.",
+  "gui.steveparty.mini_game_page.test.tooltip.not_enough": "Can't be tested: the players near the pipes don't fit a way to play ticked (the page's number of players, at least one player per team).",
+  "gui.steveparty.mini_game_page.test.tooltip.party_playing": "Can't be tested: a party is playing this mini-game.",
+  "hud.steveparty.minigame.test": "Mini-game test: %s",
+  "hud.steveparty.minigame.results.test": "Test: nothing is paid",
+  "message.steveparty.minigame.test.start": "Mini-game test started (%2$s, players: %1$s).",
+  "message.steveparty.minigame.test.stopped": "The test was stopped.",
+  "message.steveparty.minigame.test.no_gain": "Test: nothing is paid.",
+  "message.steveparty.minigame.test.ignored": "You are near a « %1$s » pipe, which is not used in « %2$s »: you don't play this test."
 }

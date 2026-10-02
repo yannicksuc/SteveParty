@@ -35,6 +35,10 @@ public final class MiniGamePagePayloads {
         PayloadTypeRegistry.playS2C().register(Status.ID, Status.CODEC);
         PayloadTypeRegistry.playS2C().register(Preview.ID, Preview.CODEC);
         PayloadTypeRegistry.playS2C().register(Results.ID, Results.CODEC);
+        PayloadTypeRegistry.playS2C().register(TestLabel.ID, TestLabel.CODEC);
+        PayloadTypeRegistry.playS2C().register(TestStatus.ID, TestStatus.CODEC);
+        PayloadTypeRegistry.playC2S().register(TestQuery.ID, TestQuery.CODEC);
+        PayloadTypeRegistry.playC2S().register(TestAction.ID, TestAction.CODEC);
         PayloadTypeRegistry.playC2S().register(PodiumUnlink.ID, PodiumUnlink.CODEC);
         PayloadTypeRegistry.playC2S().register(Edit.ID, Edit.CODEC);
         PayloadTypeRegistry.playC2S().register(Action.ID, Action.CODEC);
@@ -157,7 +161,77 @@ public final class MiniGamePagePayloads {
         }
     }
 
+    /**
+     * The label of a test being played (« Test of the mini-game: ... »), for its players, spectators and observer.
+     *
+     * @param show  false: the test is over
+     * @param title the page's title, empty if it has none
+     */
+    public record TestLabel(boolean show, String title) implements CustomPayload {
+        public static final Id<TestLabel> ID = id("test_label");
+        public static final PacketCodec<PacketByteBuf, TestLabel> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeBoolean(payload.show);
+            buf.writeString(payload.title, MiniGamePageData.MAX_TITLE_LENGTH);
+        }, buf -> new TestLabel(buf.readBoolean(), buf.readString(MiniGamePageData.MAX_TITLE_LENGTH)));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * Whether a page can be tested now (the answer to a {@link TestQuery}, and to a refused {@link TestAction}).
+     *
+     * @param status  ordinal of the {@code MiniGameTest.Status}
+     * @param players the players who would play
+     * @param mode    ordinal of the way it would be played, -1 for none
+     */
+    public record TestStatus(UUID page, int status, int players, int mode) implements CustomPayload {
+        public static final Id<TestStatus> ID = id("test_status");
+        public static final PacketCodec<PacketByteBuf, TestStatus> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeUuid(payload.page);
+            buf.writeByte(payload.status);
+            buf.writeByte(payload.players);
+            buf.writeByte(payload.mode);
+        }, buf -> new TestStatus(buf.readUuid(), buf.readByte(), buf.readByte(), buf.readByte()));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
     // ------------------------------------------------------------------ client → server
+
+    /** Asks whether the page {@code page} held in {@code hand} can be tested now (answered by {@link TestStatus}). */
+    public record TestQuery(Hand hand, UUID page) implements CustomPayload {
+        public static final Id<TestQuery> ID = id("test_query");
+        public static final PacketCodec<PacketByteBuf, TestQuery> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeEnumConstant(payload.hand);
+            buf.writeUuid(payload.page);
+        }, buf -> new TestQuery(buf.readEnumConstant(Hand.class), buf.readUuid()));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /** The « Test » button of the editor, for the page {@code page} held in {@code hand}: starts its test, or stops it. */
+    public record TestAction(Hand hand, UUID page, boolean start) implements CustomPayload {
+        public static final Id<TestAction> ID = id("test_action");
+        public static final PacketCodec<PacketByteBuf, TestAction> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeEnumConstant(payload.hand);
+            buf.writeUuid(payload.page);
+            buf.writeBoolean(payload.start);
+        }, buf -> new TestAction(buf.readEnumConstant(Hand.class), buf.readUuid(), buf.readBoolean()));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
 
     /** A podium (or a goal pole base) linked to the page {@code page} held in {@code hand}, unlinked in the editor. */
     public record PodiumUnlink(Hand hand, UUID page, GlobalPos pos) implements CustomPayload {

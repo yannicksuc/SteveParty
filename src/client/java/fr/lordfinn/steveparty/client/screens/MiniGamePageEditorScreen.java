@@ -77,6 +77,13 @@ public class MiniGamePageEditorScreen extends Screen {
     private int minPlayers, maxPlayers;
     private final PartyButton[] modeButtons = new PartyButton[MiniGameMode.values().length];
     private PartyButton removeButton;
+    /**
+     * The « Test » button, on every tab: plays the mini-game out of any party with those near its pipes, or stops the
+     * test being played. Whether it can is asked to the server every second ({@link #onTestStatus}).
+     */
+    private PartyButton testButton;
+    private fr.lordfinn.steveparty.minigame.MiniGameTest.@Nullable Status testStatus;
+    private int testPlayers, testMode = -1, testPoll;
 
     /** The picture just picked, shown until the server says what became of it. */
     private @Nullable MiniGamePageImage pendingImage;
@@ -154,7 +161,10 @@ public class MiniGamePageEditorScreen extends Screen {
         pageTabButton.setSelected(!pipesTab && !podiumsTab);
         pipesTabButton.setSelected(pipesTab);
         podiumsTabButton.setSelected(podiumsTab);
-        addDrawableChild(new PartyButton(rx, y + HEIGHT - 26, COLUMN, 18, ScreenTexts.DONE, b -> close()).style(PartyButton.Style.PRIMARY));
+        testButton = addDrawableChild(new PartyButton(rx, y + HEIGHT - 26, 88, 18, Text.translatable(KEY + "test"), b -> clickTest()));
+        addDrawableChild(new PartyButton(rx + 92, y + HEIGHT - 26, COLUMN - 92, 18, ScreenTexts.DONE, b -> close()).style(PartyButton.Style.PRIMARY));
+        refreshTestButton();
+        if (testStatus == null) queryTest();
         if (pipesTab || podiumsTab) {
             titleField = null;
             descriptionBox = null;
@@ -376,6 +386,60 @@ public class MiniGamePageEditorScreen extends Screen {
                     java.util.Arrays.copyOfRange(bytes, from, Math.min(bytes.length, from + MiniGamePagePayloads.CHUNK_SIZE))));
         }
         setStatus(Text.translatable(KEY + "status.sending"), false);
+    }
+
+    // ------------------------------------------------------------------ test
+
+    private void queryTest() {
+        if (!MiniGamePageData.NO_ID.equals(page)) send(new MiniGamePagePayloads.TestQuery(hand, page));
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (++testPoll % 20 == 0) queryTest();
+    }
+
+    /** The server says whether the page can be tested now, with how many players and in which way to play. */
+    public void onTestStatus(UUID about, int status, int players, int mode) {
+        if (!about.equals(page)) return;
+        fr.lordfinn.steveparty.minigame.MiniGameTest.Status[] values = fr.lordfinn.steveparty.minigame.MiniGameTest.Status.values();
+        testStatus = status >= 0 && status < values.length ? values[status] : null;
+        testPlayers = players;
+        testMode = mode;
+        refreshTestButton();
+    }
+
+    private boolean testRunning() {
+        return testStatus == fr.lordfinn.steveparty.minigame.MiniGameTest.Status.RUNNING;
+    }
+
+    /** « Test », or « Stop the test » while one is played; greyed, with why in its tooltip, when the page can't be tested. */
+    private void refreshTestButton() {
+        if (testButton == null) return;
+        boolean ready = testStatus == fr.lordfinn.steveparty.minigame.MiniGameTest.Status.READY;
+        testButton.setMessage(Text.translatable(KEY + (testRunning() ? "test.stop" : "test")));
+        testButton.active = canEdit && (ready || testRunning());
+        Text why;
+        if (!canEdit) why = Text.translatable(KEY + "status.read_only");
+        else if (testStatus == null) why = Text.translatable(KEY + "test.tooltip.unknown");
+        else if (ready) {
+            MiniGameMode[] ways = MiniGameMode.values();
+            why = Text.translatable(KEY + "test.tooltip.ready", testPlayers, testMode >= 0 && testMode < ways.length ? ways[testMode].text() : Text.empty());
+        } else why = Text.translatable(KEY + "test.tooltip." + testStatus.name().toLowerCase(java.util.Locale.ROOT));
+        testButton.setTooltip(Tooltip.of(ready || testRunning() ? why : why.copy().formatted(Formatting.RED)));
+    }
+
+    private void clickTest() {
+        if (!canEdit) return;
+        if (testRunning()) {
+            send(new MiniGamePagePayloads.TestAction(hand, page, false));
+        } else {
+            // What is written is the mini-game tested
+            save();
+            send(new MiniGamePagePayloads.TestAction(hand, page, true));
+        }
+        close();
     }
 
     /** The server's answer to the last request. */

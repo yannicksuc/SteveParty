@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
+import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.podium.PodiumGroup.Column;
 import fr.lordfinn.steveparty.sounds.ModSounds;
@@ -63,7 +64,7 @@ import java.util.UUID;
  *     <li><b>Links</b>: a podium or a goal pole base clicked with a mini-game page is linked to it
  *     ({@link #clickLink}); a goal pole touching a podium of the group is linked to the group too.</li>
  * </ul>
- * In a party, the group of the page being played only takes the players of the mini-game.
+ * While a page's mini-game is played (by a party, or as a test), its group only takes the players of that mini-game.
  */
 public final class Podiums {
     /** Out of a party, a pulse registers the nearest player within this many blocks. */
@@ -86,28 +87,9 @@ public final class Podiums {
 
     // ------------------------------------------------------------------ the mini-game being played
 
-    /**
-     * The mini-game of a party whose places a group records.
-     *
-     * @param teams its teams, null without teams
-     */
-    public record Played(PartyControllerEntity controller, MiniGamePartyStep miniGame, @Nullable TeamDisposition teams) {
-        public boolean isParticipant(UUID player) {
-            return miniGame.getParticipants().contains(player);
-        }
-
-        /** The team of a player (0: A ... 3: D), -1 without teams. */
-        public int teamOf(UUID player) {
-            return teams == null ? -1 : teams.teamOf(player);
-        }
-    }
-
-    /** The mini-game being played on a page the group is linked to, null for none. */
-    public static @Nullable Played played(PodiumGroup group) {
-        PartyControllerEntity controller = PartyControllerEntity.getPartyPlayingPage(group.pages()).orElse(null);
-        if (controller == null || !(controller.getPartyData().getCurrentStep() instanceof MiniGamePartyStep miniGame)) return null;
-        TeamDisposition teams = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.getCatalogue());
-        return new Played(controller, miniGame, teams == null || teams.isFreeForAll() ? null : teams);
+    /** The mini-game being played on a page the group is linked to (a party's, or a test), null for none. */
+    public static @Nullable MiniGameSession played(PodiumGroup group) {
+        return MiniGameSession.playing(group.pages());
     }
 
     /** « 1st », « 2nd »... */
@@ -154,7 +136,7 @@ public final class Podiums {
     public static boolean register(PodiumGroup group, Column column, ServerPlayerEntity player) {
         PodiumBlockEntity master = column.master();
         if (master == null) return false;
-        Played played = played(group);
+        MiniGameSession played = played(group);
         UUID uuid = player.getUuid();
         if (played != null && !played.isParticipant(uuid)) {
             player.sendMessage(Text.translatable("message.steveparty.podium.not_playing").formatted(Formatting.RED), true);
@@ -192,16 +174,16 @@ public final class Podiums {
             Text line = team < 0
                     ? Text.translatable("message.steveparty.podium.place", player.getName(), placeText(place))
                     : Text.translatable("message.steveparty.podium.place.team", teamText(team), player.getName(), placeText(place));
-            MessageUtils.sendToPlayers(played.controller().getPartyAudience(), line.copy().formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
-            played.miniGame().onPodiumsChanged(played.controller());
+            MessageUtils.sendToPlayers(played.audience(), line.copy().formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
+            played.onPodiumsChanged();
         }
         return true;
     }
 
     /** The places of the group changed: the mini-game being played with it may end, or its end be called off. */
     private static void notifyPlayed(PodiumGroup group) {
-        Played played = played(group);
-        if (played != null) played.miniGame().onPodiumsChanged(played.controller());
+        MiniGameSession played = played(group);
+        if (played != null) played.onPodiumsChanged();
     }
 
     private static void unregister(PodiumGroup group, Column column, ServerPlayerEntity player) {
@@ -210,12 +192,12 @@ public final class Podiums {
         master.setOccupant(null);
         poof(column);
         player.sendMessage(Text.translatable("message.steveparty.podium.unregistered").formatted(Formatting.GRAY), true);
-        Played played = played(group);
+        MiniGameSession played = played(group);
         if (played != null) {
-            MessageUtils.sendToPlayers(played.controller().getPartyAudience(),
+            MessageUtils.sendToPlayers(played.audience(),
                     Text.translatable("message.steveparty.podium.left", player.getName(), placeText(group.placeOf(column))).formatted(Formatting.GRAY),
                     MessageUtils.MessageType.CHAT);
-            played.miniGame().onPodiumsChanged(played.controller());
+            played.onPodiumsChanged();
         }
     }
 
@@ -241,7 +223,7 @@ public final class Podiums {
      * @return true if he took a place
      */
     public static boolean fill(PodiumGroup group, ServerPlayerEntity player) {
-        Played played = played(group);
+        MiniGameSession played = played(group);
         if (played != null && !played.isParticipant(player.getUuid())) return false;
         if (group.columnOf(player.getUuid(), played == null ? -1 : played.teamOf(player.getUuid())) != null) return false;
         Column free = group.highestFree();
@@ -283,7 +265,7 @@ public final class Podiums {
      * @param unplacedOnly only among those who have no place in the group yet (nor their team)
      */
     public static @Nullable ServerPlayerEntity nearest(PodiumGroup group, Column column, boolean unplacedOnly) {
-        Played played = played(group);
+        MiniGameSession played = played(group);
         Vec3d at = column.standPos();
         ServerPlayerEntity best = null;
         double bestDistance = played == null ? NEAREST_RADIUS * NEAREST_RADIUS : Double.MAX_VALUE;

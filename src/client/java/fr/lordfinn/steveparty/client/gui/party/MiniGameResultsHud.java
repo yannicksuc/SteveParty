@@ -18,7 +18,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The end of a party's mini-game, in the style of the mini-game card ({@link MiniGameCardHud}): the results card, in
  * the middle of the screen for a few seconds, a line per player (per team in a team mini-game) with its place, and
- * what the party paid for it (the coins and the stars, with their items).
+ * what the party paid for it (the coins and the stars, with their items). The results of a test say that nothing was
+ * paid; while a test is played, a chip at the top of the screen says so (« Test of the mini-game: ... »).
  */
 public final class MiniGameResultsHud {
     private static final int WIDTH = 210, PAD = 7, ROW = 14, CHIP = 24;
@@ -28,6 +29,8 @@ public final class MiniGameResultsHud {
 
     private static @Nullable MiniGameResults results;
     private static double shownAt;
+    /** The title of the mini-game being tested (empty: it has none), null while no test is played. */
+    private static @Nullable String testTitle;
 
     private MiniGameResultsHud() {
     }
@@ -42,8 +45,19 @@ public final class MiniGameResultsHud {
         shownAt = PartyHud.now();
     }
 
+    /** A test of a mini-game is being played ({@code title}: its page's, empty for none), or is over (null). */
+    public static void test(@Nullable String title) {
+        testTitle = title;
+    }
+
+    /** @return true while the label of a test is on screen. */
+    public static boolean isTesting() {
+        return testTitle != null;
+    }
+
     public static void clear() {
         results = null;
+        testTitle = null;
     }
 
     /** @return true while the results card is on screen. */
@@ -53,6 +67,7 @@ public final class MiniGameResultsHud {
 
     private static void render(DrawContext context, RenderTickCounter tickCounter) {
         if (MinecraftClient.getInstance().options.hudHidden) return;
+        if (testTitle != null) drawTestLabel(context, testTitle);
         if (results == null) return;
         double now = PartyHud.now();
         float age = (float) (now - shownAt);
@@ -67,6 +82,16 @@ public final class MiniGameResultsHud {
         drawResults(context, results, alpha, (1 - in) * -10 + (1 - out) * -6);
     }
 
+    /** « Test of the mini-game: ... », on a chip at the top of the screen. */
+    private static void drawTestLabel(DrawContext context, String title) {
+        TextRenderer font = HudDraw.font();
+        Text name = title.isEmpty() ? Text.translatable("item.steveparty.mini_game_page") : Text.literal(title);
+        OrderedText text = HudDraw.fit(Text.translatable("hud.steveparty.minigame.test", name), context.getScaledWindowWidth() - 40);
+        int width = font.getWidth(text) + 14, x = (context.getScaledWindowWidth() - width) / 2, y = 6;
+        HudDraw.plate(context, Plate.ORANGE, x, y, width, 15, 1);
+        HudDraw.text(context, text, x + 7, y + 4, HudDraw.TEXT, 1);
+    }
+
     private static void drawResults(DrawContext context, MiniGameResults shown, float alpha, float slide) {
         TextRenderer font = HudDraw.font();
         int screenWidth = context.getScaledWindowWidth(), screenHeight = context.getScaledWindowHeight();
@@ -74,7 +99,7 @@ public final class MiniGameResultsHud {
         boolean hasTitle = !shown.title().isEmpty();
         int head = PAD + 12 + (hasTitle ? 10 : 0) + 3;
         int rows = Math.max(1, Math.min(shown.rows().size(), Math.max(1, (room - head - PAD) / ROW)));
-        int height = head + rows * ROW + PAD - 2;
+        int height = head + rows * ROW + PAD - 2 + (shown.test() ? 11 : 0);
         int x = (screenWidth - WIDTH) / 2;
         int y = Math.max(4, ROOM_ABOVE + (room - height) / 2);
 
@@ -92,6 +117,10 @@ public final class MiniGameResultsHud {
         for (int i = 0; i < rows && i < shown.rows().size(); i++) {
             drawRow(context, font, shown, shown.rows().get(i), x + PAD, top, WIDTH - 2 * PAD, alpha);
             top += ROW;
+        }
+        if (shown.test()) {
+            Text note = Text.translatable("hud.steveparty.minigame.results.test");
+            HudDraw.text(context, note, x + (WIDTH - font.getWidth(note)) / 2, top + 1, HudDraw.TEXT_WARN, alpha);
         }
         matrices.pop();
     }
