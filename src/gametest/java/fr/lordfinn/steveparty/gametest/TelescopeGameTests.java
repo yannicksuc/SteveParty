@@ -193,9 +193,11 @@ public class TelescopeGameTests implements FabricGameTest {
         MulaSpawnSites sites = MulaSpawnSites.get(world);
         // far away, in chunks nobody loads
         BlockPos farPos = telescope.add(-600, 0, -600), outPos = telescope.add(-4000, 0, 0);
-        MulaSpawnSites.Site site = sites.add(farPos, world.getTime(), 4, new int[]{3, 3, 0});
-        MulaSpawnSites.Site out = sites.add(outPos, world.getTime(), 2, new int[]{1});
-        context.assertTrue(site != null && out != null, "recorded");
+        // The test world is saved from one run to the next, with the sites the ephemerides of the night tests left
+        // waiting in it: it can be at the cap of add() for good. These two are set by hand, whatever is waiting.
+        MulaSpawnSites.Site site = sites.record(farPos, world.getTime(), 4, new int[]{3, 3, 0});
+        MulaSpawnSites.Site out = sites.record(outPos, world.getTime(), 2, new int[]{1});
+        context.assertTrue(sites.byId(site.id) == site && sites.byId(out.id) == out, "recorded");
         try {
             long time = world.getTimeOfDay();
             boolean rain = world.isRaining();
