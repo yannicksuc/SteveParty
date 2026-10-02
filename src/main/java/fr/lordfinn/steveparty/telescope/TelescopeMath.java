@@ -80,6 +80,42 @@ public final class TelescopeMath {
         return Math.toDegrees(Math.acos(dot));
     }
 
+    // ---------------------------------------------------------------- the watcher at the eyepiece
+
+    /** The tube turns about a point this high over the block's floor; its eyepiece ends this far behind it (blocks). */
+    public static final double PIVOT_HEIGHT = 31 / 16.0, EYEPIECE_BACK = 0.6;
+    /**
+     * The player model: its neck this high when standing, this much lower fully bent (as when sneaking), the head half
+     * this size, and the eye this far from the eyepiece.
+     */
+    public static final double NECK_HEIGHT = 1.406, BEND_DROP = 0.371, HEAD = 0.234, EYE_GAP = 0.03;
+    /** A watcher stays within this distance of the telescope (blocks, horizontally from its centre). */
+    public static final double WATCH_DISTANCE = 4.5;
+
+    /**
+     * Where the neck of a player looking through the tube is, relative to the tube's pivot, into {@code out}
+     * (x, y, z): his eye against the eyepiece, his head tilted like the tube.
+     *
+     * @param yaw   where the tube points (degrees, as a player's yaw)
+     * @param pitch its tilt (degrees, as a player's pitch: negative is up)
+     */
+    public static void neck(double yaw, double pitch, double[] out) {
+        double y = Math.toRadians(yaw), p = Math.toRadians(pitch);
+        double fx = -Math.sin(y), fz = Math.cos(y);
+        double level = Math.cos(p), rise = -Math.sin(p);
+        // along the tube (behind the eyepiece, then half a head), then half a head down the tilted head
+        double along = -(EYEPIECE_BACK + EYE_GAP + HEAD);
+        double flat = along * level + HEAD * rise;
+        out[0] = fx * flat;
+        out[1] = along * rise - HEAD * level;
+        out[2] = fz * flat;
+    }
+
+    /** How much a player bends (0 standing .. 1 as low as sneaking) for his neck to be this high over his feet. */
+    public static double bend(double neckHeight) {
+        return Math.max(0, Math.min(1, (NECK_HEIGHT - neckHeight) / BEND_DROP));
+    }
+
     // ---------------------------------------------------------------- the tracking gauge
 
     /** The reticle tracks a star within this angle (degrees); within the smaller one it is well centred. */

@@ -253,6 +253,87 @@ public class TelescopeGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /**
+     * One player at a time at the eyepiece: he is the telescope's watcher (what the clients are told, never saved) and
+     * stands where his eye meets it; another is refused until he leaves; going to another telescope frees the first.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void oneWatcherAtATimeSeenByAll(TestContext context) {
+        ServerWorld world = context.getWorld();
+        BlockPos first = new BlockPos(2, 1, 2), second = new BlockPos(5, 1, 2);
+        for (int x = 0; x <= 7; x++) for (int z = 0; z <= 4; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
+        context.setBlockState(first, ModBlocks.TELESCOPE.getDefaultState());
+        context.setBlockState(second, ModBlocks.TELESCOPE.getDefaultState());
+        TelescopeBlockEntity telescope = context.getBlockEntity(first), other = context.getBlockEntity(second);
+        BlockPos at = context.getAbsolutePos(first), otherAt = context.getAbsolutePos(second);
+        ServerPlayerEntity ann = context.createMockCreativeServerPlayerInWorld();
+        ServerPlayerEntity bob = context.createMockCreativeServerPlayerInWorld();
+        try {
+            ann.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() - 2.0, 0, -40);
+            bob.refreshPositionAndAngles(at.getX() + 2.5, at.getY(), at.getZ() + 0.5, 90, -40);
+            context.assertTrue(telescope.getWatcher() == null && !telescope.toInitialChunkDataNbt(world.getRegistryManager()).getBoolean("Watched"),
+                    "nobody at first");
+
+            context.assertTrue(TelescopeService.comeToEyepiece(ann, at, telescope), "Ann comes to the eyepiece");
+            context.assertTrue(ann.getUuid().equals(telescope.getWatcher()), "she is its watcher");
+            double[] neck = new double[3];
+            TelescopeMath.neck(0, -40, neck);
+            context.assertTrue(Math.abs(ann.getX() - (at.getX() + 0.5 + neck[0])) < 0.01 && Math.abs(ann.getZ() - (at.getZ() + 0.5 + neck[2])) < 0.01,
+                    "standing where her eye meets it: " + ann.getPos());
+            context.assertTrue(neck[2] < -0.3 && neck[2] > -0.8 && Math.abs(neck[0]) < 1e-9, "just behind the eyepiece: " + neck[2]);
+
+            // What the clients are told, and nothing of it is saved
+            NbtCompound sync = telescope.toInitialChunkDataNbt(world.getRegistryManager());
+            TelescopeBlockEntity seen = new TelescopeBlockEntity(at, ModBlocks.TELESCOPE.getDefaultState());
+            seen.read(sync, world.getRegistryManager());
+            context.assertTrue(ann.getUuid().equals(seen.getWatcher()), "the clients know who looks");
+            context.assertTrue(!telescope.createNbt(world.getRegistryManager()).containsUuid("Watcher"), "not saved");
+
+            context.assertTrue(!TelescopeService.comeToEyepiece(bob, at, telescope) && ann.getUuid().equals(telescope.getWatcher()),
+                    "Bob is refused while she is there");
+            context.assertTrue(TelescopeService.comeToEyepiece(ann, at, telescope), "she may click it again");
+
+            // She goes to the other telescope: the first is free
+            context.assertTrue(TelescopeService.comeToEyepiece(ann, otherAt, other), "Ann at the other one");
+            context.assertTrue(telescope.getWatcher() == null && ann.getUuid().equals(other.getWatcher()), "the first is free");
+            context.assertTrue(TelescopeService.comeToEyepiece(bob, at, telescope) && bob.getUuid().equals(telescope.getWatcher()), "Bob takes it");
+            TelescopeService.leave(bob);
+            context.assertTrue(telescope.getWatcher() == null && TelescopeService.watching(bob.getUuid()) == null, "and leaves it");
+            seen.read(telescope.toInitialChunkDataNbt(world.getRegistryManager()), world.getRegistryManager());
+            context.assertTrue(seen.getWatcher() == null, "the clients know nobody looks");
+
+            // A watcher who walked away does not keep it
+            ann.refreshPositionAndAngles(otherAt.getX() + 0.5, otherAt.getY(), otherAt.getZ() + 9.5, 0, 0);
+            context.assertTrue(!TelescopeService.isAt(world, otherAt, ann.getUuid()), "too far to be at it");
+            context.assertTrue(TelescopeService.comeToEyepiece(bob, otherAt, other) && bob.getUuid().equals(other.getWatcher()), "Bob takes her place");
+        } finally {
+            TelescopeService.leave(ann);
+            TelescopeService.leave(bob);
+            world.getServer().getPlayerManager().remove(ann);
+            world.getServer().getPlayerManager().remove(bob);
+            TelescopeService.forget(ann.getUuid());
+            TelescopeService.forget(bob.getUuid());
+        }
+        context.complete();
+    }
+
+    /** The eyepiece is within a player's reach whatever the aim: he stands, or bends no lower than when sneaking. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theEyepieceIsAtAPlayersHeight(TestContext context) {
+        double[] neck = new double[3];
+        for (int pitch = -20; pitch >= -75; pitch -= 5) {
+            TelescopeMath.neck(37, pitch, neck);
+            double height = TelescopeMath.PIVOT_HEIGHT + neck[1];
+            context.assertTrue(height <= TelescopeMath.NECK_HEIGHT + 0.06 && height >= TelescopeMath.NECK_HEIGHT - TelescopeMath.BEND_DROP - 0.06,
+                    "neck at " + height + " for a tilt of " + pitch);
+            double back = Math.sqrt(neck[0] * neck[0] + neck[2] * neck[2]);
+            context.assertTrue(pitch < -60 || back > 0.2 && back < 0.8, "behind the pivot: " + back);
+        }
+        context.assertTrue(TelescopeMath.bend(TelescopeMath.NECK_HEIGHT) == 0 && TelescopeMath.bend(TelescopeMath.NECK_HEIGHT - TelescopeMath.BEND_DROP) == 1
+                && TelescopeMath.bend(0) == 1 && TelescopeMath.bend(3) == 0, "the bend");
+        context.complete();
+    }
+
     /** The block: its block entity (it is drawn by it), 16 ways to point, turned with the structure it is in. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void telescopeBlockPointsSixteenWays(TestContext context) {

@@ -7,7 +7,10 @@ import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.ShapeContext;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -34,14 +37,17 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * The Telescope: a little copper telescope on a tripod, pointing the way its placer looked (16 ways). A click, at
- * night under the open sky: the player looks through it and can replay the past nights of shooting stars
- * (TelescopeService; the view and the game are drawn by his client alone).
+ * The Telescope: a spyglass on a tall tripod, pointing the way its placer looked (16 ways). A click, at night under
+ * the open sky: the player comes to its eyepiece, looks through it and can replay the past nights of shooting stars
+ * (TelescopeService; the view and the game are drawn by his client alone). One player at a time: the others see him
+ * bent at the eyepiece, the tube following his eyes.
  */
 public class TelescopeBlock extends BlockWithEntity {
     public static final MapCodec<TelescopeBlock> CODEC = createCodec(TelescopeBlock::new);
     public static final IntProperty ROTATION = Properties.ROTATION;
-    private static final VoxelShape SHAPE = Block.createCuboidShape(3, 0, 3, 13, 16, 13);
+    /** A tall tripod: clicked on its whole height, but only its middle stops a player (he stands close to the eyepiece). */
+    private static final VoxelShape SHAPE = Block.createCuboidShape(4, 0, 4, 12, 24, 12);
+    private static final VoxelShape COLLISION = Block.createCuboidShape(6, 0, 6, 10, 24, 10);
     public static final String[] TOOLTIP_LINES = {"what", "use", "wheel", "track", "guide"};
 
     public TelescopeBlock(Settings settings) {
@@ -59,8 +65,10 @@ public class TelescopeBlock extends BlockWithEntity {
         builder.add(ROTATION);
     }
 
+    /** It is taller than a block: it needs room over it. */
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
+    public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
+        if (!ctx.getWorld().getBlockState(ctx.getBlockPos().up()).isReplaceable()) return null;
         return getDefaultState().with(ROTATION, RotationPropertyHelper.fromYaw(ctx.getPlayerYaw()));
     }
 
@@ -77,6 +85,16 @@ public class TelescopeBlock extends BlockWithEntity {
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return COLLISION;
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        return validateTicker(type, ModBlockEntities.TELESCOPE_ENTITY, TelescopeBlockEntity::tick);
     }
 
     /** Drawn by its block entity renderer (the tube turns freely). */
