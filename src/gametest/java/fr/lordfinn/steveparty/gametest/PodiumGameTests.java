@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyChunkHolds;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
@@ -1004,6 +1005,72 @@ public class PodiumGameTests implements FabricGameTest {
             cleanUp(context, p1);
         }
         context.complete();
+    }
+
+    // ------------------------------------------------------------------ the controller stays loaded
+
+    /**
+     * While its party is on a mini-game step the controller keeps its own chunk loaded (the players may be far away,
+     * or in another dimension); the chunk is let go when the mini-game is over, when the party stops and when the
+     * controller is broken. The holds are saved, to be taken again when the world loads.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_chunk", tickLimit = 100)
+    public void theControllerKeepsItsChunkLoadedDuringAMiniGame(TestContext context) {
+        ServerPlayerEntity p1 = player(context, "k1", 0.5, 1, 0.5);
+        ServerWorld world = context.getWorld();
+        BlockPos abs = context.getAbsolutePos(CONTROLLER);
+        net.minecraft.util.math.ChunkPos chunk = new net.minecraft.util.math.ChunkPos(abs);
+        try {
+            context.setBlockState(CONTROLLER.down(), Blocks.STONE);
+            context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+            PartyControllerEntity idle = context.getBlockEntity(CONTROLLER);
+            idle.markDirty();
+            context.assertTrue(!idle.wantsChunk() && !PartyChunkHolds.isHeld(world, abs), "no party: nothing kept loaded");
+            boolean others = PartyChunkHolds.isChunkHeld(world, chunk);
+
+            Played played = played(context, page(context), null, MiniGamePartyStep.Phase.PLAYING, p1);
+            PartyControllerEntity controller = played.controller();
+            context.assertTrue(controller.wantsChunk(), "a mini-game step: the controller must stay loaded");
+            context.assertTrue(PartyChunkHolds.isHeld(world, abs) && PartyChunkHolds.isChunkHeld(world, chunk), "its chunk is kept loaded");
+            // Saved with the world: the tickets are taken again when it loads
+            NbtCompound saved = PartyChunkHolds.get(world).writeNbt(new NbtCompound(), world.getRegistryManager());
+            long[] read = PartyChunkHolds.fromNbt(saved, world.getRegistryManager()).writeNbt(new NbtCompound(), world.getRegistryManager()).getLongArray("Controllers");
+            context.assertTrue(java.util.Arrays.stream(read).anyMatch(pos -> pos == abs.asLong()), "the hold is saved and read back");
+
+            // The mini-game ends (a step controller here): the party goes on, the chunk is let go
+            controller.nextStep();
+            context.assertEquals(played.step().getPhase(), MiniGamePartyStep.Phase.FINISHED, "the mini-game is over");
+            context.assertTrue(!PartyChunkHolds.isHeld(world, abs), "let go with the mini-game step");
+            context.assertEquals(PartyChunkHolds.isChunkHeld(world, chunk), others, "the chunk is no longer kept loaded for it");
+
+            // A controller broken during its mini-game lets it go too
+            context.removeBlock(CONTROLLER);
+            played(context, page(context), null, MiniGamePartyStep.Phase.PLAYING, p1);
+            context.assertTrue(PartyChunkHolds.isHeld(world, abs), "held again for a new mini-game");
+            context.removeBlock(CONTROLLER);
+            context.assertTrue(!PartyChunkHolds.isHeld(world, abs), "a broken controller holds nothing");
+
+            // A party stopped (no longer started) during its mini-game lets it go
+            Played stopped = played(context, page(context), null, MiniGamePartyStep.Phase.PLAYING, p1);
+            context.assertTrue(PartyChunkHolds.isHeld(world, abs), "held");
+            stopped.controller().setPartyData(new PartyData());
+            context.assertTrue(!PartyChunkHolds.isHeld(world, abs), "the party stopped: let go");
+
+            // A hold left behind (its controller is no longer on a mini-game) is dropped by the regular check
+            PartyChunkHolds.hold(world, abs);
+            context.assertTrue(PartyChunkHolds.isHeld(world, abs), "a stale hold");
+        } catch (RuntimeException e) {
+            cleanUp(context, p1);
+            throw e;
+        }
+        context.waitAndRun(30, () -> {
+            try {
+                context.assertTrue(!PartyChunkHolds.isHeld(world, abs), "the controller itself lets go of a hold it no longer needs");
+            } finally {
+                cleanUp(context, p1);
+            }
+            context.complete();
+        });
     }
 
     // ------------------------------------------------------------------ places and gains
