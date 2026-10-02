@@ -102,6 +102,12 @@ public final class MiniGamePageClient {
                 MiniGameCardHud.hide();
             }
         }));
+        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestLabel.ID, (payload, context) ->
+                context.client().execute(() -> MiniGameResultsHud.test(payload.show() ? payload.title() : null)));
+        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestStatus.ID, (payload, context) -> context.client().execute(() -> {
+            if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor)
+                editor.onTestStatus(payload.page(), payload.status(), payload.players(), payload.mode());
+        }));
         ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Results.ID, (payload, context) ->
                 context.client().execute(() -> MiniGameResultsHud.show(payload.results())));
     }

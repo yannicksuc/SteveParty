@@ -316,6 +316,8 @@ public class MiniGamePartyStep extends PartyStep {
         // A new mini-game: its podiums are emptied and its counters go back to 0 (before it is being played)
         if (controller.getWorld() instanceof ServerWorld world) {
             MiniGamePageData page = MiniGamePages.of(world.getServer(), MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+            // A test of the page gives way to the party: it is stopped, its players go back
+            if (page != null) fr.lordfinn.steveparty.minigame.MiniGameTest.stop(page.id());
             if (page != null) Podiums.resetForMiniGame(world.getServer(), page);
         }
         phase = Phase.PLAYING;
@@ -369,9 +371,14 @@ public class MiniGamePartyStep extends PartyStep {
     private void announce(PartyControllerEntity controller, @Nullable MiniGamePageData page) {
         ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
         String name = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
+        announceStart(name, page, previewAudience(controller));
+    }
+
+    /** The start of a mini-game (a party's, or a test): its name in big with « Go! », its name and description in the chat. */
+    public static void announceStart(String name, @Nullable MiniGamePageData page, Collection<ServerPlayerEntity> audience) {
         Text go = Text.translatableWithFallback("message.steveparty.minigame.go", "Go!").styled(style -> style.withColor(0x55FF55).withBold(true));
         Text title = name.isEmpty() ? go : Text.literal(name).styled(style -> style.withColor(0xFFC52E).withBold(true));
-        for (ServerPlayerEntity player : previewAudience(controller)) {
+        for (ServerPlayerEntity player : audience) {
             if (!name.isEmpty()) player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.SubtitleS2CPacket(go));
             player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.TitleS2CPacket(title));
             if (name.isEmpty()) continue;

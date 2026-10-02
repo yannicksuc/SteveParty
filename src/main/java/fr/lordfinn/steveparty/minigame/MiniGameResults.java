@@ -26,8 +26,14 @@ import java.util.function.Function;
  * @param coinItem the item the party counts as coins (its icon next to the amounts)
  * @param starItem the item the party counts as stars
  * @param rows     the best place first, the participants (no place) last
+ * @param test     the results of a test ({@link MiniGameTest}): what each place would be paid, nothing was
  */
-public record MiniGameResults(String title, ItemStack coinItem, ItemStack starItem, List<Row> rows) {
+public record MiniGameResults(String title, ItemStack coinItem, ItemStack starItem, List<Row> rows, boolean test) {
+    /** The same results, as those of a test: nothing was paid. */
+    public MiniGameResults asTest() {
+        return new MiniGameResults(title, coinItem, starItem, rows, true);
+    }
+
     public static final int MAX_ROWS = 16;
 
     /**
@@ -93,7 +99,7 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
             rows.add(new Row(place, team, names, gains.forPlace(PartyCurrency.COIN, place), gains.forPlace(PartyCurrency.STAR, place)));
         }
         rows.sort(Comparator.comparingInt(row -> row.place() == 0 ? Integer.MAX_VALUE : row.place()));
-        return new MiniGameResults(title, coinItem, starItem, rows);
+        return new MiniGameResults(title, coinItem, starItem, rows, false);
     }
 
     public static final PacketCodec<RegistryByteBuf, MiniGameResults> PACKET_CODEC = PacketCodec.of((results, buf) -> {
@@ -110,6 +116,7 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
             buf.writeVarInt(row.coins);
             buf.writeVarInt(row.stars);
         }
+        buf.writeBoolean(results.test);
     }, buf -> {
         String title = buf.readString(MiniGamePageData.MAX_TITLE_LENGTH);
         ItemStack coinItem = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
@@ -122,6 +129,6 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
             for (int j = 0; j < nameCount; j++) names.add(buf.readString());
             rows.add(new Row(place, team, names, buf.readVarInt(), buf.readVarInt()));
         }
-        return new MiniGameResults(title, coinItem, starItem, rows);
+        return new MiniGameResults(title, coinItem, starItem, rows, buf.readBoolean());
     });
 }

@@ -26,9 +26,9 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * previous).
  * <ul>
  *     <li>Not linked: the nearest party within {@value #RANGE} blocks, in its world.</li>
- *     <li>Linked to mini-game pages (page in hand, click: see {@code Podiums#clickLink}): the party playing right now
- *     the mini-game of one of those pages, however far and in whatever dimension; no such party: the pulse does
- *     nothing. « Next » ends the mini-game with the places as they stand (see {@code MiniGamePartyStep}).</li>
+ *     <li>Linked to mini-game pages (page in hand, click: see {@code Podiums#clickLink}): the mini-game being played
+ *     right now on one of those pages, by a party or as a test, however far and in whatever dimension; none: the pulse
+ *     does nothing. « Next » ends the mini-game with the places as they stand (see {@code MiniGamePartyStep}).</li>
  * </ul>
  * The links are kept by the pages; the pages it is linked to are only mirrored here for the clients (its label).
  */
@@ -155,9 +155,20 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
         return PartyControllerEntity.getClosestSteppablePartyControllerEntity(this.world, this.pos, RANGE, this.mode == 2);
     }
 
-    /** A redstone pulse: the party it acts on ({@link #target}) moves by the controller's mode. */
+    /**
+     * A redstone pulse: linked to a page, the mini-game being played on it (a party's or a test's) ends or stops, by
+     * the controller's mode; else the party it acts on ({@link #target}) moves by that mode.
+     */
     public void trigger() {
         if (this.world != null && this.world instanceof ServerWorld) {
+            java.util.List<java.util.UUID> pages = getLinkedPages();
+            if (!pages.isEmpty()) {
+                fr.lordfinn.steveparty.minigame.MiniGameSession session = fr.lordfinn.steveparty.minigame.MiniGameSession.playing(pages);
+                world.playSound(null, this.pos, session != null ? SoundEvents.BLOCK_TRIAL_SPAWNER_OPEN_SHUTTER : SoundEvents.EVENT_MOB_EFFECT_TRIAL_OMEN,
+                        SoundCategory.BLOCKS, 1.0F, 1.0F);
+                if (session != null) session.step(this.mode);
+                return;
+            }
             target()
                     .ifPresentOrElse(partyControllerEntity ->  {
                         world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);

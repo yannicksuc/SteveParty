@@ -421,7 +421,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         if (source != Source.LANDINGS_HERE) return;
         if (!follows(player)) {
             // Not one of the players this base follows: say so (no party running, too far, not in the party...)
-            String why = players == Players.PARTY && countedParty() == null ? "no_party" : "not_followed";
+            String why = players == Players.PARTY && countedSession() == null && countedParty() == null ? "no_party" : "not_followed";
             player.sendMessage(Text.translatable("message.steveparty.goal_pole." + why).formatted(Formatting.GOLD), true);
             return;
         }
@@ -632,13 +632,13 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             case RADIUS -> player.getWorld() == world
                     && player.squaredDistanceTo(Vec3d.ofCenter(pos)) <= (double) radius * radius;
             case PARTY -> {
-                PartyControllerEntity party = countedParty();
-                if (party == null) yield false;
-                // Linked to a page: the players of its mini-game (not those who only watch the party)
-                if (!linkedPages().isEmpty() && party.getPartyData().getCurrentStep() instanceof
-                        fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep miniGame)
-                    yield miniGame.getParticipants().contains(player.getUuid());
-                yield party.isParticipant(player);
+                // Linked to a page: the players of its mini-game (a party's or a test's; not those who only watch)
+                if (!linkedPages().isEmpty()) {
+                    fr.lordfinn.steveparty.minigame.MiniGameSession session = countedSession();
+                    yield session != null && session.isParticipant(player.getUuid());
+                }
+                PartyControllerEntity party = runningParty();
+                yield party != null && party.isParticipant(player);
             }
             case SELECTOR -> followsSelector(player);
         };
@@ -672,6 +672,12 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
                 net.minecraft.util.math.GlobalPos.create(serverWorld.getRegistryKey(), pos))) pages.add(page.id());
         for (fr.lordfinn.steveparty.podium.PodiumGroup group : fr.lordfinn.steveparty.podium.Podiums.groupsOf(this)) pages.addAll(group.pages());
         return pages;
+    }
+
+    /** The mini-game being played on a page this base is linked to (a party's, or a test), null for none. */
+    @Nullable
+    public fr.lordfinn.steveparty.minigame.MiniGameSession countedSession() {
+        return fr.lordfinn.steveparty.minigame.MiniGameSession.playing(linkedPages());
     }
 
     /**
