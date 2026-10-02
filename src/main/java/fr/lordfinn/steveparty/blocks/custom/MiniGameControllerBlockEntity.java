@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.items.custom.ZoneCartridgeItem;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
@@ -55,6 +56,10 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
 
     private ItemStack page = ItemStack.EMPTY;
     private ItemStack cartridge = ItemStack.EMPTY;
+    /** Its « adventure mode » option: the players of its mini-game play in adventure mode in its zone. */
+    private boolean adventure;
+    /** It said which page it holds since it was loaded. Not saved. */
+    private boolean claimedOnce;
     /** Client side: the controllers the client has loaded (whose zones it may show). */
     private static final Set<MiniGameControllerBlockEntity> CLIENT_LOADED = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
@@ -93,6 +98,32 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
         return GlobalPos.create(world.getRegistryKey(), pos);
     }
 
+    public boolean isAdventure() {
+        return adventure;
+    }
+
+    public void setAdventure(boolean adventure) {
+        if (this.adventure == adventure) return;
+        this.adventure = adventure;
+        claim();
+        markDirty();
+    }
+
+    /** Says again which page it holds, with its zone and its option. @return false if another controller is its home */
+    private boolean claim() {
+        UUID id = getPageId();
+        if (id == null || !(world instanceof ServerWorld serverWorld)) return true;
+        return MiniGameControllers.claim(serverWorld.getServer(), id, globalPos(), getZone().orElse(null), adventure);
+    }
+
+    /**
+     * @return true if nothing of the controller may change now: a round is played in the zone it stands in, or the
+     * player is of a round (what it holds then is a session inventory: a page taken would go with it)
+     */
+    public boolean isLockedFor(PlayerEntity player) {
+        return world != null && (ZoneBubbles.of(world, pos) != null || ZoneBubbles.ofPlayer(player.getUuid()) != null);
+    }
+
     /** @return true if the stack is a Zone Cartridge (what its second slot takes). */
     public static boolean isZoneCartridge(ItemStack stack) {
         return stack.getItem() instanceof ZoneCartridgeItem;
@@ -125,7 +156,7 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
             UUID before = getPageId();
             if (before != null) MiniGameControllers.release(serverWorld.getServer(), before, globalPos());
             if (!stack.isEmpty()) {
-                MiniGameControllers.claim(serverWorld.getServer(), MiniGamePages.ensureId(stack), globalPos(), ZoneCartridgeItem.zone(cartridge).orElse(null));
+                MiniGameControllers.claim(serverWorld.getServer(), MiniGamePages.ensureId(stack), globalPos(), ZoneCartridgeItem.zone(cartridge).orElse(null), adventure);
                 MiniGamePages.refresh(serverWorld.getServer(), stack);
             }
         }
@@ -136,10 +167,7 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
     /** Puts a Zone Cartridge in (an empty stack takes it out). */
     public void setCartridge(ItemStack stack) {
         cartridge = stack;
-        UUID id = getPageId();
-        if (id != null && world instanceof ServerWorld serverWorld) {
-            MiniGameControllers.claim(serverWorld.getServer(), id, globalPos(), getZone().orElse(null));
-        }
+        claim();
         markDirty();
     }
 
@@ -155,9 +183,10 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
     }
 
     public void serverTick(ServerWorld serverWorld) {
-        if (serverWorld.getTime() % CLAIM_INTERVAL_TICKS != 0) return;
-        UUID id = getPageId();
-        if (id == null || MiniGameControllers.claim(serverWorld.getServer(), id, globalPos(), getZone().orElse(null))) return;
+        // On its first tick too: a controller a mini-game zone just put back is the home of its page at once
+        if (claimedOnce && serverWorld.getTime() % CLAIM_INTERVAL_TICKS != 0) return;
+        claimedOnce = true;
+        if (claim()) return;
         // Another controller is the home of this page (this one was copied): the page comes out
         ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, page);
         page = ItemStack.EMPTY;
@@ -201,6 +230,7 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
         super.writeNbt(nbt, wrapper);
         if (!page.isEmpty()) nbt.put("Page", page.toNbt(wrapper));
         if (!cartridge.isEmpty()) nbt.put("ZoneCartridge", cartridge.toNbt(wrapper));
+        if (adventure) nbt.putBoolean("Adventure", true);
     }
 
     @Override
@@ -208,6 +238,7 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
         super.readNbt(nbt, wrapper);
         page = nbt.contains("Page") ? ItemStack.fromNbt(wrapper, nbt.get("Page")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
         cartridge = nbt.contains("ZoneCartridge") ? ItemStack.fromNbt(wrapper, nbt.get("ZoneCartridge")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
+        adventure = nbt.getBoolean("Adventure");
     }
 
     @Override

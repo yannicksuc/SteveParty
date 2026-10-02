@@ -17,8 +17,10 @@ import net.minecraft.world.PersistentState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -37,6 +39,8 @@ public final class MiniGameControllers extends PersistentState {
     private final Map<UUID, GlobalPos> homes = new LinkedHashMap<>();
     /** The zone of the pages whose controller holds a Zone Cartridge with a zone. */
     private final Map<UUID, PageZone> zones = new LinkedHashMap<>();
+    /** The pages whose controller has its « adventure mode » option on. */
+    private final Set<UUID> adventure = new LinkedHashSet<>();
 
     public static MiniGameControllers get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager().getOrCreate(TYPE, ID);
@@ -68,6 +72,18 @@ public final class MiniGameControllers extends PersistentState {
         return get(server).zone(page);
     }
 
+    /**
+     * @return true if the players of the page's mini-game play in adventure mode in its zone: the option of its
+     * Mini-game Controller (off without controller)
+     */
+    public static boolean isAdventure(MinecraftServer server, UUID page) {
+        return get(server).adventure(page);
+    }
+
+    public boolean adventure(UUID page) {
+        return adventure.contains(page);
+    }
+
     /** @return true if the controller at {@code pos} may hold the page: no other controller is its home. */
     public static boolean isFreeFor(MinecraftServer server, UUID page, GlobalPos pos) {
         GlobalPos home = get(server).homes.get(page);
@@ -77,10 +93,11 @@ public final class MiniGameControllers extends PersistentState {
     /**
      * The controller at {@code pos} holds (or is about to hold) the page: it becomes its home unless another one is.
      *
-     * @param zone the zone of its Zone Cartridge, null for none
+     * @param zone      the zone of its Zone Cartridge, null for none
+     * @param adventure its « adventure mode » option
      * @return false if another controller is the home of the page
      */
-    public static boolean claim(MinecraftServer server, UUID page, GlobalPos pos, @Nullable PageZone zone) {
+    public static boolean claim(MinecraftServer server, UUID page, GlobalPos pos, @Nullable PageZone zone, boolean adventure) {
         MiniGameControllers controllers = get(server);
         GlobalPos home = controllers.homes.get(page);
         if (!pos.equals(home)) {
@@ -93,6 +110,7 @@ public final class MiniGameControllers extends PersistentState {
             else controllers.zones.put(page, zone);
             controllers.markDirty();
         }
+        if (adventure ? controllers.adventure.add(page) : controllers.adventure.remove(page)) controllers.markDirty();
         return true;
     }
 
@@ -101,6 +119,7 @@ public final class MiniGameControllers extends PersistentState {
         MiniGameControllers controllers = get(server);
         if (!controllers.homes.remove(page, pos)) return;
         controllers.zones.remove(page);
+        controllers.adventure.remove(page);
         controllers.markDirty();
     }
 
@@ -123,6 +142,7 @@ public final class MiniGameControllers extends PersistentState {
             home.putLong("Pos", pos.pos().asLong());
             PageZone zone = zones.get(page);
             if (zone != null) PageZone.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, zone).result().ifPresent(encoded -> home.put("Zone", encoded));
+            if (adventure.contains(page)) home.putBoolean("Adventure", true);
             list.add(home);
         });
         nbt.put("Homes", list);
@@ -139,6 +159,7 @@ public final class MiniGameControllers extends PersistentState {
             controllers.homes.put(home.getUuid("Page"), GlobalPos.create(world, BlockPos.fromLong(home.getLong("Pos"))));
             if (home.contains("Zone")) PageZone.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, home.get("Zone")).result()
                     .ifPresent(zone -> controllers.zones.put(home.getUuid("Page"), zone));
+            if (home.getBoolean("Adventure")) controllers.adventure.add(home.getUuid("Page"));
         }
         return controllers;
     }

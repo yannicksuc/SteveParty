@@ -363,9 +363,10 @@ public final class ZoneBubble {
         return found;
     }
 
-    /** The entities of the zone, players aside (found in the entity sections the zone covers). */
+    /** The entities of the zone, players and those kept live aside (found in the entity sections the zone covers). */
     private List<Entity> findEntities() {
-        return world.getOtherEntities(null, zone.bounds(), entity -> !(entity instanceof PlayerEntity) && zone.contains(entity.getBlockPos()));
+        return world.getOtherEntities(null, zone.bounds(), entity -> !(entity instanceof PlayerEntity) && zone.contains(entity.getBlockPos())
+                && !ZoneBubbles.isKeptLive(entity));
     }
 
     /** Each entity of the zone as NBT, a mount with all its riders (a rider is never saved apart). */
@@ -632,6 +633,8 @@ public final class ZoneBubble {
         if (saved == null || !state.hasBlockEntity()) return;
         if (ifChanged) {
             BlockEntity current = world.getBlockEntity(pos);
+            // holds what goes on beyond the zone, and its block is still there: left as it is
+            if (current != null && ZoneBubbles.isKeptLive(current.getType())) return;
             if (current != null && saved.equals(current.createNbtWithIdentifyingData(world.getRegistryManager()))) return;
         }
         BlockPos at = pos.toImmutable();

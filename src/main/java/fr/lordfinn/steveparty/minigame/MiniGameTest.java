@@ -7,6 +7,8 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGameTeleports;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.podium.PodiumGroup;
 import fr.lordfinn.steveparty.podium.Podiums;
@@ -63,6 +65,10 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
  *     seconds later everyone is back where they stood when the test started. « Stop the test » (the same button), a
  *     step controller set to restart or previous, or the last player leaving the server, stop it at once, without
  *     results.</li>
+ *     <li><b>The zone</b>: when the page has one, the round is played in a bubble ({@link MiniGameArena}): it begins
+ *     at the departure (podiums emptied first) with those who have a pipe to come out of, and ends when the results
+ *     are read, or when it is stopped: inventories back, zone put back, then everyone goes back. A zone that can't
+ *     take the round (too big for the server, taken, too full) starts nothing: {@link #check} says why.</li>
  * </ul>
  * One test per page, and nobody in two mini-games at once. A party drawing a page under test stops the test first.
  * Nothing is saved: a server stopping brings the players back.
@@ -86,7 +92,26 @@ public final class MiniGameTest implements MiniGameSession {
         /** Those near the pipes are too few (or too many), or a team has nobody. */
         NOT_ENOUGH,
         /** A party is playing this mini-game. */
-        PARTY_PLAYING
+        PARTY_PLAYING,
+        /** The zone of the mini-game is bigger than the server lets a zone be. */
+        ZONE_TOO_BIG,
+        /** The zone of the mini-game is taken: a round is played in a zone that overlaps it, or it is being put back. */
+        ZONE_BUSY,
+        /** The dimension of the zone is not there. */
+        ZONE_NO_WORLD,
+        /** The zone holds more containers or entities than a zone may (only known when the round begins). */
+        ZONE_TOO_FULL;
+
+        /** Why the zone of a mini-game can't take a round, null when it can. */
+        static @Nullable Status ofZone(ZoneBubble.Refusal refusal) {
+            return switch (refusal) {
+                case NONE, DISABLED -> null;
+                case TOO_BIG -> ZONE_TOO_BIG;
+                case OVERLAP -> ZONE_BUSY;
+                case NO_WORLD -> ZONE_NO_WORLD;
+                case TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES -> ZONE_TOO_FULL;
+            };
+        }
     }
 
     /**
@@ -214,7 +239,9 @@ public final class MiniGameTest implements MiniGameSession {
         if (PartyControllerEntity.getPartyPlayingPage(List.of(pageId)).isPresent())
             return new Plan(Status.PARTY_PLAYING, null, null, List.of(), List.of(), Map.of());
         MiniGamePageData page = MiniGamePages.get(server, pageId);
-        return plan(page, recruit(server, page));
+        Plan plan = plan(page, recruit(server, page));
+        Status zone = plan.status() == Status.READY ? Status.ofZone(MiniGameArena.check(server, pageId)) : null;
+        return zone == null ? plan : new Plan(zone, null, null, List.of(), plan.spectators(), Map.of());
     }
 
     /**
@@ -254,6 +281,7 @@ public final class MiniGameTest implements MiniGameSession {
     private final List<UUID> tasks = new ArrayList<>();
     private Phase phase = Phase.COUNTDOWN;
     private boolean closed = false;
+    private final MiniGameArena arena = new MiniGameArena();
     private Map<UUID, Integer> places = Map.of();
     private @Nullable MiniGameResults results;
 
@@ -385,10 +413,23 @@ public final class MiniGameTest implements MiniGameSession {
 
     /** The departure, as in a party: podiums and counters start again, everyone comes out of a pipe of its role. */
     private void depart() {
+        // Its zone may still be put back from the round before
+        arena.whenZoneFree(server, pageId, () -> !closed, this::audience, this::leave);
+    }
+
+    private void leave() {
         MiniGamePageData page = page();
         Podiums.resetForMiniGame(server, page);
-        phase = Phase.PLAYING;
         Map<UUID, MiniGamePipeLink> pipes = MiniGamePipes.distribute(page, disposition, players, spectators, new Random());
+        // The round is played in its zone, by those who have a pipe to come out of: they leave their inventory at the door
+        ZoneBubble.Refusal refusal = arena.begin(server, pageId, online(players, pipes), online(spectators, pipes), () -> !closed);
+        if (refusal != ZoneBubble.Refusal.NONE) {
+            Text why = ZoneBubbles.refusalText(refusal);
+            if (why != null) MessageUtils.sendToPlayers(audience(), why.copy().formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
+            stop();
+            return;
+        }
+        phase = Phase.PLAYING;
         Map<MiniGamePipeLink, Integer> queues = new HashMap<>();
         pipes.forEach((uuid, link) -> {
             int wait = queues.merge(link, 1, Integer::sum) - 1;
@@ -401,13 +442,26 @@ public final class MiniGameTest implements MiniGameSession {
     private void comeOut(MiniGamePipeLink link, UUID uuid) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
         if (player != null && !MiniGamePipes.emerge(server, link, player)) {
+            // No pipe to come out of any more: it stays where it is, with what it owns
+            arena.leave(player);
             player.sendMessage(Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED), false);
         }
+    }
+
+    /** Those of {@code uuids} who are connected and have a pipe to come out of. */
+    private List<ServerPlayerEntity> online(List<UUID> uuids, Map<UUID, MiniGamePipeLink> pipes) {
+        List<ServerPlayerEntity> online = new ArrayList<>();
+        for (UUID uuid : uuids) {
+            ServerPlayerEntity player = pipes.containsKey(uuid) ? server.getPlayerManager().getPlayer(uuid) : null;
+            if (player != null) online.add(player);
+        }
+        return online;
     }
 
     /** A player takes the exit pipe: back where it stood, the test goes on for the others. */
     private boolean leaveEarly(ServerPlayerEntity player) {
         MiniGamePipes.leaveParty(player.getUuid());
+        arena.leave(player);
         return bringBack(player, returns.remove(player.getUuid()));
     }
 
@@ -447,6 +501,8 @@ public final class MiniGameTest implements MiniGameSession {
                     ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                     return player != null ? player.getGameProfile().getName() : uuid.toString().substring(0, 8);
                 }).asTest();
+        // The results are read: the round is over, inventories and zone are given back
+        arena.end();
         send(new MiniGamePagePayloads.Results(results));
         List<ServerPlayerEntity> audience = audience();
         List<Text> lines = new ArrayList<>();
@@ -478,6 +534,8 @@ public final class MiniGameTest implements MiniGameSession {
         phase = Phase.FINISHED;
         tasks.forEach(Steveparty.SCHEDULER::cancel);
         tasks.clear();
+        // Stopped during its round: what everyone owns first, then the way back
+        arena.end();
         List<UUID> seated = new ArrayList<>(players);
         seated.addAll(spectators);
         seated.forEach(MiniGamePipes::leaveParty);
