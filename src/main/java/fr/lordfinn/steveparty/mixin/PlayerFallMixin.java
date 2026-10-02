@@ -32,7 +32,7 @@ public abstract class PlayerFallMixin extends PlayerEntity {
     private static final float BASE_REQUIRED_FALL = 10.0F;
     /** Extra fall distance (blocks) required per point of hardness of the block under the villager block. */
     @Unique
-    private static final float REQUIRED_FALL_PER_HARDNESS = 2.0F;
+    private static final float REQUIRED_FALL_PER_HARDNESS = 4.0F;
 
     @Inject(method = "tick", at = @At("HEAD"))
     public void onTick(CallbackInfo info) {
@@ -97,7 +97,7 @@ public abstract class PlayerFallMixin extends PlayerEntity {
         }
     }
 
-    /** requiredFall = 10 + 2 * hardness of the block under the villager block. */
+    /** requiredFall = 10 + 4 * hardness of the block under the villager block. */
     @Unique
     private static float steveparty$getRequiredFallDistance(float hardness) {
         return BASE_REQUIRED_FALL + REQUIRED_FALL_PER_HARDNESS * hardness;

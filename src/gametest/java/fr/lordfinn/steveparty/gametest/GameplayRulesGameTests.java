@@ -116,18 +116,18 @@ public class GameplayRulesGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void villagerFallTooShortForStone(TestContext context) {
-        // stone: hardness 1.5 -> 13 blocks required
-        assertVillagerFall(context, Blocks.STONE, GameMode.SURVIVAL, 12.5F, false);
+        // stone: hardness 1.5 -> 10 + 4 x 1.5 = 16 blocks required
+        assertVillagerFall(context, Blocks.STONE, GameMode.SURVIVAL, 15.5F, false);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void villagerFallHighEnoughForStone(TestContext context) {
-        assertVillagerFall(context, Blocks.STONE, GameMode.SURVIVAL, 13.5F, true);
+        assertVillagerFall(context, Blocks.STONE, GameMode.SURVIVAL, 16.5F, true);
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void villagerFallTooShortForObsidian(TestContext context) {
-        // obsidian: hardness 50 -> 110 blocks required
+        // obsidian: hardness 50 -> 210 blocks required
         assertVillagerFall(context, Blocks.OBSIDIAN, GameMode.SURVIVAL, 100F, false);
     }
 
