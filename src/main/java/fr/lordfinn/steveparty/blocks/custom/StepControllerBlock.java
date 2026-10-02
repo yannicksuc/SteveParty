@@ -63,8 +63,16 @@ public class StepControllerBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient) return ActionResult.PASS;
+        // A mini-game page: the controller is linked to it (or unlinked), like a podium
+        boolean page = player.getMainHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+        if (world.isClient) return page ? ActionResult.SUCCESS : ActionResult.PASS;
         StepControllerBlockEntity blockEntity = (StepControllerBlockEntity) world.getBlockEntity(pos);
+        if (page) {
+            fr.lordfinn.steveparty.podium.Podiums.clickLink((net.minecraft.server.network.ServerPlayerEntity) player, net.minecraft.util.Hand.MAIN_HAND,
+                    (net.minecraft.server.world.ServerWorld) world, pos, fr.lordfinn.steveparty.minigame.MiniGamePodiumLink.Kind.STEP_CONTROLLER);
+            if (blockEntity != null) blockEntity.refreshLinkedPages();
+            return ActionResult.SUCCESS;
+        }
         if (blockEntity != null) blockEntity.cycleMode();
         return ActionResult.SUCCESS;
     }

@@ -46,8 +46,9 @@ import java.util.UUID;
  * is missing for the mini-game to be played in each of the ways it ticks; on the Page tab, the ways to play that miss
  * pipes carry a « ! ».
  * <p>
- * The « Podiums » tab lists the podiums and the goal pole bases linked to the page (a click on them, page in hand): the
- * podiums are the places of the mini-game (the taller the column, the better the place), the bases its counters. A
+ * The « Podiums » tab lists the podiums, the goal pole bases and the step controllers linked to the page (a click on
+ * them, page in hand): the podiums are the places of the mini-game (the taller the column, the better the place), the
+ * bases its counters, the step controllers what ends it with a redstone pulse. A
  * click on a card shows where it is, a right click unlinks it. Without any podium the mini-game names no winner (every
  * player is a « participant »): the tab says so and carries a « ! ».
  */
@@ -95,7 +96,7 @@ public class MiniGamePageEditorScreen extends Screen {
     private boolean podiumsTab;
     private PartyButton pageTabButton, pipesTabButton, podiumsTabButton;
     /** The podium cards: two columns, scrolled by row. */
-    private static final int PODIUM_CARD_WIDTH = 150, PODIUM_CARD = 13, PODIUM_ROWS = 8, PODIUMS_TOP = 64;
+    private static final int PODIUM_CARD_WIDTH = 150, PODIUM_CARD = 13, PODIUM_ROWS = 7, PODIUMS_TOP = 74;
     private int podiumScroll;
     /** What is typed in the fields, kept while the other tab is shown. */
     private String titleValue, descriptionValue;
@@ -738,7 +739,7 @@ public class MiniGamePageEditorScreen extends Screen {
 
     private static Text podiumText(MiniGamePodiumLink link) {
         net.minecraft.util.math.BlockPos pos = link.pos().pos();
-        return Text.translatable(KEY + (link.kind() == MiniGamePodiumLink.Kind.PODIUM ? "podiums.card.podium" : "podiums.card.counter"),
+        return Text.translatable(KEY + "podiums.card." + link.kind().key(),
                 pos.getX() + " " + pos.getY() + " " + pos.getZ());
     }
 
@@ -763,7 +764,7 @@ public class MiniGamePageEditorScreen extends Screen {
     private void drawPodiums(DrawContext context, MiniGamePageData data, int mouseX, int mouseY) {
         int lx = x + MARGIN;
         List<OrderedText> guide = textRenderer.wrapLines(Text.translatable(KEY + "podiums.guide"), WIDTH - 2 * MARGIN);
-        for (int i = 0; i < Math.min(4, guide.size()); i++) {
+        for (int i = 0; i < Math.min(5, guide.size()); i++) {
             context.drawText(textRenderer, guide.get(i), lx, y + TOP + i * 10, PartyGui.TEXT_SOFT, false);
         }
         List<MiniGamePodiumLink> links = data.podiumLinks();
@@ -779,9 +780,15 @@ public class MiniGamePageEditorScreen extends Screen {
             if (link.kind() == MiniGamePodiumLink.Kind.PODIUM) {
                 context.fill(left + 3, top + 6, left + 9, top + 9, 0xFFB5761A);
                 context.fill(left + 5, top + 3, left + 9, top + 6, 0xFFFFC52E);
-            } else {
+            } else if (link.kind() == MiniGamePodiumLink.Kind.COUNTER) {
                 context.fill(left + 4, top + 2, left + 5, top + 10, 0xFF4A4A4A);
                 context.fill(left + 5, top + 2, left + 9, top + 6, 0xFFD8323F);
+            } else {
+                // A step controller: an arrow pointing on
+                context.fill(left + 3, top + 5, left + 7, top + 7, 0xFF2E7D32);
+                context.fill(left + 7, top + 3, left + 8, top + 9, 0xFF2E7D32);
+                context.fill(left + 8, top + 4, left + 9, top + 8, 0xFF2E7D32);
+                context.fill(left + 9, top + 5, left + 10, top + 7, 0xFF2E7D32);
             }
             context.drawText(textRenderer, fit(podiumText(link), PODIUM_CARD_WIDTH - 16), left + 12, top + 2, 0xFF2E2E2E, false);
         }
@@ -799,7 +806,8 @@ public class MiniGamePageEditorScreen extends Screen {
         } else {
             long podiums = links.stream().filter(link -> link.kind() == MiniGamePodiumLink.Kind.PODIUM).count();
             PartyGui.statusIcon(context, lx, top, true);
-            context.drawText(textRenderer, fit(Text.translatable(KEY + "podiums.complete", podiums, links.size() - podiums), WIDTH - 2 * MARGIN - 10),
+            long counters = links.stream().filter(link -> link.kind() == MiniGamePodiumLink.Kind.COUNTER).count();
+            context.drawText(textRenderer, fit(Text.translatable(KEY + "podiums.complete", podiums, counters, links.size() - podiums - counters), WIDTH - 2 * MARGIN - 10),
                     lx + 10, top, PartyGui.TEXT_OK, false);
         }
     }
@@ -808,11 +816,10 @@ public class MiniGamePageEditorScreen extends Screen {
         MiniGamePodiumLink link = podiumAt(mouseX, mouseY);
         if (link == null) return;
         List<Text> lines = new java.util.ArrayList<>();
-        boolean podium = link.kind() == MiniGamePodiumLink.Kind.PODIUM;
         lines.add(podiumText(link).copy().formatted(Formatting.GOLD));
         lines.add(Text.translatable(KEY + "pipes.card.position", link.pos().pos().getX() + " " + link.pos().pos().getY() + " " + link.pos().pos().getZ(),
                 link.pos().dimension().getValue().getPath()).formatted(Formatting.GRAY));
-        lines.add(Text.translatable(KEY + (podium ? "podiums.card.podium.hint" : "podiums.card.counter.hint")).formatted(Formatting.GRAY));
+        lines.add(Text.translatable(KEY + "podiums.card." + link.kind().key() + ".hint").formatted(Formatting.GRAY));
         lines.add(Text.translatable(KEY + (canEdit ? "podiums.card.hint" : "pipes.card.hint.read_only")).formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
         drawWrappedTooltip(context, lines, mouseX, mouseY);
     }

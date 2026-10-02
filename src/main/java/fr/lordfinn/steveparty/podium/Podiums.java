@@ -104,16 +104,10 @@ public final class Podiums {
 
     /** The mini-game being played on a page the group is linked to, null for none. */
     public static @Nullable Played played(PodiumGroup group) {
-        if (group.pages().isEmpty()) return null;
-        for (PartyControllerEntity controller : PartyControllerEntity.getActivePartyControllers()) {
-            if (controller.isRemoved() || !(controller.getPartyData().getCurrentStep() instanceof MiniGamePartyStep miniGame)
-                    || !miniGame.isPlaying()) continue;
-            UUID page = MiniGamePages.idOf(MiniGamesCatalogueItem.getCurrentMiniGame(controller.getCatalogue()));
-            if (page == null || !group.pages().contains(page)) continue;
-            TeamDisposition teams = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.getCatalogue());
-            return new Played(controller, miniGame, teams == null || teams.isFreeForAll() ? null : teams);
-        }
-        return null;
+        PartyControllerEntity controller = PartyControllerEntity.getPartyPlayingPage(group.pages()).orElse(null);
+        if (controller == null || !(controller.getPartyData().getCurrentStep() instanceof MiniGamePartyStep miniGame)) return null;
+        TeamDisposition teams = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.getCatalogue());
+        return new Played(controller, miniGame, teams == null || teams.isFreeForAll() ? null : teams);
     }
 
     /** « 1st », « 2nd »... */
@@ -429,8 +423,8 @@ public final class Podiums {
     // ------------------------------------------------------------------ links to a mini-game page
 
     /**
-     * A click on a podium or a goal pole base with the page held in {@code hand}: it is linked to the page, or
-     * unlinked if it was. The player is told what happened.
+     * A click on a podium, a goal pole base or a step controller with the page held in {@code hand}: it is linked to
+     * the page, or unlinked if it was. The player is told what happened.
      *
      * @return true if the page changed
      */
@@ -453,7 +447,7 @@ public final class Podiums {
         } else {
             blocks.add(GlobalPos.create(world.getRegistryKey(), anchor));
         }
-        String key = "message.steveparty.mini_game_page." + (kind == MiniGamePodiumLink.Kind.PODIUM ? "podium" : "counter");
+        String key = "message.steveparty.mini_game_page." + kind.key();
         if (MiniGamePages.removePodiumLinks(server, id, blocks)) {
             player.sendMessage(Text.translatable(key + ".unlinked", anchor.getX(), anchor.getY(), anchor.getZ()), true);
             world.playSound(null, pos, ModSounds.CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
