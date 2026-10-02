@@ -59,6 +59,12 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(PartyControllerEntity::new, ModBlocks.PARTY_CONTROLLER).build(null)
     );
 
+    public static final BlockEntityType<MiniGameControllerBlockEntity> MINI_GAME_CONTROLLER_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of (MOD_ID, "mini_game_controller"),
+            FabricBlockEntityTypeBuilder.create(MiniGameControllerBlockEntity::new, ModBlocks.MINI_GAME_CONTROLLER).build(null)
+    );
+
     public static final BlockEntityType<StepControllerBlockEntity> STEP_CONTROLLER_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of (MOD_ID, "step_controller"),

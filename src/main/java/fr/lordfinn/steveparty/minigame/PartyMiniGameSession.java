@@ -36,6 +36,12 @@ public record PartyMiniGameSession(PartyControllerEntity controller, MiniGamePar
 
     @Override
     public void step(int mode) {
+        // The practice round: « next » shows its results, the others start it again; the party does not move
+        if (miniGame.isPractice()) {
+            if (mode == 0) miniGame.practiceResults(controller);
+            else miniGame.restartPractice(controller);
+            return;
+        }
         switch (mode) {
             case 0 -> controller.nextStep();
             case 1 -> controller.restartStep();

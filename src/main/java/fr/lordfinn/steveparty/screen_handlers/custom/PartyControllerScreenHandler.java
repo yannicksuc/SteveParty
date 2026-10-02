@@ -46,7 +46,7 @@ import java.util.EnumSet;
 public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
-            BUTTON_CHECK_BOARD = 4;
+            BUTTON_CHECK_BOARD = 4, BUTTON_PRACTICE = 5;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -65,7 +65,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int WIDTH = 272, PANEL_HEIGHT = 158;
     public static final int INVENTORY_Y = PANEL_HEIGHT + 4;
     public static final int CATALOGUE_X = 14, CATALOGUE_Y = 32;
-    public static final int STAR_X = 16, STAR_Y = 34, COIN_X = 16, COIN_Y = 82;
+    public static final int STAR_X = 16, STAR_Y = 28, COIN_X = 16, COIN_Y = 62;
     /** The party program: its card slots come after the player's inventory, 2 rows of 9 (Program page). */
     public static final int PROGRAM_FIRST_SLOT = PLAYER_SLOTS + 36;
     public static final int PROGRAM_X = (WIDTH - 162) / 2 + 1, PROGRAM_Y = 40;
@@ -340,6 +340,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
                 if (!controller.canEdit(player)) return false;
                 int rounds = controller.getPartyData().getNbTurn() + (id == BUTTON_ROUNDS_UP ? 1 : -1);
                 if (!controller.setRounds(rounds)) return false;
+            }
+            case BUTTON_PRACTICE -> {
+                if (!controller.canEdit(player)) return false;
+                controller.setPracticeRound(!controller.hasPracticeRound());
             }
             case BUTTON_CHECK_BOARD -> board = PartyDashboardData.checkBoard(controller, world);
             case BUTTON_LAUNCH -> {

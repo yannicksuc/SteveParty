@@ -18,8 +18,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The end of a party's mini-game, in the style of the mini-game card ({@link MiniGameCardHud}): the results card, in
  * the middle of the screen for a few seconds, a line per player (per team in a team mini-game) with its place, and
- * what the party paid for it (the coins and the stars, with their items). The results of a test say that nothing was
- * paid; while a test is played, a chip at the top of the screen says so (« Test of the mini-game: ... »).
+ * what the party paid for it (the coins and the stars, with their items). The results of a mini-game played out of a
+ * party, or of a party's practice round, say that nothing was paid; while a mini-game is played out of a party, a chip
+ * at the top of the screen says so (« Out of a party: ... »).
  */
 public final class MiniGameResultsHud {
     private static final int WIDTH = 210, PAD = 7, ROW = 14, CHIP = 24;
@@ -119,7 +120,8 @@ public final class MiniGameResultsHud {
             top += ROW;
         }
         if (shown.test()) {
-            Text note = Text.translatable("hud.steveparty.minigame.results.test");
+            Text note = Text.translatable(shown.kind() == MiniGameResults.Kind.PRACTICE
+                    ? "hud.steveparty.minigame.results.practice" : "hud.steveparty.minigame.results.test");
             HudDraw.text(context, note, x + (WIDTH - font.getWidth(note)) / 2, top + 1, HudDraw.TEXT_WARN, alpha);
         }
         matrices.pop();

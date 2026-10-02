@@ -72,6 +72,10 @@ public class ModScreensHandlers {
     public static final ExtendedScreenHandlerType<PartyControllerScreenHandler, BlockPosPayload> PARTY_CONTROLLER_SCREEN_HANDLER =
             register("party_controller_screen_handler", PartyControllerScreenHandler::new, BlockPosPayload.PACKET_CODEC);
 
+    /** The Mini-game Controller's screen (opening data: the controller's position). */
+    public static final ExtendedScreenHandlerType<MiniGameControllerScreenHandler, BlockPosPayload> MINI_GAME_CONTROLLER_SCREEN_HANDLER =
+            register("mini_game_controller_screen_handler", MiniGameControllerScreenHandler::new, BlockPosPayload.PACKET_CODEC);
+
     public static final ScreenHandlerType<LootingBoxScreenHandler> LOOTING_BOX_SCREEN_HANDLER =
             register("looting_box_screen_handler", LootingBoxScreenHandler::new);
     public static final ScreenHandlerType<DiceForgeScreenHandler> DICE_FORGE_SCREEN_HANDLER = register("dice_forge_screen_handler", DiceForgeScreenHandler::new);

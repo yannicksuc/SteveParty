@@ -437,6 +437,13 @@ public class ModBlocks {
                     .requiresTool(),
             "party_controller", true);
 
+    public static final Block MINI_GAME_CONTROLLER = register(MiniGameControllerBlock::new,
+            Block.Settings.create()
+                    .strength(4.0f, 30.0f)
+                    .sounds(BlockSoundGroup.METAL)
+                    .requiresTool(),
+            "mini_game_controller", true);
+
     public static final Block VILLAGER_BLOCK = register(VillagerBlock::new,
             Block.Settings.create()
                     // No tool needed (no requiresTool: it drops by hand), but breaking it takes a moment (1.5 s by

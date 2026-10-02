@@ -303,6 +303,12 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         plus.active = editable && data.roundsSetting() < fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.MAX_ROUNDS;
         minus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.less") : why));
         plus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.more") : why));
+        // A practice round before each mini-game: on / off
+        PartyButton practice = addDrawableChild(new PartyButton(x + WIDTH - PAD - 72, y + PRACTICE_Y, 72, 18,
+                Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off")), b -> click(BUTTON_PRACTICE)));
+        practice.setSelected(data.practiceRound());
+        practice.active = data.canEdit();
+        practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
     }
 
     // Gains page: a row per place, a stepper of coins and one of stars
@@ -375,7 +381,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         for (int i = 0; i < times; i++) client.interactionManager.clickButton(handler.syncId, button);
     }
 
-    private static final int ROUNDS_Y = 124;
+    private static final int ROUNDS_Y = 100, PRACTICE_Y = 124;
 
     // ------------------------------------------------------------------ drawing
 
@@ -826,6 +832,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         int fieldX = WIDTH - PAD - 52, fieldW = 32;
         PartyGui.inset(context, fieldX, ry, fieldW, 18, 0xFF3B4247, false, false);
         context.drawText(textRenderer, value, fieldX + (fieldW - textRenderer.getWidth(value)) / 2 + 1, ry + 5, 0xFFFFFFFF, false);
+        // Practice round
+        context.drawText(textRenderer, Text.translatable(KEY + "settings.practice").formatted(Formatting.BOLD), PAD, PRACTICE_Y + 1, PartyGui.TEXT_DARK, false);
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.practice.hint"), WIDTH - 2 * PAD - 78), PAD, PRACTICE_Y + 11, PartyGui.TEXT_SOFT, false);
     }
 
     private void drawCurrency(DrawContext context, PartyCurrency currency, int sx, int sy, String key) {

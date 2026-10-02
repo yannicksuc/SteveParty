@@ -64,6 +64,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.CASH_REGISTER,
                         ModBlocks.PARTY_CONTROLLER,
                         ModBlocks.STEP_CONTROLLER,
+                        ModBlocks.MINI_GAME_CONTROLLER,
                         ModBlocks.BOARD_SPACE_REDSTONE_ROUTER,
                         ModBlocks.STENCIL_MAKER,
                         ModBlocks.HOP_SWITCH,
@@ -143,6 +144,7 @@ public class StevepartyReferenceBlockTagProvider extends FabricTagProvider<Block
                         ModBlocks.CASH_REGISTER,
                         ModBlocks.PARTY_CONTROLLER,
                         ModBlocks.STEP_CONTROLLER,
+                        ModBlocks.MINI_GAME_CONTROLLER,
                         ModBlocks.BOARD_SPACE_REDSTONE_ROUTER,
                         ModBlocks.STENCIL_MAKER
                 );

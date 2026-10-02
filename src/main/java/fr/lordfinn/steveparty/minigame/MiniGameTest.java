@@ -42,8 +42,10 @@ import java.util.UUID;
 import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
 
 /**
- * A mini-game played as a test, out of any party: started with the « Test » button of its page's editor, to try what
- * was built without a party controller.
+ * A mini-game played out of any party, for nothing: started with « Play » on its Mini-game Controller's screen, or
+ * with the « Test » button of its page's editor, to play or try what was built without a party controller. (The
+ * players are only told it is played « out of a party »; the practice round of a party is not this: see
+ * {@code MiniGamePartyStep}.)
  * <ul>
  *     <li><b>Who plays</b> ({@link #recruit}, {@link #plan}): every player within {@value #RECRUIT_RADIUS} blocks of
  *     a pipe linked to the page, with the role of that pipe (the nearest one): green, a player; blue, red, purple,

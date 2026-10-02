@@ -185,6 +185,8 @@ public class StevepartyClient implements ClientModInitializer {
         fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.initialize();
         fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud.initialize();
         fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud.initialize();
+        fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.initialize();
+        fr.lordfinn.steveparty.client.minigame.ZoneCartridgeClient.initialize();
         fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent.register();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
@@ -357,6 +359,7 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(LOOTING_BOX_SCREEN_HANDLER, LootingBoxScreen::new);
         HandledScreens.register(DICE_FORGE_SCREEN_HANDLER, DiceForgeScreen::new);
         HandledScreens.register(PARTY_CONTROLLER_SCREEN_HANDLER, PartyControllerScreen::new);
+        HandledScreens.register(MINI_GAME_CONTROLLER_SCREEN_HANDLER, fr.lordfinn.steveparty.client.screens.MiniGameControllerScreen::new);
     }
 
     private static void initKeybinds() {

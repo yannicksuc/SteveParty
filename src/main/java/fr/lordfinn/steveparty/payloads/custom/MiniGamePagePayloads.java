@@ -37,6 +37,8 @@ public final class MiniGamePagePayloads {
         PayloadTypeRegistry.playS2C().register(Results.ID, Results.CODEC);
         PayloadTypeRegistry.playS2C().register(TestLabel.ID, TestLabel.CODEC);
         PayloadTypeRegistry.playS2C().register(TestStatus.ID, TestStatus.CODEC);
+        PayloadTypeRegistry.playS2C().register(Practice.ID, Practice.CODEC);
+        PayloadTypeRegistry.playC2S().register(Ready.ID, Ready.CODEC);
         PayloadTypeRegistry.playC2S().register(TestQuery.ID, TestQuery.CODEC);
         PayloadTypeRegistry.playC2S().register(TestAction.ID, TestAction.CODEC);
         PayloadTypeRegistry.playC2S().register(PodiumUnlink.ID, PodiumUnlink.CODEC);
@@ -162,9 +164,54 @@ public final class MiniGamePagePayloads {
     }
 
     /**
-     * The label of a test being played (« Test of the mini-game: ... »), for its players, spectators and observer.
+     * The practice round of a party's mini-game, for its players and its audience: the chip « Practice — [key] Ready
+     * 2/4 » and who is ready. Sent again each time a vote changes.
      *
-     * @param show  false: the test is over
+     * @param show   false: the practice round is over (the real round starts, or the mini-game is called off)
+     * @param title  the page's title, empty if it has none
+     * @param voters the connected players of the mini-game, in the play order
+     */
+    public record Practice(boolean show, String title, java.util.List<Voter> voters) implements CustomPayload {
+        public static final int MAX_VOTERS = 64;
+
+        /** A player of the practice round, and whether he said he is ready. */
+        public record Voter(String name, boolean ready) {
+        }
+
+        public static final Id<Practice> ID = id("practice");
+        public static final PacketCodec<PacketByteBuf, Practice> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeBoolean(payload.show);
+            buf.writeString(payload.title, MiniGamePageData.MAX_TITLE_LENGTH);
+            java.util.List<Voter> voters = payload.voters.size() > MAX_VOTERS ? payload.voters.subList(0, MAX_VOTERS) : payload.voters;
+            buf.writeVarInt(voters.size());
+            for (Voter voter : voters) {
+                buf.writeString(voter.name, 64);
+                buf.writeBoolean(voter.ready);
+            }
+        }, buf -> {
+            boolean show = buf.readBoolean();
+            String title = buf.readString(MiniGamePageData.MAX_TITLE_LENGTH);
+            int count = Math.min(buf.readVarInt(), MAX_VOTERS);
+            java.util.List<Voter> voters = new java.util.ArrayList<>(count);
+            for (int i = 0; i < count; i++) voters.add(new Voter(buf.readString(64), buf.readBoolean()));
+            return new Practice(show, title, voters);
+        });
+
+        public long readyCount() {
+            return voters.stream().filter(Voter::ready).count();
+        }
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * The label of a mini-game played out of any party (« Out of a party: ... »), for its players, spectators and
+     * observer.
+     *
+     * @param show  false: it is over
      * @param title the page's title, empty if it has none
      */
     public record TestLabel(boolean show, String title) implements CustomPayload {
@@ -203,6 +250,17 @@ public final class MiniGamePagePayloads {
     }
 
     // ------------------------------------------------------------------ client → server
+
+    /** The player says he is ready for the real round of his party's mini-game, or no longer is (the practice round's vote). */
+    public record Ready() implements CustomPayload {
+        public static final Id<Ready> ID = id("ready");
+        public static final PacketCodec<PacketByteBuf, Ready> CODEC = PacketCodec.unit(new Ready());
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
 
     /** Asks whether the page {@code page} held in {@code hand} can be tested now (answered by {@link TestStatus}). */
     public record TestQuery(Hand hand, UUID page) implements CustomPayload {

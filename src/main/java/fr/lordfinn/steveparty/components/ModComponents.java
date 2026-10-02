@@ -120,6 +120,10 @@ public class ModComponents {
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 
+    /** The box a Zone Cartridge is drawing, or has drawn (see ZoneCartridgeItem). */
+    public static final ComponentType<ZoneSelection> ZONE_SELECTION =
+            registerComponent("zone-selection", ZoneSelection.CODEC);
+
     /** Block a Box Costume looks like: the one the Boxed Trader's box looked like when it was taken from him. */
     public static final ComponentType<net.minecraft.block.BlockState> BOX_BLOCK =
             registerComponent("box-block", net.minecraft.block.BlockState.CODEC);
