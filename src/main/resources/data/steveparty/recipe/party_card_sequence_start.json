@@ -2,12 +2,12 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    "steveparty:orange_plastic_stud",
+    "steveparty:pink_plastic_stud",
     "minecraft:paper",
     "minecraft:redstone"
   ],
   "result": {
-    "id": "steveparty:party_card_event",
+    "id": "steveparty:party_card_sequence_start",
     "count": 4
   }
 }

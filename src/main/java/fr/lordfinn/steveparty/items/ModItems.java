@@ -127,6 +127,7 @@ public class ModItems {
     public static final Item PARTY_CARD_MINIGAME = registerCard(PartyCardItem.CardType.MINIGAME);
     public static final Item PARTY_CARD_EVENT = registerCard(PartyCardItem.CardType.EVENT);
     public static final Item PARTY_CARD_REPEAT = registerCard(PartyCardItem.CardType.REPEAT);
+    public static final Item PARTY_CARD_SEQUENCE_START = registerCard(PartyCardItem.CardType.SEQUENCE_START);
     public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(MOD_ID, "item_group"));
     public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
             .icon(() -> new ItemStack(PARTY_CONTROLLER))
@@ -245,6 +246,7 @@ public class ModItems {
             itemGroup.add(PARTY_CARD_TURNS);
             itemGroup.add(PARTY_CARD_MINIGAME);
             itemGroup.add(PARTY_CARD_EVENT);
+            itemGroup.add(PARTY_CARD_SEQUENCE_START);
             itemGroup.add(PARTY_CARD_REPEAT);
             itemGroup.add(PARTY_BELL);
             itemGroup.add(GOLD_PODIUM);

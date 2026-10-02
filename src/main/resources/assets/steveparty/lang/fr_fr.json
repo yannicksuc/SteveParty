@@ -1475,7 +1475,7 @@
   "item.steveparty.party_card_turns.tooltip": "Chaque pion joue un tour",
   "item.steveparty.party_card_minigame.tooltip": "Un mini-jeu tiré\ndans le catalogue",
   "item.steveparty.party_card_event.tooltip": "Fait sonner les cloches « Événement »\n(canal %s)\net attend celles en attente",
-  "item.steveparty.party_card_repeat.tooltip": "Rejoue %s fois en tout\nles cartes depuis\nla carte Répéter précédente",
+  "item.steveparty.party_card_repeat.tooltip": "Rejoue %s fois en tout les cartes\ndepuis la carte Début de séquence\n(ou la carte Répéter précédente)",
   "party_moment.steveparty.party_start": "Début de partie",
   "party_moment.steveparty.round_start": "Début de manche",
   "party_moment.steveparty.turn_start": "Début de tour",
@@ -1870,7 +1870,7 @@
   "gui.steveparty.party_controller.read_only": "Lecture seule",
   "gui.steveparty.party_controller.info.state": "§fAvant la partie§7\n• chaque ligne : une chose à régler (§bclic§7)\n• §eLancer la partie§7, ou un signal de redstone\n§fPendant la partie§7\n• le tour, l'action en cours, qui mène\n• §eContrôleur de pas§7 : avance ou recule d'une étape",
   "gui.steveparty.party_controller.info.players": "§fAvant§7 : les pions des §ecases de départ§7\n§fPendant§7 : l'ordre de jeu, surligné : son tour\n• rang : les §eétoiles§7, puis les §epièces§7\n• §cnom en orange§7 : joueur hors ligne",
-  "gui.steveparty.party_controller.info.program": "• §eCatalogue§7 : un mini-jeu y est tiré à chaque fois\n• §breprends-le§7 pour y ranger des pages\n• §eCartes de partie§7 : lues de gauche à droite\n• §eRépéter§7 : autant de fois que de cartes dans sa pile\n§8§oSans carte : la partie par défaut, estompée",
+  "gui.steveparty.party_controller.info.program": "• §eCatalogue§7 : un mini-jeu y est tiré à chaque fois\n• §breprends-le§7 pour y ranger des pages\n• §eCartes de partie§7 : lues de gauche à droite\n• §eRépéter§7 : autant de fois que de cartes dans sa pile\n• §eDébut de séquence§7 : d'où Répéter reprend\n§8§oSans carte : la partie par défaut, estompée",
   "gui.steveparty.party_controller.info.gains": "• versés après chaque mini-jeu, selon la place\n• en équipe : le gain de la place, à chacun\n• en haut : les objets §ePièce§7 et §eÉtoile§7\n• §bclic§7 avec un objet : il devient la monnaie\n• §bclic§7 à main vide : l'objet par défaut",
   "gui.steveparty.party_controller.info.settings": "• §eTours§7 : pour une partie sans cartes\n§8§o   à régler avant de la lancer\n§7• §eManche d'essai§7 : avant les mini-jeux\n   qui ont un §eContrôleur de mini-jeu",
   "gui.steveparty.party_controller.program.catalogue": "Catalogue de mini-jeux",
@@ -1918,5 +1918,7 @@
   "gui.steveparty.mini_game_page.test.tooltip.zone_busy": "Impossible de jouer : la zone du mini-jeu est occupée par une autre manche, ou en cours de remise en état.",
   "gui.steveparty.mini_game_page.test.tooltip.zone_no_world": "Impossible de jouer : la dimension de la zone du mini-jeu n'existe pas.",
   "gui.steveparty.mini_game_page.test.tooltip.zone_too_full": "Impossible de jouer : la zone du mini-jeu contient trop de conteneurs ou d'entités.",
-  "message.steveparty.podium.team_holds": "Ton équipe tient déjà cette place."
+  "message.steveparty.podium.team_holds": "Ton équipe tient déjà cette place.",
+  "item.steveparty.party_card_sequence_start": "Carte de partie : Début de séquence",
+  "item.steveparty.party_card_sequence_start.tooltip": "La carte Répéter suivante reprend d'ici"
 }

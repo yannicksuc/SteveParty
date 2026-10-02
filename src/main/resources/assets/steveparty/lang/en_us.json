@@ -1474,7 +1474,7 @@
   "item.steveparty.party_card_turns.tooltip": "Every token plays one turn",
   "item.steveparty.party_card_minigame.tooltip": "A mini-game drawn\nfrom the catalogue",
   "item.steveparty.party_card_event.tooltip": "Rings the \"Event\" party bells\n(channel %s)\nand waits for the waiting ones",
-  "item.steveparty.party_card_repeat.tooltip": "Plays the cards since\nthe previous Repeat card\n%s times in all",
+  "item.steveparty.party_card_repeat.tooltip": "Plays %s times in all the cards\nsince the Sequence start card\n(or the previous Repeat card)",
   "party_moment.steveparty.party_start": "Party start",
   "party_moment.steveparty.round_start": "Round start",
   "party_moment.steveparty.turn_start": "Turn start",
@@ -1869,7 +1869,7 @@
   "gui.steveparty.party_controller.read_only": "Read only",
   "gui.steveparty.party_controller.info.state": "§fBefore a party§7\n• each line: something to fix (§bclick§7)\n• §eStart the party§7, or a redstone signal\n§fDuring a party§7\n• the round, what happens, who leads\n• §eStep Controller§7: one step forward or back",
   "gui.steveparty.party_controller.info.players": "§fBefore§7: the tokens on the §estart tiles§7\n§fDuring§7: the turn order, highlighted: whose turn\n• rank: the §estars§7, then the §ecoins§7\n• §cname in orange§7: player offline",
-  "gui.steveparty.party_controller.info.program": "• §eCatalogue§7: a mini-game is drawn from it each time\n• §btake it back§7 to put pages in it\n• §eParty cards§7: read from left to right\n• §eRepeat§7: as many times as cards in its stack\n§8§oNo card: the default party, faded",
+  "gui.steveparty.party_controller.info.program": "• §eCatalogue§7: a mini-game is drawn from it each time\n• §btake it back§7 to put pages in it\n• §eParty cards§7: read from left to right\n• §eRepeat§7: as many times as cards in its stack\n• §eSequence start§7: where Repeat starts again from\n§8§oNo card: the default party, faded",
   "gui.steveparty.party_controller.info.gains": "• paid after each mini-game, by place\n• teams: the place's gain, for each member\n• on top: the §eCoin§7 and §eStar§7 items\n• §bclick§7 with an item: it becomes the currency\n• §bclick§7 with an empty hand: the default item",
   "gui.steveparty.party_controller.info.settings": "• §eRounds§7: for a party without cards\n§8§o   set before starting it\n§7• §ePractice round§7: before the mini-games\n   that have a §eMini-game Controller",
   "gui.steveparty.party_controller.program.catalogue": "Mini-games Catalogue",
@@ -1917,5 +1917,7 @@
   "gui.steveparty.mini_game_page.test.tooltip.zone_busy": "Can't play: the zone of the mini-game is taken by another round, or being put back as it was.",
   "gui.steveparty.mini_game_page.test.tooltip.zone_no_world": "Can't play: the dimension of the zone of the mini-game does not exist.",
   "gui.steveparty.mini_game_page.test.tooltip.zone_too_full": "Can't play: the zone of the mini-game holds too many containers or entities.",
-  "message.steveparty.podium.team_holds": "Your team already holds this place."
+  "message.steveparty.podium.team_holds": "Your team already holds this place.",
+  "item.steveparty.party_card_sequence_start": "Party Card: Sequence start",
+  "item.steveparty.party_card_sequence_start.tooltip": "The next Repeat card repeats from here"
 }

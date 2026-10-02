@@ -233,4 +233,26 @@ public class RecipeGameTests implements FabricGameTest {
                 "a forged die is not added to a double");
         context.complete();
     }
+
+    /** A party card: the Plastic Stud of its colour, paper and redstone, in any order; four cards a craft. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void partyCardsAreMadeOfAStudOfTheirColour(TestContext context) {
+        java.util.Map<String, net.minecraft.item.Item> cards = new java.util.LinkedHashMap<>();
+        cards.put("blue", ModItems.PARTY_CARD_TURNS);
+        cards.put("lime", ModItems.PARTY_CARD_MINIGAME);
+        cards.put("orange", ModItems.PARTY_CARD_EVENT);
+        cards.put("purple", ModItems.PARTY_CARD_REPEAT);
+        cards.put("pink", ModItems.PARTY_CARD_SEQUENCE_START);
+        cards.forEach((colour, card) -> {
+            ItemStack stud = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id(colour + "_plastic_stud")));
+            context.assertTrue(!stud.isEmpty(), "there is a " + colour + " plastic stud");
+            ItemStack made = result(context, 3, 1, new ItemStack(Items.REDSTONE), stud, new ItemStack(Items.PAPER));
+            context.assertTrue(made.isOf(card) && made.getCount() == 4, colour + " stud + paper + redstone: four cards");
+        });
+        ItemStack red = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("red_plastic_stud")));
+        context.assertTrue(result(context, 3, 1, red, new ItemStack(Items.PAPER), new ItemStack(Items.REDSTONE)).isEmpty(), "a stud of another colour makes no card");
+        context.assertTrue(result(context, 3, 1, new ItemStack(Items.PAPER), new ItemStack(Items.PAPER), new ItemStack(Items.CLOCK)).isEmpty(),
+                "the old recipes are gone");
+        context.complete();
+    }
 }

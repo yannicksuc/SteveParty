@@ -1,6 +1,16 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
+    "has_plastic_stud": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:purple_plastic_stud"
+          }
+        ]
+      }
+    },
     "has_paper": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
@@ -20,6 +30,7 @@
   },
   "requirements": [
     [
+      "has_plastic_stud",
       "has_paper",
       "has_the_recipe"
     ]

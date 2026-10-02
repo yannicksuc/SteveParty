@@ -145,6 +145,7 @@ public class PartyLoopGameTests implements FabricGameTest {
             case MINIGAME -> ModItems.PARTY_CARD_MINIGAME;
             case EVENT -> ModItems.PARTY_CARD_EVENT;
             case REPEAT -> ModItems.PARTY_CARD_REPEAT;
+            case SEQUENCE_START -> ModItems.PARTY_CARD_SEQUENCE_START;
         }, count);
     }
 
@@ -164,6 +165,54 @@ public class PartyLoopGameTests implements FabricGameTest {
                 PartyCardItem.CardType.EVENT, PartyCardItem.CardType.TURNS), "expanded program");
         context.assertEquals(expanded.get(6).count(), 2, "event channel");
         context.assertEquals(BasicGameGeneratorStep.expand(List.of(), 3).size(), 6, "default: 3 x (turns, mini-game)");
+        context.complete();
+    }
+
+    private static List<PartyCardItem.CardType> types(List<ItemStack> program) {
+        return BasicGameGeneratorStep.expand(program, 10).stream().map(BasicGameGeneratorStep.ExpandedCard::type).toList();
+    }
+
+    /**
+     * A Repeat card repeats from the nearest Sequence start card on its left: what is before that card is played
+     * once. Without one it repeats from the previous Repeat card or the start of the program, as it always did.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aSequenceStartCardSaysWhereARepeatStartsFrom(TestContext context) {
+        PartyCardItem.CardType turns = PartyCardItem.CardType.TURNS, game = PartyCardItem.CardType.MINIGAME, event = PartyCardItem.CardType.EVENT,
+                repeat = PartyCardItem.CardType.REPEAT, start = PartyCardItem.CardType.SEQUENCE_START;
+        // Without a Sequence start: from the beginning
+        context.assertEquals(types(List.of(card(event, 1), card(turns, 1), card(game, 1), card(repeat, 3))),
+                List.of(event, turns, game, event, turns, game, event, turns, game), "no sequence start: everything is repeated");
+        // With one: what is before it is played once
+        context.assertEquals(types(List.of(card(event, 1), card(start, 1), card(turns, 1), card(game, 1), card(repeat, 3))),
+                List.of(event, turns, game, turns, game, turns, game), "the event before the sequence start is played once");
+        // A stack of several Sequence start cards is the same as one
+        context.assertEquals(types(List.of(card(event, 1), card(start, 5), card(turns, 1), card(repeat, 2))),
+                List.of(event, turns, turns), "a stack of sequence starts: one sequence start");
+        // Two loops, each with its start: independent
+        context.assertEquals(types(List.of(card(start, 1), card(turns, 1), card(repeat, 3), card(start, 1), card(game, 1), card(repeat, 2))),
+                List.of(turns, turns, turns, game, game), "two independent loops");
+        // A second Repeat without a start of its own repeats since the previous Repeat, as before
+        context.assertEquals(types(List.of(card(start, 1), card(turns, 1), card(repeat, 2), card(game, 1), card(repeat, 2))),
+                List.of(turns, turns, game, game), "a repeat after a repeat loops its own cards");
+        // A start between a Repeat and the next one: the cards between that Repeat and the start are played once
+        context.assertEquals(types(List.of(card(turns, 1), card(repeat, 2), card(event, 1), card(start, 1), card(game, 1), card(repeat, 2))),
+                List.of(turns, turns, event, game, game), "the nearest sequence start on its left");
+        // A Sequence start without Repeat after it does nothing
+        context.assertEquals(types(List.of(card(turns, 1), card(start, 1), card(game, 1))), List.of(turns, game), "a sequence start alone changes nothing");
+        context.assertEquals(types(List.of(card(turns, 1), card(game, 1), card(repeat, 2), card(start, 1))), List.of(turns, game, turns, game),
+                "nor at the end of the program");
+        // Alone in the program, it is still the default party
+        context.assertEquals(BasicGameGeneratorStep.expand(List.of(card(start, 1)), 4), BasicGameGeneratorStep.expand(List.of(), 4),
+                "only a sequence start: the default party");
+
+        // What the dashboard says of a program follows its sequences
+        BasicGameGeneratorStep.Summary summary = BasicGameGeneratorStep.summary(
+                List.of(card(event, 1), card(start, 1), card(turns, 1), card(game, 1), card(repeat, 5)), 10);
+        context.assertEquals(summary, new BasicGameGeneratorStep.Summary(5, 5, 1), "5 turns, 5 mini-games, 1 event");
+        context.assertEquals(BasicGameGeneratorStep.summary(List.of(card(event, 1), card(turns, 1), card(game, 1), card(repeat, 5)), 10),
+                new BasicGameGeneratorStep.Summary(5, 5, 5), "without the sequence start the event is repeated too");
+        context.assertEquals(BasicGameGeneratorStep.summary(List.of(), 10), new BasicGameGeneratorStep.Summary(10, 10, 0), "the default party: 10 rounds");
         context.complete();
     }
 
