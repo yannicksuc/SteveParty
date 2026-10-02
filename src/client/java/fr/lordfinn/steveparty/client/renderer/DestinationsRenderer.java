@@ -32,8 +32,10 @@ public class DestinationsRenderer {
     private static final List<Hand> HANDS = List.of(Hand.MAIN_HAND, Hand.OFF_HAND);
 
     public static void initialize() {
-        WorldRenderEvents.LAST.register(context -> {
-            if (MinecraftClient.getInstance().player == null) {
+        // In the world's main pass, like the Wrench's overlay: at LAST the highlights were drawn after it, with a view
+        // that no longer matched the world's (they lagged behind the blocks when walking or jumping)
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
+            if (MinecraftClient.getInstance().player == null || context.matrixStack() == null) {
                 return;
             }
 
@@ -74,8 +76,8 @@ public class DestinationsRenderer {
      */
     private static void renderPagePipes(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
-        VertexConsumerProvider vertexConsumers = context.consumers();
-        if (client.player == null || client.world == null || vertexConsumers == null) return;
+        VertexConsumerProvider vertexConsumers = client.getBufferBuilders().getEntityVertexConsumers();
+        if (client.player == null || client.world == null) return;
         UUID page = MiniGamePages.idOf(client.player.getMainHandStack());
         if (page == null) page = MiniGamePages.idOf(client.player.getOffHandStack());
         MiniGamePageData data = page == null ? null : MiniGamePageClient.page(page);
@@ -137,15 +139,11 @@ public class DestinationsRenderer {
 
     private static void renderDestinations(WorldRenderContext context) {
         MatrixStack matrixStack = context.matrixStack();
-        VertexConsumerProvider vertexConsumers = context.consumers();
-
-        if (vertexConsumers != null) {
-            getDestinations().forEach((pos, gradientType) -> GlowingCuboidRenderer.renderCuboids(matrixStack, vertexConsumers, pos, gradientType));
-            // Draw now, with the world's projection: left in the shared buffers, they were drawn with the hand's
-            // (its bobbing and sway when walking, running or jumping), off the blocks they mark
-            if (vertexConsumers instanceof VertexConsumerProvider.Immediate immediate)
-                immediate.draw(RenderLayer.getDebugFilledBox());
-        }
+        VertexConsumerProvider.Immediate vertexConsumers = MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers();
+        getDestinations().forEach((pos, gradientType) -> GlowingCuboidRenderer.renderCuboids(matrixStack, vertexConsumers, pos, gradientType));
+        // Draw now, with the world's projection: left in the shared buffers, they were drawn with the hand's
+        // (its bobbing and sway when walking, running or jumping), off the blocks they mark
+        vertexConsumers.draw(RenderLayer.getDebugFilledBox());
     }
 
     public static void addDestination(BlockPos pos, GlowingCuboidRenderer.GradientType gradientType) {
