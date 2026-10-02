@@ -34,12 +34,13 @@ import java.util.UUID;
  * The Mini-game Controller's screen: its two slots (the Mini-game Page, the Zone Cartridge), the player's inventory,
  * and what the mini-game of the page is doing, worked out by the server a few times a second and synced as
  * properties ({@link State}, who would play, the votes of a practice round). Its buttons: « Play » / « Stop » out of
- * a party, « Ready » during a party's practice round. Changing the slots takes the right to build; playing and
- * voting do not.
+ * a party, « Ready » during a party's practice round, and the « adventure mode » option of its zone. Changing the
+ * slots or the option takes the right to build, and is not done during a round (by one of its players, or to a
+ * controller standing in the zone it is played in); playing and voting ask for neither.
  */
 public class MiniGameControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_PAGE = 0, SLOT_ZONE = 1, PLAYER_SLOTS = 2;
-    public static final int BUTTON_PLAY = 0, BUTTON_READY = 1;
+    public static final int BUTTON_PLAY = 0, BUTTON_READY = 1, BUTTON_ADVENTURE = 2;
     /** Ticks between two looks at the mini-game. */
     public static final int SYNC_INTERVAL = 5;
 
@@ -65,12 +66,20 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         /** A party plays its practice round. */
         PARTY_PRACTICE,
         /** A party plays its real round. */
-        PARTY_PLAYING
+        PARTY_PLAYING,
+        /** Its zone is bigger than the server lets a zone be. */
+        ZONE_TOO_BIG,
+        /** Its zone is taken: a round is played in a zone that overlaps it, or it is being put back. */
+        ZONE_BUSY,
+        /** The dimension of its zone is not there. */
+        ZONE_NO_WORLD,
+        /** Its zone holds more containers or entities than a zone may. */
+        ZONE_TOO_FULL
     }
 
     private static final int P_STATE = 0, P_PLAYERS = 1, P_MODE = 2, P_READY = 3, P_VOTERS = 4, P_FLAGS = 5,
             P_ZONE_X = 6, P_ZONE_Y = 7, P_ZONE_Z = 8, PROPERTIES = 9;
-    private static final int FLAG_VOTER = 1, FLAG_READY = 2;
+    private static final int FLAG_VOTER = 1, FLAG_READY = 2, FLAG_ADVENTURE = 4, FLAG_LOCKED = 8;
 
     private final @Nullable MiniGameControllerBlockEntity controller;
     private final BlockPos pos;
@@ -98,12 +107,12 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         addSlot(new Slot(inventory, MiniGameControllerBlockEntity.SLOT_PAGE, PAGE_X, PAGE_Y) {
             @Override
             public boolean canInsert(ItemStack stack) {
-                return MiniGamePages.isPage(stack) && MiniGamePages.canEdit(player) && (controller == null || controller.accepts(stack));
+                return MiniGamePages.isPage(stack) && mayChange(player) && (controller == null || controller.accepts(stack));
             }
 
             @Override
             public boolean canTakeItems(PlayerEntity playerEntity) {
-                return MiniGamePages.canEdit(playerEntity);
+                return mayChange(playerEntity);
             }
 
             @Override
@@ -114,12 +123,12 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         addSlot(new Slot(inventory, MiniGameControllerBlockEntity.SLOT_ZONE, ZONE_X, ZONE_Y) {
             @Override
             public boolean canInsert(ItemStack stack) {
-                return MiniGameControllerBlockEntity.isZoneCartridge(stack) && MiniGamePages.canEdit(player);
+                return MiniGameControllerBlockEntity.isZoneCartridge(stack) && mayChange(player);
             }
 
             @Override
             public boolean canTakeItems(PlayerEntity playerEntity) {
-                return MiniGamePages.canEdit(playerEntity);
+                return mayChange(playerEntity);
             }
 
             @Override
@@ -133,6 +142,11 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         }
         for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col, invX + col * 18, INVENTORY_Y + 14 + 58));
         addProperties(properties);
+    }
+
+    /** Whether the player may change what the controller holds and its option: the right to build, and no round going on. */
+    private boolean mayChange(PlayerEntity who) {
+        return MiniGamePages.canEdit(who) && (controller == null || !controller.isLockedFor(who));
     }
 
     // ------------------------------------------------------------------ what the mini-game is doing (server)
@@ -164,10 +178,16 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
                 case NOBODY -> State.NOBODY;
                 case NOT_ENOUGH -> State.NOT_ENOUGH;
                 case PARTY_PLAYING -> State.PARTY_PLAYING;
+                case ZONE_TOO_BIG -> State.ZONE_TOO_BIG;
+                case ZONE_BUSY -> State.ZONE_BUSY;
+                case ZONE_NO_WORLD -> State.ZONE_NO_WORLD;
+                case ZONE_TOO_FULL -> State.ZONE_TOO_FULL;
             };
             players = plan.players().size();
             mode = plan.mode() == null ? -1 : plan.mode().ordinal();
         }
+        if (controller.isAdventure()) flags |= FLAG_ADVENTURE;
+        if (controller.isLockedFor(player)) flags |= FLAG_LOCKED;
         properties.set(P_STATE, state.ordinal());
         properties.set(P_PLAYERS, players);
         properties.set(P_MODE, mode);
@@ -221,6 +241,16 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         return (properties.get(P_FLAGS) & FLAG_READY) != 0;
     }
 
+    /** The « adventure mode » option of the controller: the players of its mini-game play in adventure mode in its zone. */
+    public boolean isAdventure() {
+        return (properties.get(P_FLAGS) & FLAG_ADVENTURE) != 0;
+    }
+
+    /** @return true while nothing of the controller can be changed by this player: a round is going on. */
+    public boolean isLocked() {
+        return (properties.get(P_FLAGS) & FLAG_LOCKED) != 0;
+    }
+
     /** The size of the box of the Zone Cartridge (0, 0, 0: none); a side over {@code PageZone.MAX_SIDE}: too big, no zone. */
     public int[] zoneSize() {
         return new int[]{properties.get(P_ZONE_X), properties.get(P_ZONE_Y), properties.get(P_ZONE_Z)};
@@ -231,6 +261,12 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
         if (controller == null || !(player instanceof ServerPlayerEntity serverPlayer)) return false;
+        if (id == BUTTON_ADVENTURE) {
+            if (!mayChange(player)) return false;
+            controller.setAdventure(!controller.isAdventure());
+            look();
+            return true;
+        }
         UUID page = controller.getPageId();
         if (page == null || player.isSpectator()) return false;
         look();

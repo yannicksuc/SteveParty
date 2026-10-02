@@ -939,7 +939,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         if (changed) markDirty();
     }
 
-    private static boolean isTokenInRunningParty(UUID tokenUUID) {
+    public static boolean isTokenInRunningParty(UUID tokenUUID) {
         return ACTIVE_PARTY_CONTROLLERS.values().stream()
                 .anyMatch(entity -> !entity.isRemoved() && entity.getPartyData().isStarted()
                         && entity.getPartyData().getTokens().contains(tokenUUID));

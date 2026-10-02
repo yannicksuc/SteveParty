@@ -7,6 +7,8 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -564,6 +566,16 @@ public final class PipeTravel {
      */
     public static boolean emerge(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed) {
         if (traveller.isRemoved() || PipeShape.mouth(world.getBlockState(mouth.pos()), mouth.dir()) == null) return false;
+        if (!ZoneBorder.ACTIVE) return bringOut(world, mouth, traveller, speed);
+        // A mini-game zone in session: only its players come out in it, and none of them comes out elsewhere while
+        // it plays there; for who may, the trip is the mod's own and passes the border
+        if (!ZoneBubbles.mayArrive(traveller, world, mouth.pos())) return false;
+        boolean[] out = new boolean[1];
+        ZoneBubbles.unguarded(() -> out[0] = bringOut(world, mouth, traveller, speed));
+        return out[0];
+    }
+
+    private static boolean bringOut(ServerWorld world, PipeNetworks.End mouth, Entity traveller, double speed) {
         if (traveller.hasVehicle()) traveller.stopRiding();
         Vec3d center = Vec3d.ofCenter(mouth.pos());
         double feet = center.y - traveller.getHeight() / 2;

@@ -7,6 +7,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGameArena;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.minigame.MiniGameIntro;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
@@ -112,6 +115,16 @@ public class MiniGamePartyStep extends PartyStep {
     private boolean toldInChat;
     /** What the practice chip last showed, and to whom: sent again only when it changes. Not saved. */
     private @Nullable Object practiceShown;
+    /**
+     * The zone of the mini-game, round after round: each practice round and the real round are played in a bubble
+     * of their own when the page has a zone ({@link MiniGameArena}). Not saved: a round a server restart
+     * interrupted goes on without one (the server put its zone back when it stopped).
+     */
+    private final MiniGameArena arena = new MiniGameArena();
+    /** Counts the departures: one that waited for its zone only leaves if no other was asked meanwhile. Not saved. */
+    private int departures;
+    /** The players were told why this mini-game is played without the protection of its zone. Not saved. */
+    private boolean unprotectedTold;
 
     public MiniGamePartyStep(List<UUID> tokens) {
         if (tokens == null)
@@ -192,6 +205,7 @@ public class MiniGamePartyStep extends PartyStep {
         ready.clear();
         practiceOver = false;
         toldInChat = false;
+        unprotectedTold = false;
         // Players still away from a previous run of this step (restart) keep their original return position
         chosenPageSlot = 0;
 
@@ -281,6 +295,9 @@ public class MiniGamePartyStep extends PartyStep {
         emergeTasks.clear();
         hidePreview(partyControllerEntity);
         hidePractice(partyControllerEntity);
+        // A round stopped before its results: what everyone owns and the zone are given back first
+        departures++;
+        arena.end();
         // However the mini-game ends (podium, step controller...), the players go back where they were
         returnPlayers(partyControllerEntity);
     }
@@ -402,6 +419,8 @@ public class MiniGamePartyStep extends PartyStep {
         if (server == null) return;
         practiceOver = true;
         MiniGameResults results = results(controller, server, placesOnPodiums(controller)).asPractice();
+        // The results are read: the round is over, inventories and zone are given back until the next one
+        arena.end();
         tellResults(controller, results, Text.translatable("message.steveparty.minigame.practice.no_gain").formatted(Formatting.GRAY));
         cancelFlow();
         flowTaskId = UUID.randomUUID();
@@ -504,11 +523,27 @@ public class MiniGamePartyStep extends PartyStep {
     private void sendOut(PartyControllerEntity controller, Phase round) {
         emergeTasks.forEach(Steveparty.SCHEDULER::cancel);
         emergeTasks.clear();
+        // The round before (a practice round the vote stopped, or one started again): what everyone owns and the
+        // zone are given back before anything else
+        arena.end();
+        int departure = ++departures;
+        if (!(controller.getWorld() instanceof ServerWorld world)) {
+            leave(controller, round);
+            return;
+        }
+        MiniGamePageData page = MiniGamePages.of(world.getServer(), MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+        // A test of the page gives way to the party: it is stopped, its players go back
+        if (page != null) fr.lordfinn.steveparty.minigame.MiniGameTest.stop(page.id());
+        // The zone may still be put back from the round before: the departure waits for it
+        arena.whenZoneFree(world.getServer(), page == null ? null : page.id(), () -> departure == departures && isStillActive(controller),
+                () -> previewAudience(controller), () -> leave(controller, round));
+    }
+
+    /** The departure itself, once the zone of the mini-game is free. */
+    private void leave(PartyControllerEntity controller, Phase round) {
         // A new mini-game: its podiums are emptied and its counters go back to 0 (before it is being played)
         if (controller.getWorld() instanceof ServerWorld world) {
             MiniGamePageData page = MiniGamePages.of(world.getServer(), MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
-            // A test of the page gives way to the party: it is stopped, its players go back
-            if (page != null) fr.lordfinn.steveparty.minigame.MiniGameTest.stop(page.id());
             if (page != null) Podiums.resetForMiniGame(world.getServer(), page);
         }
         phase = round;
@@ -531,6 +566,7 @@ public class MiniGamePartyStep extends PartyStep {
                             MessageUtils.MessageType.CHAT);
                 }
             }
+            if (page != null) beginInZone(controller, server, page, pipes);
             pipes.forEach((uuid, link) -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                 if (player == null) return;
@@ -554,6 +590,26 @@ public class MiniGamePartyStep extends PartyStep {
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
+    }
+
+    /**
+     * The round is played in the zone of its page, when it has one, by those who have a pipe to come out of: the
+     * players of the mini-game, and those of the audience sent to its spectators pipes. They leave their inventory
+     * at the door until the round is over. A zone that can't take the round (too big for the server, taken, too
+     * full) never holds a party up: the round is played without its protection, and everyone is told why, once.
+     */
+    private void beginInZone(PartyControllerEntity controller, MinecraftServer server, MiniGamePageData page, Map<UUID, MiniGamePipeLink> pipes) {
+        List<ServerPlayerEntity> players = new ArrayList<>(), watching = new ArrayList<>();
+        for (UUID uuid : pipes.keySet()) {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+            if (player != null) (participants.contains(uuid) ? players : watching).add(player);
+        }
+        ZoneBubble.Refusal refusal = arena.begin(server, page.id(), players, watching, () -> isStillActive(controller));
+        Text why = ZoneBubbles.refusalText(refusal);
+        if (why == null || unprotectedTold) return;
+        unprotectedTold = true;
+        MessageUtils.sendToPlayers(previewAudience(controller), Text.translatable("message.steveparty.zone_bubble.party_unprotected", why)
+                .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
     }
 
     /**
@@ -595,6 +651,8 @@ public class MiniGamePartyStep extends PartyStep {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
         if (player == null) return;
         if (!MiniGamePipes.emerge(server, link, player)) {
+            // No pipe to come out of any more: it stays where it is, with what it owns
+            arena.leave(player);
             MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED),
                     MessageUtils.MessageType.CHAT);
         }
@@ -609,6 +667,8 @@ public class MiniGamePartyStep extends PartyStep {
     public boolean leaveEarly(PartyControllerEntity controller, ServerPlayerEntity player) {
         ReturnPos back = returnPositions.remove(player.getUuid());
         MiniGamePipes.leaveParty(player.getUuid());
+        // Out of the round: what it owns first, then the way back
+        arena.leave(player);
         if (back == null) return false;
         ServerWorld world = player.server.getWorld(back.dimension());
         if (world == null) return false;
@@ -731,6 +791,10 @@ public class MiniGamePartyStep extends PartyStep {
     private void conclude(PartyControllerEntity controller, Map<UUID, Integer> finalPlaces) {
         cancelFlow();
         phase = Phase.FINISHED;
+        // The places are read: the round is over. Inventories and zone are given back before the gains are paid
+        // (they go to what the players own, not to a session inventory)
+        departures++;
+        arena.end();
         places.clear();
         places.putAll(finalPlaces);
         winners.clear();

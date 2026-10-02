@@ -49,6 +49,10 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.no_build").formatted(Formatting.RED), true);
             return ActionResult.SUCCESS;
         }
+        if (controller.isLockedFor(player)) {
+            player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.locked").formatted(Formatting.RED), true);
+            return ActionResult.SUCCESS;
+        }
         if (takesPage) controller.setPage(ItemStack.EMPTY);
         else controller.setCartridge(ItemStack.EMPTY);
         player.getInventory().offerOrDrop(held);
@@ -68,6 +72,10 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
         if (!(isPage ? controller.getPage() : controller.getCartridge()).isEmpty()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
         if (!MiniGamePages.canEdit(player)) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.no_build").formatted(Formatting.RED), true);
+            return ActionResult.SUCCESS;
+        }
+        if (controller.isLockedFor(player)) {
+            player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.locked").formatted(Formatting.RED), true);
             return ActionResult.SUCCESS;
         }
         if (isPage && !controller.accepts(stack)) {

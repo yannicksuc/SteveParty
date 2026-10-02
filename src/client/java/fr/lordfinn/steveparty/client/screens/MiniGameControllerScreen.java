@@ -51,7 +51,8 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     }
 
     private Object signature() {
-        return List.of(handler.state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.mode());
+        return List.of(handler.state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.mode(),
+                handler.isAdventure(), handler.isLocked());
     }
 
     private @Nullable MiniGamePageData page() {
@@ -65,6 +66,12 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         builtFor = signature();
         State state = handler.state();
         int bx = x + WIDTH - PAD - BUTTON_WIDTH, by = y + BUTTON_Y;
+        // The option of the zone: its players play in adventure mode
+        PartyButton adventure = addDrawableChild(new PartyButton(bx, y + ZONE_Y - 1, BUTTON_WIDTH, 18, Text.translatable(KEY + "adventure"),
+                b -> click(BUTTON_ADVENTURE)));
+        adventure.setSelected(handler.isAdventure());
+        adventure.active = !handler.isLocked() && client != null && client.player != null && MiniGamePages.canEdit(client.player);
+        adventure.setTooltip(Tooltip.of(Text.translatable(KEY + "adventure.tooltip")));
         if (state == State.PARTY_PRACTICE) {
             // The vote of the practice round: the same as the key
             PartyButton ready = addDrawableChild(new PartyButton(bx, by, BUTTON_WIDTH, 18,
@@ -114,7 +121,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private static int statusColor(State state) {
         return switch (state) {
             case READY -> PartyGui.TEXT_OK;
-            case NO_PIPE, NOBODY, NOT_ENOUGH -> PartyGui.TEXT_ERROR;
+            case NO_PIPE, NOBODY, NOT_ENOUGH, ZONE_TOO_BIG, ZONE_BUSY, ZONE_NO_WORLD, ZONE_TOO_FULL -> PartyGui.TEXT_ERROR;
             case NO_PAGE -> PartyGui.TEXT_SOFT;
             default -> PartyGui.TEXT_DARK;
         };
@@ -151,7 +158,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         Text zoneText = zone[0] <= 0 ? Text.translatable(KEY + (hasCartridge ? "zone.empty" : "zone.none"))
                 : tooBig ? Text.translatable(KEY + "zone.too_big", zone[0], zone[1], zone[2], fr.lordfinn.steveparty.minigame.PageZone.MAX_SIDE)
                 : Text.translatable(KEY + "zone", zone[0], zone[1], zone[2]);
-        context.drawText(textRenderer, fit(zoneText, WIDTH - TEXT_X - PAD), TEXT_X, ZONE_Y + 4,
+        context.drawText(textRenderer, fit(zoneText, WIDTH - TEXT_X - PAD - BUTTON_WIDTH - 6), TEXT_X, ZONE_Y + 4,
                 tooBig ? PartyGui.TEXT_ERROR : zone[0] <= 0 ? PartyGui.TEXT_SOFT : PartyGui.TEXT_DARK, false);
         if (state == State.PARTY_PLAYING || state == State.PARTY_PRACTICE) {
             Text party = Text.translatable(KEY + (state == State.PARTY_PRACTICE ? "party.practice" : "party.playing"));

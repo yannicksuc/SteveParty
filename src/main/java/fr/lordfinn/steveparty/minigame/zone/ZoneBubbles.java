@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * The mini-game bubbles of the server: a mini-game played in place, in the real world, inside a box zone that is
@@ -59,6 +62,10 @@ public final class ZoneBubbles {
     private static final Map<UUID, Long> LAST_WARNING = new HashMap<>();
     /** Blocks anyone of a session may use wherever it stands (the session's own controls). */
     private static final Set<Block> USABLE = new HashSet<>();
+    /** Block entity types left alone by a restoration while their block did not change. */
+    private static final Set<BlockEntityType<?>> KEPT_LIVE = new HashSet<>();
+    /** Entities left alone by sessions. */
+    private static final List<Predicate<Entity>> KEPT_ENTITIES = new ArrayList<>();
 
     private ZoneBubbles() {
     }
@@ -103,36 +110,17 @@ public final class ZoneBubbles {
      * until it has. Anyone else found in the zone is sent just out of it.
      *
      * @return the bubble; one that {@link ZoneBubble#isActive() is not active} could not begin (feature turned off,
-     * zone too big or over another one...: {@link ZoneBubble#refusal()}) and does nothing, whatever is asked of it
+     * zone too big or over another one...: {@link ZoneBubble#refusal()}, {@link #refusalText}) and does nothing,
+     * whatever is asked of it. Nobody is told: the session says what it does about it.
      */
     public static ZoneBubble begin(MinecraftServer server, UUID sessionId, MiniGameZone zone,
                                    Collection<ServerPlayerEntity> participants, Collection<ServerPlayerEntity> spectators,
                                    ZoneBubble.Options options) {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
-        if (!config.miniGameBubble) return ZoneBubble.refused(sessionId, zone, ZoneBubble.Refusal.DISABLED);
-        ServerWorld world = server.getWorld(zone.dimension());
-        ZoneBubble.Refusal refusal = ZoneBubble.Refusal.NONE;
-        int max = config.miniGameBubbleMaxSize;
-        if (world == null) refusal = ZoneBubble.Refusal.NO_WORLD;
-        else if (zone.sizeX() > max || zone.sizeY() > max || zone.sizeZ() > max) refusal = ZoneBubble.Refusal.TOO_BIG;
-        else {
-            for (ZoneBubble other : live) {
-                if (other.zone().intersects(zone) || other.sessionId().equals(sessionId)) refusal = ZoneBubble.Refusal.OVERLAP;
-            }
-        }
+        ZoneBubble.Refusal refusal = check(server, zone);
+        if (refusal == ZoneBubble.Refusal.NONE && get(sessionId) != null) refusal = ZoneBubble.Refusal.OVERLAP;
         ZoneBubble bubble = refusal != ZoneBubble.Refusal.NONE ? ZoneBubble.refused(sessionId, zone, refusal)
-                : ZoneBubble.start(server, sessionId, zone, world, participants, spectators, options);
-        if (!bubble.isActive()) {
-            Text why = switch (bubble.refusal()) {
-                case TOO_BIG -> Text.translatable("message.steveparty.zone_bubble.too_big", max);
-                case OVERLAP -> Text.translatable("message.steveparty.zone_bubble.overlap");
-                case TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES -> Text.translatable("message.steveparty.zone_bubble.too_full");
-                default -> Text.translatable("message.steveparty.zone_bubble.unavailable");
-            };
-            for (ServerPlayerEntity player : participants) player.sendMessage(why.copy().formatted(Formatting.RED), false);
-            for (ServerPlayerEntity player : spectators) player.sendMessage(why.copy().formatted(Formatting.RED), false);
-            return bubble;
-        }
+                : ZoneBubble.start(server, sessionId, zone, server.getWorld(zone.dimension()), participants, spectators, options);
+        if (!bubble.isActive()) return bubble;
         ZoneBorder.thread = server.getThread();
         live = Arrays.copyOf(live, live.length + 1);
         live[live.length - 1] = bubble;
@@ -140,6 +128,42 @@ public final class ZoneBubbles {
         ZoneBorder.resetOrigin();
         bubble.splitStraddlingChests();
         return bubble;
+    }
+
+    /**
+     * Whether a session could begin in the zone now, as far as can be told without loading it (what it holds is
+     * only counted when it begins).
+     */
+    public static ZoneBubble.Refusal check(MinecraftServer server, MiniGameZone zone) {
+        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        if (!config.miniGameBubble) return ZoneBubble.Refusal.DISABLED;
+        if (server.getWorld(zone.dimension()) == null) return ZoneBubble.Refusal.NO_WORLD;
+        int max = config.miniGameBubbleMaxSize;
+        if (zone.sizeX() > max || zone.sizeY() > max || zone.sizeZ() > max) return ZoneBubble.Refusal.TOO_BIG;
+        for (ZoneBubble other : live) if (other.zone().intersects(zone)) return ZoneBubble.Refusal.OVERLAP;
+        return ZoneBubble.Refusal.NONE;
+    }
+
+    /** @return true if all that holds the zone up is being put back: it is free in a moment */
+    public static boolean isBeingRestored(MiniGameZone zone) {
+        boolean restoring = false;
+        for (ZoneBubble other : live) {
+            if (!other.zone().intersects(zone)) continue;
+            if (other.isActive()) return false;
+            restoring = true;
+        }
+        return restoring;
+    }
+
+    /** Why a session could not begin, for its players; null when there is nothing to say (it began, or the feature is off). */
+    public static @Nullable Text refusalText(ZoneBubble.Refusal refusal) {
+        return switch (refusal) {
+            case NONE, DISABLED -> null;
+            case TOO_BIG -> Text.translatable("message.steveparty.zone_bubble.too_big", ZoneBubbleConfig.get().miniGameBubbleMaxSize);
+            case OVERLAP -> Text.translatable("message.steveparty.zone_bubble.overlap");
+            case TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES -> Text.translatable("message.steveparty.zone_bubble.too_full");
+            case NO_WORLD -> Text.translatable("message.steveparty.zone_bubble.unavailable");
+        };
     }
 
     /** @return the bubble (in session or being restored) whose zone holds this block, null if none does */
@@ -199,6 +223,49 @@ public final class ZoneBubbles {
     /** Anyone of a session may use this block wherever it stands: for the controls of the session itself. */
     public static void allowUse(Block block) {
         USABLE.add(block);
+    }
+
+    /**
+     * Block entities of this type are left as they are when a zone is put back, unless their block had to be put
+     * back too: for those that hold what goes on beyond the zone (a party, whose controller stands in it).
+     */
+    public static void keepLive(BlockEntityType<?> type) {
+        KEPT_LIVE.add(type);
+    }
+
+    static boolean isKeptLive(BlockEntityType<?> type) {
+        return KEPT_LIVE.contains(type);
+    }
+
+    /**
+     * Entities this says yes to are no part of a zone: neither remembered when a session begins nor removed and
+     * made again when it ends (they still don't cross its border). For those of something that goes on beyond the
+     * zone: the tokens of a running party.
+     */
+    public static void keepLive(Predicate<Entity> entities) {
+        KEPT_ENTITIES.add(entities);
+    }
+
+    static boolean isKeptLive(Entity entity) {
+        for (Predicate<Entity> kept : KEPT_ENTITIES) if (kept.test(entity)) return true;
+        return false;
+    }
+
+    /**
+     * @return true if a traveller the mod carries (a pipe) may come out at {@code pos}: in a zone in session, only a
+     * player of that session; out of every zone, anyone but a participant playing in its zone; and what is not a
+     * player stays on its side
+     */
+    public static boolean mayArrive(Entity traveller, World world, BlockPos pos) {
+        if (!ZoneBorder.ACTIVE) return true;
+        ZoneBubble there = at(world, pos.getX(), pos.getY(), pos.getZ());
+        if (traveller instanceof ServerPlayerEntity player) {
+            ZoneBubble mine = BY_PLAYER.get(player.getUuid());
+            if (there != null) return there == mine && there.isActive();
+            return mine == null || !mine.plays(player);
+        }
+        BlockPos from = traveller.getBlockPos();
+        return traveller.getWorld() == world && at(world, from.getX(), from.getY(), from.getZ()) == there;
     }
 
     /** Every session ends now and every zone is whole again (the server stops). */
