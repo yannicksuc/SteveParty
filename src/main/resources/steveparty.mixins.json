@@ -28,7 +28,27 @@
     "ServerScoreboardMixin",
     "HopperBlockEntityMixin",
     "ExplosionImplMixin",
-    "PipeDismountMixin"
+    "PipeDismountMixin",
+    "PlayerShoulderInvoker",
+    "ZoneBubbleCrafterMixin",
+    "ZoneBubbleDispenserMixin",
+    "ZoneBubbleDragonEggMixin",
+    "ZoneBubbleEntityMixin",
+    "ZoneBubbleExperienceOrbMixin",
+    "ZoneBubbleExplosionMixin",
+    "ZoneBubbleFluidRandomTickMixin",
+    "ZoneBubbleHopperMixin",
+    "ZoneBubbleInteractionManagerMixin",
+    "ZoneBubbleItemEntityMixin",
+    "ZoneBubbleNeighborUpdaterMixin",
+    "ZoneBubblePickupMixin",
+    "ZoneBubblePistonHandlerMixin",
+    "ZoneBubblePlayerEntityMixin",
+    "ZoneBubbleRandomTickMixin",
+    "ZoneBubbleServerPlayerMixin",
+    "ZoneBubbleServerWorldMixin",
+    "ZoneBubbleWorldChunkMixin",
+    "ZoneBubbleWorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

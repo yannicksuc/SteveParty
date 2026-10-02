@@ -1,0 +1,55 @@
+package fr.lordfinn.steveparty.minigame.zone;
+
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+
+/**
+ * What a player may touch while sessions are going on: in a zone, only the participants of its session; out of
+ * every zone, only those who are of no session. So a participant reaches nothing out of its zone, nobody else
+ * reaches into it, and a spectator (or a participant the mod took out of its zone) touches nothing at all.
+ * Game mode and operator rights change nothing to it: a zone in session is not built in.
+ * <p>
+ * These are the polite refusals, on the click itself; the border also holds underneath, whatever the item used
+ * ({@link ZoneBorder}: a player's action changes no block and spawns nothing on the other side).
+ */
+final class ZonePlayerRules {
+    private ZonePlayerRules() {
+    }
+
+    static void initialize() {
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) ->
+                !ZoneBorder.ACTIVE || allowed(player, world, pos));
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) ->
+                !ZoneBorder.ACTIVE || allowed(player, world, pos) ? ActionResult.PASS : ActionResult.FAIL);
+        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (!ZoneBorder.ACTIVE || world.isClient) return ActionResult.PASS;
+            if (ZoneBubbles.isUsable(world.getBlockState(hit.getBlockPos()).getBlock())) return ActionResult.PASS;
+            // the block clicked, and the place a block put against it would take
+            return allowed(player, world, hit.getBlockPos()) && allowed(player, world, hit.getBlockPos().offset(hit.getSide()))
+                    ? ActionResult.PASS : ActionResult.FAIL;
+        });
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) ->
+                !ZoneBorder.ACTIVE || allowed(player, world, entity.getBlockPos()) ? ActionResult.PASS : ActionResult.FAIL);
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) ->
+                !ZoneBorder.ACTIVE || allowed(player, world, entity.getBlockPos()) ? ActionResult.PASS : ActionResult.FAIL);
+        // an item used in the air acts where its user stands
+        UseItemCallback.EVENT.register((player, world, hand) ->
+                !ZoneBorder.ACTIVE || allowed(player, world, player.getBlockPos()) ? ActionResult.PASS : ActionResult.FAIL);
+    }
+
+    private static boolean allowed(PlayerEntity player, World world, BlockPos pos) {
+        if (world.isClient || ZoneBorder.bypass > 0 || !(player instanceof ServerPlayerEntity server)) return true;
+        if (ZoneBubbles.canTouch(server, world, pos)) return true;
+        ZoneBubbles.warn(server, "hands_tied");
+        return false;
+    }
+}

@@ -1897,5 +1897,15 @@
   "hud.steveparty.zone_cartridge.hint.box": "Look at a face, sneak + wheel: move it (Ctrl: ×4) · right-click a block: new corner · sneak + right-click in the air: clear",
   "gui.steveparty.mini_game_controller.zone.too_big": "Zone too big: %1$s × %2$s × %3$s (max. %4$s)",
   "gui.steveparty.mini_game_controller.zone.empty": "No zone drawn on the cartridge",
-  "tooltip.steveparty.mini_game_controller.zone": "A Zone Cartridge in its second slot gives its mini-game a zone, shown with the cartridge, the page or the Wrench in hand."
+  "tooltip.steveparty.mini_game_controller.zone": "A Zone Cartridge in its second slot gives its mini-game a zone, shown with the cartridge, the page or the Wrench in hand.",
+  "message.steveparty.zone_bubble.cannot_leave": "You can't leave the mini-game zone.",
+  "message.steveparty.zone_bubble.cannot_enter": "A mini-game is being played here: you can't come in.",
+  "message.steveparty.zone_bubble.restoring": "The mini-game zone is being put back as it was: you can't come in yet.",
+  "message.steveparty.zone_bubble.hands_tied": "You can't do that during the mini-game.",
+  "message.steveparty.zone_bubble.journal_full": "Too much has changed in the mini-game zone: nothing more can be changed in it until the game ends.",
+  "message.steveparty.zone_bubble.too_big": "The mini-game zone is too big: %s blocks a side at most.",
+  "message.steveparty.zone_bubble.overlap": "The mini-game zone overlaps the zone of a game in progress.",
+  "message.steveparty.zone_bubble.too_full": "The mini-game zone holds too many containers or entities.",
+  "message.steveparty.zone_bubble.unavailable": "The mini-game zone can't be used.",
+  "message.steveparty.zone_bubble.inventory_back": "Your inventory from before the mini-game has been given back to you."
 }

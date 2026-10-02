@@ -1898,5 +1898,15 @@
   "hud.steveparty.zone_cartridge.hint.box": "Regarde une face, accroupi + molette : la déplacer (Ctrl : ×4) · clic droit sur un bloc : nouveau coin · accroupi + clic droit dans le vide : effacer",
   "gui.steveparty.mini_game_controller.zone.too_big": "Zone trop grande : %1$s × %2$s × %3$s (max. %4$s)",
   "gui.steveparty.mini_game_controller.zone.empty": "Aucune zone tracée sur la cartouche",
-  "tooltip.steveparty.mini_game_controller.zone": "Une Cartouche de zone dans son second emplacement donne une zone à son mini-jeu, visible cartouche, page ou Clé en main."
+  "tooltip.steveparty.mini_game_controller.zone": "Une Cartouche de zone dans son second emplacement donne une zone à son mini-jeu, visible cartouche, page ou Clé en main.",
+  "message.steveparty.zone_bubble.cannot_leave": "Tu ne peux pas sortir de la zone du mini-jeu.",
+  "message.steveparty.zone_bubble.cannot_enter": "Un mini-jeu se joue ici : tu ne peux pas entrer.",
+  "message.steveparty.zone_bubble.restoring": "La zone du mini-jeu est remise en état : tu ne peux pas encore entrer.",
+  "message.steveparty.zone_bubble.hands_tied": "Tu ne peux pas faire ça pendant le mini-jeu.",
+  "message.steveparty.zone_bubble.journal_full": "Trop de choses ont changé dans la zone du mini-jeu : plus rien ne peut y être modifié jusqu'à la fin de la partie.",
+  "message.steveparty.zone_bubble.too_big": "La zone du mini-jeu est trop grande : %s blocs de côté au plus.",
+  "message.steveparty.zone_bubble.overlap": "La zone du mini-jeu chevauche celle d'une partie en cours.",
+  "message.steveparty.zone_bubble.too_full": "La zone du mini-jeu contient trop de conteneurs ou d'entités.",
+  "message.steveparty.zone_bubble.unavailable": "La zone du mini-jeu est inutilisable.",
+  "message.steveparty.zone_bubble.inventory_back": "Ton inventaire d'avant le mini-jeu t'a été rendu."
 }
