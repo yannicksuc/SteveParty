@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.B
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Issue;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Phase;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -346,5 +347,71 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
         } finally {
             context.getWorld().getServer().getPlayerManager().remove(player);
         }
+    }
+
+    /**
+     * The dashboard is compact: with its tabs and the player's inventory it fits a 427 x 240 screen. Each tab shows
+     * its own slots (the catalogue and the cards on Program, the Star and Coin items on Gains, the inventory on both),
+     * none overlapping, all inside their panel; the slots keep their indices.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theDashboardIsCompactAndItsSlotsFollowItsTabs(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            context.assertTrue(SLOT_CATALOGUE == 0 && SLOT_STAR == 1 && SLOT_COIN == 2 && PROGRAM_FIRST_SLOT == 39, "the slots keep their indices");
+            context.assertTrue(WIDTH <= 427 && TABS_HEIGHT + INVENTORY_Y + INVENTORY_PANEL_HEIGHT <= 240, "tabs, page and inventory fit a 427 x 240 screen");
+            // The client's handler: the page shown decides which slots are there
+            PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(),
+                    new fr.lordfinn.steveparty.payloads.custom.BlockPosPayload(BlockPos.ORIGIN));
+            for (Page page : Page.values()) {
+                handler.setPage(page);
+                boolean program = page == Page.PROGRAM, gains = page == Page.GAINS;
+                context.assertTrue(handler.getSlot(SLOT_CATALOGUE).isEnabled() == program, page + ": the catalogue slot is on the Program tab");
+                context.assertTrue(handler.getSlot(SLOT_STAR).isEnabled() == gains && handler.getSlot(SLOT_COIN).isEnabled() == gains,
+                        page + ": the Star and Coin items are on the Gains tab");
+                context.assertTrue(handler.getSlot(PROGRAM_FIRST_SLOT).isEnabled() == program, page + ": the cards are on the Program tab");
+                context.assertTrue(handler.getSlot(PLAYER_SLOTS).isEnabled() == (program || gains), page + ": the inventory, where items are placed");
+                List<net.minecraft.screen.slot.Slot> shown = handler.slots.stream().filter(net.minecraft.screen.slot.Slot::isEnabled).toList();
+                for (net.minecraft.screen.slot.Slot slot : shown) {
+                    boolean inventory = slot.inventory == player.getInventory();
+                    int top = inventory ? INVENTORY_Y : 0, bottom = inventory ? INVENTORY_Y + INVENTORY_PANEL_HEIGHT : PANEL_HEIGHT;
+                    context.assertTrue(slot.x >= 4 && slot.x + 16 <= WIDTH - 4 && slot.y >= top + 4 && slot.y + 16 <= bottom - 4,
+                            page + ": slot " + slot.id + " is inside its panel");
+                    for (net.minecraft.screen.slot.Slot other : shown) {
+                        context.assertTrue(other == slot || Math.abs(other.x - slot.x) >= 18 || Math.abs(other.y - slot.y) >= 18,
+                                page + ": slots " + slot.id + " and " + other.id + " don't overlap");
+                    }
+                }
+            }
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+        context.complete();
+    }
+
+    /**
+     * The ghost cards shown while the program is empty are exactly the default party: written as real cards, they
+     * would be played the same.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theGhostCardsAreTheDefaultParty(TestContext context) {
+        for (int rounds : new int[]{1, 2, 10, 50}) {
+            List<ItemStack> cards = new ArrayList<>();
+            for (BasicGameGeneratorStep.ExpandedCard card : BasicGameGeneratorStep.defaultProgram(rounds)) {
+                cards.add(new ItemStack(switch (card.type()) {
+                    case TURNS -> ModItems.PARTY_CARD_TURNS;
+                    case MINIGAME -> ModItems.PARTY_CARD_MINIGAME;
+                    case EVENT -> ModItems.PARTY_CARD_EVENT;
+                    case REPEAT -> ModItems.PARTY_CARD_REPEAT;
+                }, card.count()));
+            }
+            context.assertTrue(cards.size() <= PartyControllerEntity.PROGRAM_SLOTS, "the ghost cards fit the program's slots");
+            context.assertEquals(BasicGameGeneratorStep.expand(cards, 7), BasicGameGeneratorStep.expand(List.of(), rounds),
+                    rounds + " rounds: the ghost cards are what an empty program plays");
+        }
+        context.assertEquals(BasicGameGeneratorStep.defaultProgram(10).stream().map(BasicGameGeneratorStep.ExpandedCard::type).toList(),
+                List.of(fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.TURNS, fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.MINIGAME,
+                        fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.REPEAT), "the players' turn, a mini-game, repeated");
+        context.complete();
     }
 }
