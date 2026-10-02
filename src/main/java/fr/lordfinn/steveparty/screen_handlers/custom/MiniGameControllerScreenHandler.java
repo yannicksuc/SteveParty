@@ -44,9 +44,9 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     public static final int SYNC_INTERVAL = 5;
 
     // Layout (shared with the screen)
-    public static final int WIDTH = 248, PANEL_HEIGHT = 150;
+    public static final int WIDTH = 248, PANEL_HEIGHT = 136;
     public static final int INVENTORY_Y = PANEL_HEIGHT + 4;
-    public static final int PAGE_X = 11, PAGE_Y = 85, ZONE_X = 11, ZONE_Y = 107;
+    public static final int PAGE_X = 11, PAGE_Y = 71, ZONE_X = 11, ZONE_Y = 91;
 
     /** What the mini-game of the page is doing. */
     public enum State {
@@ -174,6 +174,11 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         properties.set(P_READY, ready);
         properties.set(P_VOTERS, voters);
         properties.set(P_FLAGS, flags);
+        fr.lordfinn.steveparty.components.ZoneSelection selection = controller.getSelection();
+        net.minecraft.util.math.BlockBox box = selection == null ? null : selection.box().orElse(null);
+        properties.set(P_ZONE_X, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountX()));
+        properties.set(P_ZONE_Y, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountY()));
+        properties.set(P_ZONE_Z, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountZ()));
     }
 
     @Override
@@ -216,7 +221,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         return (properties.get(P_FLAGS) & FLAG_READY) != 0;
     }
 
-    /** The size of the zone of the mini-game (0, 0, 0: no zone). */
+    /** The size of the box of the Zone Cartridge (0, 0, 0: none); a side over {@code PageZone.MAX_SIDE}: too big, no zone. */
     public int[] zoneSize() {
         return new int[]{properties.get(P_ZONE_X), properties.get(P_ZONE_Y), properties.get(P_ZONE_Z)};
     }

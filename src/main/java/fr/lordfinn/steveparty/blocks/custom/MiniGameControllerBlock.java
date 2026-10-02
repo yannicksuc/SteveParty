@@ -85,7 +85,7 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, java.util.List<Text> tooltip,
                               net.minecraft.item.tooltip.TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : java.util.List.of("page", "play", "practice")) {
+        for (String line : java.util.List.of("page", "play", "practice", "zone")) {
             tooltip.add(Text.translatable("tooltip.steveparty.mini_game_controller." + line).formatted(Formatting.GRAY));
         }
     }

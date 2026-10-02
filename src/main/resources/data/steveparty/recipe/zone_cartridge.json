@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "steveparty:board_space_behavior",
+    "minecraft:glass",
+    "minecraft:lapis_lazuli"
+  ],
+  "result": {
+    "id": "steveparty:zone_cartridge",
+    "count": 1
+  }
+}

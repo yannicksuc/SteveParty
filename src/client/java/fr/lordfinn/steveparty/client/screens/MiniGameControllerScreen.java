@@ -37,9 +37,9 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private static final String KEY = "gui.steveparty.mini_game_controller.";
     private static final int INVENTORY_PANEL_HEIGHT = 98;
     private static final int PAD = 10;
-    private static final int PICTURE_X = PAD, PICTURE_Y = 22, PICTURE_WIDTH = 96, PICTURE_HEIGHT = 54;
+    private static final int PICTURE_X = PAD, PICTURE_Y = 20, PICTURE_WIDTH = 80, PICTURE_HEIGHT = 45;
     private static final int TEXT_X = PAGE_X + 23;
-    private static final int BUTTON_Y = PANEL_HEIGHT - 24, BUTTON_WIDTH = 110;
+    private static final int BUTTON_Y = PANEL_HEIGHT - 24, BUTTON_WIDTH = 80;
 
     /** What the button was built for: rebuilt when it changes. */
     private @Nullable Object builtFor;
@@ -146,9 +146,13 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
                 WIDTH - TEXT_X - PAD, 2, statusColor(state));
         // The cartridge slot: the zone
         int[] zone = handler.zoneSize();
-        Text zoneText = zone[0] <= 0 ? Text.translatable(KEY + "zone.none")
+        boolean hasCartridge = handler.getSlot(SLOT_ZONE).hasStack();
+        boolean tooBig = Math.max(zone[0], Math.max(zone[1], zone[2])) > fr.lordfinn.steveparty.minigame.PageZone.MAX_SIDE;
+        Text zoneText = zone[0] <= 0 ? Text.translatable(KEY + (hasCartridge ? "zone.empty" : "zone.none"))
+                : tooBig ? Text.translatable(KEY + "zone.too_big", zone[0], zone[1], zone[2], fr.lordfinn.steveparty.minigame.PageZone.MAX_SIDE)
                 : Text.translatable(KEY + "zone", zone[0], zone[1], zone[2]);
-        context.drawText(textRenderer, fit(zoneText, WIDTH - TEXT_X - PAD), TEXT_X, ZONE_Y + 4, zone[0] <= 0 ? PartyGui.TEXT_SOFT : PartyGui.TEXT_DARK, false);
+        context.drawText(textRenderer, fit(zoneText, WIDTH - TEXT_X - PAD), TEXT_X, ZONE_Y + 4,
+                tooBig ? PartyGui.TEXT_ERROR : zone[0] <= 0 ? PartyGui.TEXT_SOFT : PartyGui.TEXT_DARK, false);
         if (state == State.PARTY_PLAYING || state == State.PARTY_PRACTICE) {
             Text party = Text.translatable(KEY + (state == State.PARTY_PRACTICE ? "party.practice" : "party.playing"));
             context.drawText(textRenderer, fit(party, WIDTH - 2 * PAD - (state == State.PARTY_PRACTICE ? BUTTON_WIDTH + 6 : 0)), PAD, BUTTON_Y + 5, PartyGui.TEXT_SOFT, false);
@@ -164,7 +168,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         MiniGamePageData data = page();
         int tx = PICTURE_X + PICTURE_WIDTH + 8, width = WIDTH - tx - PAD;
         if (stack.isEmpty()) {
-            wrapped(context, Text.translatable(KEY + "card.empty"), tx, PICTURE_Y + 2, width, 5, PartyGui.TEXT_SOFT);
+            wrapped(context, Text.translatable(KEY + "card.empty"), tx, PICTURE_Y + 2, width, 4, PartyGui.TEXT_SOFT);
             return;
         }
         MiniGamePageClient.Picture picture = data == null ? null : MiniGamePageClient.picture(data.image(), PICTURE_WIDTH, PICTURE_HEIGHT);
@@ -173,7 +177,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         Text name = data != null && data.hasTitle() ? Text.literal(data.title()) : stack.getName();
         int ty = PICTURE_Y + 2;
         context.drawText(textRenderer, fit(name.copy().formatted(Formatting.BOLD), width), tx, ty, PartyGui.TEXT_DARK, false);
-        ty += 13;
+        ty += 12;
         if (data == null) return;
         ty = wrapped(context, MiniGamePageTooltipComponent.modesText(data), tx, ty, width, 2, 0xFF8A5A00);
         context.drawText(textRenderer, fit(MiniGamePageTooltipComponent.playersText(data), width), tx, ty + 2, PartyGui.TEXT_SOFT, false);

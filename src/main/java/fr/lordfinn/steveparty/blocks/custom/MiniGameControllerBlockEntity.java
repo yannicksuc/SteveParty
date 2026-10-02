@@ -1,7 +1,10 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
+import fr.lordfinn.steveparty.components.ZoneSelection;
+import fr.lordfinn.steveparty.items.custom.ZoneCartridgeItem;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
+import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
@@ -27,7 +30,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
 
 /**
  * The Mini-game Controller: the block of a mini-game's arena. It holds a Mini-game Page (and a Zone Cartridge) and is
@@ -47,9 +55,25 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
 
     private ItemStack page = ItemStack.EMPTY;
     private ItemStack cartridge = ItemStack.EMPTY;
+    /** Client side: the controllers the client has loaded (whose zones it may show). */
+    private static final Set<MiniGameControllerBlockEntity> CLIENT_LOADED = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     public MiniGameControllerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.MINI_GAME_CONTROLLER_ENTITY, pos, state);
+    }
+
+    @Override
+    public void setWorld(net.minecraft.world.World world) {
+        super.setWorld(world);
+        if (world.isClient) CLIENT_LOADED.add(this);
+    }
+
+    /** Client side: the controllers loaded in {@code world}. */
+    public static List<MiniGameControllerBlockEntity> clientLoaded(net.minecraft.world.World world) {
+        synchronized (CLIENT_LOADED) {
+            CLIENT_LOADED.removeIf(BlockEntity::isRemoved);
+            return CLIENT_LOADED.stream().filter(controller -> controller.getWorld() == world).toList();
+        }
     }
 
     public ItemStack getPage() {
@@ -71,7 +95,17 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
 
     /** @return true if the stack is a Zone Cartridge (what its second slot takes). */
     public static boolean isZoneCartridge(ItemStack stack) {
-        return false;
+        return stack.getItem() instanceof ZoneCartridgeItem;
+    }
+
+    /** The zone of its mini-game: the one of the Zone Cartridge it holds; empty without cartridge, or without a zone on it. */
+    public Optional<PageZone> getZone() {
+        return ZoneCartridgeItem.zone(cartridge);
+    }
+
+    /** The box drawn on its cartridge, too big or not (what its screen says of it). */
+    public @Nullable ZoneSelection getSelection() {
+        return isZoneCartridge(cartridge) ? ZoneCartridgeItem.selection(cartridge) : null;
     }
 
     /**
@@ -91,7 +125,7 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
             UUID before = getPageId();
             if (before != null) MiniGameControllers.release(serverWorld.getServer(), before, globalPos());
             if (!stack.isEmpty()) {
-                MiniGameControllers.claim(serverWorld.getServer(), MiniGamePages.ensureId(stack), globalPos());
+                MiniGameControllers.claim(serverWorld.getServer(), MiniGamePages.ensureId(stack), globalPos(), ZoneCartridgeItem.zone(cartridge).orElse(null));
                 MiniGamePages.refresh(serverWorld.getServer(), stack);
             }
         }
@@ -102,6 +136,10 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
     /** Puts a Zone Cartridge in (an empty stack takes it out). */
     public void setCartridge(ItemStack stack) {
         cartridge = stack;
+        UUID id = getPageId();
+        if (id != null && world instanceof ServerWorld serverWorld) {
+            MiniGameControllers.claim(serverWorld.getServer(), id, globalPos(), getZone().orElse(null));
+        }
         markDirty();
     }
 
@@ -119,7 +157,7 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
     public void serverTick(ServerWorld serverWorld) {
         if (serverWorld.getTime() % CLAIM_INTERVAL_TICKS != 0) return;
         UUID id = getPageId();
-        if (id == null || MiniGameControllers.claim(serverWorld.getServer(), id, globalPos())) return;
+        if (id == null || MiniGameControllers.claim(serverWorld.getServer(), id, globalPos(), getZone().orElse(null))) return;
         // Another controller is the home of this page (this one was copied): the page comes out
         ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, page);
         page = ItemStack.EMPTY;
