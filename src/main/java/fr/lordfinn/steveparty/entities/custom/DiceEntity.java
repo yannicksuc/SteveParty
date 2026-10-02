@@ -88,6 +88,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     final AttractionSimulation simulation = new AttractionSimulation(null, this);
     public static final int MIN = 1;
     public static final int MAX = 10;
+    /**
+     * Ticks after the throw during which the thrower's own hits are ignored: a die thrown overhead (sneaking: it
+     * comes back over its thrower) sits in their crosshair within reach, and the click of the throw (a double click, a
+     * click still held) must not stop or burst it. Anyone else may hit it at once.
+     */
+    public static final int THROW_GRACE_TICKS = 10;
 
     private int secondsSinceRolled = 0;
     /** Loaded already rolled: its roll is over (it is not run again). */
@@ -538,6 +544,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             return true;
         }
         if (source.getAttacker() instanceof ServerPlayerEntity player) {
+            if (isInThrowGrace(player)) return false;
             if (player.isSneaking()) {
                 explode(player);
                 return true;
@@ -555,6 +562,11 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     @Override
     public void kill(ServerWorld world) {
         killDice();
+    }
+
+    /** True if {@code player} just threw this die: their hits don't count yet (see {@link #THROW_GRACE_TICKS}). */
+    public boolean isInThrowGrace(ServerPlayerEntity player) {
+        return this.age < THROW_GRACE_TICKS && this.getOwner().map(owner -> owner.equals(player.getUuid())).orElse(false);
     }
 
     /**
