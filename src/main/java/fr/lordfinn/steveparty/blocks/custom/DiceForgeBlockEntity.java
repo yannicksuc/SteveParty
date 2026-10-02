@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
@@ -65,7 +67,11 @@ import java.util.UUID;
  * <p>
  * Layout: 12 face slots around the vortex, the center slot (gravity core input while the forge is not activated;
  * afterwards the GUI draws the core there as the FORGE button), 4 star fragment slots around the center, the blank
- * faces slot and the output slot.
+ * faces slot, the output slot and 4 module slots (the satellites in the corners of the GUI).
+ * <p>
+ * Modules ({@link DiceModules}) are not consumed either: every die forged carries the modules present, the count of
+ * a module slot being how many of that module the die gets (the same module in several slots adds up, up to its
+ * maximum; a module that doesn't stack counts once).
  * <p>
  * Faces are not consumed: the count of a face slot is the weight of that face on the die (a face placed 10 times
  * comes up 10 times more often than a face placed once). Each die consumes one blank face per face slot used,
@@ -99,7 +105,10 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     /** Blank dice faces consumed by each craft (one per face slot used). */
     public static final int BLANK_SLOT = FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS;
     public static final int OUTPUT_SLOT = BLANK_SLOT + 1;
-    public static final int SIZE = OUTPUT_SLOT + 1;
+    /** Dice modules put on every die forged (not consumed). */
+    public static final int FIRST_MODULE_SLOT = OUTPUT_SLOT + 1;
+    public static final int MODULE_SLOTS = 4;
+    public static final int SIZE = FIRST_MODULE_SLOT + MODULE_SLOTS;
     /**
      * Layout indices: the face slots, the fragment slots, then the blank faces slot. Only the fragments and the blank
      * faces are remembered (faces are not consumed, nothing to refill).
@@ -502,7 +511,30 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             }
         }
         if (count < MIN_FACES) return ItemStack.EMPTY;
-        return DiceFacesComponent.createDie(faces);
+        ItemStack die = DiceFacesComponent.createDie(faces);
+        if (!die.isEmpty()) DiceModules.set(die, modulesOf(inventory));
+        return die;
+    }
+
+    /** The modules in the module slots and how many of each (a slot's count; the same module adds up, capped). */
+    public static java.util.Map<DiceModule, Integer> modulesOf(Inventory inventory) {
+        java.util.Map<DiceModule, Integer> modules = new java.util.LinkedHashMap<>();
+        for (int i = FIRST_MODULE_SLOT; i < FIRST_MODULE_SLOT + MODULE_SLOTS; i++) {
+            ItemStack stack = inventory.getStack(i);
+            DiceModule module = DiceModules.fromItem(stack);
+            if (module != null) DiceModules.add(modules, module, stack.getCount());
+        }
+        return modules;
+    }
+
+    public static boolean isModuleSlot(int slot) {
+        return slot >= FIRST_MODULE_SLOT && slot < FIRST_MODULE_SLOT + MODULE_SLOTS;
+    }
+
+    /** How many of this module item a module slot holds at most: as many as a die may carry. */
+    public static int maxModuleCount(ItemStack stack) {
+        DiceModule module = DiceModules.fromItem(stack);
+        return module == null ? 0 : module.maxCount();
     }
 
     private boolean canAcceptOutput(ItemStack die) {
@@ -809,6 +841,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         if (slot == CENTER_SLOT) return !activated && isGravityCore(stack);
         if (slot == BLANK_SLOT) return isBlankFace(stack);
         if (slot == OUTPUT_SLOT) return false; // filled by the forge only
+        if (isModuleSlot(slot)) return DiceModules.isModuleItem(stack);
         if (slot >= FIRST_FRAGMENT_SLOT && slot < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS) {
             if (!isStarFragment(stack)) return false;
             if (isInfiniteFragment(stack)) return true;
@@ -852,6 +885,8 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     @Override
     public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
         if (dir == Direction.DOWN || !isValid(slot, stack)) return false;
+        // A module slot never holds more of a module than a die may carry
+        if (isModuleSlot(slot)) return inventory.get(slot).getCount() < maxModuleCount(stack);
         return slot >= FACE_SLOTS || !isBlankFace(stack);
     }
 

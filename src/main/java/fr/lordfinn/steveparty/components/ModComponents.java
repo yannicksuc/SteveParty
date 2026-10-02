@@ -127,5 +127,6 @@ public class ModComponents {
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();
+        fr.lordfinn.steveparty.dice.DiceModulesComponent.initialize();
     }
 }

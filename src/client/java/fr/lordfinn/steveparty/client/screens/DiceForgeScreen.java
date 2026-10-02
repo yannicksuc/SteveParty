@@ -36,7 +36,8 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 /**
  * Dice forge screen. The vortex holds the 12 die faces (their count is their weight) and, in its center, the core,
  * which is the FORGE button (a golden ring around it shows the progress): blank faces go in on its left, the forged
- * die comes out on its right, and the 4 star fragments sit on its diagonals.
+ * die comes out on its right, and the 4 star fragments sit on its diagonals. Around the vortex, four satellites hold
+ * the dice modules put on every die forged.
  */
 public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/dice_forge.png");
@@ -141,6 +142,9 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         }
         for (int[] pos : DiceForgeScreenHandler.FRAGMENT_POSITIONS) {
             drawSlotFrame(context, x + pos[0], y + pos[1], 0x30FFFFFF, 0x60FFFFFF);
+        }
+        for (int[] pos : DiceForgeScreenHandler.MODULE_POSITIONS) {
+            drawSlotFrame(context, x + pos[0], y + pos[1], 0x3080E8FF, 0x9080E8FF);
         }
         drawSlotFrame(context, x + DiceForgeScreenHandler.BLANK_X, y + DiceForgeScreenHandler.BLANK_Y, 0x40FFC8F0, 0xE0FFC8F0);
         drawSlotFrame(context, x + DiceForgeScreenHandler.OUTPUT_X, y + DiceForgeScreenHandler.OUTPUT_Y, 0x40FFE696, 0xE0FFE696);
@@ -389,6 +393,9 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
                     stack.getCount(), chance).formatted(Formatting.GOLD));
         } else if (slot.id == BLANK_SLOT) {
             lines.add(getBlankFacesHint().formatted(Formatting.LIGHT_PURPLE));
+        } else if (isModuleSlot(slot.id)) {
+            lines.add(Text.translatableWithFallback(KEY + "module_hint",
+                    "Not consumed: every die forged carries it").formatted(Formatting.AQUA));
         }
         context.drawTooltip(textRenderer, lines, mouseX, mouseY);
     }
@@ -399,6 +406,14 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     private void drawGhostTooltip(DrawContext context, int index, int mouseX, int mouseY) {
+        if (isModuleSlot(index)) {
+            context.drawTooltip(textRenderer, List.of(
+                    Text.translatableWithFallback(KEY + "module_slot", "Dice module slot"),
+                    Text.translatableWithFallback(KEY + "module_slot_hint",
+                            "Optional. A module placed here is put on every die forged, and is not consumed; its count is the count the die gets").formatted(Formatting.GRAY)),
+                    mouseX, mouseY);
+            return;
+        }
         ItemStack ghost = getGhostStack(index);
         if (ghost.isEmpty()) return;
         List<Text> lines = new ArrayList<>();

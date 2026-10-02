@@ -9,6 +9,7 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
+import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.events.TileReachedEvent;
@@ -59,8 +60,17 @@ public class TokenMovementService {
         PartyControllerEntity.onTokenDiceRolled(world, chosenToken, rollValue);
         AdvanceBackMoves.cancel(chosenToken); // a new move: nothing left of an extra move
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.cancelPush(chosenToken);
-        // Add small delay so players can appreciate the dice roll value
-        SCHEDULER.schedule(chosenToken.getUuid(), 30, () -> moveEntityOnBoard(chosenToken, rollValue));
+        // The modules of the die that change the move itself (Skeleton Key, Homing)
+        DiceRollEffects.setMoveModules(chosenToken, fr.lordfinn.steveparty.dice.DiceModules.of(dice.lead().getDieStack()));
+        DiceOutcome outcome = dice.getOutcome();
+        if (outcome.steps() != rollValue) outcome = DiceOutcome.ofSteps(rollValue); // a roll announced by hand (tests, add-ons)
+        if (outcome.steps() > 0 && !outcome.isSpecial()) {
+            // Add small delay so players can appreciate the dice roll value
+            SCHEDULER.schedule(chosenToken.getUuid(), DiceRollEffects.APPRECIATE_TICKS, () -> moveEntityOnBoard(chosenToken, rollValue));
+        } else {
+            // Coins, swap, a face 0, a roll going backward: see DiceRollEffects
+            DiceRollEffects.resolve(world, chosenToken, ownerUUID, outcome);
+        }
         return ActionResult.SUCCESS;
     }
 
@@ -82,6 +92,7 @@ public class TokenMovementService {
             TokenizedEntityInterface tokenInterface = (TokenizedEntityInterface) token;
             // Tokens without owner are eligible too: anyone may move them (see isTokenEligible)
             if (tokenInterface.steveparty$getNbSteps() == 0
+                    && !DiceRollEffects.isResolving(token.getUuid()) // its last roll is still being resolved
                     && isTokenEligible(tokenInterface, ownerUUID)) {
                 eligibleTokens.add(token);
             }
@@ -125,7 +136,7 @@ public class TokenMovementService {
 
         ABoardSpaceBehavior behavior = tile.getBoardSpaceBehavior();
         // A token still standing on a Stop space has no steps left (forced arrival: see onTokenArrived)
-        if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos())) {
+        if (behavior == null || !behavior.needToStop(entity.getWorld(), tile.getPos()) || DiceRollEffects.ignoresStops(entity)) {
             moveEntityOnBoard(entity, nbSteps);
             return ActionResult.SUCCESS;
         }
@@ -151,6 +162,8 @@ public class TokenMovementService {
             PartyControllerEntity.onFreeTokenArrived(serverWorld, mob);
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
         AdvanceBackMoves.afterArrival(mob);
+        // The move is over: the modules of its die no longer apply
+        if (token.steveparty$getNbSteps() == 0) DiceRollEffects.clearMoveModules(mob.getUuid());
     }
 
     /** True if a token reaching this board space must end its move there (a Stop space), steps left or not. */
@@ -161,12 +174,14 @@ public class TokenMovementService {
 
     /**
      * A token reaching a Stop space ends its move there (forced arrival): the steps left of its roll are lost.
+     * Not if the die that moves it carries the Skeleton Key module: it walks through.
      *
      * @return true if the move was ended here
      */
     public static boolean endMoveIfForcedStop(MobEntity mob, BoardSpaceBlockEntity boardSpace) {
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         if (token.steveparty$getNbSteps() <= 0 || !isForcedStop(mob.getWorld(), boardSpace)) return false;
+        if (DiceRollEffects.ignoresStops(mob)) return false;
         token.steveparty$setNbSteps(0);
         SCHEDULER.cancel(mob.getUuid()); // nothing of the roll may move it on
         return true;
@@ -206,7 +221,11 @@ public class TokenMovementService {
                 .filter(BoardSpaceDestination::isTile)
                 .toList();
 
-        if (destinations.size() > 1) {
+        BoardSpaceDestination homing = destinations.size() > 1 ? DiceRollEffects.chooseFork(mob, destinations) : null;
+        if (homing != null) {
+            // Homing module: the token takes a branch by itself, nobody is asked
+            moveEntity(mob, homing.position());
+        } else if (destinations.size() > 1) {
             // Remove the arrows of a previous display (re-triggered movement) to avoid duplicates
             tileEntity.hideDestinations();
             tileEntity.displayDestinations(getDestinationChooser(mob), destinations, mob.getUuid());
@@ -220,7 +239,7 @@ public class TokenMovementService {
     }
 
     /** Ends the movement on the given board space: the token "arrives" there on the next tick. */
-    private static void stopOnCurrentBoardSpace(MobEntity mob, BlockPos boardSpacePos) {
+    static void stopOnCurrentBoardSpace(MobEntity mob, BlockPos boardSpacePos) {
         moveEntityOnBoard(mob, 0);
         ((TokenizedEntityInterface) mob).steveparty$setTargetPosition(calculateTargetPosition(mob, boardSpacePos), MOVE_SPEED);
     }

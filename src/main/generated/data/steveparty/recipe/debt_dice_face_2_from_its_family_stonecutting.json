@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": [
+    "steveparty:debt_dice_face_1",
+    "steveparty:debt_dice_face_3",
+    "steveparty:debt_dice_face_4",
+    "steveparty:debt_dice_face_5",
+    "steveparty:debt_dice_face_6",
+    "steveparty:debt_dice_face_7",
+    "steveparty:debt_dice_face_8",
+    "steveparty:debt_dice_face_9",
+    "steveparty:debt_dice_face_10"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:debt_dice_face_2"
+  }
+}

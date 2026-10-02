@@ -60,6 +60,13 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(WrenchActionPayload.ID, WrenchActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(CartridgeSettingPayload.ID, CartridgeSettingPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(DicePromptPayload.ID, DicePromptPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(DicePromptAnswerPayload.ID, DicePromptAnswerPayload.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(DicePromptAnswerPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            runInPacketOrder(player, () -> payload.handle(player));
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(CartridgeSettingPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();

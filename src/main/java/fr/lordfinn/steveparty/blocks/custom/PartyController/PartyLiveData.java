@@ -41,10 +41,24 @@ import java.util.UUID;
  * @param starItem      the item counted as stars by this party (see {@link PartyCurrency}), for the HUD's icons
  * @param coinItem      the item counted as coins by this party
  * @param standings     the party's tokens, in the turn order
+ * @param effect        what the roll of the current turn does besides steps (coins, swap, a face 0)
  */
 public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean shopping, int absentSeconds,
-                            ItemStack starItem, ItemStack coinItem, List<Standing> standings) {
-    public static final PartyLiveData EMPTY = new PartyLiveData(0, 0, false, false, -1, ItemStack.EMPTY, ItemStack.EMPTY, List.of());
+                            ItemStack starItem, ItemStack coinItem, List<Standing> standings, RollEffect effect) {
+    public static final PartyLiveData EMPTY = new PartyLiveData(0, 0, false, false, -1, ItemStack.EMPTY, ItemStack.EMPTY, List.of(), RollEffect.NONE);
+
+    /**
+     * What the roll of the current turn does besides walking (see {@code DiceOutcome}).
+     *
+     * @param rolled   the turn's player rolled something that plays (a roll of 0 included; not the blank side)
+     * @param coinFace a coin or debt face was rolled
+     * @param coins    the coins gained (negative: lost): what was really given or taken once done
+     * @param swap     a swap face was rolled
+     * @param swapWith the token it was swapped with, empty until then (the roller is choosing)
+     */
+    public record RollEffect(boolean rolled, boolean coinFace, int coins, boolean swap, String swapWith) {
+        public static final RollEffect NONE = new RollEffect(false, false, 0, false, "");
+    }
     /** Power-ups sent per token at most (the kinds held, the most numerous first). */
     public static final int MAX_POWER_UPS = 6;
     /** Items shown as power-ups in the party HUD (the Double and Triple dice by default): a data pack can add others. */
@@ -76,10 +90,15 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         }
     }
 
+    /** The roll of the current turn in words: "7", "0", "\u22123" (backward), "+5 coins", "Swap", "3, +2 coins"... */
+    public Text rollText() {
+        return new fr.lordfinn.steveparty.dice.DiceOutcome(roll, effect.coins(), effect.coinFace(), effect.swap(), false).describe();
+    }
+
     /** True if nothing shown changed (ItemStack has no value equality, so records can't just be compared). */
     public boolean sameAs(PartyLiveData other) {
         if (other == null || roll != other.roll || stepsLeft != other.stepsLeft || moving != other.moving
-                || shopping != other.shopping || absentSeconds != other.absentSeconds
+                || shopping != other.shopping || absentSeconds != other.absentSeconds || !effect.equals(other.effect)
                 || !ItemStack.areEqual(starItem, other.starItem) || !ItemStack.areEqual(coinItem, other.coinItem)
                 || standings.size() != other.standings.size())
             return false;
@@ -95,12 +114,16 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         PartyData data = controller.getPartyData();
         int roll = 0, stepsLeft = 0, absentSeconds = -1;
         boolean moving = false, shopping = false;
+        RollEffect effect = RollEffect.NONE;
         if (data.getCurrentStep() instanceof TokenTurnPartyStep turn && turn.getStatus() == PartyStep.Status.IN_PROGRESS
                 && turn.getTokenUUID() != null) {
             UUID token = turn.getTokenUUID();
             roll = turn.getRoll();
             if (world.getEntity(token) instanceof TokenizedEntityInterface tokenized) stepsLeft = tokenized.steveparty$getNbSteps();
-            moving = stepsLeft != 0 || Steveparty.SCHEDULER.isScheduled(token);
+            moving = stepsLeft != 0 || Steveparty.SCHEDULER.isScheduled(token)
+                    || fr.lordfinn.steveparty.service.DiceRollEffects.isResolving(token);
+            fr.lordfinn.steveparty.dice.DiceOutcome outcome = turn.getOutcome();
+            effect = new RollEffect(turn.hasRolled(), outcome.coinFace(), turn.getRollCoins(), outcome.swap(), turn.getSwapWith());
             shopping = ShopStops.isShopping(token);
             if (turn.isWaitingForAbsentToken())
                 absentSeconds = (int) Math.max(0, (turn.getAbsentDeadline() - world.getTime() + 19) / 20);
@@ -109,7 +132,7 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         List<Standing> standings = new ArrayList<>();
         for (UUID token : data.getTokens()) standings.add(standingOf(controller, world, token));
         return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds,
-                controller.getCurrency(PartyCurrency.STAR), controller.getCurrency(PartyCurrency.COIN), standings);
+                controller.getCurrency(PartyCurrency.STAR), controller.getCurrency(PartyCurrency.COIN), standings, effect);
     }
 
     /**
@@ -154,10 +177,14 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         return nameColor == null ? -1 : nameColor.getRgb();
     }
 
-    /** A power-up: an item of the {@link #POWER_UPS} tag, or a forged die (a die with faces of its own). */
+    /**
+     * A power-up: an item of the {@link #POWER_UPS} tag, or a special die (a die with faces of its own or carrying
+     * modules).
+     */
     public static boolean isPowerUp(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        return stack.isIn(POWER_UPS) || (stack.getItem() instanceof DefaultDiceItem && DiceFacesComponent.hasFaces(stack));
+        return stack.isIn(POWER_UPS) || (stack.getItem() instanceof DefaultDiceItem
+                && (DiceFacesComponent.hasFaces(stack) || !fr.lordfinn.steveparty.dice.DiceModules.of(stack).isEmpty()));
     }
 
     /** The power-ups in an inventory: one stack per kind (same item and components), its count the number held. */
@@ -204,19 +231,21 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
     public static final PacketCodec<RegistryByteBuf, PartyLiveData> PACKET_CODEC = new PacketCodec<>() {
         @Override
         public PartyLiveData decode(RegistryByteBuf buf) {
-            int roll = buf.readVarInt();
+            int roll = buf.readInt();
             int stepsLeft = buf.readVarInt();
             boolean moving = buf.readBoolean();
             boolean shopping = buf.readBoolean();
             int absentSeconds = buf.readVarInt() - 1;
             ItemStack starItem = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
             ItemStack coinItem = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
-            return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds, starItem, coinItem, STANDINGS_CODEC.decode(buf));
+            List<Standing> standings = STANDINGS_CODEC.decode(buf);
+            RollEffect effect = new RollEffect(buf.readBoolean(), buf.readBoolean(), buf.readInt(), buf.readBoolean(), buf.readString());
+            return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds, starItem, coinItem, standings, effect);
         }
 
         @Override
         public void encode(RegistryByteBuf buf, PartyLiveData data) {
-            buf.writeVarInt(data.roll);
+            buf.writeInt(data.roll); // negative for a roll going backward
             buf.writeVarInt(data.stepsLeft);
             buf.writeBoolean(data.moving);
             buf.writeBoolean(data.shopping);
@@ -224,6 +253,11 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
             ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, data.starItem);
             ItemStack.OPTIONAL_PACKET_CODEC.encode(buf, data.coinItem);
             STANDINGS_CODEC.encode(buf, data.standings);
+            buf.writeBoolean(data.effect.rolled);
+            buf.writeBoolean(data.effect.coinFace);
+            buf.writeInt(data.effect.coins);
+            buf.writeBoolean(data.effect.swap);
+            buf.writeString(data.effect.swapWith);
         }
     };
 

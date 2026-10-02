@@ -1,6 +1,11 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.dice.DiceOutcome;
+import fr.lordfinn.steveparty.dice.DiceRollSequence;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
 import fr.lordfinn.steveparty.data.handler.ListUuidTrackedDataHandler;
@@ -9,10 +14,6 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.component.type.FireworkExplosionComponent;
 import net.minecraft.component.type.FireworksComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -27,7 +28,6 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.*;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -50,17 +50,36 @@ import java.util.stream.Collectors;
 
 import static fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE;
 import static fr.lordfinn.steveparty.utils.EntitiesUtils.getPlayerNameByUuid;
-import static net.minecraft.component.DataComponentTypes.ENCHANTMENTS;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
+/**
+ * A thrown die. It rolls until a player hits it, then shows its result for a moment and goes away (a die carrying the
+ * Infinity module goes back to its roller). The dice of a Double / Triple Dice are linked: they stop together and add
+ * up into one roll ({@link DiceOutcome}); the first one (the lead) holds the item and runs the roll
+ * ({@link DiceRollSequence}: the modules of the die decide how it stops), the others follow it.
+ */
 public class DiceEntity extends LivingEntity implements GeoEntity {
     private static final TrackedData<Integer> ROLL_VALUE = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Kind of the face shown (ordinal of {@link DiceFacesComponent.Kind}): the client picks its texture from it. */
+    private static final TrackedData<Integer> ROLL_KIND = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Slow module: the rolling die shows the synced face (and turns slowly) instead of flickering at random. */
+    private static final TrackedData<Boolean> FACE_SHOWN = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> ROLLING = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Optional<UUID>> TARGET = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     private static final TrackedData<Optional<UUID>> OWNER = DataTracker.registerData(DiceEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     private static final TrackedData<List<UUID>> LINKED_DICE = DataTracker.registerData(DiceEntity.class, ListUuidTrackedDataHandler.INSTANCE);
 
+    /** The item given back / spent: the thrown die (empty on the dice following a lead, and on bare dice). */
     private ItemStack itemReference = ItemStack.EMPTY;
+    /** The die this entity rolls: its faces and modules (the lead's item, copied on the dice following it). */
+    private ItemStack dieStack = ItemStack.EMPTY;
+    /** One of the other dice of a Double / Triple Dice: it follows the first one thrown (the lead). */
+    private boolean follower;
+    /** The roll of this throw (lead only, created when needed, not saved). */
+    private @Nullable DiceRollSequence sequence;
+    /** What the last finished roll does (lead only). */
+    private DiceOutcome outcome = DiceOutcome.NONE;
+    private List<DiceFace> rolledFaces = List.of();
 
     private final AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
     protected static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("animation.dice.idle");
@@ -71,6 +90,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     public static final int MAX = 10;
 
     private int secondsSinceRolled = 0;
+    /** Loaded already rolled: its roll is over (it is not run again). */
+    private boolean rollWasLoadedFinished;
 
     public DiceEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -81,8 +102,26 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         return itemReference;
     }
 
+    /** The thrown item: what this die rolls (faces, modules) and what is given back or spent. */
     public void setItemReference(ItemStack itemReference) {
-        this.itemReference = itemReference;
+        this.itemReference = itemReference == null ? ItemStack.EMPTY : itemReference;
+        this.dieStack = this.itemReference;
+    }
+
+    /** The die this entity rolls: its faces and its modules (empty: a plain die). */
+    public ItemStack getDieStack() {
+        return dieStack;
+    }
+
+    /** Makes this die one of the other dice of a Double / Triple Dice: it rolls the same die, but holds no item. */
+    public void follow(ItemStack die) {
+        this.itemReference = ItemStack.EMPTY;
+        this.dieStack = die == null ? ItemStack.EMPTY : die;
+        this.follower = true;
+    }
+
+    public boolean isFollower() {
+        return follower;
     }
 
     @Override
@@ -90,6 +129,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         super.initDataTracker(builder);
         builder.add(ROLLING, true);
         builder.add(ROLL_VALUE, 1);
+        builder.add(ROLL_KIND, DiceFacesComponent.Kind.NORMAL.ordinal());
+        builder.add(FACE_SHOWN, false);
         builder.add(TARGET, Optional.empty());
         builder.add(OWNER, Optional.empty());
         builder.add(LINKED_DICE, new ArrayList<>());
@@ -125,24 +166,39 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             propagateStateChange(dice -> dice.setOwner(owner, false));
     }
 
+    /** Starts (again) or stops the roll of this throw, like a hit would (see {@link DiceRollSequence}). */
     public void setRolling(boolean rolling) {
-        setRolling(rolling, true);
-    }
-
-    public void setRolling(boolean rolling, boolean propagate) {
-        if (this.isRolling() == rolling) return;
-        if (secondsSinceRolled != 0 && (rolling && (!(itemReference == null || itemReference.isEmpty()) && !hasInfinity()))) {
-            explode(null);
+        if (this.getWorld().isClient) {
+            this.dataTracker.set(ROLLING, rolling);
+            return;
         }
-        secondsSinceRolled = 0;
-        if (propagate)
-            propagateStateChange(dice -> dice.setRolling(rolling, false));
-        if (!rolling) this.pickRollValue();
-        this.dataTracker.set(ROLLING, rolling);
+        DiceEntity lead = lead();
+        if (rolling) lead.restartRoll();
+        else lead.sequence().stop();
     }
 
     public boolean isRolling() {
         return this.dataTracker.get(ROLLING);
+    }
+
+    /** The die spins or not: what is seen only (the roll itself is {@link DiceRollSequence}). */
+    public void setSpinning(boolean spinning) {
+        this.dataTracker.set(ROLLING, spinning);
+    }
+
+    /** True while the rolling die shows the synced face, turning slowly (Slow module). */
+    public boolean isFaceShown() {
+        return this.dataTracker.get(FACE_SHOWN);
+    }
+
+    public void setFaceShown(boolean shown) {
+        this.dataTracker.set(FACE_SHOWN, shown);
+    }
+
+    /** The face this die shows (its result once stopped). */
+    public void showFace(DiceFace face) {
+        this.dataTracker.set(ROLL_KIND, face.kind().ordinal());
+        this.dataTracker.set(ROLL_VALUE, face.value());
     }
 
     private void setRollValue(int rollValue) {
@@ -153,26 +209,102 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         return this.dataTracker.get(ROLL_VALUE);
     }
 
-    /** A forged die rolls one of its own faces; a plain die rolls MIN..MAX. */
-    public int getRandomDiceValue() {
-        return DiceFacesComponent.rollFace(itemReference, this.getRandom());
+    /** Kind of the face shown. */
+    public DiceFacesComponent.Kind getRollKind() {
+        DiceFacesComponent.Kind[] kinds = DiceFacesComponent.Kind.values();
+        int ordinal = this.dataTracker.get(ROLL_KIND);
+        return ordinal >= 0 && ordinal < kinds.length ? kinds[ordinal] : DiceFacesComponent.Kind.NORMAL;
     }
 
-    protected void pickRollValue() {
-        this.setRollValue(getRandomDiceValue());
-        if (areAllLinkedDiceNotRolling()) {
-            int totalRollValue = getTotalRolledValue();
-            this.getOwner().ifPresent(owner -> {
-                DiceRollEvent.EVENT.invoker().onRoll(this, owner, totalRollValue);
-                if (this.getWorld() instanceof ServerWorld world) {
-                    String playerName = getPlayerNameByUuid(world.getServer(), owner);
-                    MessageUtils.sendToNearby(world, this.getPos(), 20,
-                            Text.translatable("message.steveparty.owned_dice_rolled", totalRollValue,
-                                    playerName == null ? Text.translatable("message.steveparty.unknown_player") : playerName),
-                            MessageUtils.MessageType.CHAT);
-                }
-            });
+    /** The face this die shows. */
+    public DiceFace getRolledFace() {
+        return new DiceFace(getRollKind(), getRollValue());
+    }
+
+    // ------------------------------------------------------------------ the roll
+
+    /** The die that runs the roll of this throw: this one, or the one it follows. */
+    public DiceEntity lead() {
+        if (!follower) return this;
+        for (DiceEntity die : getLinkedDiceEntities()) {
+            if (!die.follower) return die;
         }
+        return this; // its lead is gone: it goes on alone
+    }
+
+    /** The dice thrown together, the lead first. */
+    public List<DiceEntity> group() {
+        DiceEntity lead = lead();
+        List<DiceEntity> group = new ArrayList<>();
+        group.add(lead);
+        for (DiceEntity die : lead.getLinkedDiceEntities()) {
+            if (!group.contains(die)) group.add(die);
+        }
+        if (!group.contains(this)) group.add(this);
+        return group;
+    }
+
+    /** The roll of this throw (ask the {@link #lead}). */
+    public DiceRollSequence sequence() {
+        if (sequence == null) sequence = new DiceRollSequence(this);
+        return sequence;
+    }
+
+    /** The die was just thrown: its roll begins (its item, owner and linked dice are set). */
+    public void startRoll() {
+        if (this.getWorld().isClient) return;
+        lead().sequence().start();
+    }
+
+    private void restartRoll() {
+        if (sequence != null) sequence.cancel();
+        sequence = new DiceRollSequence(this);
+        secondsSinceRolled = 0;
+        outcome = DiceOutcome.NONE;
+        rolledFaces = List.of();
+        sequence.start();
+    }
+
+    /** True once the roll of this throw is final. */
+    public boolean isRollFinished() {
+        DiceEntity lead = lead();
+        return lead.rollWasLoadedFinished || (lead.sequence != null && lead.sequence.phase() == DiceRollSequence.Phase.DONE);
+    }
+
+    /**
+     * The roll is final ({@link DiceRollSequence}): {@code faces} are the faces of the dice of the throw. The modules
+     * of the die have their say on what it does (Reversed), then it is announced: {@link DiceRollEvent} moves the
+     * roller's token.
+     */
+    public void onRollFinished(List<DiceFace> faces) {
+        this.rolledFaces = List.copyOf(faces);
+        this.secondsSinceRolled = 0;
+        DiceOutcome result = DiceOutcome.of(faces);
+        Map<DiceModule, Integer> modules = DiceModules.of(dieStack);
+        for (Map.Entry<DiceModule, Integer> entry : modules.entrySet()) result = entry.getKey().modifyOutcome(result, entry.getValue());
+        this.outcome = result;
+        DiceOutcome announced = result;
+        this.getOwner().ifPresent(owner -> {
+            DiceRollEvent.EVENT.invoker().onRoll(this, owner, announced.steps());
+            if (this.getWorld() instanceof ServerWorld world) {
+                String playerName = getPlayerNameByUuid(world.getServer(), owner);
+                MessageUtils.sendToNearby(world, this.getPos(), 20,
+                        Text.translatable("message.steveparty.owned_dice_rolled", announced.describe(),
+                                playerName == null ? Text.translatable("message.steveparty.unknown_player") : playerName),
+                        MessageUtils.MessageType.CHAT);
+            }
+        });
+        modules.forEach((module, count) -> module.afterRoll(this, announced, count));
+    }
+
+    /** What the finished roll of this throw does ({@link DiceOutcome#NONE} until then). */
+    public DiceOutcome getOutcome() {
+        return lead().outcome;
+    }
+
+    /** The faces the dice of this throw stopped on (empty until the roll is final). */
+    public List<DiceFace> getRolledFaces() {
+        return lead().rolledFaces;
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -198,13 +330,15 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 if (this.isRolling())
                     this.getWorld().playSound(null, this.getBlockPos(), SoundEvents.ENTITY_BREEZE_WHIRL, SoundCategory.AMBIENT, 1F, 0.7F);
                 else {
-                    secondsSinceRolled++;
-                    if (secondsSinceRolled >= 2 && (!(itemReference == null || itemReference.isEmpty()) && !hasInfinity())) {
-                        explode(null);
+                    // The result was seen: the thrown die goes away (Infinity: back to its roller)
+                    if (!follower && isRollFinished()) {
+                        secondsSinceRolled++;
+                        if (secondsSinceRolled >= 2 && !itemReference.isEmpty()) explode(null);
                     }
                 }
             }
             simulation.tick();
+            if (!this.isRemoved() && !rollWasLoadedFinished && lead() == this) sequence().tick();
         }
         super.tick();
     }
@@ -268,8 +402,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         try {
             super.readNbt(nbt);
 
-            this.setRolling(nbt.getBoolean("Rolling"));
+            // A die saved while rolling rolls again; a stopped one keeps showing its result (nothing is announced twice)
+            this.setSpinning(nbt.getBoolean("Rolling"));
             this.setRollValue(nbt.getInt("RollValue"));
+            this.dataTracker.set(ROLL_KIND, nbt.contains("RollKind") ? nbt.getInt("RollKind") : DiceFacesComponent.Kind.NORMAL.ordinal());
+            this.follower = nbt.getBoolean("Follower");
+            this.secondsSinceRolled = 0;
             this.skin = nbt.getString("Skin");
 
             if (nbt.containsUuid("Target")) {
@@ -317,6 +455,19 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             } else {
                 this.setItemReference(ItemStack.EMPTY);
             }
+            if (nbt.contains("DieStack", NbtElement.COMPOUND_TYPE)) {
+                try {
+                    this.dieStack = ItemStack.fromNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream()),
+                            nbt.getCompound("DieStack")).orElse(ItemStack.EMPTY);
+                } catch (Exception ex) {
+                    this.dieStack = ItemStack.EMPTY;
+                }
+            }
+            if (!nbt.getBoolean("Rolling")) {
+                // Already rolled: the roll is over, nothing to run again
+                this.sequence = null;
+                this.rollWasLoadedFinished = true;
+            }
 
             this.setInvulnerable(true);
             this.setNoGravity(true);
@@ -343,6 +494,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             nbt.putString("Skin", this.skin);
             nbt.putBoolean("Rolling", this.isRolling());
             nbt.putInt("RollValue", this.getRollValue());
+            nbt.putInt("RollKind", this.dataTracker.get(ROLL_KIND));
+            if (follower) nbt.putBoolean("Follower", true);
 
             this.getTarget().ifPresent(uuid -> nbt.putUuid("Target", uuid));
             this.getOwner().ifPresent(uuid -> nbt.putUuid("Owner", uuid));
@@ -359,6 +512,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                     ));
                 } catch (Exception e) {
                     System.err.println("Failed to write ItemReference to NBT: " + e.getMessage());
+                }
+            } else if (dieStack != null && !dieStack.isEmpty()) {
+                try {
+                    nbt.put("DieStack", dieStack.toNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream())));
+                } catch (Exception e) {
+                    System.err.println("Failed to write DieStack to NBT: " + e.getMessage());
                 }
             }
 
@@ -383,7 +542,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 explode(player);
                 return true;
             }
-            setRolling(!isRolling());
+            lead().onPlayerHit(player);
             world.playSound(null, this.getPos().x, this.getPos().y, this.getPos().z, SoundEvents.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 1.0f, 1.0F);
         }
         return false;
@@ -391,11 +550,29 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     /**
      * /kill (and any other generic kill) removes the dice at once: a dice has no health to lose, and dying would
-     * play the living entity death animation. Like an explosion, an Infinity dice goes back to its online owner.
+     * play the living entity death animation. Like an explosion, an Infinity die goes back to its online owner.
      */
     @Override
     public void kill(ServerWorld world) {
         killDice();
+    }
+
+    /**
+     * A player (not sneaking) hit one of the dice of this throw (lead only). Rolling: the roll stops, or its modules
+     * decide ({@link DiceRollSequence#hit}). Rolled: the thrown die goes away at once (Infinity: back to its roller);
+     * a bare die (no item: summoned) rolls again.
+     */
+    private void onPlayerHit(ServerPlayerEntity player) {
+        if (rollWasLoadedFinished || (sequence != null && sequence.phase() == DiceRollSequence.Phase.DONE)) {
+            if (!itemReference.isEmpty()) {
+                explode(player);
+            } else {
+                rollWasLoadedFinished = false;
+                restartRoll();
+            }
+            return;
+        }
+        sequence().hit(player);
     }
 
     private void killDice() {
@@ -415,7 +592,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     /**
-     * Removes the dice. An Infinity dice is not lost: it goes back to its owner when the owner is online,
+     * Removes the dice. A die carrying the Infinity module is not lost: it goes back to its owner when the owner is online,
      * otherwise to the player who exploded it (anyone may explode a dice).
      */
     private void giveBackDice(@Nullable ServerPlayerEntity player) {
@@ -424,7 +601,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     private void giveBackDice(@Nullable ServerPlayerEntity player, RemovalReason reason) {
         ItemStack diceItem = getItemReference();
-        if (hasInfinity()) {
+        if (sequence != null) sequence.cancel();
+        if (!diceItem.isEmpty() && DiceModules.returnsToRoller(diceItem)) {
             ServerPlayerEntity recipient = getOnlineOwner();
             if (recipient == null) recipient = player;
             if (recipient != null)
@@ -433,8 +611,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.remove(reason);
     }
 
+    /** The player who threw the die, if connected. */
     @Nullable
-    private ServerPlayerEntity getOnlineOwner() {
+    public ServerPlayerEntity getOnlineOwner() {
         if (!(this.getWorld() instanceof ServerWorld world)) return null;
         return this.getOwner()
                 .map(uuid -> world.getServer().getPlayerManager().getPlayer(uuid))
@@ -461,7 +640,11 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     private PlayState rollAnimController(AnimationState<DiceEntity> event) {
-        if (isRolling()) return event.setAndContinue(ROLL_ANIM);
+        if (isRolling()) {
+            // A Slow die turns slowly: its faces are read as they go by
+            event.getController().setAnimationSpeed(isFaceShown() ? 0.15 : 1.0);
+            return event.setAndContinue(ROLL_ANIM);
+        }
         return PlayState.STOP;
     }
 
@@ -499,21 +682,6 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         FireworksComponent fireworksComponent = new FireworksComponent(0, components);
         fireworkStack.set(FIREWORKS, fireworksComponent);
         return fireworkStack;
-    }
-
-    public boolean hasInfinity() {
-        if (this.itemReference == null || this.itemReference.isEmpty())
-            return false;
-
-        ItemEnchantmentsComponent itemEnchantmentsComponent = this.itemReference.get(ENCHANTMENTS);
-        if (itemEnchantmentsComponent == null)
-            return false;
-        for (RegistryEntry<Enchantment> enchantment : itemEnchantmentsComponent.getEnchantments()) {
-            if (enchantment.matchesKey(Enchantments.INFINITY)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public enum Skin {
@@ -594,13 +762,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         return result;
     }
 
-    private boolean areAllLinkedDiceNotRolling() {
-        return getLinkedDiceEntities().stream().noneMatch(DiceEntity::isRolling);
-    }
-
+    /** The steps of the finished roll of this throw (negative: backward). */
     public int getTotalRolledValue() {
-        return getLinkedDiceEntities().stream()
-                .mapToInt(DiceEntity::getRollValue)
-                .sum() + this.getRollValue();
+        return getOutcome().steps();
     }
 }

@@ -11,14 +11,22 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Several dice thrown at once (Double / Triple Dice): they stop together and add up into one roll. The first die
+ * holds the item (given back, spent) and runs the roll; the others follow it and roll the same die (the faces and
+ * modules the item carries: see {@code MultiDiceRecipe}).
+ */
 public abstract class MultiDiceItem extends DefaultDiceItem {
     private final int numberOfDice;
 
     public MultiDiceItem(Settings settings, int numberOfDice) {
         super(settings);
         this.numberOfDice = numberOfDice;
+    }
+
+    public int getNumberOfDice() {
+        return numberOfDice;
     }
 
     @Override
@@ -35,16 +43,15 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
 
             if (!diceEntities.isEmpty()) {
                 linkDiceEntities(diceEntities);
-                AtomicInteger i = new AtomicInteger();
-                diceEntities.forEach(dice -> {
+                ItemStack thrown = player.getStackInHand(hand).copyWithCount(1);
+                for (int i = 0; i < diceEntities.size(); i++) {
+                    DiceEntity dice = diceEntities.get(i);
                     configureDiceEntity(dice, player, hand);
                     playSounds(world, dice);
-                    if (i.get() > 0) {
-                        dice.setItemReference(ItemStack.EMPTY);
-                    } else
-                        decrementDiceInHand(player, hand);
-                    i.getAndIncrement();
-                });
+                    if (i > 0) dice.follow(thrown.copy());
+                }
+                decrementDiceInHand(player, hand);
+                diceEntities.getFirst().startRoll();
             }
         }
         return ActionResult.SUCCESS;

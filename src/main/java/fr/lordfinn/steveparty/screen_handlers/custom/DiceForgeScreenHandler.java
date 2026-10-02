@@ -23,7 +23,8 @@ import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FOR
 /**
  * Dice forge GUI. Handler slot indices match the forge inventory: 0..11 faces, 12 center (gravity core input,
  * hidden once the forge is activated: the screen draws the core there as the FORGE button), 13..16 star fragments
- * (NW, NE, SE, SW), 17 blank faces (left of the core), 18 output (right of the core), then the player inventory.
+ * (NW, NE, SE, SW), 17 blank faces (left of the core), 18 output (right of the core), 19..22 dice modules (the four
+ * satellites in the corners of the vortex), then the player inventory.
  * The FORGE button uses the vanilla button click packet (syncId + canUse, i.e. same forge open and in reach).
  */
 public class DiceForgeScreenHandler extends ScreenHandler {
@@ -47,6 +48,11 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             {134, 63}, {33, 90},  {127, 90},
             {53, 110}, {107, 110},{80, 117}
     };
+    /**
+     * The module slots: four satellites around the vortex, in the corners it leaves free (top left, top right, bottom
+     * left, bottom right), each drawn in the texture as a small moon.
+     */
+    public static final int[][] MODULE_POSITIONS = {{5, 19}, {155, 19}, {5, 107}, {155, 107}};
     private static final int PLAYER_INVENTORY_START = SIZE;
 
     private final Inventory inventory;
@@ -91,6 +97,16 @@ public class DiceForgeScreenHandler extends ScreenHandler {
                 return false;
             }
         });
+
+        // --- Dice modules (not consumed; a slot holds as many of a module as a die may carry) ---
+        for (int i = 0; i < MODULE_SLOTS; i++) {
+            this.addSlot(new ForgeSlot(inventory, FIRST_MODULE_SLOT + i, MODULE_POSITIONS[i][0], MODULE_POSITIONS[i][1]) {
+                @Override
+                public int getMaxItemCount(ItemStack stack) {
+                    return Math.max(1, maxModuleCount(stack));
+                }
+            });
+        }
 
         // --- Player inventory ---
         // Matches the slot cells painted in the texture (rows at y = 143, 161, 179, hotbar at 201)
@@ -166,6 +182,8 @@ public class DiceForgeScreenHandler extends ScreenHandler {
                 if (!insertPreferringGhosts(stackInSlot, BLANK_SLOT, BLANK_SLOT + 1)) return ItemStack.EMPTY;
             } else if (DiceFace.isFace(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, 0, FACE_SLOTS)) return ItemStack.EMPTY;
+            } else if (fr.lordfinn.steveparty.dice.DiceModules.isModuleItem(stackInSlot)) {
+                if (!insertPreferringGhosts(stackInSlot, FIRST_MODULE_SLOT, FIRST_MODULE_SLOT + MODULE_SLOTS)) return ItemStack.EMPTY;
             } else if (isStarFragment(stackInSlot)) {
                 if (!insertPreferringGhosts(stackInSlot, FIRST_FRAGMENT_SLOT, FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS)) return ItemStack.EMPTY;
             } else {

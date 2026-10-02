@@ -3,7 +3,10 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController.steps;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.service.DiceRollEffects;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -53,6 +56,12 @@ public class TokenTurnPartyStep extends PartyStep {
     private ItemStack spentDie = ItemStack.EMPTY;
     /** Total of the dice rolled for this turn by its player, 0 until they roll (shown by the party HUD). Not saved. */
     private int roll;
+    /** What that roll does (coins, swap, a face 0...), {@link DiceOutcome#NONE} until they roll. Not saved. */
+    private DiceOutcome outcome = DiceOutcome.NONE;
+    /** The coins the roll really gave (negative: took), null until it did. */
+    private @Nullable Integer rollCoins;
+    /** The token the roll swapped this one with, empty until it did. */
+    private String swapWith = "";
 
     public TokenTurnPartyStep(NbtCompound nbt) {
         super(nbt);
@@ -72,6 +81,9 @@ public class TokenTurnPartyStep extends PartyStep {
         super.start(partyControllerEntity);
         absentDeadline = -1;
         roll = 0;
+        outcome = DiceOutcome.NONE;
+        rollCoins = null;
+        swapWith = "";
         if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
             if (this.tokenUUID == null) {
                 cancelTurn(partyControllerEntity.getPartyData().getOwners(serverWorld), partyControllerEntity);
@@ -165,8 +177,40 @@ public class TokenTurnPartyStep extends PartyStep {
         if (status == Status.IN_PROGRESS && (owner == null || owner.equals(ownerUUID))) {
             spentDie = spentDie(dice);
             roll = rollValue;
+            DiceOutcome rolled = dice.getOutcome();
+            outcome = rolled.steps() == rollValue ? rolled : DiceOutcome.ofSteps(rollValue);
+            rollCoins = null;
+            swapWith = "";
         }
         return ActionResult.PASS;
+    }
+
+    /** @return what the roll of this turn does, {@link DiceOutcome#NONE} while its player has not rolled */
+    public DiceOutcome getOutcome() {
+        return outcome;
+    }
+
+    /** @return true once this turn's player rolled something that plays (not the blank side: they may roll again) */
+    public boolean hasRolled() {
+        return outcome.steps() != 0 || outcome.isSpecial() || outcome.zero();
+    }
+
+    /** The coins the roll gave (negative: took): what it really did once applied, what it is about to do before. */
+    public int getRollCoins() {
+        return rollCoins != null ? rollCoins : outcome.coins();
+    }
+
+    public void noteCoins(int coins) {
+        this.rollCoins = coins;
+    }
+
+    /** @return the name of the token this one was swapped with, empty while it was not */
+    public String getSwapWith() {
+        return swapWith;
+    }
+
+    public void noteSwap(String with) {
+        this.swapWith = with == null ? "" : with;
     }
 
     /** @return the total rolled for this turn by its player, 0 while they have not rolled */
@@ -180,8 +224,8 @@ public class TokenTurnPartyStep extends PartyStep {
     }
 
     /**
-     * The item of a rolled die (a group of linked dice: the one holding it), empty if nothing was spent: an Infinity
-     * die goes back to its owner by itself.
+     * The item of a rolled die (a group of linked dice: the one holding it), empty if nothing was spent: a die carrying
+     * the Infinity module goes back to its owner by itself.
      */
     private static ItemStack spentDie(DiceEntity dice) {
         List<DiceEntity> group = new java.util.ArrayList<>(List.of(dice));
@@ -190,7 +234,7 @@ public class TokenTurnPartyStep extends PartyStep {
                 if (world.getEntity(linked) instanceof DiceEntity other) group.add(other);
         for (DiceEntity die : group) {
             ItemStack item = die.getItemReference();
-            if (item != null && !item.isEmpty()) return die.hasInfinity() ? ItemStack.EMPTY : item.copyWithCount(1);
+            if (item != null && !item.isEmpty()) return DiceModules.returnsToRoller(item) ? ItemStack.EMPTY : item.copyWithCount(1);
         }
         return ItemStack.EMPTY;
     }
@@ -286,7 +330,7 @@ public class TokenTurnPartyStep extends PartyStep {
      * (TokenMovementService schedules the movement under the token's UUID)
      */
     private boolean isTokenMoving(ServerWorld world) {
-        if (Steveparty.SCHEDULER.isScheduled(tokenUUID)) return true;
+        if (Steveparty.SCHEDULER.isScheduled(tokenUUID) || DiceRollEffects.isResolving(tokenUUID)) return true;
         return world.getEntity(tokenUUID) instanceof TokenizedEntityInterface token && token.steveparty$getNbSteps() > 0;
     }
 

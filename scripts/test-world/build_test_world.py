@@ -977,9 +977,14 @@ def all_items():
                                'plunger', 'mini_games_catalogue', 'mini_game_page', 'garnet_crystal_ball',
                                'shop_cartridge',
                                'advance_back_cartridge', 'replay_cartridge', 'teleport_cartridge']))
-    faces = ['blank_dice_face'] + ['dice_face_%d' % i for i in range(1, 11)] + \
+    faces = ['blank_dice_face'] + ['dice_face_%d' % i for i in range(0, 11)] + \
             ['premium_dice_face_%d' % i for i in range(1, 11)] + ['cursed_dice_face_%d' % i for i in range(1, 4)]
     groups.append(('Dés', ['default_dice', 'double_dice', 'triple_dice', 'dice_forge', 'gravity_core'] + faces))
+    special_faces = ['coin_dice_face_%d' % i for i in range(1, 11)] + ['debt_dice_face_%d' % i for i in range(1, 11)] + \
+                    ['swap_dice_face']
+    modules = ['dice_module_%s' % m for m in ('slow', 'choice', 'infinity', 'lucky', 'reroll', 'reversed',
+                                              'skeleton_key', 'homing')]
+    groups.append(('Dés : faces spéciales et modules', special_faces + modules))
     stars = ['%s_star_fragment' % c for c in STAR_COLOURS]
     groups.append(('Mulas et étoiles', ['mula_spawn_egg', 'telescope', 'power_star'] + stars +
                    ['%s_star_fragments_block' % c for c in STAR_COLOURS]))
