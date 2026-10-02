@@ -43,6 +43,7 @@
     "TokenBaseRenderStateMixin",
     "WindowBackgroundDevMixin",
     "WorldRendererBreakingAccessor",
+    "WorldRendererDeferredGlowsMixin",
     "DrownedModelPipeSwimMixin",
     "PiglinModelPipeSwimMixin",
     "SkeletonModelPipeSwimMixin",
