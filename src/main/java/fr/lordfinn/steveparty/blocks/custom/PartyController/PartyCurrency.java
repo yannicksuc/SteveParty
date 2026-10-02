@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 
 import java.util.function.Supplier;
 
@@ -14,8 +13,8 @@ import java.util.function.Supplier;
  * in their inventory (same item and same components: a renamed nugget is not a plain nugget).
  */
 public enum PartyCurrency {
-    /** The main currency: a nether star by default, the rarest looking star of the game. */
-    STAR("StarItem", () -> Items.NETHER_STAR),
+    /** The main currency: the mod's Power Star by default. */
+    STAR("StarItem", () -> ModItems.POWER_STAR),
     /** The sub-currency: the mod's coin by default (a gold nugget minted at the crafting table). */
     COIN("CoinItem", () -> ModItems.COIN);
 

@@ -62,12 +62,14 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  */
 public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHandler> {
     private static final String KEY = "gui.steveparty.party_controller.";
-    private static final int TAB_HEIGHT = 20, TAB_OVERLAP = TAB_HEIGHT - TABS_HEIGHT;
+    /** A tab stands on the panel's top edge, the selected one a little taller. */
+    private static final int TAB_HEIGHT = TABS_HEIGHT - 2, TAB_RAISE = 2;
     private static final int PAD = 8;
     private static final int LINE = 13;
     /** Room kept free under the dashboard when the screen allows it (a recipe viewer's search field). */
     private static final int ROOM_BELOW = 24;
-    private static final int TOOLTIP_WIDTH = 200;
+    /** Wide enough for one idea per line. */
+    private static final int TOOLTIP_WIDTH = 236;
     private static final int COLOR_WARN = 0xFFB36200;
     private static final int COLOR_GOLD = 0xFF8A5A00;
     /** The « i » of a page: top right corner. */
@@ -183,7 +185,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         layoutTabs();
         for (Page tab : Page.values()) {
             int index = tab.ordinal();
-            PartyButton button = new PartyButton(tabX(index), y - TABS_HEIGHT, tabWidth(index), TAB_HEIGHT,
+            PartyButton button = new PartyButton(tabX(index), y - TAB_HEIGHT, tabWidth(index), TAB_HEIGHT,
                     Text.translatable(KEY + "tab." + key(tab)), b -> showPage(tab)) {
                 @Override
                 protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -252,17 +254,24 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         for (Page tab : Page.values()) {
             boolean selected = tab == page();
             if (selected != selectedPass) continue;
-            int tx = tabX(tab.ordinal()), ty = y - TABS_HEIGHT, tw = tabWidth(tab.ordinal());
-            boolean hovered = mouseX >= tx && mouseX < tx + tw && mouseY >= ty && mouseY < ty + TAB_HEIGHT;
+            int tx = tabX(tab.ordinal()), ty = y - TAB_HEIGHT - (selected ? TAB_RAISE : 0), tw = tabWidth(tab.ordinal());
+            boolean hovered = mouseX >= tx && mouseX < tx + tw && mouseY >= y - TAB_HEIGHT && mouseY < y;
             PartyGui.Theme theme = selected ? PartyGui.PANEL : hovered ? TAB_IDLE.brighter() : TAB_IDLE;
-            PartyGui.panel(context, tx, ty, tw, TAB_HEIGHT + (selected ? TAB_OVERLAP + 2 : 0), theme);
+            // Like the creative inventory's: a tab goes down behind the panel's top edge (the panel, drawn after the
+            // tabs at rest, cuts them there); the selected one, drawn after the panel, opens into it
+            PartyGui.panel(context, tx, ty, tw, y + 4 - ty, theme);
             if (selected) {
-                // Merge into the panel: no border between the tab and the page
-                context.fill(tx + 3, y, tx + tw - 3, y + 3, PartyGui.PANEL.body());
+                PartyGui.Theme panel = PartyGui.PANEL;
+                // No border between the tab and the page: the tab's bottom edge and the panel's top edge go
+                context.fill(tx, y + 3, tx + tw, y + 4, panel.body());
+                context.fill(tx + 3, y, tx + tw - 3, y + 3, panel.body());
+                // The panel's light top edge goes on, on each side, from the foot of the tab
+                context.fill(tx, y + 1, tx + 3, y + 3, panel.highlight());
+                context.fill(tx + tw - 3, y + 1, tx + tw, y + 3, panel.highlight());
             }
             OrderedText label = fit(Text.translatable(KEY + "tab." + key(tab)), tw - 4);
             int cx = tx + (tw - textRenderer.getWidth(label)) / 2;
-            int cy = ty + (selected ? 6 : 7);
+            int cy = ty + 6;
             context.drawText(textRenderer, label, cx, cy, selected ? PartyGui.TEXT_DARK : 0xFF2E2E2E, false);
             Badge badge = badge(tab);
             if (badge != null) drawBadge(context, tx + tw - 8, ty - 1, badge.error ? 0xFFD8323F : 0xFFF0A020, badge.error ? 0xFF5E0A12 : 0xFF6B4300, false);
@@ -384,6 +393,15 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         // Slot boxes of the page
         for (Slot slot : handler.slots) {
             if (slot.isEnabled()) slotBox(context, x + slot.x - 1, y + slot.y - 1);
+        }
+        // The empty catalogue slot shows, faded, the item it takes (the currency slots are never empty)
+        Slot catalogue = handler.getSlot(SLOT_CATALOGUE);
+        if (catalogue.isEnabled() && !catalogue.hasStack()) {
+            context.drawItem(new ItemStack(ModItems.MINI_GAMES_CATALOGUE), x + catalogue.x, y + catalogue.y);
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 250);
+            context.fill(x + catalogue.x, y + catalogue.y, x + catalogue.x + 16, y + catalogue.y + 16, 0x998B8B8B);
+            context.getMatrices().pop();
         }
     }
 
