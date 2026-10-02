@@ -17,7 +17,7 @@ import net.minecraft.util.math.BlockPos;
 public class TradingStallScreenHandler extends ScreenHandler {
 
     // ===== Constants for maintainability =====
-    private static final int INVENTORY_SIZE = 28;
+    private static final int INVENTORY_SIZE = TradingStallBlockEntity.SIZE;
 
     // Block inventory slot layout
     private static final int STALL_INV_ROWS_TOP = 2;
@@ -29,11 +29,6 @@ public class TradingStallScreenHandler extends ScreenHandler {
     // Middle row (third row) offset
     private static final int MIDDLE_ROW_INDEX = 2;
     private static final int MIDDLE_ROW_Y_OFFSET = 0;
-
-    // Special slot (index 27)
-    private static final int SPECIAL_SLOT_INDEX = 27;
-    private static final int SPECIAL_SLOT_X = 182;
-    private static final int SPECIAL_SLOT_Y = 62;
 
     // Player inventory position
     private static final int PLAYER_INV_X = 12;
@@ -80,9 +75,6 @@ public class TradingStallScreenHandler extends ScreenHandler {
                     0
             ));
         }
-
-        // Special slot
-        this.addSlot(new Slot(inventory, SPECIAL_SLOT_INDEX, SPECIAL_SLOT_X, SPECIAL_SLOT_Y));
 
         // Player inventory
         addPlayerSlots(playerInventory, PLAYER_INV_X, PLAYER_INV_Y);

@@ -203,7 +203,6 @@ public class VendorLinkPersistentState extends PersistentState {
         if (world.isClient) return;
         VendorLinkPersistentState state = get(world.getServer());
         if (state != null) state.unlinkPosition(GlobalPos.create(world.getRegistryKey(), pos));
-        TraderStallRegistry.unlinkStallFromAllTraders(pos);
     }
 
     public static VendorLinkPersistentState get(MinecraftServer server) {

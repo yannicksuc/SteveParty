@@ -1,19 +1,14 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
-import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
-import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.AirBlockItem;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -27,18 +22,16 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradedItem;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 public class TradingStallBlockEntity extends BlockEntity implements NamedScreenHandlerFactory, ImplementedInventory {
-    private final DefaultedList<ItemStack> items = DefaultedList.ofSize(28, ItemStack.EMPTY);
+    /** 9 columns of 3: two price rows and the sold item (an old stall's 28th slot is ignored when it loads). */
+    public static final int SIZE = 27;
+    private final DefaultedList<ItemStack> items = DefaultedList.ofSize(SIZE, ItemStack.EMPTY);
 
     public TradingStallBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TRADING_STALL, pos, state);
@@ -79,35 +72,6 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
 
     public Inventory getInventory() {
         return ImplementedInventory.of(items);
-    }
-
-    @Override
-    public void markDirty() {
-        super.markDirty();
-        if (world != null && !world.isClient) {
-            updateLinkedTraders();
-        }
-    }
-
-    public void updateLinkedTraders() {
-        ItemStack lastSlotItem = this.getItems().get(27); // Assuming the last slot is index 27
-        if (!lastSlotItem.isEmpty() && lastSlotItem.getItem() instanceof BlockItem) {
-            Block block = ((BlockItem) lastSlotItem.getItem()).getBlock();
-            World world = this.getWorld();
-            if (world != null) {
-                Box searchBox = new Box(this.getPos().add(-5, -5, -5).toCenterPos(), this.getPos().add(5, 5, 5).toCenterPos());
-                Predicate<BoxedTraderEntity> predicate = trader -> trader.getBlockState().getBlock() == block;
-
-                List<BoxedTraderEntity> nearbyTraders = world.getEntitiesByClass(BoxedTraderEntity.class, searchBox, predicate);
-
-                for (BoxedTraderEntity trader : nearbyTraders) {
-                    BlockPos stallPos = this.getPos();
-                    if (trader.getPos().distanceTo(new Vec3d(stallPos.getX(), stallPos.getY(), stallPos.getZ())) <= 5) {
-                        TraderStallRegistry.linkTraderToStall(trader.getUuid(), stallPos);
-                    }
-                }
-            }
-        }
     }
 
     @Nullable
