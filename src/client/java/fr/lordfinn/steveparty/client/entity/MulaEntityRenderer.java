@@ -79,11 +79,12 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     /**
      * Where the glows (halo, inner lights) are drawn: vanilla's translucent emissive layer, not depth-writing and not
      * outlined by the glowing effect (only the body is). Without a shader pack, drawn with the entity, unchanged. With
-     * one, drawn later, after the translucent terrain ({@link DeferredGlows}): drawn with the entity, the pack's clouds
-     * covered them.
+     * one, drawn apart ({@link DeferredGlows}): drawn with the entity, the pack's clouds covered them. Then
+     * {@code behindTranslucent} tells a Mula seen through glass or water from the others.
      */
-    private static VertexConsumer glowBuffer(VertexConsumerProvider bufferSource, Identifier texture) {
-        return ShaderPacks.inUse() ? DeferredGlows.buffer(texture)
+    private static VertexConsumer glowBuffer(VertexConsumerProvider bufferSource, Identifier texture, boolean shaderPack,
+                                             boolean behindTranslucent) {
+        return shaderPack ? DeferredGlows.buffer(texture, behindTranslucent)
                 : bufferSource.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture, false));
     }
 
@@ -212,7 +213,11 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                     return;
                 }
                 matrices.translate(bonePos.x / ratio, bonePos.y / ratio, bonePos.z / ratio);
-                renderInnerLights(matrices, entity, bodyBone.get(), camera, bufferSource, partialTick, full, warm);
+                boolean shaderPack = ShaderPacks.inUse();
+                boolean behindTranslucent = shaderPack && DeferredGlows.behindTranslucent(entity.getWorld(), camera.getPos(),
+                        entity.getLerpedPos(partialTick).add(0, entity.getHeight() * MulaEntity.CENTER, 0));
+                renderInnerLights(matrices, entity, bodyBone.get(), camera, bufferSource, partialTick, full, warm,
+                        shaderPack, behindTranslucent);
                 matrices.multiply(rotation);
                 // (times the token's scale: a small token has a small halo, a big one a big halo)
                 float size = (0.95f + 0.1f * glow) * (1f + 0.25f * full + 0.35f * flare + 0.3f * warm) * entity.getScale();
@@ -224,7 +229,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 int b = 100 + ((tint & 0xFF) * 155 / 255);
                 int alpha = (int) (255 * MathHelper.clamp(0.7f + 0.2f * glow + 0.1f * full + 0.3f * flare + 0.25f * warm,
                         0f, 1f));
-                drawQuad(matrices, glowBuffer(bufferSource, texture), packedLight, r, g, b, alpha);
+                drawQuad(matrices, glowBuffer(bufferSource, texture, shaderPack, behindTranslucent), packedLight, r, g, b, alpha);
                 matrices.pop();
             }
         }
@@ -237,7 +242,8 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
          * silhouette, so they read as glowing through it. They shrink with the body (the burst's pop). Nothing allocated per frame.
          */
         private void renderInnerLights(MatrixStack matrices, MulaEntity mula, GeoBone head, Camera camera,
-                                       VertexConsumerProvider bufferSource, float partialTick, float full, float warm) {
+                                       VertexConsumerProvider bufferSource, float partialTick, float full, float warm,
+                                       boolean shaderPack, boolean behindTranslucent) {
             float lights = full * MAX_WISPS;
             if (lights < 0.02f && warm < 0.02f) return;
             float headScale = head.getScaleY();
@@ -259,7 +265,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             int r = 90 + (((tint >> 16) & 0xFF) * 165 / 255);
             int g = 90 + (((tint >> 8) & 0xFF) * 165 / 255);
             int b = 90 + ((tint & 0xFF) * 165 / 255);
-            VertexConsumer vertices = glowBuffer(bufferSource, WISP_TEXTURE);
+            VertexConsumer vertices = glowBuffer(bufferSource, WISP_TEXTURE, shaderPack, behindTranslucent);
             // the pose stack is world-aligned here: step towards the camera up to the surface, then face the camera
             matrices.push();
             float step = (float) surface * px;
