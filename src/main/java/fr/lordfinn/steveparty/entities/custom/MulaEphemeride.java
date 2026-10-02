@@ -26,7 +26,7 @@ import java.util.Map;
  * with sparkling trails (MulaStarEntity, flat: its path is a formula from a few synced numbers, particles only on the
  * clients near it). After a player's first wave, a group of Mulas is recorded where the stars went, 150 to 600 blocks
  * on (MulaSpawnSites), appearing when that place is loaded: at most one group per player per event, and at most
- * MulaSpawnSites#MAX_PENDING waiting in the world.
+ * MulaSpawnSites#maxSites sites in the dimension (one more retires the oldest, with its wild Mulas).
  */
 public final class MulaEphemeride {
     private MulaEphemeride() {

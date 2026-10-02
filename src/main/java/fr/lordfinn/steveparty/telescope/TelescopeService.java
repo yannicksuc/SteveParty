@@ -33,6 +33,8 @@ import java.util.UUID;
  *   within {@value #RANGE} blocks he has neither found nor been to, read from the list in memory);</li>
  *   <li>records that he found one ({@link #found}) and that he has been to one ({@link #visits}), per player, in
  *   MulaSpawnSites, and tells him (only him) his guide stars;</li>
+ *   <li>follows the sites that are retired ({@link #siteRetired}): no night to replay, no guide star for a site that
+ *   is no more;</li>
  *   <li>knows who looks through which telescope (one player at a time), so that the others see him at its eyepiece.
  *   Only that is shared: what he sees in it is not.</li>
  * </ul>
@@ -234,6 +236,32 @@ public final class TelescopeService {
         syncGuides(player);
         player.sendMessage(guideText(dx, dz), true);
         return true;
+    }
+
+    /**
+     * A site was retired (too many in the dimension): nothing may show it or lead to it any more. The players it
+     * guided lose that guide star and are told; a player whose telescope showed him that night gets his nights anew
+     * (his client goes back to tonight's sky if he was replaying it) and is told. Only the players of that dimension
+     * who are online: the others simply never hear of it again.
+     */
+    public static void siteRetired(ServerWorld world, MulaSpawnSites.Retired retired) {
+        int id = retired.site().id;
+        for (ServerPlayerEntity player : world.getPlayers()) {
+            UUID uuid = player.getUuid();
+            if (retired.guided().contains(uuid)) {
+                syncGuides(player);
+                player.sendMessage(Text.translatable("message.steveparty.telescope.guide_gone"), true);
+            }
+            Set<Integer> offered = OFFERED.get(uuid);
+            if (offered == null || !offered.contains(id)) continue;
+            GlobalPos at = WATCHING.get(uuid);
+            if (at != null && at.dimension().equals(world.getRegistryKey())) {
+                answer(player, at.pos());
+                player.sendMessage(Text.translatable("message.steveparty.telescope.night_gone"), true);
+            } else {
+                offered.remove(id);
+            }
+        }
     }
 
     /** "Guide star: north-east, far". */

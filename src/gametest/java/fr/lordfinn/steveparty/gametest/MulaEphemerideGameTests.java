@@ -94,12 +94,14 @@ public class MulaEphemerideGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** No endless spawning: a cap on the sites waiting, and small groups. */
+    /** No endless spawning: a cap on the sites of a dimension (the oldest make room), and small groups. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void spawningIsBounded(TestContext context) {
         MulaSpawnSites sites = new MulaSpawnSites();
-        for (int i = 0; i < MulaSpawnSites.MAX_PENDING + 10; i++) sites.add(new BlockPos(100000 + i * 1000, 64, 0), 0, new int[]{1});
-        context.assertTrue(sites.pendingCount() == MulaSpawnSites.MAX_PENDING, "pending capped: " + sites.pendingCount());
+        int max = MulaSpawnSites.maxSites();
+        for (int i = 0; i < max + 10; i++) sites.add(new BlockPos(100000 + i * 1000, 64, 0), 0, new int[]{1});
+        context.assertTrue(sites.pendingCount() == max && sites.siteCount() == max, "sites capped: " + sites.siteCount());
+        context.assertTrue(sites.byId(10) == null && sites.byId(max + 10) != null, "the latest are the ones kept");
         net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(3);
         for (int i = 0; i < 50; i++) {
             int n = MulaEphemeride.group(random).length;

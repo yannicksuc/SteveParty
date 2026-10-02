@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * The server settings of the mini-game bubble, kept in {@code config/steveparty.json} (written with its defaults the
+ * The server settings (the mini-game bubble, the cap of Mula spawn sites), kept in {@code config/steveparty.json} (written with its defaults the
  * first time; a missing or broken file gives the defaults). Read once when the mod starts.
  */
 public final class ZoneBubbleConfig {
@@ -32,6 +32,11 @@ public final class ZoneBubbleConfig {
     public int miniGameBubbleMaxEntities = 1024;
     /** The blocks put back per tick at the end of a session: a bigger journal is restored over several ticks. */
     public int miniGameBubbleRestorePerTick = 2048;
+    /**
+     * The most Mula spawn sites (the places where an ephemeride brought Mulas down) a dimension keeps: one more, and
+     * the oldest is retired with its wild Mulas (MulaSpawnSites).
+     */
+    public int mulaMaxSites = 10;
 
     public static ZoneBubbleConfig get() {
         return current;
@@ -64,6 +69,7 @@ public final class ZoneBubbleConfig {
         miniGameBubbleMaxBlockEntities = Math.max(0, miniGameBubbleMaxBlockEntities);
         miniGameBubbleMaxEntities = Math.max(0, miniGameBubbleMaxEntities);
         miniGameBubbleRestorePerTick = Math.max(16, miniGameBubbleRestorePerTick);
+        mulaMaxSites = Math.max(1, mulaMaxSites);
         return this;
     }
 }

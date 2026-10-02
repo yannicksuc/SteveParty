@@ -137,8 +137,14 @@ public final class TelescopeClient {
         boolean same = payload.pos().equals(watching);
         watching = payload.pos();
         today = payload.day();
+        TelescopePayloads.Night replayed = same ? night() : null;
         nights = new ArrayList<>(payload.nights());
-        if (!same || index > nights.size()) setIndex(0);
+        // The same telescope, its nights anew (one was retired): the night being replayed goes on if it is still
+        // there, wherever it is in the list now; if not, back to tonight's sky
+        int kept = 0;
+        for (int i = 0; replayed != null && i < nights.size(); i++) if (nights.get(i).id() == replayed.id()) kept = i + 1;
+        if (!same || kept == 0) setIndex(0);
+        else index = kept;
         if (!same) foundHere = false;
         if (!same) play(SoundEvents.ITEM_SPYGLASS_USE, 1f, 1f);
     }

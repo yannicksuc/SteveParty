@@ -30,14 +30,53 @@ import java.util.UUID;
  * Kept after the Mulas appeared, for what comes later: a structure generated at the site, a tool finding the nearest
  * one ({@link #nearest}).
  * <p>
+ * <b>One cap, rolling</b>: a dimension keeps at most {@link #maxSites()} sites (the config's {@code mulaMaxSites},
+ * 10 by default), waiting or not. One more, and the oldest is retired: its record is dropped (a save holding more is
+ * trimmed the same way when it is read), with what the players knew of it, and its Mulas go with it. Those are not
+ * looked for: each Mula knows its site, and looks once whether it still exists when it is loaded and after each
+ * retirement ({@link #epoch()}), so the ones in unloaded chunks leave when they next load, nothing being loaded for
+ * it. Only the wild ones still at their site leave: a Mula made somebody's or taken away is kept
+ * (MulaEntity#isKeptFromSiteRetirement) and belongs to no site from then on.
+ * <p>
  * Also kept here, per player: the sites he found at a Telescope (his guide stars) and those he has been to. Nothing a
  * player finds or visits changes a site or what another player sees.
  */
 public class MulaSpawnSites extends PersistentState {
     private static final String ID = "steveparty_mula_spawn_sites";
     public static final Type<MulaSpawnSites> TYPE = new Type<>(MulaSpawnSites::new, MulaSpawnSites::fromNbt, null);
-    /** At most this many sites waiting for their chunk (older events beyond it are not recorded). */
-    public static final int MAX_PENDING = 16;
+    /**
+     * A Mula farther than this from where it came down (blocks, horizontally) was taken away: it is kept when its
+     * site is retired. Three times the reach of a Dice Forge's area (MulaHome#RADIUS), far more than a flock drifts
+     * while its chunks are loaded.
+     */
+    public static final double AWAY = 48;
+
+    /** A site that was retired, and the players who had its guide star. */
+    public record Retired(Site site, Set<UUID> guided) {
+    }
+
+    private static int epoch;
+
+    /** Changes each time a site is retired, anywhere: what a Mula compares to know it must look at its site again. */
+    public static int epoch() {
+        return epoch;
+    }
+
+    /** The most sites a dimension keeps (the config's {@code mulaMaxSites}). */
+    public static int maxSites() {
+        return Math.max(1, fr.lordfinn.steveparty.minigame.zone.ZoneBubbleConfig.get().mulaMaxSites);
+    }
+
+    /**
+     * Was that site retired? True when its dimension's list no longer has it (ids are never used twice). An unknown
+     * dimension, or one that has no list at all, says nothing: false.
+     */
+    public static boolean isRetired(net.minecraft.server.MinecraftServer server, @Nullable net.minecraft.util.Identifier dimension, int id) {
+        if (dimension == null || id == 0) return false;
+        ServerWorld world = server.getWorld(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.WORLD, dimension));
+        MulaSpawnSites sites = world == null ? null : peek(world);
+        return sites != null && sites.byId(id) == null;
+    }
 
     /**
      * One site: its column (y found when the Mulas appear, then stored), the game time, the day of its night (the
@@ -70,35 +109,72 @@ public class MulaSpawnSites extends PersistentState {
     private final List<Site> sites = new ArrayList<>();
     private final Map<UUID, Knowledge> players = new HashMap<>();
     private int nextId = 1;
+    /** Told of each retirement (the dimension's list: the telescopes and guide stars of its players follow). */
+    private @Nullable java.util.function.Consumer<Retired> onRetired;
 
     public static MulaSpawnSites get(ServerWorld world) {
-        return world.getPersistentStateManager().getOrCreate(TYPE, ID);
+        return listened(world, world.getPersistentStateManager().getOrCreate(TYPE, ID));
     }
 
     public static @Nullable MulaSpawnSites peek(ServerWorld world) {
-        return world.getPersistentStateManager().get(TYPE, ID);
+        MulaSpawnSites sites = world.getPersistentStateManager().get(TYPE, ID);
+        return sites == null ? null : listened(world, sites);
     }
 
-    /** Records a site (null when too many are already waiting), its night being the day of that game time. */
+    private static MulaSpawnSites listened(ServerWorld world, MulaSpawnSites sites) {
+        if (sites.onRetired == null) {
+            sites.onRetired = retired -> fr.lordfinn.steveparty.telescope.TelescopeService.siteRetired(world, retired);
+            // a save read with more sites than the cap was trimmed: its Mulas must look
+            epoch++;
+        }
+        return sites;
+    }
+
+    /** Records a site, its night being the day of that game time. */
     public @Nullable Site add(BlockPos pos, long time, int[] colours) {
         return add(pos, time, time / 24000L, colours);
     }
 
-    /** Records a site of the night of that day (null when too many are already waiting). */
-    public @Nullable Site add(BlockPos pos, long time, long day, int[] colours) {
-        if (pendingCount() >= MAX_PENDING) return null;
-        return record(pos, time, day, colours);
-    }
-
-    /**
-     * Records a site whatever the number already waiting: one set by hand, not by an ephemeride (the cap of
-     * {@link #add} only bounds what the events pile up; a world can be at it for good, its sites far from everyone).
-     */
-    public Site record(BlockPos pos, long time, long day, int[] colours) {
+    /** Records a site of the night of that day; past the cap, the oldest sites are retired. */
+    public Site add(BlockPos pos, long time, long day, int[] colours) {
         Site site = new Site(nextId++, pos.toImmutable(), time, day, colours.clone(), false);
         sites.add(site);
         markDirty();
+        trim();
         return site;
+    }
+
+    /** The oldest site: the earliest time, then the lowest id. */
+    private @Nullable Site oldest() {
+        Site oldest = null;
+        for (Site s : sites) {
+            if (oldest == null || s.time < oldest.time || s.time == oldest.time && s.id < oldest.id) oldest = s;
+        }
+        return oldest;
+    }
+
+    /** Retires the oldest sites until the cap holds. */
+    public void trim() {
+        int max = maxSites();
+        while (sites.size() > max) {
+            Site oldest = oldest();
+            if (oldest == null) return;
+            retire(oldest.id);
+        }
+    }
+
+    /**
+     * Retires a site: its record and what the players knew of it are dropped, its Mulas will see it gone
+     * ({@link #epoch()}), and the players it guided are told.
+     */
+    public boolean retire(int id) {
+        Site site = byId(id);
+        if (site == null) return false;
+        Set<UUID> guided = new java.util.HashSet<>();
+        for (Map.Entry<UUID, Knowledge> e : players.entrySet()) if (e.getValue().found.contains(id)) guided.add(e.getKey());
+        remove(id);
+        if (onRetired != null) onRetired.accept(new Retired(site, guided));
+        return true;
     }
 
     public int pendingCount() {
@@ -127,6 +203,7 @@ public class MulaSpawnSites extends PersistentState {
             k.found.remove(id);
             k.visited.remove(id);
         }
+        epoch++;
         markDirty();
         return true;
     }
@@ -239,6 +316,7 @@ public class MulaSpawnSites extends PersistentState {
                     site.pos.getZ() + 0.5 + Math.sin(a) * 1.5, world.random.nextFloat() * 360, 0);
             mula.initialize(world, world.getLocalDifficulty(mula.getBlockPos()), SpawnReason.EVENT, null);
             mula.setVariant(MulaEntity.MulaVariant.byId(site.colours[i]));
+            mula.setSpawnSite(world.getRegistryKey(), site.id, site.pos.getX(), site.pos.getZ());
             for (int k = 0; k < 16 && !world.isSpaceEmpty(mula); k++) {
                 mula.refreshPositionAndAngles(mula.getX(), mula.getY() + 1, mula.getZ(), mula.getYaw(), 0);
             }
@@ -298,6 +376,8 @@ public class MulaSpawnSites extends PersistentState {
             for (int id : c.getIntArray("Visited")) k.visited.add(id);
             state.players.put(c.getUuid("Player"), k);
         }
+        // a save from before the cap, or a cap lowered since: the same rule, the oldest first
+        state.trim();
         return state;
     }
 }
