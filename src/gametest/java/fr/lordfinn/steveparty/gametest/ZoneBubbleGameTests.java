@@ -18,6 +18,8 @@ import net.minecraft.block.HopperBlock;
 import net.minecraft.block.PistonBlock;
 import net.minecraft.block.Portal;
 import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.block.entity.CrafterBlockEntity;
+import net.minecraft.block.enums.Orientation;
 import net.minecraft.block.entity.DispenserBlockEntity;
 import net.minecraft.block.entity.HopperBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
@@ -30,6 +32,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
+import net.minecraft.entity.vehicle.HopperMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.ClientConnection;
@@ -38,6 +41,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.property.Properties;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.text.Text;
@@ -831,6 +835,51 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             found = pos.toImmutable();
         }
         return found;
+    }
+
+    /** A hopper minecart by the border sucks up no item lying on the other side; once the session is over, it does. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 100)
+    public void hopperMinecartsTakeNothingAcross(TestContext context) {
+        floor(context);
+        HopperMinecartEntity cart = context.spawnEntity(EntityType.HOPPER_MINECART, new Vec3d(5.5, 1, 2.5));
+        // an item of the zone, within the reach of the minecart standing just outside
+        ItemEntity lying = context.spawnItem(Items.GOLD_INGOT, new Vec3d(4.8, 1, 2.5));
+        lying.setVelocity(Vec3d.ZERO);
+        ZoneBubble bubble = begin(context);
+        later(context, 30, () -> {
+            context.assertTrue(lying.isAlive() && cart.isEmpty(), "the item of the zone is not sucked up from outside");
+            // the item was there before the session: it is put back, and the border is gone
+            bubble.end();
+        });
+        later(context, 70, () -> {
+            context.assertTrue(!cart.isEmpty(), "after the session the minecart takes it (the guard is what held it)");
+            cart.discard();
+            done(context);
+        });
+    }
+
+    /** A crafter facing the border crafts nothing across it; one facing into its own side works. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH, tickLimit = 60)
+    public void craftersCraftNothingAcross(TestContext context) {
+        floor(context);
+        ServerWorld world = context.getWorld();
+        context.setBlockState(at(4, 1, 3), Blocks.CRAFTER.getDefaultState().with(Properties.ORIENTATION, Orientation.EAST_UP));
+        context.<CrafterBlockEntity>getBlockEntity(at(4, 1, 3)).setStack(0, new ItemStack(Items.OAK_LOG));
+        context.setBlockState(at(5, 1, 1), Blocks.CRAFTER.getDefaultState().with(Properties.ORIENTATION, Orientation.WEST_UP));
+        context.<CrafterBlockEntity>getBlockEntity(at(5, 1, 1)).setStack(0, new ItemStack(Items.OAK_LOG));
+        context.setBlockState(at(3, 1, 4), Blocks.CRAFTER.getDefaultState().with(Properties.ORIENTATION, Orientation.WEST_UP));
+        context.<CrafterBlockEntity>getBlockEntity(at(3, 1, 4)).setStack(0, new ItemStack(Items.OAK_LOG));
+        ZoneBubble bubble = begin(context);
+        for (BlockPos crafter : List.of(at(4, 1, 3), at(5, 1, 1), at(3, 1, 4))) world.scheduleBlockTick(context.getAbsolutePos(crafter), Blocks.CRAFTER, 1);
+        later(context, 10, () -> {
+            context.assertTrue(context.<CrafterBlockEntity>getBlockEntity(at(4, 1, 3)).getStack(0).isOf(Items.OAK_LOG), "the crafter of the zone facing out keeps its log");
+            context.assertTrue(context.<CrafterBlockEntity>getBlockEntity(at(5, 1, 1)).getStack(0).isOf(Items.OAK_LOG), "the crafter outside facing in keeps its log");
+            context.assertTrue(context.<CrafterBlockEntity>getBlockEntity(at(3, 1, 4)).isEmpty(), "a crafter facing into the zone works");
+            List<ItemEntity> items = itemsIn(context, zone(context));
+            context.assertTrue(items.size() == 1 && items.get(0).getStack().isOf(Items.OAK_PLANKS) && inZone(context, items.get(0)), "only its planks came out, in the zone");
+            bubble.end();
+            done(context);
+        });
     }
 
     /** Two stacks of the same item on either side of the border don't merge. */

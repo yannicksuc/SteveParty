@@ -4,6 +4,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -152,6 +153,11 @@ public final class ZoneBorder {
         if (bubble == null) return false;
         BlockState old = chunk.getBlockState(pos);
         if (old == state) return false;
+        // What the server forbids in a zone does not appear in one in session, whatever would put it there
+        if (bypass == 0 && bubble.isActive() && old.getBlock() != state.getBlock() && ZoneForbidden.isForbidden(state)) {
+            if (originPlayer != null && depth > 0) ZoneBubbles.warn(originPlayer, "forbidden_here");
+            return true;
+        }
         return !bubble.journal(pos.asLong(), old, bypass > 0);
     }
 
@@ -225,11 +231,14 @@ public final class ZoneBorder {
         return new Vec3d(fx, fy, fz);
     }
 
-    /** @return true if an entity may not be added to the world: what makes it started on the other side */
+    /** @return true if an entity may not be added to the world: what makes it started on the other side, or it is forbidden in the zone it would be in */
     public static boolean blocksSpawn(ServerWorld world, Entity entity) {
-        if (depth == 0 || Thread.currentThread() != thread) return false;
+        if (bypass > 0 || Thread.currentThread() != thread) return false;
         BlockPos pos = entity.getBlockPos();
-        return fromOtherSide(world, pos.getX(), pos.getY(), pos.getZ());
+        if (depth > 0 && fromOtherSide(world, pos.getX(), pos.getY(), pos.getZ())) return true;
+        // What the server forbids in a zone does not spawn in one in session, whatever makes it (egg, dispenser, spawner, mod)
+        ZoneBubble bubble = ZoneBubbles.at(world, pos.getX(), pos.getY(), pos.getZ());
+        return bubble != null && bubble.isActive() && ZoneForbidden.isForbidden(entity.getType());
     }
 
     /** @return true if the portal block at {@code pos} takes nobody anywhere: it is in a zone in session */
@@ -271,6 +280,19 @@ public final class ZoneBorder {
     /** @return true if a player may not pick this entity up (item, experience orb, arrow) */
     public static boolean blocksPickup(PlayerEntity player, Entity entity) {
         if (bypass > 0 || !(player instanceof ServerPlayerEntity server) || Thread.currentThread() != thread) return false;
-        return !ZoneBubbles.canTouch(server, entity.getWorld(), entity.getBlockPos());
+        if (!ZoneBubbles.canTouch(server, entity.getWorld(), entity.getBlockPos())) return true;
+        if (entity instanceof ItemEntity item && ZoneBubbles.blocksItem(server, item.getStack())) {
+            ZoneBubbles.warn(server, "forbidden_item");
+            return true;
+        }
+        return false;
+    }
+
+    /** @return true if a player may not take what this slot holds: an item forbidden to sessions, in a container, and the player is of one */
+    public static boolean blocksSlot(PlayerEntity player, Slot slot) {
+        if (bypass > 0 || !(player instanceof ServerPlayerEntity server) || slot.inventory == player.getInventory()) return false;
+        if (!ZoneBubbles.blocksItem(server, slot.getStack())) return false;
+        ZoneBubbles.warn(server, "forbidden_item");
+        return true;
     }
 }

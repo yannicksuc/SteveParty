@@ -45,6 +45,7 @@
     "ZoneBubblePistonHandlerMixin",
     "ZoneBubblePlayerEntityMixin",
     "ZoneBubbleRandomTickMixin",
+    "ZoneBubbleScreenHandlerMixin",
     "ZoneBubbleServerPlayerMixin",
     "ZoneBubbleServerWorldMixin",
     "ZoneBubbleWorldChunkMixin",

@@ -78,7 +78,11 @@ public final class ZoneBubble {
 
     /** Why a bubble did not begin. */
     public enum Refusal {
-        NONE, DISABLED, NO_WORLD, TOO_BIG, OVERLAP, TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES
+        NONE, DISABLED, NO_WORLD, TOO_BIG, OVERLAP, TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES,
+        /** The zone holds a block the server does not allow in a zone ({@link ZoneForbidden}). */
+        FORBIDDEN_BLOCK,
+        /** The zone holds an entity the server does not allow in a zone. */
+        FORBIDDEN_ENTITY
     }
 
     /** @param adventure participants play in adventure mode (their own mode is given back with their inventory) */
@@ -120,6 +124,8 @@ public final class ZoneBubble {
     private final MiniGameZone zone;
     private final Options options;
     private final Refusal refusal;
+    /** What exactly kept the bubble from beginning (the forbidden block or entity and where it is), null when nothing more is known. */
+    private @Nullable Text refusalDetail;
     final @Nullable ServerWorld world;
     private final int minX, minY, minZ, maxX, maxY, maxZ;
     private final Map<UUID, Member> members = new LinkedHashMap<>();
@@ -191,6 +197,11 @@ public final class ZoneBubble {
     /** @return why the bubble did not begin, {@link Refusal#NONE} if it did */
     public Refusal refusal() {
         return refusal;
+    }
+
+    /** Why the bubble did not begin, for its players: null when it did, or when the feature is off. */
+    public @Nullable Text refusalText() {
+        return refusalDetail != null ? refusalDetail : ZoneBubbles.refusalText(refusal);
     }
 
     public boolean isMember(UUID player) {
@@ -265,11 +276,27 @@ public final class ZoneBubble {
         ZoneBubble bubble = new ZoneBubble(sessionId, zone, options, world, Refusal.NONE);
         bubble.holdChunks();
         List<BlockEntity> found = bubble.findBlockEntities();
+        List<Entity> inZone = bubble.findEntities();
         Refusal refusal = found.size() > config.miniGameBubbleMaxBlockEntities ? Refusal.TOO_MANY_BLOCK_ENTITIES
-                : bubble.findEntities().size() > config.miniGameBubbleMaxEntities ? Refusal.TOO_MANY_ENTITIES : Refusal.NONE;
+                : inZone.size() > config.miniGameBubbleMaxEntities ? Refusal.TOO_MANY_ENTITIES : Refusal.NONE;
+        Text detail = null;
+        if (refusal == Refusal.NONE) {
+            // Nothing the server forbids in a zone: its sections are asked for the blocks, the entities are those just found
+            ZoneForbidden.FoundBlock block = ZoneForbidden.findBlock(world, zone, true);
+            Entity entity = block != null ? null : ZoneForbidden.findEntity(inZone);
+            if (block != null) {
+                refusal = Refusal.FORBIDDEN_BLOCK;
+                detail = ZoneForbidden.blockText(block);
+            } else if (entity != null) {
+                refusal = Refusal.FORBIDDEN_ENTITY;
+                detail = ZoneForbidden.entityText(entity.getType(), entity.getBlockPos());
+            }
+        }
         if (refusal != Refusal.NONE) {
             bubble.releaseChunks();
-            return refused(sessionId, zone, refusal);
+            ZoneBubble refused = refused(sessionId, zone, refusal);
+            refused.refusalDetail = detail;
+            return refused;
         }
         ZoneBorder.bypass++;
         try {

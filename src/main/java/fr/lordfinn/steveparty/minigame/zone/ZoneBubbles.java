@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -73,7 +74,12 @@ public final class ZoneBubbles {
     public static void initialize() {
         ZoneBubbleConfig.load();
         ZonePlayerRules.initialize();
-        ServerLifecycleEvents.SERVER_STARTED.register(ZoneBubbles::recover);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            // the settings as the file says now, and what they forbid among what this server has
+            ZoneBubbleConfig.load();
+            ZoneForbidden.resolve();
+            recover(server);
+        });
         // before the players are sent away and the world saved: every zone whole, every inventory back
         ServerLifecycleEvents.SERVER_STOPPING.register(ZoneBubbles::endAll);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> reset());
@@ -116,7 +122,8 @@ public final class ZoneBubbles {
     public static ZoneBubble begin(MinecraftServer server, UUID sessionId, MiniGameZone zone,
                                    Collection<ServerPlayerEntity> participants, Collection<ServerPlayerEntity> spectators,
                                    ZoneBubble.Options options) {
-        ZoneBubble.Refusal refusal = check(server, zone);
+        // what the zone holds (too much, something forbidden) is looked at once its chunks are held: ZoneBubble.start
+        ZoneBubble.Refusal refusal = checkPlace(server, zone);
         if (refusal == ZoneBubble.Refusal.NONE && get(sessionId) != null) refusal = ZoneBubble.Refusal.OVERLAP;
         ZoneBubble bubble = refusal != ZoneBubble.Refusal.NONE ? ZoneBubble.refused(sessionId, zone, refusal)
                 : ZoneBubble.start(server, sessionId, zone, server.getWorld(zone.dimension()), participants, spectators, options);
@@ -135,6 +142,13 @@ public final class ZoneBubbles {
      * only counted when it begins).
      */
     public static ZoneBubble.Refusal check(MinecraftServer server, MiniGameZone zone) {
+        ZoneBubble.Refusal place = checkPlace(server, zone);
+        if (place != ZoneBubble.Refusal.NONE) return place;
+        return forbiddenBlock(server, zone) != null ? ZoneBubble.Refusal.FORBIDDEN_BLOCK : ZoneBubble.Refusal.NONE;
+    }
+
+    /** Whether the zone itself can take a session: the feature, its dimension, its size, the zones in session. Costs nothing. */
+    public static ZoneBubble.Refusal checkPlace(MinecraftServer server, MiniGameZone zone) {
         ZoneBubbleConfig config = ZoneBubbleConfig.get();
         if (!config.miniGameBubble) return ZoneBubble.Refusal.DISABLED;
         if (server.getWorld(zone.dimension()) == null) return ZoneBubble.Refusal.NO_WORLD;
@@ -142,6 +156,22 @@ public final class ZoneBubbles {
         if (zone.sizeX() > max || zone.sizeY() > max || zone.sizeZ() > max) return ZoneBubble.Refusal.TOO_BIG;
         for (ZoneBubble other : live) if (other.zone().intersects(zone)) return ZoneBubble.Refusal.OVERLAP;
         return ZoneBubble.Refusal.NONE;
+    }
+
+    /**
+     * A block of the zone the server does not allow in a zone, null if none is seen: only the chunks that are
+     * loaded are looked at (the others when a session begins), by the palettes of their sections.
+     */
+    public static ZoneForbidden.@Nullable FoundBlock forbiddenBlock(MinecraftServer server, MiniGameZone zone) {
+        ServerWorld world = server.getWorld(zone.dimension());
+        return world == null ? null : ZoneForbidden.findBlock(world, zone, false);
+    }
+
+    /** Why a zone can't take a session now, as {@link #check} sees it: with the forbidden block and where it is. */
+    public static @Nullable Text refusalText(MinecraftServer server, MiniGameZone zone) {
+        ZoneBubble.Refusal refusal = check(server, zone);
+        ZoneForbidden.FoundBlock block = refusal == ZoneBubble.Refusal.FORBIDDEN_BLOCK ? forbiddenBlock(server, zone) : null;
+        return block != null ? ZoneForbidden.blockText(block) : refusalText(refusal);
     }
 
     /** @return true if all that holds the zone up is being put back: it is free in a moment */
@@ -155,7 +185,10 @@ public final class ZoneBubbles {
         return restoring;
     }
 
-    /** Why a session could not begin, for its players; null when there is nothing to say (it began, or the feature is off). */
+    /**
+     * Why a session could not begin, for its players; null when there is nothing to say (it began, or the feature
+     * is off). {@link ZoneBubble#refusalText()} says more: which block or entity is forbidden, and where.
+     */
     public static @Nullable Text refusalText(ZoneBubble.Refusal refusal) {
         return switch (refusal) {
             case NONE, DISABLED -> null;
@@ -163,6 +196,7 @@ public final class ZoneBubbles {
             case OVERLAP -> Text.translatable("message.steveparty.zone_bubble.overlap");
             case TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES -> Text.translatable("message.steveparty.zone_bubble.too_full");
             case NO_WORLD -> Text.translatable("message.steveparty.zone_bubble.unavailable");
+            case FORBIDDEN_BLOCK, FORBIDDEN_ENTITY -> Text.translatable("message.steveparty.zone_bubble.forbidden");
         };
     }
 
@@ -310,6 +344,11 @@ public final class ZoneBubbles {
         ZoneBubble side = sideOf(player);
         if (side != null) return to != side;
         return to != null && !player.isSpectator() && !to.isMember(player.getUuid());
+    }
+
+    /** @return true if the player is of a session and may not have this item: the server forbids it to sessions */
+    static boolean blocksItem(ServerPlayerEntity player, ItemStack stack) {
+        return BY_PLAYER.containsKey(player.getUuid()) && ZoneForbidden.isForbidden(stack);
     }
 
     /** @return true if what the player drops is destroyed: a spectator, or a participant out of its zone */

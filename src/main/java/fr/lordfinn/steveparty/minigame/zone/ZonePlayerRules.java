@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
@@ -32,6 +33,7 @@ final class ZonePlayerRules {
                 !ZoneBorder.ACTIVE || allowed(player, world, pos) ? ActionResult.PASS : ActionResult.FAIL);
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!ZoneBorder.ACTIVE || world.isClient) return ActionResult.PASS;
+            if (forbidden(player, player.getStackInHand(hand))) return ActionResult.FAIL;
             if (ZoneBubbles.isUsable(world.getBlockState(hit.getBlockPos()).getBlock())) return ActionResult.PASS;
             // the block clicked, and the place a block put against it would take
             return allowed(player, world, hit.getBlockPos()) && allowed(player, world, hit.getBlockPos().offset(hit.getSide()))
@@ -43,7 +45,15 @@ final class ZonePlayerRules {
                 !ZoneBorder.ACTIVE || allowed(player, world, entity.getBlockPos()) ? ActionResult.PASS : ActionResult.FAIL);
         // an item used in the air acts where its user stands
         UseItemCallback.EVENT.register((player, world, hand) ->
-                !ZoneBorder.ACTIVE || allowed(player, world, player.getBlockPos()) ? ActionResult.PASS : ActionResult.FAIL);
+                !ZoneBorder.ACTIVE || world.isClient || !forbidden(player, player.getStackInHand(hand)) && allowed(player, world, player.getBlockPos())
+                        ? ActionResult.PASS : ActionResult.FAIL);
+    }
+
+    /** @return true if the player is of a session and holds an item the server forbids to sessions: it uses it on nothing */
+    private static boolean forbidden(PlayerEntity player, ItemStack stack) {
+        if (ZoneBorder.bypass > 0 || !(player instanceof ServerPlayerEntity server) || !ZoneBubbles.blocksItem(server, stack)) return false;
+        ZoneBubbles.warn(server, "forbidden_item");
+        return true;
     }
 
     private static boolean allowed(PlayerEntity player, World world, BlockPos pos) {

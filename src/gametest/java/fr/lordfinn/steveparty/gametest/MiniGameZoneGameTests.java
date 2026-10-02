@@ -441,6 +441,38 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         done(context);
     }
 
+    /**
+     * A block the server forbids in a zone (here the lodestone, by the tag) in the arena: the controller names it and
+     * says where it is, nothing starts out of a party, and a party plays its round without the bubble.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_forbidden")
+    public void aForbiddenBlockInTheArena(TestContext context) {
+        MinecraftServer server = context.getWorld().getServer();
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5);
+        UUID id = arena(context, true);
+        try {
+            alone(context, p1, p2);
+            p1.getInventory().setStack(0, new ItemStack(Items.DIAMOND_SWORD));
+            BlockPos forbidden = new BlockPos(3, 2, 3);
+            context.setBlockState(forbidden, Blocks.LODESTONE);
+            MiniGameControllerScreenHandler screen = new MiniGameControllerScreenHandler(1, p1.getInventory(), context.getBlockEntity(HOME));
+            context.assertEquals(screen.state(), State.ZONE_FORBIDDEN, "the controller says a forbidden block is in the zone");
+            context.assertTrue(screen.forbiddenBlock() == Blocks.LODESTONE && screen.forbiddenPos().equals(context.getAbsolutePos(forbidden)), "which one, and where");
+            context.assertTrue(!screen.onButtonClick(p1, MiniGameControllerScreenHandler.BUTTON_PLAY), "« Play » does nothing");
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.ZONE_FORBIDDEN, "nothing starts out of a party");
+            context.assertTrue(MiniGameTest.of(id) == null && p1.getInventory().getStack(0).isOf(Items.DIAMOND_SWORD), "no round, no inventory left at the door");
+
+            PartyControllerEntity controller = party(context, id, p1, p2);
+            MiniGamePartyStep step = (MiniGamePartyStep) controller.getPartyData().getCurrentStep();
+            step.leaveForMiniGame(controller);
+            context.assertTrue(step.isPractice() && step.isAway(p1.getUuid()), "a party plays its round all the same");
+            context.assertTrue(ZoneBubbles.all().isEmpty() && p1.getInventory().getStack(0).isOf(Items.DIAMOND_SWORD), "without the bubble");
+        } finally {
+            cleanUp(context, id, p1, p2);
+        }
+        done(context);
+    }
+
     // ------------------------------------------------------------------ in a party
 
     /**

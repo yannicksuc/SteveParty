@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.minigame.zone;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import fr.lordfinn.steveparty.Steveparty;
 import net.fabricmc.loader.api.FabricLoader;
@@ -10,10 +11,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The server settings (the mini-game bubble, the cap of Mula spawn sites), kept in {@code config/steveparty.json} (written with its defaults the
- * first time; a missing or broken file gives the defaults). Read once when the mod starts.
+ * first time, and again when it lacks a setting this version knows; a missing or broken file gives the defaults).
+ * Read when the mod starts, and again every time a server does.
  */
 public final class ZoneBubbleConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -33,6 +37,15 @@ public final class ZoneBubbleConfig {
     /** The blocks put back per tick at the end of a session: a bigger journal is restored over several ticks. */
     public int miniGameBubbleRestorePerTick = 2048;
     /**
+     * Blocks a mini-game zone may not hold, besides those of the block tag {@code steveparty:zone_forbidden}: an id
+     * ({@code modid:block}), a tag ({@code #namespace:tag}) or a whole mod ({@code modid:*}). See {@link ZoneForbidden}.
+     */
+    public List<String> miniGameBubbleForbiddenBlocks = new ArrayList<>();
+    /** Items the members of a session may not pick up, use or take from a container: same entries, same tag (of items). */
+    public List<String> miniGameBubbleForbiddenItems = new ArrayList<>();
+    /** Entities a mini-game zone may not hold: same entries, same tag (of entity types). */
+    public List<String> miniGameBubbleForbiddenEntities = new ArrayList<>();
+    /**
      * The most Mula spawn sites (the places where an ephemeride brought Mulas down) a dimension keeps: one more, and
      * the oldest is retired with its wild Mulas (MulaSpawnSites).
      */
@@ -45,14 +58,19 @@ public final class ZoneBubbleConfig {
     public static void load() {
         Path file = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
         ZoneBubbleConfig loaded = null;
+        boolean complete = true;
         if (Files.isRegularFile(file)) {
             try {
-                loaded = GSON.fromJson(Files.readString(file, StandardCharsets.UTF_8), ZoneBubbleConfig.class);
+                String text = Files.readString(file, StandardCharsets.UTF_8);
+                loaded = GSON.fromJson(text, ZoneBubbleConfig.class);
+                // written again with the settings it does not have yet (their defaults), so that they can be found
+                JsonObject there = GSON.fromJson(text, JsonObject.class);
+                if (loaded != null && there != null) complete = there.keySet().containsAll(GSON.toJsonTree(loaded).getAsJsonObject().keySet());
             } catch (IOException | JsonParseException e) {
                 Steveparty.LOGGER.warn("Can't read {}: the default settings are used", file, e);
             }
         }
-        boolean write = loaded == null && !Files.exists(file);
+        boolean write = loaded == null ? !Files.exists(file) : !complete;
         current = loaded == null ? new ZoneBubbleConfig() : loaded.sane();
         if (!write) return;
         try {
@@ -69,6 +87,9 @@ public final class ZoneBubbleConfig {
         miniGameBubbleMaxBlockEntities = Math.max(0, miniGameBubbleMaxBlockEntities);
         miniGameBubbleMaxEntities = Math.max(0, miniGameBubbleMaxEntities);
         miniGameBubbleRestorePerTick = Math.max(16, miniGameBubbleRestorePerTick);
+        if (miniGameBubbleForbiddenBlocks == null) miniGameBubbleForbiddenBlocks = new ArrayList<>();
+        if (miniGameBubbleForbiddenItems == null) miniGameBubbleForbiddenItems = new ArrayList<>();
+        if (miniGameBubbleForbiddenEntities == null) miniGameBubbleForbiddenEntities = new ArrayList<>();
         mulaMaxSites = Math.max(1, mulaMaxSites);
         return this;
     }
