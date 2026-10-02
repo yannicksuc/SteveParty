@@ -9,8 +9,21 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -27,11 +40,98 @@ import org.jetbrains.annotations.Nullable;
  * The Mini-game Controller block (see {@link MiniGameControllerBlockEntity}). A click with a Mini-game Page (or a
  * Zone Cartridge) puts it in when its slot is free; a sneaking click with empty hands takes the page back (the
  * cartridge when there is no page); any other click opens its screen. Putting in and taking out take the right to
- * build. No redstone, no comparator.
+ * build. No redstone, no comparator, no light.
+ * <p>
+ * Its look: a referee on a cloud, facing whoever placed it ({@link #FACING}), holding the page it was given
+ * ({@link #PAGE}) next to a lamp that tells what the mini-game of that page is doing ({@link #SIGNAL}). The block
+ * entity keeps these two up to date ({@code MiniGameControllerBlockEntity#refreshState}).
  */
 public class MiniGameControllerBlock extends Block implements BlockEntityProvider {
+    /** The side its face looks at. */
+    public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
+    /** A page is in the controller. */
+    public static final BooleanProperty PAGE = BooleanProperty.of("page");
+    public static final EnumProperty<Signal> SIGNAL = EnumProperty.of("signal", Signal.class);
+
+    /** The lamp: what the mini-game of the page is doing. */
+    public enum Signal implements StringIdentifiable {
+        /** Nobody plays it (or no page). */
+        RED("red"),
+        /** A party plays its practice round. */
+        ORANGE("orange"),
+        /** It is being played: the real round of a party, or out of a party. */
+        GREEN("green");
+
+        private final String name;
+
+        Signal(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String asString() {
+            return name;
+        }
+    }
+
+    /** The model, facing north: its base, the cloud, the referee's head, his lamp. In sixteenths of a block. */
+    private static final double[][] BOXES = {{0, 0, 0, 16, 2, 16}, {1, 2, 2, 15, 9, 14}, {6, 7, 3, 14, 15, 13}, {2, 8, 6, 6, 16, 10}};
+    private static final java.util.Map<Direction, VoxelShape> SHAPES = new java.util.EnumMap<>(Direction.class);
+
+    static {
+        for (Direction facing : Direction.Type.HORIZONTAL) {
+            // Quarter turns clockwise (seen from above) from north, like the block state's model rotation
+            int turns = switch (facing) {
+                case EAST -> 1;
+                case SOUTH -> 2;
+                case WEST -> 3;
+                default -> 0;
+            };
+            VoxelShape shape = VoxelShapes.empty();
+            for (double[] box : BOXES) {
+                double x1 = box[0], z1 = box[2], x2 = box[3], z2 = box[5];
+                for (int i = 0; i < turns; i++) {
+                    double nx1 = 16 - z2, nz1 = x1, nx2 = 16 - z1, nz2 = x2;
+                    x1 = nx1;
+                    z1 = nz1;
+                    x2 = nx2;
+                    z2 = nz2;
+                }
+                shape = VoxelShapes.union(shape, Block.createCuboidShape(x1, box[1], z1, x2, box[4], z2));
+            }
+            SHAPES.put(facing, shape);
+        }
+    }
+
     public MiniGameControllerBlock(Settings settings) {
         super(settings);
+        setDefaultState(stateManager.getDefaultState().with(FACING, Direction.NORTH).with(PAGE, false).with(SIGNAL, Signal.RED));
+    }
+
+    @Override
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+        builder.add(FACING, PAGE, SIGNAL);
+    }
+
+    /** Its face looks at whoever places it. */
+    @Override
+    public BlockState getPlacementState(ItemPlacementContext context) {
+        return getDefaultState().with(FACING, context.getHorizontalPlayerFacing().getOpposite());
+    }
+
+    @Override
+    protected BlockState rotate(BlockState state, BlockRotation rotation) {
+        return state.with(FACING, rotation.rotate(state.get(FACING)));
+    }
+
+    @Override
+    protected BlockState mirror(BlockState state, BlockMirror mirror) {
+        return state.rotate(mirror.getRotation(state.get(FACING)));
+    }
+
+    @Override
+    protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return SHAPES.get(state.get(FACING));
     }
 
     @Override

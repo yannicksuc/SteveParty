@@ -441,6 +441,7 @@ public class ModBlocks {
             Block.Settings.create()
                     .strength(4.0f, 30.0f)
                     .sounds(BlockSoundGroup.METAL)
+                    .nonOpaque()
                     .requiresTool(),
             "mini_game_controller", true);
 

@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.gametest;
 
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlock;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -660,5 +661,99 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             cleanUp(context, id, player);
         }
         context.complete();
+    }
+
+    // ------------------------------------------------------------------ what the block shows
+
+    private static MiniGameControllerBlock.Signal lamp(TestContext context) {
+        return context.getBlockState(HOME).get(MiniGameControllerBlock.SIGNAL);
+    }
+
+    private static boolean showsPage(TestContext context) {
+        return context.getBlockState(HOME).get(MiniGameControllerBlock.PAGE);
+    }
+
+    /**
+     * The block shows its page, and its lamp follows the mini-game of that page in a party: red while nobody plays it,
+     * orange during the practice round, green during the real round, red again once it is over.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_lamp", tickLimit = 100)
+    public void theLampFollowsThePartysMiniGame(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 6.5, 1, 1.5), p2 = player(context, "b", 6.5, 1, 2.5);
+        UUID id = page(context, green);
+        try {
+            alone(context, p1, p2);
+            BlockPos first = podium(context, id, 4, 3, 2), second = podium(context, id, 5, 3, 1);
+            MiniGameControllerBlockEntity home = home(context, HOME, null);
+            context.assertTrue(!showsPage(context) && lamp(context) == MiniGameControllerBlock.Signal.RED, "no page: no page shown, the lamp red");
+            context.assertEquals(context.getBlockState(HOME).rotate(net.minecraft.util.BlockRotation.CLOCKWISE_90).get(MiniGameControllerBlock.FACING),
+                    Direction.EAST, "it turns with what it stands on");
+            home.setPage(pageItem(id));
+            context.assertTrue(showsPage(context) && lamp(context) == MiniGameControllerBlock.Signal.RED, "the page is shown at once; nobody plays: red");
+            context.assertTrue(context.getBlockEntity(HOME) == home && id.equals(home.getPageId()), "the controller is still itself, with its page");
+
+            PartyControllerEntity controller = party(context, id, MiniGamePartyStep.Phase.COUNTDOWN, p1, p2);
+            MiniGamePartyStep step = step(controller);
+            home.refreshState();
+            context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.RED, "the countdown: not played yet");
+            step.leaveForMiniGame(controller);
+            home.refreshState();
+            context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.ORANGE, "the practice round: orange");
+            MiniGamePartyStep.toggleReady(p1);
+            MiniGamePartyStep.toggleReady(p2);
+            context.assertTrue(step.isPlaying(), "everyone ready: the real round");
+            home.refreshState();
+            context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.GREEN, "the real round: green");
+            Podiums.toggle(p1, context.getWorld(), context.getAbsolutePos(first));
+            Podiums.toggle(p2, context.getWorld(), context.getAbsolutePos(second));
+            context.assertEquals(step.getPhase(), MiniGamePartyStep.Phase.FINISHED, "the mini-game is over");
+            home.refreshState();
+            context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.RED, "over: red again");
+
+            // The page taken out: nothing shown
+            home.setPage(ItemStack.EMPTY);
+            context.assertTrue(!showsPage(context) && lamp(context) == MiniGameControllerBlock.Signal.RED, "the page out: gone from the block at once");
+        } finally {
+            cleanUp(context, id, p1, p2);
+        }
+        context.complete();
+    }
+
+    /** Out of a party: green while the mini-game is played, red once stopped; the lamp follows by itself within a few ticks. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_lamp_play", tickLimit = 100)
+    public void theLampFollowsAMiniGamePlayedOutOfAParty(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5);
+        MinecraftServer server = context.getWorld().getServer();
+        UUID id = page(context, green);
+        try {
+            alone(context, p1);
+            home(context, HOME, id);
+            context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.RED, "nobody plays: red");
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played out of a party");
+        } catch (RuntimeException e) {
+            cleanUp(context, id, p1);
+            throw e;
+        }
+        // Nothing asks the block to look: it does, a few times a second
+        context.waitAndRun(8, () -> {
+            try {
+                context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.GREEN, "being played: green");
+                MiniGameTest.stop(id);
+            } catch (RuntimeException e) {
+                cleanUp(context, id, p1);
+                throw e;
+            }
+            context.waitAndRun(8, () -> {
+                try {
+                    context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.RED, "stopped: red");
+                    context.assertTrue(showsPage(context), "the page is still shown");
+                } finally {
+                    cleanUp(context, id, p1);
+                }
+                context.complete();
+            });
+        });
     }
 }
