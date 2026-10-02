@@ -13,12 +13,12 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.math.BlockPos;
 
 /**
- * The Golden Mini-game Pipe's block entity: its slot holds the mini-game page it is programmed with (only pages go
+ * The mini-game pipe's block entity: its slot holds the mini-game page it is programmed with (only pages go
  * in). The page is sent to the clients, which show it in the pipe's notch.
  */
-public class GoldenPipeBlockEntity extends PipeBlockEntity {
-    public GoldenPipeBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.GOLDEN_PIPE_ENTITY, pos, state);
+public class MiniGamePipeBlockEntity extends PipeBlockEntity {
+    public MiniGamePipeBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.MINIGAME_PIPE_ENTITY, pos, state);
     }
 
     /** The page it is programmed with, empty for none. */

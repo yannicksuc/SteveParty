@@ -12,8 +12,8 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDispositio
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDispositionGenerator.Seat;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior.Status;
-import fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlock;
-import fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeShape;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
@@ -484,40 +484,40 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         }
     }
 
-    // ------------------------------------------------------------------ the golden mini-game pipes
+    // ------------------------------------------------------------------ the mini-game pipes
 
     private static final int MAGENTA = 2;
 
-    /** A golden pipe of {@code block} standing on stone (a mouth on top), programmed with {@code page} (null: not programmed). */
-    private static BlockPos goldenMouth(TestContext context, Block block, int x, int z, ItemStack page) {
+    /** A mini-game pipe of {@code block} standing on stone (a mouth on top), programmed with {@code page} (null: not programmed). */
+    private static BlockPos miniGamePipe(TestContext context, Block block, int x, int z, ItemStack page) {
         context.setBlockState(new BlockPos(x, 1, z), Blocks.STONE);
         BlockPos pos = new BlockPos(x, 2, z);
         context.setBlockState(pos, block.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN));
-        if (page != null) ((GoldenPipeBlockEntity) context.getBlockEntity(pos)).setPage(page.copyWithCount(1));
+        if (page != null) ((MiniGamePipeBlockEntity) context.getBlockEntity(pos)).setPage(page.copyWithCount(1));
         return pos;
     }
 
     /**
-     * A lobby: a golden pipe on the ground under a junction, a green way in on the east and a blue one on the west.
-     * Whoever goes in by a coloured mouth ends in the golden pipe, and comes out of the mini-game's pipes of that
+     * A lobby: a mini-game pipe on the ground under a junction, a green way in on the east and a blue one on the west.
+     * Whoever goes in by a coloured mouth ends in the mini-game pipe, and comes out of the mini-game's pipes of that
      * colour's role; the exit pipe brings back to the mouth it went in by.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
-    public void goldenPipeSendsByTheColourOfTheMouthEntered(TestContext context) {
+    public void miniGamePipeSendsByTheColourOfTheMouthEntered(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
         BlockPos players1 = mouth(context, GREEN, 3, 6), players2 = mouth(context, GREEN, 5, 6), teamA = mouth(context, BLUE, 6, 4), yellow = mouth(context, YELLOW, 6, 1);
         ItemStack page = new ItemStack(ModItems.MINI_GAME_PAGE);
         page(context, page, players1, players2, teamA, yellow);
 
-        BlockPos golden = new BlockPos(1, 2, 3), junction = golden.up(), greenIn = junction.east(), blueIn = junction.west();
-        context.setBlockState(golden.down(), Blocks.STONE);
-        context.setBlockState(golden, ModBlocks.GOLDEN_MINIGAME_PIPE.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN).with(PipeShape.connection(Direction.UP), true));
+        BlockPos programmedPipe = new BlockPos(1, 2, 3), junction = programmedPipe.up(), greenIn = junction.east(), blueIn = junction.west();
+        context.setBlockState(programmedPipe.down(), Blocks.STONE);
+        context.setBlockState(programmedPipe, ModBlocks.COPPER_MINIGAME_PIPE.getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN).with(PipeShape.connection(Direction.UP), true));
         context.setBlockState(junction, pipe(PipeKind.OPAQUE, CYAN).getDefaultState().with(PipeShape.connection(Direction.DOWN), true)
                 .with(PipeShape.connection(Direction.EAST), true).with(PipeShape.connection(Direction.WEST), true));
         context.setBlockState(greenIn, pipe(PipeKind.OPAQUE, GREEN).getDefaultState().with(PipeShape.connection(Direction.WEST), true));
         context.setBlockState(blueIn, pipe(PipeKind.STAINED_GLASS, BLUE).getDefaultState().with(PipeShape.connection(Direction.EAST), true));
-        ((GoldenPipeBlockEntity) context.getBlockEntity(golden)).setPage(page.copy());
+        ((MiniGamePipeBlockEntity) context.getBlockEntity(programmedPipe)).setPage(page.copy());
         context.assertTrue(PipeShape.mouth(context.getBlockState(greenIn), Direction.EAST) != null
                 && PipeShape.mouth(context.getBlockState(blueIn), Direction.WEST) != null, "the ways in are mouths");
 
@@ -544,7 +544,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                                                     // A linked copy edited elsewhere: the pipe follows (the content is the page's, not the item's)
                                                     UUID id = MiniGamePages.idOf(page);
                                                     MiniGamePages.update(server, MiniGamePages.get(server, id).withTexts("Course", ""));
-                                                    context.assertEquals(MiniGamePages.of(server, GoldenPipeBlock.pageAt(world, context.getAbsolutePos(golden))).title(),
+                                                    context.assertEquals(MiniGamePages.of(server, MiniGamePipeBlock.pageAt(world, context.getAbsolutePos(programmedPipe))).title(),
                                                             "Course", "the pipe leads to the page as it is now");
                                                 } finally {
                                                     cleanup.run();
@@ -558,7 +558,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
 
     /** By its own mouth, or by a colour the page has no pipe for: the entry pipes first, then the spectators', then the others. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
-    public void goldenPipeEnteredDirectlySendsToTheDefaultArrival(TestContext context) {
+    public void miniGamePipeEnteredDirectlySendsToTheDefaultArrival(TestContext context) {
         ServerWorld world = context.getWorld();
         GlobalPos entry = global(context, new BlockPos(1, 2, 6)), watch = global(context, new BlockPos(2, 2, 6)), play = global(context, new BlockPos(3, 2, 6)),
                 a = global(context, new BlockPos(4, 2, 6));
@@ -567,48 +567,48 @@ public class MiniGamePipeGameTests implements FabricGameTest {
                 new MiniGamePipeLink(watch, Direction.UP, MiniGamePipeRole.SPECTATORS), new MiniGamePipeLink(entry, Direction.UP, MiniGamePipeRole.ENTRY)));
         java.util.Random random = new java.util.Random(3);
         BlockState green = pipe(PipeKind.OPAQUE, GREEN).getDefaultState(), red = pipe(PipeKind.OPAQUE, RED).getDefaultState(),
-                yellow = pipe(PipeKind.OPAQUE, YELLOW).getDefaultState(), golden = ModBlocks.GOLDEN_MINIGAME_PIPE.getDefaultState();
-        context.assertEquals(MiniGamePipes.goldenArrival(page, null, link -> true, random).mouth(), entry, "its own mouth: the entry pipe");
-        context.assertEquals(MiniGamePipes.goldenArrival(page, golden, link -> true, random).mouth(), entry, "a golden mouth: the entry pipe");
-        context.assertEquals(MiniGamePipes.goldenArrival(page, red, link -> true, random).mouth(), entry, "a red mouth, no team B pipe: the entry pipe");
-        context.assertEquals(MiniGamePipes.goldenArrival(page, yellow, link -> true, random).mouth(), entry, "a yellow mouth (the exit is no arrival): the entry pipe");
-        context.assertEquals(MiniGamePipes.goldenArrival(page, green, link -> true, random).mouth(), play, "a green mouth: the players pipe");
+                yellow = pipe(PipeKind.OPAQUE, YELLOW).getDefaultState(), programmedPipe = ModBlocks.COPPER_MINIGAME_PIPE.getDefaultState();
+        context.assertEquals(MiniGamePipes.pipeArrival(page, null, link -> true, random).mouth(), entry, "its own mouth: the entry pipe");
+        context.assertEquals(MiniGamePipes.pipeArrival(page, programmedPipe, link -> true, random).mouth(), entry, "a mini-game pipe's mouth: the entry pipe");
+        context.assertEquals(MiniGamePipes.pipeArrival(page, red, link -> true, random).mouth(), entry, "a red mouth, no team B pipe: the entry pipe");
+        context.assertEquals(MiniGamePipes.pipeArrival(page, yellow, link -> true, random).mouth(), entry, "a yellow mouth (the exit is no arrival): the entry pipe");
+        context.assertEquals(MiniGamePipes.pipeArrival(page, green, link -> true, random).mouth(), play, "a green mouth: the players pipe");
         MiniGamePageData noEntry = page.withPipeLinks(page.pipeLinks().subList(0, 3));
-        context.assertEquals(MiniGamePipes.goldenArrival(noEntry, null, link -> true, random).mouth(), watch, "no entry pipe: the spectators pipe");
+        context.assertEquals(MiniGamePipes.pipeArrival(noEntry, null, link -> true, random).mouth(), watch, "no entry pipe: the spectators pipe");
         MiniGamePageData noWatch = page.withPipeLinks(page.pipeLinks().subList(0, 2));
-        context.assertEquals(MiniGamePipes.goldenArrival(noWatch, null, link -> true, random).mouth(), play, "nor spectators pipe: the players pipe");
-        context.assertEquals(MiniGamePipes.goldenArrival(page.withPipeLinks(page.pipeLinks().subList(0, 1)), null, link -> true, random).mouth(), a, "then the teams'");
-        context.assertTrue(MiniGamePipes.goldenArrival(MiniGamePageData.empty(UUID.randomUUID()), null, link -> true, random) == null, "no pipe: nowhere");
+        context.assertEquals(MiniGamePipes.pipeArrival(noWatch, null, link -> true, random).mouth(), play, "nor spectators pipe: the players pipe");
+        context.assertEquals(MiniGamePipes.pipeArrival(page.withPipeLinks(page.pipeLinks().subList(0, 1)), null, link -> true, random).mouth(), a, "then the teams'");
+        context.assertTrue(MiniGamePipes.pipeArrival(MiniGamePageData.empty(UUID.randomUUID()), null, link -> true, random) == null, "no pipe: nowhere");
         context.assertEquals(MiniGamePipes.DEFAULT_ARRIVALS.subList(0, 3), List.of(MiniGamePipeRole.ENTRY, MiniGamePipeRole.SPECTATORS, MiniGamePipeRole.PLAYERS),
                 "entry, spectators, players, then the teams");
 
-        // In the world: into the golden pipe's own mouth, out of the black pipe
+        // In the world: into the mini-game pipe's own mouth, out of the black pipe
         BlockPos black = mouth(context, BLACK, 5, 5), white = mouth(context, WHITE, 5, 1);
         ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
         page(context, stack, white, black);
-        BlockPos pipePos = goldenMouth(context, ModBlocks.GOLDEN_MINIGAME_PIPE, 1, 1, stack);
+        BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
-        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the golden pipe");
+        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
         when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> {
             remove(context, player);
             context.complete();
         });
     }
 
-    /** Not programmed, a golden pipe is a pipe like any other; mobs go through a programmed one like through any pipe. */
+    /** Not programmed, a mini-game pipe is a pipe like any other; mobs go through a programmed one like through any pipe. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
-    public void unprogrammedGoldenPipeIsAPipeAndMobsAreNotSent(TestContext context) {
+    public void unprogrammedMiniGamePipeIsAPipeAndMobsAreNotSent(TestContext context) {
         ServerWorld world = context.getWorld();
         BlockPos green = mouth(context, GREEN, 5, 5);
         ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
         page(context, stack, green);
-        // The mega pipe is the only one of its colour around: nowhere to warp to
-        BlockPos plain = goldenMouth(context, ModBlocks.MEGA_GOLDEN_MINIGAME_PIPE, 1, 1, null);
-        BlockPos programmed = goldenMouth(context, ModBlocks.MEGA_GOLDEN_MINIGAME_PIPE, 1, 5, stack);
+        // The programmedPipe pipe is the only one of its colour around: nowhere to warp to
+        BlockPos plain = miniGamePipe(context, ModBlocks.GOLDEN_MINIGAME_PIPE, 1, 1, null);
+        BlockPos programmed = miniGamePipe(context, ModBlocks.GOLDEN_MINIGAME_PIPE, 1, 5, stack);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
         PigEntity pig = context.spawnEntity(EntityType.PIG, new BlockPos(1, 3, 5));
         pig.setAiDisabled(true);
-        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(plain), Direction.UP, player, 0), "the player into the plain golden pipe");
+        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(plain), Direction.UP, player, 0), "the player into the plain mini-game pipe");
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(programmed), Direction.UP, pig, 0), "the pig into the programmed one");
         context.waitAndRun(60, () -> {
             try {
@@ -622,41 +622,41 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         });
     }
 
-    /** The three golden pipes differ by their reach: 100 blocks, their dimension, every dimension. */
+    /** The three mini-game pipes differ by their reach: 100 blocks, their dimension, every dimension. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
-    public void goldenPipesReachByTheirTier(TestContext context) {
+    public void miniGamePipesReachByTheirMetal(TestContext context) {
         ServerWorld world = context.getWorld();
         BlockPos here = context.getAbsolutePos(new BlockPos(1, 2, 1));
         GlobalPos near = GlobalPos.create(world.getRegistryKey(), here.add(3, 0, 3)), far = GlobalPos.create(world.getRegistryKey(), here.add(0, 0, 101)),
                 veryFar = GlobalPos.create(world.getRegistryKey(), here.add(5000, 0, 5000)), nether = GlobalPos.create(World.NETHER, here.add(3, 0, 3));
-        context.assertEquals(GoldenPipeBlock.reachOf(ModBlocks.GOLDEN_MINIGAME_PIPE.getDefaultState()), GoldenPipeBlock.Reach.NEAR, "golden: near");
-        context.assertEquals(GoldenPipeBlock.reachOf(ModBlocks.SUPER_GOLDEN_MINIGAME_PIPE.getDefaultState()), GoldenPipeBlock.Reach.DIMENSION, "super: its dimension");
-        context.assertEquals(GoldenPipeBlock.reachOf(ModBlocks.MEGA_GOLDEN_MINIGAME_PIPE.getDefaultState()), GoldenPipeBlock.Reach.EVERYWHERE, "mega: everywhere");
+        context.assertEquals(MiniGamePipeBlock.reachOf(ModBlocks.COPPER_MINIGAME_PIPE.getDefaultState()), MiniGamePipeBlock.Reach.NEAR, "copper: near");
+        context.assertEquals(MiniGamePipeBlock.reachOf(ModBlocks.IRON_MINIGAME_PIPE.getDefaultState()), MiniGamePipeBlock.Reach.DIMENSION, "iron: its dimension");
+        context.assertEquals(MiniGamePipeBlock.reachOf(ModBlocks.GOLDEN_MINIGAME_PIPE.getDefaultState()), MiniGamePipeBlock.Reach.EVERYWHERE, "golden: everywhere");
         boolean[][] expected = {{true, false, false, false}, {true, true, true, false}, {true, true, true, true}};
         GlobalPos[] targets = {near, far, veryFar, nether};
-        for (GoldenPipeBlock.Reach reach : GoldenPipeBlock.Reach.values()) {
+        for (MiniGamePipeBlock.Reach reach : MiniGamePipeBlock.Reach.values()) {
             for (int i = 0; i < targets.length; i++) {
-                context.assertEquals(GoldenPipeBlock.reaches(reach, world, here, targets[i]), expected[reach.ordinal()][i], reach + " to target " + i);
+                context.assertEquals(MiniGamePipeBlock.reaches(reach, world, here, targets[i]), expected[reach.ordinal()][i], reach + " to target " + i);
             }
         }
         // The pipes a page is reached by: only those in reach count
         MiniGamePageData page = MiniGamePageData.empty(UUID.randomUUID()).withPipeLinks(List.of(new MiniGamePipeLink(far, Direction.UP, MiniGamePipeRole.PLAYERS)));
         java.util.Random random = new java.util.Random(1);
-        context.assertTrue(MiniGamePipes.goldenArrival(page, null, link -> GoldenPipeBlock.reaches(GoldenPipeBlock.Reach.NEAR, world, here, link.mouth()), random) == null,
-                "101 blocks: out of the golden pipe's reach");
-        context.assertTrue(MiniGamePipes.goldenArrival(page, null, link -> GoldenPipeBlock.reaches(GoldenPipeBlock.Reach.DIMENSION, world, here, link.mouth()), random) != null,
-                "in the super golden pipe's");
+        context.assertTrue(MiniGamePipes.pipeArrival(page, null, link -> MiniGamePipeBlock.reaches(MiniGamePipeBlock.Reach.NEAR, world, here, link.mouth()), random) == null,
+                "101 blocks: out of the mini-game pipe's reach");
+        context.assertTrue(MiniGamePipes.pipeArrival(page, null, link -> MiniGamePipeBlock.reaches(MiniGamePipeBlock.Reach.DIMENSION, world, here, link.mouth()), random) != null,
+                "in the iron mini-game pipe's");
 
-        // In the world: a golden pipe whose mini-game is 150 blocks away sends nowhere (the player comes back out)
+        // In the world: a mini-game pipe whose mini-game is 150 blocks away sends nowhere (the player comes back out)
         ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
         UUID id = MiniGamePages.ensureId(stack);
         MiniGamePages.toggleLink(world.getServer(), id, GlobalPos.create(world.getRegistryKey(), here.add(0, 0, 150)), Direction.UP, MiniGamePipeRole.PLAYERS);
-        BlockPos pipePos = goldenMouth(context, ModBlocks.GOLDEN_MINIGAME_PIPE, 1, 1, stack);
+        BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
-        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the golden pipe");
+        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
         context.waitAndRun(40, () -> {
             try {
-                context.assertTrue(!PipeTravel.isTravelling(player) && near(context, player, pipePos), "too far: back out of the golden pipe: " + context.getRelative(player.getPos()));
+                context.assertTrue(!PipeTravel.isTravelling(player) && near(context, player, pipePos), "too far: back out of the mini-game pipe: " + context.getRelative(player.getPos()));
             } finally {
                 remove(context, player);
             }
@@ -666,12 +666,12 @@ public class MiniGamePipeGameTests implements FabricGameTest {
 
     /** A page goes in with a click, comes back with a click on the notch (or sneaking), and drops when the pipe is broken. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void goldenPipeTakesAPageAndGivesItBack(TestContext context) {
+    public void miniGamePipeTakesAPageAndGivesItBack(TestContext context) {
         ServerWorld world = context.getWorld();
-        BlockPos pipePos = goldenMouth(context, ModBlocks.SUPER_GOLDEN_MINIGAME_PIPE, 3, 3, null);
+        BlockPos pipePos = miniGamePipe(context, ModBlocks.IRON_MINIGAME_PIPE, 3, 3, null);
         BlockPos abs = context.getAbsolutePos(pipePos);
         BlockState state = context.getBlockState(pipePos);
-        Direction notch = GoldenPipeBlock.notchSide(state);
+        Direction notch = MiniGamePipeBlock.notchSide(state);
         context.assertEquals(notch, Direction.NORTH, "the notch is on a plain side");
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 3.5, 2, 1.5);
         try {
@@ -681,36 +681,45 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             // Not without the right to build
             player.changeGameMode(GameMode.ADVENTURE);
             state.onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false));
-            context.assertTrue(GoldenPipeBlock.pageAt(world, abs).isEmpty(), "adventure: not programmed");
+            context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "adventure: not programmed");
             player.changeGameMode(GameMode.SURVIVAL);
             state.onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false));
-            context.assertEquals(MiniGamePages.idOf(GoldenPipeBlock.pageAt(world, abs)), id, "the page is in the pipe");
+            context.assertEquals(MiniGamePages.idOf(MiniGamePipeBlock.pageAt(world, abs)), id, "the page is in the pipe");
             context.assertEquals(player.getMainHandStack().getCount(), 2, "one page of the stack went in");
             context.assertTrue(!PipeTravel.isTravelling(player), "programming is not going in");
-            context.assertTrue(((GoldenPipeBlockEntity) world.getBlockEntity(abs)).isValid(0, new ItemStack(ModItems.MINI_GAME_PAGE))
-                    && !((GoldenPipeBlockEntity) world.getBlockEntity(abs)).isValid(0, new ItemStack(Items.PAPER)), "only pages go in");
+            context.assertTrue(((MiniGamePipeBlockEntity) world.getBlockEntity(abs)).isValid(0, new ItemStack(ModItems.MINI_GAME_PAGE))
+                    && !((MiniGamePipeBlockEntity) world.getBlockEntity(abs)).isValid(0, new ItemStack(Items.PAPER)), "only pages go in");
 
             // A click elsewhere than the notch goes in the pipe (not tested here); on the notch: the page comes back
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
             state.onUse(world, player, new BlockHitResult(Vec3d.ofCenter(abs), notch, abs, false));
-            context.assertTrue(GoldenPipeBlock.pageAt(world, abs).isEmpty(), "the page was taken");
+            context.assertTrue(MiniGamePipeBlock.pageAt(world, abs).isEmpty(), "the page was taken");
             context.assertEquals(MiniGamePages.idOf(player.getMainHandStack()), id, "back in hand");
 
             // Broken: the page drops
-            context.assertTrue(GoldenPipeBlock.program(player, Hand.MAIN_HAND, abs), "programmed again");
+            context.assertTrue(MiniGamePipeBlock.program(player, Hand.MAIN_HAND, abs), "programmed again");
             world.breakBlock(abs, false);
             List<net.minecraft.entity.ItemEntity> drops = world.getEntitiesByClass(net.minecraft.entity.ItemEntity.class, new net.minecraft.util.math.Box(abs).expand(2),
                     item -> id.equals(MiniGamePages.idOf(item.getStack())));
             context.assertEquals(drops.size(), 1, "the page dropped");
             drops.forEach(net.minecraft.entity.Entity::discard);
 
-            // The recipes: gold round a sheet of paper; a Power Star for the super one; two more and an eye of ender for the mega one
-            ItemStack gold = new ItemStack(Items.GOLD_INGOT), star = new ItemStack(ModItems.POWER_STAR);
-            context.assertTrue(crafted(context, 3, 3, gold, ItemStack.EMPTY, gold, gold, new ItemStack(Items.PAPER), gold, gold, ItemStack.EMPTY, gold)
-                    .isOf(ModBlocks.GOLDEN_MINIGAME_PIPE.asItem()), "golden pipe");
-            context.assertTrue(crafted(context, 2, 1, new ItemStack(ModBlocks.GOLDEN_MINIGAME_PIPE), star).isOf(ModBlocks.SUPER_GOLDEN_MINIGAME_PIPE.asItem()), "super golden pipe");
-            context.assertTrue(crafted(context, 2, 2, new ItemStack(ModBlocks.SUPER_GOLDEN_MINIGAME_PIPE), star, star, new ItemStack(Items.ENDER_EYE))
-                    .isOf(ModBlocks.MEGA_GOLDEN_MINIGAME_PIPE.asItem()), "mega golden pipe");
+            // The recipes: copper round a sheet of paper; iron and a Power Star round the copper one; gold, two Power Stars and
+            // an eye of ender round the iron one
+            ItemStack copper = new ItemStack(Items.COPPER_INGOT), iron = new ItemStack(Items.IRON_INGOT), gold = new ItemStack(Items.GOLD_INGOT),
+                    star = new ItemStack(ModItems.POWER_STAR), none = ItemStack.EMPTY;
+            context.assertTrue(crafted(context, 3, 3, copper, none, copper, copper, new ItemStack(Items.PAPER), copper, copper, none, copper)
+                    .isOf(ModBlocks.COPPER_MINIGAME_PIPE.asItem()), "copper mini-game pipe");
+            context.assertTrue(crafted(context, 3, 3, iron, star, iron, iron, new ItemStack(ModBlocks.COPPER_MINIGAME_PIPE), iron, iron, none, iron)
+                    .isOf(ModBlocks.IRON_MINIGAME_PIPE.asItem()), "iron mini-game pipe");
+            context.assertTrue(crafted(context, 3, 3, gold, new ItemStack(Items.ENDER_EYE), gold, star, new ItemStack(ModBlocks.IRON_MINIGAME_PIPE), star, gold, none, gold)
+                    .isOf(ModBlocks.GOLDEN_MINIGAME_PIPE.asItem()), "programmedPipe mini-game pipe");
+            // The names they had: the iron and programmedPipe pipes are still found under them
+            context.assertTrue(net.minecraft.registry.Registries.BLOCK.get(fr.lordfinn.steveparty.Steveparty.id("super_golden_minigame_pipe")) == ModBlocks.IRON_MINIGAME_PIPE
+                    && net.minecraft.registry.Registries.ITEM.get(fr.lordfinn.steveparty.Steveparty.id("mega_golden_minigame_pipe")) == ModBlocks.GOLDEN_MINIGAME_PIPE.asItem(),
+                    "the former ids lead to the iron and programmedPipe pipes");
+            context.assertEquals(List.of(PipeKind.COPPER.ordinal() + 1, PipeKind.IRON.ordinal() + 1), List.of(PipeKind.IRON.ordinal(), PipeKind.GOLDEN.ordinal()),
+                    "copper, iron, golden: the order they are listed in");
             context.complete();
         } finally {
             remove(context, player);

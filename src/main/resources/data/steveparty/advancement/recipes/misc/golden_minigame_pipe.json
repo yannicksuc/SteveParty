@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_gold_ingot": {
+    "has_iron_minigame_pipe": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "minecraft:gold_ingot"
+            "items": "steveparty:iron_minigame_pipe"
           }
         ]
       }
@@ -20,7 +20,7 @@
   },
   "requirements": [
     [
-      "has_gold_ingot",
+      "has_iron_minigame_pipe",
       "has_the_recipe"
     ]
   ],

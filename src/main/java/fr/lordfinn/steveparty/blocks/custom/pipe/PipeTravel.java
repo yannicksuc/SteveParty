@@ -403,7 +403,7 @@ public final class PipeTravel {
     }
 
     /**
-     * A capped end that says where it sends (a programmed Golden Mini-game Pipe): a player always goes to it rather
+     * A capped end that says where it sends (a programmed mini-game pipe): a player always goes to it rather
      * than to an end picked at random, so that every mouth of the network leads there.
      */
     private static PipeNetworks.@Nullable End programmedEnd(ServerWorld world, Entity entity, List<PipeNetworks.End> ends) {
