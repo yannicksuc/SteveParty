@@ -104,4 +104,95 @@ public class DiceGameTests implements FabricGameTest {
         }
         context.complete();
     }
+    // ---------------------------------------------------------------- a thrown die rolls until it is hit
+
+    /** The dice {@code player} threw (found by their owner). */
+    private static java.util.List<DiceEntity> diceOf(TestContext context, ServerPlayerEntity player) {
+        return context.getWorld().getEntitiesByClass(DiceEntity.class, player.getBoundingBox().expand(24),
+                dice -> dice.getOwner().map(owner -> owner.equals(player.getUuid())).orElse(false));
+    }
+
+    /** A player standing in the test, holding {@code stack}, looking at {@code pitch} (-90: straight up). */
+    private static ServerPlayerEntity thrower(TestContext context, net.minecraft.item.ItemStack stack, float pitch, boolean sneaking) {
+        context.setBlockState(new BlockPos(4, 1, 4), net.minecraft.block.Blocks.STONE);
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        Vec3d pos = context.getAbsolute(new Vec3d(4.5, 2, 4.5));
+        player.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0, pitch);
+        player.setSneaking(sneaking);
+        player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, stack);
+        context.addFinalTask(() -> {
+            diceOf(context, player).forEach(DiceEntity::discard);
+            disconnect(context, player);
+        });
+        return player;
+    }
+
+    /** A plain die thrown with the item keeps rolling, nothing asked, until a player hits it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "dice_throws")
+    public void aThrownPlainDieRollsUntilItIsHit(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), -20, false);
+        player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
+        context.assertEquals(diceOf(context, player).size(), 1, "one die thrown");
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.waitAndRun(120, () -> {
+            context.assertTrue(!dice.isRemoved() && dice.isRolling() && !dice.isRollFinished(), "still rolling 6 seconds later, without a hit");
+            context.assertEquals(dice.sequence().phase(), fr.lordfinn.steveparty.dice.DiceRollSequence.Phase.ROLLING, "its roll goes on");
+            context.assertTrue(fr.lordfinn.steveparty.dice.DicePrompts.pending(player) == null, "nothing is asked for a plain die");
+            dice.damage(context.getWorld(), context.getWorld().getDamageSources().playerAttack(player), 1F);
+            context.assertTrue(!dice.isRolling() && dice.isRollFinished(), "a hit stops it");
+            context.complete();
+        });
+    }
+
+    /**
+     * Thrown sneaking, straight up: the die comes back over its thrower (a sneaking throw aims at a player) and stays
+     * there, touching them; it keeps rolling, a jump into it included: only a hit stops a die.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "dice_throws")
+    public void aDieFallingBackOnItsSneakingThrowerKeepsRolling(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), -90, true);
+        player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.assertTrue(dice.getTarget().map(target -> target.equals(player.getUuid())).orElse(false), "a sneaking throw aims at its thrower");
+        context.waitAndRun(60, () -> {
+            context.assertTrue(dice.squaredDistanceTo(player.getX(), player.getY() + player.getHeight(), player.getZ()) < 4, "the die came back over its thrower");
+            context.assertTrue(dice.isRolling() && !dice.isRollFinished(), "it still rolls");
+            // The thrower moves up into it, as if jumping: still no hit
+            player.refreshPositionAndAngles(dice.getX(), dice.getY() - 1.2, dice.getZ(), 0, -90);
+            context.waitAndRun(40, () -> {
+                context.assertTrue(!dice.isRemoved() && dice.isRolling() && !dice.isRollFinished(), "touching the die is not hitting it");
+                context.complete();
+            });
+        });
+    }
+
+    /** The click of the throw is not a hit: the thrower's hits are ignored for a moment after the throw. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    public void theThrowersClickAtThrowTimeDoesNotStopTheDie(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DOUBLE_DICE), -90, true);
+        player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
+        java.util.List<DiceEntity> thrown = diceOf(context, player);
+        context.assertEquals(thrown.size(), 2, "the two dice of a Double Dice");
+        ServerWorld world = context.getWorld();
+        for (DiceEntity dice : thrown) dice.damage(world, world.getDamageSources().playerAttack(player), 1F); // sneaking: would burst them
+        context.assertTrue(thrown.stream().noneMatch(DiceEntity::isRemoved), "a sneaking click right after the throw does not burst the dice");
+        player.setSneaking(false);
+        for (DiceEntity dice : thrown) dice.damage(world, world.getDamageSources().playerAttack(player), 1F);
+        context.assertTrue(thrown.stream().allMatch(dice -> dice.isRolling() && !dice.isRollFinished()), "nor does a click stop them");
+        context.assertTrue(thrown.getFirst().isInThrowGrace(player), "the thrower's hits don't count yet");
+
+        // Another player may hit at once; the thrower too once the moment is over
+        ServerPlayerEntity other = playerNextTo(context, false);
+        try {
+            context.assertTrue(!thrown.getFirst().isInThrowGrace(other), "someone else is not held back");
+        } finally {
+            disconnect(context, other);
+        }
+        context.waitAndRun(DiceEntity.THROW_GRACE_TICKS + 2, () -> {
+            context.assertTrue(thrown.stream().allMatch(DiceEntity::isRolling), "still rolling meanwhile");
+            thrown.getLast().damage(world, world.getDamageSources().playerAttack(player), 1F);
+            context.assertTrue(thrown.stream().noneMatch(DiceEntity::isRolling) && thrown.getFirst().isRollFinished(), "then the thrower's hit stops them");
+            context.complete();
+        });
+    }
 }

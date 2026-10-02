@@ -91,16 +91,28 @@ public final class DiceRollSequence {
 
     // ------------------------------------------------------------------ modules
 
+    /** The modules of the die: read once when the roll starts (the thrown die no longer changes). */
+    private @Nullable Map<DiceModule, Integer> modules;
+    private boolean chooses, byHand;
+
     private Map<DiceModule, Integer> modules() {
-        return DiceModules.of(lead.getDieStack());
+        return modules != null ? modules : DiceModules.of(lead.getDieStack());
+    }
+
+    private void readModules() {
+        modules = DiceModules.of(lead.getDieStack());
+        chooses = modules.keySet().stream().anyMatch(DiceModule::rollerChooses);
+        byHand = !chooses && modules.keySet().stream().anyMatch(DiceModule::stoppedByHand);
     }
 
     private boolean chooses() {
-        return modules().keySet().stream().anyMatch(DiceModule::rollerChooses);
+        if (modules == null) readModules();
+        return chooses;
     }
 
     private boolean byHand() {
-        return !chooses() && modules().keySet().stream().anyMatch(DiceModule::stoppedByHand);
+        if (modules == null) readModules();
+        return byHand;
     }
 
     private int extraRolls() {
@@ -123,6 +135,7 @@ public final class DiceRollSequence {
     public void start() {
         if (started) return;
         started = true;
+        readModules();
         modules().forEach((module, count) -> module.onThrown(lead, count));
         begin();
     }

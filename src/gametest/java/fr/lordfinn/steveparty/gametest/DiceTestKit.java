@@ -200,9 +200,13 @@ final class DiceTestKit {
         return DiceModules.set(die, modules);
     }
 
-    /** {@code roller} throws {@code die}: the die floats over {@code at} and rolls. */
+    /**
+     * {@code roller} threw {@code die} a moment ago: the die floats over {@code at} and rolls (its thrower may hit it:
+     * the grace period after a throw is over).
+     */
     static DiceEntity thrown(TestContext context, ServerPlayerEntity roller, ItemStack die, BlockPos at) {
         DiceEntity dice = context.spawnEntity(ModEntities.DICE_ENTITY, at.up(2));
+        dice.age = DiceEntity.THROW_GRACE_TICKS;
         dice.setNoGravity(true);
         dice.setOwner(roller.getUuid());
         dice.setItemReference(die.copyWithCount(1));
