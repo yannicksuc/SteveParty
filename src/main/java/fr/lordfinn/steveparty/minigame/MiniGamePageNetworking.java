@@ -69,6 +69,9 @@ public final class MiniGamePageNetworking {
                 ModPayloads.runInPacketOrder(context.player(), () -> testQuery(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestAction.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () -> testAction(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Ready.ID, (payload, context) ->
+                ModPayloads.runInPacketOrder(context.player(), () ->
+                        fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep.toggleReady(context.player())));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Request.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () ->
                         send(context.player(), new MiniGamePagePayloads.Data(MiniGamePages.get(context.player().server, payload.page())))));

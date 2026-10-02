@@ -239,6 +239,7 @@ public class ModItems {
             itemGroup.add(GARNET_CRYSTAL_BALL);
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
+            itemGroup.add(MINI_GAME_CONTROLLER);
             itemGroup.add(PARTY_CARD_TURNS);
             itemGroup.add(PARTY_CARD_MINIGAME);
             itemGroup.add(PARTY_CARD_EVENT);

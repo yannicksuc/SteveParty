@@ -12,8 +12,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * A mini-game being played right now on a page: by a party (its mini-game step, {@link PartyMiniGameSession}) or as a
- * test started from the page's editor ({@link MiniGameTest}). The blocks linked to a page (podiums, goal pole bases,
+ * A mini-game being played right now on a page: by a party (its mini-game step, practice round included:
+ * {@link PartyMiniGameSession}) or out of any party, from its controller or the page's editor ({@link MiniGameTest}). The blocks linked to a page (podiums, goal pole bases,
  * step controllers) only know the page: they ask {@link #playing} who plays it, and work the same for both.
  */
 public interface MiniGameSession {

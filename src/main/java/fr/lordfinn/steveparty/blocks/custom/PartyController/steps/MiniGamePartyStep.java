@@ -59,6 +59,12 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
  *     <li>a 3 second countdown, and the players come out of the pipes linked to the page, by team: one after the
  *     other in each pipe of their role in turn, in turn order ({@link MiniGamePipes#distribute}); the audience
  *     comes out of the spectators pipes,</li>
+ *     <li>when the page has a Mini-game Controller and the party its practice rounds (a setting of the party
+ *     controller, on by default), they first play a <b>practice round</b>: the same mini-game, whose results are
+ *     shown and pay nothing, started again after its results for as long as someone is not ready. Each player says
+ *     he is ready whenever he wants ({@link #toggleReady}: a key, or the Mini-game Controller's screen); once every
+ *     connected player is, the practice stops at once and everyone comes out of the pipes again, for the real
+ *     round,</li>
  *     <li>the mini-game is played. The podiums linked to its page record who takes which place ({@link Podiums});
  *     it ends when every place is taken, or every player (every team) has one, or when a step controller goes
  *     on,</li>
@@ -74,7 +80,7 @@ public class MiniGamePartyStep extends PartyStep {
     /** The results card stays on screen that long before the players go back. */
     public static final int RETURN_DELAY_TICKS = 100;
 
-    public enum Phase { ROULETTE, CHOSEN_WAIT, COUNTDOWN, PLAYING, FINISHED }
+    public enum Phase { ROULETTE, CHOSEN_WAIT, COUNTDOWN, PRACTICE, PLAYING, FINISHED }
 
     /** Ticks between two players coming out of the same pipe. */
     private static final int EMERGE_GAP_TICKS = 8;
@@ -98,6 +104,14 @@ public class MiniGamePartyStep extends PartyStep {
     private final List<UUID> emergeTasks = new ArrayList<>();
     /** The catalogue slot of the page the roulette chose, plus one (0: none yet). No initializer, see above. */
     private int chosenPageSlot;
+    /** The players who said they are ready for the real round, during the practice round. */
+    private Set<UUID> ready;
+    /** The practice round showed its results: it starts again in a few seconds. Not saved. */
+    private boolean practiceOver;
+    /** The chat already told which mini-game starts: said once, however many times the players leave for it. Not saved. */
+    private boolean toldInChat;
+    /** What the practice chip last showed, and to whom: sent again only when it changes. Not saved. */
+    private @Nullable Object practiceShown;
 
     public MiniGamePartyStep(List<UUID> tokens) {
         if (tokens == null)
@@ -120,6 +134,7 @@ public class MiniGamePartyStep extends PartyStep {
         if (returnPositions == null) returnPositions = new LinkedHashMap<>();
         if (winners == null) winners = new ArrayList<>();
         if (places == null) places = new LinkedHashMap<>();
+        if (ready == null) ready = new LinkedHashSet<>();
     }
 
     public Phase getPhase() {
@@ -139,9 +154,24 @@ public class MiniGamePartyStep extends PartyStep {
         return Collections.unmodifiableList(participants);
     }
 
-    /** @return true while the mini-game is being played: a podium may end it. */
+    /** @return true while the real round of the mini-game is being played: a podium may end it, and it pays. */
     public boolean isPlaying() {
         return status == Status.IN_PROGRESS && phase == Phase.PLAYING;
+    }
+
+    /** @return true during the practice round (see {@link #startPractice}). */
+    public boolean isPractice() {
+        return status == Status.IN_PROGRESS && phase == Phase.PRACTICE;
+    }
+
+    /** @return true while the players are in the mini-game: its practice round or its real round. */
+    public boolean isOnArena() {
+        return isPlaying() || isPractice();
+    }
+
+    /** The players who said they are ready, during the practice round. */
+    public Set<UUID> getReady() {
+        return Collections.unmodifiableSet(ready);
     }
 
     @Override
@@ -159,6 +189,9 @@ public class MiniGamePartyStep extends PartyStep {
         participants.clear();
         winners.clear();
         places.clear();
+        ready.clear();
+        practiceOver = false;
+        toldInChat = false;
         // Players still away from a previous run of this step (restart) keep their original return position
         chosenPageSlot = 0;
 
@@ -230,7 +263,7 @@ public class MiniGamePartyStep extends PartyStep {
                 // ROULETTE (chosen, but saved before the bells rang): ring them now. CHOSEN_WAIT / PLAYING: wait.
                 if (phase == Phase.ROULETTE) onMiniGameChosen(partyControllerEntity);
                 // Those away in the mini-game are known again as such (free pipes, the exit pipe)
-                if (phase == Phase.PLAYING) {
+                if (phase == Phase.PLAYING || phase == Phase.PRACTICE) {
                     returnPositions.keySet().forEach(uuid -> seat(partyControllerEntity, uuid));
                     // Its podiums may have filled up meanwhile
                     onPodiumsChanged(partyControllerEntity);
@@ -247,6 +280,7 @@ public class MiniGamePartyStep extends PartyStep {
         emergeTasks.forEach(Steveparty.SCHEDULER::cancel);
         emergeTasks.clear();
         hidePreview(partyControllerEntity);
+        hidePractice(partyControllerEntity);
         // However the mini-game ends (podium, step controller...), the players go back where they were
         returnPlayers(partyControllerEntity);
     }
@@ -294,7 +328,7 @@ public class MiniGamePartyStep extends PartyStep {
             MiniGamePageData page = controller.getWorld() == null || controller.getWorld().getServer() == null ? null
                     : MiniGamePages.of(controller.getWorld().getServer(), MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
             MiniGameIntro.play(page, previewAudience(controller), () -> {
-                if (isStillActive(controller)) depart(controller);
+                if (isStillActive(controller)) leaveForMiniGame(controller);
             });
             return;
         }
@@ -308,11 +342,168 @@ public class MiniGamePartyStep extends PartyStep {
         });
     }
 
-    /**
-     * The departure: every participant comes out of a pipe of its role, the audience out of the spectators pipes
-     * (see {@link MiniGamePipes#distribute}). Those who share a pipe come out one after the other.
-     */
+    /** After the countdown: the practice round when this mini-game has one ({@link #practiceWanted}), else the real round. */
+    public void leaveForMiniGame(PartyControllerEntity controller) {
+        if (practiceWanted(controller)) startPractice(controller);
+        else depart(controller);
+    }
+
+    /** The departure for the real round (straight after the countdown, or once everyone is ready after the practice). */
     public void depart(PartyControllerEntity controller) {
+        boolean afterPractice = phase == Phase.PRACTICE;
+        cancelFlow();
+        ready.clear();
+        practiceOver = false;
+        hidePractice(controller);
+        if (afterPractice) {
+            MessageUtils.sendToPlayers(previewAudience(controller), Text.translatable("message.steveparty.minigame.practice.everyone_ready")
+                    .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
+        }
+        sendOut(controller, Phase.PLAYING);
+    }
+
+    // ---------------------------------------------------------------- the practice round
+
+    /** @return true if this mini-game starts with a practice round: the party has them, and the page a Mini-game Controller. */
+    private boolean practiceWanted(PartyControllerEntity controller) {
+        if (!controller.hasPracticeRound() || !(controller.getWorld() instanceof ServerWorld world)) return false;
+        UUID page = MiniGamePages.idOf(MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+        return page != null && fr.lordfinn.steveparty.minigame.MiniGameControllers.has(world.getServer(), page);
+    }
+
+    /**
+     * The practice round: the mini-game as it will be played (same players, same teams, same pipes, its podiums and
+     * its counters), but its results pay nothing and it starts again after them, until every connected player said
+     * he is ready ({@link #toggleReady}).
+     */
+    public void startPractice(PartyControllerEntity controller) {
+        cancelFlow();
+        ready.clear();
+        practiceOver = false;
+        sendOut(controller, Phase.PRACTICE);
+        MessageUtils.sendToPlayers(previewAudience(controller), Text.translatable("message.steveparty.minigame.practice.start",
+                Text.keybind("key.steveparty.minigame_ready").formatted(Formatting.WHITE)).formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
+        showPractice(controller);
+    }
+
+    /** The practice round starts again (after its results, or a step controller): the votes are kept. */
+    public void restartPractice(PartyControllerEntity controller) {
+        if (!isPractice()) return;
+        cancelFlow();
+        practiceOver = false;
+        sendOut(controller, Phase.PRACTICE);
+        showPractice(controller);
+    }
+
+    /** The practice round is over: its results are shown, nothing is paid, and it starts again a few seconds later. */
+    public void practiceResults(PartyControllerEntity controller) {
+        if (!isPractice() || practiceOver) return;
+        MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
+        if (server == null) return;
+        practiceOver = true;
+        MiniGameResults results = results(controller, server, placesOnPodiums(controller)).asPractice();
+        tellResults(controller, results, Text.translatable("message.steveparty.minigame.practice.no_gain").formatted(Formatting.GRAY));
+        cancelFlow();
+        flowTaskId = UUID.randomUUID();
+        Steveparty.SCHEDULER.schedule(flowTaskId, RETURN_DELAY_TICKS, () -> {
+            flowTaskId = null;
+            if (isStillActive(controller)) restartPractice(controller);
+        });
+    }
+
+    /**
+     * A player says he is ready for the real round, or no longer is. Once every connected player is, the practice
+     * stops and the real round starts.
+     *
+     * @return false if the player has no vote (no practice round, or not one of its players)
+     */
+    public boolean toggleReady(PartyControllerEntity controller, UUID player) {
+        if (!isPractice() || !participants.contains(player)) return false;
+        if (!ready.remove(player)) ready.add(player);
+        controller.markDirty();
+        if (!checkReady(controller)) showPractice(controller);
+        return true;
+    }
+
+    /**
+     * Starts the real round if every connected player of the mini-game is ready (a player who left the server no
+     * longer holds the others back).
+     *
+     * @return true if the real round started
+     */
+    public boolean checkReady(PartyControllerEntity controller) {
+        if (!isPractice()) return false;
+        List<ServerPlayerEntity> online = getOnlineParticipants(controller);
+        if (online.isEmpty() || !online.stream().allMatch(player -> ready.contains(player.getUuid()))) return false;
+        depart(controller);
+        return true;
+    }
+
+    /** The player's vote in the practice round of his party, from anywhere (the key, the Mini-game Controller). */
+    public static boolean toggleReady(ServerPlayerEntity player) {
+        for (PartyControllerEntity controller : PartyControllerEntity.getActivePartyControllers()) {
+            if (!controller.isRemoved() && controller.getPartyData().getCurrentStep() instanceof MiniGamePartyStep step
+                    && step.toggleReady(controller, player.getUuid())) return true;
+        }
+        return false;
+    }
+
+    /** The connected players of the practice round with their vote, in the play order. */
+    public List<MiniGamePagePayloads.Practice.Voter> voters(PartyControllerEntity controller) {
+        List<MiniGamePagePayloads.Practice.Voter> voters = new ArrayList<>();
+        MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
+        if (server == null) return voters;
+        for (UUID uuid : orderedParticipants(controller)) {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+            if (player != null) voters.add(new MiniGamePagePayloads.Practice.Voter(player.getGameProfile().getName(), ready.contains(uuid)));
+        }
+        return voters;
+    }
+
+    /** The practice chip of the players and the audience: « Practice — [key] Ready 2/4 », and who is ready. */
+    private void showPractice(PartyControllerEntity controller) {
+        if (!isPractice() || controller.getWorld() == null || controller.getWorld().getServer() == null) return;
+        ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
+        MiniGamePageData page = MiniGamePages.of(controller.getWorld().getServer(), stack);
+        String title = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
+        MiniGamePagePayloads.Practice payload = new MiniGamePagePayloads.Practice(true, title, voters(controller));
+        List<ServerPlayerEntity> audience = previewAudience(controller);
+        Object shown = List.of(payload, audience.stream().map(ServerPlayerEntity::getUuid).toList());
+        if (shown.equals(practiceShown)) return;
+        practiceShown = shown;
+        for (ServerPlayerEntity player : audience) {
+            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Practice.ID)) ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    private void hidePractice(PartyControllerEntity controller) {
+        if (practiceShown == null && phase != Phase.PRACTICE) return;
+        practiceShown = null;
+        MiniGamePagePayloads.Practice payload = new MiniGamePagePayloads.Practice(false, "", List.of());
+        for (ServerPlayerEntity player : previewAudience(controller)) {
+            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Practice.ID)) ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /** During the practice round, every second: a player who left no longer holds the vote back, one who joined sees the chip. */
+    @Override
+    public void tick(PartyControllerEntity partyControllerEntity, ServerWorld world) {
+        super.tick(partyControllerEntity, world);
+        if (!isPractice() || world.getTime() % 20 != 0) return;
+        if (!checkReady(partyControllerEntity)) showPractice(partyControllerEntity);
+    }
+
+    // ---------------------------------------------------------------- the departure
+
+    /**
+     * Everyone leaves for the mini-game: every participant comes out of a pipe of its role, the audience out of the
+     * spectators pipes (see {@link MiniGamePipes#distribute}). Those who share a pipe come out one after the other.
+     *
+     * @param round {@link Phase#PRACTICE} or {@link Phase#PLAYING}
+     */
+    private void sendOut(PartyControllerEntity controller, Phase round) {
+        emergeTasks.forEach(Steveparty.SCHEDULER::cancel);
+        emergeTasks.clear();
         // A new mini-game: its podiums are emptied and its counters go back to 0 (before it is being played)
         if (controller.getWorld() instanceof ServerWorld world) {
             MiniGamePageData page = MiniGamePages.of(world.getServer(), MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
@@ -320,7 +511,7 @@ public class MiniGamePartyStep extends PartyStep {
             if (page != null) fr.lordfinn.steveparty.minigame.MiniGameTest.stop(page.id());
             if (page != null) Podiums.resetForMiniGame(world.getServer(), page);
         }
-        phase = Phase.PLAYING;
+        phase = round;
         hidePreview(controller);
         if (controller.getWorld() instanceof ServerWorld world) {
             MinecraftServer server = world.getServer();
@@ -358,7 +549,8 @@ public class MiniGamePartyStep extends PartyStep {
                     });
                 }
             });
-            announce(controller, page);
+            announce(controller, page, !toldInChat);
+            toldInChat = true;
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
@@ -368,20 +560,25 @@ public class MiniGamePartyStep extends PartyStep {
      * The mini-game starts: its title in big on the screen (« Go! » under it), and in the chat its title and, when
      * it has one, its description, for the players and the audience.
      */
-    private void announce(PartyControllerEntity controller, @Nullable MiniGamePageData page) {
+    private void announce(PartyControllerEntity controller, @Nullable MiniGamePageData page, boolean inChat) {
         ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
         String name = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
-        announceStart(name, page, previewAudience(controller));
+        announceStart(name, page, previewAudience(controller), inChat);
     }
 
     /** The start of a mini-game (a party's, or a test): its name in big with « Go! », its name and description in the chat. */
     public static void announceStart(String name, @Nullable MiniGamePageData page, Collection<ServerPlayerEntity> audience) {
+        announceStart(name, page, audience, true);
+    }
+
+    /** @param inChat false: only the big title (a practice round starting again: the chat already told the mini-game) */
+    public static void announceStart(String name, @Nullable MiniGamePageData page, Collection<ServerPlayerEntity> audience, boolean inChat) {
         Text go = Text.translatableWithFallback("message.steveparty.minigame.go", "Go!").styled(style -> style.withColor(0x55FF55).withBold(true));
         Text title = name.isEmpty() ? go : Text.literal(name).styled(style -> style.withColor(0xFFC52E).withBold(true));
         for (ServerPlayerEntity player : audience) {
             if (!name.isEmpty()) player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.SubtitleS2CPacket(go));
             player.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.TitleS2CPacket(title));
-            if (name.isEmpty()) continue;
+            if (name.isEmpty() || !inChat) continue;
             player.sendMessage(Text.translatable("message.steveparty.minigame.title", title), false);
             if (page != null && !MiniGameText.strip(page.description()).isBlank()) {
                 player.sendMessage(MiniGameText.parse(page.description(), Style.EMPTY.withColor(Formatting.GRAY)), false);
@@ -489,10 +686,12 @@ public class MiniGamePartyStep extends PartyStep {
      * ends it earlier.
      */
     public void onPodiumsChanged(PartyControllerEntity controller) {
-        if (!isPlaying()) return;
+        if (!isOnArena() || (isPractice() && practiceOver)) return;
         PodiumGroup group = podiums(controller);
         if (group == null || group.isEmpty()) return;
-        if (group.isFull() || placesOnPodiums(controller).values().stream().allMatch(place -> place > 0)) finish(controller);
+        if (!group.isFull() && !placesOnPodiums(controller).values().stream().allMatch(place -> place > 0)) return;
+        if (isPractice()) practiceResults(controller);
+        else finish(controller);
     }
 
     /**
@@ -551,19 +750,30 @@ public class MiniGamePartyStep extends PartyStep {
         controller.sendPacketToInterestedPlayers();
     }
 
-    /** The results card for the players and the audience, and the same lines in the chat. */
-    private void announceResults(PartyControllerEntity controller, MinecraftServer server) {
+    /** The results of the mini-game for these places, with what the party pays for each. */
+    private MiniGameResults results(PartyControllerEntity controller, MinecraftServer server, Map<UUID, Integer> finalPlaces) {
         ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
         MiniGamePageData page = MiniGamePages.of(server, stack);
         String title = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
         TeamDisposition teams = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue);
         ItemStack coin = controller.getCurrency(PartyCurrency.COIN), star = controller.getCurrency(PartyCurrency.STAR);
-        MiniGameResults results = MiniGameResults.of(title, coin, star, controller.getGains(), places, teams, uuid -> {
+        return MiniGameResults.of(title, coin, star, controller.getGains(), finalPlaces, teams, uuid -> {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
             if (player != null) return player.getGameProfile().getName();
             return server.getUserCache() == null ? uuid.toString().substring(0, 8)
                     : server.getUserCache().getByUuid(uuid).map(com.mojang.authlib.GameProfile::getName).orElse(uuid.toString().substring(0, 8));
         });
+    }
+
+    /** The results card for the players and the audience, and the same lines in the chat. */
+    private void announceResults(PartyControllerEntity controller, MinecraftServer server) {
+        tellResults(controller, results(controller, server, places), null);
+    }
+
+    /** Shows results to the players and the audience: the card, and the same lines in the chat ({@code note}: a last line). */
+    private void tellResults(PartyControllerEntity controller, MiniGameResults results, @Nullable Text note) {
+        String title = results.title();
+        ItemStack coin = results.coinItem(), star = results.starItem();
         lastResults = results;
         MiniGamePagePayloads.Results payload = new MiniGamePagePayloads.Results(results);
         List<ServerPlayerEntity> audience = previewAudience(controller);
@@ -575,6 +785,7 @@ public class MiniGamePartyStep extends PartyStep {
         lines.add(Text.translatable(title.isEmpty() ? "message.steveparty.minigame.results" : "message.steveparty.minigame.results.of", title)
                 .styled(style -> style.withColor(0xFFC52E).withBold(true)));
         for (MiniGameResults.Row row : results.rows()) lines.add(resultLine(row, coin, star));
+        if (note != null) lines.add(note);
         for (Text line : lines) MessageUtils.sendToPlayers(audience, line, MessageUtils.MessageType.CHAT);
         playSoundToPlayers(getOnlineParticipants(controller), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1f);
     }
@@ -813,6 +1024,10 @@ public class MiniGamePartyStep extends PartyStep {
         }
         participants.clear();
         readUuids(nbt.getList("Participants", NbtElement.STRING_TYPE), participants);
+        ready.clear();
+        List<UUID> readyList = new ArrayList<>();
+        readUuids(nbt.getList("Ready", NbtElement.STRING_TYPE), readyList);
+        ready.addAll(readyList);
         winners.clear();
         readUuids(nbt.getList("Winners", NbtElement.STRING_TYPE), winners);
         places.clear();
@@ -861,6 +1076,7 @@ public class MiniGamePartyStep extends PartyStep {
             nbtCompound.putBoolean("MiniGameChosen", true);
         nbtCompound.putString("Phase", phase.name());
         if (!participants.isEmpty()) nbtCompound.put("Participants", writeUuids(participants));
+        if (!ready.isEmpty()) nbtCompound.put("Ready", writeUuids(new ArrayList<>(ready)));
         if (!winners.isEmpty()) nbtCompound.put("Winners", writeUuids(winners));
         if (!places.isEmpty()) {
             NbtCompound placesNbt = new NbtCompound();

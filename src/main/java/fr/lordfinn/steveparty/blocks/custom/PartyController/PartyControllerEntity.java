@@ -96,6 +96,8 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     private MiniGameGains gains = MiniGameGains.DEFAULT;
     /** Rounds a party may have (Settings page). */
     public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
+    /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
+    private boolean practiceRound = true;
 
     static {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_PARTY_CONTROLLERS.clear());
@@ -146,14 +148,15 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     }
 
     /**
-     * The loaded controller of the party playing right now the mini-game of one of {@code pages}, in any dimension
-     * and at any distance (what the podiums and the step controllers linked to a page act on).
+     * The loaded controller of the party playing right now the mini-game of one of {@code pages} (its practice round
+     * or its real round), in any dimension and at any distance (what the podiums and the step controllers linked to
+     * a page act on).
      */
     public static Optional<PartyControllerEntity> getPartyPlayingPage(Collection<UUID> pages) {
         if (pages.isEmpty()) return Optional.empty();
         for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS.values()) {
             if (entity.isRemoved() || !(entity.getPartyData().getCurrentStep() instanceof MiniGamePartyStep miniGame)
-                    || !miniGame.isPlaying()) continue;
+                    || !miniGame.isOnArena()) continue;
             UUID page = fr.lordfinn.steveparty.minigame.MiniGamePages.idOf(MiniGamesCatalogueItem.getCurrentMiniGame(entity.catalogue));
             if (page != null && pages.contains(page)) return Optional.of(entity);
         }
@@ -209,6 +212,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         nbt.put(PartyCurrency.STAR.nbtKey(), starItem.toNbt(wrapper));
         nbt.put(PartyCurrency.COIN.nbtKey(), coinItem.toNbt(wrapper));
         nbt.put("MiniGameGains", gains.toNbt());
+        nbt.putBoolean("PracticeRound", practiceRound);
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
             tokensToRelease.forEach(uuid -> releaseNbt.add(NbtString.of(uuid.toString())));
@@ -248,6 +252,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         starItem = readCurrency(nbt, wrapper, PartyCurrency.STAR);
         coinItem = readCurrency(nbt, wrapper, PartyCurrency.COIN);
         gains = MiniGameGains.fromNbt(nbt.getCompound("MiniGameGains"));
+        practiceRound = !nbt.contains("PracticeRound") || nbt.getBoolean("PracticeRound");
         tokensToRelease.clear();
         nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
             try {
@@ -322,6 +327,20 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
                 amount -= count;
             }
         }
+    }
+
+    /**
+     * @return true if the mini-games of this party start with a practice round (those whose page has a Mini-game
+     * Controller: see {@code MiniGamePartyStep})
+     */
+    public boolean hasPracticeRound() {
+        return practiceRound;
+    }
+
+    public void setPracticeRound(boolean practiceRound) {
+        if (this.practiceRound == practiceRound) return;
+        this.practiceRound = practiceRound;
+        markDirty();
     }
 
     /** Sets the number of rounds of the next party: only while no party runs (the rounds are generated at its start). */

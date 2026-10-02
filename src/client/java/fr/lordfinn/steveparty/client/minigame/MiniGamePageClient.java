@@ -104,6 +104,8 @@ public final class MiniGamePageClient {
         }));
         ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestLabel.ID, (payload, context) ->
                 context.client().execute(() -> MiniGameResultsHud.test(payload.show() ? payload.title() : null)));
+        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Practice.ID, (payload, context) ->
+                context.client().execute(() -> fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.show(payload)));
         ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestStatus.ID, (payload, context) -> context.client().execute(() -> {
             if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor)
                 editor.onTestStatus(payload.page(), payload.status(), payload.players(), payload.mode());
@@ -123,6 +125,7 @@ public final class MiniGamePageClient {
         TEXTURES.clear();
         MiniGameCardHud.clear();
         MiniGameResultsHud.clear();
+        fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.clear();
     }
 
     // ------------------------------------------------------------------ content

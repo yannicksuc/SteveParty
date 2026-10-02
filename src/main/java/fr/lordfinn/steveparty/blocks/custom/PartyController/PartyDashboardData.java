@@ -50,12 +50,13 @@ import java.util.UUID;
  * @param following       the player follows this party (its HUDs)
  * @param catalogueLocked the controller is powered: the catalogue can't be taken out
  * @param gains           what the party pays at the end of each mini-game, by place (the Gains page)
+ * @param practiceRound   the mini-games whose page has a Mini-game Controller start with a practice round
  */
 public record PartyDashboardData(Phase phase, int round, int rounds, int roundsSetting, int stepIndex, int stepCount,
                                  Text action, Text actionDetail, int currentPlayer,
                                  List<PartyLiveData.Standing> players, Board board, boolean hasCatalogue,
                                  List<Page> pages, int currentPage, boolean canEdit, boolean following,
-                                 boolean catalogueLocked, MiniGameGains gains) {
+                                 boolean catalogueLocked, MiniGameGains gains, boolean practiceRound) {
 
     public enum Phase { SETUP, RUNNING, ENDED }
 
@@ -233,7 +234,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         return new PartyDashboardData(phase, round, rounds, data.getNbTurn(), stepIndex, steps.size(), action, detail,
                 currentPlayer, players, board, !controller.catalogue.isEmpty(), pages, currentPage,
                 controller.canEdit(player), controller.getInterestedPlayers().contains(player.getUuid()),
-                controller.isCatalogueLocked(), controller.getGains());
+                controller.isCatalogueLocked(), controller.getGains(), controller.hasPracticeRound());
     }
 
     // ------------------------------------------------------------------ network
@@ -303,7 +304,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             int currentPage = buf.readVarInt() - 1;
             boolean canEdit = buf.readBoolean(), following = buf.readBoolean(), locked = buf.readBoolean();
             return new PartyDashboardData(phase, round, rounds, roundsSetting, stepIndex, stepCount, action, detail,
-                    currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf));
+                    currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf),
+                    buf.readBoolean());
         }
 
         @Override
@@ -326,6 +328,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             buf.writeBoolean(data.following);
             buf.writeBoolean(data.catalogueLocked);
             data.gains.write(buf);
+            buf.writeBoolean(data.practiceRound);
         }
     };
 }
