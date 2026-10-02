@@ -45,7 +45,10 @@ final class WrenchOverlay {
     }
 
     static void initialize() {
-        WorldRenderEvents.AFTER_ENTITIES.register(WrenchOverlay::render);
+        // After the block entities (where the vanilla block outline is drawn), not AFTER_ENTITIES: the see-through
+        // frame writes depth, and drawn before them it hid what a tile's renderer draws under it (its stamped or role
+        // face, leaving the bare face of the block model; the whole tile when it is small, large or not level)
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(WrenchOverlay::render);
     }
 
     private static void render(WorldRenderContext context) {
