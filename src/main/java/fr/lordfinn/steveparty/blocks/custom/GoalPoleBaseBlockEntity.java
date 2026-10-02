@@ -80,8 +80,11 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * that podium's group (see {@code Podiums}): a per-player goal reached on its pole gives the player the highest free
  * place, and resetting the base empties the group (as resetting the group resets the base).
  * <p>
- * <b>Players</b> ({@link Players}): every player, the players near the base, the players of the nearest party (the
- * party link: the points also go back to 0 when that party starts), or an advanced target selector.
+ * <b>Players</b> ({@link Players}): every player, the players near the base, the players of the party, or an advanced
+ * target selector. « The party » is, for a base linked to a mini-game page (clicked with it, or touching a podium
+ * linked to it), the party playing that page's mini-game right now, wherever it is: its players are those of the
+ * mini-game. Without a linked page it is the nearest party controller within {@value #PARTY_LINK_RADIUS} blocks (the
+ * points also go back to 0 when that party starts).
  */
 public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPoleBasePayload> {
     /**
@@ -91,7 +94,10 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public static final int VERSION = 3;
 
     public enum Players {
-        /** The players of the party run by the nearest party controller; the points go back to 0 when it starts. */
+        /**
+         * The players of the party: the one playing the mini-game of the page the base is linked to, however far; without
+         * a linked page, the one run by the nearest party controller (the points go back to 0 when it starts).
+         */
         PARTY,
         /** Every player. Default of new bases without a party controller nearby. */
         ALL,
@@ -415,7 +421,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         if (source != Source.LANDINGS_HERE) return;
         if (!follows(player)) {
             // Not one of the players this base follows: say so (no party running, too far, not in the party...)
-            String why = players == Players.PARTY && runningParty() == null ? "no_party" : "not_followed";
+            String why = players == Players.PARTY && countedParty() == null ? "no_party" : "not_followed";
             player.sendMessage(Text.translatable("message.steveparty.goal_pole." + why).formatted(Formatting.GOLD), true);
             return;
         }
@@ -626,8 +632,13 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             case RADIUS -> player.getWorld() == world
                     && player.squaredDistanceTo(Vec3d.ofCenter(pos)) <= (double) radius * radius;
             case PARTY -> {
-                PartyControllerEntity party = runningParty();
-                yield party != null && party.isParticipant(player);
+                PartyControllerEntity party = countedParty();
+                if (party == null) yield false;
+                // Linked to a page: the players of its mini-game (not those who only watch the party)
+                if (!linkedPages().isEmpty() && party.getPartyData().getCurrentStep() instanceof
+                        fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep miniGame)
+                    yield miniGame.getParticipants().contains(player.getUuid());
+                yield party.isParticipant(player);
             }
             case SELECTOR -> followsSelector(player);
         };
@@ -648,6 +659,31 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
             }
         }
         return best;
+    }
+
+    /**
+     * The mini-game pages this base is linked to: those it was clicked with, and those of the podiums it touches
+     * (itself or its pole). Worked out when something happens.
+     */
+    public java.util.Set<UUID> linkedPages() {
+        java.util.Set<UUID> pages = new java.util.LinkedHashSet<>();
+        if (!(world instanceof ServerWorld serverWorld)) return pages;
+        for (fr.lordfinn.steveparty.minigame.MiniGamePageData page : fr.lordfinn.steveparty.minigame.MiniGamePages.pagesAt(serverWorld.getServer(),
+                net.minecraft.util.math.GlobalPos.create(serverWorld.getRegistryKey(), pos))) pages.add(page.id());
+        for (fr.lordfinn.steveparty.podium.PodiumGroup group : fr.lordfinn.steveparty.podium.Podiums.groupsOf(this)) pages.addAll(group.pages());
+        return pages;
+    }
+
+    /**
+     * The party whose players « the party's players » are, now: linked to a page, the party playing that page's
+     * mini-game, at any distance and in any dimension (none playing it: nobody counts); not linked, the nearest party
+     * controller's, if it runs.
+     */
+    @Nullable
+    public PartyControllerEntity countedParty() {
+        java.util.Set<UUID> pages = linkedPages();
+        if (!pages.isEmpty()) return PartyControllerEntity.getPartyPlayingPage(pages).orElse(null);
+        return runningParty();
     }
 
     /** The linked party, if it is running. */
@@ -768,6 +804,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         settings.putString("OutputMode", outputMode.name());
         settings.putLong("Total", total);
         settings.putBoolean("PartyNear", linkedParty() != null);
+        settings.putBoolean("PageLinked", !linkedPages().isEmpty());
         settings.putBoolean("Active", isActive());
         return settings;
     }

@@ -82,6 +82,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private Players players;
     /** Whether a party controller is near the base (for the party choice's meaning). */
     private final boolean partyNear;
+    /** Whether the base is linked to a mini-game page: « the party » is then the one playing that page's mini-game. */
+    private final boolean pageLinked;
     private RedstoneMode redstoneMode;
     private OutputMode outputMode;
     private boolean resetRequested;
@@ -105,6 +107,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         this.source = GoalPoleBaseBlockEntity.readEnum(settings, "Source", Source.values(), Source.LANDINGS_HERE);
         this.players = GoalPoleBaseBlockEntity.readEnum(settings, "Players", Players.values(), Players.ALL);
         this.partyNear = settings.getBoolean("PartyNear");
+        this.pageLinked = settings.getBoolean("PageLinked");
         this.redstoneMode = RedstoneMode.read(settings, "RedstoneMode", RedstoneMode.PAUSE_WHEN_POWERED);
         this.outputMode = GoalPoleBaseBlockEntity.readEnum(settings, "OutputMode", OutputMode.values(), OutputMode.PULSE);
     }
@@ -251,7 +254,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         playersCheck = switch (players) {
             case SELECTOR -> selectorCheck;
             case RADIUS -> checkRadius(radiusField.getText());
-            case PARTY -> new Check(true, Text.translatable(KEY + (partyNear ? "players.party.meaning" : "players.party.none")));
+            case PARTY -> new Check(true, Text.translatable(KEY + (pageLinked ? "players.party.meaning.page"
+                    : partyNear ? "players.party.meaning" : "players.party.none")));
             case ALL -> new Check(true, Text.translatable(KEY + "players.all.meaning"));
         };
         goalCheck = criterion ? checkGoal(goalField.getText()) : new Check(true, Text.translatable(KEY + "source.landings_here.meaning"));

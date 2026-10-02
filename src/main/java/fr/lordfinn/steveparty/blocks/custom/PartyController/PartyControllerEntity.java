@@ -387,6 +387,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     public void serverTick(ServerWorld serverWorld) {
         if (!tokensToRelease.isEmpty() && serverWorld.getTime() % 20 == 0)
             releasePendingTokens(serverWorld);
+        if (serverWorld.getTime() % 20 == 0) syncChunkHold();
         if (serverWorld.getTime() % LIVE_SYNC_INTERVAL_TICKS == 0)
             syncLiveData(serverWorld);
         PartyStep currentStep = partyData.getCurrentStep();
@@ -430,6 +431,24 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         }
         super.markDirty();
         updatePhase();
+        syncChunkHold();
+    }
+
+    /** @return true while the party is on a mini-game step: the controller must stay loaded (see {@link PartyChunkHolds}). */
+    public boolean wantsChunk() {
+        return !isRemoved() && partyData.isStarted() && partyData.getCurrentStep() instanceof MiniGamePartyStep;
+    }
+
+    /**
+     * Keeps the controller's chunk loaded for as long as its party is on a mini-game step (the players are away, maybe
+     * in another dimension: the mini-game must still end, pay and bring them back), and lets it go after.
+     */
+    private void syncChunkHold() {
+        if (!(this.world instanceof ServerWorld serverWorld) || isRemoved()) return;
+        boolean wanted = wantsChunk();
+        if (wanted == PartyChunkHolds.isHeld(serverWorld, pos)) return;
+        if (wanted) PartyChunkHolds.hold(serverWorld, pos);
+        else PartyChunkHolds.release(serverWorld, pos);
     }
 
     public void boot() {
@@ -1042,6 +1061,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
      */
     public void onControllerRemoved() {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
+        PartyChunkHolds.release(serverWorld, pos);
         for (UUID playerUUID : interestedPlayers) {
             ServerPlayerEntity player = serverWorld.getServer().getPlayerManager().getPlayer(playerUUID);
             if (player != null)
