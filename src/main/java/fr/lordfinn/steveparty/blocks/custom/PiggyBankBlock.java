@@ -21,12 +21,16 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Piggy bank (see {@link PiggyBankBlockEntity}).
@@ -38,12 +42,27 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PiggyBankBlock extends CartridgeContainer {
     public static final MapCodec<PiggyBankBlock> CODEC = Block.createCodec(PiggyBankBlock::new);
-    /** Covers the pig (body, snout, ears) whatever its facing. */
-    private static final VoxelShape SHAPE = Block.createCuboidShape(3, 0, 3, 13, 10, 13);
+    /** The pig for each facing: its body down to the hooves, and its head with the snout and the ears. */
+    private static final Map<Direction, VoxelShape> SHAPES = new EnumMap<>(Direction.class);
+
+    static {
+        for (Direction facing : Direction.Type.HORIZONTAL)
+            SHAPES.put(facing, VoxelShapes.union(turned(facing, 3, 0, 5, 13, 10, 15), turned(facing, 4, 3, 0, 12, 13, 5)));
+    }
+
+    /** A box of the model (which faces north), turned around the middle of the block to face {@code facing}. */
+    private static VoxelShape turned(Direction facing, double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return switch (facing) {
+            case SOUTH -> Block.createCuboidShape(16 - maxX, minY, 16 - maxZ, 16 - minX, maxY, 16 - minZ);
+            case EAST -> Block.createCuboidShape(16 - maxZ, minY, minX, 16 - minZ, maxY, maxX);
+            case WEST -> Block.createCuboidShape(minZ, minY, 16 - maxX, maxZ, maxY, 16 - minX);
+            default -> Block.createCuboidShape(minX, minY, minZ, maxX, maxY, maxZ);
+        };
+    }
 
     public PiggyBankBlock(Settings settings) {
         super(settings, 1);
-        setDefaultState(getStateManager().getDefaultState().with(HorizontalFacingBlock.FACING, net.minecraft.util.math.Direction.NORTH));
+        setDefaultState(getStateManager().getDefaultState().with(HorizontalFacingBlock.FACING, Direction.NORTH));
     }
 
     @Override
@@ -73,7 +92,7 @@ public class PiggyBankBlock extends CartridgeContainer {
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPE;
+        return SHAPES.get(state.get(HorizontalFacingBlock.FACING));
     }
 
     @Override

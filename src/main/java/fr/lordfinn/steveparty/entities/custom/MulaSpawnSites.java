@@ -87,6 +87,14 @@ public class MulaSpawnSites extends PersistentState {
     /** Records a site of the night of that day (null when too many are already waiting). */
     public @Nullable Site add(BlockPos pos, long time, long day, int[] colours) {
         if (pendingCount() >= MAX_PENDING) return null;
+        return record(pos, time, day, colours);
+    }
+
+    /**
+     * Records a site whatever the number already waiting: one set by hand, not by an ephemeride (the cap of
+     * {@link #add} only bounds what the events pile up; a world can be at it for good, its sites far from everyone).
+     */
+    public Site record(BlockPos pos, long time, long day, int[] colours) {
         Site site = new Site(nextId++, pos.toImmutable(), time, day, colours.clone(), false);
         sites.add(site);
         markDirty();

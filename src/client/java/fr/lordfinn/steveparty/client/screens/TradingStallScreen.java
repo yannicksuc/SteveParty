@@ -24,7 +24,7 @@ public class TradingStallScreen extends HandledScreen<TradingStallScreenHandler>
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, TEXTURE);
-        int x = (this.width - this.backgroundWidth) / 2; //12 is the size of the additional boxed trader slot
+        int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
         context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground,
                 TEXTURE, x, y, 0,0,

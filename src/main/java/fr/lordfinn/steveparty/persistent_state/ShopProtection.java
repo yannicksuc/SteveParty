@@ -78,9 +78,6 @@ public final class ShopProtection {
         VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
         if (state == null) return owners;
         Set<UUID> traders = new HashSet<>(state.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), pos)));
-        if (world.getBlockEntity(pos) instanceof TradingStallBlockEntity) {
-            traders.addAll(TraderStallRegistry.getLinkedTraders(pos));
-        }
         for (UUID trader : traders) {
             UUID owner = state.getOwner(trader);
             if (owner != null) owners.add(owner);

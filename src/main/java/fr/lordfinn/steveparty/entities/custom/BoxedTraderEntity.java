@@ -13,7 +13,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BandanaItem;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
-import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.CustomizableMerchantScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.ShopStopScreenHandler;
@@ -150,7 +149,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     /** Server: where he wanders around (first position), null until his first tick. */
     @Nullable
     private BlockPos home = null;
-    /** Server: linked to a shop (owner, Shopkeeper Key links or trading stall), refreshed with the owner sync. */
+    /** Server: linked to a shop (owner or Shopkeeper Key links), refreshed with the owner sync. */
     private boolean assigned = true;
     /** Server: snapped to the block grid since he last closed. */
     private boolean gridAligned = false;
@@ -403,12 +402,6 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         if (this.getWorld() instanceof ServerWorld serverWorld) {
             VendorLinkPersistentState.get(serverWorld.getServer()).forgetVendor(this.getUuid());
         }
-    }
-
-    @Override
-    public void onRemoved() {
-        TraderStallRegistry.unlinkTraderFromAllStalls(this.getUuid());
-        super.onRemoved();
     }
 
     @Override
@@ -1148,11 +1141,10 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
 
     private void refreshAssigned() {
         VendorLinkPersistentState linkState = getVendorLinkState();
-        assigned = ownerUuid != null || (linkState != null && !linkState.getVendorLinks(this.getUuid()).isEmpty())
-                || !TraderStallRegistry.getLinkedStalls(this.getUuid()).isEmpty();
+        assigned = ownerUuid != null || (linkState != null && !linkState.getVendorLinks(this.getUuid()).isEmpty());
     }
 
-    /** Linked to a shop: owner, Shopkeeper Key links or trading stall (server side, refreshed every second). */
+    /** Linked to a shop: owner or Shopkeeper Key links (server side, refreshed every second). */
     public boolean isAssigned() {
         return assigned;
     }

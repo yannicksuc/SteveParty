@@ -353,6 +353,7 @@ public class DiceRollGameTests implements FabricGameTest {
             DiceEntity lead = thrown(context, player, doubleDie, PATH.get(1));
             DiceEntity second = context.spawnEntity(fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY, PATH.get(1).up(3));
             second.setNoGravity(true);
+            second.age = DiceEntity.THROW_GRACE_TICKS;
             second.setOwner(player.getUuid());
             second.follow(doubleDie.copy());
             lead.setLinkedDice(List.of(lead.getUuid(), second.getUuid()));
