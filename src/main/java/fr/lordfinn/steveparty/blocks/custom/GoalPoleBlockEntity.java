@@ -132,6 +132,15 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     private boolean perSegment = false;
     /** How the pole's flags show the progress (a setting of the whole pole). */
     private boolean flagSteps = false;
+    /**
+     * The goal is each player's own: a player whose own points reach it fires the pole once (a comparator pulse, and
+     * the highest free place of the linked podiums: see {@code Podiums}). A setting of the whole pole.
+     */
+    private boolean perPlayer = false;
+    /** The holders who reached this segment's per-player goal since the last reset. */
+    private final java.util.Set<String> reached = new java.util.LinkedHashSet<>();
+    /** Game ticks of the comparator pulse of a per-player goal reached. */
+    public static final int PLAYER_GOAL_PULSE_TICKS = 4;
     /** Loaded from before the column setting: its column decides once whether its goals were all the same. */
     private boolean legacyGoal = false;
     /** Placed, not loaded: takes the settings of the column it joins. */
@@ -167,6 +176,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
                     value = other.value;
                     perSegment = other.perSegment;
                     flagSteps = other.flagSteps;
+                    perPlayer = other.perPlayer;
                     markDirty();
                     break;
                 }
@@ -262,6 +272,71 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         }
     }
 
+    /** Whether the goal is each player's own (see {@link #perPlayer}). A setting of the whole pole. */
+    public boolean isPerPlayer() {
+        return perPlayer;
+    }
+
+    /** Sets whose points the goal is about (each player's own, or everybody's total), for the whole pole. */
+    public void applyPerPlayer(boolean each) {
+        if (world == null || world.isClient) {
+            perPlayer = each;
+            return;
+        }
+        for (GoalPoleBlockEntity segment : column(world, pos)) {
+            if (segment.perPlayer == each) continue;
+            segment.perPlayer = each;
+            segment.reached.clear();
+            if (segment.redstoneOutput != 0) {
+                segment.redstoneOutput = 0;
+                world.updateComparators(segment.pos, segment.getCachedState().getBlock());
+            }
+            segment.markDirty();
+            segment.sync();
+            segment.recompare();
+        }
+    }
+
+    /**
+     * The own points of a holder changed (per-player goal).
+     *
+     * @return true when this makes him reach the goal, the first time since the last reset: the pole fires (a chime, a
+     * comparator pulse)
+     */
+    public boolean acceptPlayerPoints(String holder, int points) {
+        if (world == null || world.isClient || !perPlayer) return false;
+        if (!compare(comparator, points, value)) {
+            if (reached.remove(holder)) markDirty();
+            return false;
+        }
+        if (!reached.add(holder)) return false;
+        markDirty();
+        redstoneOutput = 15;
+        world.updateComparators(pos, getCachedState().getBlock());
+        world.scheduleBlockTick(pos, getCachedState().getBlock(), PLAYER_GOAL_PULSE_TICKS);
+        world.playSound(null, pos, net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 1f, 1.19f);
+        return true;
+    }
+
+    /** The holders who reached the per-player goal of this segment since the last reset. */
+    public java.util.Set<String> getReached() {
+        return java.util.Collections.unmodifiableSet(reached);
+    }
+
+    /** The base was reset: the per-player goal can be reached again by everyone. */
+    public void clearReached() {
+        if (reached.isEmpty()) return;
+        reached.clear();
+        markDirty();
+    }
+
+    /** End of the comparator pulse of a per-player goal. */
+    public void endPlayerGoalPulse() {
+        if (!perPlayer || redstoneOutput == 0 || world == null) return;
+        redstoneOutput = 0;
+        world.updateComparators(pos, getCachedState().getBlock());
+    }
+
     /**
      * Share of the way to this segment's goal, 0 to 1 (1 when met): the total over the number to reach; goals that
      * are not a number to reach ("less than") are all or nothing.
@@ -324,14 +399,15 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         if (world == null || world.isClient) return false;
         cachedBase = base;
         baseResolved = true;
-        long newTotal = base != null ? base.getTotal() : 0;
+        // A per-player goal shows the best player's own points, and only pulses its comparator when a player reaches it
+        long newTotal = base == null ? 0 : perPlayer ? base.getBestPoints() : base.getTotal();
         boolean met = base != null && compare(comparator, (int) Math.clamp(newTotal, Integer.MIN_VALUE, Integer.MAX_VALUE), value);
-        int output = met ? 15 : 0;
+        int output = perPlayer ? redstoneOutput : met ? 15 : 0;
         boolean changed = newTotal != total || met != goalMet || linked != (base != null);
         // Clients see the total only above the top segment and on flags going down point by point: other segments
         // send nothing when only the total changed
         boolean shown = met != goalMet || linked != (base != null) || (newTotal != total && (isTop() || flagSteps));
-        boolean justMet = met && !goalMet;
+        boolean justMet = met && !goalMet && !perPlayer;
         total = newTotal;
         linked = base != null;
         if (met != goalMet) {
@@ -406,6 +482,12 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         nbt.putInt("Value", value);
         nbt.putBoolean("PerSegment", perSegment);
         nbt.putBoolean("FlagSteps", flagSteps);
+        nbt.putBoolean("PerPlayer", perPlayer);
+        if (!reached.isEmpty()) {
+            net.minecraft.nbt.NbtList list = new net.minecraft.nbt.NbtList();
+            reached.forEach(holder -> list.add(net.minecraft.nbt.NbtString.of(holder)));
+            nbt.put("Reached", list);
+        }
         if (legacyGoal) nbt.putBoolean("LegacyGoal", true);
         if (flagColor != FlagItem.NO_COLOR) nbt.putInt("FlagColor", flagColor);
         nbt.putLong("Total", total);
@@ -420,6 +502,10 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         fresh = false;
         perSegment = nbt.getBoolean("PerSegment");
         flagSteps = nbt.getBoolean("FlagSteps");
+        perPlayer = nbt.getBoolean("PerPlayer");
+        reached.clear();
+        net.minecraft.nbt.NbtList reachedNbt = nbt.getList("Reached", NbtElement.STRING_TYPE);
+        for (int i = 0; i < reachedNbt.size(); i++) reached.add(reachedNbt.getString(i));
         // Saved before the column setting (or not consolidated yet): its column decides when it loads
         legacyGoal = nbt.getInt("Version") < VERSION || nbt.getBoolean("LegacyGoal");
         if (nbt.contains("Comparator")) {
@@ -436,7 +522,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
         goalMet = nbt.getBoolean("GoalMet");
         goalMetTick = nbt.getLong("GoalMetTick");
         // Same signal as before the chunk was unloaded: no spurious comparator pulse on load
-        redstoneOutput = goalMet ? 15 : 0;
+        redstoneOutput = goalMet && !perPlayer ? 15 : 0;
     }
 
     // --- Client sync (the flag colour) ---
@@ -510,7 +596,7 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     @Override
     public GoalPolePayload getScreenOpeningData(ServerPlayerEntity player) {
         if (world != null && !world.isClient) consolidate(column(world, pos));
-        return new GoalPolePayload(this.getPos(), this.comparator, this.value, this.perSegment, this.flagSteps);
+        return new GoalPolePayload(this.getPos(), this.comparator, this.value, this.perSegment, this.flagSteps, this.perPlayer);
     }
 
     @Override

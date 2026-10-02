@@ -184,6 +184,7 @@ public class StevepartyClient implements ClientModInitializer {
         PartyHud.initialize();
         fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.initialize();
         fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud.initialize();
+        fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud.initialize();
         fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent.register();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));
 
@@ -287,9 +288,9 @@ public class StevepartyClient implements ClientModInitializer {
             return infos == null || infos.isEmpty() ? -1 : infos.last().getStage();
         };
         BlockEntityRendererFactories.register(ModBlockEntities.DICE_FORGE_ENTITY, DiceForgeBlockEntityRenderer::new);
-        // The pattern tagged on a podium's banner
-        BlockEntityRendererFactories.register(ModBlockEntities.PODIUM_ENTITY, fr.lordfinn.steveparty.client.blockentity.PodiumBannerRenderer::new);
-        fr.lordfinn.steveparty.client.blockentity.PodiumBannerRenderer.registerReloadListener();
+        // The figure of the player registered on a podium, and the pattern tagged on its banner
+        BlockEntityRendererFactories.register(ModBlockEntities.PODIUM_ENTITY, fr.lordfinn.steveparty.client.blockentity.PodiumRenderer::new);
+        fr.lordfinn.steveparty.client.blockentity.PodiumRenderer.registerReloadListener();
 
         for (net.minecraft.block.Block starFragments : STAR_FRAGMENTS_BLOCKS) {
             BlockRenderLayerMap.INSTANCE.putBlock(starFragments, RenderLayer.getTranslucent());

@@ -12,7 +12,8 @@ The area (x 1936..2095, z 1952..2175, floor y=99, everything built at y=100), fa
   - the board (west): a start zone of 4 start tiles (a token each) feeding the loop through an entry tile, a loop of 30 tiles spaced 4 blocks apart (2 block gap, tiles are 2 blocks wide), each one turned
     toward the next tile of the path, with diagonal sides, and a shortcut: the fork tile has two destinations (the
     main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 emeralds and one is a Stop space trap driven by a router + lever);
-  - the stations (east), one per 20x20 plot: dice, shops, goal pole, plastic, signs, building blocks, misc, tiles
+  - the stations (east), one per 20x20 plot: dice, shops, goal pole (with « the 10 jumps »: a jump counter whose
+    per-player goal fills a podium staircase in order), plastic, signs, building blocks, misc, tiles
     (on stairs, slabs, snow, carpets),
     chests holding one of every item, and the Mulas' glass enclosure around an activated Dice Forge;
   - the showcase of the new features (south, z 2098..2146, reached by the path south of the welcome point): a gallery
@@ -416,7 +417,26 @@ def goal_pole_station(x0=2060, z0=1970):
                 'true' if h == 1 else 'false', 'true' if h == height else 'false', 'true' if h in flag_at else 'false')
             nbt = '{FlagColor:%d}' % (DYE_RGB[flag_at[h]] & 0xFFFFFF) if h in flag_at else ''
             cmds.append('setblock %d %d %d steveparty:goal_pole[%s]%s' % (bx, Y + h, bz, state, nbt))
-    cmds.append(label(x0 + 10, Y + 1.5, z0 + 14, 'Base + segments + drapeaux colorés', 'white', 0.8, False))
+    cmds.append(label(x0 + 10, Y + 1.5, z0 + 12, 'Base + segments + drapeaux colorés', 'white', 0.8, False))
+    # « Les 10 sauts »: a jump counter (the base counts minecraft.custom:minecraft.jump for everyone) under a pole
+    # whose goal is each player's own (10), touching a podium staircase: the first to jump 10 times takes the 1st
+    # place, the second the 2nd, the third the 3rd. Sneak + right click a podium with the Wrench to start again.
+    bx, bz = x0 + 5, z0 + 16
+    cmds.append('setblock %d %d %d steveparty:goal_pole_base[facing=south]{Version:3,RedstoneMode:"PAUSE_WHEN_POWERED",'
+                'Source:"CRITERION",Criterion:"minecraft.custom:minecraft.jump",Selector:"@a",Players:"ALL",Radius:16,'
+                'OutputMode:"PULSE"}' % (bx, Y, bz))
+    cmds.append('setblock %d %d %d steveparty:goal_pole[facing=south,on_base=true,top=true,flag=true]'
+                '{Version:2,Comparator:1,Value:10,PerSegment:0b,FlagSteps:1b,PerPlayer:1b,FlagColor:%d}'
+                % (bx, Y + 1, bz, DYE_RGB['yellow'] & 0xFFFFFF))
+    steps = [('gold_podium', [('full=true,top=false,base=true,banner_tail=gold', 0), ('full=false,top=true,base=false,banner_tail=none', 1)]),
+             ('silver_podium', [('full=true,top=true,base=true,banner_tail=none', 0)]),
+             ('bronze_podium', [('full=false,top=true,base=true,banner_tail=none', 0)])]
+    for k, (block, parts) in enumerate(steps):
+        for state, dy in parts:
+            cmds.append('setblock %d %d %d steveparty:%s[facing=south,%s]' % (bx + 1 + k, Y + dy, bz, block, state))
+    cmds.append(label(bx + 2, Y + 3.4, bz + 0.5, 'Les 10 sauts : le 1er à sauter 10 fois est 1er, puis 2e, 3e', 'yellow', 0.8, False))
+    cmds.append(label(bx + 2, Y + 3.0, bz + 0.5, 'Socle = compteur de sauts · mât = but par joueur ≥ 10 · podiums collés', 'white', 0.6, False))
+    cmds.append(label(bx + 2, Y + 2.7, bz + 0.5, "S'accroupir sur un podium ou clic droit = s'inscrire · Clé accroupi = remise à zéro", 'white', 0.6, False))
     return cmds
 
 

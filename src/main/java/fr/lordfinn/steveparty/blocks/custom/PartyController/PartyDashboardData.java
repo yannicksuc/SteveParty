@@ -49,12 +49,13 @@ import java.util.UUID;
  * @param canEdit         the player may change the settings and start a party (see {@link PartyControllerEntity#canEdit})
  * @param following       the player follows this party (its HUDs)
  * @param catalogueLocked the controller is powered: the catalogue can't be taken out
+ * @param gains           what the party pays at the end of each mini-game, by place (the Gains page)
  */
 public record PartyDashboardData(Phase phase, int round, int rounds, int roundsSetting, int stepIndex, int stepCount,
                                  Text action, Text actionDetail, int currentPlayer,
                                  List<PartyLiveData.Standing> players, Board board, boolean hasCatalogue,
                                  List<Page> pages, int currentPage, boolean canEdit, boolean following,
-                                 boolean catalogueLocked) {
+                                 boolean catalogueLocked, MiniGameGains gains) {
 
     public enum Phase { SETUP, RUNNING, ENDED }
 
@@ -98,8 +99,9 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
      *
      * @param pipes    the pipes linked to the page
      * @param playable the number of ways it can be played among those it ticks (0: it can't be drawn)
+     * @param podiums  the podiums linked to the page (0: its mini-game names no winner, everyone is a participant)
      */
-    public record Page(int slot, ItemStack page, int pipes, int playable, int played) {}
+    public record Page(int slot, ItemStack page, int pipes, int playable, int played, int podiums) {}
 
     /** Why a party can't be started now, the checks in the order a player meets them. */
     public static Blocker launchBlocker(boolean running, Board board, boolean canEdit) {
@@ -223,13 +225,15 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             if (content != null) {
                 for (MiniGameMode mode : content.modes()) if (content.hasPipesFor(mode)) playable++;
             }
-            pages.add(new Page(slot, page, pipes, playable, played[slot]));
+            int podiums = content == null ? 0 : (int) content.podiumLinks().stream()
+                    .filter(link -> link.kind() == fr.lordfinn.steveparty.minigame.MiniGamePodiumLink.Kind.PODIUM).count();
+            pages.add(new Page(slot, page, pipes, playable, played[slot], podiums));
         }
 
         return new PartyDashboardData(phase, round, rounds, data.getNbTurn(), stepIndex, steps.size(), action, detail,
                 currentPlayer, players, board, !controller.catalogue.isEmpty(), pages, currentPage,
                 controller.canEdit(player), controller.getInterestedPlayers().contains(player.getUuid()),
-                controller.isCatalogueLocked());
+                controller.isCatalogueLocked(), controller.getGains());
     }
 
     // ------------------------------------------------------------------ network
@@ -265,7 +269,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             int count = buf.readVarInt();
             List<Page> pages = new ArrayList<>(count);
             for (int i = 0; i < count; i++)
-                pages.add(new Page(buf.readVarInt(), ItemStack.PACKET_CODEC.decode(buf), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                pages.add(new Page(buf.readVarInt(), ItemStack.PACKET_CODEC.decode(buf), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
             return pages;
         }
 
@@ -278,6 +282,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                 buf.writeVarInt(page.pipes());
                 buf.writeVarInt(page.playable());
                 buf.writeVarInt(page.played());
+                buf.writeVarInt(page.podiums());
             }
         }
     };
@@ -298,7 +303,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             int currentPage = buf.readVarInt() - 1;
             boolean canEdit = buf.readBoolean(), following = buf.readBoolean(), locked = buf.readBoolean();
             return new PartyDashboardData(phase, round, rounds, roundsSetting, stepIndex, stepCount, action, detail,
-                    currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked);
+                    currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf));
         }
 
         @Override
@@ -320,6 +325,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             buf.writeBoolean(data.canEdit);
             buf.writeBoolean(data.following);
             buf.writeBoolean(data.catalogueLocked);
+            data.gains.write(buf);
         }
     };
 }

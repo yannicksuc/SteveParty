@@ -1,8 +1,10 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
-import fr.lordfinn.steveparty.utils.MessageUtils;
+import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
+import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
+import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -10,17 +12,16 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
-import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
 import net.minecraft.util.hit.BlockHitResult;
@@ -31,29 +32,37 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.block.WireOrientation;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
- * Podium (see {@link PodiumBlockEntity}): ends the mini-game being played and names its winners.
+ * Podium (see {@link PodiumBlockEntity} and {@link Podiums}): it records who came first, second, third... in a
+ * mini-game.
  * <ul>
- *     <li>Four kinds: gold (1st place), silver (2nd), bronze (3rd) and the classic one.</li>
- *     <li>A podium is a slab; another podium of the same kind put on it makes it a full block. Podiums stacked on
- *     one another make one podium (a column): only its top counts, redstone goes in and out through any of its
- *     blocks, and its settings (mode, cartridge, banner) are kept by its bottom block. A column looks like one
- *     piece: the plate on its top only, the plinth at its foot only, and its banner hanging from its top over one
- *     block of height, across two blocks when its top is a slab (a slab alone only has a label).</li>
- *     <li>Wrench (or cartridge) + right-click: the cartridge slot (the reward of the winners).</li>
- *     <li>Right-click (empty hand): mode "first arrived" / "on signal".</li>
+ *     <li>Four looks: classic, gold, silver and bronze. The look says nothing about the place.</li>
+ *     <li>A podium is a slab; another podium put on it makes it a full block. Podiums stacked on one another make one
+ *     podium (a column): its settings (who is registered, what a signal does, its banner) are kept by its bottom
+ *     block. A column looks like one piece: the plate on its top only, the plinth at its foot only, and its banner
+ *     hanging from its top over one block of height, across two blocks when its top is a slab (a slab alone only has
+ *     a label).</li>
+ *     <li>The columns touching each other, and the columns linked to the same mini-game page (page in hand, click),
+ *     form a group. <b>The taller the column, the better the place</b>: the tallest is the 1st place, the next height
+ *     the 2nd... Columns of the same height share the place.</li>
+ *     <li>Sneaking on its top, or right-clicking it, registers the player on it; again, unregisters him. One podium
+ *     per player (per team in a team mini-game); a podium held by someone else can be taken.</li>
+ *     <li>Redstone into any block of the column: what the Wrench set (right click with it): register the nearest
+ *     player on it, give him the highest free place of the group, empty the column, or reset the group. Sneak +
+ *     right click with the Wrench resets the group.</li>
  *     <li>The banner hanging on its front can be stamped with a stencil (Stencil Hammer, or a stencil and a dye),
  *     washed with a wet sponge.</li>
- *     <li>Output: a pulse each time a player steps on it; comparator: number of players standing on it.</li>
+ *     <li>Comparator: 15 while someone is registered on the column.</li>
  * </ul>
  */
-public class PodiumBlock extends CartridgeContainer {
+public class PodiumBlock extends Block implements BlockEntityProvider {
     public static final EnumProperty<Direction> FACING = HorizontalFacingBlock.FACING;
     /** False: a slab (the podium's first level); true: a full block. */
     public static final BooleanProperty FULL = BooleanProperty.of("full");
@@ -63,38 +72,26 @@ public class PodiumBlock extends CartridgeContainer {
     public static final BooleanProperty BASE = BooleanProperty.of("base");
     /** Full block right under the top slab of its column: the lower half of that slab's banner hangs on it. */
     public static final EnumProperty<BannerTail> BANNER_TAIL = EnumProperty.of("banner_tail", BannerTail.class);
-    public static final BooleanProperty POWERED = Properties.POWERED;
     private static final VoxelShape SLAB = Block.createCuboidShape(0, 0, 0, 16, 8, 16);
     private static final VoxelShape FULL_SHAPE = VoxelShapes.fullCube();
 
-    /** The place a podium gives in the "first arrived" mode (classic: the first one to arrive wins). */
-    public enum Place implements StringIdentifiable {
-        FIRST("gold", 1), SECOND("silver", 2), THIRD("bronze", 3), CLASSIC("classic", 1);
+    /** The look of a podium. It gives no place: the height of the column does. */
+    public enum Style implements StringIdentifiable {
+        CLASSIC("classic"), GOLD("gold"), SILVER("silver"), BRONZE("bronze");
 
         private final String name;
-        private final int rank;
 
-        Place(String name, int rank) {
+        Style(String name) {
             this.name = name;
-            this.rank = rank;
         }
 
         @Override
         public String asString() {
             return name;
         }
-
-        public int rank() {
-            return rank;
-        }
-
-        /** Arriving on it ends the mini-game (the 1st place, or a classic podium). */
-        public boolean endsTheMiniGame() {
-            return rank == 1;
-        }
     }
 
-    /** The banner of the slab above, by the kind of that slab (podiums of different kinds can be stacked). */
+    /** The banner of the slab above, by the look of that slab (podiums of different looks can be stacked). */
     public enum BannerTail implements StringIdentifiable {
         NONE("none"), CLASSIC("classic"), GOLD("gold"), SILVER("silver"), BRONZE("bronze");
 
@@ -109,38 +106,38 @@ public class PodiumBlock extends CartridgeContainer {
             return name;
         }
 
-        static BannerTail of(Place place) {
-            return switch (place) {
-                case FIRST -> GOLD;
-                case SECOND -> SILVER;
-                case THIRD -> BRONZE;
+        static BannerTail of(Style style) {
+            return switch (style) {
+                case GOLD -> GOLD;
+                case SILVER -> SILVER;
+                case BRONZE -> BRONZE;
                 case CLASSIC -> CLASSIC;
             };
         }
     }
 
-    private final Place place;
+    private final Style style;
 
-    public PodiumBlock(Settings settings, Place place) {
-        super(settings, 1);
-        this.place = place;
+    public PodiumBlock(Settings settings, Style style) {
+        super(settings);
+        this.style = style;
         setDefaultState(getStateManager().getDefaultState()
                 .with(FACING, Direction.NORTH).with(FULL, false).with(TOP, true)
-                .with(BASE, true).with(BANNER_TAIL, BannerTail.NONE).with(POWERED, false));
+                .with(BASE, true).with(BANNER_TAIL, BannerTail.NONE));
     }
 
-    public Place getPlace() {
-        return place;
+    public Style getStyle() {
+        return style;
     }
 
     @Override
     protected MapCodec<PodiumBlock> getCodec() {
-        return Block.createCodec(settings -> new PodiumBlock(settings, place));
+        return Block.createCodec(settings -> new PodiumBlock(settings, style));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING, FULL, TOP, BASE, BANNER_TAIL, POWERED);
+        builder.add(FACING, FULL, TOP, BASE, BANNER_TAIL);
     }
 
     @Override
@@ -186,7 +183,7 @@ public class PodiumBlock extends CartridgeContainer {
         boolean podium = isPodium(above);
         boolean tail = podium && state.get(FULL) && !above.get(FULL) && above.get(TOP);
         return state.with(TOP, !podium)
-                .with(BANNER_TAIL, tail ? BannerTail.of(((PodiumBlock) above.getBlock()).getPlace()) : BannerTail.NONE);
+                .with(BANNER_TAIL, tail ? BannerTail.of(((PodiumBlock) above.getBlock()).getStyle()) : BannerTail.NONE);
     }
 
     /** {@code state} on {@code below}: only a full podium carries it (a slab leaves a gap under the next block). */
@@ -235,6 +232,13 @@ public class PodiumBlock extends CartridgeContainer {
         return world.getBlockEntity(bottomOf(world, pos)) instanceof PodiumBlockEntity podium ? podium : null;
     }
 
+    /** The height of the top of the column {@code pos} belongs to above its foot, in half blocks (a slab alone: 1). */
+    public static int heightOf(BlockView world, BlockPos pos) {
+        BlockPos top = topOf(world, pos);
+        BlockState state = world.getBlockState(top);
+        return (top.getY() - bottomOf(world, pos).getY()) * 2 + (isPodium(state) && state.get(FULL) ? 2 : 1);
+    }
+
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PodiumBlockEntity(pos, state);
@@ -242,72 +246,72 @@ public class PodiumBlock extends CartridgeContainer {
 
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        // Only the top of a column watches the players standing on it
+        // Only the top of a column watches the players sneaking on it
         return world.isClient || !state.get(TOP) ? null : TickableBlockEntity.getTicker(world);
     }
 
     // ---------------------------------------------------------------- interaction
 
+    /**
+     * Decided the same way on both sides. The banner first (stencils, sponge), then the page (linking), the Wrench
+     * (what a signal does); a block in hand is placed; anything else, or nothing: the player registers ({@link #onUse}).
+     */
     @Override
-    public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, World world, BlockPos pos) {
-        // The cartridge of the whole column is the bottom block's
-        return master(world, pos);
-    }
-
-    @Override
-    protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         ActionResult stamped = PodiumBanner.onUseWithItem(state, world, pos, player, hand, hit);
         if (stamped != null) return stamped;
-        return stack.isEmpty() ? ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION : ActionResult.PASS;
+        if (stack.getItem() instanceof MiniGamePageItem) {
+            if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer)
+                Podiums.clickLink(serverPlayer, hand, serverWorld, pos, MiniGamePodiumLink.Kind.PODIUM);
+            return ActionResult.SUCCESS;
+        }
+        if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
+        if (stack.getItem() instanceof WrenchItem) {
+            if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer)
+                Podiums.cycleSignal(serverPlayer, serverWorld, pos);
+            return ActionResult.SUCCESS;
+        }
+        return stack.getItem() instanceof BlockItem ? ActionResult.PASS : ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+    }
+
+    /** Right click: the player registers on the podium, or leaves it if it already shows him. */
+    @Override
+    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+        if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer)
+            Podiums.toggle(serverPlayer, serverWorld, pos);
+        return ActionResult.SUCCESS;
     }
 
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (!world.isClient && master(world, pos) instanceof PodiumBlockEntity podium) {
-            podium.cycleMode();
-            world.playSound(null, pos, SoundEvents.BLOCK_COPPER_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0f, 1.5f);
-            if (player instanceof ServerPlayerEntity serverPlayer)
-                MessageUtils.sendToPlayer(serverPlayer, Text.translatableWithFallback("message.steveparty.podium.mode",
-                        "Podium: %s", podium.getMode().getText().copy().formatted(Formatting.YELLOW)), MessageUtils.MessageType.ACTION_BAR);
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
+        super.appendTooltip(stack, context, tooltip, options);
+        for (String line : List.of("places", "register", "signal", "page", "reset")) {
+            tooltip.add(Text.translatable("tooltip.steveparty.podium." + line).formatted(Formatting.GRAY));
         }
-        return ActionResult.SUCCESS;
     }
 
     // ---------------------------------------------------------------- redstone
 
-    /** A 2 redstone tick pulse out of every block of the column (a new arrival during the pulse extends it). */
-    static void pulse(ServerWorld world, BlockPos anyPos) {
-        BlockPos top = topOf(world, anyPos);
-        for (BlockPos pos = bottomOf(world, anyPos); pos.getY() <= top.getY(); pos = pos.up()) {
-            BlockState state = world.getBlockState(pos);
-            if (!isPodium(state)) break;
-            if (!state.get(POWERED)) world.setBlockState(pos, state.with(POWERED, true), Block.NOTIFY_ALL);
-            world.scheduleBlockTick(pos, state.getBlock(), PartyBellBlock.PULSE_TICKS);
-        }
-        world.playSound(null, top, SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.BLOCKS, 0.8f, 1.5f);
-    }
-
-    @Override
-    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        if (state.get(POWERED))
-            world.setBlockState(pos, state.with(POWERED, false), Block.NOTIFY_ALL);
-    }
-
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
         super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
-        // Its own pulse fed back through a wire is not a signal sent to the podium
-        if (world.isClient || state.get(POWERED)) return;
+        if (world.isClient) return;
         PodiumBlockEntity podium = master(world, pos);
-        if (podium != null) podium.onRedstoneInput(columnPower(world, pos));
+        if (podium != null) podium.onRedstoneInput(columnPower(world, pos) > 0);
     }
 
-    /** The strongest power received by a block of the column. */
-    static int columnPower(World world, BlockPos anyPos) {
+    /** The strongest power received by a block of the column from what is not a podium. */
+    public static int columnPower(World world, BlockPos anyPos) {
         int power = 0;
         BlockPos top = topOf(world, anyPos);
-        for (BlockPos pos = bottomOf(world, anyPos); pos.getY() <= top.getY(); pos = pos.up())
-            power = Math.max(power, world.getReceivedRedstonePower(pos));
+        for (BlockPos pos = bottomOf(world, anyPos); pos.getY() <= top.getY(); pos = pos.up()) {
+            for (Direction direction : Direction.values()) {
+                BlockPos neighbor = pos.offset(direction);
+                if (isPodium(world.getBlockState(neighbor))) continue;
+                // Same convention as World#getReceivedRedstonePower: (neighbor pos, direction towards the neighbor)
+                power = Math.max(power, world.getEmittedRedstonePower(neighbor, direction));
+            }
+        }
         return power;
     }
 
@@ -319,17 +323,13 @@ public class PodiumBlock extends CartridgeContainer {
     }
 
     @Override
-    protected boolean emitsRedstonePower(BlockState state) {
+    protected boolean hasComparatorOutput(BlockState state) {
         return true;
     }
 
     @Override
-    protected int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-        return state.get(POWERED) ? 15 : 0;
-    }
-
-    @Override
-    public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-        return world.getBlockEntity(topOf(world, pos)) instanceof PodiumBlockEntity top ? Math.min(15, top.getPlayersOnCount()) : 0;
+    protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+        PodiumBlockEntity podium = master(world, pos);
+        return podium != null && podium.getOccupant() != null ? 15 : 0;
     }
 }

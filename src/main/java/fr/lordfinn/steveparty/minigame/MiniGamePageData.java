@@ -28,12 +28,14 @@ import java.util.UUID;
  * @param pipeLinks   the pipe mouths of the mini-game, with their roles
  * @param randomRoles the roles whose players are sent to a pipe picked at random (the others: each pipe in turn)
  * @param intro       the shots of the introduction shown before the players leave, empty for none
+ * @param podiumLinks the podiums (the places of the mini-game) and the goal pole bases (its counters) linked to the page
  */
 public record MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
                                Set<MiniGameMode> modes, int minPlayers, int maxPlayers, List<MiniGamePipeLink> pipeLinks,
-                               Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro) {
-    /** The version of the saved form: 2 added the random roles, the introduction and the text markup. */
-    public static final int FORMAT = 2;
+                               Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro, List<MiniGamePodiumLink> podiumLinks) {
+    /** The version of the saved form: 2 added the random roles, the introduction and the text markup; 3 the podiums. */
+    public static final int FORMAT = 3;
+    public static final int MAX_PODIUM_LINKS = 32;
     public static final int MAX_INTRO_SHOTS = 32;
     public static final int MAX_TITLE_LENGTH = 40;
     public static final int MAX_DESCRIPTION_LENGTH = 400;
@@ -62,6 +64,14 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         if (randomRoles != null) random.addAll(randomRoles);
         randomRoles = Collections.unmodifiableSet(random);
         intro = intro == null ? List.of() : List.copyOf(intro.size() > MAX_INTRO_SHOTS ? intro.subList(0, MAX_INTRO_SHOTS) : intro);
+        podiumLinks = podiumLinks == null ? List.of()
+                : List.copyOf(podiumLinks.size() > MAX_PODIUM_LINKS ? podiumLinks.subList(0, MAX_PODIUM_LINKS) : podiumLinks);
+    }
+
+    public MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
+                            Set<MiniGameMode> modes, int minPlayers, int maxPlayers, List<MiniGamePipeLink> pipeLinks,
+                            Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro) {
+        this(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro, List.of());
     }
 
     public MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
@@ -131,27 +141,27 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     }
 
     public MiniGamePageData withId(UUID newId) {
-        return new MiniGamePageData(newId, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
+        return new MiniGamePageData(newId, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro, podiumLinks);
     }
 
     public MiniGamePageData withTexts(String newTitle, String newDescription) {
-        return new MiniGamePageData(id, newTitle, newDescription, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
+        return new MiniGamePageData(id, newTitle, newDescription, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro, podiumLinks);
     }
 
     public MiniGamePageData withImage(@Nullable MiniGamePageImage newImage) {
-        return new MiniGamePageData(id, title, description, newImage, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
+        return new MiniGamePageData(id, title, description, newImage, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro, podiumLinks);
     }
 
     public MiniGamePageData withModes(Set<MiniGameMode> newModes) {
-        return new MiniGamePageData(id, title, description, image, newModes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro);
+        return new MiniGamePageData(id, title, description, image, newModes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro, podiumLinks);
     }
 
     public MiniGamePageData withPlayers(int min, int max) {
-        return new MiniGamePageData(id, title, description, image, modes, min, max, pipeLinks, randomRoles, intro);
+        return new MiniGamePageData(id, title, description, image, modes, min, max, pipeLinks, randomRoles, intro, podiumLinks);
     }
 
     public MiniGamePageData withPipeLinks(List<MiniGamePipeLink> links) {
-        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, links, randomRoles, intro);
+        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, links, randomRoles, intro, podiumLinks);
     }
 
     /** The players of {@code role} are sent to a pipe picked at random ({@code random}), or to each pipe in turn. */
@@ -160,11 +170,27 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         roles.addAll(randomRoles);
         if (random) roles.add(role);
         else roles.remove(role);
-        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, roles, intro);
+        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, roles, intro, podiumLinks);
     }
 
     public MiniGamePageData withIntro(List<MiniGameIntroShot> shots) {
-        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, shots);
+        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, shots, podiumLinks);
+    }
+
+    public MiniGamePageData withPodiumLinks(List<MiniGamePodiumLink> links) {
+        return new MiniGamePageData(id, title, description, image, modes, minPlayers, maxPlayers, pipeLinks, randomRoles, intro, links);
+    }
+
+    /** The index of the link to the block at {@code pos}, -1 if it is not linked. */
+    public int podiumLinkIndex(net.minecraft.util.math.GlobalPos pos) {
+        for (int i = 0; i < podiumLinks.size(); i++) if (podiumLinks.get(i).pos().equals(pos)) return i;
+        return -1;
+    }
+
+    /** @return true if a podium is linked to the page: its mini-game says who won. */
+    public boolean hasPodium() {
+        for (MiniGamePodiumLink link : podiumLinks) if (link.kind() == MiniGamePodiumLink.Kind.PODIUM) return true;
+        return false;
     }
 
     /** @return true if the players of {@code role} are sent to a pipe picked at random. */
@@ -226,6 +252,11 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
             intro.forEach(shot -> shots.add(shot.toNbt()));
             nbt.put("Intro", shots);
         }
+        if (!podiumLinks.isEmpty()) {
+            NbtList podiums = new NbtList();
+            podiumLinks.forEach(link -> podiums.add(link.toNbt()));
+            nbt.put("Podiums", podiums);
+        }
         return nbt;
     }
 
@@ -243,10 +274,16 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
             MiniGameIntroShot shot = MiniGameIntroShot.fromNbt(shotsNbt.getCompound(i));
             if (shot != null) shots.add(shot);
         }
+        List<MiniGamePodiumLink> podiums = new ArrayList<>();
+        NbtList podiumsNbt = nbt.getList("Podiums", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < podiumsNbt.size(); i++) {
+            MiniGamePodiumLink link = MiniGamePodiumLink.fromNbt(podiumsNbt.getCompound(i));
+            if (link != null) podiums.add(link);
+        }
         return new MiniGamePageData(nbt.getUuid("Id"), nbt.getString("Title"), nbt.getString("Description"),
                 nbt.contains("Image", NbtElement.COMPOUND_TYPE) ? MiniGamePageImage.fromNbt(nbt.getCompound("Image")) : null,
                 MiniGameMode.fromMask(nbt.getInt("Modes")), nbt.getInt("MinPlayers"), nbt.getInt("MaxPlayers"), links,
-                rolesFromMask(nbt.getInt("RandomRoles")), shots);
+                rolesFromMask(nbt.getInt("RandomRoles")), shots, podiums);
     }
 
     private static Set<MiniGamePipeRole> rolesFromMask(int mask) {
@@ -271,6 +308,8 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         buf.writeVarInt(mask);
         buf.writeVarInt(intro.size());
         intro.forEach(shot -> shot.write(buf));
+        buf.writeVarInt(podiumLinks.size());
+        podiumLinks.forEach(link -> link.write(buf));
     }
 
     private static MiniGamePageData read(PacketByteBuf buf) {
@@ -287,6 +326,9 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         int shotCount = Math.min(buf.readVarInt(), MAX_INTRO_SHOTS);
         List<MiniGameIntroShot> shots = new ArrayList<>(shotCount);
         for (int i = 0; i < shotCount; i++) shots.add(MiniGameIntroShot.read(buf));
-        return new MiniGamePageData(id, title, description, image, MiniGameMode.fromMask(modes), min, max, links, random, shots);
+        int podiumCount = Math.min(buf.readVarInt(), MAX_PODIUM_LINKS);
+        List<MiniGamePodiumLink> podiums = new ArrayList<>(podiumCount);
+        for (int i = 0; i < podiumCount; i++) podiums.add(MiniGamePodiumLink.read(buf));
+        return new MiniGamePageData(id, title, description, image, MiniGameMode.fromMask(modes), min, max, links, random, shots, podiums);
     }
 }

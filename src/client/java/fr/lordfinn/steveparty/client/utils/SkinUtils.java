@@ -18,15 +18,19 @@ public class SkinUtils {
      * Cheap enough to be called every frame.
      */
     public static Identifier getPlayerSkin(UUID uuid) {
+        return getSkinTextures(uuid).texture();
+    }
+
+    /** Same, with the model of the skin (wide or slim arms). */
+    public static net.minecraft.client.util.SkinTextures getSkinTextures(UUID uuid) {
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayNetworkHandler networkHandler = client.getNetworkHandler();
         if (networkHandler != null) {
             PlayerListEntry playerListEntry = networkHandler.getPlayerListEntry(uuid);
-            if (playerListEntry != null) return playerListEntry.getSkinTextures().texture();
+            if (playerListEntry != null) return playerListEntry.getSkinTextures();
         }
         Optional<GameProfile> profile = SkullBlockEntity.fetchProfileByUuid(uuid).getNow(Optional.empty());
         return profile.map(p -> client.getSkinProvider().getSkinTextures(p))
-                .orElseGet(() -> DefaultSkinHelper.getSkinTextures(uuid))
-                .texture();
+                .orElseGet(() -> DefaultSkinHelper.getSkinTextures(uuid));
     }
 }

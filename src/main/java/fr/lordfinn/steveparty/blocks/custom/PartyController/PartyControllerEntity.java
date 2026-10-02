@@ -92,6 +92,8 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     /** The items counted as stars and coins by this party (one of each, never empty): see {@link PartyCurrency}. */
     private ItemStack starItem = PartyCurrency.STAR.defaultStack();
     private ItemStack coinItem = PartyCurrency.COIN.defaultStack();
+    /** What the party pays at the end of each mini-game, by place (Gains page). */
+    private MiniGameGains gains = MiniGameGains.DEFAULT;
     /** Rounds a party may have (Settings page). */
     public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
 
@@ -191,6 +193,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         partyData.toNbt(nbt);
         nbt.put(PartyCurrency.STAR.nbtKey(), starItem.toNbt(wrapper));
         nbt.put(PartyCurrency.COIN.nbtKey(), coinItem.toNbt(wrapper));
+        nbt.put("MiniGameGains", gains.toNbt());
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
             tokensToRelease.forEach(uuid -> releaseNbt.add(NbtString.of(uuid.toString())));
@@ -229,6 +232,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         partyData = new PartyData(nbt);
         starItem = readCurrency(nbt, wrapper, PartyCurrency.STAR);
         coinItem = readCurrency(nbt, wrapper, PartyCurrency.COIN);
+        gains = MiniGameGains.fromNbt(nbt.getCompound("MiniGameGains"));
         tokensToRelease.clear();
         nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
             try {
@@ -274,6 +278,35 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         else coinItem = template;
         markDirty();
         return true;
+    }
+
+    /** What the party pays at the end of each of its mini-games, by place. */
+    public MiniGameGains getGains() {
+        return gains;
+    }
+
+    public void setGains(MiniGameGains gains) {
+        if (gains == null || gains.equals(this.gains)) return;
+        this.gains = gains;
+        markDirty();
+    }
+
+    /**
+     * Pays a player what his place in a mini-game is worth: the party's coins and stars, as items (what does not fit in
+     * his inventory falls at his feet).
+     *
+     * @param place 1 for the winners, 2, 3, 4; 0 (or more than 4) for the participants
+     */
+    public void payGains(ServerPlayerEntity player, int place) {
+        for (PartyCurrency currency : PartyCurrency.values()) {
+            int amount = gains.forPlace(currency, place);
+            ItemStack template = getCurrency(currency);
+            while (amount > 0) {
+                int count = Math.min(amount, template.getMaxCount());
+                player.getInventory().offerOrDrop(template.copyWithCount(count));
+                amount -= count;
+            }
+        }
     }
 
     /** Sets the number of rounds of the next party: only while no party runs (the rounds are generated at its start). */
@@ -628,6 +661,8 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     public void nextStep() {
         PartyStep currentStep = partyData.getCurrentStep();
         int index = partyData.getStepIndex();
+        // A mini-game ended from outside (a step controller): its results are read on its podiums and paid all the same
+        if (currentStep instanceof MiniGamePartyStep miniGame) miniGame.concludeIfPlaying(this);
         endCurrentStep();
         if (currentStep instanceof EventPartyStep event && event.isTransition() && index >= 0) {
             // Its moments rang: go on with the step it was inserted before (already announced)

@@ -34,6 +34,9 @@ public final class MiniGamePagePayloads {
         PayloadTypeRegistry.playS2C().register(ImageChunk.ID, ImageChunk.CODEC);
         PayloadTypeRegistry.playS2C().register(Status.ID, Status.CODEC);
         PayloadTypeRegistry.playS2C().register(Preview.ID, Preview.CODEC);
+        PayloadTypeRegistry.playS2C().register(EndCountdown.ID, EndCountdown.CODEC);
+        PayloadTypeRegistry.playS2C().register(Results.ID, Results.CODEC);
+        PayloadTypeRegistry.playC2S().register(PodiumUnlink.ID, PodiumUnlink.CODEC);
         PayloadTypeRegistry.playC2S().register(Edit.ID, Edit.CODEC);
         PayloadTypeRegistry.playC2S().register(Action.ID, Action.CODEC);
         PayloadTypeRegistry.playC2S().register(Upload.ID, Upload.CODEC);
@@ -142,7 +145,53 @@ public final class MiniGamePagePayloads {
         }
     }
 
+    /**
+     * The mini-game being played is about to end: the first place is taken.
+     *
+     * @param seconds seconds left before it ends, 0: the countdown is called off (or over)
+     */
+    public record EndCountdown(int seconds) implements CustomPayload {
+        public static final Id<EndCountdown> ID = id("end_countdown");
+        public static final PacketCodec<PacketByteBuf, EndCountdown> CODEC = PacketCodec.of(
+                (payload, buf) -> buf.writeByte(payload.seconds), buf -> new EndCountdown(buf.readByte()));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /** The results of the mini-game that just ended: the places, and what the party paid. */
+    public record Results(fr.lordfinn.steveparty.minigame.MiniGameResults results) implements CustomPayload {
+        public static final Id<Results> ID = id("results");
+        public static final PacketCodec<net.minecraft.network.RegistryByteBuf, Results> CODEC = PacketCodec.of(
+                (payload, buf) -> fr.lordfinn.steveparty.minigame.MiniGameResults.PACKET_CODEC.encode(buf, payload.results),
+                buf -> new Results(fr.lordfinn.steveparty.minigame.MiniGameResults.PACKET_CODEC.decode(buf)));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
     // ------------------------------------------------------------------ client → server
+
+    /** A podium (or a goal pole base) linked to the page {@code page} held in {@code hand}, unlinked in the editor. */
+    public record PodiumUnlink(Hand hand, UUID page, GlobalPos pos) implements CustomPayload {
+        public static final Id<PodiumUnlink> ID = id("podium_unlink");
+        public static final PacketCodec<PacketByteBuf, PodiumUnlink> CODEC = PacketCodec.of((payload, buf) -> {
+            buf.writeEnumConstant(payload.hand);
+            buf.writeUuid(payload.page);
+            buf.writeIdentifier(payload.pos.dimension().getValue());
+            buf.writeBlockPos(payload.pos.pos());
+        }, buf -> new PodiumUnlink(buf.readEnumConstant(Hand.class), buf.readUuid(),
+                GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, buf.readIdentifier()), buf.readBlockPos())));
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
 
     /** The texts and settings written in the editor, for the page {@code page} held in {@code hand}. */
     public record Edit(Hand hand, UUID page, String title, String description, int modes, int minPlayers, int maxPlayers) implements CustomPayload {

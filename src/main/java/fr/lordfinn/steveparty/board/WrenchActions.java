@@ -66,6 +66,12 @@ public final class WrenchActions {
 
     /** Right click on a block, within reach. */
     public static ActionResult useOnBlock(ServerPlayerEntity player, ItemStack wrench, ServerWorld world, BlockPos clicked) {
+        // A podium (sneaking: a plain click is the podium's, it changes what a signal does): its group is reset
+        if (fr.lordfinn.steveparty.blocks.custom.PodiumBlock.isPodium(world.getBlockState(clicked))) {
+            if (player.isSneaking() && !isRepeat(player, clicked, world.getTime()))
+                fr.lordfinn.steveparty.podium.Podiums.wrenchReset(player, world, clicked);
+            return ActionResult.SUCCESS;
+        }
         BlockPos pos = BoardSpaces.resolve(world, clicked);
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof PartyController) {

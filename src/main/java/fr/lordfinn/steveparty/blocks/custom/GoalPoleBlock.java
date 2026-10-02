@@ -123,6 +123,12 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
         return ActionResult.PASS;
     }
 
+    /** End of the comparator pulse of a per-player goal reached. */
+    @Override
+    protected void scheduledTick(BlockState state, net.minecraft.server.world.ServerWorld world, BlockPos pos, net.minecraft.util.math.random.Random random) {
+        if (world.getBlockEntity(pos) instanceof GoalPoleBlockEntity pole) pole.endPlayerGoalPulse();
+    }
+
     @Override
     public boolean hasComparatorOutput(BlockState state) {
         return true;

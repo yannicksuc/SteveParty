@@ -63,6 +63,8 @@ public final class MiniGamePageNetworking {
                 ModPayloads.runInPacketOrder(context.player(), () -> pipeRole(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PipeOrder.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () -> pipeOrder(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.PodiumUnlink.ID, (payload, context) ->
+                ModPayloads.runInPacketOrder(context.player(), () -> podiumUnlink(context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Request.ID, (payload, context) ->
                 ModPayloads.runInPacketOrder(context.player(), () ->
                         send(context.player(), new MiniGamePagePayloads.Data(MiniGamePages.get(context.player().server, payload.page())))));
@@ -152,6 +154,12 @@ public final class MiniGamePageNetworking {
         if (payload.role() < 0) return MiniGamePages.removeLink(player.server, payload.page(), payload.mouth());
         MiniGamePipeRole role = MiniGamePipeRole.byOrdinal(payload.role());
         return role != null && MiniGamePages.setLinkRole(player.server, payload.page(), payload.mouth(), role);
+    }
+
+    /** A linked podium (or goal pole base) unlinked in the editor. @return true if it was done */
+    public static boolean podiumUnlink(ServerPlayerEntity player, MiniGamePagePayloads.PodiumUnlink payload) {
+        if (editable(player, payload.hand(), payload.page()) == null) return false;
+        return MiniGamePages.removePodiumLinks(player.server, payload.page(), java.util.List.of(payload.pos()));
     }
 
     /** A role's players sent in turn or at random, chosen in the editor. @return true if it was done */

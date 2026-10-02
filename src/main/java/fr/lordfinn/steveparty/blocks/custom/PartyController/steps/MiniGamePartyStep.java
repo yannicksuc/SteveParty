@@ -14,6 +14,10 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
+import fr.lordfinn.steveparty.minigame.MiniGameResults;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.podium.PodiumGroup;
+import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -55,13 +59,22 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
  *     <li>a 3 second countdown, and the players come out of the pipes linked to the page, by team: one after the
  *     other in each pipe of their role in turn, in turn order ({@link MiniGamePipes#distribute}); the audience
  *     comes out of the spectators pipes,</li>
- *     <li>the mini-game is played until a podium names the winners (or a step controller goes on),</li>
- *     <li>the winners are announced, and the players are brought back where they were.</li>
+ *     <li>the mini-game is played. The podiums linked to its page record who takes which place ({@link Podiums});
+ *     it ends when every place is taken, or every player (every team) has one, or {@value #END_DELAY_SECONDS} seconds
+ *     after the first place was taken (a countdown everyone sees), or when a step controller goes on,</li>
+ *     <li>the results are read on the podiums (the place of each player, of each team in a team mini-game; no place:
+ *     « participant »), the party controller pays the gains of its Gains page, everyone sees the results card, and
+ *     the players are brought back where they were. The winners (kept for the party bells and the piggy banks) are
+ *     the players of the first place.</li>
  * </ol>
+ * A page without podium can be played too: it only ends with a step controller, and everyone is a participant.
  */
 public class MiniGamePartyStep extends PartyStep {
     private static final int COUNTDOWN_SECONDS = 3;
-    private static final int RETURN_DELAY_TICKS = 60;
+    /** The results card stays on screen that long before the players go back. */
+    public static final int RETURN_DELAY_TICKS = 100;
+    /** Once the first place is taken, the mini-game ends after that many seconds (the others can still take a place). */
+    public static final int END_DELAY_SECONDS = 5;
 
     public enum Phase { ROULETTE, CHOSEN_WAIT, COUNTDOWN, PLAYING, FINISHED }
 
@@ -79,6 +92,10 @@ public class MiniGamePartyStep extends PartyStep {
     private List<UUID> participants;
     private Map<UUID, ReturnPos> returnPositions;
     private List<UUID> winners;
+    /** The place of each participant once the mini-game is over (0: none, a « participant »), in turn order. */
+    private Map<UUID, Integer> places;
+    /** Seconds left before the mini-game ends (the first place is taken), 0 while no such countdown runs. */
+    private int endSeconds = 0;
     private UUID rouletteTaskId = null;
     private UUID flowTaskId = null;
     /** The players still waiting for their turn to come out of a pipe. */
@@ -106,6 +123,7 @@ public class MiniGamePartyStep extends PartyStep {
         if (participants == null) participants = new ArrayList<>();
         if (returnPositions == null) returnPositions = new LinkedHashMap<>();
         if (winners == null) winners = new ArrayList<>();
+        if (places == null) places = new LinkedHashMap<>();
     }
 
     public Phase getPhase() {
@@ -114,6 +132,16 @@ public class MiniGamePartyStep extends PartyStep {
 
     public List<UUID> getWinners() {
         return Collections.unmodifiableList(winners);
+    }
+
+    /** The place of each participant of the mini-game once it is over (0: no place), in turn order. */
+    public Map<UUID, Integer> getPlaces() {
+        return Collections.unmodifiableMap(places);
+    }
+
+    /** Seconds left before the mini-game ends because the first place is taken, 0 while that countdown does not run. */
+    public int getEndSeconds() {
+        return endSeconds;
     }
 
     public List<UUID> getParticipants() {
@@ -139,6 +167,8 @@ public class MiniGamePartyStep extends PartyStep {
         phase = Phase.ROULETTE;
         participants.clear();
         winners.clear();
+        places.clear();
+        endSeconds = 0;
         // Players still away from a previous run of this step (restart) keep their original return position
         chosenPageSlot = 0;
 
@@ -210,7 +240,11 @@ public class MiniGamePartyStep extends PartyStep {
                 // ROULETTE (chosen, but saved before the bells rang): ring them now. CHOSEN_WAIT / PLAYING: wait.
                 if (phase == Phase.ROULETTE) onMiniGameChosen(partyControllerEntity);
                 // Those away in the mini-game are known again as such (free pipes, the exit pipe)
-                if (phase == Phase.PLAYING) returnPositions.keySet().forEach(uuid -> seat(partyControllerEntity, uuid));
+                if (phase == Phase.PLAYING) {
+                    returnPositions.keySet().forEach(uuid -> seat(partyControllerEntity, uuid));
+                    // The countdown of a first place already taken starts again
+                    onPodiumsChanged(partyControllerEntity);
+                }
             }
         }
     }
@@ -289,7 +323,13 @@ public class MiniGamePartyStep extends PartyStep {
      * (see {@link MiniGamePipes#distribute}). Those who share a pipe come out one after the other.
      */
     public void depart(PartyControllerEntity controller) {
+        // A new mini-game: its podiums are emptied and its counters go back to 0 (before it is being played)
+        if (controller.getWorld() instanceof ServerWorld world) {
+            MiniGamePageData page = MiniGamePages.of(world.getServer(), MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+            if (page != null) Podiums.resetForMiniGame(world.getServer(), page);
+        }
         phase = Phase.PLAYING;
+        endSeconds = 0;
         hidePreview(controller);
         if (controller.getWorld() instanceof ServerWorld world) {
             MinecraftServer server = world.getServer();
@@ -425,42 +465,189 @@ public class MiniGamePartyStep extends PartyStep {
 
     // ---------------------------------------------------------------- end of the mini-game
 
+    /** The podiums linked to the page of the mini-game, null for none. */
+    private @Nullable PodiumGroup podiums(PartyControllerEntity controller) {
+        if (controller.getWorld() == null || controller.getWorld().getServer() == null) return null;
+        MinecraftServer server = controller.getWorld().getServer();
+        MiniGamePageData page = MiniGamePages.of(server, MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+        return page == null ? null : PodiumGroup.ofPage(server, page);
+    }
+
+    /** The participants in the play order. */
+    private List<UUID> orderedParticipants(PartyControllerEntity controller) {
+        List<UUID> order = new ArrayList<>();
+        controller.getPlayersInOrder().stream().filter(participants::contains).forEach(order::add);
+        participants.stream().filter(uuid -> !order.contains(uuid)).forEach(order::add);
+        return order;
+    }
+
+    /** The place of each participant as the podiums of the mini-game say now (0: no place). */
+    public Map<UUID, Integer> placesOnPodiums(PartyControllerEntity controller) {
+        return MiniGameResults.places(orderedParticipants(controller),
+                MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue), podiums(controller));
+    }
+
     /**
-     * Ends the mini-game (called by a podium): announces the winners, then brings the players back and goes on.
+     * Someone registered on a podium of the mini-game, or left it: the mini-game ends when every place is taken or
+     * every player (every team) has one; the first place taken starts the countdown of its end, called off if that
+     * place is left.
+     */
+    public void onPodiumsChanged(PartyControllerEntity controller) {
+        if (!isPlaying()) return;
+        PodiumGroup group = podiums(controller);
+        if (group == null || group.isEmpty()) {
+            stopEndCountdown(controller);
+            return;
+        }
+        if (group.isFull() || placesOnPodiums(controller).values().stream().allMatch(place -> place > 0)) {
+            finish(controller);
+        } else if (!group.isFirstPlaceTaken()) {
+            stopEndCountdown(controller);
+        } else if (endSeconds == 0) {
+            endCountdown(controller, END_DELAY_SECONDS);
+        }
+    }
+
+    /** « Ends in 5... »: shown to everyone, then the mini-game ends. */
+    private void endCountdown(PartyControllerEntity controller, int seconds) {
+        if (!isStillActive(controller) || !isPlaying()) return;
+        if (seconds <= 0) {
+            finish(controller);
+            return;
+        }
+        endSeconds = seconds;
+        sendEndCountdown(controller, seconds);
+        playSoundToPlayers(getOnlineParticipants(controller), SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), SoundCategory.PLAYERS, 0.8f, 1.2f);
+        cancelFlow();
+        flowTaskId = UUID.randomUUID();
+        Steveparty.SCHEDULER.schedule(flowTaskId, 20, () -> {
+            flowTaskId = null;
+            endCountdown(controller, seconds - 1);
+        });
+    }
+
+    private void stopEndCountdown(PartyControllerEntity controller) {
+        if (endSeconds == 0) return;
+        endSeconds = 0;
+        cancelFlow();
+        sendEndCountdown(controller, 0);
+    }
+
+    private void sendEndCountdown(PartyControllerEntity controller, int seconds) {
+        if (controller.getWorld() == null || controller.getWorld().getServer() == null) return;
+        MiniGamePagePayloads.EndCountdown payload = new MiniGamePagePayloads.EndCountdown(seconds);
+        for (ServerPlayerEntity player : previewAudience(controller)) {
+            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.EndCountdown.ID)) ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /**
+     * Ends the mini-game being played: the places are read on its podiums, the gains paid, the results shown, then
+     * the players are brought back and the party goes on.
+     *
+     * @return false if the mini-game is not being played
+     */
+    public boolean finish(PartyControllerEntity controller) {
+        if (!isPlaying()) return false;
+        conclude(controller, placesOnPodiums(controller));
+        scheduleReturn(controller);
+        return true;
+    }
+
+    /**
+     * Ends the mini-game with named winners, whatever its podiums say: they take the first place, the others are
+     * participants.
      *
      * @return false if the mini-game is not being played
      */
     public boolean finish(PartyControllerEntity controller, List<UUID> winnerPlayers) {
         if (!isPlaying() && !(status == Status.IN_PROGRESS && phase == Phase.COUNTDOWN)) return false;
-        cancelFlow();
-        phase = Phase.FINISHED;
-        winners.clear();
-        winnerPlayers.stream().filter(participants::contains).distinct().forEach(winners::add);
-        controller.setLastWinners(winners);
-        announceWinners(controller);
-        controller.markDirty();
-        controller.sendPacketToInterestedPlayers();
+        Map<UUID, Integer> named = new LinkedHashMap<>();
+        for (UUID player : orderedParticipants(controller)) named.put(player, winnerPlayers.contains(player) ? 1 : 0);
+        conclude(controller, named);
         scheduleReturn(controller);
         return true;
     }
 
-    private void announceWinners(PartyControllerEntity controller) {
-        List<ServerPlayerEntity> players = getOnlineParticipants(controller);
-        MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
-        Text title;
-        if (winners.isEmpty() || server == null) {
-            title = Text.translatableWithFallback("message.steveparty.minigame.no_winner", "No winner!").formatted(Formatting.GRAY);
-        } else {
-            String names = winners.stream().map(uuid -> {
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-                return player == null ? uuid.toString().substring(0, 8) : player.getName().getString();
-            }).reduce((a, b) -> a + ", " + b).orElse("");
-            title = Text.translatableWithFallback("message.steveparty.minigame.winners", "Winner: %s", names)
-                    .styled(style -> style.withColor(0xFFD700).withBold(true));
+    /** The party goes on while the mini-game is being played (a step controller): its results count all the same. */
+    public void concludeIfPlaying(PartyControllerEntity controller) {
+        if (isPlaying()) conclude(controller, placesOnPodiums(controller));
+    }
+
+    /** The mini-game is over: the places are kept, the gains paid, the results told to everyone. */
+    private void conclude(PartyControllerEntity controller, Map<UUID, Integer> finalPlaces) {
+        cancelFlow();
+        if (endSeconds != 0) {
+            endSeconds = 0;
+            sendEndCountdown(controller, 0);
         }
-        MessageUtils.sendToPlayers(players, title, MessageUtils.MessageType.TITLE);
-        MessageUtils.sendToPlayers(controller.getPartyAudience(), title, MessageUtils.MessageType.CHAT);
-        playSoundToPlayers(players, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1f);
+        phase = Phase.FINISHED;
+        places.clear();
+        places.putAll(finalPlaces);
+        winners.clear();
+        places.forEach((player, place) -> {
+            if (place == 1) winners.add(player);
+        });
+        controller.setLastWinners(winners);
+        MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
+        if (server != null) {
+            places.forEach((uuid, place) -> {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+                if (player != null) controller.payGains(player, place);
+            });
+            announceResults(controller, server);
+        }
+        controller.markDirty();
+        controller.sendPacketToInterestedPlayers();
+    }
+
+    /** The results card for the players and the audience, and the same lines in the chat. */
+    private void announceResults(PartyControllerEntity controller, MinecraftServer server) {
+        ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
+        MiniGamePageData page = MiniGamePages.of(server, stack);
+        String title = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
+        TeamDisposition teams = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue);
+        ItemStack coin = controller.getCurrency(PartyCurrency.COIN), star = controller.getCurrency(PartyCurrency.STAR);
+        MiniGameResults results = MiniGameResults.of(title, coin, star, controller.getGains(), places, teams, uuid -> {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+            if (player != null) return player.getGameProfile().getName();
+            return server.getUserCache() == null ? uuid.toString().substring(0, 8)
+                    : server.getUserCache().getByUuid(uuid).map(com.mojang.authlib.GameProfile::getName).orElse(uuid.toString().substring(0, 8));
+        });
+        lastResults = results;
+        MiniGamePagePayloads.Results payload = new MiniGamePagePayloads.Results(results);
+        List<ServerPlayerEntity> audience = previewAudience(controller);
+        for (ServerPlayerEntity player : controller.getPartyAudience()) if (!audience.contains(player)) audience.add(player);
+        for (ServerPlayerEntity player : audience) {
+            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Results.ID)) ServerPlayNetworking.send(player, payload);
+        }
+        List<Text> lines = new ArrayList<>();
+        lines.add(Text.translatable(title.isEmpty() ? "message.steveparty.minigame.results" : "message.steveparty.minigame.results.of", title)
+                .styled(style -> style.withColor(0xFFC52E).withBold(true)));
+        for (MiniGameResults.Row row : results.rows()) lines.add(resultLine(row, coin, star));
+        for (Text line : lines) MessageUtils.sendToPlayers(audience, line, MessageUtils.MessageType.CHAT);
+        playSoundToPlayers(getOnlineParticipants(controller), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1f);
+    }
+
+    /** « 1st: Steve +10 Emerald », « Participants: Alex, Sam ». */
+    public static Text resultLine(MiniGameResults.Row row, ItemStack coin, ItemStack star) {
+        net.minecraft.text.MutableText line = Text.empty();
+        line.append((row.place() == 0 ? Text.translatable("message.steveparty.minigame.results.participant") : Podiums.placeText(row.place()))
+                .styled(style -> style.withColor(row.place() == 1 ? 0xFFD700 : row.place() == 0 ? 0xA0A0A0 : 0xFFFFFF).withBold(row.place() == 1)));
+        line.append(Text.translatable("message.steveparty.minigame.results.separator"));
+        if (row.team() >= 0) line.append(Podiums.teamText(row.team())).append(" (");
+        line.append(String.join(", ", row.names()));
+        if (row.team() >= 0) line.append(")");
+        if (row.coins() > 0) line.append(Text.literal("  +" + row.coins() + " ").append(coin.getName()).formatted(Formatting.GREEN));
+        if (row.stars() > 0) line.append(Text.literal("  +" + row.stars() + " ").append(star.getName()).formatted(Formatting.YELLOW));
+        return line;
+    }
+
+    /** The results of the mini-game once it is over (as sent to the players), null before. Not saved. */
+    private @Nullable MiniGameResults lastResults;
+
+    public @Nullable MiniGameResults getLastResults() {
+        return lastResults;
     }
 
     private void scheduleReturn(PartyControllerEntity controller) {
@@ -678,6 +865,14 @@ public class MiniGamePartyStep extends PartyStep {
         readUuids(nbt.getList("Participants", NbtElement.STRING_TYPE), participants);
         winners.clear();
         readUuids(nbt.getList("Winners", NbtElement.STRING_TYPE), winners);
+        places.clear();
+        NbtCompound placesNbt = nbt.getCompound("Places");
+        for (String key : placesNbt.getKeys()) {
+            try {
+                places.put(UUID.fromString(key), placesNbt.getInt(key));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
         returnPositions.clear();
         NbtCompound returnsNbt = nbt.getCompound("ReturnPositions");
         for (String key : returnsNbt.getKeys()) {
@@ -717,6 +912,11 @@ public class MiniGamePartyStep extends PartyStep {
         nbtCompound.putString("Phase", phase.name());
         if (!participants.isEmpty()) nbtCompound.put("Participants", writeUuids(participants));
         if (!winners.isEmpty()) nbtCompound.put("Winners", writeUuids(winners));
+        if (!places.isEmpty()) {
+            NbtCompound placesNbt = new NbtCompound();
+            places.forEach((uuid, place) -> placesNbt.putInt(uuid.toString(), place));
+            nbtCompound.put("Places", placesNbt);
+        }
         if (!returnPositions.isEmpty()) {
             NbtCompound returnsNbt = new NbtCompound();
             returnPositions.forEach((uuid, back) -> {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
@@ -46,6 +47,8 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  *     coins and rank (before a party: the tokens on the start tiles, who will play).</li>
  *     <li><b>Mini-games</b>: the catalogue slot (insert / take it out), its pages with how many times each was played
  *     and whether it has somewhere to send the players.</li>
+ *     <li><b>Gains</b>: what the party pays at the end of each mini-game, a row per place (1st to 4th, then the
+ *     participants), an amount of coins and of stars each.</li>
  *     <li><b>Settings</b>: the Star and Coin items (click a slot with an item to pick it, with an empty hand to go back
  *     to the default one) and the number of rounds.</li>
  * </ul>
@@ -104,6 +107,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 case STATE -> addStateButtons(data);
                 case PLAYERS -> {}
                 case MINI_GAMES, PROGRAM -> {}
+                case GAINS -> addGainsButtons(data);
                 case SETTINGS -> addSettingsButtons(data);
             }
         }
@@ -129,18 +133,37 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     // ------------------------------------------------------------------ tabs
 
-    private int tabWidth() {
-        return (WIDTH - 8) / Page.values().length;
+    /** Left edge (from the panel's) and width of each tab: as wide as its name needs, the room left shared out. */
+    private final int[] tabLeft = new int[Page.values().length], tabWide = new int[Page.values().length];
+
+    private void layoutTabs() {
+        Page[] tabs = Page.values();
+        int room = WIDTH - 8 - 2 * (tabs.length - 1), names = 0;
+        for (Page tab : tabs) names += textRenderer.getWidth(Text.translatable(KEY + "tab." + key(tab)));
+        int pad = Math.max(0, room - names) / tabs.length, left = 4;
+        for (Page tab : tabs) {
+            int index = tab.ordinal();
+            // Names too long for the row (a wordy language): tabs of the same width, their names cut
+            tabWide[index] = names > room - 4 * tabs.length ? room / tabs.length
+                    : textRenderer.getWidth(Text.translatable(KEY + "tab." + key(tab))) + pad;
+            tabLeft[index] = left;
+            left += tabWide[index] + 2;
+        }
+    }
+
+    private int tabWidth(int index) {
+        return tabWide[index];
     }
 
     private int tabX(int index) {
-        return x + 4 + index * tabWidth();
+        return x + tabLeft[index];
     }
 
     private void addTabs() {
+        layoutTabs();
         for (Page tab : Page.values()) {
             int index = tab.ordinal();
-            PartyButton button = new PartyButton(tabX(index), y - TAB_HEIGHT + TAB_OVERLAP, tabWidth() - 2, TAB_HEIGHT,
+            PartyButton button = new PartyButton(tabX(index), y - TAB_HEIGHT + TAB_OVERLAP, tabWidth(index), TAB_HEIGHT,
                     Text.translatable(KEY + "tab." + key(tab)), b -> showPage(tab)) {
                 @Override
                 protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -205,7 +228,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         for (Page tab : Page.values()) {
             boolean selected = tab == page();
             if (selected != selectedPass) continue;
-            int tx = tabX(tab.ordinal()), ty = y - TAB_HEIGHT + TAB_OVERLAP, tw = tabWidth() - 2;
+            int tx = tabX(tab.ordinal()), ty = y - TAB_HEIGHT + TAB_OVERLAP, tw = tabWidth(tab.ordinal());
             boolean hovered = mouseX >= tx && mouseX < tx + tw && mouseY >= ty && mouseY < ty + TAB_HEIGHT;
             PartyGui.Theme theme = selected ? PartyGui.PANEL : hovered ? TAB_IDLE.brighter() : TAB_IDLE;
             PartyGui.panel(context, tx, ty, tw, TAB_HEIGHT + (selected ? TAB_OVERLAP + 2 : 0), theme);
@@ -213,7 +236,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 // Merge into the panel: no border between the tab and the page
                 context.fill(tx + 3, y, tx + tw - 3, y + 3, PartyGui.PANEL.body());
             }
-            Text label = Text.translatable(KEY + "tab." + key(tab));
+            OrderedText label = fit(Text.translatable(KEY + "tab." + key(tab)), tw - 4);
             int cx = tx + (tw - textRenderer.getWidth(label)) / 2;
             int cy = ty + (selected ? 6 : 7);
             context.drawText(textRenderer, label, cx, cy, selected ? PartyGui.TEXT_DARK : 0xFF2E2E2E, false);
@@ -282,6 +305,67 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         plus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.more") : why));
     }
 
+    // Gains page: a row per place, a stepper of coins and one of stars
+    private static final int GAINS_Y = 48, GAINS_ROW = 20, GAINS_COIN_X = 92, GAINS_STAR_X = 170, GAINS_STEP = 16, GAINS_FIELD = 28;
+
+    private void addGainsButtons(PartyDashboardData data) {
+        for (int row = 0; row < MiniGameGains.ROWS; row++) {
+            for (PartyCurrency currency : new PartyCurrency[]{PartyCurrency.COIN, PartyCurrency.STAR}) {
+                int left = x + (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X), top = y + GAINS_Y + row * GAINS_ROW;
+                int amount = data.gains().amount(currency, row);
+                int less = gainButton(row, currency, false), more = gainButton(row, currency, true);
+                PartyButton minus = addDrawableChild(new PartyButton(left, top, GAINS_STEP, GAINS_STEP, Text.literal("-"),
+                        b -> click(less, Screen.hasShiftDown() ? 5 : 1))
+                        .content((context, font, cx, cy, color) -> context.fill(cx - 3, cy - 1, cx + 3, cy + 1, color)));
+                PartyButton plus = addDrawableChild(new PartyButton(left + GAINS_STEP + GAINS_FIELD + 2, top, GAINS_STEP, GAINS_STEP, Text.literal("+"),
+                        b -> click(more, Screen.hasShiftDown() ? 5 : 1))
+                        .content((context, font, cx, cy, color) -> {
+                            context.fill(cx - 3, cy - 1, cx + 3, cy + 1, color);
+                            context.fill(cx - 1, cy - 3, cx + 1, cy + 3, color);
+                        }));
+                minus.active = data.canEdit() && amount > 0;
+                plus.active = data.canEdit() && amount < MiniGameGains.MAX;
+                Text why = data.canEdit() ? Text.translatable(KEY + "gains.step") : Text.translatable(KEY + "locked");
+                minus.setTooltip(Tooltip.of(why));
+                plus.setTooltip(Tooltip.of(why));
+            }
+        }
+    }
+
+    private void drawGains(DrawContext context, PartyDashboardData data) {
+        heading(context, Text.translatable(KEY + "gains.title"));
+        if (!data.canEdit())
+            context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.read_only"), WIDTH - 2 * PAD - 110), PAD + 110, 9, PartyGui.TEXT_ERROR, false);
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.hint"), WIDTH - 2 * PAD), PAD, 21, PartyGui.TEXT_SOFT, false);
+        // The two currencies, above their steppers
+        int stepper = 2 * GAINS_STEP + GAINS_FIELD + 2;
+        for (PartyCurrency currency : new PartyCurrency[]{PartyCurrency.COIN, PartyCurrency.STAR}) {
+            int left = currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X;
+            OrderedText name = fit(Text.translatable(KEY + (currency == PartyCurrency.COIN ? "gains.coins" : "gains.stars")).formatted(Formatting.BOLD), stepper - 12);
+            int width = 12 + textRenderer.getWidth(name);
+            drawSmallItem(context, currency(currency), left + (stepper - width) / 2, GAINS_Y - 13, 10);
+            context.drawText(textRenderer, name, left + (stepper - width) / 2 + 12, GAINS_Y - 12,
+                    currency == PartyCurrency.STAR ? COLOR_GOLD : PartyGui.TEXT_DARK, false);
+        }
+        for (int row = 0; row < MiniGameGains.ROWS; row++) {
+            int top = GAINS_Y + row * GAINS_ROW;
+            if (row == MiniGameGains.PARTICIPANTS) {
+                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.participants"), GAINS_COIN_X - PAD - 4), PAD, top + 4, PartyGui.TEXT_DARK, false);
+            } else {
+                drawRankPlate(context, row + 1, PAD, top + 1);
+                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.place"), GAINS_COIN_X - PAD - 30), PAD + 26, top + 4, PartyGui.TEXT_SOFT, false);
+            }
+            for (PartyCurrency currency : new PartyCurrency[]{PartyCurrency.COIN, PartyCurrency.STAR}) {
+                int left = (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X) + GAINS_STEP + 1;
+                int amount = data.gains().amount(currency, row);
+                PartyGui.inset(context, left, top, GAINS_FIELD, GAINS_STEP, 0xFF3B4247, false, false);
+                String value = Integer.toString(amount);
+                context.drawText(textRenderer, value, left + (GAINS_FIELD - textRenderer.getWidth(value)) / 2 + 1, top + 4,
+                        amount == 0 ? 0xFF8E979D : 0xFFFFFFFF, false);
+            }
+        }
+    }
+
     private void click(int button) {
         click(button, 1);
     }
@@ -326,6 +410,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             case PLAYERS -> drawPlayers(context, data);
             case MINI_GAMES -> drawMiniGames(context, data);
             case PROGRAM -> drawProgram(context, data);
+            case GAINS -> drawGains(context, data);
             case SETTINGS -> drawSettings(context, data);
         }
         if (flash != null && Util.getMeasuringTimeMs() < flashUntil) {
@@ -793,6 +878,8 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             } else {
                 lines.add(Text.translatable(KEY + "mini_games.page.pipes", hoveredPage.pipes()).formatted(Formatting.GRAY));
             }
+            lines.add(hoveredPage.podiums() == 0 ? Text.translatable(KEY + "mini_games.page.no_podium").formatted(Formatting.YELLOW)
+                    : Text.translatable(KEY + "mini_games.page.podiums", hoveredPage.podiums()).formatted(Formatting.GRAY));
             if (data != null && hoveredPage.slot() == data.currentPage())
                 lines.add(Text.translatable(KEY + "mini_games.page.current").formatted(Formatting.GOLD));
             context.drawOrderedTooltip(textRenderer, wrapTooltip(lines), mouseX, mouseY);

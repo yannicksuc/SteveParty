@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
@@ -33,7 +34,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 /**
- * The Party Controller's dashboard: five pages (state, players, mini-games, party program cards, settings) fed by a
+ * The Party Controller's dashboard: six pages (state, players, mini-games, party program cards, gains, settings) fed by a
  * {@link PartyDashboardData} the server sends while the screen is open, three slots (the mini-game catalogue, the
  * star item and the coin item) and the player's inventory. Everything is checked server side: the setting slots and
  * the buttons and the program cards only act for a player who {@linkplain PartyControllerEntity#canEdit may edit} the controller (except
@@ -46,13 +47,18 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
             BUTTON_CHECK_BOARD = 4;
+    /**
+     * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
+     * more, stars less, stars more (see {@link #gainButton}).
+     */
+    public static final int BUTTON_GAINS = 100;
     /** Ticks between two captures of the dashboard (sent only if something changed). */
     public static final int SYNC_INTERVAL = 10;
     /** Ticks between two checks of the board while no party runs (a check walks the whole board). */
     public static final int BOARD_INTERVAL = 100;
 
     /** Pages of the dashboard: each shows its own slots (client side; the server always has them all). */
-    public enum Page { STATE, PLAYERS, MINI_GAMES, PROGRAM, SETTINGS }
+    public enum Page { STATE, PLAYERS, MINI_GAMES, PROGRAM, GAINS, SETTINGS }
 
     // Layout (shared with the screen)
     public static final int WIDTH = 248, PANEL_HEIGHT = 158;
@@ -294,10 +300,35 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         return original;
     }
 
+    /** The button of the Gains page that changes the gain of a row by one. */
+    public static int gainButton(int row, PartyCurrency currency, boolean more) {
+        return BUTTON_GAINS + row * 4 + (currency == PartyCurrency.STAR ? 2 : 0) + (more ? 1 : 0);
+    }
+
+    /** A stepper of the Gains page: one more or one less, for a player who may edit the controller. */
+    private boolean changeGain(PlayerEntity player, int button) {
+        if (controller == null) return false;
+        if (!controller.canEdit(player)) {
+            player.sendMessage(Text.translatable("gui.steveparty.party_controller.locked").formatted(Formatting.RED), true);
+            return false;
+        }
+        int row = button / 4;
+        PartyCurrency currency = button % 4 >= 2 ? PartyCurrency.STAR : PartyCurrency.COIN;
+        int amount = controller.getGains().amount(currency, row) + (button % 2 == 1 ? 1 : -1);
+        if (amount < 0 || amount > MiniGameGains.MAX) return false;
+        controller.setGains(controller.getGains().with(currency, row, amount));
+        return true;
+    }
+
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
         if (controller == null || !(player instanceof ServerPlayerEntity serverPlayer)
                 || !(controller.getWorld() instanceof ServerWorld world)) return false;
+        if (id >= BUTTON_GAINS && id < BUTTON_GAINS + MiniGameGains.ROWS * 4) {
+            if (!changeGain(player, id - BUTTON_GAINS)) return false;
+            refreshNow = true;
+            return true;
+        }
         switch (id) {
             case BUTTON_FOLLOW -> {
                 if (controller.getInterestedPlayers().contains(player.getUuid())) controller.removeInterestedPlayer(serverPlayer);

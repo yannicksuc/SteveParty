@@ -15,6 +15,7 @@ public class GoalPoleScreenHandler extends ScreenHandler {
     private int value;
     private boolean perSegment;
     private boolean flagSteps;
+    private boolean perPlayer;
     private BlockPos pos;
 
     // Constructor from BlockEntity (server-side)
@@ -25,6 +26,7 @@ public class GoalPoleScreenHandler extends ScreenHandler {
         this.value = entity.getValue();
         this.perSegment = entity.isPerSegment();
         this.flagSteps = entity.isFlagSteps();
+        this.perPlayer = entity.isPerPlayer();
         this.pos = entity.getPos();
     }
 
@@ -37,6 +39,7 @@ public class GoalPoleScreenHandler extends ScreenHandler {
         this.value = payload.value();
         this.perSegment = payload.perSegment();
         this.flagSteps = payload.flagSteps();
+        this.perPlayer = payload.perPlayer();
     }
 
     // --- Getters / setters ---
@@ -72,6 +75,11 @@ public class GoalPoleScreenHandler extends ScreenHandler {
 
     public boolean isFlagSteps() {
         return flagSteps;
+    }
+
+    /** The goal is each player's own points (it fires once per player), not everybody's total. */
+    public boolean isPerPlayer() {
+        return perPlayer;
     }
 
     public BlockPos getPos() {

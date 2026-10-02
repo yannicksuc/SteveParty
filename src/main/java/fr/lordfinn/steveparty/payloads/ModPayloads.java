@@ -161,6 +161,7 @@ public class ModPayloads {
                 if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBlockEntity blockEntity) {
                     blockEntity.applyGoal(payload.comparator(), payload.value(), payload.perSegment());
                     blockEntity.applyFlagSteps(payload.flagSteps());
+                    blockEntity.applyPerPlayer(payload.perPlayer());
                 }
             });
         });

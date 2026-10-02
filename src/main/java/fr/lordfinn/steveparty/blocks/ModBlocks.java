@@ -469,29 +469,29 @@ public class ModBlocks {
                     .nonOpaque()
                     .requiresTool(),
             "party_bell", true);
-    /** Podiums: the classic one, and the gold, silver and bronze ones giving the 1st, 2nd and 3rd place. */
-    public static final Block PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.CLASSIC),
+    /** Podiums: four looks (classic, gold, silver, bronze); the place of a podium is the height of its column. */
+    public static final Block PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.CLASSIC),
             Block.Settings.create()
                     .strength(2.0f, 6.0f)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "podium", true);
-    public static final Block GOLD_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.FIRST),
+    public static final Block GOLD_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.GOLD),
             Block.Settings.create()
                     .strength(2.0f, 6.0f)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "gold_podium", true);
-    public static final Block SILVER_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.SECOND),
+    public static final Block SILVER_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.SILVER),
             Block.Settings.create()
                     .strength(2.0f, 6.0f)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "silver_podium", true);
-    public static final Block BRONZE_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Place.THIRD),
+    public static final Block BRONZE_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.BRONZE),
             Block.Settings.create()
                     .strength(2.0f, 6.0f)
                     .sounds(BlockSoundGroup.STONE)

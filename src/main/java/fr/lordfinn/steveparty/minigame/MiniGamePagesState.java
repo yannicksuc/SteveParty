@@ -32,6 +32,8 @@ public class MiniGamePagesState extends PersistentState {
     private final Map<UUID, MiniGamePageData> pages = new LinkedHashMap<>();
     /** Index of the linked pipes, null when it has to be worked out again. */
     private @Nullable Map<GlobalPos, List<Linked>> byMouth;
+    /** Index of the linked podiums and goal pole bases, null when it has to be worked out again. */
+    private @Nullable Map<GlobalPos, List<MiniGamePageData>> byPodium;
 
     public static MiniGamePagesState get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager().getOrCreate(TYPE, ID);
@@ -48,6 +50,7 @@ public class MiniGamePagesState extends PersistentState {
     public void put(MiniGamePageData data) {
         if (data.equals(pages.put(data.id(), data))) return;
         byMouth = null;
+        byPodium = null;
         markDirty();
     }
 
@@ -66,6 +69,19 @@ public class MiniGamePagesState extends PersistentState {
             }
         }
         return byMouth.getOrDefault(mouth, List.of());
+    }
+
+    /** The pages the podium block (or goal pole base) at {@code pos} is linked to. */
+    public List<MiniGamePageData> pagesAt(GlobalPos pos) {
+        if (byPodium == null) {
+            byPodium = new HashMap<>();
+            for (MiniGamePageData page : pages.values()) {
+                for (MiniGamePodiumLink link : page.podiumLinks()) {
+                    byPodium.computeIfAbsent(link.pos(), key -> new ArrayList<>(1)).add(page);
+                }
+            }
+        }
+        return byPodium.getOrDefault(pos, List.of());
     }
 
     /** @return true if a page other than {@code except} shows the picture {@code hash}. */

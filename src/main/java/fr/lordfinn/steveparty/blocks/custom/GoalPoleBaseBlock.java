@@ -88,8 +88,15 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         ItemStack mainHandStack = player.getMainHandStack();
+        boolean page = mainHandStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
         // Same result as the server on the client (arm swing, no item use behind the screen)
-        if (world.isClient) return mainHandStack.getItem() instanceof WrenchItem ? ActionResult.SUCCESS : ActionResult.PASS;
+        if (world.isClient) return mainHandStack.getItem() instanceof WrenchItem || page ? ActionResult.SUCCESS : ActionResult.PASS;
+        // A mini-game page: the base is one of its counters (reset with its podiums, its goals give their places)
+        if (page) {
+            fr.lordfinn.steveparty.podium.Podiums.clickLink((ServerPlayerEntity) player, net.minecraft.util.Hand.MAIN_HAND, (ServerWorld) world, pos,
+                    fr.lordfinn.steveparty.minigame.MiniGamePodiumLink.Kind.COUNTER);
+            return ActionResult.SUCCESS;
+        }
 
         if (world.getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity goalPoleBaseBlockEntity) {
             if (mainHandStack.getItem() instanceof WrenchItem) {

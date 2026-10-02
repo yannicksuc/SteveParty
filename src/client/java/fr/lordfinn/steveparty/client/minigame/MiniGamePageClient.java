@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.minigame;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud;
+import fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud;
 import fr.lordfinn.steveparty.client.screens.MiniGamePageEditorScreen;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImage;
@@ -101,6 +102,10 @@ public final class MiniGamePageClient {
                 MiniGameCardHud.hide();
             }
         }));
+        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.EndCountdown.ID, (payload, context) ->
+                context.client().execute(() -> MiniGameResultsHud.countdown(payload.seconds())));
+        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Results.ID, (payload, context) ->
+                context.client().execute(() -> MiniGameResultsHud.show(payload.results())));
     }
 
     /** Everything kept is about one server: forgotten when the connection ends. */
@@ -113,6 +118,7 @@ public final class MiniGamePageClient {
         TEXTURES.values().forEach(texture -> MinecraftClient.getInstance().getTextureManager().destroyTexture(texture));
         TEXTURES.clear();
         MiniGameCardHud.clear();
+        MiniGameResultsHud.clear();
     }
 
     // ------------------------------------------------------------------ content

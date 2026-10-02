@@ -73,8 +73,12 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * of a followed player's score there is a point ({@code steveparty:landed_on_pole}, landings on any goal pole, was
  * the only source before and stays selectable).
  * <p>
- * <b>Redstone</b> ({@link RedstoneMode}): the back port pauses the base, or is ignored. Paused, the base
+ * <b>Redstone</b> ({@link RedstoneMode}): the back port pauses the base, resets it, or is ignored. Paused, the base
  * counts nothing (increases seen meanwhile are dropped) but keeps its points, its objective and its outputs.
+ * <p>
+ * <b>Podiums</b>: a base touching a podium (itself or its pole), or linked to the same mini-game page, is linked to
+ * that podium's group (see {@code Podiums}): a per-player goal reached on its pole gives the player the highest free
+ * place, and resetting the base empties the group (as resetting the group resets the base).
  * <p>
  * <b>Players</b> ({@link Players}): every player, the players near the base, the players of the nearest party (the
  * party link: the points also go back to 0 when that party starts), or an advanced target selector.
@@ -105,7 +109,9 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         /** The back port does nothing: the base always counts. */
         IGNORE,
         /** A signal at the back pauses the base (like a hopper). Default of new bases. */
-        PAUSE_WHEN_POWERED;
+        PAUSE_WHEN_POWERED,
+        /** A pulse at the back puts the points back to 0 (and empties the podiums linked to the base); it always counts. */
+        RESET_WHEN_POWERED;
 
         /** The removed mode where the base counted only while powered at the back; saved bases now pause instead. */
         private static final String REMOVED_RUN_WHEN_POWERED = "RUN_WHEN_POWERED";
@@ -450,9 +456,36 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
                     TextColor.fromRgb(0xC90E0E), 50);
         }
         pushTotal();
+        checkPlayerGoals(holder);
     }
 
-    /** All the points go back to 0 (reset port, screen button). */
+    /**
+     * The per-player goals of the poles above ({@link GoalPoleBlockEntity#isPerPlayer}): a holder whose own points
+     * just reached one fires it once, and takes the highest free place of the podiums linked to this base.
+     */
+    private void checkPlayerGoals(String holder) {
+        if (world == null || world.isClient) return;
+        int own = points.getOrDefault(holder, 0);
+        boolean reached = false;
+        BlockPos.Mutable cursor = pos.mutableCopy().move(Direction.UP);
+        while (!world.isOutOfHeightLimit(cursor) && world.getBlockEntity(cursor) instanceof GoalPoleBlockEntity pole) {
+            if (pole.isPerPlayer() && pole.acceptPlayerPoints(holder, own)) reached = true;
+            cursor.move(Direction.UP);
+        }
+        if (reached) fr.lordfinn.steveparty.podium.Podiums.onGoalReached(this, holder);
+    }
+
+    /** The most points a single holder has (what a per-player goal shows). */
+    public int getBestPoints() {
+        int best = 0;
+        for (int value : points.values()) best = Math.max(best, value);
+        return best;
+    }
+
+    /**
+     * All the points go back to 0 (reset port, screen button, redstone mode, a party or a mini-game starting), the
+     * per-player goals can be reached again, and the podiums linked to the base are emptied.
+     */
     public void reset() {
         if (world == null || world.isClient || world.getServer() == null) return;
         Scoreboard scoreboard = world.getServer().getScoreboard();
@@ -467,7 +500,13 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         points.clear();
         total = 0;
         markDirty();
+        BlockPos.Mutable cursor = pos.mutableCopy().move(Direction.UP);
+        while (!world.isOutOfHeightLimit(cursor) && world.getBlockEntity(cursor) instanceof GoalPoleBlockEntity pole) {
+            pole.clearReached();
+            cursor.move(Direction.UP);
+        }
         pushTotal();
+        fr.lordfinn.steveparty.podium.Podiums.onBaseReset(this);
         world.playSound(null, pos, SoundEvents.BLOCK_COMPARATOR_CLICK, SoundCategory.BLOCKS, 0.8f, 0.6f);
         world.playSound(null, pos, SoundEvents.BLOCK_COPPER_BULB_TURN_OFF, SoundCategory.BLOCKS, 0.7f, 0.8f);
     }
@@ -507,15 +546,19 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public boolean isActive() {
         boolean powered = getCachedState().contains(POWERED) && getCachedState().get(POWERED);
         return switch (redstoneMode) {
-            case IGNORE -> true;
+            case IGNORE, RESET_WHEN_POWERED -> true;
             case PAUSE_WHEN_POWERED -> !powered;
         };
     }
 
-    /** The back port's power changed: a base that pauses or resumes says so with a sound. */
+    /** The back port's power changed: a base that pauses or resumes says so with a sound; in reset mode, a pulse resets it. */
     public void onBackPowerChanged() {
         pushTotal();
         markDirty();
+        if (redstoneMode == RedstoneMode.RESET_WHEN_POWERED) {
+            if (getCachedState().contains(POWERED) && getCachedState().get(POWERED)) reset();
+            return;
+        }
         if (redstoneMode != RedstoneMode.IGNORE && world != null && !world.isClient) {
             boolean active = isActive();
             world.playSound(null, pos, active ? SoundEvents.BLOCK_BEACON_ACTIVATE : SoundEvents.BLOCK_BEACON_DEACTIVATE,

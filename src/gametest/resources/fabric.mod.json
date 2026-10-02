@@ -38,6 +38,7 @@
       "fr.lordfinn.steveparty.gametest.LootAndBrewingGameTests",
       "fr.lordfinn.steveparty.gametest.DecisionsGameTests",
       "fr.lordfinn.steveparty.gametest.PartyLoopGameTests",
+      "fr.lordfinn.steveparty.gametest.PodiumGameTests",
       "fr.lordfinn.steveparty.gametest.MulaFeedbackGameTests",
       "fr.lordfinn.steveparty.gametest.MulaBehaviourGameTests",
       "fr.lordfinn.steveparty.gametest.MulaDanceGameTests",

@@ -208,6 +208,32 @@ public final class MiniGamePages {
         return MiniGamePagesState.get(server).linksAt(mouth);
     }
 
+    // ------------------------------------------------------------------ podiums
+
+    /** Links a podium (or a goal pole base) to the page. @return false if it already is, or the page has no room left */
+    public static boolean addPodiumLink(MinecraftServer server, UUID id, MiniGamePodiumLink link) {
+        MiniGamePageData data = get(server, id);
+        if (data.podiumLinkIndex(link.pos()) >= 0 || data.podiumLinks().size() >= MiniGamePageData.MAX_PODIUM_LINKS) return false;
+        List<MiniGamePodiumLink> links = new ArrayList<>(data.podiumLinks());
+        links.add(link);
+        update(server, data.withPodiumLinks(links));
+        return true;
+    }
+
+    /** Unlinks the podium blocks (or the goal pole base) at {@code positions}. @return false if none was linked */
+    public static boolean removePodiumLinks(MinecraftServer server, UUID id, Collection<GlobalPos> positions) {
+        MiniGamePageData data = get(server, id);
+        List<MiniGamePodiumLink> links = new ArrayList<>(data.podiumLinks());
+        if (!links.removeIf(link -> positions.contains(link.pos()))) return false;
+        update(server, data.withPodiumLinks(links));
+        return true;
+    }
+
+    /** The pages the podium block (or the goal pole base) at {@code pos} is linked to. */
+    public static List<MiniGamePageData> pagesAt(MinecraftServer server, GlobalPos pos) {
+        return MiniGamePagesState.get(server).pagesAt(pos);
+    }
+
     // ------------------------------------------------------------------ rights
 
     /** Writing on a page takes the right to build: not in adventure, not as a spectator. */

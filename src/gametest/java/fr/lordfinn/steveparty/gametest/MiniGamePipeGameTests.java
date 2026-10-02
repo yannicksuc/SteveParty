@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDispositionGenerator;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDispositionGenerator.Seat;
-import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior.Status;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
 import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
@@ -326,12 +325,6 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         ways = TeamDispositionGenerator.generateTeamDispositions(List.of(new Seat(p1, Status.GOOD), new Seat(p2, Status.BAD), new Seat(p3, Status.BAD),
                 new Seat(p4, Status.BAD), new Seat(UUID.randomUUID(), Status.BAD)));
         context.assertTrue(ways.stream().allMatch(way -> MiniGameMode.of(way) == MiniGameMode.TWO_TEAMS), "five players: two teams only");
-
-        // The podium names teams C and D too (signal 3 and 4)
-        List<UUID> players = List.of(p1, p2, p3, p4);
-        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), four, 3, null), List.of(p1), "signal 3: team C");
-        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), four, 4, null), List.of(p2), "signal 4: team D");
-        context.assertEquals(PodiumBlockEntity.designateWinners(players, List.of(), four, 1, null), List.of(p4), "signal 1: team A");
         context.complete();
     }
 

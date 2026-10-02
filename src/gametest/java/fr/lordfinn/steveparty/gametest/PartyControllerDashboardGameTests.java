@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -95,6 +96,83 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
 
         controller.setCurrency(PartyCurrency.STAR, ItemStack.EMPTY);
         context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), Items.NETHER_STAR), "nothing picked: back to the default");
+        context.complete();
+    }
+
+    /**
+     * The gains of the mini-games: 10, 5, 3 and 1 coins for the four places by default (nothing for the participants,
+     * no star), changed one by one from the Gains page by who may edit the controller, saved and loaded, and shown by
+     * the dashboard.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_gains")
+    public void gainsAreSetFromTheDashboardAndSaved(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            PartyControllerEntity controller = place(context);
+            MiniGameGains gains = controller.getGains();
+            context.assertEquals(gains, MiniGameGains.DEFAULT, "the default gains");
+            int[] coins = new int[MiniGameGains.ROWS], stars = new int[MiniGameGains.ROWS];
+            for (int row = 0; row < MiniGameGains.ROWS; row++) {
+                coins[row] = gains.amount(PartyCurrency.COIN, row);
+                stars[row] = gains.amount(PartyCurrency.STAR, row);
+            }
+            context.assertTrue(java.util.Arrays.equals(coins, new int[]{10, 5, 3, 1, 0}), "10, 5, 3, 1 coins; nothing for the participants");
+            context.assertTrue(java.util.Arrays.equals(stars, new int[]{0, 0, 0, 0, 0}), "no star");
+            context.assertEquals(MiniGameGains.rowOf(0), MiniGameGains.PARTICIPANTS, "no place: a participant");
+            context.assertEquals(MiniGameGains.rowOf(7), MiniGameGains.PARTICIPANTS, "beyond the 4th place: a participant");
+
+            PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
+            // Adventure: read only
+            player.changeGameMode(GameMode.ADVENTURE);
+            context.assertTrue(!handler.onButtonClick(player, gainButton(0, PartyCurrency.COIN, true)), "Adventure: refused");
+            context.assertEquals(controller.getGains(), MiniGameGains.DEFAULT, "Adventure: the gains are unchanged");
+            // A builder: one more, one less, per row and per currency
+            player.changeGameMode(GameMode.CREATIVE);
+            context.assertTrue(handler.onButtonClick(player, gainButton(0, PartyCurrency.COIN, true)), "one more coin for the 1st");
+            context.assertTrue(handler.onButtonClick(player, gainButton(1, PartyCurrency.COIN, false)), "one coin less for the 2nd");
+            context.assertTrue(handler.onButtonClick(player, gainButton(0, PartyCurrency.STAR, true)), "a star for the 1st");
+            context.assertTrue(handler.onButtonClick(player, gainButton(MiniGameGains.PARTICIPANTS, PartyCurrency.COIN, true)), "a coin for the participants");
+            context.assertTrue(!handler.onButtonClick(player, gainButton(3, PartyCurrency.STAR, false)), "never below 0");
+            MiniGameGains set = controller.getGains();
+            context.assertEquals(set.amount(PartyCurrency.COIN, 0), 11, "1st: 11 coins");
+            context.assertEquals(set.amount(PartyCurrency.COIN, 1), 4, "2nd: 4 coins");
+            context.assertEquals(set.amount(PartyCurrency.STAR, 0), 1, "1st: a star");
+            context.assertEquals(set.amount(PartyCurrency.COIN, MiniGameGains.PARTICIPANTS), 1, "participants: a coin");
+            context.assertEquals(set.amount(PartyCurrency.STAR, 3), 0, "4th: no star");
+            context.assertEquals(MiniGameGains.DEFAULT.with(PartyCurrency.COIN, 0, 500).amount(PartyCurrency.COIN, 0), MiniGameGains.MAX, "capped");
+
+            // Paid as items of the party's currencies
+            controller.payGains(player, 1);
+            context.assertEquals(PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN)), 11, "11 coins paid");
+            context.assertEquals(PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.STAR)), 1, "a star paid");
+
+            // The dashboard shows them, and they travel to the client as they are
+            Board board = new Board(0, 0, List.of(), List.of());
+            PartyDashboardData data = PartyDashboardData.capture(controller, context.getWorld(), player, board);
+            context.assertEquals(data.gains(), set, "captured by the dashboard");
+            net.minecraft.network.RegistryByteBuf buf = new net.minecraft.network.RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
+            PartyDashboardData.PACKET_CODEC.encode(buf, data);
+            context.assertEquals(PartyDashboardData.PACKET_CODEC.decode(buf).gains(), set, "sent and read back");
+            buf.release();
+
+            // Saved with the controller
+            RegistryWrapper.WrapperLookup registries = context.getWorld().getRegistryManager();
+            NbtCompound saved = controller.createNbt(registries);
+            controller.setGains(MiniGameGains.DEFAULT);
+            controller.read(saved, registries);
+            context.assertEquals(controller.getGains(), set, "saved and loaded");
+            saved.remove("MiniGameGains");
+            controller.read(saved, registries);
+            context.assertEquals(controller.getGains(), MiniGameGains.DEFAULT, "a controller saved without gains has the default ones");
+
+            // During a party: operators and Game Masters only
+            startParty(controller);
+            context.assertEquals(handler.onButtonClick(player, gainButton(2, PartyCurrency.COIN, true)), player.hasPermissionLevel(2),
+                    "during a party: operators only");
+            context.setBlockState(CONTROLLER, Blocks.AIR);
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
         context.complete();
     }
 

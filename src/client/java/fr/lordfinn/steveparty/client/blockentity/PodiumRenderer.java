@@ -3,7 +3,20 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
+import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.components.TileStampComponent;
+import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
+import fr.lordfinn.steveparty.podium.PodiumOccupant;
+import fr.lordfinn.steveparty.podium.Podiums;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
+import net.minecraft.client.util.SkinTextures;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
@@ -30,12 +43,27 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * The pattern tagged on a podium's banner (see {@code PodiumBanner}), drawn in the dye's colour over the front face of
- * the column's top: 8x8 in the middle of the banner hanging over one block of height (across the top slab and the block
- * under it when the column ends with a slab), 4x3 on the label of a slab alone (see {@link PodiumBlock#bannerHangs}).
- * The look is kept by the column's bottom block.
+ * What a podium column shows, drawn on its top block (the column's bottom block keeps it):
+ * <ul>
+ *     <li><b>Who is registered on it</b>: a small figure of the player, with his skin, standing on the top and facing
+ *     the podium's front. It pops in when he registers and bobs a little; over it, his place and his name (in the
+ *     colour of his team, with its name, in a team mini-game).</li>
+ *     <li>With the Wrench in hand: what a redstone pulse into the column does.</li>
+ *     <li><b>The pattern tagged on its banner</b> (see {@code PodiumBanner}), in the dye's colour over the front face
+ *     of the column's top: 8x8 in the middle of the banner hanging over one block of height (across the top slab and
+ *     the block under it when the column ends with a slab), 4x3 on the label of a slab alone (see
+ *     {@link PodiumBlock#bannerHangs}).</li>
+ * </ul>
  */
-public class PodiumBannerRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
+public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
+    /** The figure: half the size of a player. */
+    private static final float FIGURE_SCALE = 0.5f;
+    private static final float POP_TICKS = 8;
+    /** The names are only shown from this close (blocks). */
+    private static final double LABEL_DISTANCE = 24;
+
+    private final ModelPart wide, slim;
+    private final BlockEntityRenderDispatcher dispatcher;
     private static final float OUT = 0.002f;
     private static final int MAX_CACHED = 64;
 
@@ -51,7 +79,70 @@ public class PodiumBannerRenderer implements BlockEntityRenderer<PodiumBlockEnti
         }
     };
 
-    public PodiumBannerRenderer(BlockEntityRendererFactory.Context context) {
+    public PodiumRenderer(BlockEntityRendererFactory.Context context) {
+        this.wide = context.getLayerModelPart(EntityModelLayers.PLAYER);
+        this.slim = context.getLayerModelPart(EntityModelLayers.PLAYER_SLIM);
+        this.dispatcher = context.getRenderDispatcher();
+    }
+
+    /** The figure and its name stand above the block. */
+    @Override
+    public boolean rendersOutsideBoundingBox(PodiumBlockEntity entity) {
+        return true;
+    }
+
+    private void renderOccupant(PodiumBlockEntity entity, PodiumBlockEntity master, BlockState state, float tickDelta,
+                                MatrixStack matrices, VertexConsumerProvider vertexConsumers) {
+        World world = entity.getWorld();
+        PodiumOccupant occupant = master.getOccupant();
+        float surface = state.get(PodiumBlock.FULL) ? 1f : 0.5f;
+        Vec3d camera = dispatcher.camera.getPos();
+        boolean near = camera.squaredDistanceTo(entity.getPos().toCenterPos()) <= LABEL_DISTANCE * LABEL_DISTANCE;
+        float labelY = surface + 0.2f;
+        if (occupant != null) {
+            float age = (float) (world.getTime() - occupant.since()) + tickDelta;
+            float pop = age < 0 || age >= POP_TICKS ? 1f : easeOutBack(age / POP_TICKS);
+            float time = world.getTime() + tickDelta + (entity.getPos().getX() * 7 + entity.getPos().getZ() * 13) % 40;
+            float bob = MathHelper.sin(time * 0.12f) * 0.025f;
+            SkinTextures skin = SkinUtils.getSkinTextures(occupant.player());
+            ModelPart root = skin.model() == SkinTextures.Model.SLIM ? slim : wide;
+            root.traverse().forEach(ModelPart::resetTransform);
+            // A light idle: the head looks around a little, the arms sway
+            root.getChild("head").yaw = MathHelper.sin(time * 0.05f) * 0.25f;
+            root.getChild("right_arm").roll = 0.08f + MathHelper.sin(time * 0.12f) * 0.04f;
+            root.getChild("left_arm").roll = -0.08f - MathHelper.sin(time * 0.12f) * 0.04f;
+            int light = WorldRenderer.getLightmapCoordinates(world, entity.getPos().up());
+            matrices.push();
+            matrices.translate(0.5, surface + bob, 0.5);
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180 - state.get(PodiumBlock.FACING).asRotation()));
+            float scale = FIGURE_SCALE * pop;
+            matrices.scale(-scale, -scale, scale);
+            matrices.translate(0, -1.501, 0);
+            root.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(skin.texture())), light, OverlayTexture.DEFAULT_UV);
+            matrices.pop();
+            labelY = surface + 2 * FIGURE_SCALE + 0.16f;
+            if (near) {
+                MutableText label = Podiums.placeText(occupant.place()).append(" ");
+                int color = 0xFFFFFFFF;
+                if (occupant.team() >= 0) {
+                    MiniGamePipeRole role = MiniGamePipeRole.ofTeam(occupant.team());
+                    label.append(role.text()).append(" · ");
+                    color = 0xFF000000 | role.color();
+                }
+                label.append(occupant.name());
+                WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, label, color, 0x60000000, 0, 1f / 80f);
+                labelY += 0.14f;
+            }
+        }
+        // The Wrench shows what a redstone pulse does to the column
+        if (near && WorldLabels.holdingWrench()) {
+            WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, master.getSignal().text(), 0xFFFFE08A, 0x60000000, 0, 1f / 80f);
+        }
+    }
+
+    private static float easeOutBack(float t) {
+        float c1 = 1.70158f, c3 = c1 + 1, u = t - 1;
+        return 1 + c3 * u * u * u + c1 * u * u;
     }
 
     public static void registerReloadListener() {
@@ -75,7 +166,9 @@ public class PodiumBannerRenderer implements BlockEntityRenderer<PodiumBlockEnti
         BlockState state = entity.getCachedState();
         if (world == null || !PodiumBlock.isPodium(state) || !state.get(PodiumBlock.TOP)) return;
         PodiumBlockEntity master = PodiumBlock.master(world, entity.getPos());
-        TileStampComponent stamp = master == null ? null : master.getBannerStamp();
+        if (master == null) return;
+        renderOccupant(entity, master, state, tickDelta, matrices, vertexConsumers);
+        TileStampComponent stamp = master.getBannerStamp();
         if (stamp == null) return;
         boolean slab = !PodiumBlock.bannerHangs(state);
         Identifier texture = texture(stamp, slab);

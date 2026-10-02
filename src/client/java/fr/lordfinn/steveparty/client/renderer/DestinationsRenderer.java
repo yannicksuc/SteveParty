@@ -18,6 +18,8 @@ import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
+import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
+import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 
 import java.util.*;
 
@@ -79,7 +81,22 @@ public class DestinationsRenderer {
         MiniGamePageData data = page == null ? null : MiniGamePageClient.page(page);
         long time = client.world.getTime();
         if (located != null && time >= locatedUntil) located = null;
-        if (data == null || data.pipeLinks().isEmpty()) return;
+        if (data == null || (data.pipeLinks().isEmpty() && data.podiumLinks().isEmpty())) return;
+        // Its podiums (the whole column) and its counters, like its pipes
+        for (MiniGamePodiumLink link : data.podiumLinks()) {
+            if (!link.pos().dimension().equals(client.world.getRegistryKey())) continue;
+            BlockPos from = link.pos().pos(), to = from;
+            if (link.kind() == MiniGamePodiumLink.Kind.PODIUM && PodiumBlock.isPodium(client.world.getBlockState(from))) {
+                from = PodiumBlock.bottomOf(client.world, from);
+                to = PodiumBlock.topOf(client.world, from);
+            }
+            boolean blink = link.pos().equals(located);
+            boolean lit = time / 4 % 2 == 0;
+            for (BlockPos pos = from; pos.getY() <= to.getY(); pos = pos.up()) {
+                if (blink) GlowingCuboidRenderer.drawBlockBox(context.matrixStack(), vertexConsumers, pos, 1F, lit ? 1F : 0.2F, lit ? 1F : 0.6F, 0.75F);
+                else GlowingCuboidRenderer.renderCuboids(context.matrixStack(), vertexConsumers, pos, GlowingCuboidRenderer.GradientType.RAINBOW);
+            }
+        }
         for (MiniGamePipeLink link : data.pipeLinks()) {
             if (!link.mouth().dimension().equals(client.world.getRegistryKey())) continue;
             if (link.mouth().equals(located)) {
