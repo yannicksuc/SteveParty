@@ -21,6 +21,17 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+/**
+ * The step controller: a redstone pulse (rising edge) moves a party one step, by its mode (0: next, 1: restart, 2:
+ * previous).
+ * <ul>
+ *     <li>Not linked: the nearest party within {@value #RANGE} blocks, in its world.</li>
+ *     <li>Linked to mini-game pages (page in hand, click: see {@code Podiums#clickLink}): the party playing right now
+ *     the mini-game of one of those pages, however far and in whatever dimension; no such party: the pulse does
+ *     nothing. « Next » ends the mini-game with the places as they stand (see {@code MiniGamePartyStep}).</li>
+ * </ul>
+ * The links are kept by the pages; the pages it is linked to are only mirrored here for the clients (its label).
+ */
 public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEntity, TickableBlockEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
@@ -31,6 +42,9 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
     private static final int RANGE = 64; //TODO Add config to manage range
     public int mode = 0;
     public boolean wasPowered = false;
+    /** The pages it is linked to, as the pages say (checked again every second): what the clients show. */
+    private java.util.List<java.util.UUID> linkedPages = java.util.List.of();
+    private static final int LINK_CHECK_TICKS = 20;
 
 
     public StepControllerBlockEntity(BlockPos pos, BlockState state) {
@@ -41,6 +55,11 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         nbt.putInt("mode", this.mode);
         nbt.putBoolean("wasPowered", this.wasPowered);
+        if (!linkedPages.isEmpty()) {
+            net.minecraft.nbt.NbtList pages = new net.minecraft.nbt.NbtList();
+            linkedPages.forEach(page -> pages.add(net.minecraft.nbt.NbtHelper.fromUuid(page)));
+            nbt.put("LinkedPages", pages);
+        }
         super.writeNbt(nbt, wrapper);
     }
 
@@ -53,6 +72,9 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
         if (nbt.contains("wasPowered")) {
             this.wasPowered = nbt.getBoolean("wasPowered");
         }
+        java.util.List<java.util.UUID> pages = new java.util.ArrayList<>();
+        for (NbtElement element : nbt.getList("LinkedPages", NbtElement.INT_ARRAY_TYPE)) pages.add(net.minecraft.nbt.NbtHelper.toUuid(element));
+        this.linkedPages = java.util.List.copyOf(pages);
     }
 
     @Override
@@ -91,6 +113,7 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
     @Override
     public void tick() {
         if (this.world != null && !this.world.isClient) {
+            if (this.world.getTime() % LINK_CHECK_TICKS == 0) refreshLinkedPages();
             boolean isPowered = this.world.isReceivingRedstonePower(this.pos);
             if (isPowered != wasPowered) {
                 wasPowered = isPowered;
@@ -102,10 +125,40 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
         }
     }
 
-    private void trigger() {
+    /** The pages this controller is linked to (server: as the pages say now; client: as last told). */
+    public java.util.List<java.util.UUID> getLinkedPages() {
+        if (this.world instanceof ServerWorld serverWorld) {
+            java.util.List<java.util.UUID> pages = new java.util.ArrayList<>();
+            for (fr.lordfinn.steveparty.minigame.MiniGamePageData page : fr.lordfinn.steveparty.minigame.MiniGamePages.pagesAt(serverWorld.getServer(),
+                    net.minecraft.util.math.GlobalPos.create(serverWorld.getRegistryKey(), this.pos))) pages.add(page.id());
+            return pages;
+        }
+        return linkedPages;
+    }
+
+    /** Tells the clients the pages it is linked to, if they changed (a link made or removed, here or in a page's editor). */
+    public void refreshLinkedPages() {
+        if (!(this.world instanceof ServerWorld)) return;
+        java.util.List<java.util.UUID> pages = getLinkedPages();
+        if (pages.equals(linkedPages)) return;
+        linkedPages = java.util.List.copyOf(pages);
+        this.markDirty();
+        this.sync();
+    }
+
+    /** The party a pulse acts on now: the one playing a linked page's mini-game, or (not linked) the nearest one. */
+    public java.util.Optional<PartyControllerEntity> target() {
+        if (!(this.world instanceof ServerWorld)) return java.util.Optional.empty();
+        java.util.List<java.util.UUID> pages = getLinkedPages();
+        if (!pages.isEmpty()) return PartyControllerEntity.getPartyPlayingPage(pages);
+        // "previous" may also bring back a party that reached its END step
+        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(this.world, this.pos, RANGE, this.mode == 2);
+    }
+
+    /** A redstone pulse: the party it acts on ({@link #target}) moves by the controller's mode. */
+    public void trigger() {
         if (this.world != null && this.world instanceof ServerWorld) {
-            // "previous" may also bring back a party that reached its END step
-            PartyControllerEntity.getClosestSteppablePartyControllerEntity(this.world, this.pos, RANGE, this.mode == 2)
+            target()
                     .ifPresentOrElse(partyControllerEntity ->  {
                         world.playSound(null, this.pos, SoundEvents.BLOCK_TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
                         switch (this.mode) {

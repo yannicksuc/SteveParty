@@ -146,6 +146,21 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     }
 
     /**
+     * The loaded controller of the party playing right now the mini-game of one of {@code pages}, in any dimension
+     * and at any distance (what the podiums and the step controllers linked to a page act on).
+     */
+    public static Optional<PartyControllerEntity> getPartyPlayingPage(Collection<UUID> pages) {
+        if (pages.isEmpty()) return Optional.empty();
+        for (PartyControllerEntity entity : ACTIVE_PARTY_CONTROLLERS.values()) {
+            if (entity.isRemoved() || !(entity.getPartyData().getCurrentStep() instanceof MiniGamePartyStep miniGame)
+                    || !miniGame.isPlaying()) continue;
+            UUID page = fr.lordfinn.steveparty.minigame.MiniGamePages.idOf(MiniGamesCatalogueItem.getCurrentMiniGame(entity.catalogue));
+            if (page != null && pages.contains(page)) return Optional.of(entity);
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Closest party controller a step controller can act on: a started party or, if {@code includeEnded},
      * a party standing on its END step (so it can be brought back to the previous step).
      */

@@ -10,10 +10,12 @@ import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A block linked to a mini-game page to tell who won: a podium (its whole column, and the columns touching it, are
- * the places of the mini-game) or a goal pole base (a counter whose reached goals fill those places).
+ * A block linked to a mini-game page to end it and tell who won: a podium (its whole column, and the columns touching
+ * it, are the places of the mini-game), a goal pole base (a counter whose reached goals fill those places) or a step
+ * controller (a redstone pulse into it ends the mini-game of the page, wherever its party is).
  *
- * @param pos  the block clicked with the page (a block of the podium's column, or the goal pole base), with its dimension
+ * @param pos  the block clicked with the page (the bottom block of the podium's column, the goal pole base, the step
+ *             controller), with its dimension
  * @param kind what it was when it was linked
  */
 public record MiniGamePodiumLink(GlobalPos pos, Kind kind) {
@@ -21,7 +23,14 @@ public record MiniGamePodiumLink(GlobalPos pos, Kind kind) {
         /** A podium column: a place of the mini-game. */
         PODIUM,
         /** A goal pole base: its points go back to 0 with the podiums, its per-player goals give the places. */
-        COUNTER
+        COUNTER,
+        /** A step controller: a pulse into it acts on the party playing the page's mini-game, however far. */
+        STEP_CONTROLLER;
+
+        /** Its name in the translation keys. */
+        public String key() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
     }
 
     public MiniGamePodiumLink {

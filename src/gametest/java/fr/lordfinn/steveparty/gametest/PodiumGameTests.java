@@ -18,6 +18,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.commands.PodiumCommand;
 import fr.lordfinn.steveparty.components.TileStampComponent;
@@ -858,6 +859,149 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertEquals(named.controller().getLastWinners(), List.of(p2.getUuid()), "winners kept");
         } finally {
             cleanUp(context, p1, p2, p3);
+        }
+        context.complete();
+    }
+
+    // ------------------------------------------------------------------ step controllers linked to a page
+
+    /** A second party, running on a plain step: what an unlinked step controller next to it acts on. */
+    private static PartyData otherParty(TestContext context, BlockPos pos) {
+        context.setBlockState(pos.down(), Blocks.STONE);
+        context.setBlockState(pos, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(pos);
+        UUID token = UUID.randomUUID();
+        PartyData data = new PartyData();
+        data.addToken(token);
+        data.addStep(new PartyStep());
+        data.addStep(new PartyStep());
+        data.addStep(new PartyStep());
+        data.addStep(new EndPartyStep(new ArrayList<>(List.of(token))));
+        data.setStepIndex(0);
+        controller.setPartyData(data);
+        return data;
+    }
+
+    /**
+     * A step controller clicked with a page is linked to it: a pulse then ends the mini-game of that page (places as
+     * they stand, gains paid), not the step of the nearest party; with nobody playing the page the pulse does nothing;
+     * unlinked (a second click), it acts on the nearest party again.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_step_link", tickLimit = 100)
+    public void aLinkedStepControllerEndsTheMiniGameOfItsPage(TestContext context) {
+        ServerPlayerEntity p1 = player(context, "l1", 0.5, 1, 0.5), p2 = player(context, "l2", 1.5, 1, 0.5);
+        BlockPos first = column(context, 3, 3, 2), second = column(context, 4, 3, 1);
+        BlockPos other = new BlockPos(6, 1, 6), stepPos = new BlockPos(6, 1, 4);
+        Played played;
+        PartyData near;
+        ServerWorld world = context.getWorld();
+        StepControllerBlockEntity stepController;
+        try {
+            played = played(context, page(context, first), null, MiniGamePartyStep.Phase.PLAYING, p1, p2);
+            near = otherParty(context, other);
+            context.setBlockState(stepPos.down(), Blocks.STONE);
+            context.setBlockState(stepPos, ModBlocks.STEP_CONTROLLER);
+            stepController = context.getBlockEntity(stepPos);
+            context.assertTrue(stepController.getLinkedPages().isEmpty(), "a new step controller is linked to nothing");
+            context.assertTrue(stepController.target().isPresent() && stepController.target().get().getPartyData() == near,
+                    "not linked: the nearest party");
+
+            // Page in hand, a click links it, like a podium
+            p1.setStackInHand(Hand.MAIN_HAND, played.page());
+            BlockPos abs = context.getAbsolutePos(stepPos);
+            BlockHitResult hit = new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false);
+            context.assertTrue(context.getBlockState(stepPos).onUse(world, p1, hit).isAccepted(), "clicked with the page");
+            context.assertEquals(stepController.mode, 0, "the click with a page does not change its mode");
+            context.assertEquals(stepController.getLinkedPages(), List.of(played.pageId()), "linked to the page");
+            context.assertTrue(MiniGamePages.get(world.getServer(), played.pageId()).podiumLinks().contains(new MiniGamePodiumLink(
+                    GlobalPos.create(world.getRegistryKey(), abs), MiniGamePodiumLink.Kind.STEP_CONTROLLER)), "the page lists it");
+            context.assertEquals(stepController.createNbt(world.getRegistryManager()).getList("LinkedPages", 11).size(), 1, "told to the clients (its label)");
+            context.assertTrue(stepController.target().isPresent() && stepController.target().get() == played.controller(),
+                    "linked: the party playing the page, not the nearest one");
+            context.assertTrue(group(context, first).columns().size() == 2, "the podiums of the page are still its two columns");
+
+            context.assertTrue(Podiums.toggle(p2, world, context.getAbsolutePos(second)), "p2 on the 2nd place");
+            context.assertTrue(played.step().isPlaying(), "p1 has no place: it goes on");
+            context.setBlockState(stepPos.south(), Blocks.REDSTONE_BLOCK);
+        } catch (RuntimeException e) {
+            context.removeBlock(other);
+            cleanUp(context, p1, p2);
+            throw e;
+        }
+        context.waitAndRun(4, () -> {
+            try {
+                context.assertEquals(played.step().getPhase(), MiniGamePartyStep.Phase.FINISHED, "the pulse ended the mini-game of the page");
+                context.assertEquals(played.step().getPlaces(), Map.of(p1.getUuid(), 0, p2.getUuid(), 2), "places as they stood");
+                context.assertEquals(coins(played.controller(), p2), 5, "gains paid");
+                context.assertTrue(played.data().isAtEnd(), "its party went on");
+                context.assertEquals(near.getStepIndex(), 0, "the nearest party was not touched");
+                // Nobody plays the page any more: another pulse does nothing, even with a party right next to it
+                context.assertTrue(stepController.target().isEmpty(), "no party is playing the page");
+                context.setBlockState(stepPos.south(), Blocks.AIR);
+            } catch (RuntimeException e) {
+                context.removeBlock(other);
+                cleanUp(context, p1, p2);
+                throw e;
+            }
+            context.waitAndRun(4, () -> {
+                context.setBlockState(stepPos.south(), Blocks.REDSTONE_BLOCK);
+                context.waitAndRun(4, () -> {
+                    try {
+                        context.assertEquals(near.getStepIndex(), 0, "a pulse with no party on the page does nothing");
+                        context.assertTrue(played.data().isAtEnd(), "nor to the party that played it");
+                        // A second click with the page unlinks it: the nearest party again
+                        BlockPos abs = context.getAbsolutePos(stepPos);
+                        context.getBlockState(stepPos).onUse(world, p1, new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false));
+                        context.assertTrue(stepController.getLinkedPages().isEmpty(), "unlinked");
+                        context.assertTrue(stepController.target().isPresent() && stepController.target().get().getPartyData() == near, "the nearest party again");
+                        context.setBlockState(stepPos.south(), Blocks.AIR);
+                    } catch (RuntimeException e) {
+                        context.removeBlock(other);
+                        cleanUp(context, p1, p2);
+                        throw e;
+                    }
+                    context.waitAndRun(4, () -> {
+                        context.setBlockState(stepPos.south(), Blocks.REDSTONE_BLOCK);
+                        context.waitAndRun(4, () -> {
+                            try {
+                                context.assertEquals(near.getStepIndex(), 1, "not linked: a pulse moves the nearest party one step, as before");
+                            } finally {
+                                context.removeBlock(other);
+                                cleanUp(context, p1, p2);
+                            }
+                            context.complete();
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    /** A step controller in the Nether, linked to a page, ends that page's mini-game of an overworld party. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_step_nether", tickLimit = 200)
+    public void aLinkedStepControllerWorksFromAnotherDimension(TestContext context) {
+        ServerPlayerEntity p1 = player(context, "n1", 0.5, 1, 0.5);
+        MinecraftServer server = context.getWorld().getServer();
+        ServerWorld nether = server.getWorld(net.minecraft.world.World.NETHER);
+        BlockPos there = new BlockPos(context.getAbsolutePos(CONTROLLER).getX(), 100, context.getAbsolutePos(CONTROLLER).getZ());
+        try {
+            context.assertTrue(nether != null, "the test server has a Nether");
+            Played played = played(context, page(context), null, MiniGamePartyStep.Phase.PLAYING, p1);
+            nether.setBlockState(there, ModBlocks.STEP_CONTROLLER.getDefaultState());
+            StepControllerBlockEntity stepController = (StepControllerBlockEntity) nether.getBlockEntity(there);
+            context.assertTrue(stepController != null, "placed in the Nether");
+            context.assertTrue(stepController.target().isEmpty(), "not linked: no party near it in the Nether");
+            context.assertTrue(MiniGamePages.addPodiumLink(server, played.pageId(), new MiniGamePodiumLink(
+                    GlobalPos.create(nether.getRegistryKey(), there), MiniGamePodiumLink.Kind.STEP_CONTROLLER)), "linked to the page");
+            context.assertTrue(stepController.target().isPresent() && stepController.target().get() == played.controller(),
+                    "the party playing the page, in another dimension");
+            stepController.trigger();
+            context.assertEquals(played.step().getPhase(), MiniGamePartyStep.Phase.FINISHED, "ended from the Nether");
+            context.assertEquals(played.step().getPlaces(), Map.of(p1.getUuid(), 0), "no podium: a participant");
+            context.assertTrue(played.data().isAtEnd(), "the party went on");
+        } finally {
+            if (nether != null) nether.setBlockState(there, Blocks.AIR.getDefaultState());
+            cleanUp(context, p1);
         }
         context.complete();
     }
