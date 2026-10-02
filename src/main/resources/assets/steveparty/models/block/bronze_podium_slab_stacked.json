@@ -1,0 +1,6 @@
+{
+  "parent": "steveparty:block/bronze_podium_slab",
+  "textures": {
+    "label": "steveparty:block/podium_bronze_front"
+  }
+}

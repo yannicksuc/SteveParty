@@ -1,64 +1,745 @@
 {
-  "variants": {
-    "facing=north,full=false,top=false": {
-      "model": "steveparty:block/podium_body_slab"
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "full": "false",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab"
+      }
     },
-    "facing=north,full=false,top=true": {
-      "model": "steveparty:block/bronze_podium_slab"
+    {
+      "when": {
+        "facing": "north",
+        "full": "false",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab_stacked"
+      }
     },
-    "facing=north,full=true,top=false": {
-      "model": "steveparty:block/podium_body_full"
+    {
+      "when": {
+        "facing": "north",
+        "full": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_slab"
+      }
     },
-    "facing=north,full=true,top=true": {
-      "model": "steveparty:block/bronze_podium_full"
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full"
+      }
     },
-    "facing=east,full=false,top=false": {
-      "model": "steveparty:block/podium_body_slab",
-      "y": 90
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full_stacked"
+      }
     },
-    "facing=east,full=false,top=true": {
-      "model": "steveparty:block/bronze_podium_slab",
-      "y": 90
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full_base"
+      }
     },
-    "facing=east,full=true,top=false": {
-      "model": "steveparty:block/podium_body_full",
-      "y": 90
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full"
+      }
     },
-    "facing=east,full=true,top=true": {
-      "model": "steveparty:block/bronze_podium_full",
-      "y": 90
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic_base"
+      }
     },
-    "facing=south,full=false,top=false": {
-      "model": "steveparty:block/podium_body_slab",
-      "y": 180
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic"
+      }
     },
-    "facing=south,full=false,top=true": {
-      "model": "steveparty:block/bronze_podium_slab",
-      "y": 180
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold_base"
+      }
     },
-    "facing=south,full=true,top=false": {
-      "model": "steveparty:block/podium_body_full",
-      "y": 180
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold"
+      }
     },
-    "facing=south,full=true,top=true": {
-      "model": "steveparty:block/bronze_podium_full",
-      "y": 180
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver_base"
+      }
     },
-    "facing=west,full=false,top=false": {
-      "model": "steveparty:block/podium_body_slab",
-      "y": 270
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver"
+      }
     },
-    "facing=west,full=false,top=true": {
-      "model": "steveparty:block/bronze_podium_slab",
-      "y": 270
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze_base"
+      }
     },
-    "facing=west,full=true,top=false": {
-      "model": "steveparty:block/podium_body_full",
-      "y": 270
+    {
+      "when": {
+        "facing": "north",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze"
+      }
     },
-    "facing=west,full=true,top=true": {
-      "model": "steveparty:block/bronze_podium_full",
-      "y": 270
+    {
+      "when": {
+        "facing": "east",
+        "full": "false",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "false",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab_stacked",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_slab",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full_stacked",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full_base",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic_base",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold_base",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver_base",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze_base",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "false",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "false",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab_stacked",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_slab",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full_stacked",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full_base",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic_base",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold_base",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver_base",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze_base",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "false",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "false",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_slab_stacked",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_slab",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "true",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "true",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/bronze_podium_full_stacked",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full_base",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "none",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_body_full",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic_base",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "classic",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_classic",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold_base",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "gold",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_gold",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver_base",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "silver",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_silver",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "true"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze_base",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "full": "true",
+        "top": "false",
+        "banner_tail": "bronze",
+        "base": "false"
+      },
+      "apply": {
+        "model": "steveparty:block/podium_tail_bronze",
+        "y": 270
+      }
     }
-  }
+  ]
 }

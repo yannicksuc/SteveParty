@@ -1,0 +1,10 @@
+{
+  "parent": "steveparty:block/podium_template_full_stacked",
+  "textures": {
+    "top": "steveparty:block/podium_silver_top",
+    "side": "steveparty:block/podium_silver_side",
+    "front": "steveparty:block/podium_silver_front",
+    "body": "steveparty:block/podium_body",
+    "particle": "steveparty:block/podium_silver_side"
+  }
+}

@@ -31,8 +31,9 @@ import java.util.Map;
 
 /**
  * The pattern tagged on a podium's banner (see {@code PodiumBanner}), drawn in the dye's colour over the front face of
- * the column's top block: 8x8 in the middle of the hanging banner of a full block, 4x3 on the label of a slab. The look
- * is kept by the column's bottom block.
+ * the column's top: 8x8 in the middle of the banner hanging over one block of height (across the top slab and the block
+ * under it when the column ends with a slab), 4x3 on the label of a slab alone (see {@link PodiumBlock#bannerHangs}).
+ * The look is kept by the column's bottom block.
  */
 public class PodiumBannerRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
     private static final float OUT = 0.002f;
@@ -76,24 +77,26 @@ public class PodiumBannerRenderer implements BlockEntityRenderer<PodiumBlockEnti
         PodiumBlockEntity master = PodiumBlock.master(world, entity.getPos());
         TileStampComponent stamp = master == null ? null : master.getBannerStamp();
         if (stamp == null) return;
-        boolean slab = !state.get(PodiumBlock.FULL);
+        boolean slab = !PodiumBlock.bannerHangs(state);
         Identifier texture = texture(stamp, slab);
         Direction front = state.get(PodiumBlock.FACING);
         int frontLight = WorldRenderer.getLightmapCoordinates(world, entity.getPos().offset(front));
 
         // Seen from the front, the texture's left edge is on the side the facing turns clockwise to
         Direction left = front.rotateYClockwise();
-        float height = slab ? 0.5f : 1f;
+        // One block of height under the top of the column, or the slab alone
+        float top = state.get(PodiumBlock.FULL) ? 1f : 0.5f;
+        float bottom = slab ? 0f : top - 1f;
         float fx = 0.5f + front.getOffsetX() * (0.5f + OUT), fz = 0.5f + front.getOffsetZ() * (0.5f + OUT);
         float lx = left.getOffsetX() * 0.5f, lz = left.getOffsetZ() * 0.5f;
         float vMax = slab ? 0.5f : 1f;
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(texture));
         MatrixStack.Entry entry = matrices.peek();
         float nx = front.getOffsetX(), nz = front.getOffsetZ();
-        vertex(consumer, entry, fx + lx, 0, fz + lz, 0, vMax, frontLight, nx, nz);
-        vertex(consumer, entry, fx - lx, 0, fz - lz, 1, vMax, frontLight, nx, nz);
-        vertex(consumer, entry, fx - lx, height, fz - lz, 1, 0, frontLight, nx, nz);
-        vertex(consumer, entry, fx + lx, height, fz + lz, 0, 0, frontLight, nx, nz);
+        vertex(consumer, entry, fx + lx, bottom, fz + lz, 0, vMax, frontLight, nx, nz);
+        vertex(consumer, entry, fx - lx, bottom, fz - lz, 1, vMax, frontLight, nx, nz);
+        vertex(consumer, entry, fx - lx, top, fz - lz, 1, 0, frontLight, nx, nz);
+        vertex(consumer, entry, fx + lx, top, fz + lz, 0, 0, frontLight, nx, nz);
     }
 
     private static void vertex(VertexConsumer consumer, MatrixStack.Entry entry, float x, float y, float z, float u, float v,
