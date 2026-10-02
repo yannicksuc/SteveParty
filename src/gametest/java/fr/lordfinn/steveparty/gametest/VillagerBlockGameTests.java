@@ -342,8 +342,26 @@ public class VillagerBlockGameTests implements FabricGameTest {
         });
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    // ---------------------------------------------------------------- awake: by day, whatever the hour of the suite
+
+    private static int dayTests;
+    private static long hourBefore;
+
+    /** A villager block sleeps at night: the tests of what it does awake are played by day, in a batch of their own. */
+    private static void pinDay(TestContext context) {
+        var world = context.getWorld();
+        if (dayTests++ == 0) hourBefore = world.getTimeOfDay();
+        world.setTimeOfDay(hourBefore - Math.floorMod(hourBefore, 24000L) + 1000);
+    }
+
+    /** The hour is put back once the last of those tests is over. */
+    private static void unpinDay(TestContext context) {
+        if (--dayTests == 0) context.getWorld().setTimeOfDay(hourBefore);
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "villager_block_day")
     public void answersHmmInTheChat(TestContext context) {
+        pinDay(context);
         context.assertTrue(VillagerBlockEvents.isVillagerTalk("Hmmm?"), "hmm");
         context.assertTrue(VillagerBlockEvents.isVillagerTalk("bonjour !"), "bonjour");
         context.assertFalse(VillagerBlockEvents.isVillagerTalk("where is the shop"), "not villager talk");
@@ -352,18 +370,21 @@ public class VillagerBlockGameTests implements FabricGameTest {
         context.runAtTick(10, () -> VillagerBlockEvents.recordVillagerTalk(player));
         context.addInstantFinalTask(() -> {
             context.assertTrue(villager.timesStarted(VillagerReaction.CHAT_HMM) > 0, "answered hmm");
+            unpinDay(context);
             disconnect(context, player);
         });
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "villager_block_day")
     public void panicsWhenAZombieComes(TestContext context) {
+        pinDay(context);
         VillagerBlockEntity villager = place(context);
         ServerPlayerEntity player = playerAt(context, new Vec3d(0, 0, 10), GameMode.CREATIVE);
         ZombieEntity zombie = context.spawnEntity(EntityType.ZOMBIE, POS.west(3));
         zombie.setAiDisabled(true);
         context.addInstantFinalTask(() -> {
             context.assertTrue(villager.timesStarted(VillagerReaction.ZOMBIE_PANIC) > 0, "panicked");
+            unpinDay(context);
             zombie.discard();
             disconnect(context, player);
         });

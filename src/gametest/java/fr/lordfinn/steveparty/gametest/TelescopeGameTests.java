@@ -198,6 +198,9 @@ public class TelescopeGameTests implements FabricGameTest {
         MulaSpawnSites.Site site = sites.record(farPos, world.getTime(), 4, new int[]{3, 3, 0});
         MulaSpawnSites.Site out = sites.record(outPos, world.getTime(), 2, new int[]{1});
         context.assertTrue(sites.byId(site.id) == site && sites.byId(out.id) == out, "recorded");
+        // By day, whatever the hour the suite reached: the checks below are those of a telescope that is not watched
+        long hour = world.getTimeOfDay();
+        world.setTimeOfDay(hour - Math.floorMod(hour, 24000L) + 1000);
         try {
             long time = world.getTimeOfDay();
             boolean rain = world.isRaining();
@@ -233,7 +236,7 @@ public class TelescopeGameTests implements FabricGameTest {
             context.assertTrue(world.getEntitiesByClass(MulaStarEntity.class, around, e -> true).size() == stars
                     && world.getEntitiesByClass(MulaEntity.class, around, e -> true).size() == mulas, "no shooting star, no Mula");
 
-            // Not under a roof, whatever the hour
+            // Not under a roof
             context.setBlockState(new BlockPos(1, 3, 1), Blocks.STONE);
             context.assertTrue(!TelescopeService.canWatch(world, telescope), "no sky under a roof");
             context.assertTrue(!TelescopeService.use(ann, telescope), "refused");
@@ -244,6 +247,7 @@ public class TelescopeGameTests implements FabricGameTest {
             TelescopeService.visits(world);
             context.assertTrue(TelescopeService.guides(bob).size() == 1, "standing at the telescope is not being there");
         } finally {
+            world.setTimeOfDay(hour);
             sites.remove(site.id);
             sites.remove(out.id);
             context.setBlockState(new BlockPos(1, 3, 1), Blocks.AIR);
