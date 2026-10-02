@@ -1136,9 +1136,9 @@
   "hint.steveparty.goal_pole.points.none": "Aucun point pour l'instant",
   "gui.steveparty.goal_pole_base.players": "Joueurs",
   "gui.steveparty.goal_pole_base.players.party": "Les joueurs de la partie",
-  "gui.steveparty.goal_pole_base.players.party.details": "Les joueurs de la partie lancée par le contrôleur de fête le plus proche (à moins de 100 blocs). Quand cette partie commence, les points reviennent à 0.",
-  "gui.steveparty.goal_pole_base.players.party.meaning": "Les joueurs de la partie ; remis à 0 au lancement",
-  "gui.steveparty.goal_pole_base.players.party.none": "Aucun contrôleur de fête à moins de 100 blocs",
+  "gui.steveparty.goal_pole_base.players.party.details": "Les joueurs de la partie : celle qui joue le mini-jeu de la page liée, où qu'elle soit (aucune partie ne le joue : personne ne compte). Sans page liée, celle du contrôleur de fête le plus proche (100 blocs). Une page se lie en cliquant le socle avec elle, ou par un podium lié qui touche le socle. Les points reviennent à 0 quand le mini-jeu, ou cette partie, commence.",
+  "gui.steveparty.goal_pole_base.players.party.meaning": "Sans page liée : la partie la plus proche (100 blocs)",
+  "gui.steveparty.goal_pole_base.players.party.none": "Ni page liée ni contrôleur de fête à moins de 100 blocs",
   "gui.steveparty.goal_pole_base.players.all": "Tous les joueurs",
   "gui.steveparty.goal_pole_base.players.all.details": "Tous les joueurs comptent.",
   "gui.steveparty.goal_pole_base.players.all.meaning": "Tous les joueurs comptent",
@@ -1148,7 +1148,7 @@
   "gui.steveparty.goal_pole_base.players.radius.invalid": "Entrez une distance de 1 à %s blocs",
   "gui.steveparty.goal_pole_base.players.selector": "Avancé : un sélecteur",
   "gui.steveparty.goal_pole_base.players.selector.details": "Un sélecteur de cible ou un nom de joueur, comme dans les commandes (ex. @a[team=red], @p, Steve).",
-  "message.steveparty.goal_pole.no_party": "⚠ Aucune partie en cours près de ce socle : atterrissage non compté",
+  "message.steveparty.goal_pole.no_party": "⚠ Aucune partie ne joue le mini-jeu de ce socle (ni n'est en cours près de lui) : atterrissage non compté",
   "message.steveparty.goal_pole.not_followed": "⚠ Ce socle ne vous suit pas : atterrissage non compté",
   "hint.steveparty.goal_pole.players.radius": "à moins de %s blocs",
   "gui.steveparty.goal_pole.flag": "Drapeau",
@@ -1808,5 +1808,6 @@
   "message.steveparty.mini_game_page.step_controller.unlinked": "Contrôleur de pas délié : (%d, %d, %d)",
   "gui.steveparty.mini_game_page.podiums.card.step_controller": "Contrôleur de pas %s",
   "gui.steveparty.mini_game_page.podiums.card.step_controller.hint": "Une impulsion de redstone dessus agit sur la partie qui joue ce mini-jeu, même très loin ou dans une autre dimension : haut = le termine (places telles quelles, gains payés), côté = recommence l'étape, bas = revient d'une étape. Aucune partie ne le joue : rien ne se passe.",
-  "label.steveparty.step_controller.linked": "Lié : %s"
+  "label.steveparty.step_controller.linked": "Lié : %s",
+  "gui.steveparty.goal_pole_base.players.party.meaning.page": "Page liée : les joueurs de son mini-jeu, où qu'il soit"
 }

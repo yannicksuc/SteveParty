@@ -1007,6 +1007,69 @@ public class PodiumGameTests implements FabricGameTest {
         context.complete();
     }
 
+    // ------------------------------------------------------------------ « the party's players » of a linked base
+
+    /**
+     * A goal base set to « the party's players » and linked to a page counts the players of the party playing that
+     * page's mini-game, however far its controller is (here: not the nearest one, and, at the unit level, a base in the
+     * Nether); nobody when no party plays the page; without a linked page, the nearest party as before.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_base_players", tickLimit = 100)
+    public void aLinkedBaseCountsThePlayersOfItsPagesMiniGame(TestContext context) {
+        ServerPlayerEntity player = player(context, "g1", 0.5, 1, 0.5), watcher = player(context, "g2", 1.5, 1, 0.5);
+        BlockPos other = new BlockPos(3, 1, 2);
+        MinecraftServer server = context.getWorld().getServer();
+        ServerWorld nether = server.getWorld(net.minecraft.world.World.NETHER);
+        BlockPos there = new BlockPos(context.getAbsolutePos(BASE).getX(), 100, context.getAbsolutePos(BASE).getZ());
+        try {
+            GoalPoleBaseBlockEntity base = jumpCounter(context);
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
+            // The nearest controller (one block away) runs a party these players are not in
+            PartyData near = otherParty(context, other);
+            context.assertTrue(base.linkedPages().isEmpty() && base.countedParty() != null && base.countedParty().getPartyData() == near,
+                    "no linked page: the nearest party");
+            context.assertTrue(!base.follows(player), "not a player of the nearest party");
+
+            // Linked to the page of a mini-game played by a party farther away
+            ItemStack pageStack = page(context);
+            MiniGamePages.addPodiumLink(server, MiniGamePages.idOf(pageStack), new MiniGamePodiumLink(
+                    GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(BASE)), MiniGamePodiumLink.Kind.COUNTER));
+            context.assertEquals(base.linkedPages(), Set.of(MiniGamePages.idOf(pageStack)), "linked to the page");
+            context.assertTrue(base.countedParty() == null && !base.follows(player), "no party plays the page: nobody counts");
+            context.assertTrue(base.writeSettings().getBoolean("PageLinked"), "its screen is told");
+            Played played = played(context, pageStack, null, MiniGamePartyStep.Phase.PLAYING, player);
+            played.controller().addInterestedPlayer(watcher);
+            context.assertTrue(base.countedParty() == played.controller(), "the party playing the page's mini-game, not the nearest one");
+            context.assertTrue(base.follows(player), "a player of the mini-game counts");
+            context.assertTrue(!base.follows(watcher), "someone who only watches the party does not");
+            jump(player, 3);
+            jump(watcher, 5);
+            context.assertEquals(base.getTotal(), 3L, "only the mini-game's player was counted");
+
+            // Linked through a podium touching it: the page of that podium
+            ItemStack second = page(context, column(context, BASE.getX(), BASE.getZ() + 1, 1));
+            context.assertTrue(base.linkedPages().contains(MiniGamePages.idOf(second)), "the page of the podium touching the base");
+
+            // In another dimension: the same lookup
+            nether.setBlockState(there, ModBlocks.GOAL_POLE_BASE.getDefaultState());
+            GoalPoleBaseBlockEntity far = (GoalPoleBaseBlockEntity) nether.getBlockEntity(there);
+            far.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
+            context.assertTrue(far.countedParty() == null, "in the Nether, not linked: no party near");
+            MiniGamePages.addPodiumLink(server, played.pageId(), new MiniGamePodiumLink(GlobalPos.create(nether.getRegistryKey(), there), MiniGamePodiumLink.Kind.COUNTER));
+            context.assertTrue(far.countedParty() == played.controller() && far.follows(player), "linked: the overworld party playing the page");
+
+            // The mini-game is over: nobody counts any more
+            played.controller().nextStep();
+            context.assertTrue(base.countedParty() == null && !base.follows(player), "the mini-game is over: nobody counts");
+        } finally {
+            if (nether != null) nether.setBlockState(there, Blocks.AIR.getDefaultState());
+            context.setBlockState(BASE, Blocks.AIR);
+            context.removeBlock(other);
+            cleanUp(context, player, watcher);
+        }
+        context.complete();
+    }
+
     // ------------------------------------------------------------------ the controller stays loaded
 
     /**
