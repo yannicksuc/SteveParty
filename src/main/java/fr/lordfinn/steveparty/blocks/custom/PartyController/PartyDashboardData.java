@@ -176,8 +176,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             } else if (live.stepsLeft() != 0) {
                 detail = Text.translatable(live.stepsLeft() > 0 ? "gui.steveparty.party_controller.action.moving" : "gui.steveparty.party_controller.action.moving_back",
                         Math.abs(live.stepsLeft()));
-            } else if (live.roll() > 0) {
-                detail = Text.translatable("gui.steveparty.party_controller.action.rolled", owner, live.roll());
+            } else if (live.roll() != 0 || live.effect().rolled()) {
+                detail = Text.translatable("gui.steveparty.party_controller.action.rolled", owner, live.rollText());
             } else if (standing != null && standing.owner().isEmpty()) {
                 detail = Text.translatable("hud.steveparty.party.roll.anyone", name);
             } else {

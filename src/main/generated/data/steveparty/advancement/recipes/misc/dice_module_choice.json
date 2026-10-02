@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_blank_dice_face": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:blank_dice_face"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:dice_module_choice"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_blank_dice_face"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:dice_module_choice"
+    ]
+  }
+}

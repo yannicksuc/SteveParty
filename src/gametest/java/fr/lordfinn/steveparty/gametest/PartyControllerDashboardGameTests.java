@@ -67,14 +67,14 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
         return stack.isOf(item) && stack.getCount() == 1;
     }
 
-    /** Defaults (nether star, gold nugget), one item of the kind picked is kept, saved and loaded; the two differ. */
+    /** Defaults (nether star, emerald), one item of the kind picked is kept, saved and loaded; the two differ. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void currenciesHaveDefaultsAndAreSaved(TestContext context) {
         PartyControllerEntity controller = place(context);
         context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), Items.NETHER_STAR), "default star: a nether star");
-        context.assertTrue(isOf(controller.getCurrency(PartyCurrency.COIN), Items.GOLD_NUGGET), "default coin: a gold nugget");
+        context.assertTrue(isOf(controller.getCurrency(PartyCurrency.COIN), Items.EMERALD), "default coin: an emerald");
 
-        ItemStack coin = new ItemStack(Items.EMERALD, 12);
+        ItemStack coin = new ItemStack(Items.GOLD_NUGGET, 12);
         coin.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Pièce"));
         context.assertTrue(controller.setCurrency(PartyCurrency.COIN, coin), "an item picked as coin");
         context.assertTrue(!controller.setCurrency(PartyCurrency.STAR, coin.copyWithCount(1)), "the coin's very item can't be the star");
@@ -91,7 +91,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
         PartyControllerEntity old = new PartyControllerEntity(controller.getPos(), controller.getCachedState());
         old.read(new NbtCompound(), registries);
         context.assertTrue(isOf(old.getCurrency(PartyCurrency.STAR), Items.NETHER_STAR)
-                && isOf(old.getCurrency(PartyCurrency.COIN), Items.GOLD_NUGGET), "nothing saved: the defaults");
+                && isOf(old.getCurrency(PartyCurrency.COIN), Items.EMERALD), "nothing saved: the defaults");
 
         controller.setCurrency(PartyCurrency.STAR, ItemStack.EMPTY);
         context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), Items.NETHER_STAR), "nothing picked: back to the default");
@@ -157,7 +157,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             handler.onSlotClick(SLOT_STAR, 0, SlotActionType.PICKUP, player);
             context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), Items.DIAMOND), "the diamond clicked is the star");
             context.assertTrue(handler.getCursorStack().isOf(Items.DIAMOND) && handler.getCursorStack().getCount() == 4, "nothing taken from the cursor");
-            handler.setCursorStack(new ItemStack(Items.GOLD_NUGGET));
+            handler.setCursorStack(new ItemStack(Items.EMERALD));
             handler.onSlotClick(SLOT_STAR, 0, SlotActionType.PICKUP, player);
             context.assertTrue(isOf(controller.getCurrency(PartyCurrency.STAR), Items.DIAMOND), "the coin's item refused as star");
             handler.setCursorStack(ItemStack.EMPTY);
@@ -186,9 +186,9 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             startParty(controller);
             context.assertEquals(controller.canEdit(player), player.hasPermissionLevel(2), "during a party: operators only");
             if (!player.hasPermissionLevel(2)) {
-                handler.setCursorStack(new ItemStack(Items.EMERALD));
+                handler.setCursorStack(new ItemStack(Items.GOLD_NUGGET));
                 handler.onSlotClick(SLOT_COIN, 0, SlotActionType.PICKUP, player);
-                context.assertTrue(isOf(controller.getCurrency(PartyCurrency.COIN), Items.GOLD_NUGGET), "during a party: the coin is unchanged");
+                context.assertTrue(isOf(controller.getCurrency(PartyCurrency.COIN), Items.EMERALD), "during a party: the coin is unchanged");
             }
 
             // Following the party: anyone

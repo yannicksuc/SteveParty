@@ -54,7 +54,14 @@ public class ModItems {
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
     public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
+    /** The dice faces: the blank one first ({@link #blankDiceFace}), then kind by kind. */
     public static final List<Item> DICE_FACES = new ArrayList<>();
+    /** The dice module items, one per module of DiceModules. */
+    public static final List<Item> DICE_MODULES = new ArrayList<>();
+
+    public static Item blankDiceFace() {
+        return DICE_FACES.getFirst();
+    }
     public static final Item GARNET_CRYSTAL_BALL = register(GarnetCrystalBallItem.class,"garnet_crystal_ball");
     public static final Item MINI_GAMES_CATALOGUE = registerUnstackable(MiniGamesCatalogueItem.class,"mini_games_catalogue");
     public static final Item TOKEN = register(TokenItem.class, "token");
@@ -178,22 +185,23 @@ public class ModItems {
         // Register the group.
         Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
 
-        //generates dices items face from 1 to 10
+        // The dice faces, the blank one first, then kind by kind in the order of their values:
+        // numbers (0 to 10), premium, cursed, coins (+1 to +10), debts (-1 to -10), swap
         DICE_FACES.add(register(Item.class, "blank_dice_face"));
+        for (int i = 0; i <= 10; i++) DICE_FACES.add(register(Item.class, "dice_face_" + i));
+        for (int i = 1; i <= 10; i++) DICE_FACES.add(register(Item.class, "premium_dice_face_" + i));
+        for (int i = 1; i <= 3; i++) DICE_FACES.add(register(Item.class, "cursed_dice_face_" + i));
+        for (int i = 1; i <= fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace.MAX_COINS; i++)
+            DICE_FACES.add(register(Item.class, "coin_dice_face_" + i));
+        for (int i = 1; i <= fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace.MAX_COINS; i++)
+            DICE_FACES.add(register(Item.class, "debt_dice_face_" + i));
+        DICE_FACES.add(register(Item.class, "swap_dice_face"));
 
-        for (int i = 1; i <= 10; i++) {
-            DICE_FACES.add(register(Item.class, "dice_face_" + i));
-            DICE_FACES.add(register(Item.class, "premium_dice_face_" + i));
-            if (i <= 3)
-                DICE_FACES.add(register(Item.class, "cursed_dice_face_" + i));
+        // One item per dice module (see DiceModules)
+        for (fr.lordfinn.steveparty.dice.DiceModule module : fr.lordfinn.steveparty.dice.DiceModules.all()) {
+            Item item = new fr.lordfinn.steveparty.items.custom.DiceModuleItem(module, getSettings(new Item.Settings(), module.itemPath()));
+            DICE_MODULES.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(module.itemPath())), item));
         }
-        DICE_FACES.sort(
-                (item1, item2) -> {
-                    String name1 = item1.getName().getString();
-                    String name2 = item2.getName().getString();
-                    return name1.compareTo(name2);
-                }
-        );
 
         // Register items to the custom item group.
         ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
@@ -346,6 +354,9 @@ public class ModItems {
             itemGroup.add(DICE_FORGE);
             itemGroup.add(TELESCOPE);
             for (Item item : DICE_FACES) {
+                itemGroup.add(item);
+            }
+            for (Item item : DICE_MODULES) {
                 itemGroup.add(item);
             }
             itemGroup.add(DEFAULT_DICE);

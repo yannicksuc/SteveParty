@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.LoreComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -31,7 +30,10 @@ import java.util.regex.Pattern;
 /**
  * Faces of a die forged in the Dice Forge. A die carrying this component rolls one of these faces instead of the
  * default 1..10 range, each face being as likely as its weight (the number of that face placed in the forge).
- * Dice forged before weights existed read a weight of 1 for every face.
+ * <p>
+ * Besides the numbers (normal, premium, cursed, 0 and the blank side), a face may be a coin face (the roller gains
+ * coins), a debt face (the roller loses coins) or the swap face (the token swaps places with another one): see
+ * {@link fr.lordfinn.steveparty.dice.DiceOutcome} for what a roll does.
  */
 public record DiceFacesComponent(List<DiceFace> faces) {
     public static final int MAX_FACES = 12;
@@ -85,6 +87,21 @@ public record DiceFacesComponent(List<DiceFace> faces) {
         return component.faces().getLast();
     }
 
+    /** The faces a die rolls: its forged faces, or {@link DiceEntity#MIN}..{@link DiceEntity#MAX} for a plain die. */
+    public static List<DiceFace> facesOf(@Nullable ItemStack stack) {
+        DiceFacesComponent component = stack == null ? null : stack.get(TYPE);
+        if (component != null && !component.faces().isEmpty()) return component.faces();
+        List<DiceFace> faces = new ArrayList<>();
+        for (int value = DiceEntity.MIN; value <= DiceEntity.MAX; value++) faces.add(new DiceFace(Kind.NORMAL, value));
+        return faces;
+    }
+
+    /** Rolls the die: one of its faces by weight (a plain die: a number of {@link #facesOf}). Never null. */
+    public static DiceFace roll(@Nullable ItemStack stack, Random random) {
+        DiceFace face = rollDiceFace(stack, random);
+        return face != null ? face : new DiceFace(Kind.NORMAL, random.nextBetween(DiceEntity.MIN, DiceEntity.MAX));
+    }
+
     /** Sum of the face weights (at least 1). */
     public int totalWeight() {
         int total = 0;
@@ -116,7 +133,6 @@ public record DiceFacesComponent(List<DiceFace> faces) {
         die.set(TYPE, component);
         die.set(DataComponentTypes.ITEM_NAME,
                 Text.translatableWithFallback("item.steveparty.forged_dice", "Forged Dice"));
-        die.set(DataComponentTypes.LORE, new LoreComponent(List.of(component.describe())));
         return die;
     }
 
@@ -157,19 +173,27 @@ public record DiceFacesComponent(List<DiceFace> faces) {
         }
         public static final Comparator<DiceFace> ORDER =
                 Comparator.comparing(DiceFace::kind).thenComparingInt(DiceFace::value);
-        private static final Pattern FACE_PATTERN = Pattern.compile("^(premium_|cursed_)?dice_face_(\\d+)$");
+        private static final Pattern FACE_PATTERN = Pattern.compile("^(premium_|cursed_|coin_|debt_)?dice_face_(\\d+)$");
+        /** The highest number of coins a coin / debt face gives or takes. */
+        public static final int MAX_COINS = 10;
 
-        /** @return the face represented by this item (dice_face_N, premium_dice_face_N, cursed_dice_face_N, blank_dice_face). */
+        /**
+         * @return the face represented by this item (dice_face_N, premium_dice_face_N, cursed_dice_face_N,
+         * coin_dice_face_N, debt_dice_face_N, swap_dice_face, blank_dice_face).
+         */
         public static Optional<DiceFace> fromItem(Item item) {
             if (item == null || item == Items.AIR) return Optional.empty();
             Identifier id = Registries.ITEM.getId(item);
             if (!Steveparty.MOD_ID.equals(id.getNamespace())) return Optional.empty();
             String path = id.getPath();
             if (path.equals("blank_dice_face")) return Optional.of(new DiceFace(Kind.BLANK, 0));
+            if (path.equals("swap_dice_face")) return Optional.of(new DiceFace(Kind.SWAP, 0));
             Matcher matcher = FACE_PATTERN.matcher(path);
             if (!matcher.matches()) return Optional.empty();
-            Kind kind = matcher.group(1) == null ? Kind.NORMAL
-                    : matcher.group(1).equals("premium_") ? Kind.PREMIUM : Kind.CURSED;
+            Kind kind = Kind.NORMAL;
+            for (Kind candidate : Kind.values()) {
+                if (candidate.prefix.equals(matcher.group(1))) kind = candidate;
+            }
             try {
                 return Optional.of(new DiceFace(kind, Integer.parseInt(matcher.group(2))));
             } catch (NumberFormatException e) {
@@ -183,8 +207,24 @@ public record DiceFacesComponent(List<DiceFace> faces) {
 
         /** @return the face item this face was made from (AIR if it no longer exists). */
         public Item toItem() {
-            String path = kind == Kind.BLANK ? "blank_dice_face" : kind.prefix + "dice_face_" + value;
+            String path = kind == Kind.BLANK ? "blank_dice_face" : kind == Kind.SWAP ? "swap_dice_face"
+                    : kind.prefix + "dice_face_" + value;
             return Registries.ITEM.get(Steveparty.id(path));
+        }
+
+        /** @return the steps this face moves the token (0 for the coin, debt and swap faces). */
+        public int steps() {
+            return kind.numeric ? value : 0;
+        }
+
+        /** @return the coins this face gives (negative: takes), 0 for the other faces. */
+        public int coins() {
+            return kind == Kind.COIN ? value : kind == Kind.DEBT ? -value : 0;
+        }
+
+        /** @return true for the face 0: the token stays where it is and its tile plays its landing again. */
+        public boolean isZero() {
+            return kind == Kind.NORMAL && value == 0;
         }
 
         public Text asText() {
@@ -193,23 +233,40 @@ public record DiceFacesComponent(List<DiceFace> faces) {
                 case PREMIUM -> Text.literal(value + "★").formatted(Formatting.GOLD);
                 case CURSED -> Text.literal(value + "☠").formatted(Formatting.DARK_PURPLE);
                 case BLANK -> Text.literal("–").formatted(Formatting.DARK_GRAY);
+                case COIN -> Text.literal("+" + value + "¢").formatted(Formatting.YELLOW);
+                case DEBT -> Text.literal("−" + value + "¢").formatted(Formatting.RED);
+                case SWAP -> Text.literal("⇄").formatted(Formatting.LIGHT_PURPLE);
             };
         }
     }
 
     public enum Kind implements StringIdentifiable {
-        NORMAL("normal", ""),
-        PREMIUM("premium", "premium_"),
-        CURSED("cursed", "cursed_"),
-        BLANK("blank", "blank_");
+        NORMAL("normal", "", true),
+        PREMIUM("premium", "premium_", true),
+        CURSED("cursed", "cursed_", true),
+        BLANK("blank", "blank_", true),
+        /** The roller gains {@code value} coins of the party; the token doesn't move. */
+        COIN("coin", "coin_", false),
+        /** The roller loses {@code value} coins of the party (never more than they hold); the token doesn't move. */
+        DEBT("debt", "debt_", false),
+        /** The token swaps places with another token, chosen by the roller. */
+        SWAP("swap", "swap_", false);
 
         public static final Codec<Kind> CODEC = StringIdentifiable.createCodec(Kind::values);
         private final String name;
+        /** Prefix of the face items of this kind, before "dice_face_N". */
         private final String prefix;
+        /** The value of the face is a number of steps. */
+        private final boolean numeric;
 
-        Kind(String name, String prefix) {
+        Kind(String name, String prefix, boolean numeric) {
             this.name = name;
             this.prefix = prefix;
+            this.numeric = numeric;
+        }
+
+        public boolean isNumeric() {
+            return numeric;
         }
 
         @Override

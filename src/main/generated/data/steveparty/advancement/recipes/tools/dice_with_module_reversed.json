@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_dice_module_reversed": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_reversed"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:dice_with_module_reversed"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_dice_module_reversed"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:dice_with_module_reversed"
+    ]
+  }
+}

@@ -20,7 +20,7 @@ public class DiceEntityModel extends GeoModel<DiceEntity> {
 
     @Override
     public Identifier getTextureResource(DiceEntity diceEntity, @Nullable GeoRenderer<DiceEntity> geoRenderer) {
-        return Steveparty.id("textures/entity/dice/default_dice"+diceEntity.getRollValue()+".png");
+        return DiceEntityRenderer.textureOf(diceEntity);
     }
 
     @Override

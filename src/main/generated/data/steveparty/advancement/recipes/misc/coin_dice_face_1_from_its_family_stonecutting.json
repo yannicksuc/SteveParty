@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_coin_dice_face_1": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:coin_dice_face_1"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:coin_dice_face_1_from_its_family_stonecutting"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_coin_dice_face_1"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:coin_dice_face_1_from_its_family_stonecutting"
+    ]
+  }
+}

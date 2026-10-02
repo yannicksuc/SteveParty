@@ -26,6 +26,13 @@ public class ModRecipes {
     public static final RecipeSerializer<TileSizeRecipe> TILE_SIZE = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_tile_size"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(TileSizeRecipe::new));
 
+    /** A die + module items: the die with those modules added (the module items stay in the grid). One per module. */
+    public static final RecipeSerializer<DiceModuleRecipe> DICE_MODULE = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("dice_module"), new DiceModuleRecipe.Serializer());
+    /** Double / Triple Dice made of dice carrying faces or modules: the result keeps them. */
+    public static final RecipeSerializer<MultiDiceRecipe> MULTI_DICE = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("crafting_special_multi_dice"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(MultiDiceRecipe::new));
+
     public static void initialize() {
     }
 }

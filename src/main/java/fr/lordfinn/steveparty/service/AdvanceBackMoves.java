@@ -59,10 +59,13 @@ public final class AdvanceBackMoves {
         final @Nullable Deque<BlockPos> route;
         /** Decided, not walking yet (see {@link #START_DELAY_TICKS}). */
         boolean waiting = true;
+        /** The extra move of a tile (true), or the move of a roll going backward (the Reversed dice module). */
+        final boolean extra;
 
-        Move(boolean backward, @Nullable Deque<BlockPos> route) {
+        Move(boolean backward, @Nullable Deque<BlockPos> route, boolean extra) {
             this.backward = backward;
             this.route = route;
+            this.extra = extra;
         }
     }
 
@@ -118,7 +121,8 @@ public final class AdvanceBackMoves {
 
     /** True while the token makes (or is about to make) the extra move of a Move Forward / Back tile. */
     public static boolean isExtraMove(MobEntity token) {
-        return MOVES.containsKey(token.getUuid());
+        Move move = MOVES.get(token.getUuid());
+        return move != null && move.extra;
     }
 
     /** The extra move is decided but has not started yet: nothing else may move the token meanwhile. */
@@ -158,16 +162,25 @@ public final class AdvanceBackMoves {
      * back only as far as the path goes (0: nowhere to go back, nothing happens)
      */
     public static int launch(ServerWorld world, MobEntity token, BlockPos from, int steps) {
+        return launch(world, token, from, steps, true);
+    }
+
+    /**
+     * Same, for a move that is not the extra move of a tile when {@code extra} is false: the move of a roll going
+     * backward (the Reversed dice module). It walks back by the same rules, but it is an ordinary move: a Move
+     * Forward / Back tile it ends on plays as usual.
+     */
+    public static int launch(ServerWorld world, MobEntity token, BlockPos from, int steps, boolean extra) {
         if (steps == 0) return 0;
         Move move;
         int walked;
         if (steps > 0) {
-            move = new Move(false, null);
+            move = new Move(false, null, extra);
             walked = steps;
         } else {
             Route route = planBack(world, token, from, -steps);
             if (route.steps() == 0) return 0;
-            move = new Move(true, new ArrayDeque<>(route.spaces()));
+            move = new Move(true, new ArrayDeque<>(route.spaces()), extra);
             walked = route.steps();
         }
         UUID uuid = token.getUuid();

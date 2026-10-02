@@ -190,9 +190,20 @@ final class PartyHudModel {
             model.set(Action.MOVING, HudDraw.ICON_STEPS, Text.translatable(live.stepsLeft() > 0
                     ? "hud.steveparty.party.moving" : "hud.steveparty.party.moving_back"));
             model.badge = Text.translatable(steps == 1 ? "hud.steveparty.party.steps.one" : "hud.steveparty.party.steps", steps).getString();
-        } else if (live.roll() > 0) {
+        } else if (live.effect().swap()) {
+            // The swap face: who it swaps with once chosen; the coins of the same roll stay in the badge
+            PartyLiveData.RollEffect effect = live.effect();
+            model.set(Action.ROLLED, HudDraw.ICON_DICE, effect.swapWith().isEmpty()
+                    ? Text.translatable(mine ? "hud.steveparty.party.swap.choosing.you" : "hud.steveparty.party.swap.choosing", owner)
+                    : Text.translatable("hud.steveparty.party.swap", effect.swapWith()));
+            if (effect.coinFace()) model.badge = coinsBadge(effect.coins());
+        } else if (live.effect().coinFace()) {
             model.set(Action.ROLLED, HudDraw.ICON_DICE, mine ? Text.translatable("hud.steveparty.party.rolled.you") : Text.translatable("hud.steveparty.party.rolled", owner));
-            model.badge = Integer.toString(live.roll());
+            model.badge = coinsBadge(live.effect().coins());
+        } else if (live.roll() != 0 || live.effect().rolled()) {
+            // A number: the steps (0 for the face 0, negative for a roll going backward)
+            model.set(Action.ROLLED, HudDraw.ICON_DICE, mine ? Text.translatable("hud.steveparty.party.rolled.you") : Text.translatable("hud.steveparty.party.rolled", owner));
+            model.badge = live.roll() < 0 ? "\u2212" + -live.roll() : Integer.toString(live.roll());
         } else {
             model.yourTurn = mine;
             Text text;
@@ -201,6 +212,12 @@ final class PartyHudModel {
             else text = Text.translatable("hud.steveparty.party.roll", owner);
             model.set(Action.ROLL, HudDraw.ICON_DICE, text);
         }
+    }
+
+    /** "+5 coins", "−3 coins", "+1 coin". */
+    private static String coinsBadge(int coins) {
+        return Text.translatable(Math.abs(coins) == 1 ? "hud.steveparty.party.coins.one" : "hud.steveparty.party.coins",
+                fr.lordfinn.steveparty.dice.DiceOutcome.signed(coins)).getString();
     }
 
     private void set(Action action, Identifier icon, Text text) {

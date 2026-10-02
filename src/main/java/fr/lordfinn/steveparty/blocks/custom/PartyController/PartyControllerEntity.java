@@ -721,6 +721,29 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), PartyMoment.DICE_ROLLED, rollValue);
     }
 
+    /**
+     * The roll of {@code token} moved nothing (coin, debt or swap face): its turn ends where it stands, without
+     * landing on its tile.
+     *
+     * @return false if it is not the turn of that token (nothing done)
+     */
+    public boolean endTurnOf(UUID token) {
+        if (!(partyData.getCurrentStep() instanceof TokenTurnPartyStep turn) || turn.getStatus() != PartyStep.Status.IN_PROGRESS
+                || !token.equals(turn.getTokenUUID())) return false;
+        nextStep();
+        return true;
+    }
+
+    /** The roll of the turn of {@code token} gave or took coins: the party HUD shows it. */
+    public void noteRollCoins(UUID token, int coins) {
+        if (partyData.getCurrentStep() instanceof TokenTurnPartyStep turn && token.equals(turn.getTokenUUID())) turn.noteCoins(coins);
+    }
+
+    /** The roll of the turn of {@code token} swapped it with the token named {@code with}: the party HUD shows it. */
+    public void noteRollSwap(UUID token, String with) {
+        if (partyData.getCurrentStep() instanceof TokenTurnPartyStep turn && token.equals(turn.getTokenUUID())) turn.noteSwap(with);
+    }
+
     /** Free play: a token that is not in a running party finished its movement. */
     public static void onFreeTokenArrived(ServerWorld world, Entity token) {
         if (getRunningPartyOf(token.getUuid()).isEmpty())

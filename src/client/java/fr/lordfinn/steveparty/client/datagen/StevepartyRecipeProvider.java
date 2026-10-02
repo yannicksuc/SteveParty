@@ -2,7 +2,11 @@ package fr.lordfinn.steveparty.client.datagen;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.recipes.DiceModuleRecipe;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
@@ -86,24 +90,75 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 }
             }
 
+            /** A special dice face: a blank face and its ingredient, anywhere in the grid. */
+            private void offerSpecialFace(String face, Item blank, Item ingredient) {
+                createShapeless(RecipeCategory.MISC, Registries.ITEM.get(Steveparty.id(face)), 1)
+                        .input(blank)
+                        .input(ingredient)
+                        .criterion(hasItem(blank), conditionsFromItem(blank))
+                        .offerTo(exporter, id(face + "_from_crafting"));
+            }
+
+            /** Coin / debt faces: any face of the family is cut into any value of it at the stonecutter. */
+            private void offerFaceValues(String prefix) {
+                List<Item> family = new java.util.ArrayList<>();
+                for (int value = 1; value <= DiceFacesComponent.DiceFace.MAX_COINS; value++)
+                    family.add(Registries.ITEM.get(Steveparty.id(prefix + value)));
+                for (Item output : family) {
+                    StonecuttingRecipeJsonBuilder.createStonecutting(Ingredient.ofItems(family.stream().filter(item -> item != output)),
+                                    RecipeCategory.MISC, output, 1)
+                            .criterion(hasItem(family.getFirst()), conditionsFromItem(family.getFirst()))
+                            .offerTo(exporter, id(getItemPath(output) + "_from_its_family_stonecutting"));
+                }
+            }
+
+            /**
+             * A dice module: its item (a blank face and its ingredient, anywhere in the grid), and the craft that puts
+             * it on a die (see DiceModuleRecipe), unlocked by the module item.
+             */
+            private void offerModule(DiceModule module, Item blank, Item ingredient) {
+                createShapeless(RecipeCategory.MISC, module.item(), 1)
+                        .input(blank)
+                        .input(ingredient)
+                        .criterion(hasItem(blank), conditionsFromItem(blank))
+                        .offerTo(exporter); // named after the item: steveparty:dice_module_<id>
+                RegistryKey<Recipe<?>> onDie = RegistryKey.of(RegistryKeys.RECIPE, Steveparty.id("dice_with_module_" + module.id()));
+                exporter.accept(onDie, new DiceModuleRecipe(module), exporter.getAdvancementBuilder()
+                        .criterion("has_the_recipe", RecipeUnlockedCriterion.create(onDie))
+                        .criterion(hasItem(module.item()), conditionsFromItem(module.item()))
+                        .rewards(AdvancementRewards.Builder.recipe(onDie))
+                        .criteriaMerger(AdvancementRequirements.CriterionMerger.OR)
+                        .build(onDie.getValue().withPrefixedPath("recipes/tools/")));
+            }
+
             @Override
             public void generate() {
-                //TagKey<Item> diceTag = StevepartyReferenceItemTagProvider.DICE_FACES_TAG;
-                List<Item> allDice = ModItems.DICE_FACES;
-                for (Item dice : allDice) {
-                    if (dice == ModItems.DICE_FACES.get(0))
-                        continue;
-                    offerStonecuttingRecipe(
-                            RecipeCategory.MISC,
-                            dice,
-                            ModItems.DICE_FACES.get(0)
-                    );
-                    offerStonecuttingRecipe(
-                            RecipeCategory.MISC,
-                            ModItems.DICE_FACES.get(0),
-                            dice
-                    );
+                // Dice faces. The numbers (0 included, premium, cursed) are cut from a blank face at the stonecutter,
+                // and any face is cut back into a blank one. The special faces are crafted from a blank face and an
+                // ingredient (their value 1 for the coin and debt faces), then cut into the value wanted.
+                Item blank = ModItems.blankDiceFace();
+                for (Item dice : ModItems.DICE_FACES) {
+                    if (dice == blank) continue;
+                    DiceFacesComponent.Kind kind = DiceFacesComponent.DiceFace.fromItem(dice).orElseThrow().kind();
+                    if (kind.isNumeric()) offerStonecuttingRecipe(RecipeCategory.MISC, dice, blank);
+                    offerStonecuttingRecipe(RecipeCategory.MISC, blank, dice);
                 }
+                offerSpecialFace("coin_dice_face_1", blank, Items.EMERALD);
+                offerSpecialFace("debt_dice_face_1", blank, Items.SPIDER_EYE);
+                offerSpecialFace("swap_dice_face", blank, Items.ENDER_PEARL);
+                offerFaceValues("coin_dice_face_");
+                offerFaceValues("debt_dice_face_");
+
+                // Dice modules: a blank face and what the module is about
+                offerModule(DiceModules.SLOW, blank, Items.CLOCK);
+                offerModule(DiceModules.CHOICE, blank, Items.COMPASS);
+                offerModule(DiceModules.INFINITY, blank, Items.ECHO_SHARD);
+                offerModule(DiceModules.LUCKY, blank, Items.RABBIT_FOOT);
+                offerModule(DiceModules.REROLL, blank, Items.WIND_CHARGE);
+                offerModule(DiceModules.REVERSED, blank, Items.FERMENTED_SPIDER_EYE);
+                offerModule(DiceModules.SKELETON_KEY, blank, Items.TRIPWIRE_HOOK);
+                offerModule(DiceModules.HOMING, blank, Items.ENDER_EYE);
+
                 createShaped(RecipeCategory.MISC, ModItems.DICE_FACES.get(0), 4) // output 4 blank dice faces
                         .pattern("IQ")
                         .pattern("QI")

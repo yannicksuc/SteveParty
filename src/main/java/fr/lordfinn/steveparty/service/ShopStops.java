@@ -191,7 +191,9 @@ public final class ShopStops {
     public static boolean onTileReached(MobEntity mob, BoardSpaceBlockEntity space) {
         if (!(mob instanceof TokenizedEntityInterface token) || shopCartridge(space) == null) return false;
         int steps = token.steveparty$getNbSteps();
-        if (!ABoardSpaceBlock.countsAsStep(space.getCachedState().getBlock())) return steps > 0 && start(mob, space, null);
+        // A check point: the token walking forward stops to shop, unless its die carries the Skeleton Key module
+        if (!ABoardSpaceBlock.countsAsStep(space.getCachedState().getBlock()))
+            return steps > 0 && !DiceRollEffects.ignoresStops(mob) && start(mob, space, null);
         if (steps == 0 && !TileFeedback.isInRunningParty(mob.getUuid())) start(mob, space, null);
         return false;
     }

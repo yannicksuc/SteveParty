@@ -3,6 +3,11 @@ package fr.lordfinn.steveparty.client.compat.rei;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.compat.CartridgeApplications;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
+import fr.lordfinn.steveparty.dice.DiceModule;
+import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.items.ModItems;
+import me.shedaniel.rei.plugin.common.displays.crafting.DefaultCustomShapelessDisplay;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
@@ -17,10 +22,13 @@ import net.minecraft.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Optional REI plugin (entrypoint {@code rei_client}, only loaded by REI): every tile in each size and with each role in
- * the list, and the « Cartridge application » category (see {@link CartridgeApplications}).
+ * the list, the « Cartridge application » category (see {@link CartridgeApplications}), and the crafts of the dice
+ * modules (special recipes: shown as ordinary crafting recipes).
  */
 public class SteveReiPlugin implements REIClientPlugin {
     public static final CategoryIdentifier<CartridgeApplicationDisplay> CARTRIDGE_APPLICATION =
@@ -45,6 +53,38 @@ public class SteveReiPlugin implements REIClientPlugin {
             count++;
         }
         Steveparty.LOGGER.info("REI: {} cartridge application displays", count);
+        registerDiceDisplays(registry);
+    }
+
+    /**
+     * The dice recipes REI can't read by itself (recipe types of the mod): one craft per module (a die and the module item:
+     * the die carrying it, on a plain die, a forged one, a Double and a Triple Dice in turn), and the Double / Triple
+     * Dice keeping the modules of their dice.
+     */
+    private static void registerDiceDisplays(DisplayRegistry registry) {
+        List<ItemStack> dice = List.of(new ItemStack(ModItems.DEFAULT_DICE),
+                DiceFacesComponent.createDie(List.of(new ItemStack(ModItems.DICE_FACES.get(2)), new ItemStack(ModItems.DICE_FACES.get(7)))),
+                new ItemStack(ModItems.DOUBLE_DICE), new ItemStack(ModItems.TRIPLE_DICE));
+        for (DiceModule module : DiceModules.all()) {
+            List<ItemStack> results = new ArrayList<>();
+            for (ItemStack die : dice) results.add(DiceModules.set(die.copy(), Map.of(module, 1)));
+            registry.add(new DefaultCustomShapelessDisplay(
+                    List.of(EntryIngredients.ofItemStacks(dice), EntryIngredients.of(module.item())),
+                    List.of(EntryIngredients.ofItemStacks(results)),
+                    Optional.of(Steveparty.id("dice_module/" + module.id()))));
+        }
+        ItemStack lucky = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.LUCKY, 2));
+        ItemStack infinite = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.INFINITY, 1));
+        Map<DiceModule, Integer> both = DiceModules.union(DiceModules.of(lucky), DiceModules.of(infinite));
+        registry.add(new DefaultCustomShapelessDisplay(
+                List.of(EntryIngredients.of(lucky), EntryIngredients.of(infinite)),
+                List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.DOUBLE_DICE), both))),
+                Optional.of(Steveparty.id("multi_dice/double"))));
+        registry.add(new DefaultCustomShapelessDisplay(
+                List.of(EntryIngredients.of(lucky), EntryIngredients.of(infinite), EntryIngredients.of(ModItems.DEFAULT_DICE)),
+                List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.TRIPLE_DICE), both))),
+                Optional.of(Steveparty.id("multi_dice/triple"))));
+        Steveparty.LOGGER.info("REI: {} dice module displays", DiceModules.all().size() + 2);
     }
 
     @Override

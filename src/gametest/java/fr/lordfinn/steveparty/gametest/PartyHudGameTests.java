@@ -136,13 +136,13 @@ public class PartyHudGameTests implements FabricGameTest {
             PartyControllerEntity controller = startParty(context, pig.getUuid(), UUID.randomUUID());
             player.getInventory().setStack(10, new ItemStack(Items.NETHER_STAR, 2));
             player.getInventory().setStack(11, new ItemStack(Items.NETHER_STAR));
-            player.getInventory().setStack(12, new ItemStack(Items.GOLD_NUGGET, 20));
-            ItemStack renamed = new ItemStack(Items.GOLD_NUGGET, 5);
+            player.getInventory().setStack(12, new ItemStack(Items.EMERALD, 20));
+            ItemStack renamed = new ItemStack(Items.EMERALD, 5);
             renamed.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Fake coin"));
             player.getInventory().setStack(13, renamed);
 
             PartyLiveData live = capture(context, controller);
-            context.assertTrue(live.starItem().isOf(Items.NETHER_STAR) && live.coinItem().isOf(Items.GOLD_NUGGET), "the default currencies, for the icons");
+            context.assertTrue(live.starItem().isOf(Items.NETHER_STAR) && live.coinItem().isOf(Items.EMERALD), "the default currencies, for the icons");
             PartyLiveData.Standing standing = live.standings().getFirst();
             context.assertEquals(standing.stars(), 3, "the nether stars held");
             context.assertEquals(standing.coins(), 20, "the plain gold nuggets held (not the renamed ones)");

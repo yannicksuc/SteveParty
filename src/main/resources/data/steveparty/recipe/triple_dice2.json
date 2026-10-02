@@ -2,12 +2,20 @@
   "type": "minecraft:crafting_shapeless",
   "category": "equipment",
   "ingredients": [
-    "steveparty:double_dice",
+    {
+      "fabric:type": "fabric:components",
+      "base": "steveparty:double_dice",
+      "components": {
+        "!steveparty:dice-faces": {},
+        "!steveparty:dice-modules": {}
+      }
+    },
     {
       "fabric:type": "fabric:components",
       "base": "steveparty:default_dice",
       "components": {
-        "!steveparty:dice-faces": {}
+        "!steveparty:dice-faces": {},
+        "!steveparty:dice-modules": {}
       }
     }
   ],

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "steveparty:blank_dice_face",
+    "minecraft:emerald"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:coin_dice_face_1"
+  }
+}

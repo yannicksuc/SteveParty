@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "steveparty:blank_dice_face",
+    "minecraft:ender_eye"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:dice_module_homing"
+  }
+}
