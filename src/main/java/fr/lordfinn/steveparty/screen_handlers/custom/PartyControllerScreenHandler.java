@@ -61,13 +61,13 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public enum Page { STATE, PLAYERS, PROGRAM, GAINS, SETTINGS }
 
     // Layout (shared with the screen). Compact: with its tabs (17 px above the panel) and the player's inventory, the
-    // dashboard is 214 px high: it fits a 427 x 240 screen (a large GUI scale) with room left under it (the search
+    // dashboard is 216 px high: it fits a 427 x 240 screen (a large GUI scale) with room left under it (the search
     // field of a recipe viewer).
     public static final int WIDTH = 236, PANEL_HEIGHT = 113;
     /** The player's inventory (Program and Gains pages): a panel without title under the page. */
     public static final int INVENTORY_Y = PANEL_HEIGHT + 2, INVENTORY_PANEL_HEIGHT = 82, INVENTORY_PAD = 4;
-    /** Height of the tabs above the panel. */
-    public static final int TABS_HEIGHT = 17;
+    /** Room taken by the tabs above the panel (the selected one, the tallest). */
+    public static final int TABS_HEIGHT = 19;
     /** Program page: the catalogue slot, left of the grid of its mini-games. */
     public static final int CATALOGUE_X = 9, CATALOGUE_Y = 19;
     /** Gains page: the Coin and Star items, above their columns (on the title's line). */

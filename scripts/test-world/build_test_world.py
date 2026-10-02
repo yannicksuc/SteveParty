@@ -904,7 +904,7 @@ def showcase():
              ['{id:"steveparty:advanced_tile",count:8}', '{id:"steveparty:check_point",count:2}',
               '{id:"steveparty:tile_behavior_start",count:2}', '{id:"steveparty:board_space_behavior",count:8}',
               '{id:"steveparty:token",count:2}', '{id:"steveparty:tokenizer_wand",count:1}',
-              '{id:"steveparty:trading_stall",count:1}', '{id:"minecraft:emerald",count:64}']
+              '{id:"steveparty:trading_stall",count:1}', '{id:"steveparty:coin",count:64}']
     items = ','.join(s.replace('{', '{Slot:%db,' % slot, 1) for slot, s in enumerate(stacks))
     cmds += ['setblock %d %d %d minecraft:chest[facing=east]{CustomName:%s,Items:[%s]}'
              % (SC_CHEST[0], Y, SC_CHEST[1], jtext('Coffre des nouveautés'), items),
@@ -915,9 +915,9 @@ def showcase():
     # The merchant: a Boxed Trader in a pen, his trading stall (3 offers) and his stock chest
     px0, pz0, px1, pz1 = SC_PEN
     gate = (px0, (pz0 + pz1) // 2)
-    offers = [('minecraft:emerald', 3, 'steveparty:replay_cartridge', 1),
-              ('minecraft:emerald', 2, 'steveparty:board_space_behavior_stop', 1),
-              ('minecraft:emerald', 5, 'minecraft:golden_apple', 1)]
+    offers = [('steveparty:coin', 3, 'steveparty:replay_cartridge', 1),
+              ('steveparty:coin', 2, 'steveparty:board_space_behavior_stop', 1),
+              ('steveparty:coin', 5, 'minecraft:golden_apple', 1)]
     stall = []
     for col, (price, n, sell, m) in enumerate(offers):
         stall += ['{Slot:%db,id:"%s",count:%d}' % (col, price, n), '{Slot:%db,id:"%s",count:%d}' % (col + 18, sell, m)]
@@ -934,9 +934,9 @@ def showcase():
              # animation is over (20 ticks, while his chunk ticks): the new one is summoned once he is gone
              'schedule function %s:showcase_merchant 40t' % NS,
              'setblock %d %d %d minecraft:chest[facing=west]{CustomName:%s,Items:[%s]}'
-             % (SC_EMERALDS[0], Y, SC_EMERALDS[1], jtext('Émeraudes pour la boutique'),
-                ','.join('{Slot:%db,id:"minecraft:emerald",count:64}' % s for s in range(4))),
-             label(SC_EMERALDS[0] + 0.5, Y + 1.6, SC_EMERALDS[1] + 0.5, 'Émeraudes pour acheter', 'white', 0.6, False),
+             % (SC_EMERALDS[0], Y, SC_EMERALDS[1], jtext('Pièces pour la boutique'),
+                ','.join('{Slot:%db,id:"steveparty:coin",count:64}' % s for s in range(4))),
+             label(SC_EMERALDS[0] + 0.5, Y + 1.6, SC_EMERALDS[1] + 0.5, 'Pièces pour acheter', 'white', 0.6, False),
              label((px0 + px1) / 2 + 0.5, Y + 4.6, (pz0 + pz1) / 2 + 0.5, 'BOUTIQUE DU MARCHAND', 'yellow', 1.5),
              label((px0 + px1) / 2 + 0.5, Y + 3.2, (pz0 + pz1) / 2 + 0.5,
                    'À faire une fois après chaque reconstruction :\nClé du Marchand (coffre des nouveautés) en main,\n'
