@@ -94,7 +94,7 @@ public final class TelescopeClient {
         BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.TELESCOPE, (stack, mode, matrices, vertexConsumers, light, overlay) -> {
             matrices.push();
             matrices.translate(0.5f, 0f, 0.5f);
-            icon.render(matrices, vertexConsumers, light, overlay, 0f, 0f, TelescopeModel.REST_PITCH);
+            icon.render(matrices, vertexConsumers, light, overlay, 0f, 0f, TelescopeModel.REST_PITCH, true);
             matrices.pop();
         });
         ClientPlayNetworking.registerGlobalReceiver(TelescopePayloads.Open.ID,
@@ -106,6 +106,7 @@ public final class TelescopeClient {
             guides = List.of();
             zoom = prevZoom = 0;
         });
+        ClientTickEvents.END_CLIENT_TICK.register(TelescopePoses::tick);
         ClientTickEvents.END_CLIENT_TICK.register(TelescopeClient::tick);
         HudRenderCallback.EVENT.register(TelescopeClient::renderHud);
         WorldRenderEvents.END.register(TelescopeClient::renderSky);
@@ -145,6 +146,8 @@ public final class TelescopeClient {
     private static void close(boolean sound) {
         if (watching == null) return;
         watching = null;
+        // the server lets the others see him straighten up
+        if (ClientPlayNetworking.canSend(TelescopePayloads.Leave.ID)) ClientPlayNetworking.send(new TelescopePayloads.Leave());
         nights = new ArrayList<>();
         setIndex(0);
         successTicks = -1;

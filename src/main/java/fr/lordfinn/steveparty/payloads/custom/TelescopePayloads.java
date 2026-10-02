@@ -26,6 +26,7 @@ public final class TelescopePayloads {
         PayloadTypeRegistry.playS2C().register(Open.ID, Open.CODEC);
         PayloadTypeRegistry.playS2C().register(Guides.ID, Guides.CODEC);
         PayloadTypeRegistry.playC2S().register(Found.ID, Found.CODEC);
+        PayloadTypeRegistry.playC2S().register(Leave.ID, Leave.CODEC);
     }
 
     private static <T extends CustomPayload> CustomPayload.Id<T> id(String name) {
@@ -91,6 +92,17 @@ public final class TelescopePayloads {
             for (int i = 0; i < n; i++) guides.add(new Guide(buf.readVarInt(), buf.readInt(), buf.readInt()));
             return new Guides(guides);
         });
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /** Client → server: the player takes his eye off the telescope. */
+    public record Leave() implements CustomPayload {
+        public static final Id<Leave> ID = TelescopePayloads.id("leave");
+        public static final PacketCodec<PacketByteBuf, Leave> CODEC = PacketCodec.unit(new Leave());
 
         @Override
         public Id<? extends CustomPayload> getId() {

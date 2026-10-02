@@ -11,7 +11,11 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import fr.lordfinn.steveparty.blocks.custom.TelescopeBlockEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.GlobalPos;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +32,9 @@ import java.util.UUID;
  *   <li>answers a click on a telescope with the past nights that player can replay there ({@link #nights}: the sites
  *   within {@value #RANGE} blocks he has neither found nor been to, read from the list in memory);</li>
  *   <li>records that he found one ({@link #found}) and that he has been to one ({@link #visits}), per player, in
- *   MulaSpawnSites, and tells him (only him) his guide stars.</li>
+ *   MulaSpawnSites, and tells him (only him) his guide stars;</li>
+ *   <li>knows who looks through which telescope (one player at a time), so that the others see him at its eyepiece.
+ *   Only that is shared: what he sees in it is not.</li>
  * </ul>
  * It never changes the time or the weather, spawns nothing, loads no chunk and makes no Mula appear early.
  */
@@ -43,7 +49,12 @@ public final class TelescopeService {
     /** At most one answer per player every this many ticks, and the players' places are checked this often. */
     public static final int QUERY_COOLDOWN = 10, VISIT_PERIOD = 40;
 
+    /** A player coming to the eyepiece stands at least this far from the telescope's centre (blocks). */
+    private static final double MIN_STANCE = 0.45;
+
     private static final Map<UUID, Integer> LAST_QUERY = new HashMap<>();
+    /** The telescope each player is looking through. */
+    private static final Map<UUID, GlobalPos> WATCHING = new HashMap<>();
     /** The nights last shown to each player: only those can be reported found. */
     private static final Map<UUID, Set<Integer>> OFFERED = new HashMap<>();
 
@@ -53,8 +64,15 @@ public final class TelescopeService {
             ServerPlayerEntity player = context.player();
             ModPayloads.runInPacketOrder(player, () -> found(player, payload.site()));
         });
+        ServerPlayNetworking.registerGlobalReceiver(TelescopePayloads.Leave.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            ModPayloads.runInPacketOrder(player, () -> leave(player));
+        });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> syncGuides(handler.getPlayer()));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> forget(handler.getPlayer().getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            leave(handler.getPlayer());
+            forget(handler.getPlayer().getUuid());
+        });
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> syncGuides(player));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> syncGuides(newPlayer));
         ServerTickEvents.END_WORLD_TICK.register(world -> {
@@ -65,6 +83,79 @@ public final class TelescopeService {
     public static void forget(UUID player) {
         LAST_QUERY.remove(player);
         OFFERED.remove(player);
+        WATCHING.remove(player);
+    }
+
+    // ---------------------------------------------------------------- the watcher at the eyepiece
+
+    /** The telescope a player is looking through (null: none). */
+    public static @Nullable GlobalPos watching(UUID player) {
+        return WATCHING.get(player);
+    }
+
+    /**
+     * Is that player still at this telescope, under a night sky? Checked by the telescope itself
+     * (TelescopeBlockEntity), so a watcher who vanished never keeps it.
+     */
+    public static boolean stillWatching(ServerWorld world, BlockPos pos, UUID watcher) {
+        return canWatch(world, pos) && isAt(world, pos, watcher);
+    }
+
+    /** Is that player at this telescope? Online, alive, in its world, close to it. */
+    public static boolean isAt(ServerWorld world, BlockPos pos, UUID watcher) {
+        if (!(world.getPlayerByUuid(watcher) instanceof ServerPlayerEntity player)) return false;
+        if (!player.isAlive() || player.isSpectator()) return false;
+        double dx = player.getX() - (pos.getX() + 0.5), dz = player.getZ() - (pos.getZ() + 0.5);
+        return dx * dx + dz * dz <= TelescopeMath.WATCH_DISTANCE * TelescopeMath.WATCH_DISTANCE
+                && Math.abs(player.getY() - pos.getY()) <= TelescopeMath.WATCH_DISTANCE;
+    }
+
+    /** The telescope let its watcher go. */
+    public static void released(UUID watcher, ServerWorld world, BlockPos pos) {
+        WATCHING.remove(watcher, GlobalPos.create(world.getRegistryKey(), pos));
+    }
+
+    /** The player takes his eye off the telescope he was looking through. */
+    public static void leave(ServerPlayerEntity player) {
+        GlobalPos at = WATCHING.remove(player.getUuid());
+        if (at == null) return;
+        ServerWorld world = player.server.getWorld(at.dimension());
+        if (world != null && world.isChunkLoaded(at.pos()) && world.getBlockEntity(at.pos()) instanceof TelescopeBlockEntity telescope
+                && player.getUuid().equals(telescope.getWatcher())) {
+            telescope.setWatcher(null);
+        }
+    }
+
+    /**
+     * The player comes to the eyepiece, unless another player is at it (one eyepiece: one player at a time): he is
+     * the telescope's watcher (the others see him there), and steps to where his eye meets it, if he can stand there.
+     *
+     * @return false if the telescope is taken
+     */
+    public static boolean comeToEyepiece(ServerPlayerEntity player, BlockPos pos, TelescopeBlockEntity telescope) {
+        UUID watcher = telescope.getWatcher();
+        if (watcher != null && !watcher.equals(player.getUuid()) && isAt(player.getServerWorld(), pos, watcher)) return false;
+        GlobalPos at = GlobalPos.create(player.getServerWorld().getRegistryKey(), pos);
+        if (!at.equals(WATCHING.get(player.getUuid()))) leave(player);
+        WATCHING.put(player.getUuid(), at);
+        telescope.setWatcher(player.getUuid());
+        if (Math.abs(player.getY() - pos.getY()) > 0.6) return true;
+        double[] neck = new double[3];
+        TelescopeMath.neck(player.getYaw(), player.getPitch(), neck);
+        // not into the tripod (a steep aim puts the eyepiece over it)
+        double flat = Math.sqrt(neck[0] * neck[0] + neck[2] * neck[2]);
+        if (flat < MIN_STANCE) {
+            double yaw = Math.toRadians(player.getYaw());
+            neck[0] = Math.sin(yaw) * MIN_STANCE;
+            neck[2] = -Math.cos(yaw) * MIN_STANCE;
+        }
+        double x = pos.getX() + 0.5 + neck[0], z = pos.getZ() + 0.5 + neck[2];
+        Box box = player.getBoundingBox().offset(x - player.getX(), 0, z - player.getZ());
+        ServerWorld world = player.getServerWorld();
+        // room to stand, on something
+        if (!world.isSpaceEmpty(player, box.contract(1e-3)) || world.isSpaceEmpty(player, box.offset(0, -0.6, 0))) return true;
+        player.networkHandler.requestTeleport(x, player.getY(), z, player.getYaw(), player.getPitch());
+        return true;
     }
 
     /** A night sky, clear, seen from the telescope: a dimension with a sky, at night, no rain, nothing over it. */
@@ -106,6 +197,10 @@ public final class TelescopeService {
         Integer last = LAST_QUERY.get(player.getUuid());
         if (last != null && now - last >= 0 && now - last < QUERY_COOLDOWN) return false;
         LAST_QUERY.put(player.getUuid(), now);
+        if (world.getBlockEntity(pos) instanceof TelescopeBlockEntity telescope && !comeToEyepiece(player, pos, telescope)) {
+            player.sendMessage(Text.translatable("message.steveparty.telescope.busy"), true);
+            return false;
+        }
         answer(player, pos);
         return true;
     }
