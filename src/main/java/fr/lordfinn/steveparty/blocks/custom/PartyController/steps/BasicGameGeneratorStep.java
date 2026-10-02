@@ -148,4 +148,17 @@ public class BasicGameGeneratorStep extends PartyStep {
     }
 
     public record ExpandedCard(PartyCardItem.CardType type, int count) {}
+
+    /**
+     * The default party written as cards (what an empty program shows): the players' turn, a mini-game, and a
+     * "repeat" card of as many cards as rounds. Expanded, it is exactly what {@link #expand} gives an empty program.
+     */
+    public static List<ExpandedCard> defaultProgram(int defaultRounds) {
+        int rounds = Math.max(1, defaultRounds);
+        List<ExpandedCard> cards = new ArrayList<>();
+        cards.add(new ExpandedCard(PartyCardItem.CardType.TURNS, 1));
+        cards.add(new ExpandedCard(PartyCardItem.CardType.MINIGAME, 1));
+        if (rounds > 1) cards.add(new ExpandedCard(PartyCardItem.CardType.REPEAT, rounds));
+        return cards;
+    }
 }

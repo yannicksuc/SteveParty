@@ -34,13 +34,13 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 /**
- * The Party Controller's dashboard: six pages (state, players, mini-games, party program cards, gains, settings) fed by a
+ * The Party Controller's dashboard: five pages (state, players, program, gains, settings) fed by a
  * {@link PartyDashboardData} the server sends while the screen is open, three slots (the mini-game catalogue, the
  * star item and the coin item) and the player's inventory. Everything is checked server side: the setting slots and
  * the buttons and the program cards only act for a player who {@linkplain PartyControllerEntity#canEdit may edit} the controller (except
  * following the party, open to anyone), the catalogue slot follows the block's rule (locked while powered).
  * <p>
- * The setting slots are « ghost » slots: clicking one with an item picks that item (nothing is taken), clicking it
+ * The currency slots (the Star and Coin items, shown on the Gains page) are « ghost » slots: clicking one with an item picks that item (nothing is taken), clicking it
  * with an empty hand puts the default item back.
  */
 public class PartyControllerScreenHandler extends ScreenHandler {
@@ -58,17 +58,25 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int BOARD_INTERVAL = 100;
 
     /** Pages of the dashboard: each shows its own slots (client side; the server always has them all). */
-    public enum Page { STATE, PLAYERS, MINI_GAMES, PROGRAM, GAINS, SETTINGS }
+    public enum Page { STATE, PLAYERS, PROGRAM, GAINS, SETTINGS }
 
-    // Layout (shared with the screen)
-    /** Wide enough for the six tabs with their whole names (English and French). */
-    public static final int WIDTH = 272, PANEL_HEIGHT = 158;
-    public static final int INVENTORY_Y = PANEL_HEIGHT + 4;
-    public static final int CATALOGUE_X = 14, CATALOGUE_Y = 32;
-    public static final int STAR_X = 16, STAR_Y = 28, COIN_X = 16, COIN_Y = 62;
+    // Layout (shared with the screen). Compact: with its tabs (17 px above the panel) and the player's inventory, the
+    // dashboard is 214 px high: it fits a 427 x 240 screen (a large GUI scale) with room left under it (the search
+    // field of a recipe viewer).
+    public static final int WIDTH = 236, PANEL_HEIGHT = 113;
+    /** The player's inventory (Program and Gains pages): a panel without title under the page. */
+    public static final int INVENTORY_Y = PANEL_HEIGHT + 2, INVENTORY_PANEL_HEIGHT = 82, INVENTORY_PAD = 4;
+    /** Height of the tabs above the panel. */
+    public static final int TABS_HEIGHT = 17;
+    /** Program page: the catalogue slot, left of the grid of its mini-games. */
+    public static final int CATALOGUE_X = 9, CATALOGUE_Y = 19;
+    /** Gains page: the Coin and Star items, above their columns (on the title's line). */
+    public static final int GAINS_COIN_X = 88, GAINS_STAR_X = 162, GAINS_COLUMN = 62;
+    public static final int COIN_X = GAINS_COIN_X + (GAINS_COLUMN - 16) / 2, COIN_Y = 6;
+    public static final int STAR_X = GAINS_STAR_X + (GAINS_COLUMN - 16) / 2, STAR_Y = 6;
     /** The party program: its card slots come after the player's inventory, 2 rows of 9 (Program page). */
     public static final int PROGRAM_FIRST_SLOT = PLAYER_SLOTS + 36;
-    public static final int PROGRAM_X = (WIDTH - 162) / 2 + 1, PROGRAM_Y = 40;
+    public static final int PROGRAM_X = (WIDTH - 162) / 2 + 1, PROGRAM_Y = 59;
 
     private final @Nullable PartyControllerEntity controller;
     private final BlockPos pos;
@@ -108,13 +116,13 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         addSlot(new GhostSlot(currencies, 0, STAR_X, STAR_Y));
         addSlot(new GhostSlot(currencies, 1, COIN_X, COIN_Y));
         int invX = (WIDTH - 162) / 2 + 1;
-        EnumSet<Page> withInventory = EnumSet.of(Page.MINI_GAMES, Page.PROGRAM, Page.SETTINGS);
+        EnumSet<Page> withInventory = EnumSet.of(Page.PROGRAM, Page.GAINS);
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++)
-                addSlot(new PageSlot(playerInventory, col + row * 9 + 9, invX + col * 18, INVENTORY_Y + 14 + row * 18, withInventory));
+                addSlot(new PageSlot(playerInventory, col + row * 9 + 9, invX + col * 18, INVENTORY_Y + INVENTORY_PAD + row * 18, withInventory));
         }
         for (int col = 0; col < 9; col++)
-            addSlot(new PageSlot(playerInventory, col, invX + col * 18, INVENTORY_Y + 14 + 58, withInventory));
+            addSlot(new PageSlot(playerInventory, col, invX + col * 18, INVENTORY_Y + INVENTORY_PAD + 58, withInventory));
         for (int i = 0; i < PartyControllerEntity.PROGRAM_SLOTS; i++)
             addSlot(new CardSlot(program, i, PROGRAM_X + (i % 9) * 18, PROGRAM_Y + (i / 9) * 18));
     }
@@ -171,7 +179,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
     private class CatalogueSlot extends PageSlot {
         CatalogueSlot(Inventory inventory, int x, int y) {
-            super(inventory, 0, x, y, EnumSet.of(Page.MINI_GAMES));
+            super(inventory, 0, x, y, EnumSet.of(Page.PROGRAM));
         }
 
         @Override
@@ -192,7 +200,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
     private class GhostSlot extends PageSlot {
         GhostSlot(Inventory inventory, int index, int x, int y) {
-            super(inventory, index, x, y, EnumSet.of(Page.SETTINGS));
+            super(inventory, index, x, y, EnumSet.of(Page.GAINS));
         }
 
         @Override

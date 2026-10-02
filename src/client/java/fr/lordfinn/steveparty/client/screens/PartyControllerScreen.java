@@ -19,6 +19,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
@@ -37,48 +38,68 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.CLOSE_TILE_GUI_SOUND_EVENT
 import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
 
 /**
- * The Party Controller's dashboard, built around the player's journey:
+ * The Party Controller's dashboard: sober and compact (with its tabs and the player's inventory it fits a 427 x 240
+ * screen, a large GUI scale, leaving the bottom of the screen free). No paragraph on the pages: what a page is for is in the yellow « i » of its top right
+ * corner, what a slot or a control does in a short tooltip.
  * <ul>
  *     <li><b>Status</b>: before a party, a checklist of what a party needs (board, tokens on the start tiles, mini-game
  *     catalogue, currencies, rounds), each line leading to the tab where it is fixed, and « Start the party » (active
  *     only when ready, else it says why); during a party, what is happening now, the round, the leader; once over, the
  *     podium and « Start a new party ».</li>
  *     <li><b>Players</b>: the tokens in the turn order with their player, whether they are connected, their stars,
- *     coins and rank (before a party: the tokens on the start tiles, who will play).</li>
- *     <li><b>Mini-games</b>: the catalogue slot (insert / take it out), its pages with how many times each was played
- *     and whether it has somewhere to send the players.</li>
+ *     coins and rank (before a party: the tokens on the start tiles, who will play). The list scrolls.</li>
+ *     <li><b>Program</b>: the catalogue slot and the mini-games it brings (a scrolling grid: how many times each was
+ *     played, whether it has somewhere to send the players), then the party's program, its card slots. Without any
+ *     card, the slots show the default party as see-through ghost cards (the players' turn, a mini-game, repeated as
+ *     many times as rounds): exactly what will be played, see {@link BasicGameGeneratorStep#defaultProgram}.</li>
  *     <li><b>Gains</b>: what the party pays at the end of each mini-game, a row per place (1st to 4th, then the
- *     participants), an amount of coins and of stars each.</li>
- *     <li><b>Settings</b>: the Star and Coin items (click a slot with an item to pick it, with an empty hand to go back
- *     to the default one) and the number of rounds.</li>
+ *     participants), an amount of coins and of stars each; above each column, the item that counts as that currency
+ *     (click the slot with an item to pick it, with an empty hand to go back to the default one).</li>
+ *     <li><b>Settings</b>: a row per setting (the rounds, the practice round), its control on the right.</li>
  * </ul>
  * The tabs carry a red « ! » when something blocks (no board, no token, no catalogue) and a yellow one for a warning.
  * Everything shown comes from the server ({@link PartyDashboardData}), every action is checked there.
  */
 public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHandler> {
     private static final String KEY = "gui.steveparty.party_controller.";
-    private static final int TAB_HEIGHT = 20, TAB_OVERLAP = 3;
-    private static final int INVENTORY_PANEL_HEIGHT = 98;
-    private static final int PAD = 10;
-    private static final int LINE = 15;
+    private static final int TAB_HEIGHT = 20, TAB_OVERLAP = TAB_HEIGHT - TABS_HEIGHT;
+    private static final int PAD = 8;
+    private static final int LINE = 13;
+    /** Room kept free under the dashboard when the screen allows it (a recipe viewer's search field). */
+    private static final int ROOM_BELOW = 24;
+    private static final int TOOLTIP_WIDTH = 200;
     private static final int COLOR_WARN = 0xFFB36200;
     private static final int COLOR_GOLD = 0xFF8A5A00;
-    /** Players rows and pages grid. */
-    private static final int ROW = 19, PLAYER_ROWS = 5;
-    private static final int GRID_COLUMNS = 12, GRID_ROWS = 3, GRID_Y = 60;
+    /** The « i » of a page: top right corner. */
+    private static final int INFO_SIZE = 9, INFO_X = WIDTH - PAD - INFO_SIZE, INFO_Y = 8;
+    /** Players rows. */
+    private static final int ROW = 18, PLAYER_ROWS = 5, LIST_Y = 19;
+    /** Program page: the grid of the catalogue's mini-games, the note under the cards. */
+    private static final int GRID_X = CATALOGUE_X + 22, GRID_COLUMNS = 10, GRID_ROWS = 2, GRID_Y = CATALOGUE_Y - 1;
+    private static final int NOTE_Y = PROGRAM_Y + 2 * 18 + 3;
+    /** Gains page: a row per place, a stepper of coins and one of stars. */
+    private static final int GAINS_Y = 25, GAINS_ROW = 17, GAINS_STEP = 16, GAINS_FIELD = GAINS_COLUMN - 2 * GAINS_STEP - 2;
+    /** Settings page: a row per setting. */
+    private static final int SETTINGS_Y = 21, SETTINGS_ROW = 22;
+    private static final int SCROLLBAR = 5;
     private static final PartyGui.Theme TAB_IDLE = new PartyGui.Theme(0xFF000000, 0xFFE9E9E9, 0xFFA9A9A9, 0xFF4A4A4A);
     private static final PartyGui.Theme GOLD = new PartyGui.Theme(0xFF3B2600, 0xFFFFF2A8, 0xFFFFC52E, 0xFFB5761A);
     private static final PartyGui.Theme SILVER = new PartyGui.Theme(0xFF202020, 0xFFFFFFFF, 0xFFC9D3DA, 0xFF7C8A94);
     private static final PartyGui.Theme BRONZE = new PartyGui.Theme(0xFF2A1405, 0xFFF4B98A, 0xFFC9793F, 0xFF7A4118);
     private static final PartyGui.Theme OTHER = new PartyGui.Theme(0xFF1A1030, 0xFFD9C8FF, 0xFF9C7FD6, 0xFF5B438F);
+    private static final float MARQUEE_SPEED = 28F;
+    private static final long MARQUEE_PAUSE_MS = 700;
 
     private boolean openSoundPlayed;
     private int playersScroll, pagesScroll;
-    /** A local refusal shown on the page for a few seconds (setting slots). */
+    /** A local refusal shown on the page for a few seconds (currency slots). */
     private @Nullable Text flash;
     private long flashUntil;
     /** The data the widgets were built for: rebuilt when a new one arrives. */
     private @Nullable PartyDashboardData builtFor;
+    /** The text scrolling under the mouse (too long for its place), and since when. */
+    private @Nullable String marqueeText;
+    private long marqueeStart;
 
     public PartyControllerScreen(PartyControllerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -90,7 +111,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     private boolean showsInventory() {
-        return page() == Page.MINI_GAMES || page() == Page.PROGRAM || page() == Page.SETTINGS;
+        return page() == Page.PROGRAM || page() == Page.GAINS;
     }
 
     @Override
@@ -98,15 +119,14 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         backgroundHeight = showsInventory() ? INVENTORY_Y + INVENTORY_PANEL_HEIGHT : PANEL_HEIGHT;
         super.init();
         // Room for the tabs above the panel
-        y = Math.max(TAB_HEIGHT, (height - backgroundHeight + TAB_HEIGHT - TAB_OVERLAP) / 2);
+        y = Math.max(TABS_HEIGHT + 2, Math.min((height - backgroundHeight + TABS_HEIGHT) / 2, height - ROOM_BELOW - backgroundHeight));
         builtFor = handler.getData();
         addTabs();
         PartyDashboardData data = handler.getData();
         if (data != null) {
             switch (page()) {
                 case STATE -> addStateButtons(data);
-                case PLAYERS -> {}
-                case MINI_GAMES, PROGRAM -> {}
+                case PLAYERS, PROGRAM -> {}
                 case GAINS -> addGainsButtons(data);
                 case SETTINGS -> addSettingsButtons(data);
             }
@@ -163,7 +183,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         layoutTabs();
         for (Page tab : Page.values()) {
             int index = tab.ordinal();
-            PartyButton button = new PartyButton(tabX(index), y - TAB_HEIGHT + TAB_OVERLAP, tabWidth(index), TAB_HEIGHT,
+            PartyButton button = new PartyButton(tabX(index), y - TABS_HEIGHT, tabWidth(index), TAB_HEIGHT,
                     Text.translatable(KEY + "tab." + key(tab)), b -> showPage(tab)) {
                 @Override
                 protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -176,12 +196,11 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     private Text tabTooltip(Page tab) {
-        Text name = Text.translatable(KEY + "tab." + key(tab)).formatted(Formatting.GOLD);
-        Text description = Text.translatable(KEY + "tab." + key(tab) + ".tooltip").formatted(Formatting.GRAY);
+        Text description = Text.translatable(KEY + "tab." + key(tab) + ".tooltip");
         Badge badge = badge(tab);
-        Text reason = badge == null ? null : badge.reason.copy().formatted(badge.error ? Formatting.RED : Formatting.YELLOW);
-        return reason == null ? Text.empty().append(name).append("\n").append(description)
-                : Text.empty().append(name).append("\n").append(reason).append("\n").append(description);
+        if (badge == null) return description;
+        return Text.empty().append(badge.reason.copy().formatted(badge.error ? Formatting.RED : Formatting.YELLOW)).append("\n")
+                .append(description.copy().formatted(Formatting.GRAY));
     }
 
     private record Badge(boolean error, Text reason) {}
@@ -207,17 +226,22 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                     return new Badge(true, blockerText(Blocker.NO_TOKEN));
                 return null;
             }
-            case MINI_GAMES -> {
-                if (!data.hasCatalogue()) return new Badge(true, Text.translatable(KEY + "badge.no_catalogue"));
-                if (data.pages().isEmpty()) return new Badge(true, Text.translatable(KEY + "badge.empty_catalogue"));
-                long notPlayable = data.pages().stream().filter(p -> p.playable() == 0).count();
-                if (notPlayable > 0) return new Badge(false, Text.translatable(KEY + "badge.no_pipes", notPlayable));
-                return null;
+            case PROGRAM -> {
+                return catalogueBadge(data);
             }
             default -> {
                 return null;
             }
         }
+    }
+
+    /** What is wrong with the mini-games: no catalogue, an empty one, mini-games without their pipes. Null: nothing. */
+    private static @Nullable Badge catalogueBadge(PartyDashboardData data) {
+        if (!data.hasCatalogue()) return new Badge(true, Text.translatable(KEY + "badge.no_catalogue"));
+        if (data.pages().isEmpty()) return new Badge(true, Text.translatable(KEY + "badge.empty_catalogue"));
+        long notPlayable = data.pages().stream().filter(p -> p.playable() == 0).count();
+        if (notPlayable > 0) return new Badge(false, Text.translatable(KEY + "badge.no_pipes", notPlayable));
+        return null;
     }
 
     private static String key(Page page) {
@@ -228,7 +252,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         for (Page tab : Page.values()) {
             boolean selected = tab == page();
             if (selected != selectedPass) continue;
-            int tx = tabX(tab.ordinal()), ty = y - TAB_HEIGHT + TAB_OVERLAP, tw = tabWidth(tab.ordinal());
+            int tx = tabX(tab.ordinal()), ty = y - TABS_HEIGHT, tw = tabWidth(tab.ordinal());
             boolean hovered = mouseX >= tx && mouseX < tx + tw && mouseY >= ty && mouseY < ty + TAB_HEIGHT;
             PartyGui.Theme theme = selected ? PartyGui.PANEL : hovered ? TAB_IDLE.brighter() : TAB_IDLE;
             PartyGui.panel(context, tx, ty, tw, TAB_HEIGHT + (selected ? TAB_OVERLAP + 2 : 0), theme);
@@ -241,39 +265,44 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             int cy = ty + (selected ? 6 : 7);
             context.drawText(textRenderer, label, cx, cy, selected ? PartyGui.TEXT_DARK : 0xFF2E2E2E, false);
             Badge badge = badge(tab);
-            if (badge != null) drawBadge(context, tx + tw - 7, ty - 3, badge.error);
+            if (badge != null) drawBadge(context, tx + tw - 8, ty - 1, badge.error ? 0xFFD8323F : 0xFFF0A020, badge.error ? 0xFF5E0A12 : 0xFF6B4300, false);
         }
     }
 
-    /** A round « ! » in the corner of a tab: red when it blocks, orange for a warning. */
-    private void drawBadge(DrawContext context, int bx, int by, boolean error) {
-        int body = error ? 0xFFD8323F : 0xFFF0A020, outline = error ? 0xFF5E0A12 : 0xFF6B4300;
+    /** A round mark, 9 px: « ! » in the corner of a tab (red when it blocks, orange for a warning), or the « i » of a page. */
+    private static void drawBadge(DrawContext context, int bx, int by, int body, int outline, boolean info) {
         context.fill(bx + 1, by, bx + 8, by + 9, outline);
         context.fill(bx, by + 1, bx + 9, by + 8, outline);
         context.fill(bx + 1, by + 1, bx + 8, by + 8, body);
-        context.fill(bx + 4, by + 2, bx + 5, by + 5, 0xFFFFFFFF);
-        context.fill(bx + 4, by + 6, bx + 5, by + 7, 0xFFFFFFFF);
+        int mark = info ? 0xFF4A2C00 : 0xFFFFFFFF;
+        if (info) {
+            context.fill(bx + 4, by + 2, bx + 5, by + 3, mark);
+            context.fill(bx + 4, by + 4, bx + 5, by + 7, mark);
+        } else {
+            context.fill(bx + 4, by + 2, bx + 5, by + 5, mark);
+            context.fill(bx + 4, by + 6, bx + 5, by + 7, mark);
+        }
     }
 
     // ------------------------------------------------------------------ buttons of the pages
 
     private void addStateButtons(PartyDashboardData data) {
-        int buttonY = y + PANEL_HEIGHT - PAD - 18;
+        int buttonY = y + PANEL_HEIGHT - 6 - 18;
         // Follow the party: its HUDs on screen
-        PartyButton follow = addDrawableChild(new PartyButton(x + PAD, buttonY, 78, 18,
+        PartyButton follow = addDrawableChild(new PartyButton(x + PAD, buttonY, 70, 18,
                 Text.translatable(KEY + (data.following() ? "follow.on" : "follow.off")), b -> click(BUTTON_FOLLOW)));
         follow.setSelected(data.following());
         follow.setTooltip(Tooltip.of(Text.translatable(KEY + "follow.tooltip")));
 
         if (data.phase() == Phase.RUNNING) return;
         // Check the board again (it is checked every few seconds anyway)
-        PartyButton check = addDrawableChild(new PartyButton(x + PAD + 82, buttonY, 18, 18, Text.translatable(KEY + "check_board"),
+        PartyButton check = addDrawableChild(new PartyButton(x + PAD + 73, buttonY, 18, 18, Text.translatable(KEY + "check_board"),
                 b -> click(BUTTON_CHECK_BOARD)).content((context, font, cx, cy, color) -> drawSmallItem(context, new ItemStack(ModItems.WRENCH), cx - 5, cy - 5, 10)));
         check.setTooltip(Tooltip.of(Text.translatable(KEY + "check_board.tooltip")));
 
         // The main action
         Blocker blocker = data.launchBlocker();
-        int launchWidth = WIDTH - 2 * PAD - 104;
+        int launchWidth = WIDTH - 2 * PAD - 94;
         PartyButton launch = addDrawableChild(new PartyButton(x + WIDTH - PAD - launchWidth, buttonY, launchWidth, 18,
                 Text.translatable(KEY + (data.phase() == Phase.ENDED ? "launch.again" : "launch")), b -> {
                     click(BUTTON_LAUNCH);
@@ -287,7 +316,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     private void addSettingsButtons(PartyDashboardData data) {
-        int rowY = y + ROUNDS_Y;
+        int rowY = y + SETTINGS_Y;
         boolean editable = data.canEdit() && data.phase() != Phase.RUNNING;
         Text why = !data.canEdit() ? Text.translatable(KEY + "locked") : Text.translatable(KEY + "settings.rounds.running");
         PartyButton minus = addDrawableChild(new PartyButton(x + WIDTH - PAD - 72, rowY, 18, 18, Text.literal("-"),
@@ -299,20 +328,17 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                     context.fill(cx - 4, cy - 1, cx + 4, cy + 1, color);
                     context.fill(cx - 1, cy - 4, cx + 1, cy + 4, color);
                 }));
-        minus.active = editable && data.roundsSetting() > fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.MIN_ROUNDS;
-        plus.active = editable && data.roundsSetting() < fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.MAX_ROUNDS;
+        minus.active = editable && data.roundsSetting() > PartyControllerEntity.MIN_ROUNDS;
+        plus.active = editable && data.roundsSetting() < PartyControllerEntity.MAX_ROUNDS;
         minus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.less") : why));
         plus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.more") : why));
         // A practice round before each mini-game: on / off
-        PartyButton practice = addDrawableChild(new PartyButton(x + WIDTH - PAD - 72, y + PRACTICE_Y, 72, 18,
+        PartyButton practice = addDrawableChild(new PartyButton(x + WIDTH - PAD - 72, rowY + SETTINGS_ROW, 72, 18,
                 Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off")), b -> click(BUTTON_PRACTICE)));
         practice.setSelected(data.practiceRound());
         practice.active = data.canEdit();
         practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
     }
-
-    // Gains page: a row per place, a stepper of coins and one of stars
-    private static final int GAINS_Y = 48, GAINS_ROW = 20, GAINS_COIN_X = 104, GAINS_STAR_X = 188, GAINS_STEP = 16, GAINS_FIELD = 28;
 
     private void addGainsButtons(PartyDashboardData data) {
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
@@ -338,40 +364,6 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
     }
 
-    private void drawGains(DrawContext context, PartyDashboardData data) {
-        heading(context, Text.translatable(KEY + "gains.title"));
-        if (!data.canEdit())
-            context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.read_only"), WIDTH - 2 * PAD - 110), PAD + 110, 9, PartyGui.TEXT_ERROR, false);
-        context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.hint"), WIDTH - 2 * PAD), PAD, 21, PartyGui.TEXT_SOFT, false);
-        // The two currencies, above their steppers
-        int stepper = 2 * GAINS_STEP + GAINS_FIELD + 2;
-        for (PartyCurrency currency : new PartyCurrency[]{PartyCurrency.COIN, PartyCurrency.STAR}) {
-            int left = currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X;
-            OrderedText name = fit(Text.translatable(KEY + (currency == PartyCurrency.COIN ? "gains.coins" : "gains.stars")).formatted(Formatting.BOLD), stepper - 12);
-            int width = 12 + textRenderer.getWidth(name);
-            drawSmallItem(context, currency(currency), left + (stepper - width) / 2, GAINS_Y - 13, 10);
-            context.drawText(textRenderer, name, left + (stepper - width) / 2 + 12, GAINS_Y - 12,
-                    currency == PartyCurrency.STAR ? COLOR_GOLD : PartyGui.TEXT_DARK, false);
-        }
-        for (int row = 0; row < MiniGameGains.ROWS; row++) {
-            int top = GAINS_Y + row * GAINS_ROW;
-            if (row == MiniGameGains.PARTICIPANTS) {
-                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.participants"), GAINS_COIN_X - PAD - 4), PAD, top + 4, PartyGui.TEXT_DARK, false);
-            } else {
-                drawRankPlate(context, row + 1, PAD, top + 1);
-                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.place"), GAINS_COIN_X - PAD - 30), PAD + 26, top + 4, PartyGui.TEXT_SOFT, false);
-            }
-            for (PartyCurrency currency : new PartyCurrency[]{PartyCurrency.COIN, PartyCurrency.STAR}) {
-                int left = (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X) + GAINS_STEP + 1;
-                int amount = data.gains().amount(currency, row);
-                PartyGui.inset(context, left, top, GAINS_FIELD, GAINS_STEP, 0xFF3B4247, false, false);
-                String value = Integer.toString(amount);
-                context.drawText(textRenderer, value, left + (GAINS_FIELD - textRenderer.getWidth(value)) / 2 + 1, top + 4,
-                        amount == 0 ? 0xFF8E979D : 0xFFFFFFFF, false);
-            }
-        }
-    }
-
     private void click(int button) {
         click(button, 1);
     }
@@ -381,8 +373,6 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         for (int i = 0; i < times; i++) client.interactionManager.clickButton(handler.syncId, button);
     }
 
-    private static final int ROUNDS_Y = 100, PRACTICE_Y = 124;
-
     // ------------------------------------------------------------------ drawing
 
     @Override
@@ -390,10 +380,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         drawTabs(context, mouseX, mouseY, false);
         PartyGui.panel(context, x, y, WIDTH, PANEL_HEIGHT, PartyGui.PANEL);
         drawTabs(context, mouseX, mouseY, true);
-        if (showsInventory()) {
-            PartyGui.panel(context, x, y + INVENTORY_Y, WIDTH, INVENTORY_PANEL_HEIGHT, PartyGui.PANEL);
-            context.drawText(textRenderer, playerInventoryTitle, x + (WIDTH - 162) / 2 + 1, y + INVENTORY_Y + 4, PartyGui.TEXT_DARK, false);
-        }
+        if (showsInventory()) PartyGui.panel(context, x, y + INVENTORY_Y, WIDTH, INVENTORY_PANEL_HEIGHT, PartyGui.PANEL);
         // Slot boxes of the page
         for (Slot slot : handler.slots) {
             if (slot.isEnabled()) slotBox(context, x + slot.x - 1, y + slot.y - 1);
@@ -411,14 +398,15 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             centered(context, Text.translatable(KEY + "loading"), PANEL_HEIGHT / 2 - 4, PartyGui.TEXT_SOFT);
             return;
         }
+        int mx = mouseX - x, my = mouseY - y;
         switch (page()) {
-            case STATE -> drawState(context, data, mouseX - x, mouseY - y);
-            case PLAYERS -> drawPlayers(context, data);
-            case MINI_GAMES -> drawMiniGames(context, data);
-            case PROGRAM -> drawProgram(context, data);
+            case STATE -> drawState(context, data, mx, my);
+            case PLAYERS -> drawPlayers(context, data, mx, my);
+            case PROGRAM -> drawProgram(context, data, mx, my);
             case GAINS -> drawGains(context, data);
             case SETTINGS -> drawSettings(context, data);
         }
+        drawBadge(context, INFO_X, INFO_Y, 0xFFFFC52E, 0xFF6B4300, true);
         if (flash != null && Util.getMeasuringTimeMs() < flashUntil) {
             int w = textRenderer.getWidth(flash) + 8;
             int fx = (WIDTH - w) / 2, fy = PANEL_HEIGHT - 16;
@@ -430,21 +418,26 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
     }
 
-    private void heading(DrawContext context, Text text) {
-        context.drawText(textRenderer, text.copy().formatted(Formatting.BOLD), PAD, 9, PartyGui.TEXT_DARK, false);
+    private static final int HEADING_Y = 8;
+
+    /**
+     * The title of the page, and « Read only » next to the « i » for who may not change what the page sets.
+     *
+     * @return where the room left on the title's line starts
+     */
+    private int heading(DrawContext context, Text text, boolean readOnly) {
+        Text title = text.copy().formatted(Formatting.BOLD);
+        Text locked = Text.translatable(KEY + "read_only");
+        int room = INFO_X - PAD - 4 - (readOnly ? textRenderer.getWidth(locked) + 6 : 0);
+        OrderedText line = fit(title, room);
+        context.drawText(textRenderer, line, PAD, HEADING_Y, PartyGui.TEXT_DARK, false);
+        if (readOnly) context.drawText(textRenderer, locked, INFO_X - 4 - textRenderer.getWidth(locked), HEADING_Y, PartyGui.TEXT_ERROR, false);
+        return PAD + textRenderer.getWidth(line) + 8;
     }
 
     private void centered(DrawContext context, Text text, int ty, int color) {
-        context.drawText(textRenderer, text, (WIDTH - textRenderer.getWidth(text)) / 2, ty, color, false);
-    }
-
-    private int wrapped(DrawContext context, Text text, int tx, int ty, int width, int color) {
-        List<OrderedText> lines = textRenderer.wrapLines(text, width);
-        for (OrderedText line : lines) {
-            context.drawText(textRenderer, line, tx, ty, color, false);
-            ty += 10;
-        }
-        return ty;
+        OrderedText line = fit(text, WIDTH - 2 * PAD);
+        context.drawText(textRenderer, line, (WIDTH - textRenderer.getWidth(line)) / 2, ty, color, false);
     }
 
     private void drawSmallItem(DrawContext context, ItemStack stack, int ix, int iy, int size) {
@@ -487,6 +480,61 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         return Text.translatable(KEY + "blocker." + blocker.name().toLowerCase(java.util.Locale.ROOT));
     }
 
+    /** A scrollbar in the mod's look: a sunken track, a raised thumb. */
+    private static void scrollbar(DrawContext context, int sx, int sy, int height, int scroll, int maxScroll, int shown, int total) {
+        PartyGui.inset(context, sx, sy, SCROLLBAR, height, 0xFF6F6F6F, false, false);
+        int thumb = Math.max(8, (height - 1) * shown / Math.max(shown, total));
+        int travel = height - 1 - thumb;
+        int ty = sy + 1 + (maxScroll == 0 ? 0 : travel * scroll / maxScroll);
+        PartyGui.button(context, sx + 1, ty, SCROLLBAR - 1, thumb, PartyGui.BUTTON, false);
+    }
+
+    // ------------------------------------------------------------------ one-line texts that may not fit
+
+    private OrderedText fit(Text text, int width) {
+        if (textRenderer.getWidth(text) <= width) return text.asOrderedText();
+        String ellipsis = "…";
+        String cut = textRenderer.trimToWidth(text.getString(), Math.max(0, width - textRenderer.getWidth(ellipsis)));
+        return Text.literal(cut.stripTrailing() + ellipsis).setStyle(text.getStyle()).asOrderedText();
+    }
+
+    /**
+     * Draws {@code text} in a box {@code maxWidth} wide (panel coordinates): as is when it fits; else cut with « … »,
+     * and scrolling back and forth, clipped to the box, while {@code hovered} (like the cartridge menu's lines).
+     */
+    private void drawFitted(DrawContext context, Text text, int tx, int ty, int maxWidth, int color, boolean hovered) {
+        int width = textRenderer.getWidth(text);
+        if (width <= maxWidth || !hovered) {
+            context.drawText(textRenderer, fit(text, maxWidth), tx, ty, color, false);
+            return;
+        }
+        long now = Util.getMeasuringTimeMs();
+        String string = text.getString();
+        if (!string.equals(marqueeText)) {
+            marqueeText = string;
+            marqueeStart = now;
+        }
+        int travel = width - maxWidth;
+        long moveMs = Math.max(1, (long) (travel / MARQUEE_SPEED * 1000F));
+        long t = (now - marqueeStart) % (2 * (MARQUEE_PAUSE_MS + moveMs));
+        float offset;
+        if (t < MARQUEE_PAUSE_MS) offset = 0;
+        else if (t < MARQUEE_PAUSE_MS + moveMs) offset = (t - MARQUEE_PAUSE_MS) / (float) moveMs * travel;
+        else if (t < 2 * MARQUEE_PAUSE_MS + moveMs) offset = travel;
+        else offset = travel - (t - 2 * MARQUEE_PAUSE_MS - moveMs) / (float) moveMs * travel;
+        // The scissor is in screen coordinates, the page is drawn from the panel's corner
+        context.enableScissor(x + tx, y + ty - 1, x + tx + maxWidth, y + ty + 10);
+        context.getMatrices().push();
+        context.getMatrices().translate(-offset, 0, 0);
+        context.drawText(textRenderer, text, tx, ty, color, false);
+        context.getMatrices().pop();
+        context.disableScissor();
+    }
+
+    private static boolean in(int mx, int my, int left, int top, int width, int height) {
+        return mx >= left && mx < left + width && my >= top && my < top + height;
+    }
+
     // ------------------------------------------------------------------ Status page
 
     /** A line of the checklist: its state, its text, its hint (tooltip) and the tab that fixes it. */
@@ -523,17 +571,17 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         // The mini-games
         long notPlayable = data.pages().stream().filter(p -> p.playable() == 0).count();
         if (!data.hasCatalogue()) {
-            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.none"), Text.translatable(KEY + "check.catalogue.none.hint"), Page.MINI_GAMES));
+            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.none"), Text.translatable(KEY + "check.catalogue.none.hint"), Page.PROGRAM));
         } else if (data.pages().isEmpty()) {
-            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.empty"), Text.translatable(KEY + "check.catalogue.empty.hint"), Page.MINI_GAMES));
+            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.empty"), Text.translatable(KEY + "check.catalogue.empty.hint"), Page.PROGRAM));
         } else if (notPlayable > 0) {
-            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.no_pipes", data.pages().size(), notPlayable), Text.translatable(KEY + "check.catalogue.no_pipes.hint"), Page.MINI_GAMES));
+            checks.add(new Check(Check.WARN, Text.translatable(KEY + "check.catalogue.no_pipes", data.pages().size(), notPlayable), Text.translatable(KEY + "check.catalogue.no_pipes.hint"), Page.PROGRAM));
         } else {
-            checks.add(new Check(Check.OK, Text.translatable(KEY + "check.catalogue.ok", data.pages().size()), Text.translatable(KEY + "check.catalogue.ok.hint"), Page.MINI_GAMES));
+            checks.add(new Check(Check.OK, Text.translatable(KEY + "check.catalogue.ok", data.pages().size()), Text.translatable(KEY + "check.catalogue.ok.hint"), Page.PROGRAM));
         }
         // Currencies and rounds
         checks.add(new Check(Check.OK, Text.translatable(KEY + "check.currencies", currency(PartyCurrency.STAR).getName(), currency(PartyCurrency.COIN).getName()),
-                Text.translatable(KEY + "check.currencies.hint"), Page.SETTINGS));
+                Text.translatable(KEY + "check.currencies.hint"), Page.GAINS));
         checks.add(new Check(Check.OK, Text.translatable(KEY + "check.rounds", data.roundsSetting()), Text.translatable(KEY + "check.rounds.hint"), Page.SETTINGS));
         return checks;
     }
@@ -556,76 +604,71 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
     }
 
-    private static final int CHECK_Y = 26;
+    private static final int CHECK_Y = 21;
 
     private void drawState(DrawContext context, PartyDashboardData data, int mx, int my) {
         switch (data.phase()) {
             case SETUP -> {
-                heading(context, Text.translatable(KEY + "state.setup"));
+                heading(context, Text.translatable(KEY + "state.setup"), false);
                 List<Check> checks = checklist(data);
                 for (int i = 0; i < checks.size(); i++) {
                     Check check = checks.get(i);
                     int ly = CHECK_Y + i * LINE;
-                    boolean hovered = mx >= PAD - 2 && mx < WIDTH - PAD + 2 && my >= ly - 3 && my < ly + LINE - 3;
+                    boolean hovered = in(mx, my, PAD - 2, ly - 3, WIDTH - 2 * PAD + 4, LINE);
                     if (hovered) context.fill(PAD - 2, ly - 3, WIDTH - PAD + 2, ly + LINE - 4, 0x30FFFFFF);
                     if (check.state() == Check.WARN) warnIcon(context, PAD, ly);
                     else PartyGui.statusIcon(context, PAD, ly, check.state() == Check.OK);
                     int color = check.state() == Check.ERROR ? PartyGui.TEXT_ERROR : check.state() == Check.WARN ? COLOR_WARN : PartyGui.TEXT_DARK;
-                    context.drawText(textRenderer, fit(check.text(), WIDTH - 2 * PAD - 22), PAD + 11, ly, color, false);
+                    drawFitted(context, check.text(), PAD + 11, ly, WIDTH - 2 * PAD - 20, color, hovered);
                     if (check.target() != null)
                         context.drawText(textRenderer, "›", WIDTH - PAD - 5, ly, PartyGui.TEXT_SOFT, false);
                 }
-                Text redstone = Text.translatable(KEY + "state.redstone");
-                wrapped(context, redstone, PAD, CHECK_Y + checks.size() * LINE + 2, WIDTH - 2 * PAD, PartyGui.TEXT_SOFT);
             }
             case RUNNING -> {
-                heading(context, Text.translatable(KEY + "state.running"));
+                heading(context, Text.translatable(KEY + "state.running"), false);
                 Text round = data.round() == 0 ? Text.translatable("hud.steveparty.party.round.start")
                         : Text.translatable("hud.steveparty.party.round", data.round(), data.rounds());
-                int rw = textRenderer.getWidth(round) + 10;
-                PartyGui.button(context, WIDTH - PAD - rw, 6, rw, 14, GOLD, false);
-                context.drawText(textRenderer, round, WIDTH - PAD - rw + 5, 9, 0xFF4A2C00, false);
+                int rw = textRenderer.getWidth(round) + 10, rx = INFO_X - 4 - rw;
+                PartyGui.button(context, rx, HEADING_Y - 3, rw, 13, GOLD, false);
+                context.drawText(textRenderer, round, rx + 5, HEADING_Y, 0xFF4A2C00, false);
                 // Progress through the steps
-                int barY = 26, barW = WIDTH - 2 * PAD;
+                int barY = 20, barW = WIDTH - 2 * PAD;
                 PartyGui.inset(context, PAD, barY, barW, 6, 0xFF3B4247, false, false);
                 int done = data.stepCount() == 0 ? 0 : (int) ((barW - 2) * (double) Math.max(0, data.stepIndex()) / data.stepCount());
                 context.fill(PAD + 1, barY + 1, PAD + 1 + done, barY + 6, 0xFF46AE2E);
                 context.drawText(textRenderer, Text.translatable(KEY + "state.step", data.stepIndex() + 1, data.stepCount()),
                         PAD, barY + 9, PartyGui.TEXT_SOFT, false);
                 // What is happening now
-                int ay = barY + 24;
+                int ay = 41;
                 context.drawText(textRenderer, Text.translatable(KEY + "state.now").formatted(Formatting.BOLD), PAD, ay, PartyGui.TEXT_DARK, false);
-                ay = wrapped(context, data.action(), PAD, ay + 12, WIDTH - 2 * PAD, COLOR_GOLD);
+                drawFitted(context, data.action(), PAD, ay + 11, WIDTH - 2 * PAD, COLOR_GOLD, in(mx, my, PAD, ay + 10, WIDTH - 2 * PAD, 10));
                 if (!data.actionDetail().getString().isEmpty())
-                    ay = wrapped(context, data.actionDetail(), PAD, ay, WIDTH - 2 * PAD, PartyGui.TEXT_DARK);
+                    drawFitted(context, data.actionDetail(), PAD, ay + 22, WIDTH - 2 * PAD, PartyGui.TEXT_DARK, in(mx, my, PAD, ay + 21, WIDTH - 2 * PAD, 10));
                 // The leader
                 PartyLiveData.Standing leader = leader(data);
                 if (leader != null) {
-                    int ly = Math.max(ay + 6, 100);
-                    Text label = Text.translatable(KEY + "state.leader", leader.tokenName());
+                    int ly = 75;
+                    OrderedText label = fit(Text.translatable(KEY + "state.leader", leader.tokenName()), WIDTH - 2 * PAD - 64);
                     context.drawText(textRenderer, label, PAD, ly, PartyGui.TEXT_DARK, false);
                     drawCounts(context, leader.stars(), leader.coins(), PAD + textRenderer.getWidth(label) + 5, ly, PartyGui.TEXT_DARK);
                 }
-                wrapped(context, Text.translatable(KEY + "state.step_controller"), PAD + 82, PANEL_HEIGHT - PAD - 18, WIDTH - 2 * PAD - 82, PartyGui.TEXT_SOFT);
             }
             case ENDED -> {
-                heading(context, Text.translatable(KEY + "state.ended"));
                 List<PartyLiveData.Standing> players = data.players();
                 int[] ranks = PartyLiveData.ranks(players);
                 List<Integer> order = byRank(ranks);
-                int py = 28;
+                // The winner in the title
+                heading(context, players.isEmpty() ? Text.translatable(KEY + "state.ended")
+                        : Text.translatable(KEY + "state.winner", players.get(order.getFirst()).tokenName()), false);
+                int py = 22;
                 for (int i = 0; i < Math.min(order.size(), 5); i++) {
                     int index = order.get(i);
                     PartyLiveData.Standing player = players.get(index);
                     drawRankPlate(context, ranks[index], PAD, py - 3);
-                    context.drawText(textRenderer, fit(Text.literal(player.tokenName()), 90), PAD + 26, py, PartyGui.TEXT_DARK, false);
-                    context.drawText(textRenderer, fit(owner(player), 48), PAD + 130, py, PartyGui.TEXT_SOFT, false);
+                    context.drawText(textRenderer, fit(Text.literal(player.tokenName()), 76), PAD + 26, py, PartyGui.TEXT_DARK, false);
+                    context.drawText(textRenderer, fit(owner(player), 46), PAD + 106, py, PartyGui.TEXT_SOFT, false);
                     drawCounts(context, player.stars(), player.coins(), WIDTH - PAD - 58, py, PartyGui.TEXT_DARK);
-                    py += 17;
-                }
-                if (!players.isEmpty()) {
-                    PartyLiveData.Standing winner = players.get(order.getFirst());
-                    centered(context, Text.translatable(KEY + "state.winner", winner.tokenName()).formatted(Formatting.BOLD), py + 4, COLOR_GOLD);
+                    py += 13;
                 }
             }
         }
@@ -664,138 +707,118 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         return Text.literal(player.ownerName());
     }
 
-    private OrderedText fit(Text text, int width) {
-        if (textRenderer.getWidth(text) <= width) return text.asOrderedText();
-        String ellipsis = "…";
-        String cut = textRenderer.trimToWidth(text.getString(), width - textRenderer.getWidth(ellipsis));
-        return Text.literal(cut + ellipsis).setStyle(text.getStyle()).asOrderedText();
-    }
-
     // ------------------------------------------------------------------ Players page
 
-    private void drawPlayers(DrawContext context, PartyDashboardData data) {
+    private void drawPlayers(DrawContext context, PartyDashboardData data, int mx, int my) {
         List<PartyLiveData.Standing> players = data.players();
-        heading(context, Text.translatable(data.phase() == Phase.SETUP ? KEY + "players.setup" : KEY + "players.party", players.size()));
+        heading(context, Text.translatable(data.phase() == Phase.SETUP ? KEY + "players.setup" : KEY + "players.party", players.size()), false);
         if (players.isEmpty()) {
-            wrapped(context, Text.translatable(KEY + "players.none"), PAD, 30, WIDTH - 2 * PAD, PartyGui.TEXT_ERROR);
-            wrapped(context, Text.translatable(KEY + "check.tokens.hint"), PAD, 54, WIDTH - 2 * PAD, PartyGui.TEXT_SOFT);
+            context.drawText(textRenderer, fit(Text.translatable(KEY + "check.tokens.none"), WIDTH - 2 * PAD), PAD, LIST_Y + 4, PartyGui.TEXT_ERROR, false);
             return;
         }
         boolean ranked = data.phase() != Phase.SETUP && players.stream().anyMatch(p -> p.stars() != 0 || p.coins() != 0);
         int[] ranks = PartyLiveData.ranks(players);
-        playersScroll = Math.clamp(playersScroll, 0, Math.max(0, players.size() - PLAYER_ROWS));
-        int ry = 24;
+        int maxScroll = Math.max(0, players.size() - PLAYER_ROWS);
+        playersScroll = Math.clamp(playersScroll, 0, maxScroll);
+        int rowWidth = WIDTH - 2 * PAD - (maxScroll > 0 ? SCROLLBAR + 3 : 0);
+        int ry = LIST_Y;
         for (int i = playersScroll; i < Math.min(players.size(), playersScroll + PLAYER_ROWS); i++) {
             PartyLiveData.Standing player = players.get(i);
             boolean current = i == data.currentPlayer();
-            PartyGui.inset(context, PAD, ry, WIDTH - 2 * PAD, ROW - 2, current ? 0xFFFFE08A : 0xFFB9B9B9, false, false);
+            boolean hovered = in(mx, my, PAD, ry, rowWidth, ROW - 1);
+            PartyGui.inset(context, PAD, ry, rowWidth, ROW - 2, current ? 0xFFFFE08A : 0xFFB9B9B9, false, false);
             // Turn order, rank
             context.drawText(textRenderer, Integer.toString(i + 1), PAD + 4, ry + 5, PartyGui.TEXT_SOFT, false);
             if (ranked) drawRankPlate(context, ranks[i], PAD + 14, ry + 2);
             // Colour and names
-            int nameX = PAD + 40;
+            int nameX = PAD + (ranked ? 40 : 16);
             int color = player.color() < 0 ? 0xFF8B8B8B : 0xFF000000 | player.color();
             context.fill(nameX, ry + 4, nameX + 8, ry + 12, 0xFF202020);
             context.fill(nameX + 1, ry + 5, nameX + 7, ry + 11, color);
-            context.drawText(textRenderer, fit(Text.literal(player.tokenName()), 70), nameX + 12, ry + 5, PartyGui.TEXT_DARK, false);
+            int countsX = PAD + rowWidth - 56;
+            int namesRoom = countsX - nameX - 16, tokenRoom = namesRoom * 3 / 5, ownerRoom = namesRoom - tokenRoom - 4;
+            drawFitted(context, Text.literal(player.tokenName()), nameX + 12, ry + 5, tokenRoom, PartyGui.TEXT_DARK, hovered);
             int ownerColor = player.owner().isEmpty() ? PartyGui.TEXT_SOFT : player.online() ? 0xFF2E5E8E : COLOR_WARN;
-            context.drawText(textRenderer, fit(owner(player), 44), nameX + 86, ry + 5, ownerColor, false);
+            context.drawText(textRenderer, fit(owner(player), ownerRoom), nameX + 12 + tokenRoom + 4, ry + 5, ownerColor, false);
             // Stars and coins
-            drawCounts(context, player.stars(), player.coins(), WIDTH - PAD - 56, ry + 5, PartyGui.TEXT_DARK);
+            drawCounts(context, player.stars(), player.coins(), countsX, ry + 5, PartyGui.TEXT_DARK);
             ry += ROW;
         }
-        if (players.size() > PLAYER_ROWS)
-            context.drawText(textRenderer, Text.translatable(KEY + "scroll", playersScroll + 1, players.size() - PLAYER_ROWS + 1),
-                    WIDTH - PAD - 30, 9, PartyGui.TEXT_SOFT, false);
-        wrapped(context, Text.translatable(data.phase() == Phase.SETUP ? KEY + "players.setup.footer" : KEY + "players.footer"),
-                PAD, 24 + PLAYER_ROWS * ROW + 1, WIDTH - 2 * PAD, PartyGui.TEXT_SOFT);
-    }
-
-    // ------------------------------------------------------------------ Mini-games page
-
-    private int gridX() {
-        return (WIDTH - GRID_COLUMNS * 18) / 2;
-    }
-
-    private void drawMiniGames(DrawContext context, PartyDashboardData data) {
-        heading(context, Text.translatable(KEY + "mini_games.title"));
-        int tx = CATALOGUE_X + 24;
-        int textWidth = WIDTH - tx - PAD;
-        if (!data.hasCatalogue()) {
-            int ty = wrapped(context, Text.translatable(KEY + "mini_games.none"), tx, CATALOGUE_Y - 4, textWidth, PartyGui.TEXT_ERROR);
-            wrapped(context, Text.translatable(KEY + "mini_games.none.hint"), PAD, Math.max(ty + 2, CATALOGUE_Y + 22), WIDTH - 2 * PAD, PartyGui.TEXT_DARK);
-            return;
-        }
-        long played = data.pages().stream().filter(p -> p.played() > 0).count();
-        context.drawText(textRenderer, Text.translatable(KEY + "mini_games.summary", data.pages().size(), played), tx, CATALOGUE_Y, PartyGui.TEXT_DARK, false);
-        Text second = data.catalogueLocked() ? Text.translatable(KEY + "mini_games.locked").formatted(Formatting.RED)
-                : Text.translatable(KEY + "mini_games.edit_hint");
-        context.drawText(textRenderer, fit(second, textWidth), tx, CATALOGUE_Y + 10, PartyGui.TEXT_SOFT, false);
-        if (data.pages().isEmpty()) {
-            wrapped(context, Text.translatable(KEY + "check.catalogue.empty.hint"), PAD, GRID_Y, WIDTH - 2 * PAD, PartyGui.TEXT_ERROR);
-            return;
-        }
-        int total = data.pages().size();
-        int maxScroll = Math.max(0, (total + GRID_COLUMNS - 1) / GRID_COLUMNS - GRID_ROWS);
-        pagesScroll = Math.clamp(pagesScroll, 0, maxScroll);
-        int gx = gridX();
-        for (int cell = 0; cell < GRID_COLUMNS * GRID_ROWS; cell++) {
-            int index = pagesScroll * GRID_COLUMNS + cell;
-            int cx = gx + (cell % GRID_COLUMNS) * 18, cy = GRID_Y + (cell / GRID_COLUMNS) * 18;
-            slotBox(context, cx, cy);
-            if (index >= total) continue;
-            PartyDashboardData.Page page = data.pages().get(index);
-            if (page.slot() == data.currentPage()) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFFFC52E);
-            else if (page.playable() == 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFE0707A);
-            else if (page.played() > 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFF8FCF7A);
-            context.drawItem(page.page(), cx + 1, cy + 1);
-            context.getMatrices().push();
-            context.getMatrices().translate(0, 0, 200);
-            if (page.played() > 0) PartyGui.statusIcon(context, cx + 10, cy + 1, true);
-            if (page.playable() == 0) PartyGui.statusIcon(context, cx + 10, cy + 10, false);
-            context.getMatrices().pop();
-        }
         if (maxScroll > 0)
-            context.drawText(textRenderer, Text.translatable(KEY + "scroll", pagesScroll + 1, maxScroll + 1), WIDTH - PAD - 30, 9, PartyGui.TEXT_SOFT, false);
-        // Legend
-        int ly = GRID_Y + GRID_ROWS * 18 + 6;
-        PartyGui.statusIcon(context, PAD, ly, true);
-        context.drawText(textRenderer, Text.translatable(KEY + "mini_games.legend.played"), PAD + 10, ly, PartyGui.TEXT_SOFT, false);
-        int lx = PAD + 10 + textRenderer.getWidth(Text.translatable(KEY + "mini_games.legend.played")) + 10;
-        PartyGui.statusIcon(context, lx, ly, false);
-        context.drawText(textRenderer, Text.translatable(KEY + "mini_games.legend.no_pipes"), lx + 10, ly, PartyGui.TEXT_SOFT, false);
-        if (data.currentPage() >= 0) {
-            int lx2 = lx + 10 + textRenderer.getWidth(Text.translatable(KEY + "mini_games.legend.no_pipes")) + 10;
-            context.fill(lx2, ly, lx2 + 7, ly + 7, 0xFFFFC52E);
-            context.drawText(textRenderer, Text.translatable(KEY + "mini_games.legend.current"), lx2 + 10, ly, PartyGui.TEXT_SOFT, false);
-        }
-    }
-
-    private @Nullable PartyDashboardData.Page pageAt(double mouseX, double mouseY) {
-        PartyDashboardData data = handler.getData();
-        if (data == null || page() != Page.MINI_GAMES || !data.hasCatalogue()) return null;
-        int col = (int) Math.floor((mouseX - x - gridX()) / 18), row = (int) Math.floor((mouseY - y - GRID_Y) / 18);
-        if (col < 0 || col >= GRID_COLUMNS || row < 0 || row >= GRID_ROWS) return null;
-        int index = (pagesScroll + row) * GRID_COLUMNS + col;
-        return index < data.pages().size() ? data.pages().get(index) : null;
+            scrollbar(context, WIDTH - PAD - SCROLLBAR, LIST_Y, PLAYER_ROWS * ROW - 2, playersScroll, maxScroll, PLAYER_ROWS, players.size());
     }
 
     // ------------------------------------------------------------------ Program page
 
-    /**
-     * The party program: the cards read left to right, top to bottom, then what the party will be made of (the same
-     * expansion as the party generator: an empty program is the default party of the Settings page's rounds).
-     */
-    private void drawProgram(DrawContext context, PartyDashboardData data) {
-        heading(context, Text.translatable(KEY + "program.title"));
-        if (!data.canEdit())
-            context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.read_only"), WIDTH - 2 * PAD - 90), PAD + 90, 9, PartyGui.TEXT_ERROR, false);
-        wrapped(context, Text.translatable(KEY + "program.hint"), PAD, 21, WIDTH - 2 * PAD, PartyGui.TEXT_SOFT);
+    /** The real cards of the program, in reading order. */
+    private List<ItemStack> cards() {
         List<ItemStack> cards = new ArrayList<>();
         for (int i = 0; i < PartyControllerEntity.PROGRAM_SLOTS; i++) {
             ItemStack stack = handler.getSlot(PROGRAM_FIRST_SLOT + i).getStack();
             if (!stack.isEmpty()) cards.add(stack);
         }
+        return cards;
+    }
+
+    private static Item cardItem(PartyCardItem.CardType type) {
+        return switch (type) {
+            case TURNS -> ModItems.PARTY_CARD_TURNS;
+            case MINIGAME -> ModItems.PARTY_CARD_MINIGAME;
+            case EVENT -> ModItems.PARTY_CARD_EVENT;
+            case REPEAT -> ModItems.PARTY_CARD_REPEAT;
+        };
+    }
+
+    /**
+     * The ghost cards of the program: with no real card, the default party as cards (never items: only drawn), in
+     * the first slots; empty as soon as a real card is placed (the program is then the real cards only).
+     */
+    private List<ItemStack> ghosts(PartyDashboardData data) {
+        if (!cards().isEmpty()) return List.of();
+        List<ItemStack> ghosts = new ArrayList<>();
+        for (BasicGameGeneratorStep.ExpandedCard card : BasicGameGeneratorStep.defaultProgram(data.roundsSetting()))
+            ghosts.add(new ItemStack(cardItem(card.type()), card.count()));
+        return ghosts;
+    }
+
+    /**
+     * The mini-games of the catalogue in a scrolling grid next to its slot, a line saying what the party will be
+     * made of (the same expansion as the party generator), then the card slots, with the default party as ghost cards
+     * while no card is placed.
+     */
+    private void drawProgram(DrawContext context, PartyDashboardData data, int mx, int my) {
+        int summaryX = heading(context, Text.translatable(KEY + "tab.program"), !data.canEdit());
+        // The mini-games
+        int gridWidth = GRID_COLUMNS * 18;
+        Badge problem = catalogueBadge(data);
+        if (data.pages().isEmpty()) {
+            Text text = Text.translatable(KEY + (data.hasCatalogue() ? "program.catalogue.empty" : "program.catalogue.none"));
+            drawFitted(context, text, GRID_X + 2, CATALOGUE_Y + 4, gridWidth, PartyGui.TEXT_ERROR, in(mx, my, GRID_X, CATALOGUE_Y, gridWidth, 16));
+        } else {
+            int total = data.pages().size();
+            int maxScroll = Math.max(0, (total + GRID_COLUMNS - 1) / GRID_COLUMNS - GRID_ROWS);
+            pagesScroll = Math.clamp(pagesScroll, 0, maxScroll);
+            for (int cell = 0; cell < GRID_COLUMNS * GRID_ROWS; cell++) {
+                int index = pagesScroll * GRID_COLUMNS + cell;
+                int cx = GRID_X + (cell % GRID_COLUMNS) * 18, cy = GRID_Y + (cell / GRID_COLUMNS) * 18;
+                slotBox(context, cx, cy);
+                if (index >= total) continue;
+                PartyDashboardData.Page page = data.pages().get(index);
+                if (page.slot() == data.currentPage()) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFFFC52E);
+                else if (page.playable() == 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFE0707A);
+                else if (page.played() > 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFF8FCF7A);
+                context.drawItem(page.page(), cx + 1, cy + 1);
+                context.getMatrices().push();
+                context.getMatrices().translate(0, 0, 200);
+                if (page.played() > 0) PartyGui.statusIcon(context, cx + 10, cy + 1, true);
+                if (page.playable() == 0) PartyGui.statusIcon(context, cx + 10, cy + 10, false);
+                context.getMatrices().pop();
+            }
+            if (maxScroll > 0)
+                scrollbar(context, GRID_X + gridWidth + 3, GRID_Y, GRID_ROWS * 18, pagesScroll, maxScroll, GRID_ROWS, (total + GRID_COLUMNS - 1) / GRID_COLUMNS);
+        }
+        // What the party will be made of
+        List<ItemStack> cards = cards();
         int turns = 0, miniGames = 0, events = 0;
         PartyCardItem.CardType previous = null;
         for (BasicGameGeneratorStep.ExpandedCard card : BasicGameGeneratorStep.expand(cards, data.roundsSetting())) {
@@ -807,45 +830,76 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             }
             previous = card.type();
         }
-        int ty = PROGRAM_Y + 2 * 18 + 8;
-        Text summary = Text.translatable(cards.isEmpty() ? KEY + "program.default" : KEY + "program.summary",
-                turns, miniGames, events).formatted(Formatting.BOLD);
-        ty = wrapped(context, summary, PAD, ty, WIDTH - 2 * PAD, PartyGui.TEXT_DARK);
-        wrapped(context, Text.translatable(data.phase() == Phase.RUNNING ? KEY + "program.running" : KEY + "program.cards"),
-                PAD, ty + 2, WIDTH - 2 * PAD, PartyGui.TEXT_SOFT);
+        Text summary = Text.translatable(cards.isEmpty() ? KEY + "program.default" : KEY + "program.summary", turns, miniGames, events);
+        // On the title's line
+        int summaryWidth = INFO_X - 4 - summaryX - (data.canEdit() ? 0 : textRenderer.getWidth(Text.translatable(KEY + "read_only")) + 6);
+        drawFitted(context, summary, summaryX, HEADING_Y, summaryWidth, PartyGui.TEXT_SOFT, in(mx, my, summaryX, HEADING_Y - 1, summaryWidth, 10));
+        int noteX = PROGRAM_X - 1, noteWidth = 9 * 18;
+        // The default party, as ghost cards
+        List<ItemStack> ghosts = ghosts(data);
+        for (int i = 0; i < ghosts.size(); i++) {
+            int gx = PROGRAM_X + (i % 9) * 18, gy = PROGRAM_Y + (i / 9) * 18;
+            context.drawItem(ghosts.get(i), gx, gy);
+            context.drawStackOverlay(textRenderer, ghosts.get(i), gx, gy);
+            // See-through: the slot's grey over the card
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 250);
+            context.fill(gx, gy, gx + 16, gy + 16, 0x998B8B8B);
+            context.getMatrices().pop();
+        }
+        // Under the cards, one short line: mini-games without their pipes, or whom the program is for
+        if (problem != null && !data.pages().isEmpty()) {
+            warnIcon(context, noteX, NOTE_Y);
+            drawFitted(context, problem.reason(), noteX + 10, NOTE_Y, noteWidth - 10, COLOR_WARN, in(mx, my, noteX, NOTE_Y - 1, noteWidth, 10));
+        } else if (data.phase() == Phase.RUNNING) {
+            context.drawText(textRenderer, fit(Text.translatable(KEY + "program.running"), noteWidth), noteX, NOTE_Y, PartyGui.TEXT_SOFT, false);
+        }
+    }
+
+    private @Nullable PartyDashboardData.Page pageAt(double mouseX, double mouseY) {
+        PartyDashboardData data = handler.getData();
+        if (data == null || page() != Page.PROGRAM || data.pages().isEmpty()) return null;
+        int col = (int) Math.floor((mouseX - x - GRID_X) / 18), row = (int) Math.floor((mouseY - y - GRID_Y) / 18);
+        if (col < 0 || col >= GRID_COLUMNS || row < 0 || row >= GRID_ROWS) return null;
+        int index = (pagesScroll + row) * GRID_COLUMNS + col;
+        return index < data.pages().size() ? data.pages().get(index) : null;
+    }
+
+    // ------------------------------------------------------------------ Gains page
+
+    private void drawGains(DrawContext context, PartyDashboardData data) {
+        // No « Read only » here: the currency slots share the title's line (the greyed steppers and their tooltip say it)
+        heading(context, Text.translatable(KEY + "tab.gains"), false);
+        for (int row = 0; row < MiniGameGains.ROWS; row++) {
+            int top = GAINS_Y + row * GAINS_ROW;
+            if (row == MiniGameGains.PARTICIPANTS) {
+                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.participants"), GAINS_COIN_X - PAD - 4), PAD, top + 4, PartyGui.TEXT_DARK, false);
+            } else {
+                drawRankPlate(context, row + 1, PAD, top + 1);
+                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.place"), GAINS_COIN_X - PAD - 30), PAD + 26, top + 4, PartyGui.TEXT_SOFT, false);
+            }
+            for (PartyCurrency currency : new PartyCurrency[]{PartyCurrency.COIN, PartyCurrency.STAR}) {
+                int left = (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X) + GAINS_STEP + 1;
+                int amount = data.gains().amount(currency, row);
+                PartyGui.inset(context, left, top, GAINS_FIELD, GAINS_STEP, 0xFF3B4247, false, false);
+                String value = Integer.toString(amount);
+                context.drawText(textRenderer, value, left + (GAINS_FIELD - textRenderer.getWidth(value)) / 2 + 1, top + 4,
+                        amount == 0 ? 0xFF8E979D : 0xFFFFFFFF, false);
+            }
+        }
     }
 
     // ------------------------------------------------------------------ Settings page
 
     private void drawSettings(DrawContext context, PartyDashboardData data) {
-        heading(context, Text.translatable(KEY + "settings.title"));
-        if (!data.canEdit())
-            context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.read_only"), WIDTH - 2 * PAD - 70), PAD + 70, 9, PartyGui.TEXT_ERROR, false);
-        drawCurrency(context, PartyCurrency.STAR, STAR_X, STAR_Y, KEY + "settings.star");
-        drawCurrency(context, PartyCurrency.COIN, COIN_X, COIN_Y, KEY + "settings.coin");
-        // Rounds
-        int ry = ROUNDS_Y;
-        context.drawText(textRenderer, Text.translatable(KEY + "settings.rounds").formatted(Formatting.BOLD), PAD, ry + 1, PartyGui.TEXT_DARK, false);
-        context.drawText(textRenderer, fit(Text.translatable(data.phase() == Phase.RUNNING ? KEY + "settings.rounds.running" : KEY + "settings.rounds.hint"),
-                WIDTH - 2 * PAD - 80), PAD, ry + 11, PartyGui.TEXT_SOFT, false);
+        heading(context, Text.translatable(KEY + "tab.settings"), !data.canEdit());
+        int room = WIDTH - 2 * PAD - 78;
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.rounds"), room), PAD, SETTINGS_Y + 5, PartyGui.TEXT_DARK, false);
         String value = Integer.toString(data.roundsSetting());
         int fieldX = WIDTH - PAD - 52, fieldW = 32;
-        PartyGui.inset(context, fieldX, ry, fieldW, 18, 0xFF3B4247, false, false);
-        context.drawText(textRenderer, value, fieldX + (fieldW - textRenderer.getWidth(value)) / 2 + 1, ry + 5, 0xFFFFFFFF, false);
-        // Practice round
-        context.drawText(textRenderer, Text.translatable(KEY + "settings.practice").formatted(Formatting.BOLD), PAD, PRACTICE_Y + 1, PartyGui.TEXT_DARK, false);
-        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.practice.hint"), WIDTH - 2 * PAD - 78), PAD, PRACTICE_Y + 11, PartyGui.TEXT_SOFT, false);
-    }
-
-    private void drawCurrency(DrawContext context, PartyCurrency currency, int sx, int sy, String key) {
-        int tx = sx + 24;
-        ItemStack stack = currency(currency);
-        boolean isDefault = ItemStack.areItemsAndComponentsEqual(stack, currency.defaultStack());
-        Text title = Text.translatable(key).formatted(Formatting.BOLD);
-        context.drawText(textRenderer, title, tx, sy - 4, currency == PartyCurrency.STAR ? COLOR_GOLD : PartyGui.TEXT_DARK, false);
-        Text name = Text.empty().append(stack.getName()).append(isDefault ? Text.translatable(KEY + "settings.default") : Text.empty());
-        context.drawText(textRenderer, fit(name, WIDTH - tx - PAD - textRenderer.getWidth(title) - 6), tx + textRenderer.getWidth(title) + 6, sy - 4, PartyGui.TEXT_SOFT, false);
-        wrapped(context, Text.translatable(key + ".description"), tx, sy + 7, WIDTH - tx - PAD, PartyGui.TEXT_DARK);
+        PartyGui.inset(context, fieldX, SETTINGS_Y, fieldW, 18, 0xFF3B4247, false, false);
+        context.drawText(textRenderer, value, fieldX + (fieldW - textRenderer.getWidth(value)) / 2 + 1, SETTINGS_Y + 5, 0xFFFFFFFF, false);
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.practice"), room), PAD, SETTINGS_Y + SETTINGS_ROW + 5, PartyGui.TEXT_DARK, false);
     }
 
     // ------------------------------------------------------------------ tooltips and input
@@ -856,29 +910,65 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
+    private void tooltip(DrawContext context, List<Text> lines, int mouseX, int mouseY) {
+        // wrapLines also breaks at the line breaks, keeping the styles
+        List<OrderedText> wrapped = new ArrayList<>();
+        for (Text line : lines) wrapped.addAll(textRenderer.wrapLines(line, TOOLTIP_WIDTH));
+        context.drawOrderedTooltip(textRenderer, wrapped, mouseX, mouseY);
+    }
+
     @Override
     protected void drawMouseoverTooltip(DrawContext context, int mouseX, int mouseY) {
         PartyDashboardData data = handler.getData();
-        if (focusedSlot != null && isGhostSlot(focusedSlot.id) && handler.getCursorStack().isEmpty() && data != null) {
-            PartyCurrency currency = currencyOf(focusedSlot.id);
-            String key = KEY + "settings." + (currency == PartyCurrency.STAR ? "star" : "coin");
-            List<Text> lines = new ArrayList<>();
-            lines.add(Text.translatable(key).formatted(Formatting.GOLD));
-            lines.add(focusedSlot.getStack().getName().copy().formatted(Formatting.WHITE));
-            lines.add(Text.translatable(key + ".description").formatted(Formatting.GRAY));
-            lines.add(Text.translatable(KEY + "settings.slot.hint").formatted(Formatting.DARK_GRAY));
-            if (!data.canEdit()) lines.add(Text.translatable(KEY + "locked").formatted(Formatting.RED));
-            context.drawOrderedTooltip(textRenderer, wrapTooltip(lines), mouseX, mouseY);
+        int mx = mouseX - x, my = mouseY - y;
+        boolean emptyHand = handler.getCursorStack().isEmpty();
+        // The « i » of the page: what it is for and how it is used
+        if (data != null && in(mx, my, INFO_X - 1, INFO_Y - 1, INFO_SIZE + 2, INFO_SIZE + 2)) {
+            tooltip(context, List.of(Text.translatable(KEY + "tab." + key(page())).formatted(Formatting.GOLD),
+                    Text.translatable(KEY + "info." + key(page())).formatted(Formatting.GRAY)), mouseX, mouseY);
             return;
         }
-        if (focusedSlot != null && focusedSlot.id == SLOT_CATALOGUE && !focusedSlot.hasStack() && handler.getCursorStack().isEmpty()) {
-            List<Text> lines = List.of(Text.translatable(KEY + "mini_games.slot").formatted(Formatting.GOLD),
-                    Text.translatable(KEY + "mini_games.none.hint").formatted(Formatting.GRAY));
-            context.drawOrderedTooltip(textRenderer, wrapTooltip(lines), mouseX, mouseY);
+        if (focusedSlot != null && isGhostSlot(focusedSlot.id) && emptyHand && data != null) {
+            PartyCurrency currency = currencyOf(focusedSlot.id);
+            String name = currency == PartyCurrency.STAR ? "star" : "coin";
+            List<Text> lines = new ArrayList<>();
+            lines.add(Text.translatable(KEY + "gains." + name, focusedSlot.getStack().getName()).formatted(Formatting.GOLD));
+            lines.add(Text.translatable(KEY + "gains." + name + ".hint").formatted(Formatting.GRAY));
+            if (!data.canEdit()) lines.add(Text.translatable(KEY + "locked").formatted(Formatting.RED));
+            tooltip(context, lines, mouseX, mouseY);
+            return;
+        }
+        if (focusedSlot != null && focusedSlot.id == SLOT_CATALOGUE && emptyHand && data != null) {
+            if (!focusedSlot.hasStack()) {
+                tooltip(context, List.of(Text.translatable(KEY + "program.catalogue").formatted(Formatting.GOLD),
+                        Text.translatable(KEY + "program.catalogue.hint").formatted(Formatting.GRAY)), mouseX, mouseY);
+                return;
+            }
+            List<Text> lines = new ArrayList<>();
+            lines.add(focusedSlot.getStack().getName().copy().formatted(Formatting.GOLD));
+            long played = data.pages().stream().filter(p -> p.played() > 0).count();
+            lines.add(Text.translatable(KEY + "program.catalogue.summary", data.pages().size(), played).formatted(Formatting.GRAY));
+            if (data.catalogueLocked()) lines.add(Text.translatable(KEY + "program.catalogue.locked").formatted(Formatting.RED));
+            tooltip(context, lines, mouseX, mouseY);
+            return;
+        }
+        if (focusedSlot != null && isProgramSlot(focusedSlot.id) && !focusedSlot.hasStack() && emptyHand && data != null) {
+            List<ItemStack> ghosts = ghosts(data);
+            int index = focusedSlot.id - PROGRAM_FIRST_SLOT;
+            List<Text> lines = new ArrayList<>();
+            if (index < ghosts.size()) {
+                ItemStack ghost = ghosts.get(index);
+                Text name = ghost.getCount() > 1 ? Text.translatable(KEY + "program.ghost.count", ghost.getName(), ghost.getCount()) : ghost.getName();
+                lines.add(Text.translatable(KEY + "program.ghost", name).formatted(Formatting.GOLD));
+                lines.add(Text.translatable(KEY + "program.ghost.hint").formatted(Formatting.GRAY));
+            } else {
+                lines.add(Text.translatable(KEY + "program.slot").formatted(Formatting.GRAY));
+            }
+            tooltip(context, lines, mouseX, mouseY);
             return;
         }
         PartyDashboardData.Page hoveredPage = pageAt(mouseX, mouseY);
-        if (hoveredPage != null && handler.getCursorStack().isEmpty()) {
+        if (hoveredPage != null && emptyHand) {
             List<Text> lines = new ArrayList<>(Screen.getTooltipFromItem(client, hoveredPage.page()));
             lines.add(hoveredPage.played() == 0 ? Text.translatable(KEY + "mini_games.page.not_played").formatted(Formatting.GRAY)
                     : Text.translatable(KEY + "mini_games.page.played", hoveredPage.played()).formatted(Formatting.GREEN));
@@ -891,7 +981,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                     : Text.translatable(KEY + "mini_games.page.podiums", hoveredPage.podiums()).formatted(Formatting.GRAY));
             if (data != null && hoveredPage.slot() == data.currentPage())
                 lines.add(Text.translatable(KEY + "mini_games.page.current").formatted(Formatting.GOLD));
-            context.drawOrderedTooltip(textRenderer, wrapTooltip(lines), mouseX, mouseY);
+            tooltip(context, lines, mouseX, mouseY);
             return;
         }
         if (data != null && page() == Page.STATE && data.phase() == Phase.SETUP) {
@@ -902,18 +992,20 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 lines.add(check.hint().copy().formatted(Formatting.GRAY));
                 if (check.target() != null)
                     lines.add(Text.translatable(KEY + "check.go", Text.translatable(KEY + "tab." + key(check.target()))).formatted(Formatting.YELLOW));
-                context.drawOrderedTooltip(textRenderer, wrapTooltip(lines), mouseX, mouseY);
+                tooltip(context, lines, mouseX, mouseY);
+                return;
+            }
+        }
+        // The label of a setting: what it does
+        if (data != null && page() == Page.SETTINGS && emptyHand && mx >= PAD && mx < WIDTH - PAD - 76) {
+            int row = Math.floorDiv(my - SETTINGS_Y, SETTINGS_ROW);
+            if (my >= SETTINGS_Y && row >= 0 && row < 2 && my < SETTINGS_Y + row * SETTINGS_ROW + 18) {
+                String key = row == 0 ? "settings.rounds" : "settings.practice";
+                tooltip(context, List.of(Text.translatable(KEY + key + ".tooltip").formatted(Formatting.GRAY)), mouseX, mouseY);
                 return;
             }
         }
         super.drawMouseoverTooltip(context, mouseX, mouseY);
-    }
-
-    private List<OrderedText> wrapTooltip(List<Text> lines) {
-        // wrapLines also breaks at the line breaks, keeping the styles
-        List<OrderedText> wrapped = new ArrayList<>();
-        for (Text line : lines) wrapped.addAll(textRenderer.wrapLines(line, 220));
-        return wrapped;
     }
 
     private int checkAt(double mouseX, double mouseY, PartyDashboardData data) {
@@ -953,7 +1045,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             PartyDashboardData data = handler.getData();
             if (actionType != SlotActionType.PICKUP) return;
             if (data == null || !data.canEdit()) {
-                flash(Text.translatable(KEY + "locked"));
+                flash(Text.translatable(KEY + "read_only"));
                 return;
             }
             ItemStack cursor = handler.getCursorStack();
@@ -965,7 +1057,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             }
         }
         if (slot != null && slot.id == SLOT_CATALOGUE && slot.hasStack() && handler.isCatalogueLocked()) {
-            flash(Text.translatable(KEY + "mini_games.locked"));
+            flash(Text.translatable(KEY + "program.catalogue.locked"));
             return;
         }
         super.onMouseClick(slot, slotId, button, actionType);
@@ -984,7 +1076,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             playersScroll -= (int) Math.signum(verticalAmount);
             return true;
         }
-        if (verticalAmount != 0 && page() == Page.MINI_GAMES && mouseY < y + PANEL_HEIGHT) {
+        if (verticalAmount != 0 && page() == Page.PROGRAM && mouseY < y + PROGRAM_Y - 2) {
             pagesScroll -= (int) Math.signum(verticalAmount);
             return true;
         }
