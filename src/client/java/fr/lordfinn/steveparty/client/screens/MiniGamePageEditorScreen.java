@@ -95,7 +95,7 @@ public class MiniGamePageEditorScreen extends Screen {
     private boolean podiumsTab;
     private PartyButton pageTabButton, pipesTabButton, podiumsTabButton;
     /** The podium cards: two columns, scrolled by row. */
-    private static final int PODIUM_CARD_WIDTH = 150, PODIUM_CARD = 13, PODIUM_ROWS = 9, PODIUMS_TOP = 54;
+    private static final int PODIUM_CARD_WIDTH = 150, PODIUM_CARD = 13, PODIUM_ROWS = 8, PODIUMS_TOP = 64;
     private int podiumScroll;
     /** What is typed in the fields, kept while the other tab is shown. */
     private String titleValue, descriptionValue;
@@ -763,7 +763,7 @@ public class MiniGamePageEditorScreen extends Screen {
     private void drawPodiums(DrawContext context, MiniGamePageData data, int mouseX, int mouseY) {
         int lx = x + MARGIN;
         List<OrderedText> guide = textRenderer.wrapLines(Text.translatable(KEY + "podiums.guide"), WIDTH - 2 * MARGIN);
-        for (int i = 0; i < Math.min(3, guide.size()); i++) {
+        for (int i = 0; i < Math.min(4, guide.size()); i++) {
             context.drawText(textRenderer, guide.get(i), lx, y + TOP + i * 10, PartyGui.TEXT_SOFT, false);
         }
         List<MiniGamePodiumLink> links = data.podiumLinks();

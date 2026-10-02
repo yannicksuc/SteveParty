@@ -306,7 +306,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     // Gains page: a row per place, a stepper of coins and one of stars
-    private static final int GAINS_Y = 48, GAINS_ROW = 20, GAINS_COIN_X = 92, GAINS_STAR_X = 170, GAINS_STEP = 16, GAINS_FIELD = 28;
+    private static final int GAINS_Y = 48, GAINS_ROW = 20, GAINS_COIN_X = 104, GAINS_STAR_X = 188, GAINS_STEP = 16, GAINS_FIELD = 28;
 
     private void addGainsButtons(PartyDashboardData data) {
         for (int row = 0; row < MiniGameGains.ROWS; row++) {

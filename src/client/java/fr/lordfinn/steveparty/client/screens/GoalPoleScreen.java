@@ -71,9 +71,9 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         valueY = cmpY + CMP_HEIGHT + 12;
         summaryY = valueY + FIELD_HEIGHT + 7;
         modeY = summaryY + 16;
-        flagY = modeY + 22;
-        playerY = flagY + 22;
-        buttonsY = playerY + 26;
+        flagY = modeY + 20;
+        playerY = flagY + 20;
+        buttonsY = playerY + 24;
         backgroundHeight = buttonsY + 20 + 12;
         super.init();
         // init() runs again on every resize: keep what the player already chose / typed

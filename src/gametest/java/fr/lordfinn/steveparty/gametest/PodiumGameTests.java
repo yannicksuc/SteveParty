@@ -470,6 +470,8 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertTrue(occupant(context, first) == null, "refused");
             context.assertTrue(Podiums.register(group, group.columnAt(world, context.getAbsolutePos(second)), a1), "team A on the second place");
             context.assertEquals(master(context, second).getOccupant().team(), 0, "the podium shows the team");
+            context.assertTrue(!Podiums.fill(group, a2), "a winner whose team is already placed takes no other place");
+            context.assertEquals(occupant(context, second), a1.getUuid(), "the team keeps its podium");
             context.assertTrue(Podiums.register(group, group.columnAt(world, context.getAbsolutePos(third)), a2), "a team-mate on another podium");
             context.assertTrue(occupant(context, second) == null, "the team left its podium");
             context.assertEquals(occupant(context, third), a2.getUuid(), "and stands on the new one");

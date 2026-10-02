@@ -61,7 +61,8 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public enum Page { STATE, PLAYERS, MINI_GAMES, PROGRAM, GAINS, SETTINGS }
 
     // Layout (shared with the screen)
-    public static final int WIDTH = 248, PANEL_HEIGHT = 158;
+    /** Wide enough for the six tabs with their whole names (English and French). */
+    public static final int WIDTH = 272, PANEL_HEIGHT = 158;
     public static final int INVENTORY_Y = PANEL_HEIGHT + 4;
     public static final int CATALOGUE_X = 14, CATALOGUE_Y = 32;
     public static final int STAR_X = 16, STAR_Y = 34, COIN_X = 16, COIN_Y = 82;

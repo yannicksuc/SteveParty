@@ -134,8 +134,9 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
                 labelY += 0.14f;
             }
         }
-        // The Wrench shows what a redstone pulse does to the column
-        if (near && WorldLabels.holdingWrench()) {
+        // The Wrench shows what a redstone pulse does to the column looked at
+        if (near && WorldLabels.holdingWrench() && WorldLabels.lookingAtColumn(entity.getPos().getX(), entity.getPos().getZ(),
+                PodiumBlock.bottomOf(world, entity.getPos()).getY(), entity.getPos().getY())) {
             WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, master.getSignal().text(), 0xFFFFE08A, 0x60000000, 0, 1f / 80f);
         }
     }
