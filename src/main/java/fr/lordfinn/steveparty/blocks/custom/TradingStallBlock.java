@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.CarpetColorComponent;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
-import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler;
 import fr.lordfinn.steveparty.utils.VoxelShapeUtils;
@@ -188,7 +187,6 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
             VendorLinkPersistentState.onShopBlockRemoved(world, pos);
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof TradingStallBlockEntity entity) {
-                TraderStallRegistry.unlinkStallFromAllTraders(pos);
                 Inventory inv = entity.getInventory();
                 for (int i = 0; i < inv.size(); i++) {
                     ItemStack stack = inv.getStack(i);

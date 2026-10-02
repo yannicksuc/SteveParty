@@ -1,10 +1,8 @@
 package fr.lordfinn.steveparty.items.custom;
 
-import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
-import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -191,10 +189,6 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
         VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
         if (state != null) {
             traders.addAll(state.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), pos)));
-        }
-        if (world.getBlockEntity(pos) instanceof TradingStallBlockEntity) {
-            // Runtime links made by the stall's key block (slot 27)
-            traders.addAll(TraderStallRegistry.getLinkedTraders(pos));
         }
 
         boolean holdsKey = holdsKey(player);

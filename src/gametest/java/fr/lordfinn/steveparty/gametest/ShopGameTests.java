@@ -12,7 +12,6 @@ import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.ShopkeeperKeyItem;
 import fr.lordfinn.steveparty.persistent_state.ShopProtection;
-import fr.lordfinn.steveparty.persistent_state.TraderStallRegistry;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.enums.ChestType;
@@ -314,7 +313,6 @@ public class ShopGameTests implements FabricGameTest {
         UUID vendor = UUID.randomUUID();
         state.linkBlock(vendor, stallGlobalPos);
         state.linkBlock(vendor, registerGlobalPos);
-        TraderStallRegistry.linkTraderToStall(vendor, stallPos);
         try {
             // Same block, other state: links kept
             context.setBlockState(stallRelative, context.getBlockState(stallRelative).with(TradingStallBlock.COLOR1, 5));
@@ -327,7 +325,6 @@ public class ShopGameTests implements FabricGameTest {
             context.setBlockState(registerRelative, Blocks.AIR);
             context.assertTrue(state.getVendorsLinkedTo(stallGlobalPos).isEmpty(), "broken stall unlinked");
             context.assertTrue(state.getVendorsLinkedTo(registerGlobalPos).isEmpty(), "broken register unlinked");
-            context.assertTrue(TraderStallRegistry.getLinkedTraders(stallPos).isEmpty(), "runtime stall link removed");
 
             // A new stall at the same place starts unlinked (opens with any key, for setup)
             context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
@@ -337,9 +334,46 @@ public class ShopGameTests implements FabricGameTest {
         } finally {
             state.unlinkPosition(stallGlobalPos);
             state.unlinkPosition(registerGlobalPos);
-            TraderStallRegistry.unlinkStallFromAllTraders(stallPos);
         }
         context.complete();
+    }
+
+    /** A stall is only its 27 trade slots: no disguise block slot, a merchant is tied to it with the Shopkeeper Key only. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aStallHasNoDisguiseSlotAndAttachesNoMerchantByItself(TestContext context) {
+        for (int x = 0; x < 5; x++) for (int z = 0; z < 5; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
+        BlockPos stallRelative = new BlockPos(1, 1, 1);
+        context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
+        TradingStallBlockEntity stall = (TradingStallBlockEntity) context.getBlockEntity(stallRelative);
+        context.assertEquals(stall.size(), 27, "stall slots");
+        // A stall saved with an item in the old 28th slot loads without it
+        net.minecraft.nbt.NbtCompound saved = stall.createNbt(context.getWorld().getRegistryManager());
+        net.minecraft.nbt.NbtList items = new net.minecraft.nbt.NbtList();
+        for (int slot : new int[]{0, 27}) {
+            net.minecraft.nbt.NbtCompound entry = (net.minecraft.nbt.NbtCompound) new ItemStack(Items.GOLD_BLOCK).toNbt(context.getWorld().getRegistryManager());
+            entry.putByte("Slot", (byte) slot);
+            items.add(entry);
+        }
+        saved.put("Items", items);
+        stall.read(saved, context.getWorld().getRegistryManager());
+        context.assertTrue(stall.getStack(0).isOf(Items.GOLD_BLOCK) && stall.size() == 27, "old save loaded, 28th slot ignored");
+        // A merchant in a gold box right next to it stays free: only a Shopkeeper Key ties him to a shop
+        fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(2, 1, 2));
+        stall.markDirty();
+        context.waitAndRun(45, () -> {
+            context.assertFalse(trader.isAssigned(), "not attached by the stall");
+            VendorLinkPersistentState state = VendorLinkPersistentState.get(context.getWorld().getServer());
+            GlobalPos stallPos = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(stallRelative));
+            state.linkBlock(trader.getUuid(), stallPos);
+            context.waitAndRun(45, () -> {
+                try {
+                    context.assertTrue(trader.isAssigned(), "linked with the key: assigned, he stays by his shop");
+                } finally {
+                    state.unlinkPosition(stallPos);
+                }
+                context.complete();
+            });
+        });
     }
 
     /** Links the blocks (relative positions) to a new trader, owned by the given player (null: no owner). */
