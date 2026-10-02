@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import net.minecraft.client.render.RenderLayer;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -133,6 +135,12 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         drawMouseoverTooltip(context, mouseX, mouseY);
+        // An empty slot says what it takes
+        if (focusedSlot != null && !focusedSlot.hasStack() && handler.getCursorStack().isEmpty()
+                && (focusedSlot.id == SLOT_PAGE || focusedSlot.id == SLOT_ZONE)) {
+            context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(
+                    Text.translatable(KEY + (focusedSlot.id == SLOT_PAGE ? "slot.page" : "slot.zone")), 180), mouseX, mouseY);
+        }
     }
 
     @Override
@@ -141,6 +149,16 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         PartyGui.panel(context, x, y + INVENTORY_Y, WIDTH, INVENTORY_PANEL_HEIGHT, PartyGui.PANEL);
         context.drawText(textRenderer, playerInventoryTitle, x + (WIDTH - 162) / 2 + 1, y + INVENTORY_Y + 4, PartyGui.TEXT_DARK, false);
         for (Slot slot : handler.slots) PartyGui.inset(context, x + slot.x - 1, y + slot.y - 1, 18, 18, 0xFF8B8B8B, false, false);
+        // Its two own slots show, faded, the item they take while they are empty
+        ghost(context, SLOT_PAGE, ModItems.MINI_GAME_PAGE);
+        ghost(context, SLOT_ZONE, ModItems.ZONE_CARTRIDGE);
+    }
+
+    private void ghost(DrawContext context, int index, net.minecraft.item.Item item) {
+        Slot slot = handler.getSlot(index);
+        if (slot.hasStack()) return;
+        context.drawItem(new ItemStack(item), x + slot.x, y + slot.y);
+        context.fill(RenderLayer.getGuiGhostRecipeOverlay(), x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0xA08B8B8B);
     }
 
     @Override
