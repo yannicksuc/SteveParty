@@ -143,7 +143,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                     if (kind.isNumeric()) offerStonecuttingRecipe(RecipeCategory.MISC, dice, blank);
                     offerStonecuttingRecipe(RecipeCategory.MISC, blank, dice);
                 }
-                offerSpecialFace("coin_dice_face_1", blank, Items.EMERALD);
+                offerSpecialFace("coin_dice_face_1", blank, ModItems.COIN);
                 offerSpecialFace("debt_dice_face_1", blank, Items.SPIDER_EYE);
                 offerSpecialFace("swap_dice_face", blank, Items.ENDER_PEARL);
                 offerFaceValues("coin_dice_face_");
@@ -190,6 +190,11 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .input(ModItems.BLACK_STAR_FRAGMENT, 5)
                         .criterion(hasItem(ModItems.BLACK_STAR_FRAGMENT), conditionsFromItem(ModItems.BLACK_STAR_FRAGMENT))
                         .offerTo(recipeExporter, id("power_star_from_black_fragments"));
+                // The coin (the default Pièce currency of a party): minted from a gold nugget, one for one
+                createShapeless(RecipeCategory.MISC, ModItems.COIN, 1)
+                        .input(Items.GOLD_NUGGET)
+                        .criterion(hasItem(Items.GOLD_NUGGET), conditionsFromItem(Items.GOLD_NUGGET))
+                        .offerTo(recipeExporter, id("coin"));
 
                 generatePolishedConcrete();
                 generatePolishedTerracotta();

@@ -148,7 +148,7 @@ public class DiceRollGameTests implements FabricGameTest {
             hit(context, dice, player);
             context.assertTrue(DiceRollEffects.isResolving(pig.getUuid()) || dice.getOutcome().coins() == 5, "+5 was rolled");
             when(context, () -> count(player, Items.GOLD_INGOT) == 5, 100, "the coins are given", () -> {
-                context.assertEquals(count(player, Items.EMERALD), 0, "not the default coin");
+                context.assertEquals(count(player, ModItems.COIN), 0, "not the default coin");
                 PartyLiveData live = PartyLiveData.capture(controller, context.getWorld());
                 context.assertTrue(live.effect().rolled() && live.effect().coinFace() && live.effect().coins() == 5, "the HUD: +5 coins");
                 RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), context.getWorld().getRegistryManager());
@@ -164,18 +164,18 @@ public class DiceRollGameTests implements FabricGameTest {
         });
     }
 
-    /** Outside a party: the default coin (an emerald). */
+    /** Outside a party: the default coin (the mod's coin). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
-    public void coinFaceGivesEmeraldsOutsideAParty(TestContext context) {
+    public void coinFaceGivesCoinsOutsideAParty(TestContext context) {
         path(context, 3, -1, null);
         List<Played> played = record(context);
         ServerPlayerEntity player = player(context);
         PigEntity pig = token(context, PATH.get(1), player.getUuid());
-        context.assertTrue(PartyCurrency.COIN.defaultStack().isOf(Items.EMERALD), "the default coin is the emerald");
+        context.assertTrue(PartyCurrency.COIN.defaultStack().isOf(ModItems.COIN), "the default coin is the mod's coin");
         context.waitAndRun(2, () -> {
             DiceEntity dice = thrown(context, player, die("coin_dice_face_10"), PATH.get(1));
             hit(context, dice, player);
-            when(context, () -> count(player, Items.EMERALD) == 10, 100, "the emeralds are given", () ->
+            when(context, () -> count(player, ModItems.COIN) == 10, 100, "the coins are given", () ->
                     when(context, () -> !DiceRollEffects.isResolving(pig.getUuid()), 100, "the roll is resolved", () -> {
                         assertOn(context, pig, PATH.get(1), "the token did not move");
                         context.assertTrue(!played(played, context, Kind.AMBIENT, PATH.get(1)), "it did not arrive on its tile again");
@@ -191,8 +191,8 @@ public class DiceRollGameTests implements FabricGameTest {
         ServerPlayerEntity player = player(context);
         PigEntity pig = token(context, PATH.get(1), player.getUuid());
         PartyControllerEntity controller = party(context, player.getUuid(), pig);
-        player.getInventory().setStack(3, new ItemStack(Items.EMERALD, 2));
-        ItemStack renamed = new ItemStack(Items.EMERALD, 9);
+        player.getInventory().setStack(3, new ItemStack(ModItems.COIN, 2));
+        ItemStack renamed = new ItemStack(ModItems.COIN, 9);
         renamed.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, net.minecraft.text.Text.literal("Not a coin"));
         player.getInventory().setStack(4, renamed);
         context.waitAndRun(2, () -> {
@@ -200,8 +200,8 @@ public class DiceRollGameTests implements FabricGameTest {
             hit(context, dice, player);
             context.assertEquals(dice.getOutcome().coins(), -5, "-5 was rolled");
             when(context, turnEnded(controller), 150, "the turn ends", () -> {
-                context.assertEquals(count(player, Items.EMERALD), 0, "the 2 coins held are taken");
-                context.assertEquals(player.getInventory().getStack(4).getCount(), 9, "a renamed emerald is not the party's coin");
+                context.assertEquals(count(player, ModItems.COIN), 0, "the 2 coins held are taken");
+                context.assertEquals(player.getInventory().getStack(4).getCount(), 9, "a renamed coin is not the party's coin");
                 assertOn(context, pig, PATH.get(1), "the token did not move");
                 context.complete();
             });
@@ -310,7 +310,7 @@ public class DiceRollGameTests implements FabricGameTest {
                     new DiceFace(DiceFacesComponent.Kind.SWAP, 0), new DiceFace(DiceFacesComponent.Kind.NORMAL, 2)));
             DiceRollEffects.resolve(context.getWorld(), a, player.getUuid(), outcome, 1, 100);
             when(context, () -> DicePrompts.pending(player) != null, 20, "asked who to swap with", () -> {
-                context.assertEquals(count(player, Items.EMERALD), 3, "the coins come first");
+                context.assertEquals(count(player, ModItems.COIN), 3, "the coins come first");
                 DicePrompts.answer(player, DicePrompts.pending(player).id(), 0);
                 when(context, turnEnded(controller), 200, "the turn ends", () -> {
                     assertOn(context, a, PATH.get(4), "a swapped to the third tile, then walked 2 steps");
@@ -335,7 +335,7 @@ public class DiceRollGameTests implements FabricGameTest {
             hit(context, steps, player);
             when(context, () -> !DiceRollEffects.isResolving(pig.getUuid()), 100, "resolved", () -> context.waitAndRun(40, () -> {
                 assertOn(context, pig, PATH.get(0), "the second die moved nothing");
-                context.assertEquals(count(player, Items.EMERALD), 2, "the coins of the first one");
+                context.assertEquals(count(player, ModItems.COIN), 2, "the coins of the first one");
                 context.complete();
             }));
         });
@@ -363,7 +363,7 @@ public class DiceRollGameTests implements FabricGameTest {
             context.assertTrue(!lead.isRolling() && !second.isRolling(), "both stopped");
             context.assertEquals(lead.getRolledFaces().size(), 2, "one face per die");
             context.assertEquals(second.getOutcome().coins(), 8, "+4 and +4");
-            when(context, () -> count(player, Items.EMERALD) == 8, 100, "the coins of both dice", () -> {
+            when(context, () -> count(player, ModItems.COIN) == 8, 100, "the coins of both dice", () -> {
                 assertOn(context, pig, PATH.get(1), "the token did not move");
                 if (!second.isRemoved()) second.discard();
                 context.complete();

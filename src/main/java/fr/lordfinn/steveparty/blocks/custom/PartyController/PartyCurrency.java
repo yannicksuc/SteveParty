@@ -1,9 +1,12 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+
+import java.util.function.Supplier;
 
 /**
  * The two currencies of a party, like in Mario Party: the stars rank the players, the coins break the ties. Each party
@@ -12,14 +15,15 @@ import net.minecraft.item.Items;
  */
 public enum PartyCurrency {
     /** The main currency: a nether star by default, the rarest looking star of the game. */
-    STAR("StarItem", Items.NETHER_STAR),
-    /** The sub-currency: an emerald by default, the money of Minecraft itself. */
-    COIN("CoinItem", Items.EMERALD);
+    STAR("StarItem", () -> Items.NETHER_STAR),
+    /** The sub-currency: the mod's coin by default (a gold nugget minted at the crafting table). */
+    COIN("CoinItem", () -> ModItems.COIN);
 
     private final String nbtKey;
-    private final Item defaultItem;
+    /** Read when asked for, not when the enum loads: the mod's items may not be registered yet. */
+    private final Supplier<Item> defaultItem;
 
-    PartyCurrency(String nbtKey, Item defaultItem) {
+    PartyCurrency(String nbtKey, Supplier<Item> defaultItem) {
         this.nbtKey = nbtKey;
         this.defaultItem = defaultItem;
     }
@@ -29,7 +33,7 @@ public enum PartyCurrency {
     }
 
     public ItemStack defaultStack() {
-        return new ItemStack(defaultItem);
+        return new ItemStack(defaultItem.get());
     }
 
     public PartyCurrency other() {

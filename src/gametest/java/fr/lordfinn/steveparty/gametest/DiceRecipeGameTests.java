@@ -71,7 +71,7 @@ public class DiceRecipeGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void specialFacesAreCraftedFromABlankFace(TestContext context) {
-        context.assertTrue(craft(context, blank(), new ItemStack(Items.EMERALD)).isOf(face("coin_dice_face_1")), "blank + emerald: coins +1");
+        context.assertTrue(craft(context, blank(), new ItemStack(ModItems.COIN)).isOf(face("coin_dice_face_1")), "blank + coin: coins +1");
         context.assertTrue(craft(context, blank(), new ItemStack(Items.SPIDER_EYE)).isOf(face("debt_dice_face_1")), "blank + spider eye: debt -1");
         context.assertTrue(craft(context, blank(), new ItemStack(Items.ENDER_PEARL)).isOf(face("swap_dice_face")), "blank + ender pearl: swap");
 
