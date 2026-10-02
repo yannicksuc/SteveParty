@@ -1,7 +1,94 @@
 {
   "variants": {
-    "": {
-      "model": "steveparty:block/mini_game_controller"
+    "facing=north,page=false,signal=red": {
+      "model": "steveparty:block/mini_game_controller_red"
+    },
+    "facing=north,page=false,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_orange"
+    },
+    "facing=north,page=false,signal=green": {
+      "model": "steveparty:block/mini_game_controller_green"
+    },
+    "facing=north,page=true,signal=red": {
+      "model": "steveparty:block/mini_game_controller_with_page_red"
+    },
+    "facing=north,page=true,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_with_page_orange"
+    },
+    "facing=north,page=true,signal=green": {
+      "model": "steveparty:block/mini_game_controller_with_page_green"
+    },
+    "facing=east,page=false,signal=red": {
+      "model": "steveparty:block/mini_game_controller_red",
+      "y": 90
+    },
+    "facing=east,page=false,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_orange",
+      "y": 90
+    },
+    "facing=east,page=false,signal=green": {
+      "model": "steveparty:block/mini_game_controller_green",
+      "y": 90
+    },
+    "facing=east,page=true,signal=red": {
+      "model": "steveparty:block/mini_game_controller_with_page_red",
+      "y": 90
+    },
+    "facing=east,page=true,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_with_page_orange",
+      "y": 90
+    },
+    "facing=east,page=true,signal=green": {
+      "model": "steveparty:block/mini_game_controller_with_page_green",
+      "y": 90
+    },
+    "facing=south,page=false,signal=red": {
+      "model": "steveparty:block/mini_game_controller_red",
+      "y": 180
+    },
+    "facing=south,page=false,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_orange",
+      "y": 180
+    },
+    "facing=south,page=false,signal=green": {
+      "model": "steveparty:block/mini_game_controller_green",
+      "y": 180
+    },
+    "facing=south,page=true,signal=red": {
+      "model": "steveparty:block/mini_game_controller_with_page_red",
+      "y": 180
+    },
+    "facing=south,page=true,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_with_page_orange",
+      "y": 180
+    },
+    "facing=south,page=true,signal=green": {
+      "model": "steveparty:block/mini_game_controller_with_page_green",
+      "y": 180
+    },
+    "facing=west,page=false,signal=red": {
+      "model": "steveparty:block/mini_game_controller_red",
+      "y": 270
+    },
+    "facing=west,page=false,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_orange",
+      "y": 270
+    },
+    "facing=west,page=false,signal=green": {
+      "model": "steveparty:block/mini_game_controller_green",
+      "y": 270
+    },
+    "facing=west,page=true,signal=red": {
+      "model": "steveparty:block/mini_game_controller_with_page_red",
+      "y": 270
+    },
+    "facing=west,page=true,signal=orange": {
+      "model": "steveparty:block/mini_game_controller_with_page_orange",
+      "y": 270
+    },
+    "facing=west,page=true,signal=green": {
+      "model": "steveparty:block/mini_game_controller_with_page_green",
+      "y": 270
     }
   }
 }

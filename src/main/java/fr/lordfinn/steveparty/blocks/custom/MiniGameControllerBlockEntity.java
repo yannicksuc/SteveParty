@@ -162,6 +162,36 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
         }
         page = stack;
         markDirty();
+        refreshState();
+    }
+
+    // ------------------------------------------------------------------ what the block shows
+
+    /** How often the lamp looks at the mini-game of the page (the sessions have no event to listen to). */
+    private static final int SIGNAL_INTERVAL_TICKS = 5;
+
+    /** What the mini-game of the page is doing: a party's practice round, being played (a party's real round, or out of a party), or nothing. */
+    public MiniGameControllerBlock.Signal signal() {
+        UUID id = getPageId();
+        if (id == null) return MiniGameControllerBlock.Signal.RED;
+        java.util.Optional<fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity> party =
+                fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.getPartyPlayingPage(List.of(id));
+        if (party.isPresent() && party.get().getPartyData().getCurrentStep()
+                instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep step) {
+            return step.isPractice() ? MiniGameControllerBlock.Signal.ORANGE : MiniGameControllerBlock.Signal.GREEN;
+        }
+        fr.lordfinn.steveparty.minigame.MiniGameTest played = fr.lordfinn.steveparty.minigame.MiniGameTest.of(id);
+        return played != null && played.phase() != fr.lordfinn.steveparty.minigame.MiniGameTest.Phase.FINISHED
+                ? MiniGameControllerBlock.Signal.GREEN : MiniGameControllerBlock.Signal.RED;
+    }
+
+    /** The block shows the page it holds and the lamp of its mini-game: changed only when they are not what it shows. */
+    public void refreshState() {
+        if (!(world instanceof ServerWorld) || isRemoved()) return;
+        BlockState state = world.getBlockState(pos);
+        if (!(state.getBlock() instanceof MiniGameControllerBlock)) return;
+        BlockState wanted = state.with(MiniGameControllerBlock.PAGE, !page.isEmpty()).with(MiniGameControllerBlock.SIGNAL, signal());
+        if (wanted != state) world.setBlockState(pos, wanted, net.minecraft.block.Block.NOTIFY_LISTENERS);
     }
 
     /** Puts a Zone Cartridge in (an empty stack takes it out). */
@@ -183,6 +213,7 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
     }
 
     public void serverTick(ServerWorld serverWorld) {
+        if (serverWorld.getTime() % SIGNAL_INTERVAL_TICKS == 0) refreshState();
         // On its first tick too: a controller a mini-game zone just put back is the home of its page at once
         if (claimedOnce && serverWorld.getTime() % CLAIM_INTERVAL_TICKS != 0) return;
         claimedOnce = true;
