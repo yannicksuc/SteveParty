@@ -43,7 +43,9 @@ import org.jetbrains.annotations.Nullable;
  *     <li>Four kinds: gold (1st place), silver (2nd), bronze (3rd) and the classic one.</li>
  *     <li>A podium is a slab; another podium of the same kind put on it makes it a full block. Podiums stacked on
  *     one another make one podium (a column): only its top counts, redstone goes in and out through any of its
- *     blocks, and its settings (mode, cartridge, banner) are kept by its bottom block.</li>
+ *     blocks, and its settings (mode, cartridge, banner) are kept by its bottom block. A column looks like one
+ *     piece: the plate on its top only, the plinth at its foot only, and its banner hanging from its top over one
+ *     block of height, across two blocks when its top is a slab (a slab alone only has a label).</li>
  *     <li>Wrench (or cartridge) + right-click: the cartridge slot (the reward of the winners).</li>
  *     <li>Right-click (empty hand): mode "first arrived" / "on signal".</li>
  *     <li>The banner hanging on its front can be stamped with a stencil (Stencil Hammer, or a stencil and a dye),
@@ -57,6 +59,10 @@ public class PodiumBlock extends CartridgeContainer {
     public static final BooleanProperty FULL = BooleanProperty.of("full");
     /** Top block of its column: the one with the plate and the banner, the one players stand on. */
     public static final BooleanProperty TOP = BooleanProperty.of("top");
+    /** Foot of a piece: it doesn't rest on a full podium (a full block shows its plinth, a top slab a label). */
+    public static final BooleanProperty BASE = BooleanProperty.of("base");
+    /** Full block right under the top slab of its column: the lower half of that slab's banner hangs on it. */
+    public static final EnumProperty<BannerTail> BANNER_TAIL = EnumProperty.of("banner_tail", BannerTail.class);
     public static final BooleanProperty POWERED = Properties.POWERED;
     private static final VoxelShape SLAB = Block.createCuboidShape(0, 0, 0, 16, 8, 16);
     private static final VoxelShape FULL_SHAPE = VoxelShapes.fullCube();
@@ -88,13 +94,39 @@ public class PodiumBlock extends CartridgeContainer {
         }
     }
 
+    /** The banner of the slab above, by the kind of that slab (podiums of different kinds can be stacked). */
+    public enum BannerTail implements StringIdentifiable {
+        NONE("none"), CLASSIC("classic"), GOLD("gold"), SILVER("silver"), BRONZE("bronze");
+
+        private final String name;
+
+        BannerTail(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String asString() {
+            return name;
+        }
+
+        static BannerTail of(Place place) {
+            return switch (place) {
+                case FIRST -> GOLD;
+                case SECOND -> SILVER;
+                case THIRD -> BRONZE;
+                case CLASSIC -> CLASSIC;
+            };
+        }
+    }
+
     private final Place place;
 
     public PodiumBlock(Settings settings, Place place) {
         super(settings, 1);
         this.place = place;
         setDefaultState(getStateManager().getDefaultState()
-                .with(FACING, Direction.NORTH).with(FULL, false).with(TOP, true).with(POWERED, false));
+                .with(FACING, Direction.NORTH).with(FULL, false).with(TOP, true)
+                .with(BASE, true).with(BANNER_TAIL, BannerTail.NONE).with(POWERED, false));
     }
 
     public Place getPlace() {
@@ -108,7 +140,7 @@ public class PodiumBlock extends CartridgeContainer {
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING, FULL, TOP, POWERED);
+        builder.add(FACING, FULL, TOP, BASE, BANNER_TAIL, POWERED);
     }
 
     @Override
@@ -128,10 +160,10 @@ public class PodiumBlock extends CartridgeContainer {
         BlockPos pos = ctx.getBlockPos();
         BlockState existing = ctx.getWorld().getBlockState(pos);
         // Doubling a slab: the podium becomes a full block, same facing
-        if (existing.isOf(this) && !existing.get(FULL)) return existing.with(FULL, true);
-        return getDefaultState()
-                .with(FACING, ctx.getHorizontalPlayerFacing().getOpposite())
-                .with(TOP, !isPodium(ctx.getWorld().getBlockState(pos.up())));
+        BlockState state = existing.isOf(this) && !existing.get(FULL)
+                ? existing.with(FULL, true)
+                : getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+        return below(above(state, ctx.getWorld().getBlockState(pos.up())), ctx.getWorld().getBlockState(pos.down()));
     }
 
     @Override
@@ -144,8 +176,30 @@ public class PodiumBlock extends CartridgeContainer {
     @Override
     protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
                                                    Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
-        if (direction == Direction.UP) return state.with(TOP, !isPodium(neighborState));
+        if (direction == Direction.UP) return above(state, neighborState);
+        if (direction == Direction.DOWN) return below(state, neighborState);
         return state;
+    }
+
+    /** {@code state} under {@code above}: the top of its column or not, and the banner of a top slab hanging on it. */
+    private static BlockState above(BlockState state, BlockState above) {
+        boolean podium = isPodium(above);
+        boolean tail = podium && state.get(FULL) && !above.get(FULL) && above.get(TOP);
+        return state.with(TOP, !podium)
+                .with(BANNER_TAIL, tail ? BannerTail.of(((PodiumBlock) above.getBlock()).getPlace()) : BannerTail.NONE);
+    }
+
+    /** {@code state} on {@code below}: only a full podium carries it (a slab leaves a gap under the next block). */
+    private static BlockState below(BlockState state, BlockState below) {
+        return state.with(BASE, !(isPodium(below) && below.get(FULL)));
+    }
+
+    /**
+     * The banner of a column, seen on its top block: true when it hangs over one block of height (a full block, or a
+     * slab on a full podium: over that slab and the upper half of the block below), false for the label of a slab.
+     */
+    public static boolean bannerHangs(BlockState top) {
+        return top.get(FULL) || !top.get(BASE);
     }
 
     @Override

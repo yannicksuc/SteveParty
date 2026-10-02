@@ -1,0 +1,6 @@
+{
+  "parent": "steveparty:block/podium_template_tail",
+  "textures": {
+    "front": "steveparty:block/podium_bronze_front"
+  }
+}

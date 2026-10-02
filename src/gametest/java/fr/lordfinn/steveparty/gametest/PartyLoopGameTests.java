@@ -353,6 +353,58 @@ public class PartyLoopGameTests implements FabricGameTest {
         });
     }
 
+    /**
+     * A column looks like one piece: the plinth at its foot only, and its banner hanging over one block of height from
+     * its top (across the top slab and the block under it), whatever it is made of; a slab alone has a label.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void podiumColumnBanner(TestContext context) {
+        BlockPos bottom = new BlockPos(2, 1, 2);
+        BlockState slab = ModBlocks.GOLD_PODIUM.getDefaultState();
+        BlockState full = ModBlocks.SILVER_PODIUM.getDefaultState().with(PodiumBlock.FULL, true);
+
+        placePodium(context, bottom, slab);
+        context.assertFalse(PodiumBlock.bannerHangs(context.getBlockState(bottom)), "a slab alone: a label");
+        placePodium(context, bottom, full);
+        context.assertTrue(PodiumBlock.bannerHangs(context.getBlockState(bottom)), "a full block: the banner hangs");
+        context.assertTrue(context.getBlockState(bottom).get(PodiumBlock.BASE), "alone: its plinth");
+
+        // Full block + slab of another kind: the slab's banner goes on over the block under it
+        placePodium(context, bottom.up(), slab);
+        BlockState top = context.getBlockState(bottom.up());
+        context.assertTrue(top.get(PodiumBlock.TOP) && !top.get(PodiumBlock.BASE), "the slab rests on the column");
+        context.assertTrue(PodiumBlock.bannerHangs(top), "a slab on a full block: the banner hangs");
+        context.assertEquals(context.getBlockState(bottom).get(PodiumBlock.BANNER_TAIL), PodiumBlock.BannerTail.GOLD, "lower half of the gold banner");
+        context.assertTrue(context.getBlockState(bottom).get(PodiumBlock.BASE), "the foot of the column keeps its plinth");
+
+        // Two full blocks: the banner is on the upper one only, which has no plinth
+        placePodium(context, bottom.up(), full);
+        context.assertEquals(context.getBlockState(bottom).get(PodiumBlock.BANNER_TAIL), PodiumBlock.BannerTail.NONE, "no banner under a full block");
+        context.assertFalse(context.getBlockState(bottom.up()).get(PodiumBlock.BASE), "no plinth on a block resting on a podium");
+
+        // Two full blocks + slab: the banner is on the slab and the block under it, not lower
+        placePodium(context, bottom.up(2), slab);
+        context.assertEquals(context.getBlockState(bottom.up()).get(PodiumBlock.BANNER_TAIL), PodiumBlock.BannerTail.GOLD, "under the top slab");
+        context.assertEquals(context.getBlockState(bottom).get(PodiumBlock.BANNER_TAIL), PodiumBlock.BannerTail.NONE, "not lower");
+        context.assertFalse(context.getBlockState(bottom.up()).get(PodiumBlock.TOP), "covered");
+        context.removeBlock(bottom.up(2));
+        context.assertEquals(context.getBlockState(bottom.up()).get(PodiumBlock.BANNER_TAIL), PodiumBlock.BannerTail.NONE, "slab removed");
+        context.assertTrue(context.getBlockState(bottom.up()).get(PodiumBlock.TOP), "the top again");
+
+        // A slab under another podium leaves a gap: the one above stands on its own
+        placePodium(context, bottom.up(), slab);
+        placePodium(context, bottom.up(2), slab);
+        context.assertTrue(context.getBlockState(bottom.up(2)).get(PodiumBlock.BASE), "nothing full under it");
+        context.assertFalse(PodiumBlock.bannerHangs(context.getBlockState(bottom.up(2))), "a label");
+        context.complete();
+    }
+
+    /** Like /setblock: the block takes its place in the column, its neighbours follow. */
+    private static void placePodium(TestContext context, BlockPos pos, BlockState state) {
+        BlockPos abs = context.getAbsolutePos(pos);
+        context.getWorld().setBlockState(abs, net.minecraft.block.Block.postProcessState(state, context.getWorld(), abs));
+    }
+
     /** Silver and bronze give their place without ending the mini-game; the gold podium ends it. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void podiumPlaces(TestContext context) {
