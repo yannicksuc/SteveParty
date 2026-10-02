@@ -144,14 +144,14 @@ public class ModBlocks {
             PIPES[kind.ordinal()] = new Block[kind.count()];
             for (int i = 0; i < kind.count(); i++) {
                 final int color = i;
-                final boolean golden = kind.isGolden();
+                final boolean miniGame = kind.isMiniGame();
                 PIPES[kind.ordinal()][i] = register(
-                        settings -> golden ? new fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlock(kind, settings)
+                        settings -> miniGame ? new fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock(kind, settings)
                                 : new fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock(kind, color, settings),
                         Block.Settings.create()
-                                .mapColor(golden ? MapColor.GOLD : kind.colored ? DyeColor.byName(COLORS[i], DyeColor.WHITE).getMapColor() : MapColor.CLEAR)
-                                .strength(golden ? 1.5f : kind.isPlastic() ? 1.0f : 0.3f, golden ? 6.0f : 1.0f)
-                                .sounds(golden ? BlockSoundGroup.METAL : kind.isPlastic() ? BlockSoundGroup.BAMBOO_WOOD : BlockSoundGroup.GLASS)
+                                .mapColor(miniGame ? MapColor.GOLD : kind.colored ? DyeColor.byName(COLORS[i], DyeColor.WHITE).getMapColor() : MapColor.CLEAR)
+                                .strength(miniGame ? 1.5f : kind.isPlastic() ? 1.0f : 0.3f, miniGame ? 6.0f : 1.0f)
+                                .sounds(miniGame ? BlockSoundGroup.METAL : kind.isPlastic() ? BlockSoundGroup.BAMBOO_WOOD : BlockSoundGroup.GLASS)
                                 .nonOpaque()
                                 .suffocates((state, world, pos) -> false)
                                 .blockVision((state, world, pos) -> false)
@@ -164,10 +164,10 @@ public class ModBlocks {
         }
     }
 
-    /** The golden mini-game pipes: reaching 100 blocks, its whole dimension, every dimension. */
+    /** The mini-game pipes: copper reaches 100 blocks, iron its whole dimension, gold every dimension. */
+    public static final Block COPPER_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.COPPER.ordinal()][0];
+    public static final Block IRON_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.IRON.ordinal()][0];
     public static final Block GOLDEN_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GOLDEN.ordinal()][0];
-    public static final Block SUPER_GOLDEN_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.SUPER_GOLDEN.ordinal()][0];
-    public static final Block MEGA_GOLDEN_MINIGAME_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.MEGA_GOLDEN.ordinal()][0];
 
     /** The plain glass pipe. */
     public static final Block GLASS_PIPE = PIPES[fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind.GLASS.ordinal()][0];

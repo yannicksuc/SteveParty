@@ -10,12 +10,12 @@ public enum PipeKind {
     GLASS("glass", "glass_pipe", false),
     /** Stained glass (the vanilla stained glass look), in the 16 dye colours. */
     STAINED_GLASS("stained_glass", "stained_glass_pipe", true),
-    /** The Golden Mini-game Pipe: gold, one block; programmed with a mini-game page (see {@link GoldenPipeBlock}). */
-    GOLDEN("golden", "golden_minigame_pipe", false),
-    /** The Super Golden Mini-game Pipe: it reaches any distance in its dimension. */
-    SUPER_GOLDEN("super_golden", "super_golden_minigame_pipe", false),
-    /** The Mega Golden Mini-game Pipe: it reaches the other dimensions too. */
-    MEGA_GOLDEN("mega_golden", "mega_golden_minigame_pipe", false);
+    /** The Copper Mini-game Pipe: gold, one block; programmed with a mini-game page (see {@link MiniGamePipeBlock}). */
+    COPPER("copper", "copper_minigame_pipe", false),
+    /** The Iron Mini-game Pipe: it reaches any distance in its dimension. */
+    IRON("iron", "iron_minigame_pipe", false),
+    /** The mini-game pipe: it reaches the other dimensions too. */
+    GOLDEN("golden", "golden_minigame_pipe", false);
 
     /** Folder of its textures ({@code textures/block/pipe/<folder>/}, plastic kinds only). */
     public final String folder;
@@ -34,9 +34,9 @@ public enum PipeKind {
         return this == OPAQUE || this == WINDOWED;
     }
 
-    /** One of the golden mini-game pipes (see {@link GoldenPipeBlock}). */
-    public boolean isGolden() {
-        return this == GOLDEN || this == SUPER_GOLDEN || this == MEGA_GOLDEN;
+    /** One of the mini-game pipes (see {@link MiniGamePipeBlock}). */
+    public boolean isMiniGame() {
+        return this == COPPER || this == IRON || this == GOLDEN;
     }
 
     /** Glass all round (seen through): the vanilla glass textures, no wall sheets of its own. */

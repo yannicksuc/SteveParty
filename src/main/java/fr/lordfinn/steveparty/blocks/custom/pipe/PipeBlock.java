@@ -82,7 +82,7 @@ public class PipeBlock extends Block implements BlockEntityProvider {
         return switch (kind) {
             case GLASS -> "glass";
             case STAINED_GLASS -> "stained_glass/" + color;
-            case GOLDEN, SUPER_GOLDEN, MEGA_GOLDEN -> kind.folder;
+            case COPPER, IRON, GOLDEN -> kind.folder;
             default -> "plastic/" + color;
         };
     }

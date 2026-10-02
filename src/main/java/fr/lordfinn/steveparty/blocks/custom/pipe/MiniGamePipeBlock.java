@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * The golden mini-game pipes (Golden, Super Golden, Mega Golden: they differ by how far they send, see {@link Reach}):
+ * The mini-game pipes (Copper, Iron, Golden: they differ by how far they send, see {@link Reach}):
  * a pipe like any other (it joins the pipes of any colour) that can be programmed with a
  * mini-game page, shown in the notch on its side. Programmed, it is the way into that mini-game out of a party: see
  * {@code MiniGamePipes}.
@@ -34,10 +34,10 @@ import java.util.List;
  * </ul>
  * Programming it takes the right to build.
  */
-public class GoldenPipeBlock extends PipeBlock {
+public class MiniGamePipeBlock extends PipeBlock {
     private static final Direction[] NOTCH_SIDES = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, Direction.UP, Direction.DOWN};
 
-    /** How far a golden pipe sends to its mini-game. */
+    /** How far a mini-game pipe sends to its mini-game. */
     public enum Reach {
         /** Like any warp: at most {@link PipeNetworks#WARP_RADIUS} blocks, in a loaded chunk of its dimension. */
         NEAR,
@@ -47,30 +47,30 @@ public class GoldenPipeBlock extends PipeBlock {
         EVERYWHERE
     }
 
-    public GoldenPipeBlock(PipeKind kind, Settings settings) {
+    public MiniGamePipeBlock(PipeKind kind, Settings settings) {
         super(kind, 0, settings);
     }
 
     @Override
     protected MapCodec<? extends Block> getCodec() {
-        return createCodec(settings -> new GoldenPipeBlock(kind(), settings));
+        return createCodec(settings -> new MiniGamePipeBlock(kind(), settings));
     }
 
     public Reach reach() {
         return switch (kind()) {
-            case MEGA_GOLDEN -> Reach.EVERYWHERE;
-            case SUPER_GOLDEN -> Reach.DIMENSION;
+            case GOLDEN -> Reach.EVERYWHERE;
+            case IRON -> Reach.DIMENSION;
             default -> Reach.NEAR;
         };
     }
 
-    /** How far the golden pipe {@code state} sends, {@link Reach#NEAR} if it is not one. */
+    /** How far the mini-game pipe {@code state} sends, {@link Reach#NEAR} if it is not one. */
     public static Reach reachOf(BlockState state) {
-        return state.getBlock() instanceof GoldenPipeBlock pipe ? pipe.reach() : Reach.NEAR;
+        return state.getBlock() instanceof MiniGamePipeBlock pipe ? pipe.reach() : Reach.NEAR;
     }
 
     /**
-     * @return true if a golden pipe at {@code from} in {@code world} sends as far as the mouth at {@code to}: see {@link Reach}
+     * @return true if a mini-game pipe at {@code from} in {@code world} sends as far as the mouth at {@code to}: see {@link Reach}
      */
     public static boolean reaches(Reach reach, net.minecraft.server.world.ServerWorld world, BlockPos from, net.minecraft.util.math.GlobalPos to) {
         if (reach == Reach.EVERYWHERE) return true;
@@ -82,7 +82,7 @@ public class GoldenPipeBlock extends PipeBlock {
 
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new GoldenPipeBlockEntity(pos, state);
+        return new MiniGamePipeBlockEntity(pos, state);
     }
 
     /** The side its notch is on: the first plain side (no pipe joined, no mouth, no cap), the sides before top and bottom; null if it has none. */
@@ -94,18 +94,18 @@ public class GoldenPipeBlock extends PipeBlock {
         return null;
     }
 
-    /** The page of the golden pipe at {@code pos}, empty if it is not one or holds none. */
+    /** The page of the mini-game pipe at {@code pos}, empty if it is not one or holds none. */
     public static ItemStack pageAt(World world, BlockPos pos) {
-        return world.getBlockEntity(pos) instanceof GoldenPipeBlockEntity pipe ? pipe.getPage() : ItemStack.EMPTY;
+        return world.getBlockEntity(pos) instanceof MiniGamePipeBlockEntity pipe ? pipe.getPage() : ItemStack.EMPTY;
     }
 
     @Override
     public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, List<Text> tooltip, net.minecraft.item.tooltip.TooltipType options) {
         for (String line : new String[]{"what", "program", "colours", "direct", "own", "take"}) {
-            tooltip.add(Text.translatable("tooltip.steveparty.golden_minigame_pipe." + line)
+            tooltip.add(Text.translatable("tooltip.steveparty.minigame_pipe." + line)
                     .formatted(line.equals("what") ? Formatting.GOLD : Formatting.GRAY));
         }
-        tooltip.add(Text.translatable("tooltip.steveparty.golden_minigame_pipe.reach." + reach().name().toLowerCase(java.util.Locale.ROOT))
+        tooltip.add(Text.translatable("tooltip.steveparty.minigame_pipe.reach." + reach().name().toLowerCase(java.util.Locale.ROOT))
                 .formatted(Formatting.YELLOW));
     }
 
@@ -126,16 +126,16 @@ public class GoldenPipeBlock extends PipeBlock {
     }
 
     /**
-     * Programs the golden pipe at {@code pos} with the page held in {@code hand} (one page of the stack); the page
+     * Programs the mini-game pipe at {@code pos} with the page held in {@code hand} (one page of the stack); the page
      * that was there goes back to the player.
      *
      * @return false if the player may not build, or holds no page
      */
     public static boolean program(ServerPlayerEntity player, Hand hand, BlockPos pos) {
         ItemStack held = player.getStackInHand(hand);
-        if (!(player.getWorld().getBlockEntity(pos) instanceof GoldenPipeBlockEntity pipe) || !MiniGamePages.isPage(held)) return false;
+        if (!(player.getWorld().getBlockEntity(pos) instanceof MiniGamePipeBlockEntity pipe) || !MiniGamePages.isPage(held)) return false;
         if (!MiniGamePages.canEdit(player)) {
-            player.sendMessage(Text.translatable("message.steveparty.golden_minigame_pipe.not_allowed").formatted(Formatting.RED), true);
+            player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.not_allowed").formatted(Formatting.RED), true);
             return false;
         }
         ItemStack before = pipe.getPage();
@@ -144,15 +144,15 @@ public class GoldenPipeBlock extends PipeBlock {
         pipe.setPage(page);
         if (!before.isEmpty()) player.getInventory().offerOrDrop(before);
         player.getWorld().playSound(null, pos, ModSounds.SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
-        player.sendMessage(Text.translatable("message.steveparty.golden_minigame_pipe.programmed", page.getName()), true);
+        player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.programmed", page.getName()), true);
         return true;
     }
 
-    /** Takes the page out of the golden pipe at {@code pos}, into the player's hands. @return false if there is none, or the player may not build */
+    /** Takes the page out of the mini-game pipe at {@code pos}, into the player's hands. @return false if there is none, or the player may not build */
     public static boolean takePage(ServerPlayerEntity player, BlockPos pos) {
-        if (!(player.getWorld().getBlockEntity(pos) instanceof GoldenPipeBlockEntity pipe) || pipe.getPage().isEmpty()) return false;
+        if (!(player.getWorld().getBlockEntity(pos) instanceof MiniGamePipeBlockEntity pipe) || pipe.getPage().isEmpty()) return false;
         if (!MiniGamePages.canEdit(player)) {
-            player.sendMessage(Text.translatable("message.steveparty.golden_minigame_pipe.not_allowed").formatted(Formatting.RED), true);
+            player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.not_allowed").formatted(Formatting.RED), true);
             return false;
         }
         ItemStack page = pipe.getPage();
@@ -160,7 +160,7 @@ public class GoldenPipeBlock extends PipeBlock {
         if (player.getMainHandStack().isEmpty()) player.setStackInHand(Hand.MAIN_HAND, page);
         else player.getInventory().offerOrDrop(page);
         player.getWorld().playSound(null, pos, ModSounds.CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
-        player.sendMessage(Text.translatable("message.steveparty.golden_minigame_pipe.page_taken"), true);
+        player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.page_taken"), true);
         return true;
     }
 }

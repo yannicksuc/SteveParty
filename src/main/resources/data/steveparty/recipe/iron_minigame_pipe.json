@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ISI",
+    "IPI",
+    "I I"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "S": "steveparty:power_star",
+    "P": "steveparty:copper_minigame_pipe"
+  },
+  "result": {
+    "id": "steveparty:iron_minigame_pipe",
+    "count": 1
+  }
+}

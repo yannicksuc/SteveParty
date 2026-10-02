@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "particle": "steveparty:block/pipe/golden/metal_rim"
+    "particle": "steveparty:block/pipe/copper/metal_rim"
   }
 }

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "C C",
+    "CPC",
+    "C C"
+  ],
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "P": "minecraft:paper"
+  },
+  "result": {
+    "id": "steveparty:copper_minigame_pipe",
+    "count": 1
+  }
+}

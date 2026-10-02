@@ -1,7 +1,7 @@
 package fr.lordfinn.steveparty.client.pipe;
 
-import fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlock;
-import fr.lordfinn.steveparty.blocks.custom.pipe.GoldenPipeBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlock;
+import fr.lordfinn.steveparty.blocks.custom.pipe.MiniGamePipeBlockEntity;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -29,22 +29,22 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * The notch of the Golden Mini-game Pipe: a dark slot with a small ledge on one of its plain sides
- * ({@link GoldenPipeBlock#notchSide}), and in it the page the pipe is programmed with. Also the hint shown when a
- * golden pipe is looked at: what it can be programmed with, or the mini-game it leads to.
+ * The notch of the mini-game pipe: a dark slot with a small ledge on one of its plain sides
+ * ({@link MiniGamePipeBlock#notchSide}), and in it the page the pipe is programmed with. Also the hint shown when a
+ * mini-game pipe is looked at: what it can be programmed with, or the mini-game it leads to.
  */
-public class GoldenPipeNotchRenderer implements BlockEntityRenderer<GoldenPipeBlockEntity> {
+public class MiniGamePipeNotchRenderer implements BlockEntityRenderer<MiniGamePipeBlockEntity> {
     /** The pipe's body is 14 pixels across: its side is 7 pixels from the middle. */
     private static final double SIDE = 7 / 16.0;
     private final ItemRenderer itemRenderer;
 
-    public GoldenPipeNotchRenderer(BlockEntityRendererFactory.Context context) {
+    public MiniGamePipeNotchRenderer(BlockEntityRendererFactory.Context context) {
         this.itemRenderer = context.getItemRenderer();
     }
 
     @Override
-    public void render(GoldenPipeBlockEntity pipe, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
-        Direction side = GoldenPipeBlock.notchSide(pipe.getCachedState());
+    public void render(MiniGamePipeBlockEntity pipe, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+        Direction side = MiniGamePipeBlock.notchSide(pipe.getCachedState());
         if (side == null || pipe.getWorld() == null) return;
         matrices.push();
         matrices.translate(0.5, 0.5, 0.5);
@@ -71,12 +71,12 @@ public class GoldenPipeNotchRenderer implements BlockEntityRenderer<GoldenPipeBl
     private static @Nullable BlockPos lookedAt;
     private static int lookedFor;
 
-    /** Shows, above the hotbar, what the golden pipe under the crosshair is for (again every two seconds while it is looked at). */
+    /** Shows, above the hotbar, what the mini-game pipe under the crosshair is for (again every two seconds while it is looked at). */
     public static void registerHint() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             BlockPos pos = client.player != null && client.world != null && client.currentScreen == null
                     && client.crosshairTarget instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK ? hit.getBlockPos() : null;
-            if (pos == null || !(client.world.getBlockEntity(pos) instanceof GoldenPipeBlockEntity pipe)) {
+            if (pos == null || !(client.world.getBlockEntity(pos) instanceof MiniGamePipeBlockEntity pipe)) {
                 lookedAt = null;
                 return;
             }
@@ -88,12 +88,12 @@ public class GoldenPipeNotchRenderer implements BlockEntityRenderer<GoldenPipeBl
     }
 
     private static Text hint(ItemStack page) {
-        if (page.isEmpty()) return Text.translatable("message.steveparty.golden_minigame_pipe.hint");
+        if (page.isEmpty()) return Text.translatable("message.steveparty.minigame_pipe.hint");
         // The title the page has now, when this client knows it; else the one the item carries
         UUID id = MiniGamePages.idOf(page);
         MiniGamePageData data = id == null ? null : MiniGamePageClient.page(id);
         Text title = data != null && data.hasTitle() ? Text.literal(data.title()) : page.getName();
-        return Text.translatable("message.steveparty.golden_minigame_pipe.hint.programmed", title);
+        return Text.translatable("message.steveparty.minigame_pipe.hint.programmed", title);
     }
 
     /** The page in its notch is small: not drawn from far. */

@@ -2,13 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "G G",
-    "GPG",
+    "GEG",
+    "SPS",
     "G G"
   ],
   "key": {
     "G": "minecraft:gold_ingot",
-    "P": "minecraft:paper"
+    "E": "minecraft:ender_eye",
+    "S": "steveparty:power_star",
+    "P": "steveparty:iron_minigame_pipe"
   },
   "result": {
     "id": "steveparty:golden_minigame_pipe",
