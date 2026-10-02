@@ -74,11 +74,15 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         /** The dimension of its zone is not there. */
         ZONE_NO_WORLD,
         /** Its zone holds more containers or entities than a zone may. */
-        ZONE_TOO_FULL
+        ZONE_TOO_FULL,
+        /** Its zone holds a block the server does not allow in a zone: {@link #forbiddenBlock}, {@link #forbiddenPos}. */
+        ZONE_FORBIDDEN
     }
 
     private static final int P_STATE = 0, P_PLAYERS = 1, P_MODE = 2, P_READY = 3, P_VOTERS = 4, P_FLAGS = 5,
-            P_ZONE_X = 6, P_ZONE_Y = 7, P_ZONE_Z = 8, PROPERTIES = 9;
+            P_ZONE_X = 6, P_ZONE_Y = 7, P_ZONE_Z = 8,
+            // a block id and a position, each over two properties: a property carries 16 bits
+            P_FORBIDDEN_BLOCK = 9, P_FORBIDDEN_X = 11, P_FORBIDDEN_Y = 13, P_FORBIDDEN_Z = 15, PROPERTIES = 17;
     private static final int FLAG_VOTER = 1, FLAG_READY = 2, FLAG_ADVENTURE = 4, FLAG_LOCKED = 8;
 
     private final @Nullable MiniGameControllerBlockEntity controller;
@@ -182,7 +186,17 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
                 case ZONE_BUSY -> State.ZONE_BUSY;
                 case ZONE_NO_WORLD -> State.ZONE_NO_WORLD;
                 case ZONE_TOO_FULL -> State.ZONE_TOO_FULL;
+                case ZONE_FORBIDDEN -> State.ZONE_FORBIDDEN;
             };
+            if (state == State.ZONE_FORBIDDEN) {
+                fr.lordfinn.steveparty.minigame.zone.ZoneForbidden.FoundBlock found = fr.lordfinn.steveparty.minigame.MiniGameArena.forbiddenBlock(server, page);
+                if (found != null) {
+                    setWide(P_FORBIDDEN_BLOCK, net.minecraft.registry.Registries.BLOCK.getRawId(found.block()));
+                    setWide(P_FORBIDDEN_X, found.pos().getX());
+                    setWide(P_FORBIDDEN_Y, found.pos().getY());
+                    setWide(P_FORBIDDEN_Z, found.pos().getZ());
+                }
+            }
             players = plan.players().size();
             mode = plan.mode() == null ? -1 : plan.mode().ordinal();
         }
@@ -249,6 +263,25 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     /** @return true while nothing of the controller can be changed by this player: a round is going on. */
     public boolean isLocked() {
         return (properties.get(P_FLAGS) & FLAG_LOCKED) != 0;
+    }
+
+    private void setWide(int property, int value) {
+        properties.set(property, (short) value);
+        properties.set(property + 1, (short) (value >> 16));
+    }
+
+    private int wide(int property) {
+        return properties.get(property + 1) << 16 | properties.get(property) & 0xFFFF;
+    }
+
+    /** The block that keeps the zone from taking a round ({@link State#ZONE_FORBIDDEN}). */
+    public net.minecraft.block.Block forbiddenBlock() {
+        return net.minecraft.registry.Registries.BLOCK.get(wide(P_FORBIDDEN_BLOCK));
+    }
+
+    /** Where that block is. */
+    public BlockPos forbiddenPos() {
+        return new BlockPos(wide(P_FORBIDDEN_X), wide(P_FORBIDDEN_Y), wide(P_FORBIDDEN_Z));
     }
 
     /** The size of the box of the Zone Cartridge (0, 0, 0: none); a side over {@code PageZone.MAX_SIDE}: too big, no zone. */

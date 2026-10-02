@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
+import fr.lordfinn.steveparty.minigame.zone.ZoneForbidden;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
@@ -18,7 +19,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -49,9 +52,16 @@ public final class MiniGameArena {
     /** The arenas with a round going on in a bubble. */
     private static final List<MiniGameArena> PLAYED = new ArrayList<>();
 
+    /** What the last look at the zone of a page found of forbidden blocks, and when. */
+    private record Seen(MiniGameZone zone, int tick, ZoneForbidden.@Nullable FoundBlock block) {
+    }
+
+    private static final Map<UUID, Seen> SEEN = new HashMap<>();
+
     private @Nullable ZoneBubble bubble;
     private BooleanSupplier stillOn = () -> true;
     private @Nullable UUID waitTask;
+    private @Nullable Text refused;
 
     public static void initialize() {
         // What session members use whatever the rules of the bubble: the ready vote of the controller (its slots
@@ -67,7 +77,10 @@ public final class MiniGameArena {
                 if (!arena.stillOn.getAsBoolean()) arena.end();
             }
         });
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> PLAYED.clear());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            PLAYED.clear();
+            SEEN.clear();
+        });
     }
 
     /** The zone of a page's mini-game as the bubble takes it, null when the page has none. */
@@ -83,7 +96,10 @@ public final class MiniGameArena {
      */
     public static ZoneBubble.Refusal check(MinecraftServer server, UUID pageId) {
         MiniGameZone zone = zoneOf(server, pageId);
-        return zone == null ? ZoneBubble.Refusal.NONE : playable(ZoneBubbles.check(server, zone));
+        if (zone == null) return ZoneBubble.Refusal.NONE;
+        ZoneBubble.Refusal place = ZoneBubbles.checkPlace(server, zone);
+        if (place != ZoneBubble.Refusal.NONE) return playable(place);
+        return forbiddenBlock(server, pageId) != null ? ZoneBubble.Refusal.FORBIDDEN_BLOCK : ZoneBubble.Refusal.NONE;
     }
 
     private static ZoneBubble.Refusal playable(ZoneBubble.Refusal refusal) {
@@ -140,15 +156,40 @@ public final class MiniGameArena {
     public ZoneBubble.Refusal begin(MinecraftServer server, UUID pageId, Collection<ServerPlayerEntity> participants,
                                     Collection<ServerPlayerEntity> spectators, BooleanSupplier stillOn) {
         end();
+        refused = null;
         MiniGameZone zone = zoneOf(server, pageId);
         if (zone == null) return ZoneBubble.Refusal.NONE;
         ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, participants, spectators,
                 new ZoneBubble.Options(MiniGameControllers.isAdventure(server, pageId)));
-        if (!begun.isActive()) return playable(begun.refusal());
+        if (!begun.isActive()) {
+            refused = begun.refusalText();
+            return playable(begun.refusal());
+        }
         bubble = begun;
         this.stillOn = stillOn;
         PLAYED.add(this);
         return ZoneBubble.Refusal.NONE;
+    }
+
+    /** Why the zone could not take the round {@link #begin} was last asked for (with the forbidden block or entity and where it is), null if it could. */
+    public @Nullable Text refusalText() {
+        return refused;
+    }
+
+    /**
+     * The block of the page's zone the server does not allow in a zone, as far as its loaded chunks show; null for
+     * none. Asked again and again by the screens that say whether the mini-game can be played: the zone is looked at
+     * once a second at most (a block just put there is seen when the round begins anyway).
+     */
+    public static ZoneForbidden.@Nullable FoundBlock forbiddenBlock(MinecraftServer server, UUID pageId) {
+        MiniGameZone zone = zoneOf(server, pageId);
+        if (zone == null) return null;
+        int now = server.getTicks();
+        Seen seen = SEEN.get(pageId);
+        if (seen != null && seen.zone().equals(zone) && now >= seen.tick() && now - seen.tick() < WATCH_INTERVAL_TICKS) return seen.block();
+        ZoneForbidden.FoundBlock block = ZoneBubbles.forbiddenBlock(server, zone);
+        SEEN.put(pageId, new Seen(zone, now, block));
+        return block;
     }
 
     /** A player leaves the round before its end: it gets back what it owns, and may then be taken out of the zone. */

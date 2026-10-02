@@ -1,0 +1,113 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "ae2:controller",
+      "required": false
+    },
+    {
+      "id": "ae2:drive",
+      "required": false
+    },
+    {
+      "id": "ae2:chest",
+      "required": false
+    },
+    {
+      "id": "ae2:interface",
+      "required": false
+    },
+    {
+      "id": "ae2:cable_bus",
+      "required": false
+    },
+    {
+      "id": "ae2:quantum_ring",
+      "required": false
+    },
+    {
+      "id": "ae2:quantum_link",
+      "required": false
+    },
+    {
+      "id": "ae2:wireless_access_point",
+      "required": false
+    },
+    {
+      "id": "ae2:spatial_io_port",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:controller",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:disk_drive",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:cable",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:interface",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:external_storage",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:importer",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:exporter",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:network_transmitter",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:network_receiver",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:wireless_transmitter",
+      "required": false
+    },
+    {
+      "id": "enderstorage:ender_chest",
+      "required": false
+    },
+    {
+      "id": "enderstorage:ender_tank",
+      "required": false
+    },
+    {
+      "id": "mekanism:quantum_entangloporter",
+      "required": false
+    },
+    {
+      "id": "mekanism:teleporter",
+      "required": false
+    },
+    {
+      "id": "pipez:item_pipe",
+      "required": false
+    },
+    {
+      "id": "pipez:universal_pipe",
+      "required": false
+    },
+    {
+      "id": "sophisticatedstorage:controller",
+      "required": false
+    },
+    {
+      "id": "integrateddynamics:cable",
+      "required": false
+    }
+  ]
+}

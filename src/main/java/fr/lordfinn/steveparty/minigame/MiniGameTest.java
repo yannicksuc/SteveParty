@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyS
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGameTeleports;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.podium.PodiumGroup;
 import fr.lordfinn.steveparty.podium.Podiums;
@@ -100,7 +99,9 @@ public final class MiniGameTest implements MiniGameSession {
         /** The dimension of the zone is not there. */
         ZONE_NO_WORLD,
         /** The zone holds more containers or entities than a zone may (only known when the round begins). */
-        ZONE_TOO_FULL;
+        ZONE_TOO_FULL,
+        /** The zone holds a block or an entity the server does not allow in a zone. */
+        ZONE_FORBIDDEN;
 
         /** Why the zone of a mini-game can't take a round, null when it can. */
         static @Nullable Status ofZone(ZoneBubble.Refusal refusal) {
@@ -110,6 +111,7 @@ public final class MiniGameTest implements MiniGameSession {
                 case OVERLAP -> ZONE_BUSY;
                 case NO_WORLD -> ZONE_NO_WORLD;
                 case TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES -> ZONE_TOO_FULL;
+                case FORBIDDEN_BLOCK, FORBIDDEN_ENTITY -> ZONE_FORBIDDEN;
             };
         }
     }
@@ -424,7 +426,7 @@ public final class MiniGameTest implements MiniGameSession {
         // The round is played in its zone, by those who have a pipe to come out of: they leave their inventory at the door
         ZoneBubble.Refusal refusal = arena.begin(server, pageId, online(players, pipes), online(spectators, pipes), () -> !closed);
         if (refusal != ZoneBubble.Refusal.NONE) {
-            Text why = ZoneBubbles.refusalText(refusal);
+            Text why = arena.refusalText();
             if (why != null) MessageUtils.sendToPlayers(audience(), why.copy().formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
             stop();
             return;

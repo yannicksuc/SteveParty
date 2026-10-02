@@ -53,7 +53,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
 
     private Object signature() {
         return List.of(handler.state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.mode(),
-                handler.isAdventure(), handler.isLocked());
+                handler.isAdventure(), handler.isLocked(), handler.forbiddenPos());
     }
 
     private @Nullable MiniGamePageData page() {
@@ -115,6 +115,8 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
                 yield Text.translatable(KEY + "status.ready", handler.players(), mode >= 0 && mode < ways.length ? ways[mode].text() : Text.empty());
             }
             case PARTY_PRACTICE -> Text.translatable(KEY + "status.party_practice", handler.readyCount(), handler.voters());
+            case ZONE_FORBIDDEN -> Text.translatable(KEY + "status.zone_forbidden", handler.forbiddenBlock().getName(),
+                    handler.forbiddenPos().getX(), handler.forbiddenPos().getY(), handler.forbiddenPos().getZ());
             default -> Text.translatable(KEY + "status." + state.name().toLowerCase(Locale.ROOT));
         };
     }
@@ -122,7 +124,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private static int statusColor(State state) {
         return switch (state) {
             case READY -> PartyGui.TEXT_OK;
-            case NO_PIPE, NOBODY, NOT_ENOUGH, ZONE_TOO_BIG, ZONE_BUSY, ZONE_NO_WORLD, ZONE_TOO_FULL -> PartyGui.TEXT_ERROR;
+            case NO_PIPE, NOBODY, NOT_ENOUGH, ZONE_TOO_BIG, ZONE_BUSY, ZONE_NO_WORLD, ZONE_TOO_FULL, ZONE_FORBIDDEN -> PartyGui.TEXT_ERROR;
             case NO_PAGE -> PartyGui.TEXT_SOFT;
             default -> PartyGui.TEXT_DARK;
         };

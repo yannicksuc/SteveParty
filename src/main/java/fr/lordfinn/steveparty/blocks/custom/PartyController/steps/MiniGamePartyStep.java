@@ -8,8 +8,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBeh
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameArena;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.minigame.MiniGameIntro;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
@@ -604,8 +602,8 @@ public class MiniGamePartyStep extends PartyStep {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
             if (player != null) (participants.contains(uuid) ? players : watching).add(player);
         }
-        ZoneBubble.Refusal refusal = arena.begin(server, page.id(), players, watching, () -> isStillActive(controller));
-        Text why = ZoneBubbles.refusalText(refusal);
+        arena.begin(server, page.id(), players, watching, () -> isStillActive(controller));
+        Text why = arena.refusalText();
         if (why == null || unprotectedTold) return;
         unprotectedTold = true;
         MessageUtils.sendToPlayers(previewAudience(controller), Text.translatable("message.steveparty.zone_bubble.party_unprotected", why)
