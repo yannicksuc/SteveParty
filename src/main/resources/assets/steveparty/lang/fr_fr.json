@@ -939,6 +939,7 @@
   "item.steveparty.cyan_star_fragment": "Fragment d'étoile cyan",
   "item.steveparty.brown_star_fragment": "Fragment d'étoile marron",
   "item.steveparty.power_star": "Super étoile",
+  "item.steveparty.coin": "Pièce",
   "gui.steveparty.goal_pole_base.selector": "Sélecteur",
   "gui.steveparty.goal_pole_base.goal": "Objectif (critère de scoreboard)",
   "gui.steveparty.cancel": "Annuler",

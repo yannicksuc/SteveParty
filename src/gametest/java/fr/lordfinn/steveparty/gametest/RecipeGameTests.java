@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -23,6 +25,7 @@ import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.context.ContextParameterMap;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 
@@ -129,6 +132,25 @@ public class RecipeGameTests implements FabricGameTest {
                 e, new ItemStack(Items.COPPER_INGOT), e,
                 new ItemStack(Items.STICK), new ItemStack(Items.STICK), new ItemStack(Items.STICK));
         context.assertTrue(!without.isOf(ModBlocks.TELESCOPE.asItem()), "no telescope without a spyglass");
+        context.complete();
+    }
+
+    /** A gold nugget mints one coin (never the other way round), and that coin is what a fresh party counts as Pièce. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aGoldNuggetMintsTheCoinOfAFreshParty(TestContext context) {
+        ItemStack coin = result(context, 1, 1, new ItemStack(Items.GOLD_NUGGET));
+        context.assertTrue(coin.isOf(ModItems.COIN) && coin.getCount() == 1, "1 gold nugget: 1 coin, got " + coin);
+        context.assertTrue(result(context, 1, 1, new ItemStack(ModItems.COIN)).isEmpty(), "a coin is not turned back into a nugget");
+
+        BlockPos pos = new BlockPos(1, 1, 1);
+        context.setBlockState(pos, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(pos);
+        ItemStack partyCoin = controller.getCurrency(PartyCurrency.COIN);
+        context.assertTrue(ItemStack.areItemsAndComponentsEqual(partyCoin, coin), "a fresh party's coin is the crafted coin, got " + partyCoin);
+        context.assertTrue(controller.setCurrency(PartyCurrency.COIN, new ItemStack(Items.EMERALD)), "another item may still be picked");
+        PartyControllerEntity loaded = new PartyControllerEntity(controller.getPos(), controller.getCachedState());
+        loaded.read(controller.createNbt(context.getWorld().getRegistryManager()), context.getWorld().getRegistryManager());
+        context.assertTrue(loaded.getCurrency(PartyCurrency.COIN).isOf(Items.EMERALD), "a party with its own coin item keeps it");
         context.complete();
     }
 

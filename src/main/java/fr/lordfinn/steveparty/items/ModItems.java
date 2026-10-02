@@ -114,6 +114,8 @@ public class ModItems {
         return STAR_FRAGMENTS.contains(item);
     }
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
+    /** The coin: the default Pièce currency of a party, minted from a gold nugget. */
+    public static final Item COIN = register(Item.class, "coin");
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
     /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
     public static final Item PLASTIC_STICK = register(Item.class, "plastic_stick");
@@ -350,6 +352,7 @@ public class ModItems {
             for (Block block : STAR_FRAGMENTS_BLOCKS) itemGroup.add(block);
             for (Item fragment : STAR_FRAGMENTS) itemGroup.add(fragment);
             itemGroup.add(POWER_STAR);
+            itemGroup.add(COIN);
             itemGroup.add(GRAVITY_CORE);
             itemGroup.add(DICE_FORGE);
             itemGroup.add(TELESCOPE);

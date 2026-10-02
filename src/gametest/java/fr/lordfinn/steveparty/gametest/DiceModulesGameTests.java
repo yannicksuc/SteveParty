@@ -431,7 +431,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         ServerPlayerEntity roller = player(context);
         PigEntity pig = token(context, PATH.get(4), roller.getUuid());
         PartyControllerEntity controller = party(context, roller.getUuid(), pig);
-        roller.getInventory().setStack(2, new ItemStack(Items.EMERALD, 9));
+        roller.getInventory().setStack(2, new ItemStack(ModItems.COIN, 9));
         context.waitAndRun(2, () -> {
             DiceEntity coins = thrown(context, roller, with(die("coin_dice_face_4"), DiceModules.REVERSED, 1), DICE);
             context.assertTrue(coins.isRolling(), "thrown");
