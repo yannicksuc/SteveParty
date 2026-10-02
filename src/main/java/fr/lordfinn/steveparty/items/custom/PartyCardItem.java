@@ -21,8 +21,16 @@ public class PartyCardItem extends Item {
         MINIGAME("minigame"),
         /** Rings the "event" party bells (value = stack size, up to 15) and waits for the waiting ones. */
         EVENT("event"),
-        /** Plays the cards since the previous "repeat" card (or the start) N times in all (N = stack size). */
-        REPEAT("repeat");
+        /**
+         * Plays N times in all (N = stack size) the cards since the nearest "sequence start" or "repeat" card on its
+         * left; since the beginning of the program when there is none.
+         */
+        REPEAT("repeat"),
+        /**
+         * A marker: where the next "repeat" card starts repeating from. Without a "repeat" card after it, it does
+         * nothing; a stack of several is the same as one.
+         */
+        SEQUENCE_START("sequence_start");
 
         private final String name;
 

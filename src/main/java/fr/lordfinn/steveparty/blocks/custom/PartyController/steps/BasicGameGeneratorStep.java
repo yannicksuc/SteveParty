@@ -103,7 +103,7 @@ public class BasicGameGeneratorStep extends PartyStep {
                 }
                 case MINIGAME -> partyData.addStep(new MiniGamePartyStep(new ArrayList<>(tokens)));
                 case EVENT -> partyData.addStep(EventPartyStep.eventCard(Math.min(card.count(), 15)));
-                case REPEAT -> {
+                case REPEAT, SEQUENCE_START -> {
                     // Already expanded
                 }
             }
@@ -117,13 +117,17 @@ public class BasicGameGeneratorStep extends PartyStep {
 
     /**
      * Expands the party program: the cards in reading order, "repeat" cards replaced by the repetitions they ask
-     * for. A "repeat" card with N cards in its stack plays the cards since the previous "repeat" card (or the start)
-     * N times in all. An empty program is the default party: turns, mini-game, repeated {@code defaultRounds} times.
+     * for. A "repeat" card with N cards in its stack plays N times in all the cards since the nearest "sequence start"
+     * or "repeat" card on its left (since the start of the program without any): so two loops written one after the
+     * other are independent, and a "sequence start" card keeps what is before it out of the loop. A "sequence start"
+     * card is only a marker: without a "repeat" card after it, it changes nothing. An empty program (or one made of
+     * "sequence start" cards only) is the default party: turns, mini-game, repeated {@code defaultRounds} times.
      */
     public static List<ExpandedCard> expand(List<ItemStack> program, int defaultRounds) {
         List<ExpandedCard> result = new ArrayList<>();
         List<ExpandedCard> group = new ArrayList<>();
-        boolean any = program.stream().anyMatch(stack -> stack.getItem() instanceof PartyCardItem);
+        boolean any = program.stream().anyMatch(stack -> stack.getItem() instanceof PartyCardItem card
+                && card.getCardType() != PartyCardItem.CardType.SEQUENCE_START);
         if (!any) {
             for (int i = 0; i < Math.max(1, defaultRounds); i++) {
                 result.add(new ExpandedCard(PartyCardItem.CardType.TURNS, 1));
@@ -134,6 +138,11 @@ public class BasicGameGeneratorStep extends PartyStep {
         for (ItemStack stack : program) {
             if (!(stack.getItem() instanceof PartyCardItem cardItem)) continue;
             ExpandedCard card = new ExpandedCard(cardItem.getCardType(), stack.getCount());
+            if (card.type() == PartyCardItem.CardType.SEQUENCE_START) {
+                // What is before it was played once, and stays out of the next loop
+                group.clear();
+                continue;
+            }
             if (card.type() == PartyCardItem.CardType.REPEAT) {
                 for (int i = 1; i < card.count() && result.size() + group.size() <= MAX_EXPANDED_CARDS; i++)
                     result.addAll(group);
@@ -148,6 +157,34 @@ public class BasicGameGeneratorStep extends PartyStep {
     }
 
     public record ExpandedCard(PartyCardItem.CardType type, int count) {}
+
+    /**
+     * What a program is made of once expanded (what the dashboard says of it).
+     *
+     * @param turns     rounds of turns (several "turns" cards in a row count as one)
+     * @param miniGames mini-games
+     * @param events    events
+     */
+    public record Summary(int turns, int miniGames, int events) {}
+
+    /** What the party of this program will be made of: its loops and its sequences taken into account. */
+    public static Summary summary(List<ItemStack> program, int defaultRounds) {
+        int turns = 0, miniGames = 0, events = 0;
+        PartyCardItem.CardType previous = null;
+        for (ExpandedCard card : expand(program, defaultRounds)) {
+            switch (card.type()) {
+                case TURNS -> {
+                    if (previous != PartyCardItem.CardType.TURNS) turns++;
+                }
+                case MINIGAME -> miniGames++;
+                case EVENT -> events++;
+                default -> {
+                }
+            }
+            previous = card.type();
+        }
+        return new Summary(turns, miniGames, events);
+    }
 
     /**
      * The default party written as cards (what an empty program shows): the players' turn, a mini-game, and a

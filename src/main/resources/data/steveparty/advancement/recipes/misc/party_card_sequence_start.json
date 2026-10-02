@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "items": "steveparty:blue_plastic_stud"
+            "items": "steveparty:pink_plastic_stud"
           }
         ]
       }
@@ -24,7 +24,7 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "steveparty:party_card_turns"
+        "recipe": "steveparty:party_card_sequence_start"
       }
     }
   },
@@ -37,7 +37,7 @@
   ],
   "rewards": {
     "recipes": [
-      "steveparty:party_card_turns"
+      "steveparty:party_card_sequence_start"
     ]
   }
 }

@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
+    "steveparty:purple_plastic_stud",
     "minecraft:paper",
-    "minecraft:paper",
-    "minecraft:clock"
+    "minecraft:redstone"
   ],
   "result": {
     "id": "steveparty:party_card_repeat",

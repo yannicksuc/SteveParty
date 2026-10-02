@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
+    "steveparty:lime_plastic_stud",
     "minecraft:paper",
-    "minecraft:paper",
-    "minecraft:emerald"
+    "minecraft:redstone"
   ],
   "result": {
     "id": "steveparty:party_card_minigame",

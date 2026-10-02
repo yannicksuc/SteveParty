@@ -406,6 +406,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                     case MINIGAME -> ModItems.PARTY_CARD_MINIGAME;
                     case EVENT -> ModItems.PARTY_CARD_EVENT;
                     case REPEAT -> ModItems.PARTY_CARD_REPEAT;
+                    case SEQUENCE_START -> ModItems.PARTY_CARD_SEQUENCE_START;
                 }, card.count()));
             }
             context.assertTrue(cards.size() <= PartyControllerEntity.PROGRAM_SLOTS, "the ghost cards fit the program's slots");

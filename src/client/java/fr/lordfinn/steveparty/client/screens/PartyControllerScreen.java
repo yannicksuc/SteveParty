@@ -784,6 +784,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             case MINIGAME -> ModItems.PARTY_CARD_MINIGAME;
             case EVENT -> ModItems.PARTY_CARD_EVENT;
             case REPEAT -> ModItems.PARTY_CARD_REPEAT;
+            case SEQUENCE_START -> ModItems.PARTY_CARD_SEQUENCE_START;
         };
     }
 
@@ -837,18 +838,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
         // What the party will be made of
         List<ItemStack> cards = cards();
-        int turns = 0, miniGames = 0, events = 0;
-        PartyCardItem.CardType previous = null;
-        for (BasicGameGeneratorStep.ExpandedCard card : BasicGameGeneratorStep.expand(cards, data.roundsSetting())) {
-            switch (card.type()) {
-                case TURNS -> { if (previous != PartyCardItem.CardType.TURNS) turns++; }
-                case MINIGAME -> miniGames++;
-                case EVENT -> events++;
-                default -> {}
-            }
-            previous = card.type();
-        }
-        Text summary = Text.translatable(cards.isEmpty() ? KEY + "program.default" : KEY + "program.summary", turns, miniGames, events);
+        BasicGameGeneratorStep.Summary made = BasicGameGeneratorStep.summary(cards, data.roundsSetting());
+        Text summary = Text.translatable(cards.isEmpty() ? KEY + "program.default" : KEY + "program.summary",
+                made.turns(), made.miniGames(), made.events());
         // On the title's line
         int summaryWidth = INFO_X - 4 - summaryX - (data.canEdit() ? 0 : textRenderer.getWidth(Text.translatable(KEY + "read_only")) + 6);
         drawFitted(context, summary, summaryX, HEADING_Y, summaryWidth, PartyGui.TEXT_SOFT, in(mx, my, summaryX, HEADING_Y - 1, summaryWidth, 10));
