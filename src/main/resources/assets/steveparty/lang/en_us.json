@@ -999,6 +999,8 @@
   "tooltip.steveparty.telescope.guide": "A guide star then shines in your sky, over the Mulas: low when far, high when near",
   "message.steveparty.telescope.need_night_sky": "A clear night sky is needed",
   "message.steveparty.telescope.busy": "Someone is already looking through this telescope",
+  "message.steveparty.telescope.guide_gone": "A guide star went out: its Mulas have left",
+  "message.steveparty.telescope.night_gone": "That night has faded: its Mulas have left",
   "message.steveparty.telescope.guide": "Guide star: %s, %s",
   "telescope.steveparty.direction.n": "north",
   "telescope.steveparty.direction.ne": "north-east",

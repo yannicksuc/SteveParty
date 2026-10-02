@@ -234,6 +234,15 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private @Nullable net.minecraft.util.math.BlockPos homeForge;
 	/** Server: its owner is leading it (following them): the only thing that may take it out of its forge's area. */
 	private boolean ledByOwner;
+	/**
+	 * The spawn site it came down at (MulaSpawnSites: its id there, the dimension, its column), 0 for none: a Mula
+	 * of another origin, or one that a player made his own or took away (it then belongs to no site, for good).
+	 */
+	private int spawnSite;
+	private @Nullable Identifier spawnSiteWorld;
+	private int spawnSiteX, spawnSiteZ;
+	/** The retirements it has taken into account (MulaSpawnSites#epoch): -1 just loaded, not checked yet. */
+	private int spawnSiteEpoch = -1;
 
 	public @Nullable net.minecraft.util.math.BlockPos homeForge() {
 		return homeForge;
@@ -385,6 +394,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			}
 			return;
 		}
+		if (spawnSite != 0 && spawnSiteEpoch != MulaSpawnSites.epoch()) {
+			spawnSiteEpoch = MulaSpawnSites.epoch();
+			if (leaveWithRetiredSite()) return;
+		}
 		if (eatCooldown > 0) eatCooldown--;
 		if (bellyClearTicks > 0 && --bellyClearTicks == 0) setLastFood(ItemStack.EMPTY);
 		if (freshTicks > 0 && --freshTicks == 0) this.dataTracker.set(FRESH, false);
@@ -407,6 +420,82 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if ((this.age + this.getId()) % 20 == 3) checkHome();
 		brain.tick();
 		tickEmotes();
+	}
+
+	// ---------------------------------------------------------------- its spawn site
+
+	public int getSpawnSite() {
+		return spawnSite;
+	}
+
+	/** Server, when it comes down at a site (MulaSpawnSites#spawn). */
+	public void setSpawnSite(net.minecraft.registry.RegistryKey<World> world, int id, int x, int z) {
+		this.spawnSite = id;
+		this.spawnSiteWorld = world.getValue();
+		this.spawnSiteX = x;
+		this.spawnSiteZ = z;
+	}
+
+	/** It belongs to no site any more: nothing that happens to its site concerns it. */
+	public void leaveSpawnSite() {
+		this.spawnSite = 0;
+		this.spawnSiteWorld = null;
+	}
+
+	/**
+	 * Is it somebody's, or no longer a wild Mula of its site? Tamed, named, on a leash, riding or ridden, carrying,
+	 * kept from despawning, a board pawn, living at a forge, or farther than MulaSpawnSites#AWAY blocks from where it
+	 * came down (brought back to a base).
+	 */
+	public boolean isKeptFromSiteRetirement() {
+		if (isTamed() || getOwnerUuid() != null || hasCustomName() || isLeashed() || hasVehicle() || hasPassengers()
+				|| isPersistent() || isCarrying() || homeForge != null || isToken()) return true;
+		double dx = this.getX() - (spawnSiteX + 0.5), dz = this.getZ() - (spawnSiteZ + 0.5);
+		return dx * dx + dz * dz > MulaSpawnSites.AWAY * MulaSpawnSites.AWAY;
+	}
+
+	/**
+	 * Server: its site was retired (too many in the dimension: MulaSpawnSites)? A wild Mula still there goes with it
+	 * (removed without dying: no loot); any other is kept and no longer belongs to a site. Looked at once when it is
+	 * loaded and once after each retirement, never otherwise.
+	 *
+	 * @return true if it was removed
+	 */
+	public boolean leaveWithRetiredSite() {
+		if (spawnSite == 0 || !(this.getWorld() instanceof ServerWorld world)) return false;
+		if (!MulaSpawnSites.isRetired(world.getServer(), spawnSiteWorld, spawnSite)) return false;
+		if (isKeptFromSiteRetirement()) {
+			leaveSpawnSite();
+			return false;
+		}
+		this.discard();
+		return true;
+	}
+
+	/** Made somebody's, or taken along: it leaves its site at once (whatever happens next, it is kept). */
+	@Override
+	public void setTamed(boolean tamed, boolean updateAttributes) {
+		super.setTamed(tamed, updateAttributes);
+		if (tamed) leaveSpawnSite();
+	}
+
+	@Override
+	public void setCustomName(@Nullable net.minecraft.text.Text name) {
+		super.setCustomName(name);
+		if (name != null) leaveSpawnSite();
+	}
+
+	@Override
+	public void attachLeash(net.minecraft.entity.Entity leashHolder, boolean sendPacket) {
+		super.attachLeash(leashHolder, sendPacket);
+		leaveSpawnSite();
+	}
+
+	@Override
+	public boolean startRiding(net.minecraft.entity.Entity entity, boolean force) {
+		boolean riding = super.startRiding(entity, force);
+		if (riding) leaveSpawnSite();
+		return riding;
 	}
 
 	/** @return true while it is a board token: a static pawn, with none of its life (see {@link #tickAsToken}). */
@@ -797,6 +886,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		nbt.putInt("Variant", this.getVariant().getId());
 		nbt.putInt("Hunger", this.getHunger());
 		if (homeForge != null) nbt.putIntArray("HomeForge", new int[]{homeForge.getX(), homeForge.getY(), homeForge.getZ()});
+		if (spawnSite != 0 && spawnSiteWorld != null) {
+			nbt.putInt("SpawnSite", spawnSite);
+			nbt.putString("SpawnSiteWorld", spawnSiteWorld.toString());
+			nbt.putIntArray("SpawnSitePos", new int[]{spawnSiteX, spawnSiteZ});
+		}
 		if (!getLastFood().isEmpty()) {
 			nbt.putString("LastFood", Registries.ITEM.getId(getLastFood().getItem()).toString());
 		}
@@ -809,6 +903,14 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		this.setHunger(nbt.getInt("Hunger"));
 		int[] home = nbt.getIntArray("HomeForge");
 		this.homeForge = home.length == 3 ? new net.minecraft.util.math.BlockPos(home[0], home[1], home[2]) : null;
+		int[] sitePos = nbt.getIntArray("SpawnSitePos");
+		this.spawnSiteWorld = nbt.contains("SpawnSiteWorld") ? Identifier.tryParse(nbt.getString("SpawnSiteWorld")) : null;
+		this.spawnSite = spawnSiteWorld != null && sitePos.length == 2 ? nbt.getInt("SpawnSite") : 0;
+		if (spawnSite != 0) {
+			this.spawnSiteX = sitePos[0];
+			this.spawnSiteZ = sitePos[1];
+		}
+		this.spawnSiteEpoch = -1;
 		Identifier food = nbt.contains("LastFood") ? Identifier.tryParse(nbt.getString("LastFood")) : null;
 		setLastFood(food == null ? ItemStack.EMPTY : new ItemStack(Registries.ITEM.get(food)));
 		// it always floats: /summon with any NBT (no "NoGravity" in it) used to give it gravity, and it fell

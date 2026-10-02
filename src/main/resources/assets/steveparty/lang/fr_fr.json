@@ -1198,6 +1198,8 @@
   "tooltip.steveparty.telescope.guide": "Une étoile guide brille alors dans votre ciel, au-dessus des Mulas : basse quand ils sont loin, haute quand ils sont proches",
   "message.steveparty.telescope.need_night_sky": "Il faut un ciel nocturne dégagé",
   "message.steveparty.telescope.busy": "Quelqu'un regarde déjà dans ce télescope",
+  "message.steveparty.telescope.guide_gone": "Une étoile guide s'est éteinte : ses Mulas sont repartis",
+  "message.steveparty.telescope.night_gone": "Cette nuit s'est effacée : ses Mulas sont repartis",
   "message.steveparty.telescope.guide": "Étoile guide : %s, %s",
   "telescope.steveparty.direction.n": "nord",
   "telescope.steveparty.direction.ne": "nord-est",
