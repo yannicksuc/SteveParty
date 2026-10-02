@@ -6,9 +6,11 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnParty
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.screen_handlers.custom.LootingBoxScreenHandler;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.HorizontalFacingBlock;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -18,6 +20,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -113,7 +116,15 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity {
         serverWorld.updateComparators(this.pos, getCachedState().getBlock());
         serverWorld.playSound(null, this.pos, succeeded ? SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP : SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(),
                 SoundCategory.BLOCKS, 0.8f, succeeded ? 1.2f : 0.6f);
+        if (succeeded) sparkleAtSlot(serverWorld);
         return succeeded;
+    }
+
+    /** A few sparkles over the coin slot, on the pig's back. */
+    private void sparkleAtSlot(ServerWorld world) {
+        Direction back = getCachedState().get(HorizontalFacingBlock.FACING).getOpposite();
+        world.spawnParticles(ParticleTypes.WAX_OFF, this.pos.getX() + 0.5 + back.getOffsetX() * 0.125, this.pos.getY() + 0.75,
+                this.pos.getZ() + 0.5 + back.getOffsetZ() * 0.125, 5, 0.1, 0.05, 0.1, 0);
     }
 
     public List<ServerPlayerEntity> findTargets(ServerWorld world) {
