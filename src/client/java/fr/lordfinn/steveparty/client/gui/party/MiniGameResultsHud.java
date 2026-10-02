@@ -16,26 +16,18 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The end of a party's mini-game, in the style of the mini-game card ({@link MiniGameCardHud}):
- * <ul>
- *     <li>« Ends in 5... »: a gold chip under the turn bar while the first place is taken and the others can still
- *     take theirs, its number popping at each second;</li>
- *     <li>the results card, in the middle of the screen for a few seconds: a line per player (per team in a team
- *     mini-game) with its place, and what the party paid for it (the coins and the stars, with their items).</li>
- * </ul>
+ * The end of a party's mini-game, in the style of the mini-game card ({@link MiniGameCardHud}): the results card, in
+ * the middle of the screen for a few seconds, a line per player (per team in a team mini-game) with its place, and
+ * what the party paid for it (the coins and the stars, with their items).
  */
 public final class MiniGameResultsHud {
     private static final int WIDTH = 210, PAD = 7, ROW = 14, CHIP = 24;
     private static final int ROOM_ABOVE = 40, ROOM_BELOW = 64;
-    private static final float IN_TICKS = 7, OUT_TICKS = 10, STAY_TICKS = 20 * 7, COUNT_POP_TICKS = 8;
-    /** Without news from the server the countdown leaves by itself. */
-    private static final float COUNTDOWN_STAY_TICKS = 20 * 2;
+    private static final float IN_TICKS = 7, OUT_TICKS = 10, STAY_TICKS = 20 * 7;
     private static final int[] PLACE_COLORS = {0xFFFFC52E, 0xFFC9D3DA, 0xFFC9793F, 0xFF9C7FD6};
 
     private static @Nullable MiniGameResults results;
     private static double shownAt;
-    private static int seconds;
-    private static double secondsAt;
 
     private MiniGameResultsHud() {
     }
@@ -48,18 +40,10 @@ public final class MiniGameResultsHud {
     public static void show(MiniGameResults shown) {
         results = shown;
         shownAt = PartyHud.now();
-        seconds = 0;
-    }
-
-    /** The seconds left before the mini-game ends, 0: no countdown. */
-    public static void countdown(int left) {
-        seconds = Math.max(0, left);
-        secondsAt = PartyHud.now();
     }
 
     public static void clear() {
         results = null;
-        seconds = 0;
     }
 
     /** @return true while the results card is on screen. */
@@ -67,19 +51,10 @@ public final class MiniGameResultsHud {
         return results != null;
     }
 
-    /** The seconds shown by the countdown, 0 when it is not shown. */
-    public static int shownSeconds() {
-        return seconds;
-    }
-
     private static void render(DrawContext context, RenderTickCounter tickCounter) {
         if (MinecraftClient.getInstance().options.hudHidden) return;
-        double now = PartyHud.now();
-        if (seconds > 0) {
-            if (now - secondsAt > COUNTDOWN_STAY_TICKS) seconds = 0;
-            else drawCountdown(context, now);
-        }
         if (results == null) return;
+        double now = PartyHud.now();
         float age = (float) (now - shownAt);
         float in = HudDraw.easeOutCubic(age / IN_TICKS);
         float out = age < STAY_TICKS ? 1 : 1 - HudDraw.clamp01((age - STAY_TICKS) / OUT_TICKS);
@@ -90,21 +65,6 @@ public final class MiniGameResultsHud {
         float alpha = Math.min(in, out);
         if (alpha < 0.08f) return;
         drawResults(context, results, alpha, (1 - in) * -10 + (1 - out) * -6);
-    }
-
-    private static void drawCountdown(DrawContext context, double now) {
-        TextRenderer font = HudDraw.font();
-        Text text = Text.translatable("hud.steveparty.minigame.ending", seconds);
-        int width = font.getWidth(text) + 16, height = 16;
-        float pop = HudDraw.easeOutBack((float) ((now - secondsAt) / COUNT_POP_TICKS));
-        float scale = 0.85f + 0.15f * pop;
-        MatrixStack matrices = context.getMatrices();
-        matrices.push();
-        matrices.translate(context.getScaledWindowWidth() / 2f, ROOM_ABOVE + height / 2f, 0);
-        matrices.scale(scale, scale, 1);
-        HudDraw.plate(context, Plate.GOLD, -width / 2, -height / 2, width, height, 1);
-        HudDraw.text(context, text, -font.getWidth(text) / 2, -4, HudDraw.TEXT, 1);
-        matrices.pop();
     }
 
     private static void drawResults(DrawContext context, MiniGameResults shown, float alpha, float slide) {

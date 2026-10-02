@@ -102,8 +102,6 @@ public final class MiniGamePageClient {
                 MiniGameCardHud.hide();
             }
         }));
-        ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.EndCountdown.ID, (payload, context) ->
-                context.client().execute(() -> MiniGameResultsHud.countdown(payload.seconds())));
         ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Results.ID, (payload, context) ->
                 context.client().execute(() -> MiniGameResultsHud.show(payload.results())));
     }

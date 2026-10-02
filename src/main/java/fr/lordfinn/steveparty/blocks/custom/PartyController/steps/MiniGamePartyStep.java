@@ -60,8 +60,8 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
  *     other in each pipe of their role in turn, in turn order ({@link MiniGamePipes#distribute}); the audience
  *     comes out of the spectators pipes,</li>
  *     <li>the mini-game is played. The podiums linked to its page record who takes which place ({@link Podiums});
- *     it ends when every place is taken, or every player (every team) has one, or {@value #END_DELAY_SECONDS} seconds
- *     after the first place was taken (a countdown everyone sees), or when a step controller goes on,</li>
+ *     it ends when every place is taken, or every player (every team) has one, or when a step controller goes
+ *     on,</li>
  *     <li>the results are read on the podiums (the place of each player, of each team in a team mini-game; no place:
  *     « participant »), the party controller pays the gains of its Gains page, everyone sees the results card, and
  *     the players are brought back where they were. The winners (kept for the party bells and the piggy banks) are
@@ -73,8 +73,6 @@ public class MiniGamePartyStep extends PartyStep {
     private static final int COUNTDOWN_SECONDS = 3;
     /** The results card stays on screen that long before the players go back. */
     public static final int RETURN_DELAY_TICKS = 100;
-    /** Once the first place is taken, the mini-game ends after that many seconds (the others can still take a place). */
-    public static final int END_DELAY_SECONDS = 5;
 
     public enum Phase { ROULETTE, CHOSEN_WAIT, COUNTDOWN, PLAYING, FINISHED }
 
@@ -94,8 +92,6 @@ public class MiniGamePartyStep extends PartyStep {
     private List<UUID> winners;
     /** The place of each participant once the mini-game is over (0: none, a « participant »), in turn order. */
     private Map<UUID, Integer> places;
-    /** Seconds left before the mini-game ends (the first place is taken), 0 while no such countdown runs. */
-    private int endSeconds = 0;
     private UUID rouletteTaskId = null;
     private UUID flowTaskId = null;
     /** The players still waiting for their turn to come out of a pipe. */
@@ -139,11 +135,6 @@ public class MiniGamePartyStep extends PartyStep {
         return Collections.unmodifiableMap(places);
     }
 
-    /** Seconds left before the mini-game ends because the first place is taken, 0 while that countdown does not run. */
-    public int getEndSeconds() {
-        return endSeconds;
-    }
-
     public List<UUID> getParticipants() {
         return Collections.unmodifiableList(participants);
     }
@@ -168,7 +159,6 @@ public class MiniGamePartyStep extends PartyStep {
         participants.clear();
         winners.clear();
         places.clear();
-        endSeconds = 0;
         // Players still away from a previous run of this step (restart) keep their original return position
         chosenPageSlot = 0;
 
@@ -242,7 +232,7 @@ public class MiniGamePartyStep extends PartyStep {
                 // Those away in the mini-game are known again as such (free pipes, the exit pipe)
                 if (phase == Phase.PLAYING) {
                     returnPositions.keySet().forEach(uuid -> seat(partyControllerEntity, uuid));
-                    // The countdown of a first place already taken starts again
+                    // Its podiums may have filled up meanwhile
                     onPodiumsChanged(partyControllerEntity);
                 }
             }
@@ -329,7 +319,6 @@ public class MiniGamePartyStep extends PartyStep {
             if (page != null) Podiums.resetForMiniGame(world.getServer(), page);
         }
         phase = Phase.PLAYING;
-        endSeconds = 0;
         hidePreview(controller);
         if (controller.getWorld() instanceof ServerWorld world) {
             MinecraftServer server = world.getServer();
@@ -489,56 +478,14 @@ public class MiniGamePartyStep extends PartyStep {
 
     /**
      * Someone registered on a podium of the mini-game, or left it: the mini-game ends when every place is taken or
-     * every player (every team) has one; the first place taken starts the countdown of its end, called off if that
-     * place is left.
+     * every player (every team) has one. Until then it goes on, whoever holds the first place: only a step controller
+     * ends it earlier.
      */
     public void onPodiumsChanged(PartyControllerEntity controller) {
         if (!isPlaying()) return;
         PodiumGroup group = podiums(controller);
-        if (group == null || group.isEmpty()) {
-            stopEndCountdown(controller);
-            return;
-        }
-        if (group.isFull() || placesOnPodiums(controller).values().stream().allMatch(place -> place > 0)) {
-            finish(controller);
-        } else if (!group.isFirstPlaceTaken()) {
-            stopEndCountdown(controller);
-        } else if (endSeconds == 0) {
-            endCountdown(controller, END_DELAY_SECONDS);
-        }
-    }
-
-    /** « Ends in 5... »: shown to everyone, then the mini-game ends. */
-    private void endCountdown(PartyControllerEntity controller, int seconds) {
-        if (!isStillActive(controller) || !isPlaying()) return;
-        if (seconds <= 0) {
-            finish(controller);
-            return;
-        }
-        endSeconds = seconds;
-        sendEndCountdown(controller, seconds);
-        playSoundToPlayers(getOnlineParticipants(controller), SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), SoundCategory.PLAYERS, 0.8f, 1.2f);
-        cancelFlow();
-        flowTaskId = UUID.randomUUID();
-        Steveparty.SCHEDULER.schedule(flowTaskId, 20, () -> {
-            flowTaskId = null;
-            endCountdown(controller, seconds - 1);
-        });
-    }
-
-    private void stopEndCountdown(PartyControllerEntity controller) {
-        if (endSeconds == 0) return;
-        endSeconds = 0;
-        cancelFlow();
-        sendEndCountdown(controller, 0);
-    }
-
-    private void sendEndCountdown(PartyControllerEntity controller, int seconds) {
-        if (controller.getWorld() == null || controller.getWorld().getServer() == null) return;
-        MiniGamePagePayloads.EndCountdown payload = new MiniGamePagePayloads.EndCountdown(seconds);
-        for (ServerPlayerEntity player : previewAudience(controller)) {
-            if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.EndCountdown.ID)) ServerPlayNetworking.send(player, payload);
-        }
+        if (group == null || group.isEmpty()) return;
+        if (group.isFull() || placesOnPodiums(controller).values().stream().allMatch(place -> place > 0)) finish(controller);
     }
 
     /**
@@ -577,10 +524,6 @@ public class MiniGamePartyStep extends PartyStep {
     /** The mini-game is over: the places are kept, the gains paid, the results told to everyone. */
     private void conclude(PartyControllerEntity controller, Map<UUID, Integer> finalPlaces) {
         cancelFlow();
-        if (endSeconds != 0) {
-            endSeconds = 0;
-            sendEndCountdown(controller, 0);
-        }
         phase = Phase.FINISHED;
         places.clear();
         places.putAll(finalPlaces);

@@ -34,7 +34,6 @@ public final class MiniGamePagePayloads {
         PayloadTypeRegistry.playS2C().register(ImageChunk.ID, ImageChunk.CODEC);
         PayloadTypeRegistry.playS2C().register(Status.ID, Status.CODEC);
         PayloadTypeRegistry.playS2C().register(Preview.ID, Preview.CODEC);
-        PayloadTypeRegistry.playS2C().register(EndCountdown.ID, EndCountdown.CODEC);
         PayloadTypeRegistry.playS2C().register(Results.ID, Results.CODEC);
         PayloadTypeRegistry.playC2S().register(PodiumUnlink.ID, PodiumUnlink.CODEC);
         PayloadTypeRegistry.playC2S().register(Edit.ID, Edit.CODEC);
@@ -138,22 +137,6 @@ public final class MiniGamePagePayloads {
             buf.writeByte(payload.mode);
             buf.writeByte(payload.countdown);
         }, buf -> new Preview(buf.readBoolean(), MiniGamePageData.PACKET_CODEC.decode(buf), buf.readByte(), buf.readByte()));
-
-        @Override
-        public Id<? extends CustomPayload> getId() {
-            return ID;
-        }
-    }
-
-    /**
-     * The mini-game being played is about to end: the first place is taken.
-     *
-     * @param seconds seconds left before it ends, 0: the countdown is called off (or over)
-     */
-    public record EndCountdown(int seconds) implements CustomPayload {
-        public static final Id<EndCountdown> ID = id("end_countdown");
-        public static final PacketCodec<PacketByteBuf, EndCountdown> CODEC = PacketCodec.of(
-                (payload, buf) -> buf.writeByte(payload.seconds), buf -> new EndCountdown(buf.readByte()));
 
         @Override
         public Id<? extends CustomPayload> getId() {

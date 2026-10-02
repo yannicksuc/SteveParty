@@ -208,15 +208,6 @@ public final class PodiumGroup {
         return !columns.isEmpty() && highestFree() == null;
     }
 
-    /** @return true if someone is registered on a column of the 1st place. */
-    public boolean isFirstPlaceTaken() {
-        for (Column column : columns) {
-            if (placeOf(column) != 1) break;
-            if (column.occupant() != null) return true;
-        }
-        return false;
-    }
-
     /** Who is registered, with the place of their column, the best place first. */
     public Map<PodiumOccupant, Integer> placements() {
         Map<PodiumOccupant, Integer> placements = new LinkedHashMap<>();

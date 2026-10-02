@@ -1782,7 +1782,6 @@
   "message.steveparty.minigame.results.of": "Résultats : %s",
   "message.steveparty.minigame.results.participant": "Participants",
   "message.steveparty.minigame.results.separator": " : ",
-  "hud.steveparty.minigame.ending": "Fin dans %s…",
   "hud.steveparty.minigame.results": "Résultats",
   "hud.steveparty.minigame.results.participant": "Participant :",
   "gui.steveparty.party_controller.tab.gains": "Gains",

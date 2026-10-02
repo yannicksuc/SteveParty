@@ -476,7 +476,6 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertTrue(occupant(context, second) == null, "the team left its podium");
             context.assertEquals(occupant(context, third), a2.getUuid(), "and stands on the new one");
             context.assertTrue(played.step().isPlaying(), "one team out of two: the mini-game goes on");
-            context.assertEquals(played.step().getEndSeconds(), 0, "the first place is free: no countdown");
             // The other team: every team has a place, the mini-game ends
             context.assertTrue(Podiums.register(group, group.columnAt(world, context.getAbsolutePos(first)), b1), "team B on the first place");
             context.assertEquals(played.step().getPhase(), MiniGamePartyStep.Phase.FINISHED, "every team placed: over");
@@ -508,7 +507,7 @@ public class PodiumGameTests implements FabricGameTest {
             context.setBlockState(first.up().north(), Blocks.REDSTONE_BLOCK);
             context.assertEquals(occupant(context, first), near.getUuid(), "the nearest player of the mini-game (not the watcher standing on it)");
             context.assertTrue(occupant(context, second) == null && occupant(context, third) == null, "the podiums next to it received nothing");
-            context.assertEquals(played.step().getEndSeconds(), MiniGamePartyStep.END_DELAY_SECONDS, "the first place is taken: the end is counted down");
+            context.assertTrue(played.step().isPlaying(), "the first place is taken: the mini-game goes on for the others");
             context.setBlockState(first.up().north(), Blocks.AIR);
             // The Wrench: what a pulse does
             context.assertEquals(master(context, first).getSignal(), PodiumSignal.REGISTER, "registers by default");
@@ -517,7 +516,6 @@ public class PodiumGameTests implements FabricGameTest {
             context.assertEquals(master(context, first).getSignal(), PodiumSignal.CLEAR, "register, fill, then empty");
             context.setBlockState(first.north(), Blocks.REDSTONE_BLOCK);
             context.assertTrue(occupant(context, first) == null, "a pulse empties this podium");
-            context.assertEquals(played.step().getEndSeconds(), 0, "the first place is free again: the countdown is called off");
             context.setBlockState(first.north(), Blocks.AIR);
             // Reset the whole group
             master(context, second).setOccupant(new PodiumOccupant(far.getUuid(), "far", -1, 2, 0));
@@ -756,7 +754,7 @@ public class PodiumGameTests implements FabricGameTest {
             played = played(context, page(context, first), null, MiniGamePartyStep.Phase.PLAYING, p1, p2);
             ServerWorld world = context.getWorld();
             context.assertTrue(Podiums.toggle(p1, world, context.getAbsolutePos(third)), "p1 on the 3rd place");
-            context.assertTrue(played.step().isPlaying() && played.step().getEndSeconds() == 0, "one player left, the first place free: it goes on");
+            context.assertTrue(played.step().isPlaying(), "one player left: it goes on");
             context.assertTrue(Podiums.toggle(p2, world, context.getAbsolutePos(second)), "p2 on the 2nd place");
             context.assertEquals(played.step().getPhase(), MiniGamePartyStep.Phase.FINISHED, "everyone has a place: over");
             context.assertEquals(played.step().getPlaces(), Map.of(p1.getUuid(), 3, p2.getUuid(), 2), "the places of the podiums");
@@ -783,68 +781,42 @@ public class PodiumGameTests implements FabricGameTest {
     }
 
     /**
-     * The first place taken starts the countdown of the end; leaving it calls it off; taken again, the mini-game ends
-     * when the countdown does, and those without a place are participants.
+     * The first place taken ends nothing: the others keep playing for as long as they need, until every place or every
+     * player is placed, or a step controller goes on. Those without a place are then participants.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_countdown", tickLimit = 300)
-    public void endsFiveSecondsAfterTheFirstPlace(TestContext context) {
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_first_place", tickLimit = 300)
+    public void theFirstPlaceAloneDoesNotEndIt(TestContext context) {
         ServerPlayerEntity p1 = player(context, "c1", 0.5, 1, 0.5), p2 = player(context, "c2", 1.5, 1, 0.5), p3 = player(context, "c3", 2.5, 1, 0.5);
         BlockPos first = column(context, 3, 3, 2), second = column(context, 4, 3, 1);
         Played played;
-        ServerWorld world = context.getWorld();
         try {
             played = played(context, page(context, first), null, MiniGamePartyStep.Phase.PLAYING, p1, p2, p3);
             played.controller().setGains(played.controller().getGains().with(PartyCurrency.COIN, MiniGameGains.PARTICIPANTS, 2)
                     .with(PartyCurrency.STAR, 0, 1));
-            context.assertTrue(Podiums.toggle(p1, world, context.getAbsolutePos(first)), "p1 takes the first place");
-            context.assertEquals(played.step().getEndSeconds(), MiniGamePartyStep.END_DELAY_SECONDS, "the countdown starts");
+            context.assertTrue(Podiums.toggle(p2, context.getWorld(), context.getAbsolutePos(first)), "p2 takes the first place");
             context.assertTrue(played.step().isPlaying(), "the others can still take a place");
         } catch (RuntimeException e) {
             cleanUp(context, p1, p2, p3);
             throw e;
         }
-        context.waitAndRun(30, () -> {
+        // Well after the 5 seconds the first place used to leave the others
+        context.waitAndRun(200, () -> {
             try {
-                context.assertTrue(played.step().getEndSeconds() < MiniGamePartyStep.END_DELAY_SECONDS && played.step().getEndSeconds() > 0, "counting down");
-                context.assertTrue(Podiums.toggle(p1, world, context.getAbsolutePos(first)), "p1 leaves the first place");
-                context.assertEquals(played.step().getEndSeconds(), 0, "called off");
-            } catch (RuntimeException e) {
+                context.assertTrue(played.step().isPlaying(), "still being played: nothing ends it by itself");
+                context.assertEquals(coins(played.controller(), p2), 0, "nothing paid yet");
+                played.controller().nextStep();
+                context.assertEquals(played.step().getPhase(), MiniGamePartyStep.Phase.FINISHED, "ended by the step controller");
+                context.assertEquals(played.step().getPlaces(), Map.of(p1.getUuid(), 0, p2.getUuid(), 1, p3.getUuid(), 0), "the others are participants");
+                context.assertEquals(played.controller().getLastWinners(), List.of(p2.getUuid()), "the winner is kept for the bells and the piggy banks");
+                context.assertEquals(coins(played.controller(), p2), 10, "1st: 10 coins");
+                context.assertEquals(stars(played.controller(), p2), 1, "and the star set on the Gains page");
+                context.assertEquals(coins(played.controller(), p1), 2, "participants get their gain");
+                context.assertEquals(coins(played.controller(), p3), 2, "participants get their gain");
+                context.assertEquals(stars(played.controller(), p1), 0, "no star for them");
+            } finally {
                 cleanUp(context, p1, p2, p3);
-                throw e;
             }
-            context.waitAndRun(MiniGamePartyStep.END_DELAY_SECONDS * 20 + 10, () -> {
-                try {
-                    context.assertTrue(played.step().isPlaying(), "no first place: the mini-game goes on");
-                    context.assertTrue(Podiums.toggle(p2, world, context.getAbsolutePos(first)), "p2 takes the first place");
-                    context.assertEquals(played.step().getEndSeconds(), MiniGamePartyStep.END_DELAY_SECONDS, "a new countdown");
-                } catch (RuntimeException e) {
-                    cleanUp(context, p1, p2, p3);
-                    throw e;
-                }
-                context.waitAndRun(MiniGamePartyStep.END_DELAY_SECONDS * 20 - 15, () -> {
-                    try {
-                        context.assertTrue(played.step().isPlaying(), "not over before the 5 seconds");
-                    } catch (RuntimeException e) {
-                        cleanUp(context, p1, p2, p3);
-                        throw e;
-                    }
-                    context.waitAndRun(30, () -> {
-                        try {
-                            context.assertEquals(played.step().getPhase(), MiniGamePartyStep.Phase.FINISHED, "over 5 seconds after the first place");
-                            context.assertEquals(played.step().getPlaces(), Map.of(p1.getUuid(), 0, p2.getUuid(), 1, p3.getUuid(), 0), "the others are participants");
-                            context.assertEquals(played.controller().getLastWinners(), List.of(p2.getUuid()), "the winner is kept for the bells and the piggy banks");
-                            context.assertEquals(coins(played.controller(), p2), 10, "1st: 10 coins");
-                            context.assertEquals(stars(played.controller(), p2), 1, "and the star set on the Gains page");
-                            context.assertEquals(coins(played.controller(), p1), 2, "participants get their gain");
-                            context.assertEquals(coins(played.controller(), p3), 2, "participants get their gain");
-                            context.assertEquals(stars(played.controller(), p1), 0, "no star for them");
-                        } finally {
-                            cleanUp(context, p1, p2, p3);
-                        }
-                        context.complete();
-                    });
-                });
-            });
+            context.complete();
         });
     }
 
