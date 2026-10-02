@@ -1883,5 +1883,15 @@
   "gui.steveparty.party_controller.gains.star.hint": "Item that counts as Star: put an item to change it",
   "gui.steveparty.party_controller.settings.rounds.tooltip": "Rounds of a party without cards: every token plays, then a mini-game.",
   "gui.steveparty.party_controller.program.catalogue.none": "No Mini-games Catalogue",
-  "gui.steveparty.party_controller.program.catalogue.empty": "Empty catalogue"
+  "gui.steveparty.party_controller.program.catalogue.empty": "Empty catalogue",
+  "message.steveparty.zone_bubble.cannot_leave": "You can't leave the mini-game zone.",
+  "message.steveparty.zone_bubble.cannot_enter": "A mini-game is being played here: you can't come in.",
+  "message.steveparty.zone_bubble.restoring": "The mini-game zone is being put back as it was: you can't come in yet.",
+  "message.steveparty.zone_bubble.hands_tied": "You can't do that during the mini-game.",
+  "message.steveparty.zone_bubble.journal_full": "Too much has changed in the mini-game zone: nothing more can be changed in it until the game ends.",
+  "message.steveparty.zone_bubble.too_big": "The mini-game zone is too big: %s blocks a side at most.",
+  "message.steveparty.zone_bubble.overlap": "The mini-game zone overlaps the zone of a game in progress.",
+  "message.steveparty.zone_bubble.too_full": "The mini-game zone holds too many containers or entities.",
+  "message.steveparty.zone_bubble.unavailable": "The mini-game zone can't be used.",
+  "message.steveparty.zone_bubble.inventory_back": "Your inventory from before the mini-game has been given back to you."
 }
