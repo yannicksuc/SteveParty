@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "steveparty:block/pink_star_fragments_block"
+  }
+}

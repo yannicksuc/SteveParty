@@ -1,0 +1,6 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "steveparty:item/pink_star_fragment"
+	}
+}
