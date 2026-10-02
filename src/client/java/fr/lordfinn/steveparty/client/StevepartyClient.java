@@ -291,12 +291,9 @@ public class StevepartyClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ModBlockEntities.PODIUM_ENTITY, fr.lordfinn.steveparty.client.blockentity.PodiumBannerRenderer::new);
         fr.lordfinn.steveparty.client.blockentity.PodiumBannerRenderer.registerReloadListener();
 
-        BlockRenderLayerMap.INSTANCE.putBlock(BLUE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
-        BlockRenderLayerMap.INSTANCE.putBlock(PURPLE_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
-        BlockRenderLayerMap.INSTANCE.putBlock(RED_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
-        BlockRenderLayerMap.INSTANCE.putBlock(YELLOW_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
-        BlockRenderLayerMap.INSTANCE.putBlock(GREEN_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
-        BlockRenderLayerMap.INSTANCE.putBlock(BLACK_STAR_FRAGMENTS_BLOCK, RenderLayer.getTranslucent());
+        for (net.minecraft.block.Block starFragments : STAR_FRAGMENTS_BLOCKS) {
+            BlockRenderLayerMap.INSTANCE.putBlock(starFragments, RenderLayer.getTranslucent());
+        }
         BlockRenderLayerMap.INSTANCE.putBlock(GRAVITY_CORE, RenderLayer.getTranslucent());
 
         BlockRenderLayerMap.INSTANCE.putBlock(TRADING_STALL, RenderLayer.getCutout());

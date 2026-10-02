@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "steveparty:white_star_fragments_block"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_white_star_fragment": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:white_star_fragment"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_white_star_fragment"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "steveparty:white_star_fragments_block"
+    ]
+  }
+}

@@ -335,6 +335,10 @@ def plot_title(x0, z0, title):
     return [label(x0 + 10, Y + 7, z0 + 10, title, 'gold', 3)]
 
 
+STAR_COLOURS = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray', 'light_gray', 'cyan', 'purple',
+             'blue', 'brown', 'green', 'red', 'black']
+
+
 def dice_station(x0=2010, z0=1970):
     cmds = ['# Dice station'] + plot_title(x0, z0, 'DÉS & FORGE')
     forge = (x0 + 10, Y, z0 + 9)
@@ -342,8 +346,8 @@ def dice_station(x0=2010, z0=1970):
              label(forge[0] + 0.5, Y + 3.2, forge[2] + 0.5, 'Dice Forge (noyau inséré)', 'white', 0.8, False)]
     cmds += ['setblock %d %d %d steveparty:gravity_core' % (x0 + 4, Y, z0 + 9),
              label(x0 + 4.5, Y + 1.8, z0 + 9.5, 'Gravity Core', 'white', 0.7, False)]
-    for k, c in enumerate(['blue', 'green', 'red', 'yellow', 'purple', 'black']):
-        cmds.append('setblock %d %d %d steveparty:%s_star_fragments_block' % (x0 + 3 + 3 * k, Y, z0 + 3, c))
+    for k, c in enumerate(STAR_COLOURS):               # the 16 colours in dye order, two rows of 8
+        cmds.append('setblock %d %d %d steveparty:%s_star_fragments_block' % (x0 + 3 + 2 * (k % 8), Y, z0 + 3 + 2 * (k // 8), c))
     cmds.append(label(x0 + 10.5, Y + 2, z0 + 3.5, 'Blocs de fragments d\'étoile', 'white', 0.8, False))
 
     forged = '"steveparty:dice-faces":[%s],"minecraft:item_name":%s'
@@ -976,9 +980,9 @@ def all_items():
     faces = ['blank_dice_face'] + ['dice_face_%d' % i for i in range(1, 11)] + \
             ['premium_dice_face_%d' % i for i in range(1, 11)] + ['cursed_dice_face_%d' % i for i in range(1, 4)]
     groups.append(('Dés', ['default_dice', 'double_dice', 'triple_dice', 'dice_forge', 'gravity_core'] + faces))
-    stars = ['%s_star_fragment' % c for c in ['blue', 'purple', 'red', 'yellow', 'green', 'black']]
+    stars = ['%s_star_fragment' % c for c in STAR_COLOURS]
     groups.append(('Mulas et étoiles', ['mula_spawn_egg', 'telescope', 'power_star'] + stars +
-                   ['%s_star_fragments_block' % c for c in ['blue', 'green', 'red', 'yellow', 'purple', 'black']]))
+                   ['%s_star_fragments_block' % c for c in STAR_COLOURS]))
     groups.append(('Boutique et divers', ['trading_stall', 'cash_register', 'looting_box', 'villager_block',
                                           'shopkeeper_key', 'bandana', 'goal_pole_base', 'goal_pole', 'flag',
                                           'triple_jump_shoes', 'hop_switch', 'plastic_pellets', 'plastic_stick']))

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.particle;
 
+import fr.lordfinn.steveparty.blocks.custom.StarFragmentsBlock;
 import fr.lordfinn.steveparty.particles.StarFlareEffect;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -26,7 +27,7 @@ import net.minecraft.util.math.Vec3d;
  */
 public class StarFlareParticle extends SpriteBillboardParticle {
     private static final int FRAMES_PER_COLOUR = 6;
-    private static final int SPRITE_COUNT = 6 * FRAMES_PER_COLOUR;
+    private static final int SPRITE_COUNT = StarFragmentsBlock.COLOUR_COUNT * FRAMES_PER_COLOUR;
     private static final float SPRITE_ARC_RADIUS = 12.5f / 16f; // arc radius drawn in the sprite, in blocks at scale 1
 
     private final SpriteProvider sprites;
@@ -38,7 +39,7 @@ public class StarFlareParticle extends SpriteBillboardParticle {
                                 SpriteProvider sprites) {
         super(world, x, y, z);
         this.sprites = sprites;
-        this.colour = MathHelper.clamp(effect.colour(), 0, 5);
+        this.colour = MathHelper.clamp(effect.colour(), 0, StarFragmentsBlock.COLOUR_COUNT - 1);
         this.cx = x;
         this.cy = y;
         this.cz = z;

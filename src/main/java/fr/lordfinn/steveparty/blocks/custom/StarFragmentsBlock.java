@@ -25,7 +25,11 @@ public class StarFragmentsBlock extends TransparentBlock {
             createSettingsCodec()
     ).apply(instance, StarFragmentsBlock::new));
 
-    public static final int BLUE = 0, GREEN = 1, PURPLE = 2, RED = 3, YELLOW = 4, BLACK = 5;
+    /** Colour index: the sprite set of its slashes (StarFlareEffect). The 6 dropped colours, then the 10 mixed ones. */
+    public static final int BLUE = 0, GREEN = 1, PURPLE = 2, RED = 3, YELLOW = 4, BLACK = 5,
+            WHITE = 6, ORANGE = 7, MAGENTA = 8, LIGHT_BLUE = 9, LIME = 10, PINK = 11, GRAY = 12, LIGHT_GRAY = 13,
+            CYAN = 14, BROWN = 15;
+    public static final int COLOUR_COUNT = 16;
     /** Eruption chance per display tick for a lone block (6 exposed faces); about one every 9 s near the player. */
     private static final float ERUPTION_CHANCE = 0.25f;
     /** Each neighbouring star block (3x3x3) lowers the chance: walls don't turn into fireworks. */

@@ -160,9 +160,7 @@ public final class MulaBrain {
     }
 
     public static boolean isStarFragment(Item item) {
-        return item == ModItems.BLUE_STAR_FRAGMENT || item == ModItems.RED_STAR_FRAGMENT
-                || item == ModItems.GREEN_STAR_FRAGMENT || item == ModItems.YELLOW_STAR_FRAGMENT
-                || item == ModItems.PURPLE_STAR_FRAGMENT || item == ModItems.BLACK_STAR_FRAGMENT;
+        return ModItems.isStarFragment(item);
     }
 
     private void refreshNeighbours() {
