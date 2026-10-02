@@ -18,6 +18,9 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
 
     public static final TagKey<Item> DICE_FACES_TAG =
             TagKey.of(RegistryKeys.ITEM, Steveparty.id("dice_faces"));
+    /** The star fragments of the 16 colours (the Shopkeeper Key takes any of them). */
+    public static final TagKey<Item> STAR_FRAGMENTS_TAG =
+            TagKey.of(RegistryKeys.ITEM, Steveparty.id("star_fragments"));
 
     public StevepartyReferenceItemTagProvider(FabricDataOutput output, CompletableFuture<RegistryWrapper.WrapperLookup> registriesFuture) {
         super(output, RegistryKeys.ITEM, registriesFuture);
@@ -27,6 +30,8 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
     protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
         for (Item diceFace : ModItems.DICE_FACES)
             getOrCreateTagBuilder(DICE_FACES_TAG).add(diceFace);
+        for (Item fragment : ModItems.STAR_FRAGMENTS)
+            getOrCreateTagBuilder(STAR_FRAGMENTS_TAG).add(fragment);
         for (net.minecraft.block.Block fence : fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_FENCES)
             getOrCreateTagBuilder(net.minecraft.registry.tag.ItemTags.FENCES).add(fence.asItem());
         for (int i = 0; i < fr.lordfinn.steveparty.blocks.ModBlocks.COLORS.length; i++) {

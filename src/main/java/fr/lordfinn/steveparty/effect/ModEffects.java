@@ -6,7 +6,6 @@ import net.minecraft.entity.effect.StatusEffect;
 import fr.lordfinn.steveparty.items.ModItems;
 import net.minecraft.item.Item;
 
-import java.util.List;
 import net.minecraft.potion.Potions;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -23,8 +22,7 @@ public class ModEffects {
         FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
             // Vanilla has the Luck potion but no brewing recipe for it (Awkward + rabbit foot is Leaping):
             // any star fragment brews it. Splash/lingering variants come from vanilla's generic recipes.
-            for (Item fragment : List.of(ModItems.BLUE_STAR_FRAGMENT, ModItems.PURPLE_STAR_FRAGMENT, ModItems.RED_STAR_FRAGMENT,
-                    ModItems.YELLOW_STAR_FRAGMENT, ModItems.GREEN_STAR_FRAGMENT, ModItems.BLACK_STAR_FRAGMENT)) {
+            for (Item fragment : ModItems.STAR_FRAGMENTS) {
                 builder.registerPotionRecipe(Potions.AWKWARD, fragment, LUCK);
             }
         });

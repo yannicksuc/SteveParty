@@ -13,7 +13,7 @@ import net.minecraft.particle.ParticleType;
  * A star fragments block's swoosh slash (see the client's StarFlareParticle): a crescent ribbon that sweeps an arc of
  * circle centred on the block (the particle's spawn position), starting from an exposed face, then fades.
  *
- * @param colour  star colour index: 0 blue, 1 green, 2 purple, 3 red, 4 yellow, 5 black (sprite set)
+ * @param colour  star colour index (sprite set): the constants of StarFragmentsBlock, 0 blue to 15 brown
  * @param face    Direction id of the face it bursts out of (the arc starts on that axis)
  * @param roll    angle (radians) of the arc's plane around the face normal: the slash's orientation
  * @param radius  arc radius in blocks, from the block's centre

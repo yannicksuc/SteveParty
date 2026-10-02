@@ -26,6 +26,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.registry.RegistryKeys;
 
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -580,36 +581,47 @@ public class ModBlocks {
             "looting_box", true);
 
     /** Glowing translucent crystal built like glass: see-through, lets light pass, never suffocates or blocks vision. */
-    private static Block.Settings starFragmentsSettings() {
-        return Block.Settings.create()
-                .strength(0.5f)
-                .sounds(BlockSoundGroup.AMETHYST_BLOCK)
-                .luminance(state -> 15)
-                .nonOpaque()
-                .allowsSpawning((state, world, pos, type) -> false)
-                .solidBlock((state, world, pos) -> false)
-                .suffocates((state, world, pos) -> false)
-                .blockVision((state, world, pos) -> false);
+    private static Block starFragmentsBlock(int colour, DyeColor dye) {
+        return register(settings -> new StarFragmentsBlock(colour, settings),
+                Block.Settings.create()
+                        .mapColor(dye)
+                        .strength(0.5f)
+                        .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+                        .luminance(state -> 15)
+                        .nonOpaque()
+                        .allowsSpawning((state, world, pos, type) -> false)
+                        .solidBlock((state, world, pos) -> false)
+                        .suffocates((state, world, pos) -> false)
+                        .blockVision((state, world, pos) -> false),
+                dye.getName() + "_star_fragments_block", true);
     }
 
-    public static final Block BLUE_STAR_FRAGMENTS_BLOCK = register(
-            s -> new StarFragmentsBlock(StarFragmentsBlock.BLUE, s), starFragmentsSettings(),
-            "blue_star_fragments_block", true);
-    public static final Block GREEN_STAR_FRAGMENTS_BLOCK = register(
-            s -> new StarFragmentsBlock(StarFragmentsBlock.GREEN, s), starFragmentsSettings(),
-            "green_star_fragments_block", true);
-    public static final Block RED_STAR_FRAGMENTS_BLOCK = register(
-            s -> new StarFragmentsBlock(StarFragmentsBlock.RED, s), starFragmentsSettings(),
-            "red_star_fragments_block", true);
-    public static final Block YELLOW_STAR_FRAGMENTS_BLOCK = register(
-            s -> new StarFragmentsBlock(StarFragmentsBlock.YELLOW, s), starFragmentsSettings(),
-            "yellow_star_fragments_block", true);
-    public static final Block PURPLE_STAR_FRAGMENTS_BLOCK = register(
-            s -> new StarFragmentsBlock(StarFragmentsBlock.PURPLE, s), starFragmentsSettings(),
-            "purple_star_fragments_block", true);
-    public static final Block BLACK_STAR_FRAGMENTS_BLOCK = register(
-            s -> new StarFragmentsBlock(StarFragmentsBlock.BLACK, s), starFragmentsSettings(),
-            "black_star_fragments_block", true);
+    public static final Block BLUE_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.BLUE, DyeColor.BLUE);
+    public static final Block GREEN_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.GREEN, DyeColor.GREEN);
+    public static final Block PURPLE_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.PURPLE, DyeColor.PURPLE);
+    public static final Block RED_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.RED, DyeColor.RED);
+    public static final Block YELLOW_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.YELLOW, DyeColor.YELLOW);
+    public static final Block BLACK_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.BLACK, DyeColor.BLACK);
+    public static final Block WHITE_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.WHITE, DyeColor.WHITE);
+    public static final Block ORANGE_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.ORANGE, DyeColor.ORANGE);
+    public static final Block MAGENTA_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.MAGENTA, DyeColor.MAGENTA);
+    public static final Block LIGHT_BLUE_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.LIGHT_BLUE, DyeColor.LIGHT_BLUE);
+    public static final Block LIME_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.LIME, DyeColor.LIME);
+    public static final Block PINK_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.PINK, DyeColor.PINK);
+    public static final Block GRAY_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.GRAY, DyeColor.GRAY);
+    public static final Block LIGHT_GRAY_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.LIGHT_GRAY, DyeColor.LIGHT_GRAY);
+    public static final Block CYAN_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.CYAN, DyeColor.CYAN);
+    public static final Block BROWN_STAR_FRAGMENTS_BLOCK = starFragmentsBlock(StarFragmentsBlock.BROWN, DyeColor.BROWN);
+    /** The 16 star fragments blocks in dye order (index = DyeColor id). 6 are made of Mula drops, 10 of mixed fragments. */
+    public static final List<Block> STAR_FRAGMENTS_BLOCKS = List.of(
+            WHITE_STAR_FRAGMENTS_BLOCK, ORANGE_STAR_FRAGMENTS_BLOCK, MAGENTA_STAR_FRAGMENTS_BLOCK, LIGHT_BLUE_STAR_FRAGMENTS_BLOCK,
+            YELLOW_STAR_FRAGMENTS_BLOCK, LIME_STAR_FRAGMENTS_BLOCK, PINK_STAR_FRAGMENTS_BLOCK, GRAY_STAR_FRAGMENTS_BLOCK,
+            LIGHT_GRAY_STAR_FRAGMENTS_BLOCK, CYAN_STAR_FRAGMENTS_BLOCK, PURPLE_STAR_FRAGMENTS_BLOCK, BLUE_STAR_FRAGMENTS_BLOCK,
+            BROWN_STAR_FRAGMENTS_BLOCK, GREEN_STAR_FRAGMENTS_BLOCK, RED_STAR_FRAGMENTS_BLOCK, BLACK_STAR_FRAGMENTS_BLOCK);
+
+    public static Block starFragmentsBlock(DyeColor dye) {
+        return STAR_FRAGMENTS_BLOCKS.get(dye.getId());
+    }
 
     public static final Block GRAVITY_CORE = register(GravityCoreBlock::new,
             Block.Settings.create()

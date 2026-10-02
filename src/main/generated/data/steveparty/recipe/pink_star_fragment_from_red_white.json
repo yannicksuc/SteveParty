@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "pink_star_fragment",
+  "ingredients": [
+    "steveparty:red_star_fragment",
+    "steveparty:white_star_fragment"
+  ],
+  "result": {
+    "count": 2,
+    "id": "steveparty:pink_star_fragment"
+  }
+}

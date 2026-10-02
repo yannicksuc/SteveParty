@@ -79,6 +79,33 @@ public class ModItems {
     public static final Item YELLOW_STAR_FRAGMENT = register(Item.class, "yellow_star_fragment");
     public static final Item GREEN_STAR_FRAGMENT = register(Item.class, "green_star_fragment");
     public static final Item BLACK_STAR_FRAGMENT = register(Item.class, "black_star_fragment");
+    public static final Item WHITE_STAR_FRAGMENT = register(Item.class, "white_star_fragment");
+    public static final Item ORANGE_STAR_FRAGMENT = register(Item.class, "orange_star_fragment");
+    public static final Item MAGENTA_STAR_FRAGMENT = register(Item.class, "magenta_star_fragment");
+    public static final Item LIGHT_BLUE_STAR_FRAGMENT = register(Item.class, "light_blue_star_fragment");
+    public static final Item LIME_STAR_FRAGMENT = register(Item.class, "lime_star_fragment");
+    public static final Item PINK_STAR_FRAGMENT = register(Item.class, "pink_star_fragment");
+    public static final Item GRAY_STAR_FRAGMENT = register(Item.class, "gray_star_fragment");
+    public static final Item LIGHT_GRAY_STAR_FRAGMENT = register(Item.class, "light_gray_star_fragment");
+    public static final Item CYAN_STAR_FRAGMENT = register(Item.class, "cyan_star_fragment");
+    public static final Item BROWN_STAR_FRAGMENT = register(Item.class, "brown_star_fragment");
+    /**
+     * The 16 star fragments in dye order (index = DyeColor id). Blue, purple, red, yellow, green and black are dropped
+     * by the Mulas; the 10 others are crafted by mixing fragments, like dyes (white = red + blue + yellow).
+     */
+    public static final List<Item> STAR_FRAGMENTS = List.of(
+            WHITE_STAR_FRAGMENT, ORANGE_STAR_FRAGMENT, MAGENTA_STAR_FRAGMENT, LIGHT_BLUE_STAR_FRAGMENT,
+            YELLOW_STAR_FRAGMENT, LIME_STAR_FRAGMENT, PINK_STAR_FRAGMENT, GRAY_STAR_FRAGMENT,
+            LIGHT_GRAY_STAR_FRAGMENT, CYAN_STAR_FRAGMENT, PURPLE_STAR_FRAGMENT, BLUE_STAR_FRAGMENT,
+            BROWN_STAR_FRAGMENT, GREEN_STAR_FRAGMENT, RED_STAR_FRAGMENT, BLACK_STAR_FRAGMENT);
+
+    public static Item starFragment(DyeColor dye) {
+        return STAR_FRAGMENTS.get(dye.getId());
+    }
+
+    public static boolean isStarFragment(Item item) {
+        return STAR_FRAGMENTS.contains(item);
+    }
     public static final Item POWER_STAR = register(PowerStarItem.class, "power_star");
     public static final Item PLASTIC_PELLETS = register(Item.class, "plastic_pellets");
     /** Plastic sticks: the plastic fences are made of them, like wooden fences of sticks. */
@@ -311,18 +338,9 @@ public class ModItems {
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);
             itemGroup.add(BOXED_TRADER_SPAWN_EGG);
-            itemGroup.add(BLUE_STAR_FRAGMENTS_BLOCK);
-            itemGroup.add(PURPLE_STAR_FRAGMENTS_BLOCK);
-            itemGroup.add(RED_STAR_FRAGMENTS_BLOCK);
-            itemGroup.add(YELLOW_STAR_FRAGMENTS_BLOCK);
-            itemGroup.add(GREEN_STAR_FRAGMENTS_BLOCK);
-            itemGroup.add(BLACK_STAR_FRAGMENTS_BLOCK);
-            itemGroup.add(BLUE_STAR_FRAGMENT);
-            itemGroup.add(PURPLE_STAR_FRAGMENT);
-            itemGroup.add(RED_STAR_FRAGMENT);
-            itemGroup.add(YELLOW_STAR_FRAGMENT);
-            itemGroup.add(GREEN_STAR_FRAGMENT);
-            itemGroup.add(BLACK_STAR_FRAGMENT);
+            // The 16 colours, in dye order: the blocks, then the fragments
+            for (Block block : STAR_FRAGMENTS_BLOCKS) itemGroup.add(block);
+            for (Item fragment : STAR_FRAGMENTS) itemGroup.add(fragment);
             itemGroup.add(POWER_STAR);
             itemGroup.add(GRAVITY_CORE);
             itemGroup.add(DICE_FORGE);

@@ -113,42 +113,12 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .criterion(hasItem(Items.QUARTZ), conditionsFromItem(Items.QUARTZ))
                         .offerTo(recipeExporter, id("blank_dice_face_from_crafting"));
 
-                offerReversibleCompactingRecipes(
-                        RecipeCategory.MISC,
-                        ModItems.BLACK_STAR_FRAGMENT,
-                        RecipeCategory.BUILDING_BLOCKS,
-                        ModBlocks.BLACK_STAR_FRAGMENTS_BLOCK
-                );
-                offerReversibleCompactingRecipes(
-                        RecipeCategory.MISC,
-                        ModItems.PURPLE_STAR_FRAGMENT,
-                        RecipeCategory.BUILDING_BLOCKS,
-                        ModBlocks.PURPLE_STAR_FRAGMENTS_BLOCK
-                );
-                offerReversibleCompactingRecipes(
-                        RecipeCategory.MISC,
-                        ModItems.RED_STAR_FRAGMENT,
-                        RecipeCategory.BUILDING_BLOCKS,
-                        ModBlocks.RED_STAR_FRAGMENTS_BLOCK
-                );
-                offerReversibleCompactingRecipes(
-                        RecipeCategory.MISC,
-                        ModItems.YELLOW_STAR_FRAGMENT,
-                        RecipeCategory.BUILDING_BLOCKS,
-                        ModBlocks.YELLOW_STAR_FRAGMENTS_BLOCK
-                );
-                offerReversibleCompactingRecipes(
-                        RecipeCategory.MISC,
-                        ModItems.GREEN_STAR_FRAGMENT,
-                        RecipeCategory.BUILDING_BLOCKS,
-                        ModBlocks.GREEN_STAR_FRAGMENTS_BLOCK
-                );
-                offerReversibleCompactingRecipes(
-                        RecipeCategory.MISC,
-                        ModItems.BLUE_STAR_FRAGMENT,
-                        RecipeCategory.BUILDING_BLOCKS,
-                        ModBlocks.BLUE_STAR_FRAGMENTS_BLOCK
-                );
+                // 9 fragments <-> their block, for the 16 colours
+                for (DyeColor dye : DyeColor.values()) {
+                    offerReversibleCompactingRecipes(RecipeCategory.MISC, ModItems.starFragment(dye),
+                            RecipeCategory.BUILDING_BLOCKS, ModBlocks.starFragmentsBlock(dye));
+                }
+                generateStarFragmentMixing();
                 createShapeless(RecipeCategory.MISC, ModItems.POWER_STAR, 1)
                         .input(ModItems.BLUE_STAR_FRAGMENT)
                         .input(ModItems.GREEN_STAR_FRAGMENT)
@@ -171,6 +141,44 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 generatePolishedTiles();
                 generatePlasticBlocks();
                 generateSurvivalRecipes();
+            }
+
+            /**
+             * Star fragments mix like dyes: as many fragments out as in, so nothing is lost. The Mulas drop blue,
+             * purple, red, yellow, green and black; every other colour is mixed from those (white from the three
+             * primaries). Vanilla's dye mixes where they exist; no two recipes share the same ingredients.
+             */
+            private void generateStarFragmentMixing() {
+                offerMix(DyeColor.WHITE, DyeColor.RED, DyeColor.BLUE, DyeColor.YELLOW);
+                offerMix(DyeColor.ORANGE, DyeColor.RED, DyeColor.YELLOW);
+                offerMix(DyeColor.GREEN, DyeColor.BLUE, DyeColor.YELLOW);
+                offerMix(DyeColor.PURPLE, DyeColor.RED, DyeColor.BLUE);
+                offerMix(DyeColor.CYAN, DyeColor.BLUE, DyeColor.GREEN);
+                offerMix(DyeColor.LIGHT_BLUE, DyeColor.BLUE, DyeColor.WHITE);
+                offerMix(DyeColor.LIME, DyeColor.GREEN, DyeColor.WHITE);
+                offerMix(DyeColor.PINK, DyeColor.RED, DyeColor.WHITE);
+                offerMix(DyeColor.MAGENTA, DyeColor.PURPLE, DyeColor.PINK);
+                offerMix(DyeColor.MAGENTA, DyeColor.BLUE, DyeColor.RED, DyeColor.PINK);
+                offerMix(DyeColor.MAGENTA, DyeColor.BLUE, DyeColor.RED, DyeColor.RED, DyeColor.WHITE);
+                offerMix(DyeColor.GRAY, DyeColor.BLACK, DyeColor.WHITE);
+                offerMix(DyeColor.LIGHT_GRAY, DyeColor.GRAY, DyeColor.WHITE);
+                offerMix(DyeColor.LIGHT_GRAY, DyeColor.BLACK, DyeColor.WHITE, DyeColor.WHITE);
+                offerMix(DyeColor.BROWN, DyeColor.ORANGE, DyeColor.BLACK);
+                offerMix(DyeColor.BROWN, DyeColor.RED, DyeColor.GREEN);
+            }
+
+            /** Shapeless mix: one fragment of each input colour gives as many fragments of the result colour. */
+            private void offerMix(DyeColor result, DyeColor... inputs) {
+                Item output = ModItems.starFragment(result);
+                var builder = createShapeless(RecipeCategory.MISC, output, inputs.length)
+                        .group(result.getName() + "_star_fragment");
+                StringBuilder name = new StringBuilder(result.getName()).append("_star_fragment_from");
+                for (DyeColor input : inputs) {
+                    Item fragment = ModItems.starFragment(input);
+                    builder.input(fragment).criterion(hasItem(fragment), conditionsFromItem(fragment));
+                    name.append('_').append(input.getName());
+                }
+                builder.offerTo(recipeExporter, id(name.toString()));
             }
 
             /**
@@ -229,9 +237,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         .pattern("F")
                         .pattern("G")
                         .pattern("N")
-                        .input('F', Ingredient.ofItems(ModItems.BLUE_STAR_FRAGMENT, ModItems.PURPLE_STAR_FRAGMENT,
-                                ModItems.RED_STAR_FRAGMENT, ModItems.YELLOW_STAR_FRAGMENT, ModItems.GREEN_STAR_FRAGMENT,
-                                ModItems.BLACK_STAR_FRAGMENT))
+                        .input('F', StevepartyReferenceItemTagProvider.STAR_FRAGMENTS_TAG)
                         .input('G', Items.GOLD_INGOT)
                         .input('N', Items.GOLD_NUGGET)
                         .criterion(hasItem(ModBlocks.TRADING_STALL), conditionsFromItem(ModBlocks.TRADING_STALL))
