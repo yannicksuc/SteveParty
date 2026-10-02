@@ -31,8 +31,10 @@ import java.util.UUID;
  * columns touching those.
  * <p>
  * <b>The places come from the heights</b>: the tallest columns are the 1st place, the next height the 2nd place, and
- * so on. Columns of the same height share the place (several winners). The height of a column is the height of its top
- * above its own foot, so that a group spread over uneven ground is ranked like a podium built on flat ground.
+ * so on. Columns of the same height share the place: on their own, each takes a winner (several winners of the same
+ * place); while a mini-game is played on the page of the group, they are one place held by one player or team (see
+ * {@code Podiums}). The height of a column is the height of its top above its own foot, so that a group spread over
+ * uneven ground is ranked like a podium built on flat ground.
  */
 public final class PodiumGroup {
     /** The most columns a group can have (the others are left out). */
@@ -201,6 +203,31 @@ public final class PodiumGroup {
     public @Nullable Column highestFree() {
         for (Column column : columns) if (column.occupant() == null) return column;
         return null;
+    }
+
+    /** The columns of the same place as {@code column} (the same height), itself included, in the group's order. */
+    public List<Column> placeColumns(Column column) {
+        int place = placeOf(column);
+        List<Column> same = new ArrayList<>();
+        for (Column other : columns) if (placeOf(other) == place) same.add(other);
+        return same;
+    }
+
+    /** The first column of the best place none of whose columns is taken, null when every place is. */
+    public @Nullable Column highestFreePlace() {
+        Column first = null;
+        int place = 0;
+        boolean free = false;
+        for (Column column : columns) {
+            if (placeOf(column) != place) {
+                if (free) return first;
+                place = placeOf(column);
+                first = column;
+                free = true;
+            }
+            if (column.occupant() != null) free = false;
+        }
+        return free ? first : null;
     }
 
     /** @return true if every column is taken. */

@@ -1727,7 +1727,7 @@
   "podium_signal.steveparty.fill": "donne au joueur le plus proche la plus haute place libre",
   "podium_signal.steveparty.clear": "vide ce podium",
   "podium_signal.steveparty.reset": "réinitialise tout le groupe",
-  "tooltip.steveparty.podium.places": "Retient qui a gagné : plus la colonne est haute, meilleure est la place (même hauteur : même place). Les podiums qui se touchent forment un groupe.",
+  "tooltip.steveparty.podium.places": "Retient qui a gagné : plus la colonne est haute, meilleure est la place. Les podiums qui se touchent forment un groupe. Pendant un mini-jeu lié par une page, les colonnes de même hauteur forment une seule place.",
   "tooltip.steveparty.podium.register": "S'accroupir dessus ou clic droit : on le prend ; encore : on le quitte. Un podium par joueur (par équipe), et un podium occupé peut être pris.",
   "tooltip.steveparty.podium.signal": "Impulsion de redstone : inscrit le joueur le plus proche. Clé : clic droit pour changer (plus haute place libre, vider, réinitialiser le groupe).",
   "tooltip.steveparty.podium.page": "Page de mini-jeu en main : clic pour le lier au mini-jeu (ses places décident des gains du Party Controller).",
@@ -1894,5 +1894,6 @@
   "message.steveparty.zone_bubble.overlap": "La zone du mini-jeu chevauche celle d'une partie en cours.",
   "message.steveparty.zone_bubble.too_full": "La zone du mini-jeu contient trop de conteneurs ou d'entités.",
   "message.steveparty.zone_bubble.unavailable": "La zone du mini-jeu est inutilisable.",
-  "message.steveparty.zone_bubble.inventory_back": "Ton inventaire d'avant le mini-jeu t'a été rendu."
+  "message.steveparty.zone_bubble.inventory_back": "Ton inventaire d'avant le mini-jeu t'a été rendu.",
+  "message.steveparty.podium.team_holds": "Ton équipe tient déjà cette place."
 }

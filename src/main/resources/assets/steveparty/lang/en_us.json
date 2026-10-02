@@ -1726,7 +1726,7 @@
   "podium_signal.steveparty.fill": "gives the nearest player the highest free place",
   "podium_signal.steveparty.clear": "empties this podium",
   "podium_signal.steveparty.reset": "resets the whole group",
-  "tooltip.steveparty.podium.places": "Records who won: the taller the column, the better the place (same height: same place). Podiums that touch form one group.",
+  "tooltip.steveparty.podium.places": "Records who won: the taller the column, the better the place. Podiums touching each other form a group. During a mini-game linked by a page, the columns of the same height are one place.",
   "tooltip.steveparty.podium.register": "Sneak on it or right-click it: you take it; again: you leave it. One podium per player (per team), and a held podium can be taken.",
   "tooltip.steveparty.podium.signal": "Redstone pulse: registers the nearest player. Wrench: right-click to change it (highest free place, empty it, reset the group).",
   "tooltip.steveparty.podium.page": "Mini-game Page in hand: click to link it to the mini-game (its places decide the gains of the Party Controller).",
@@ -1893,5 +1893,6 @@
   "message.steveparty.zone_bubble.overlap": "The mini-game zone overlaps the zone of a game in progress.",
   "message.steveparty.zone_bubble.too_full": "The mini-game zone holds too many containers or entities.",
   "message.steveparty.zone_bubble.unavailable": "The mini-game zone can't be used.",
-  "message.steveparty.zone_bubble.inventory_back": "Your inventory from before the mini-game has been given back to you."
+  "message.steveparty.zone_bubble.inventory_back": "Your inventory from before the mini-game has been given back to you.",
+  "message.steveparty.podium.team_holds": "Your team already holds this place."
 }

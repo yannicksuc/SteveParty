@@ -64,7 +64,20 @@ import java.util.UUID;
  *     <li><b>Links</b>: a podium or a goal pole base clicked with a mini-game page is linked to it
  *     ({@link #clickLink}); a goal pole touching a podium of the group is linked to the group too.</li>
  * </ul>
- * While a page's mini-game is played (by a party, or as a test), its group only takes the players of that mini-game.
+ * While a page's mini-game is played (by a party, practice round included, or out of a party), its group only takes
+ * the players of that mini-game, and <b>its columns of the same height are one place</b> ({@link #sharesPlaces}):
+ * <ul>
+ *     <li>taking any column of a place takes the whole place (whoever held it leaves all of it), and so do the
+ *     redstone modes; a place is free when none of its columns is taken;</li>
+ *     <li>free for all: the player's figure stands on the column he took, the other columns of the place say who
+ *     holds them, without figure;</li>
+ *     <li>teams: the team holds the place, its members stand one per column (who registered on the column he took,
+ *     then the others in the team's order); those the place has no column for are named on the label of its last
+ *     column, and the columns left over say the team, without figure;</li>
+ *     <li>doing the gesture again on any column of his place, who took it frees the whole place (a team-mate's gesture
+ *     on its team's place changes nothing: two team-mates arriving together must not undo each other).</li>
+ * </ul>
+ * Out of a mini-game, and for the podiums linked to no page, every column is on its own.
  */
 public final class Podiums {
     /** Out of a party, a pulse registers the nearest player within this many blocks. */
@@ -90,6 +103,19 @@ public final class Podiums {
     /** The mini-game being played on a page the group is linked to (a party's, or a test), null for none. */
     public static @Nullable MiniGameSession played(PodiumGroup group) {
         return MiniGameSession.playing(group.pages());
+    }
+
+    /**
+     * @return true when the columns of the same height of the group are one place: a mini-game is being played on a
+     * page the group is linked to
+     */
+    public static boolean sharesPlaces(PodiumGroup group) {
+        return played(group) != null;
+    }
+
+    /** The columns {@code column} is taken, left and emptied with: its whole place during a mini-game, else itself. */
+    private static List<Column> placeOf(PodiumGroup group, Column column, @Nullable MiniGameSession played) {
+        return played == null ? List.of(column) : group.placeColumns(column);
     }
 
     /** « 1st », « 2nd »... */
@@ -145,17 +171,57 @@ public final class Podiums {
         int team = played == null ? -1 : played.teamOf(uuid);
         PodiumOccupant previous = master.getOccupant();
         if (previous != null && previous.player().equals(uuid) && previous.team() == team) return false;
+        // During a mini-game the place is the team's: a team-mate of who took it changes nothing
+        if (played != null && previous != null && previous.sameSide(uuid, team)) {
+            player.sendMessage(Text.translatable("message.steveparty.podium.team_holds").formatted(Formatting.GRAY), true);
+            return false;
+        }
+        List<Column> taken = placeOf(group, column, played);
         // One podium per player, per team in a team mini-game
         for (Column other : group.columns()) {
             PodiumOccupant there = other.occupant();
-            if (other != column && there != null && there.sameSide(uuid, team) && other.master() != null) {
+            if (!taken.contains(other) && there != null && there.sameSide(uuid, team) && other.master() != null) {
                 other.master().setOccupant(null);
                 poof(other);
             }
         }
         ServerWorld world = column.world();
         int place = group.placeOf(column);
-        master.setOccupant(new PodiumOccupant(uuid, player.getGameProfile().getName(), team, place, world.getTime()));
+        // Whoever held a column of the place leaves it
+        Set<UUID> ousted = new LinkedHashSet<>();
+        for (Column other : taken) {
+            PodiumOccupant there = other.occupant();
+            if (there != null && !there.player().equals(uuid)) ousted.add(there.player());
+        }
+        String name = player.getGameProfile().getName();
+        if (played == null) {
+            master.setOccupant(new PodiumOccupant(uuid, name, team, place, world.getTime()));
+        } else {
+            // The column taken first, then the others of the place; who registered first, then his team-mates
+            List<Column> order = new ArrayList<>(taken);
+            order.remove(column);
+            order.addFirst(column);
+            List<PodiumOccupant.Figure> members = new ArrayList<>();
+            members.add(new PodiumOccupant.Figure(uuid, name));
+            TeamDisposition teams = played.teams();
+            if (team >= 0 && teams != null && team < teams.teams().size()) {
+                for (UUID mate : teams.teams().get(team)) {
+                    if (!mate.equals(uuid)) members.add(new PodiumOccupant.Figure(mate, nameOf(world.getServer(), mate)));
+                }
+            }
+            for (int i = 0; i < order.size(); i++) {
+                PodiumBlockEntity entity = order.get(i).master();
+                if (entity == null) continue;
+                boolean last = i == order.size() - 1;
+                List<String> more = last && members.size() > order.size()
+                        ? members.subList(order.size(), members.size()).stream().map(PodiumOccupant.Figure::name).toList() : List.of();
+                entity.setOccupant(new PodiumOccupant(uuid, name, team, place, world.getTime(), i < members.size() ? members.get(i) : null, more));
+                if (order.get(i) != column) {
+                    Vec3d there = order.get(i).standPos();
+                    world.spawnParticles(ParticleTypes.POOF, there.x, there.y + 0.4, there.z, 6, 0.2, 0.25, 0.2, 0.02);
+                }
+            }
+        }
         refreshPlaces(group);
         Vec3d at = column.standPos();
         world.spawnParticles(ParticleTypes.POOF, at.x, at.y + 0.4, at.z, 10, 0.2, 0.25, 0.2, 0.02);
@@ -165,10 +231,10 @@ public final class Podiums {
         world.playSound(null, at.x, at.y, at.z, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.BLOCKS, 0.6f, 1.2f);
 
         player.sendMessage(Text.translatable("message.steveparty.podium.registered", placeText(place)).formatted(Formatting.GOLD), true);
-        if (previous != null && !previous.player().equals(uuid)) {
-            ServerPlayerEntity ousted = world.getServer().getPlayerManager().getPlayer(previous.player());
-            if (ousted != null && ousted != player)
-                ousted.sendMessage(Text.translatable("message.steveparty.podium.taken", player.getName()).formatted(Formatting.RED), true);
+        for (UUID gone : ousted) {
+            ServerPlayerEntity loser = world.getServer().getPlayerManager().getPlayer(gone);
+            if (loser != null && loser != player)
+                loser.sendMessage(Text.translatable("message.steveparty.podium.taken", player.getName()).formatted(Formatting.RED), true);
         }
         if (played != null) {
             Text line = team < 0
@@ -186,13 +252,31 @@ public final class Podiums {
         if (played != null) played.onPodiumsChanged();
     }
 
+    /** The name of a player: the connected one's, else the one the server remembers. */
+    private static String nameOf(MinecraftServer server, UUID uuid) {
+        ServerPlayerEntity online = server.getPlayerManager().getPlayer(uuid);
+        if (online != null) return online.getGameProfile().getName();
+        return server.getUserCache() == null ? uuid.toString().substring(0, 8)
+                : server.getUserCache().getByUuid(uuid).map(com.mojang.authlib.GameProfile::getName).orElse(uuid.toString().substring(0, 8));
+    }
+
+    /** Empties a column, its whole place during a mini-game. @return true if something was emptied */
+    private static boolean empty(PodiumGroup group, Column column, @Nullable MiniGameSession played) {
+        boolean changed = false;
+        for (Column other : placeOf(group, column, played)) {
+            PodiumBlockEntity master = other.master();
+            if (master == null || master.getOccupant() == null) continue;
+            master.setOccupant(null);
+            poof(other);
+            changed = true;
+        }
+        return changed;
+    }
+
     private static void unregister(PodiumGroup group, Column column, ServerPlayerEntity player) {
-        PodiumBlockEntity master = column.master();
-        if (master == null || master.getOccupant() == null) return;
-        master.setOccupant(null);
-        poof(column);
-        player.sendMessage(Text.translatable("message.steveparty.podium.unregistered").formatted(Formatting.GRAY), true);
         MiniGameSession played = played(group);
+        if (!empty(group, column, played)) return;
+        player.sendMessage(Text.translatable("message.steveparty.podium.unregistered").formatted(Formatting.GRAY), true);
         if (played != null) {
             MessageUtils.sendToPlayers(played.audience(),
                     Text.translatable("message.steveparty.podium.left", player.getName(), placeText(group.placeOf(column))).formatted(Formatting.GRAY),
@@ -226,7 +310,8 @@ public final class Podiums {
         MiniGameSession played = played(group);
         if (played != null && !played.isParticipant(player.getUuid())) return false;
         if (group.columnOf(player.getUuid(), played == null ? -1 : played.teamOf(player.getUuid())) != null) return false;
-        Column free = group.highestFree();
+        // During a mini-game: the best place none of whose columns is taken
+        Column free = played == null ? group.highestFree() : group.highestFreePlace();
         return free != null && register(group, free, player);
     }
 
@@ -248,11 +333,7 @@ public final class Podiums {
                 if (nearest != null) fill(group, nearest);
             }
             case CLEAR -> {
-                if (master.getOccupant() != null) {
-                    master.setOccupant(null);
-                    poof(column);
-                    notifyPlayed(group);
-                }
+                if (empty(group, column, played(group))) notifyPlayed(group);
             }
             case RESET -> reset(group);
         }
