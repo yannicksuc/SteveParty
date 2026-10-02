@@ -1,6 +1,5 @@
 package fr.lordfinn.steveparty.client.screens;
 
-import net.minecraft.client.render.RenderLayer;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
@@ -158,7 +157,11 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         Slot slot = handler.getSlot(index);
         if (slot.hasStack()) return;
         context.drawItem(new ItemStack(item), x + slot.x, y + slot.y);
-        context.fill(RenderLayer.getGuiGhostRecipeOverlay(), x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0xA08B8B8B);
+        // Over the item (drawn above the GUI's depth), like the ghost cards of the Party Controller
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 250);
+        context.fill(x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0x998B8B8B);
+        context.getMatrices().pop();
     }
 
     @Override
