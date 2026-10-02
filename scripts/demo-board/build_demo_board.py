@@ -4,7 +4,7 @@ Writes <run-server>/world/datapacks/steveparty-demo/, then in game (or through `
     /reload
     /function steveparty_demo:board
 
-The board: a loop of 20 tiles (2 start tiles, 2 blue and 2 red inventory tiles linked to a chest of emeralds,
+The board: a loop of 20 tiles (2 start tiles, 2 blue and 2 red inventory tiles linked to a chest of coins,
 the rest default tiles), a Party Controller and a Step Controller with levers, two tokens owned by the dev player,
 and a kit (dice, wand, token, wrench, cartridges) given to the player.
 """
@@ -67,7 +67,7 @@ def main():
             'fill 305 118 418 335 125 446 air',
             'fill 305 117 418 335 117 446 grass_block']
 
-    chest_items = ','.join('{Slot:%db,id:"minecraft:emerald",count:64}' % s for s in range(9))
+    chest_items = ','.join('{Slot:%db,id:"steveparty:coin",count:64}' % s for s in range(9))
     cmds.append('setblock %d %d %d minecraft:chest{Items:[%s]}' % (*CHEST, chest_items))
 
     for i, pos in enumerate(tiles):
@@ -76,7 +76,7 @@ def main():
             state, item = 'tile_start', cartridge('tile_behavior_start', nxt, ',"steveparty:color":%d' % WHITE)
         elif i in blue or i in red:
             negative = i in red
-            ghost = '{id:"minecraft:emerald",count:3%s}' % (
+            ghost = '{id:"steveparty:coin",count:3%s}' % (
                 ',components:{"steveparty:is-negative":true}' if negative else '')
             extra = (',"steveparty:inventory-cartridge":{items:[%s]}'
                      ',"steveparty:inventory-pos":[I;%d,%d,%d]'

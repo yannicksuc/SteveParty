@@ -90,7 +90,7 @@ for (x, z), name in zip(starts, names):
 
 # ------------------------------------------------------------------ controller (program: turns + event + repeat x3, coin/star)
 cx, cz = X0 + W // 2, Z0 + D // 2
-settings = ('{Items:[{Slot:0b,id:"minecraft:emerald",count:1},{Slot:1b,id:"steveparty:power_star",count:1},'
+settings = ('{Items:[{Slot:0b,id:"steveparty:coin",count:1},{Slot:1b,id:"steveparty:power_star",count:1},'
             '{Slot:2b,id:"steveparty:party_card_turns",count:1},{Slot:3b,id:"steveparty:party_card_event",count:1},'
             '{Slot:4b,id:"steveparty:party_card_repeat",count:3}]}')
 cmd(f"setblock {pos(cx, cz)} steveparty:party_controller[facing=south]{{PartySettings:{settings}}}")
@@ -137,7 +137,7 @@ sign(X0 + W + 4, Z0 + SP + 1, "Tirelire")
 sign(X0 + W + 4, Z0 + D - SP + 1, "Podium")
 
 # ------------------------------------------------------------------ player kit
-for item in ("steveparty:default_dice 2", "steveparty:wrench", "minecraft:emerald 32"):
+for item in ("steveparty:default_dice 2", "steveparty:wrench", "steveparty:coin 32"):
     cmd(f"give LordFinn {item}")
 cmd(f"tp LordFinn {X0 - SP - 2} {Y} {Z0 + D // 2} -90 25")
 print("board built:", len(loop), "tiles")

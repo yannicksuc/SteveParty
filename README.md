@@ -85,7 +85,7 @@ Requires JDK 21. Everything goes through the Gradle wrapper.
 
 Demo board: `python scripts/demo-board/build_demo_board.py` writes a datapack into `run-server/world`, then
 `.\scripts\dev.ps1 cmd "reload"` and `.\scripts\dev.ps1 cmd "function steveparty_demo:board"` build a ready-to-play
-loop of 20 tiles (start, blue/red inventory tiles linked to a chest of emeralds), a Party Controller and a Step
+loop of 20 tiles (start, blue/red inventory tiles linked to a chest of coins), a Party Controller and a Step
 Controller with levers, two tokens and a kit for `LordFinn`.
 
 The dev server lives in `run-server/` and is prepared automatically before each start

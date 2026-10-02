@@ -11,7 +11,7 @@ Writes <run-server>/world/datapacks/steveparty-test/, then in game (or through `
 The area (x 1936..2095, z 1952..2175, floor y=99, everything built at y=100), far from the demo board:
   - the board (west): a start zone of 4 start tiles (a token each) feeding the loop through an entry tile, a loop of 30 tiles spaced 4 blocks apart (2 block gap, tiles are 2 blocks wide), each one turned
     toward the next tile of the path, with diagonal sides, and a shortcut: the fork tile has two destinations (the
-    main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 emeralds and one is a Stop space trap driven by a router + lever);
+    main route east, or the shortcut straight south through the middle, which rejoins the loop further on: it is dangerous, every tile takes 5 coins and one is a Stop space trap driven by a router + lever);
   - the stations (east), one per 20x20 plot: dice, shops, goal pole (with « the 10 jumps »: a jump counter whose
     per-player goal fills a podium staircase in order), plastic, signs, building blocks, misc, tiles
     (on stairs, slabs, snow, carpets),
@@ -208,7 +208,7 @@ def color(c):
 
 
 def inventory_cartridge(destinations, chest, negative, count=3, slot=0):
-    ghost = '{id:"minecraft:emerald",count:%d%s}' % (count, ',components:{"steveparty:is-negative":true}' if negative else '')
+    ghost = '{id:"steveparty:coin",count:%d%s}' % (count, ',components:{"steveparty:is-negative":true}' if negative else '')
     extra = (',"steveparty:inventory-cartridge":{items:[%s]},"steveparty:inventory-pos":[I;%d,%d,%d]'
              ',"steveparty:selection-state":1' % (ghost, *chest)) + color(BAD if negative else GOOD)
     return cartridge(slot, 'inventory_cartridge', destinations, extra)
@@ -235,11 +235,11 @@ def board():
 
     cmds = ['# Board: start zone of %d tiles, loop of %d tiles + %d dangerous shortcut tiles'
             % (len(STARTS) + 1, len(loop), len(shortcut))]
-    emeralds = ','.join('{Slot:%db,id:"minecraft:emerald",count:64}' % s for s in range(9))
+    coins = ','.join('{Slot:%db,id:"steveparty:coin",count:64}' % s for s in range(9))
     for chest, name in ((CHEST_W, 'Coffre des cases bleues/rouges'), (CHEST_E, 'Coffre des cases bleues/rouges'),
                         (SHORTCUT_CHEST, 'Coffre du raccourci dangereux')):
         cmds.append('setblock %d %d %d minecraft:chest[facing=south]{CustomName:%s,Items:[%s]}'
-                    % (*chest, jtext(name), emeralds))
+                    % (*chest, jtext(name), coins))
 
     # The dangerous shortcut is marked on the ground: red polished concrete, lined with magma
     sx = shortcut[0][0]
@@ -278,7 +278,7 @@ def board():
             nxt.append(shortcut[0])   # first destination: the main route (east); second: the shortcut (south)
         cmds.append(place(pos, nxt, i))
 
-    # Shortcut: every tile loses emeralds (red, 5 at a time), and one is a trap: a stop tile while its lever is on
+    # Shortcut: every tile loses coins (red, 5 at a time), and one is a trap: a stop tile while its lever is on
     for j, pos in enumerate(shortcut):
         nxt = [shortcut[j + 1] if j + 1 < len(shortcut) else loop[merge]]
         if j == trap:
@@ -316,7 +316,7 @@ def board():
               'Embranchement : tout droit, ou raccourci dangereux (sud)', 'red', 1),
         label(loop[merge][0] + 0.5, Y + 2.5, loop[merge][1] + 0.5, 'Fin du raccourci', 'red', 1),
         label(shortcut[4][0] + 0.5, Y + 3, shortcut[4][1] + 0.5, 'Raccourci dangereux', 'red', 1.5),
-        label(shortcut[4][0] + 0.5, Y + 2.2, shortcut[4][1] + 0.5, '-5 émeraudes par case + un piège Stop', 'red', 0.7, False),
+        label(shortcut[4][0] + 0.5, Y + 2.2, shortcut[4][1] + 0.5, '-5 pièces par case + un piège Stop', 'red', 0.7, False),
         label(shortcut[trap][0] + 0.5, Y + 2.2, shortcut[trap][1] + 0.5, 'Piège : case Stop tant que le levier est allumé',
               'dark_red', 0.7, False),
         label(TRAP_ROUTER[0] + 0.5, Y + 1.8, TRAP_ROUTER[2] + 0.5, 'Routeur du piège + levier', 'white', 0.7, False),
