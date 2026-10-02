@@ -47,7 +47,9 @@ import java.util.Map;
  * <ul>
  *     <li><b>Who is registered on it</b>: a small figure of the player, with his skin, standing on the top and facing
  *     the podium's front. It pops in when he registers and bobs a little; over it, his place and his name (in the
- *     colour of his team, with its name, in a team mini-game).</li>
+ *     colour of his team, with its name, in a team mini-game). During a mini-game the columns of the same height are
+ *     one place: each shows the figure it was given (the player on the column he took, a member of the team on each
+ *     column), or no figure at all, only the label of who holds the place (see {@code PodiumOccupant}).</li>
  *     <li>With the Wrench in hand: what a redstone pulse into the column does.</li>
  *     <li><b>The pattern tagged on its banner</b> (see {@code PodiumBanner}), in the dye's colour over the front face
  *     of the column's top: 8x8 in the middle of the banner hanging over one block of height (across the top slab and
@@ -99,12 +101,13 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
         Vec3d camera = dispatcher.camera.getPos();
         boolean near = camera.squaredDistanceTo(entity.getPos().toCenterPos()) <= LABEL_DISTANCE * LABEL_DISTANCE;
         float labelY = surface + 0.2f;
-        if (occupant != null) {
+        PodiumOccupant.Figure figure = occupant == null ? null : occupant.figure();
+        if (figure != null) {
             float age = (float) (world.getTime() - occupant.since()) + tickDelta;
             float pop = age < 0 || age >= POP_TICKS ? 1f : easeOutBack(age / POP_TICKS);
             float time = world.getTime() + tickDelta + (entity.getPos().getX() * 7 + entity.getPos().getZ() * 13) % 40;
             float bob = MathHelper.sin(time * 0.12f) * 0.025f;
-            SkinTextures skin = SkinUtils.getSkinTextures(occupant.player());
+            SkinTextures skin = SkinUtils.getSkinTextures(figure.player());
             ModelPart root = skin.model() == SkinTextures.Model.SLIM ? slim : wide;
             root.traverse().forEach(ModelPart::resetTransform);
             // A light idle: the head looks around a little, the arms sway
@@ -121,18 +124,22 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
             root.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(skin.texture())), light, OverlayTexture.DEFAULT_UV);
             matrices.pop();
             labelY = surface + 2 * FIGURE_SCALE + 0.16f;
-            if (near) {
-                MutableText label = Podiums.placeText(occupant.place()).append(" ");
-                int color = 0xFFFFFFFF;
-                if (occupant.team() >= 0) {
-                    MiniGamePipeRole role = MiniGamePipeRole.ofTeam(occupant.team());
-                    label.append(role.text()).append(" · ");
-                    color = 0xFF000000 | role.color();
-                }
-                label.append(occupant.name());
-                WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, label, color, 0x60000000, 0, 1f / 80f);
-                labelY += 0.14f;
+        }
+        if (occupant != null && near) {
+            // The place, the team, then who stands here (a column without figure: who holds the place, a team by its name only)
+            MutableText label = Podiums.placeText(occupant.place()).append(" ");
+            int color = figure == null ? 0xFFC8C8C8 : 0xFFFFFFFF;
+            String shown = figure != null ? figure.name() : occupant.team() < 0 ? occupant.name() : null;
+            if (occupant.team() >= 0) {
+                MiniGamePipeRole role = MiniGamePipeRole.ofTeam(occupant.team());
+                label.append(role.text());
+                if (shown != null) label.append(" · ");
+                color = 0xFF000000 | role.color();
             }
+            if (shown != null) label.append(shown);
+            for (String other : occupant.more()) label.append(", ").append(other);
+            WorldLabels.draw(matrices, vertexConsumers, dispatcher, 0.5, labelY, 0.5, label, color, 0x60000000, 0, 1f / 80f);
+            labelY += 0.14f;
         }
         // The Wrench shows what a redstone pulse does to the column looked at
         if (near && WorldLabels.holdingWrench() && WorldLabels.lookingAtColumn(entity.getPos().getX(), entity.getPos().getZ(),

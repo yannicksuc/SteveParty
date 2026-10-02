@@ -1727,7 +1727,7 @@
   "podium_signal.steveparty.fill": "donne au joueur le plus proche la plus haute place libre",
   "podium_signal.steveparty.clear": "vide ce podium",
   "podium_signal.steveparty.reset": "réinitialise tout le groupe",
-  "tooltip.steveparty.podium.places": "Retient qui a gagné : plus la colonne est haute, meilleure est la place (même hauteur : même place). Les podiums qui se touchent forment un groupe.",
+  "tooltip.steveparty.podium.places": "Retient qui a gagné : plus la colonne est haute, meilleure est la place. Les podiums qui se touchent forment un groupe. Pendant un mini-jeu lié par une page, les colonnes de même hauteur forment une seule place.",
   "tooltip.steveparty.podium.register": "S'accroupir dessus ou clic droit : on le prend ; encore : on le quitte. Un podium par joueur (par équipe), et un podium occupé peut être pris.",
   "tooltip.steveparty.podium.signal": "Impulsion de redstone : inscrit le joueur le plus proche. Clé : clic droit pour changer (plus haute place libre, vider, réinitialiser le groupe).",
   "tooltip.steveparty.podium.page": "Page de mini-jeu en main : clic pour le lier au mini-jeu (ses places décident des gains du Party Controller).",
@@ -1907,5 +1907,6 @@
   "gui.steveparty.mini_game_page.test.tooltip.zone_too_big": "Impossible de jouer : la zone du mini-jeu est trop grande pour ce serveur.",
   "gui.steveparty.mini_game_page.test.tooltip.zone_busy": "Impossible de jouer : la zone du mini-jeu est occupée par une autre manche, ou en cours de remise en état.",
   "gui.steveparty.mini_game_page.test.tooltip.zone_no_world": "Impossible de jouer : la dimension de la zone du mini-jeu n'existe pas.",
-  "gui.steveparty.mini_game_page.test.tooltip.zone_too_full": "Impossible de jouer : la zone du mini-jeu contient trop de conteneurs ou d'entités."
+  "gui.steveparty.mini_game_page.test.tooltip.zone_too_full": "Impossible de jouer : la zone du mini-jeu contient trop de conteneurs ou d'entités.",
+  "message.steveparty.podium.team_holds": "Ton équipe tient déjà cette place."
 }
