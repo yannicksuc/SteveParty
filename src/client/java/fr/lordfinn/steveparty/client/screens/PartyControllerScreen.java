@@ -44,12 +44,14 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  * <ul>
  *     <li><b>Status</b>: before a party, a checklist of what a party needs (board, tokens on the start tiles, mini-game
  *     catalogue, currencies, rounds), each line leading to the tab where it is fixed, and « Start the party » (active
- *     only when ready, else it says why); during a party, what is happening now, the round, the leader; once over, the
- *     podium and « Start a new party ».</li>
+ *     only when ready, else it says why); during a party, a timeline of its steps (the current one highlighted, the
+ *     next ones at a glance, a number where a round begins: wheel or drag to scroll it), what is happening now, the
+ *     round, the leader; once over, the podium and « Start a new party ».</li>
  *     <li><b>Players</b>: the tokens in the turn order with their player, whether they are connected, their stars,
  *     coins and rank (before a party: the tokens on the start tiles, who will play). The list scrolls.</li>
  *     <li><b>Program</b>: the catalogue slot and the mini-games it brings (a scrolling grid: how many times each was
- *     played, whether it has somewhere to send the players), then the party's program, its card slots. Without any
+ *     played, whether it has somewhere to send the players), then the party's program, its card slots, and under
+ *     them the timeline of what that program will play (its loops unrolled). Without any
  *     card, the slots show the default party as see-through ghost cards (the players' turn, a mini-game, repeated as
  *     many times as rounds): exactly what will be played, see {@link BasicGameGeneratorStep#defaultProgram}.</li>
  *     <li><b>Gains</b>: what the party pays at the end of each mini-game, a row per place (1st to 4th, then the
@@ -76,9 +78,15 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     private static final int INFO_SIZE = 9, INFO_X = WIDTH - PAD - INFO_SIZE, INFO_Y = 8;
     /** Players rows. */
     private static final int ROW = 18, PLAYER_ROWS = 5, LIST_Y = 19;
-    /** Program page: the grid of the catalogue's mini-games, the note under the cards. */
-    private static final int GRID_X = CATALOGUE_X + 22, GRID_COLUMNS = 10, GRID_ROWS = 2, GRID_Y = CATALOGUE_Y - 1;
-    private static final int NOTE_Y = PROGRAM_Y + 2 * 18 + 3;
+    /** Program page: the grid of the catalogue's mini-games, the timeline of the program under the cards. */
+    private static final int GRID_X = CATALOGUE_X + 22, GRID_COLUMNS = 10, GRID_ROWS = 1, GRID_Y = CATALOGUE_Y - 1;
+    private static final int PROGRAM_TIMELINE_Y = PROGRAM_Y + 2 * 18 + 3, PROGRAM_CHIP = 15;
+    /** Status page: the timeline of the running party. */
+    private static final int STEPS_TIMELINE_Y = 19, STEPS_CHIP = 20;
+    /** The row of round numbers above the chips of a timeline, the gap between two chips. */
+    private static final int TIMELINE_LABELS = 9, TIMELINE_GAP = 2;
+    /** The running party's timeline keeps this many past steps on the left of the current one. */
+    private static final int TIMELINE_PAST = 2;
     /** Gains page: a row per place, a stepper of coins and one of stars. */
     private static final int GAINS_Y = 25, GAINS_ROW = 17, GAINS_STEP = 16, GAINS_FIELD = GAINS_COLUMN - 2 * GAINS_STEP - 2;
     /** Settings page: a row per setting. */
@@ -99,6 +107,13 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     private long flashUntil;
     /** The data the widgets were built for: rebuilt when a new one arrives. */
     private @Nullable PartyDashboardData builtFor;
+    /** The first step shown of each timeline; the running party's follows the current step until it is scrolled. */
+    private int stepsScroll, programScroll;
+    private boolean stepsScrolled;
+    private int stepsFollowed = -1;
+    private double timelineDrag;
+    /** The step of a timeline under the mouse (drawn this frame), null for none. */
+    private @Nullable Text hoveredStep;
     /** The text scrolling under the mouse (too long for its place), and since when. */
     private @Nullable String marqueeText;
     private long marqueeStart;
@@ -304,14 +319,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         follow.setTooltip(Tooltip.of(Text.translatable(KEY + "follow.tooltip")));
 
         if (data.phase() == Phase.RUNNING) return;
-        // Check the board again (it is checked every few seconds anyway)
-        PartyButton check = addDrawableChild(new PartyButton(x + PAD + 73, buttonY, 18, 18, Text.translatable(KEY + "check_board"),
-                b -> click(BUTTON_CHECK_BOARD)).content((context, font, cx, cy, color) -> drawSmallItem(context, new ItemStack(ModItems.WRENCH), cx - 5, cy - 5, 10)));
-        check.setTooltip(Tooltip.of(Text.translatable(KEY + "check_board.tooltip")));
-
-        // The main action
+        // The main action (the board is checked again every two seconds while the dashboard is open, and at the launch)
         Blocker blocker = data.launchBlocker();
-        int launchWidth = WIDTH - 2 * PAD - 94;
+        int launchWidth = WIDTH - 2 * PAD - 73;
         PartyButton launch = addDrawableChild(new PartyButton(x + WIDTH - PAD - launchWidth, buttonY, launchWidth, 18,
                 Text.translatable(KEY + (data.phase() == Phase.ENDED ? "launch.again" : "launch")), b -> {
                     click(BUTTON_LAUNCH);
@@ -649,23 +659,29 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 int rw = textRenderer.getWidth(round) + 10, rx = INFO_X - 4 - rw;
                 PartyGui.button(context, rx, HEADING_Y - 3, rw, 13, GOLD, false);
                 context.drawText(textRenderer, round, rx + 5, HEADING_Y, 0xFF4A2C00, false);
-                // Progress through the steps
-                int barY = 20, barW = WIDTH - 2 * PAD;
-                PartyGui.inset(context, PAD, barY, barW, 6, 0xFF3B4247, false, false);
-                int done = data.stepCount() == 0 ? 0 : (int) ((barW - 2) * (double) Math.max(0, data.stepIndex()) / data.stepCount());
-                context.fill(PAD + 1, barY + 1, PAD + 1 + done, barY + 6, 0xFF46AE2E);
-                context.drawText(textRenderer, Text.translatable(KEY + "state.step", data.stepIndex() + 1, data.stepCount()),
-                        PAD, barY + 9, PartyGui.TEXT_SOFT, false);
+                // The steps of the party: the current one stays near the left until the timeline is scrolled
+                PartyDashboardData.Timeline steps = data.steps();
+                int current = steps.offset() + steps.current();
+                if (current != stepsFollowed) {
+                    stepsFollowed = current;
+                    stepsScrolled = false;
+                }
+                if (!stepsScrolled) stepsScroll = Math.max(0, steps.current() - TIMELINE_PAST);
+                stepsScroll = drawTimeline(context, data, steps, PAD, STEPS_TIMELINE_Y, WIDTH - 2 * PAD, STEPS_CHIP, stepsScroll, mx, my);
                 // What is happening now
-                int ay = 41;
-                context.drawText(textRenderer, Text.translatable(KEY + "state.now").formatted(Formatting.BOLD), PAD, ay, PartyGui.TEXT_DARK, false);
-                drawFitted(context, data.action(), PAD, ay + 11, WIDTH - 2 * PAD, COLOR_GOLD, in(mx, my, PAD, ay + 10, WIDTH - 2 * PAD, 10));
+                int ay = STEPS_TIMELINE_Y + TIMELINE_LABELS + STEPS_CHIP + 4;
+                // « Step 3/20 », at the end of that line
+                Text stepText = Text.translatable(KEY + "state.step", data.stepIndex() + 1, data.stepCount());
+                int stepWidth = textRenderer.getWidth(stepText);
+                context.drawText(textRenderer, stepText, WIDTH - PAD - stepWidth, ay, PartyGui.TEXT_SOFT, false);
+                int actionRoom = WIDTH - 2 * PAD - stepWidth - 6;
+                drawFitted(context, data.action(), PAD, ay, actionRoom, COLOR_GOLD, in(mx, my, PAD, ay - 1, actionRoom, 10));
                 if (!data.actionDetail().getString().isEmpty())
-                    drawFitted(context, data.actionDetail(), PAD, ay + 22, WIDTH - 2 * PAD, PartyGui.TEXT_DARK, in(mx, my, PAD, ay + 21, WIDTH - 2 * PAD, 10));
+                    drawFitted(context, data.actionDetail(), PAD, ay + 11, WIDTH - 2 * PAD, PartyGui.TEXT_DARK, in(mx, my, PAD, ay + 10, WIDTH - 2 * PAD, 10));
                 // The leader
                 PartyLiveData.Standing leader = leader(data);
                 if (leader != null) {
-                    int ly = 75;
+                    int ly = 76;
                     OrderedText label = fit(Text.translatable(KEY + "state.leader", leader.tokenName()), WIDTH - 2 * PAD - 64);
                     context.drawText(textRenderer, label, PAD, ly, PartyGui.TEXT_DARK, false);
                     drawCounts(context, leader.stars(), leader.coins(), PAD + textRenderer.getWidth(label) + 5, ly, PartyGui.TEXT_DARK);
@@ -841,10 +857,16 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         BasicGameGeneratorStep.Summary made = BasicGameGeneratorStep.summary(cards, data.roundsSetting());
         Text summary = Text.translatable(cards.isEmpty() ? KEY + "program.default" : KEY + "program.summary",
                 made.turns(), made.miniGames(), made.events());
-        // On the title's line
+        // On the title's line: mini-games without their pipes, whom the program is for during a party, else the summary
         int summaryWidth = INFO_X - 4 - summaryX - (data.canEdit() ? 0 : textRenderer.getWidth(Text.translatable(KEY + "read_only")) + 6);
-        drawFitted(context, summary, summaryX, HEADING_Y, summaryWidth, PartyGui.TEXT_SOFT, in(mx, my, summaryX, HEADING_Y - 1, summaryWidth, 10));
-        int noteX = PROGRAM_X - 1, noteWidth = 9 * 18;
+        boolean overTitle = in(mx, my, summaryX, HEADING_Y - 1, summaryWidth, 10);
+        if (problem != null && !data.pages().isEmpty()) {
+            warnIcon(context, summaryX, HEADING_Y);
+            drawFitted(context, problem.reason(), summaryX + 10, HEADING_Y, summaryWidth - 10, COLOR_WARN, overTitle);
+        } else {
+            drawFitted(context, data.phase() == Phase.RUNNING ? Text.translatable(KEY + "program.running") : summary,
+                    summaryX, HEADING_Y, summaryWidth, PartyGui.TEXT_SOFT, overTitle);
+        }
         // The default party, as ghost cards
         List<ItemStack> ghosts = ghosts(data);
         for (int i = 0; i < ghosts.size(); i++) {
@@ -857,12 +879,121 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             context.fill(gx, gy, gx + 16, gy + 16, 0x998B8B8B);
             context.getMatrices().pop();
         }
-        // Under the cards, one short line: mini-games without their pipes, or whom the program is for
-        if (problem != null && !data.pages().isEmpty()) {
-            warnIcon(context, noteX, NOTE_Y);
-            drawFitted(context, problem.reason(), noteX + 10, NOTE_Y, noteWidth - 10, COLOR_WARN, in(mx, my, noteX, NOTE_Y - 1, noteWidth, 10));
-        } else if (data.phase() == Phase.RUNNING) {
-            context.drawText(textRenderer, fit(Text.translatable(KEY + "program.running"), noteWidth), noteX, NOTE_Y, PartyGui.TEXT_SOFT, false);
+        // Under the cards: what the program will play, its loops unrolled
+        programScroll = drawTimeline(context, data, data.program(), PAD, PROGRAM_TIMELINE_Y, WIDTH - 2 * PAD, PROGRAM_CHIP, programScroll, mx, my);
+    }
+
+    // ------------------------------------------------------------------ timelines
+
+    private static final net.minecraft.util.Identifier ICON_DICE = fr.lordfinn.steveparty.Steveparty.id("party_hud/dice"),
+            ICON_GEAR = fr.lordfinn.steveparty.Steveparty.id("party_hud/gear"), ICON_STEPS = fr.lordfinn.steveparty.Steveparty.id("party_hud/steps"),
+            ICON_GAMEPAD = fr.lordfinn.steveparty.Steveparty.id("party_hud/gamepad"), ICON_CLOCK = fr.lordfinn.steveparty.Steveparty.id("party_hud/clock"),
+            ICON_CROWN = fr.lordfinn.steveparty.Steveparty.id("party_hud/crown"), ICON_MARKER = fr.lordfinn.steveparty.Steveparty.id("party_hud/marker");
+    private static final PartyGui.Theme CHIP_GAME = new PartyGui.Theme(0xFF0B2A12, 0xFFC9F2C0, 0xFF8FD67F, 0xFF4E9A45);
+    private static final PartyGui.Theme CHIP_EVENT = new PartyGui.Theme(0xFF3A2400, 0xFFFFE2A8, 0xFFF4B24A, 0xFFB5761A);
+
+    private static net.minecraft.util.Identifier icon(PartyDashboardData.StepKind kind) {
+        return switch (kind) {
+            case START_ROLLS -> ICON_DICE;
+            case PREPARING -> ICON_GEAR;
+            case TURN, TURNS -> ICON_STEPS;
+            case MINI_GAME -> ICON_GAMEPAD;
+            case EVENT -> ICON_CLOCK;
+            case END -> ICON_CROWN;
+            case OTHER -> ICON_MARKER;
+        };
+    }
+
+    /** « Round 2 · Mini-game », « Round 3 · Steve's turn »: what a step of a timeline is, in one line. */
+    private Text stepText(PartyDashboardData data, PartyDashboardData.TimelineStep step, boolean current) {
+        PartyLiveData.Standing player = step.player() >= 0 && step.player() < data.players().size() ? data.players().get(step.player()) : null;
+        Text what = switch (step.kind()) {
+            case START_ROLLS -> Text.translatable(KEY + "action.start_rolls");
+            case PREPARING -> Text.translatable("hud.steveparty.party.preparing");
+            case TURN -> player == null ? Text.translatable(KEY + "timeline.turn.unknown") : Text.translatable(KEY + "timeline.turn", player.tokenName());
+            case TURNS -> Text.translatable(KEY + "timeline.turns");
+            case MINI_GAME -> Text.translatable(KEY + "timeline.mini_game");
+            case EVENT -> step.value() > 0 ? Text.translatable(KEY + "timeline.event.channel", step.value()) : Text.translatable(KEY + "timeline.event");
+            case END -> Text.translatable(KEY + "timeline.end");
+            case OTHER -> Text.translatable(KEY + "timeline.other");
+        };
+        Text line = step.round() > 0 ? Text.translatable(KEY + "timeline.in_round", step.round(), what) : what;
+        return current ? Text.translatable(KEY + "timeline.current", line) : line;
+    }
+
+    /**
+     * A timeline: a row of chips, one per step (its icon: the head of the player whose turn it is, else what the step
+     * is), the current one gold and framed, the past ones dimmed; above the first chip of each round, its number.
+     * Shown from {@code scroll}; « +N » after the last step sent when the party has more.
+     *
+     * @return the scroll, kept within the timeline
+     */
+    private int drawTimeline(DrawContext context, PartyDashboardData data, PartyDashboardData.Timeline timeline, int left, int top, int width,
+                             int chip, int scroll, int mx, int my) {
+        List<PartyDashboardData.TimelineStep> steps = timeline.steps();
+        int pitch = chip + TIMELINE_GAP, shown = (width + TIMELINE_GAP) / pitch;
+        int total = steps.size() + (timeline.more() > 0 ? 2 : 0);
+        scroll = Math.clamp(scroll, 0, Math.max(0, total - shown));
+        int chipY = top + TIMELINE_LABELS;
+        // More on the left
+        if (scroll > 0 || timeline.offset() > 0) context.drawText(textRenderer, "‹", left - 5, chipY + (chip - 8) / 2, PartyGui.TEXT_SOFT, false);
+        for (int slot = 0; slot < shown; slot++) {
+            int index = scroll + slot, cx = left + slot * pitch;
+            if (index >= steps.size()) {
+                // « +N »: the steps the party has after those sent
+                if (index == steps.size() && timeline.more() > 0)
+                    context.drawText(textRenderer, "+" + timeline.more(), cx + 2, chipY + (chip - 8) / 2, PartyGui.TEXT_SOFT, false);
+                break;
+            }
+            PartyDashboardData.TimelineStep step = steps.get(index);
+            boolean current = index == timeline.current(), past = timeline.current() >= 0 && index < timeline.current();
+            boolean hovered = in(mx, my, cx, chipY, chip, chip);
+            // The round it begins (and, on the first chip shown, the round it is in)
+            boolean begins = step.round() > 0 && (index == 0 || steps.get(index - 1).round() != step.round());
+            if (step.round() > 0 && (begins || slot == 0)) {
+                int room = pitch - TIMELINE_GAP;
+                for (int next = index + 1; next < steps.size() && steps.get(next).round() == step.round() && next - scroll < shown; next++) room += pitch;
+                Text label = Text.translatable(KEY + "timeline.round", step.round());
+                if (textRenderer.getWidth(label) > room) label = Text.literal(Integer.toString(step.round()));
+                context.drawText(textRenderer, label, cx + 1, top, past ? 0xFF8A8A8A : PartyGui.TEXT_SOFT, false);
+                if (begins && slot > 0) context.fill(cx - TIMELINE_GAP, top + 1, cx - TIMELINE_GAP + 1, chipY + chip, 0xFF8A8A8A);
+            }
+            PartyGui.Theme theme = current ? GOLD : step.kind() == PartyDashboardData.StepKind.MINI_GAME ? CHIP_GAME
+                    : step.kind() == PartyDashboardData.StepKind.EVENT ? CHIP_EVENT : PartyGui.BUTTON;
+            PartyGui.button(context, cx, chipY, chip, chip, hovered ? theme.brighter() : theme, false);
+            // The player whose turn it is: his head, on the colour of his token
+            PartyLiveData.Standing player = step.player() >= 0 && step.player() < data.players().size() ? data.players().get(step.player()) : null;
+            int head = chip >= 20 ? 16 : 8, inside = (chip - head) / 2;
+            if (player != null && player.color() >= 0) context.fill(cx + 1, chipY + 1, cx + chip - 1, chipY + chip - 1, 0xFF000000 | player.color());
+            if (player != null && player.owner().isPresent()) {
+                net.minecraft.util.Identifier skin = fr.lordfinn.steveparty.client.utils.SkinUtils.getPlayerSkin(player.owner().get());
+                context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, skin, cx + inside, chipY + inside, 8, 8, head, head, 8, 8, 64, 64);
+                context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, skin, cx + inside, chipY + inside, 40, 8, head, head, 8, 8, 64, 64);
+            } else {
+                context.drawGuiTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, icon(step.kind()), cx + (chip - 9) / 2, chipY + (chip - 9) / 2, 9, 9);
+            }
+            if (past) context.fill(cx + 1, chipY + 1, cx + chip - 1, chipY + chip - 1, 0x9CC6C6C6);
+            if (current) context.drawBorder(cx - 1, chipY - 1, chip + 2, chip + 2, 0xFFFFFFFF);
+            if (hovered) hoveredStep = stepText(data, step, current);
+        }
+        return scroll;
+    }
+
+    /** @return true if the mouse is over the timeline of the page shown. */
+    private boolean overTimeline(double mouseX, double mouseY) {
+        PartyDashboardData data = handler.getData();
+        if (data == null) return false;
+        int mx = (int) mouseX - x, my = (int) mouseY - y;
+        if (page() == Page.STATE && data.phase() == Phase.RUNNING) return in(mx, my, PAD - 6, STEPS_TIMELINE_Y, WIDTH - 2 * PAD + 12, TIMELINE_LABELS + STEPS_CHIP);
+        return page() == Page.PROGRAM && in(mx, my, PAD - 6, PROGRAM_TIMELINE_Y, WIDTH - 2 * PAD + 12, TIMELINE_LABELS + PROGRAM_CHIP);
+    }
+
+    private void scrollTimeline(int steps) {
+        if (page() == Page.STATE) {
+            stepsScroll += steps;
+            stepsScrolled = true;
+        } else {
+            programScroll += steps;
         }
     }
 
@@ -932,6 +1063,13 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         PartyDashboardData data = handler.getData();
         int mx = mouseX - x, my = mouseY - y;
         boolean emptyHand = handler.getCursorStack().isEmpty();
+        // A step of a timeline
+        Text step = hoveredStep;
+        hoveredStep = null;
+        if (step != null && emptyHand && overTimeline(mouseX, mouseY)) {
+            context.drawTooltip(textRenderer, step, mouseX, mouseY);
+            return;
+        }
         // The « i » of the page: what it is for and how it is used
         if (data != null && in(mx, my, INFO_X - 1, INFO_Y - 1, INFO_SIZE + 2, INFO_SIZE + 2)) {
             tooltip(context, List.of(Text.translatable(KEY + "tab." + key(page())).formatted(Formatting.GOLD),
@@ -1081,7 +1219,26 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        // A timeline is dragged like a strip: one chip at a time
+        if (button == 0 && handler.getCursorStack().isEmpty() && overTimeline(mouseX, mouseY)) {
+            timelineDrag += deltaX;
+            int pitch = (page() == Page.STATE ? STEPS_CHIP : PROGRAM_CHIP) + TIMELINE_GAP;
+            while (Math.abs(timelineDrag) >= pitch) {
+                scrollTimeline(timelineDrag > 0 ? -1 : 1);
+                timelineDrag -= Math.signum(timelineDrag) * pitch;
+            }
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (verticalAmount != 0 && overTimeline(mouseX, mouseY)) {
+            scrollTimeline(-(int) Math.signum(verticalAmount));
+            return true;
+        }
         if (verticalAmount != 0 && page() == Page.PLAYERS) {
             playersScroll -= (int) Math.signum(verticalAmount);
             return true;

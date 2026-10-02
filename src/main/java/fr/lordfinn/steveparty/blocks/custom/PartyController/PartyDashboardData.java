@@ -51,12 +51,15 @@ import java.util.UUID;
  * @param catalogueLocked the controller is powered: the catalogue can't be taken out
  * @param gains           what the party pays at the end of each mini-game, by place (the Gains page)
  * @param practiceRound   the mini-games whose page has a Mini-game Controller start with a practice round
+ * @param steps           running / ended party: its steps around the current one, as a timeline; empty otherwise
+ * @param program         what the program (its cards, or the default party) will play, as a timeline
  */
 public record PartyDashboardData(Phase phase, int round, int rounds, int roundsSetting, int stepIndex, int stepCount,
                                  Text action, Text actionDetail, int currentPlayer,
                                  List<PartyLiveData.Standing> players, Board board, boolean hasCatalogue,
                                  List<Page> pages, int currentPage, boolean canEdit, boolean following,
-                                 boolean catalogueLocked, MiniGameGains gains, boolean practiceRound) {
+                                 boolean catalogueLocked, MiniGameGains gains, boolean practiceRound,
+                                 Timeline steps, Timeline program) {
 
     public enum Phase { SETUP, RUNNING, ENDED }
 
@@ -103,6 +106,96 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
      * @param podiums  the podiums linked to the page (0: its mini-game names no winner, everyone is a participant)
      */
     public record Page(int slot, ItemStack page, int pipes, int playable, int played, int podiums) {}
+
+    // ------------------------------------------------------------------ timelines
+
+    /** What a step of a timeline is. */
+    public enum StepKind {
+        /** The dice rolls that decide the turn order. */
+        START_ROLLS,
+        /** The party being generated from its program. */
+        PREPARING,
+        /** The turn of one token. */
+        TURN,
+        /** The turn of every token, in an order not known yet (a program, before the party). */
+        TURNS,
+        MINI_GAME,
+        EVENT,
+        END,
+        OTHER
+    }
+
+    /**
+     * A step of a timeline.
+     *
+     * @param round  the round it belongs to (1-based: a round ends with its mini-game), 0 for none (the start rolls,
+     *               the end)
+     * @param player {@link StepKind#TURN}: index in {@code players} of the token whose turn it is, -1 if unknown
+     * @param value  {@link StepKind#EVENT} of a program: its channel; 0 otherwise
+     */
+    public record TimelineStep(StepKind kind, int round, int player, int value) {}
+
+    /**
+     * Steps in the order they are played.
+     *
+     * @param steps   the steps sent (a window of at most {@link #MAX_TIMELINE_STEPS})
+     * @param offset  how many steps come before the first one sent
+     * @param current index in {@code steps} of the step being played, -1 for none
+     * @param more    how many steps come after the last one sent
+     */
+    public record Timeline(List<TimelineStep> steps, int offset, int current, int more) {
+        public static final Timeline EMPTY = new Timeline(List.of(), 0, -1, 0);
+    }
+
+    /** The most steps of a timeline sent to a dashboard, and how many of them are before the current one. */
+    public static final int MAX_TIMELINE_STEPS = 64, TIMELINE_PAST_STEPS = 8;
+
+    /** The steps of a party around the one being played. */
+    public static Timeline timelineOf(List<PartyStep> steps, int stepIndex, List<UUID> tokens) {
+        if (steps.isEmpty()) return Timeline.EMPTY;
+        List<TimelineStep> all = new ArrayList<>(steps.size());
+        int round = 1;
+        for (PartyStep step : steps) {
+            switch (step.getType()) {
+                case START_ROLLS -> all.add(new TimelineStep(StepKind.START_ROLLS, 0, -1, 0));
+                case BASIC_GAME_GENERATOR -> all.add(new TimelineStep(StepKind.PREPARING, 0, -1, 0));
+                case END -> all.add(new TimelineStep(StepKind.END, 0, -1, 0));
+                case TOKEN_TURN -> all.add(new TimelineStep(StepKind.TURN, round,
+                        step instanceof TokenTurnPartyStep turn && turn.getTokenUUID() != null ? tokens.indexOf(turn.getTokenUUID()) : -1, 0));
+                case MINI_GAME -> all.add(new TimelineStep(StepKind.MINI_GAME, round++, -1, 0));
+                case EVENT -> all.add(new TimelineStep(StepKind.EVENT, round, -1, 0));
+                default -> all.add(new TimelineStep(StepKind.OTHER, round, -1, 0));
+            }
+        }
+        int from = Math.clamp(stepIndex - TIMELINE_PAST_STEPS, 0, Math.max(0, all.size() - 1));
+        int to = Math.min(all.size(), from + MAX_TIMELINE_STEPS);
+        int current = stepIndex >= from && stepIndex < to ? stepIndex - from : -1;
+        return new Timeline(List.copyOf(all.subList(from, to)), from, current, all.size() - to);
+    }
+
+    /**
+     * What a program will play: the start rolls, its cards expanded (the loops of its Repeat and Sequence start cards
+     * unrolled; the default party without cards), the end. The turn order is not known yet: a « turns » step stands
+     * for the turn of every token.
+     */
+    public static Timeline programTimeline(List<ItemStack> program, int rounds) {
+        List<TimelineStep> all = new ArrayList<>();
+        all.add(new TimelineStep(StepKind.START_ROLLS, 0, -1, 0));
+        int round = 1;
+        for (fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep.ExpandedCard card
+                : fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep.expand(program, rounds)) {
+            switch (card.type()) {
+                case TURNS -> all.add(new TimelineStep(StepKind.TURNS, round, -1, 0));
+                case MINIGAME -> all.add(new TimelineStep(StepKind.MINI_GAME, round++, -1, 0));
+                case EVENT -> all.add(new TimelineStep(StepKind.EVENT, round, -1, card.count()));
+                default -> {
+                }
+            }
+        }
+        all.add(new TimelineStep(StepKind.END, 0, -1, 0));
+        int to = Math.min(all.size(), MAX_TIMELINE_STEPS);
+        return new Timeline(List.copyOf(all.subList(0, to)), 0, -1, all.size() - to);
+    }
 
     /** Why a party can't be started now, the checks in the order a player meets them. */
     public static Blocker launchBlocker(boolean running, Board board, boolean canEdit) {
@@ -234,7 +327,9 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         return new PartyDashboardData(phase, round, rounds, data.getNbTurn(), stepIndex, steps.size(), action, detail,
                 currentPlayer, players, board, !controller.catalogue.isEmpty(), pages, currentPage,
                 controller.canEdit(player), controller.getInterestedPlayers().contains(player.getUuid()),
-                controller.isCatalogueLocked(), controller.getGains(), controller.hasPracticeRound());
+                controller.isCatalogueLocked(), controller.getGains(), controller.hasPracticeRound(),
+                phase == Phase.SETUP ? Timeline.EMPTY : timelineOf(steps, stepIndex, tokens),
+                programTimeline(controller.getProgram().getHeldStacks(), data.getNbTurn()));
     }
 
     // ------------------------------------------------------------------ network
@@ -288,6 +383,30 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         }
     };
 
+    private static Timeline readTimeline(RegistryByteBuf buf) {
+        int count = Math.min(buf.readVarInt(), MAX_TIMELINE_STEPS);
+        List<TimelineStep> steps = new ArrayList<>(count);
+        StepKind[] kinds = StepKind.values();
+        for (int i = 0; i < count; i++) {
+            steps.add(new TimelineStep(kinds[Math.clamp(buf.readVarInt(), 0, kinds.length - 1)], buf.readVarInt(), buf.readVarInt() - 1, buf.readVarInt()));
+        }
+        return new Timeline(steps, buf.readVarInt(), buf.readVarInt() - 1, buf.readVarInt());
+    }
+
+    private static void writeTimeline(RegistryByteBuf buf, Timeline timeline) {
+        List<TimelineStep> steps = timeline.steps().size() > MAX_TIMELINE_STEPS ? timeline.steps().subList(0, MAX_TIMELINE_STEPS) : timeline.steps();
+        buf.writeVarInt(steps.size());
+        for (TimelineStep step : steps) {
+            buf.writeVarInt(step.kind().ordinal());
+            buf.writeVarInt(step.round());
+            buf.writeVarInt(step.player() + 1);
+            buf.writeVarInt(step.value());
+        }
+        buf.writeVarInt(timeline.offset());
+        buf.writeVarInt(timeline.current() + 1);
+        buf.writeVarInt(timeline.more());
+    }
+
     public static final PacketCodec<RegistryByteBuf, PartyDashboardData> PACKET_CODEC = new PacketCodec<>() {
         @Override
         public PartyDashboardData decode(RegistryByteBuf buf) {
@@ -305,7 +424,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             boolean canEdit = buf.readBoolean(), following = buf.readBoolean(), locked = buf.readBoolean();
             return new PartyDashboardData(phase, round, rounds, roundsSetting, stepIndex, stepCount, action, detail,
                     currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf),
-                    buf.readBoolean());
+                    buf.readBoolean(), readTimeline(buf), readTimeline(buf));
         }
 
         @Override
@@ -329,6 +448,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             buf.writeBoolean(data.catalogueLocked);
             data.gains.write(buf);
             buf.writeBoolean(data.practiceRound);
+            writeTimeline(buf, data.steps);
+            writeTimeline(buf, data.program);
         }
     };
 }

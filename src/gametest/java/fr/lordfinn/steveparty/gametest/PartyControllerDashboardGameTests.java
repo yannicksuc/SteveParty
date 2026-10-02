@@ -418,4 +418,106 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                         fr.lordfinn.steveparty.items.custom.PartyCardItem.CardType.REPEAT), "the players' turn, a mini-game, repeated");
         context.complete();
     }
+
+    private static List<PartyDashboardData.StepKind> kinds(PartyDashboardData.Timeline timeline) {
+        return timeline.steps().stream().map(PartyDashboardData.TimelineStep::kind).toList();
+    }
+
+    private static List<Integer> rounds(PartyDashboardData.Timeline timeline) {
+        return timeline.steps().stream().map(PartyDashboardData.TimelineStep::round).toList();
+    }
+
+    /**
+     * The timeline of a program, before the party: the start rolls, the cards expanded (loops and sequences
+     * unrolled), the end; a round ends with its mini-game. Long programs are cut, with how many steps are left out.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theProgramTimelineIsWhatWillBePlayed(TestContext context) {
+        PartyDashboardData.StepKind rolls = PartyDashboardData.StepKind.START_ROLLS, turns = PartyDashboardData.StepKind.TURNS,
+                game = PartyDashboardData.StepKind.MINI_GAME, event = PartyDashboardData.StepKind.EVENT, end = PartyDashboardData.StepKind.END;
+        // No card: the default party
+        PartyDashboardData.Timeline byDefault = PartyDashboardData.programTimeline(List.of(), 2);
+        context.assertEquals(kinds(byDefault), List.of(rolls, turns, game, turns, game, end), "the default party of two rounds");
+        context.assertEquals(rounds(byDefault), List.of(0, 1, 1, 2, 2, 0), "a round is the turns up to its mini-game");
+        context.assertTrue(byDefault.current() == -1 && byDefault.more() == 0 && byDefault.offset() == 0, "nothing is being played, nothing is left out");
+
+        // Cards with a sequence: the event once, then (turns, mini-game) three times
+        List<ItemStack> cards = List.of(new ItemStack(ModItems.PARTY_CARD_EVENT, 4), new ItemStack(ModItems.PARTY_CARD_SEQUENCE_START),
+                new ItemStack(ModItems.PARTY_CARD_TURNS), new ItemStack(ModItems.PARTY_CARD_MINIGAME), new ItemStack(ModItems.PARTY_CARD_REPEAT, 3));
+        PartyDashboardData.Timeline program = PartyDashboardData.programTimeline(cards, 10);
+        context.assertEquals(kinds(program), List.of(rolls, event, turns, game, turns, game, turns, game, end), "the loop of the sequence, unrolled");
+        context.assertEquals(rounds(program), List.of(0, 1, 1, 1, 2, 2, 3, 3, 0), "three rounds");
+        context.assertEquals(program.steps().get(1).value(), 4, "the channel of the event card");
+
+        // A long program is cut
+        PartyDashboardData.Timeline longOne = PartyDashboardData.programTimeline(List.of(), 50);
+        context.assertEquals(longOne.steps().size(), PartyDashboardData.MAX_TIMELINE_STEPS, "at most 64 steps are sent");
+        context.assertEquals(longOne.more(), 102 - PartyDashboardData.MAX_TIMELINE_STEPS, "and how many are left out (rolls + 50 x 2 + end)");
+        context.complete();
+    }
+
+    /**
+     * The timeline of a running party: its real steps, whose turn each is, the step being played, the rounds; a window
+     * around the current step when the party is long. The dashboard sends both timelines.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_timeline")
+    public void thePartyTimelineFollowsTheCurrentStep(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            PartyControllerEntity controller = place(context);
+            UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+            List<UUID> tokens = List.of(a, b);
+            List<PartyStep> steps = new ArrayList<>();
+            steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep());
+            steps.add(new BasicGameGeneratorStep());
+            for (int round = 0; round < 2; round++) {
+                steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(a, null));
+                steps.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(b, null));
+                steps.add(new MiniGamePartyStep(new ArrayList<>(tokens)));
+            }
+            steps.add(new EndPartyStep(new ArrayList<>(tokens)));
+            PartyDashboardData.Timeline timeline = PartyDashboardData.timelineOf(steps, 3, tokens);
+            PartyDashboardData.StepKind turn = PartyDashboardData.StepKind.TURN, game = PartyDashboardData.StepKind.MINI_GAME;
+            context.assertEquals(kinds(timeline), List.of(PartyDashboardData.StepKind.START_ROLLS, PartyDashboardData.StepKind.PREPARING,
+                    turn, turn, game, turn, turn, game, PartyDashboardData.StepKind.END), "the steps of the party, in order");
+            context.assertEquals(rounds(timeline), List.of(0, 0, 1, 1, 1, 2, 2, 2, 0), "the rounds: a round ends with its mini-game");
+            context.assertEquals(timeline.steps().stream().map(PartyDashboardData.TimelineStep::player).toList(), List.of(-1, -1, 0, 1, -1, 0, 1, -1, -1),
+                    "whose turn each turn is");
+            context.assertTrue(timeline.current() == 3 && timeline.offset() == 0 && timeline.more() == 0, "the step being played");
+
+            // A long party: a window around the current step
+            List<PartyStep> many = new ArrayList<>();
+            for (int i = 0; i < 200; i++) many.add(new fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep(a, null));
+            PartyDashboardData.Timeline window = PartyDashboardData.timelineOf(many, 100, tokens);
+            context.assertEquals(window.offset(), 100 - PartyDashboardData.TIMELINE_PAST_STEPS, "a few steps before the current one");
+            context.assertEquals(window.current(), PartyDashboardData.TIMELINE_PAST_STEPS, "the current step in the window");
+            context.assertTrue(window.steps().size() == PartyDashboardData.MAX_TIMELINE_STEPS
+                    && window.more() == 200 - window.offset() - PartyDashboardData.MAX_TIMELINE_STEPS, "the steps after the window are counted");
+
+            // What the dashboard sends: the program before the party, both during it
+            PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
+            handler.sendContentUpdates();
+            context.assertTrue(handler.getData().steps().steps().isEmpty() && handler.getData().program().steps().size() == 22,
+                    "before the party: no steps, the default program of 10 rounds");
+            controller.getProgram().setStack(0, new ItemStack(ModItems.PARTY_CARD_TURNS));
+            PartyData party = new PartyData();
+            party.addToken(a);
+            for (PartyStep step : steps) party.addStep(step);
+            controller.setPartyData(party);
+            party.setStepIndex(4);
+            PartyDashboardData sent = PartyDashboardData.capture(controller, context.getWorld(), player, PartyDashboardData.Board.UNKNOWN);
+            context.assertTrue(sent.steps().current() == 4 && sent.steps().steps().size() == 9, "during the party: its steps, the current one");
+            context.assertEquals(kinds(sent.program()), List.of(PartyDashboardData.StepKind.START_ROLLS, PartyDashboardData.StepKind.TURNS,
+                    PartyDashboardData.StepKind.END), "and the program of the next one");
+            // It travels whole
+            net.minecraft.network.RegistryByteBuf buf = new net.minecraft.network.RegistryByteBuf(io.netty.buffer.Unpooled.buffer(), context.getWorld().getRegistryManager());
+            PartyDashboardData.PACKET_CODEC.encode(buf, sent);
+            PartyDashboardData received = PartyDashboardData.PACKET_CODEC.decode(buf);
+            buf.release();
+            context.assertTrue(received.steps().equals(sent.steps()) && received.program().equals(sent.program()), "the timelines are sent as they are");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+        context.complete();
+    }
 }
