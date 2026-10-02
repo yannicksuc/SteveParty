@@ -46,7 +46,7 @@ import java.util.EnumSet;
 public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
-            BUTTON_CHECK_BOARD = 4, BUTTON_PRACTICE = 5;
+            BUTTON_PRACTICE = 5;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -55,7 +55,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     /** Ticks between two captures of the dashboard (sent only if something changed). */
     public static final int SYNC_INTERVAL = 10;
     /** Ticks between two checks of the board while no party runs (a check walks the whole board). */
-    public static final int BOARD_INTERVAL = 100;
+    public static final int BOARD_INTERVAL = 40;
 
     /** Pages of the dashboard: each shows its own slots (client side; the server always has them all). */
     public enum Page { STATE, PLAYERS, PROGRAM, GAINS, SETTINGS }
@@ -76,7 +76,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int STAR_X = GAINS_STAR_X + (GAINS_COLUMN - 16) / 2, STAR_Y = 6;
     /** The party program: its card slots come after the player's inventory, 2 rows of 9 (Program page). */
     public static final int PROGRAM_FIRST_SLOT = PLAYER_SLOTS + 36;
-    public static final int PROGRAM_X = (WIDTH - 162) / 2 + 1, PROGRAM_Y = 59;
+    public static final int PROGRAM_X = (WIDTH - 162) / 2 + 1, PROGRAM_Y = 41;
 
     private final @Nullable PartyControllerEntity controller;
     private final BlockPos pos;
@@ -353,7 +353,6 @@ public class PartyControllerScreenHandler extends ScreenHandler {
                 if (!controller.canEdit(player)) return false;
                 controller.setPracticeRound(!controller.hasPracticeRound());
             }
-            case BUTTON_CHECK_BOARD -> board = PartyDashboardData.checkBoard(controller, world);
             case BUTTON_LAUNCH -> {
                 board = PartyDashboardData.checkBoard(controller, world);
                 if (PartyDashboardData.launchBlocker(controller.getPartyData().isStarted(), board, controller.canEdit(player))
