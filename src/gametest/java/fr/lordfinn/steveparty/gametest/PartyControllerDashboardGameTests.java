@@ -367,6 +367,8 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
         try {
             context.assertTrue(SLOT_CATALOGUE == 0 && SLOT_STAR == 1 && SLOT_COIN == 2 && PROGRAM_FIRST_SLOT == 39, "the slots keep their indices");
             context.assertTrue(WIDTH <= 427 && TABS_HEIGHT + INVENTORY_Y + INVENTORY_PANEL_HEIGHT <= 240, "tabs, page and inventory fit a 427 x 240 screen");
+            context.assertTrue(PartyControllerEntity.PROGRAM_SLOTS == 2 * PROGRAM_COLUMNS && SLOT_BANK == PROGRAM_FIRST_SLOT + 24,
+                    "the program: 2 rows of 12 cards, the bank after them");
             // The client's handler: the page shown decides which slots are there
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(),
                     new fr.lordfinn.steveparty.payloads.custom.BlockPosPayload(BlockPos.ORIGIN));
@@ -377,7 +379,7 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
                 context.assertTrue(handler.getSlot(SLOT_STAR).isEnabled() == gains && handler.getSlot(SLOT_COIN).isEnabled() == gains,
                         page + ": the Star and Coin items are on the Gains tab");
                 context.assertTrue(handler.getSlot(PROGRAM_FIRST_SLOT).isEnabled() == program, page + ": the cards are on the Program tab");
-                context.assertTrue(handler.getSlot(PLAYER_SLOTS).isEnabled() == (program || gains), page + ": the inventory, where items are placed");
+                context.assertTrue(handler.getSlot(PLAYER_SLOTS).isEnabled(), page + ": the inventory, on every tab");
                 List<net.minecraft.screen.slot.Slot> shown = handler.slots.stream().filter(net.minecraft.screen.slot.Slot::isEnabled).toList();
                 for (net.minecraft.screen.slot.Slot slot : shown) {
                     boolean inventory = slot.inventory == player.getInventory();

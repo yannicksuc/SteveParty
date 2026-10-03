@@ -44,10 +44,14 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     /** Ticks between two looks at the mini-game. */
     public static final int SYNC_INTERVAL = 5;
 
-    // Layout (shared with the screen)
-    public static final int WIDTH = 248, PANEL_HEIGHT = 136;
-    public static final int INVENTORY_Y = PANEL_HEIGHT + 4;
-    public static final int PAGE_X = 11, PAGE_Y = 71, ZONE_X = 11, ZONE_Y = 91;
+    // Layout (shared with the screen): the console (137) above the inventory's own panel (92), 2 px apart
+    public static final int WIDTH = 248, PANEL_HEIGHT = 137, INVENTORY_PANEL_HEIGHT = 92;
+    public static final int INVENTORY_Y = PANEL_HEIGHT + 2;
+    /** The inventory grid: 162 x 76, centred in its panel, 8 px under its top. */
+    public static final int INVENTORY_GRID_X = (WIDTH - 162) / 2, INVENTORY_GRID_Y = INVENTORY_Y + 8;
+    /** The console's two rows (their slot's top left corner, its item at + 1). */
+    public static final int ROW1_Y = 89, ROW2_Y = 109;
+    public static final int PAGE_X = 11, PAGE_Y = ROW1_Y + 1, ZONE_X = 11, ZONE_Y = ROW2_Y + 1;
 
     /** What the mini-game of the page is doing. */
     public enum State {
@@ -140,11 +144,11 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
                 return 1;
             }
         });
-        int invX = (WIDTH - 162) / 2 + 1;
+        int invX = INVENTORY_GRID_X + 1, invY = INVENTORY_GRID_Y + 1;
         for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col + row * 9 + 9, invX + col * 18, INVENTORY_Y + 14 + row * 18));
+            for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col + row * 9 + 9, invX + col * 18, invY + row * 18));
         }
-        for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col, invX + col * 18, INVENTORY_Y + 14 + 58));
+        for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col, invX + col * 18, invY + 58));
         addProperties(properties);
     }
 

@@ -25,9 +25,9 @@ import java.util.Map;
  * texture pixel per GUI pixel; they are kept (the few widths the names make) and drawn with a vertex colour, so that
  * plates can fade.
  */
-final class HudPaint {
+public final class HudPaint {
     /** A colour ramp of the kit: outline, highlight, body, shadow (opaque ARGB, or with their own alpha). */
-    record Ramp(int outline, int hi, int body, int shadow) {
+    public record Ramp(int outline, int hi, int body, int shadow) {
         static Ramp of(int outline, int hi, int body, int shadow) {
             return new Ramp(0xFF000000 | outline, 0xFF000000 | hi, 0xFF000000 | body, 0xFF000000 | shadow);
         }
@@ -73,7 +73,7 @@ final class HudPaint {
     }
 
     /** The ramp of a token: its colour's nearest among the players' (the palette by turn order without one). */
-    static Ramp playerRamp(int color, int index) {
+    public static Ramp playerRamp(int color, int index) {
         if (color < 0) return PLAYERS[Math.floorMod(index, PLAYERS.length)];
         Ramp best = PLAYERS[0];
         long bestDistance = Long.MAX_VALUE;
@@ -273,8 +273,9 @@ final class HudPaint {
         });
     }
 
-    static Tex bang() {
-        return pattern("bang", new String[]{"##", "##", "##", "##", "##", "  ", "##", "##"}, Map.of('#', MINI_GAME.shadow()));
+    /** The mini-game's icon, 10 x 8: the same as the dashboard's ({@link fr.lordfinn.steveparty.client.gui.ConsolePaint#GAMEPAD}). */
+    static Tex gamepad() {
+        return pattern("gamepad", fr.lordfinn.steveparty.client.gui.ConsolePaint.GAMEPAD, fr.lordfinn.steveparty.client.gui.ConsolePaint.GAMEPAD_COLOURS);
     }
 
     static Tex bell() {

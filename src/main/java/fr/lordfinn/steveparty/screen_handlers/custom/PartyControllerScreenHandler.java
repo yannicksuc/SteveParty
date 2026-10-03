@@ -60,26 +60,30 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     /** Pages of the dashboard: each shows its own slots (client side; the server always has them all). */
     public enum Page { STATE, PLAYERS, PROGRAM, GAINS, SETTINGS }
 
-    // Layout (shared with the screen). Compact: with its tabs (17 px above the panel) and the player's inventory, the
-    // dashboard is 216 px high: it fits a 427 x 240 screen (a large GUI scale) with room left under it (the search
-    // field of a recipe viewer).
-    public static final int WIDTH = 236, PANEL_HEIGHT = 113;
-    /** The player's inventory (Program and Gains pages): a panel without title under the page. */
-    public static final int INVENTORY_Y = PANEL_HEIGHT + 2, INVENTORY_PANEL_HEIGHT = 82, INVENTORY_PAD = 4;
-    /** Room taken by the tabs above the panel (the selected one, the tallest). */
-    public static final int TABS_HEIGHT = 19;
-    /** Program page: the catalogue slot, left of the grid of its mini-games. */
-    public static final int CATALOGUE_X = 9, CATALOGUE_Y = 19;
-    /** Gains page: the Coin and Star items, above their columns (on the title's line). */
-    public static final int GAINS_COIN_X = 88, GAINS_STAR_X = 162, GAINS_COLUMN = 62;
-    public static final int COIN_X = GAINS_COIN_X + (GAINS_COLUMN - 16) / 2, COIN_Y = 6;
-    public static final int STAR_X = GAINS_STAR_X + (GAINS_COLUMN - 16) / 2, STAR_Y = 6;
-    /** The party program: its card slots come after the player's inventory, 2 rows of 9 (Program page). */
+    // Layout (shared with the screen), the approved mock-up's (the art sources): the
+    // tabs (17 px above the panel), the panel (125), 2 px, the player's inventory in its own panel (92): 236 px high,
+    // it fits a 427 x 240 screen. The content of a panel is 10 px inside it (its bezel 4, a margin 6).
+    public static final int WIDTH = 248, PANEL_HEIGHT = 125;
+    /** The player's inventory (every tab): its own panel under the page, its grid centred, 8 px under its top. */
+    public static final int INVENTORY_Y = PANEL_HEIGHT + 2, INVENTORY_PANEL_HEIGHT = 92, INVENTORY_PAD = 8;
+    public static final int INVENTORY_GRID_X = (WIDTH - 162) / 2;
+    /** Room taken by the tabs above the panel. */
+    public static final int TABS_HEIGHT = 17;
+    /** The content box of the panel. */
+    public static final int CONTENT_X = 10, CONTENT_Y = 10, CONTENT_WIDTH = WIDTH - 2 * CONTENT_X;
+    /** Program page: the catalogue slot, at the content's top left (its item at + 1). */
+    public static final int CATALOGUE_X = CONTENT_X + 1, CATALOGUE_Y = CONTENT_Y + 1;
+    /** Gains page: two columns of steppers at the right, the Coin and Star items centred above them. */
+    public static final int GAINS_COLUMN = 62, GAINS_STAR_X = CONTENT_X + CONTENT_WIDTH - GAINS_COLUMN, GAINS_COIN_X = GAINS_STAR_X - 8 - GAINS_COLUMN;
+    public static final int COIN_X = GAINS_COIN_X + (GAINS_COLUMN - 18) / 2 + 1, COIN_Y = CONTENT_Y + 1;
+    public static final int STAR_X = GAINS_STAR_X + (GAINS_COLUMN - 18) / 2 + 1, STAR_Y = CONTENT_Y + 1;
+    /** The party program: its card slots come after the player's inventory, 2 rows of 12 centred (Program page). */
     public static final int PROGRAM_FIRST_SLOT = PLAYER_SLOTS + 36;
-    public static final int PROGRAM_X = (WIDTH - 162) / 2 + 1, PROGRAM_Y = 41;
-    /** Gains page: the bank's Chest Cartridge (after the program's slots), at the start of the title's line. */
+    public static final int PROGRAM_COLUMNS = 12;
+    public static final int PROGRAM_X = CONTENT_X + (CONTENT_WIDTH - PROGRAM_COLUMNS * 18) / 2 + 1, PROGRAM_Y = CONTENT_Y + 33;
+    /** Gains page: the bank's Chest Cartridge (after the program's slots), at the content's top left. */
     public static final int SLOT_BANK = PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS;
-    public static final int BANK_X = 5, BANK_Y = 4;
+    public static final int BANK_X = CONTENT_X + 1, BANK_Y = CONTENT_Y + 1;
 
     private final @Nullable PartyControllerEntity controller;
     private final BlockPos pos;
@@ -124,16 +128,16 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         addSlot(new CatalogueSlot(catalogue, CATALOGUE_X, CATALOGUE_Y));
         addSlot(new GhostSlot(currencies, 0, STAR_X, STAR_Y));
         addSlot(new GhostSlot(currencies, 1, COIN_X, COIN_Y));
-        int invX = (WIDTH - 162) / 2 + 1;
-        EnumSet<Page> withInventory = EnumSet.of(Page.PROGRAM, Page.GAINS);
+        int invX = INVENTORY_GRID_X + 1;
+        EnumSet<Page> withInventory = EnumSet.allOf(Page.class);
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++)
-                addSlot(new PageSlot(playerInventory, col + row * 9 + 9, invX + col * 18, INVENTORY_Y + INVENTORY_PAD + row * 18, withInventory));
+                addSlot(new PageSlot(playerInventory, col + row * 9 + 9, invX + col * 18, INVENTORY_Y + INVENTORY_PAD + 1 + row * 18, withInventory));
         }
         for (int col = 0; col < 9; col++)
-            addSlot(new PageSlot(playerInventory, col, invX + col * 18, INVENTORY_Y + INVENTORY_PAD + 58, withInventory));
+            addSlot(new PageSlot(playerInventory, col, invX + col * 18, INVENTORY_Y + INVENTORY_PAD + 1 + 58, withInventory));
         for (int i = 0; i < PartyControllerEntity.PROGRAM_SLOTS; i++)
-            addSlot(new CardSlot(program, i, PROGRAM_X + (i % 9) * 18, PROGRAM_Y + (i / 9) * 18));
+            addSlot(new CardSlot(program, i, PROGRAM_X + (i % PROGRAM_COLUMNS) * 18, PROGRAM_Y + (i / PROGRAM_COLUMNS) * 18));
         addSlot(new BankSlot(bank));
     }
 

@@ -239,7 +239,7 @@ final class TurnBarHud {
             case PINNED -> {
                 HudPaint.draw(context, HudPaint.shape(Form.PILL, el.w, el.h, HudPaint.MINI_GAME, HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND), x, y, alpha);
                 HudPaint.draw(context, HudPaint.shape(Form.PILL, 10, 10, HudPaint.white(HudPaint.MINI_GAME.shadow()), 0), x + 2, y + 2, alpha);
-                HudPaint.draw(context, HudPaint.bang(), x + PAD + 6, y + PAD + 3, alpha);
+                HudPaint.draw(context, HudPaint.gamepad(), x + 2 + PAD, y + 3 + PAD, alpha);
                 HudDraw.shadowed(context, el.label, x + PAD + 15, y + PAD + 3, HudPaint.TEXT, alpha);
             }
             case BUBBLE -> {
@@ -293,7 +293,7 @@ final class TurnBarHud {
 
     private static HudPaint.Tex icon(Kind kind) {
         return switch (kind) {
-            case MINI_GAME -> HudPaint.bang();
+            case MINI_GAME -> HudPaint.gamepad();
             case EVENT -> HudPaint.bell();
             case START -> HudPaint.die();
             case END -> HudPaint.flag();
