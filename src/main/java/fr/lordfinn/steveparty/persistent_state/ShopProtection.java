@@ -33,7 +33,9 @@ import java.util.UUID;
  * </ul>
  * Blocks of shops without owner (trader never claimed, or not linked at all) keep the vanilla behaviour for these.
  * <p>
- * Automation is another rule, for every merchant, owned or not: see {@link #blocksAutomation}.
+ * Automation is free: hoppers, hopper minecarts and droppers fill and empty the stock containers and the cash
+ * registers of any shop, owned or not, so that a shop can be supplied and its till emptied by machines. The trading
+ * stall keeps them off its own way ({@code TradingStallBlockEntity}: its slots are the offers, not stock).
  */
 public final class ShopProtection {
     private ShopProtection() {
@@ -91,21 +93,6 @@ public final class ShopProtection {
     public static boolean isProtected(World world, BlockPos pos) {
         if (world.isClient || !world.getBlockState(pos).hasBlockEntity()) return false;
         return !getShopOwners(world, pos).isEmpty();
-    }
-
-    /**
-     * No automation with a merchant: a block linked to a trader (its trading stalls, cash registers and stock
-     * containers, owned or not) gives nothing to and takes nothing from a hopper, a hopper minecart or a dropper, nor
-     * from whatever finds containers through the vanilla look-up (mixins). A double chest is a merchant's if either
-     * half is. One look-up in the links' reverse index, nothing at all while no block is linked.
-     */
-    public static boolean blocksAutomation(World world, BlockPos pos) {
-        if (world.isClient || world.getServer() == null) return false;
-        VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
-        if (state == null || state.hasNoLinks()) return false;
-        if (state.isLinked(GlobalPos.create(world.getRegistryKey(), pos))) return true;
-        BlockPos other = getOtherChestHalf(world.getBlockState(pos), pos);
-        return other != null && state.isLinked(GlobalPos.create(world.getRegistryKey(), other));
     }
 
     private static BlockPos getOtherChestHalf(BlockState state, BlockPos pos) {

@@ -477,54 +477,68 @@ public class ShopGameTests implements FabricGameTest {
     }
 
     /**
-     * No automation with a merchant, owned or not: hoppers don't pull from its stock chest nor its register, a hopper
-     * above its register pushes nothing in, a dropper facing its chest drops nothing into it. A chest linked to no
-     * merchant is drained as usual.
+     * A shop works with machines, owned or not: a hopper fills its stock chest and the merchant sells from it, a
+     * hopper under its cash register empties the till. The trading stall is its offers, not stock: hoppers neither
+     * fill nor empty it. And no dispenser reaches the merchant itself (no armour put on it).
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void noAutomationWithAMerchant(TestContext context) {
-        BlockPos chest = new BlockPos(1, 2, 1);
-        BlockPos register = new BlockPos(3, 2, 1);
-        BlockPos unownedChest = new BlockPos(5, 2, 1);
-        BlockPos plainChest = new BlockPos(7, 2, 1);
-        BlockPos fedRegister = new BlockPos(1, 2, 4);
-        BlockPos dropper = new BlockPos(3, 2, 4), droppedChest = new BlockPos(4, 2, 4);
-        context.setBlockState(chest, Blocks.CHEST);
-        context.setBlockState(register, ModBlocks.CASH_REGISTER);
-        context.setBlockState(unownedChest, Blocks.CHEST);
-        context.setBlockState(plainChest, Blocks.CHEST);
-        for (BlockPos pos : List.of(chest, register, unownedChest, plainChest)) {
-            context.setBlockState(pos.down(), Blocks.HOPPER);
-        }
-        context.setBlockState(fedRegister, ModBlocks.CASH_REGISTER);
-        context.setBlockState(fedRegister.up(), Blocks.HOPPER);
-        context.setBlockState(droppedChest, Blocks.CHEST);
-        context.setBlockState(dropper, Blocks.DROPPER.getDefaultState().with(net.minecraft.block.DispenserBlock.FACING, Direction.EAST));
-        inventoryAt(context, chest).setStack(0, new ItemStack(Items.DIAMOND, 10));
-        inventoryAt(context, register).setStack(0, new ItemStack(Items.EMERALD, 10));
-        inventoryAt(context, unownedChest).setStack(0, new ItemStack(Items.DIAMOND, 10));
-        inventoryAt(context, plainChest).setStack(0, new ItemStack(Items.DIAMOND, 10));
-        inventoryAt(context, fedRegister.up()).setStack(0, new ItemStack(Items.GOLD_INGOT, 5));
-        inventoryAt(context, dropper).setStack(0, new ItemStack(Items.IRON_INGOT, 5));
-        UUID shop = shopOf(context, UUID.randomUUID(), chest, register, fedRegister);
-        UUID unownedShop = shopOf(context, null, unownedChest, droppedChest);
-        // A pulse: the dropper fires once
-        context.setBlockState(dropper.down(), Blocks.REDSTONE_BLOCK);
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void aShopWorksWithHoppersButItsStallAndMerchantDont(TestContext context) {
+        BlockPos stallPos = new BlockPos(1, 2, 1), chestPos = new BlockPos(3, 1, 1), registerPos = new BlockPos(1, 2, 4);
+        context.setBlockState(stallPos, ModBlocks.TRADING_STALL);
+        context.setBlockState(stallPos.down(), Blocks.HOPPER);
+        context.setBlockState(stallPos.up(), Blocks.HOPPER);
+        context.setBlockState(chestPos, Blocks.CHEST);
+        context.setBlockState(chestPos.up(), Blocks.HOPPER);
+        context.setBlockState(registerPos, ModBlocks.CASH_REGISTER);
+        context.setBlockState(registerPos.down(), Blocks.HOPPER);
+        TradingStallBlockEntity stall = context.getBlockEntity(stallPos);
+        stall.setStack(0, new ItemStack(Items.EMERALD));
+        stall.setStack(18, new ItemStack(Items.DIAMOND));
+        inventoryAt(context, stallPos.up()).setStack(0, new ItemStack(Items.GOLD_INGOT, 3));
+        inventoryAt(context, chestPos.up()).setStack(0, new ItemStack(Items.DIAMOND, 5));
+        CashRegisterBlockEntity register = context.getBlockEntity(registerPos);
 
-        context.waitAndRun(40, () -> {
+        BoxedTraderEntity trader = context.spawnEntity(ModEntities.BOXED_TRADER_ENTITY, new BlockPos(2, 1, 3));
+        UUID shop = trader.getUuid();
+        VendorLinkPersistentState links = VendorLinkPersistentState.get(context.getWorld().getServer());
+        for (BlockPos pos : List.of(stallPos, chestPos, registerPos)) {
+            links.linkBlock(shop, GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(pos)));
+        }
+        links.setOwner(shop, UUID.randomUUID());
+        // A dispenser of armour facing the merchant
+        BlockPos dispenser = new BlockPos(3, 1, 3);
+        context.setBlockState(dispenser, Blocks.DISPENSER.getDefaultState().with(net.minecraft.block.DispenserBlock.FACING, Direction.WEST));
+        inventoryAt(context, dispenser).setStack(0, new ItemStack(Items.IRON_HELMET));
+        context.setBlockState(dispenser.east(), Blocks.REDSTONE_BLOCK);
+
+        context.waitAndRun(60, () -> {
+            ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
             try {
-                context.assertEquals(inventoryAt(context, chest).count(Items.DIAMOND), 10, "owned stock not pulled");
-                context.assertEquals(inventoryAt(context, register).count(Items.EMERALD), 10, "owned register not pulled");
-                context.assertEquals(inventoryAt(context, unownedChest).count(Items.DIAMOND), 10, "a stock without owner is a merchant's too: not pulled");
-                context.assertTrue(inventoryAt(context, plainChest).count(Items.DIAMOND) < 10, "a chest of no merchant is pulled as usual");
-                context.assertEquals(inventoryAt(context, fedRegister).count(Items.GOLD_INGOT), 0, "nothing pushed into a register");
-                context.assertEquals(inventoryAt(context, fedRegister.up()).count(Items.GOLD_INGOT), 5, "the hopper keeps its gold");
-                context.assertEquals(inventoryAt(context, droppedChest).count(Items.IRON_INGOT), 0, "nothing dropped into the stock");
-                context.assertEquals(inventoryAt(context, dropper).count(Items.IRON_INGOT), 5, "the dropper keeps its iron");
+                context.assertEquals(inventoryAt(context, chestPos).count(Items.DIAMOND), 5, "the hopper filled the stock");
+                player.setPosition(trader.getPos().add(0, 0, 1));
+                trader.interact(player, Hand.MAIN_HAND);
+                context.assertTrue(player.currentScreenHandler instanceof MerchantScreenHandler, "merchant screen opened");
+                MerchantScreenHandler handler = (MerchantScreenHandler) player.currentScreenHandler;
+                context.assertTrue(buyOnce(handler, player) && buyOnce(handler, player), "the merchant sells what the hopper brought");
+                context.assertEquals(inventoryAt(context, chestPos).count(Items.DIAMOND), 3, "taken from the stock");
+                player.closeHandledScreen();
+                context.assertEquals(stall.count(Items.GOLD_INGOT), 0, "nothing pushed into the stall");
+                context.assertEquals(inventoryAt(context, stallPos.up()).count(Items.GOLD_INGOT), 3, "the hopper above keeps its gold");
+                context.assertTrue(stall.getStack(0).isOf(Items.EMERALD) && stall.getStack(18).isOf(Items.DIAMOND)
+                        && inventoryAt(context, stallPos.down()).isEmpty(), "nothing pulled from the stall: its offer is whole");
+                context.assertTrue(trader.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD).isEmpty(), "no armour put on the merchant");
             } finally {
-                forgetShops(context, shop, unownedShop);
+                context.getWorld().getServer().getPlayerManager().remove(player);
             }
-            context.complete();
+            context.waitAndRun(40, () -> {
+                try {
+                    context.assertEquals(register.count(Items.EMERALD), 0, "the till is emptied by the hopper under it");
+                    context.assertEquals(inventoryAt(context, registerPos.down()).count(Items.EMERALD), 2, "into the hopper");
+                } finally {
+                    forgetShops(context, shop);
+                }
+                context.complete();
+            });
         });
     }
 
@@ -549,21 +563,27 @@ public class ShopGameTests implements FabricGameTest {
         return (Inventory) context.getWorld().getBlockEntity(context.getAbsolutePos(relative));
     }
 
-    /** An explosion spares the blocks of an owned shop and still destroys the others. */
+    /**
+     * An explosion spares the stock of an owned shop and still destroys the others; stalls and registers are never
+     * broken by one, owned or not (they are of the board blocks, see BoardExplosionGameTests).
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void explosionsSpareOwnedShopBlocks(TestContext context) {
-        BlockPos stall = new BlockPos(2, 1, 1);
-        BlockPos unownedStall = new BlockPos(2, 1, 3);
-        context.setBlockState(stall, ModBlocks.TRADING_STALL);
+        BlockPos stock = new BlockPos(2, 1, 1);
+        BlockPos unownedStock = new BlockPos(2, 1, 3);
+        BlockPos unownedStall = new BlockPos(3, 1, 3);
+        context.setBlockState(stock, Blocks.CHEST);
+        context.setBlockState(unownedStock, Blocks.CHEST);
         context.setBlockState(unownedStall, ModBlocks.TRADING_STALL);
-        UUID shop = shopOf(context, UUID.randomUUID(), stall);
-        UUID unownedShop = shopOf(context, null, unownedStall);
+        UUID shop = shopOf(context, UUID.randomUUID(), stock);
+        UUID unownedShop = shopOf(context, null, unownedStock, unownedStall);
         try {
             BlockPos center = context.getAbsolutePos(new BlockPos(2, 1, 2));
             context.getWorld().createExplosion(null, center.getX() + 0.5, center.getY() + 0.5, center.getZ() + 0.5,
                     4.0f, World.ExplosionSourceType.TNT);
-            context.assertTrue(context.getBlockState(stall).isOf(ModBlocks.TRADING_STALL), "owned stall kept");
-            context.assertTrue(context.getBlockState(unownedStall).isAir(), "unowned stall destroyed as usual");
+            context.assertTrue(context.getBlockState(stock).isOf(Blocks.CHEST), "owned stock kept");
+            context.assertTrue(context.getBlockState(unownedStock).isAir(), "unowned stock destroyed as usual");
+            context.assertTrue(context.getBlockState(unownedStall).isOf(ModBlocks.TRADING_STALL), "a stall, even unowned, is never blown up");
         } finally {
             forgetShops(context, shop, unownedShop);
         }

@@ -1,0 +1,31 @@
+{
+  "replace": false,
+  "values": [
+    "steveparty:tile",
+    "steveparty:advanced_tile",
+    "steveparty:tile_part",
+    "steveparty:check_point",
+    "steveparty:board_space_redstone_router",
+    "steveparty:hop_switch",
+    "steveparty:looting_box",
+    "steveparty:piggy_bank",
+    "steveparty:party_controller",
+    "steveparty:mini_game_controller",
+    "steveparty:step_controller",
+    "steveparty:party_bell",
+    "steveparty:podium",
+    "steveparty:gold_podium",
+    "steveparty:silver_podium",
+    "steveparty:bronze_podium",
+    "steveparty:goal_pole_base",
+    "steveparty:goal_pole",
+    "steveparty:copper_minigame_pipe",
+    "steveparty:iron_minigame_pipe",
+    "steveparty:golden_minigame_pipe",
+    "steveparty:dice_forge",
+    "steveparty:telescope",
+    "steveparty:trading_stall",
+    "steveparty:cash_register",
+    "steveparty:stencil_maker"
+  ]
+}
