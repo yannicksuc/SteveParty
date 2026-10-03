@@ -315,17 +315,23 @@ public class VillagerBlockGameTests implements FabricGameTest {
         context.complete();
     }
 
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    /** Played by day (see {@link #pinDay}): at night the villager block falls asleep instead of dancing. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "villager_block_day")
     public void dancesWhileTheJukeboxPlays(TestContext context) {
+        pinDay(context);
         VillagerBlockEntity villager = place(context);
         context.setBlockState(POS.east(3), Blocks.JUKEBOX);
         JukeboxBlockEntity jukebox = context.getBlockEntity(POS.east(3));
         jukebox.setStack(new ItemStack(Items.MUSIC_DISC_PIGSTEP));
         // the jukebox tells the listeners around every second while it plays
         context.waitAndRun(30, () -> {
-            context.assertEquals(villager.getMode(), VillagerMode.DANCE_FUNKY, "Pigstep: funky dance");
-            jukebox.setStack(ItemStack.EMPTY);
-            context.assertEquals(villager.getMode(), VillagerMode.NONE, "the music stops, so does the dance");
+            try {
+                context.assertEquals(villager.getMode(), VillagerMode.DANCE_FUNKY, "Pigstep: funky dance");
+                jukebox.setStack(ItemStack.EMPTY);
+                context.assertEquals(villager.getMode(), VillagerMode.NONE, "the music stops, so does the dance");
+            } finally {
+                unpinDay(context);
+            }
             context.complete();
         });
     }
