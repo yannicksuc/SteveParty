@@ -138,38 +138,50 @@ public class ModPayloads {
             ServerPlayerEntity player = context.player();
 
             // In packet order (see runInPacketOrder): the screen closes right after this payload is sent
-            runInPacketOrder(player, () -> {
-                BlockPos pos = payload.pos();
-                if (payload.settings() == null) return;
-                // The goal pole base screen for this block must be open and the block in reach
-                if (!(player.currentScreenHandler instanceof GoalPoleBaseScreenHandler handler)
-                        || !pos.equals(handler.getPos())
-                        || !ScreenHandlerChecks.isInReach(player, pos)) return;
-
-                // Check the BlockEntity type
-                if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity blockEntity) {
-                    // Each setting is checked by the base (known values, string lengths)
-                    blockEntity.applySettings(payload.settings());
-                }
-            });
+            runInPacketOrder(player, () -> applyGoalPoleBase(player, payload));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(GoalPolePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
-            runInPacketOrder(player, () -> {
-                BlockPos pos = payload.pos();
-                if (payload.comparator() == null) return;
-                // The goal pole screen for this block must be open and the block in reach
-                if (!(player.currentScreenHandler instanceof GoalPoleScreenHandler handler)
-                        || !pos.equals(handler.getPos())
-                        || !ScreenHandlerChecks.isInReach(player, pos)) return;
-                if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBlockEntity blockEntity) {
-                    blockEntity.applyGoal(payload.comparator(), payload.value(), payload.perSegment());
-                    blockEntity.applyFlagSteps(payload.flagSteps());
-                    blockEntity.applyPerPlayer(payload.perPlayer());
-                }
-            });
+            runInPacketOrder(player, () -> applyGoalPole(player, payload));
         });
+    }
+
+    /**
+     * The settings of a goal pole base sent back by its screen. The screen opens for anyone holding a Wrench (to read
+     * them), but only a player who may build there changes them: they reset the points of a party going on and pick
+     * the players it counts.
+     */
+    public static void applyGoalPoleBase(ServerPlayerEntity player, GoalPoleBasePayload payload) {
+        BlockPos pos = payload.pos();
+        if (payload.settings() == null) return;
+        // The goal pole base screen for this block must be open and the block in reach
+        if (!(player.currentScreenHandler instanceof GoalPoleBaseScreenHandler handler)
+                || !pos.equals(handler.getPos())
+                || !ScreenHandlerChecks.isInReach(player, pos)
+                || !ScreenHandlerChecks.canBuildAt(player, pos)) return;
+
+        // Check the BlockEntity type
+        if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBaseBlockEntity blockEntity) {
+            // Each setting is checked by the base (known values, string lengths)
+            blockEntity.applySettings(payload.settings());
+        }
+    }
+
+    /** The goal of a goal pole sent back by its screen: like the base, read by anyone, changed by a builder. */
+    public static void applyGoalPole(ServerPlayerEntity player, GoalPolePayload payload) {
+        BlockPos pos = payload.pos();
+        if (payload.comparator() == null) return;
+        // The goal pole screen for this block must be open and the block in reach
+        if (!(player.currentScreenHandler instanceof GoalPoleScreenHandler handler)
+                || !pos.equals(handler.getPos())
+                || !ScreenHandlerChecks.isInReach(player, pos)
+                || !ScreenHandlerChecks.canBuildAt(player, pos)) return;
+        if (player.getWorld().getBlockEntity(pos) instanceof GoalPoleBlockEntity blockEntity) {
+            blockEntity.applyGoal(payload.comparator(), payload.value(), payload.perSegment());
+            blockEntity.applyFlagSteps(payload.flagSteps());
+            blockEntity.applyPerPlayer(payload.perPlayer());
+        }
     }
 
     /**
