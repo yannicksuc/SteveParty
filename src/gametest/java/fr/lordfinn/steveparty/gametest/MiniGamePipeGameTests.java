@@ -133,12 +133,12 @@ public class MiniGamePipeGameTests implements FabricGameTest {
 
     // ------------------------------------------------------------------ roles
 
-    /** Green players, white or glass spectators, blue A, red B, purple C, orange D, yellow exit, black entry. */
+    /** Green players, white or glass spectators, blue (and cyan) A, red B, purple C, orange D, yellow exit, black entry. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void pipeColoursGiveRoles(TestContext context) {
         Map<Integer, MiniGamePipeRole> roles = Map.of(GREEN, MiniGamePipeRole.PLAYERS, WHITE, MiniGamePipeRole.SPECTATORS,
                 BLUE, MiniGamePipeRole.TEAM_A, RED, MiniGamePipeRole.TEAM_B, PURPLE, MiniGamePipeRole.TEAM_C,
-                ORANGE, MiniGamePipeRole.TEAM_D, YELLOW, MiniGamePipeRole.EXIT, BLACK, MiniGamePipeRole.ENTRY, CYAN, MiniGamePipeRole.PLAYERS);
+                ORANGE, MiniGamePipeRole.TEAM_D, YELLOW, MiniGamePipeRole.EXIT, BLACK, MiniGamePipeRole.ENTRY, CYAN, MiniGamePipeRole.TEAM_A);
         roles.forEach((color, role) -> {
             for (PipeKind kind : new PipeKind[]{PipeKind.OPAQUE, PipeKind.WINDOWED, PipeKind.STAINED_GLASS}) {
                 context.assertEquals(MiniGamePipeRole.ofPipe(pipe(kind, color).getDefaultState()), role, kind + " " + ModBlocks.COLORS[color]);
