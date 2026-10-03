@@ -35,19 +35,6 @@ public final class TokenStatus {
         return currentStatus;
     }
 
-    // Toggle a specific status (flip the flag)
-    public static int toggleStatus(int currentStatus, int flag) {
-        return currentStatus ^ flag; // Use bitwise XOR to toggle a flag
-    }
-
-    // Toggle multiple statuses at once
-    public static int toggleStatuses(int currentStatus, int... flags) {
-        for (int flag : flags) {
-            currentStatus ^= flag;
-        }
-        return currentStatus;
-    }
-
     // Check if a specific status is set
     public static boolean hasStatus(int currentStatus, int flag) {
         return (currentStatus & flag) != 0; // Use bitwise AND to check a flag
@@ -61,16 +48,6 @@ public final class TokenStatus {
             }
         }
         return true;
-    }
-
-    // Check if any of the specified statuses are set
-    public static boolean hasAnyStatus(int currentStatus, int... flags) {
-        for (int flag : flags) {
-            if (hasStatus(currentStatus, flag)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     // Reset all statuses (clear all flags)

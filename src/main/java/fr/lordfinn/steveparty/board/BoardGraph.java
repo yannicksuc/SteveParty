@@ -247,12 +247,6 @@ public final class BoardGraph {
         return group == null ? List.of() : group;
     }
 
-    /** Paths join the board spaces at {@code a} and {@code b} (links of any cartridge, whichever way). */
-    public boolean sameBoard(BlockPos a, BlockPos b) {
-        BlockPos boardA = boards.get(a);
-        return boardA != null && boardA.equals(boards.get(b));
-    }
-
     /** A teleport tile no other tile of its network shares its board with: a token landing there stays. */
     public boolean isTeleportAlone(Node node) {
         return node.teleportNetwork() != null && teleportPartners(node.pos()).isEmpty();
@@ -336,7 +330,4 @@ public final class BoardGraph {
         return hasStart() && !distances.containsKey(node.pos());
     }
 
-    public boolean hasIncoming(BlockPos pos) {
-        return withIncoming.contains(pos);
-    }
 }

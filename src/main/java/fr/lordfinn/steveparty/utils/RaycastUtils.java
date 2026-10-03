@@ -11,15 +11,4 @@ public class RaycastUtils {
         return hitResult.getType() == HitResult.Type.BLOCK;
     }
 
-    public static boolean isTargetingEntity(PlayerEntity player) {
-        double reachDistance = player.isCreative() ? 5.0 : 4.5;
-        HitResult hitResult = player.raycast(reachDistance, 0.0F, false);
-        return hitResult.getType() == HitResult.Type.ENTITY;
-    }
-
-    public static boolean isTargetingBlockOrEntity(PlayerEntity player) {
-        double reachDistance = player.isCreative() ? 5.0 : 4.5;
-        HitResult hitResult = player.raycast(reachDistance, 0.0F, false);
-        return hitResult.getType() == HitResult.Type.BLOCK || hitResult.getType() == HitResult.Type.ENTITY;
-    }
 }

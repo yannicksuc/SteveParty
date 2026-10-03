@@ -38,10 +38,6 @@ public class HopSwitchScreenHandler extends CartridgeContainerScreenHandler {
         this.addSlot(new CartridgeCustomSlot(this.inventory, 0, 52, 14));
     }
 
-    public int getModeInt() {
-        return propertyDelegate.get(0);
-    }
-
     public int getDurationTicks() {
         return propertyDelegate.get(1);
     }

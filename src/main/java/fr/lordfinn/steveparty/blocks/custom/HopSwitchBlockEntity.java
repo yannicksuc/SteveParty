@@ -137,8 +137,4 @@ public class HopSwitchBlockEntity extends CartridgeContainerBlockEntity implemen
         markDirty();
     }
 
-    public int getDurationSeconds() {
-        return durationTicks / 20;
-    }
-
 }

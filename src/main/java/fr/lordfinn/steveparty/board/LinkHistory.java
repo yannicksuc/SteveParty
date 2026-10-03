@@ -182,11 +182,6 @@ public final class LinkHistory {
         REDO.remove(player.getUuid());
     }
 
-    /** Drops the action being recorded, if any. */
-    public static void abort(ServerPlayerEntity player) {
-        PENDING.remove(player.getUuid());
-    }
-
     private static void push(Map<UUID, Deque<Action>> stacks, UUID player, Action action) {
         Deque<Action> stack = stacks.computeIfAbsent(player, k -> new ArrayDeque<>());
         stack.push(action);

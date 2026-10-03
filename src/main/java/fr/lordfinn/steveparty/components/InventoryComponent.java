@@ -151,12 +151,6 @@ public final class InventoryComponent {
         return new ItemStackBackedInventory(stack, size);
     }
 
-    /** @return a fresh copy of the inventory stored in {@code stack} (not written back automatically). */
-    public static SimpleInventory copyInventoryFromStack(ItemStack stack, int size) {
-        InventoryComponent component = stack.get(INVENTORY_COMPONENT);
-        return component != null ? component.toInventory(size) : new SimpleInventory(size);
-    }
-
     /** Stores a snapshot of {@code inventory} into {@code stack}. */
     public static void writeToStack(ItemStack stack, Inventory inventory) {
         if (stack == null || stack.isEmpty()) return;

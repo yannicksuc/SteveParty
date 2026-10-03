@@ -134,18 +134,6 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     }
 
     /**
-     * Closest started party controller in the given world, within {@code radius} blocks ({@code radius <= 0}: no limit).
-     */
-    public static Optional<PartyControllerEntity> getClosestActivePartyControllerEntity(@Nullable World world, BlockPos pos, int radius) {
-        return ACTIVE_PARTY_CONTROLLERS.values().stream()
-                .filter(entity -> !entity.isRemoved())
-                .filter(entity -> world == null || entity.getWorld() == world)
-                .filter(entity -> entity.getPartyData().isStarted())
-                .filter(entity -> radius <= 0 || entity.getPos().getSquaredDistance(pos) < (double) radius * radius)
-                .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
-    }
-
-    /**
      * The loaded controller of the party playing right now the mini-game of one of {@code pages} (its practice round
      * or its real round), in any dimension and at any distance (what the podiums and the step controllers linked to
      * a page act on).

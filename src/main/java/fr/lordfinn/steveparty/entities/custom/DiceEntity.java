@@ -127,10 +127,6 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.follower = true;
     }
 
-    public boolean isFollower() {
-        return follower;
-    }
-
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
@@ -171,17 +167,6 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.dataTracker.set(OWNER, Optional.ofNullable(owner));
         if (propagate)
             propagateStateChange(dice -> dice.setOwner(owner, false));
-    }
-
-    /** Starts (again) or stops the roll of this throw, like a hit would (see {@link DiceRollSequence}). */
-    public void setRolling(boolean rolling) {
-        if (this.getWorld().isClient) {
-            this.dataTracker.set(ROLLING, rolling);
-            return;
-        }
-        DiceEntity lead = lead();
-        if (rolling) lead.restartRoll();
-        else lead.sequence().stop();
     }
 
     public boolean isRolling() {
@@ -741,20 +726,6 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         this.dataTracker.set(LINKED_DICE, linkedDice.stream().filter(uuid -> !uuid.equals(this.getUuid())).toList());
     }
 
-    public void addLinkedDice(UUID diceUuid) {
-        if (this.getLinkedDice().contains(diceUuid)) return;
-        if (diceUuid.equals(this.getUuid())) return;
-        List<UUID> linkedDice = new ArrayList<>(this.getLinkedDice());
-        linkedDice.add(diceUuid);
-        this.setLinkedDice(linkedDice);
-    }
-
-    public void removeLinkedDice(UUID diceUuid) {
-        List<UUID> linkedDice = new ArrayList<>(this.getLinkedDice());
-        linkedDice.remove(diceUuid);
-        this.setLinkedDice(linkedDice);
-    }
-
     private void propagateStateChange(java.util.function.Consumer<DiceEntity> stateChange) {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
         for (UUID uuid : this.getLinkedDice()) {
@@ -777,8 +748,4 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         return result;
     }
 
-    /** The steps of the finished roll of this throw (negative: backward). */
-    public int getTotalRolledValue() {
-        return getOutcome().steps();
-    }
 }
