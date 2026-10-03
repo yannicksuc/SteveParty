@@ -203,6 +203,8 @@ public class PodiumGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGamePage(catalogue, pageStack);
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, teams == null ? TeamDisposition.freeForAll(uuids) : teams);
         controller.catalogue = catalogue;
+        // A well stocked bank: the gains are taken from it
+        BankFixtures.stock(context, controller, CONTROLLER.up(), 640, 64);
         return new Played(controller, step, data, pageStack, MiniGamePages.idOf(pageStack));
     }
 

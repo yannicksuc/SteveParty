@@ -164,6 +164,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
             PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
             if (entity != null) {
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.catalogue);
+                ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.getBank());
                 // The party is gone: its players' steps HUD must go too
                 entity.onControllerRemoved();
             }

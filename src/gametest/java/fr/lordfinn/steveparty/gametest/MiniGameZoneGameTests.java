@@ -224,6 +224,8 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         MiniGamesCatalogueItem.setCurrentMiniGamePage(catalogue, pageItem(pageId));
         MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(catalogue, TeamDisposition.freeForAll(uuids));
         controller.catalogue = catalogue;
+        // A well stocked bank: the gains are taken from it
+        BankFixtures.stock(context, controller, PARTY.up(), 640, 64);
         return controller;
     }
 

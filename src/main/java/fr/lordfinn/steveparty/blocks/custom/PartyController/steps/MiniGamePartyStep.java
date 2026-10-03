@@ -802,18 +802,49 @@ public class MiniGamePartyStep extends PartyStep {
         controller.setLastWinners(winners);
         MinecraftServer server = controller.getWorld() == null ? null : controller.getWorld().getServer();
         if (server != null) {
-            places.forEach((uuid, place) -> {
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-                if (player != null) controller.payGains(player, place);
-            });
-            announceResults(controller, server);
+            Text note = payGains(controller, server);
+            tellResults(controller, results(controller, server, places, paid), note);
         }
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
     }
 
+    /** What each player was paid by the last results ({coins, stars}), for their card. */
+    private final Map<UUID, int[]> paid = new LinkedHashMap<>();
+
+    /**
+     * Pays the gains of the places, taken from the party's bank (see {@link fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank}):
+     * the 1st place first, then the 2nd..., the participants last, in turn order within a place; when the bank runs
+     * short, a player gets what is left and the next ones nothing. Nothing is created.
+     *
+     * @return the line telling everyone the gains were not all paid, null if they were
+     */
+    private @Nullable Text payGains(PartyControllerEntity controller, MinecraftServer server) {
+        paid.clear();
+        List<Map.Entry<UUID, Integer>> order = new ArrayList<>(places.entrySet());
+        order.sort(java.util.Comparator.comparingInt(entry -> entry.getValue() <= 0 ? Integer.MAX_VALUE : entry.getValue()));
+        net.minecraft.inventory.Inventory bank = fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank.inventory(server, controller.getBank());
+        boolean full = true;
+        for (Map.Entry<UUID, Integer> entry : order) {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
+            if (player == null) continue;
+            PartyControllerEntity.Paid received = controller.payGains(player, entry.getValue(), bank);
+            paid.put(entry.getKey(), new int[]{received.coins(), received.stars()});
+            full &= received.full();
+        }
+        if (full) return null;
+        return Text.translatable(bank == null ? "message.steveparty.minigame.results.no_bank" : "message.steveparty.minigame.results.bank_empty")
+                .formatted(net.minecraft.util.Formatting.RED);
+    }
+
     /** The results of the mini-game for these places, with what the party pays for each. */
     private MiniGameResults results(PartyControllerEntity controller, MinecraftServer server, Map<UUID, Integer> finalPlaces) {
+        return results(controller, server, finalPlaces, null);
+    }
+
+    /** The results of the mini-game for these places, with what each player was paid (null: the gains of the places). */
+    private MiniGameResults results(PartyControllerEntity controller, MinecraftServer server, Map<UUID, Integer> finalPlaces,
+                                    @Nullable Map<UUID, int[]> received) {
         ItemStack stack = MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue);
         MiniGamePageData page = MiniGamePages.of(server, stack);
         String title = page != null && page.hasTitle() ? page.title() : stack.isEmpty() ? "" : stack.getName().getString();
@@ -824,12 +855,7 @@ public class MiniGamePartyStep extends PartyStep {
             if (player != null) return player.getGameProfile().getName();
             return server.getUserCache() == null ? uuid.toString().substring(0, 8)
                     : server.getUserCache().getByUuid(uuid).map(com.mojang.authlib.GameProfile::getName).orElse(uuid.toString().substring(0, 8));
-        });
-    }
-
-    /** The results card for the players and the audience, and the same lines in the chat. */
-    private void announceResults(PartyControllerEntity controller, MinecraftServer server) {
-        tellResults(controller, results(controller, server, places), null);
+        }, received);
     }
 
     /** Shows results to the players and the audience: the card, and the same lines in the chat ({@code note}: a last line). */

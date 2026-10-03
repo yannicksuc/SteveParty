@@ -142,10 +142,16 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
             context.assertEquals(set.amount(PartyCurrency.STAR, 3), 0, "4th: no star");
             context.assertEquals(MiniGameGains.DEFAULT.with(PartyCurrency.COIN, 0, 500).amount(PartyCurrency.COIN, 0), MiniGameGains.MAX, "capped");
 
-            // Paid as items of the party's currencies
-            controller.payGains(player, 1);
+            // Paid as items of the party's currencies, taken from the bank
+            net.minecraft.inventory.SimpleInventory bank = new net.minecraft.inventory.SimpleInventory(
+                    controller.getCurrency(PartyCurrency.COIN).copyWithCount(20), controller.getCurrency(PartyCurrency.STAR).copyWithCount(3));
+            PartyControllerEntity.Paid paid = controller.payGains(player, 1, bank);
+            context.assertTrue(paid.coins() == 11 && paid.stars() == 1 && paid.full(), "the whole gain paid");
             context.assertEquals(PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN)), 11, "11 coins paid");
             context.assertEquals(PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.STAR)), 1, "a star paid");
+            context.assertTrue(bank.getStack(0).getCount() == 9 && bank.getStack(1).getCount() == 2, "taken from the bank");
+            context.assertTrue(!controller.payGains(player, 1, null).full(), "no bank: nothing paid");
+            context.assertEquals(PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN)), 11, "nothing created");
 
             // The dashboard shows them, and they travel to the client as they are
             Board board = new Board(0, 0, List.of(), List.of());

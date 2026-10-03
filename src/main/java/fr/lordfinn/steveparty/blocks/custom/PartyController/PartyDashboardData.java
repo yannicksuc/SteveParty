@@ -53,13 +53,15 @@ import java.util.UUID;
  * @param practiceRound   the mini-games whose page has a Mini-game Controller start with a practice round
  * @param steps           running / ended party: its steps around the current one, as a timeline; empty otherwise
  * @param program         what the program (its cards, or the default party) will play, as a timeline
+ * @param bank            the chest the gains are taken from (see {@link PartyBank}): what it holds, whether it can pay a
+ *                        whole mini-game for the party's players (4 when none is known)
  */
 public record PartyDashboardData(Phase phase, int round, int rounds, int roundsSetting, int stepIndex, int stepCount,
                                  Text action, Text actionDetail, int currentPlayer,
                                  List<PartyLiveData.Standing> players, Board board, boolean hasCatalogue,
                                  List<Page> pages, int currentPage, boolean canEdit, boolean following,
                                  boolean catalogueLocked, MiniGameGains gains, boolean practiceRound,
-                                 Timeline steps, Timeline program) {
+                                 Timeline steps, Timeline program, PartyBank.Status bank) {
 
     public enum Phase { SETUP, RUNNING, ENDED }
 
@@ -329,7 +331,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                 controller.canEdit(player), controller.getInterestedPlayers().contains(player.getUuid()),
                 controller.isCatalogueLocked(), controller.getGains(), controller.hasPracticeRound(),
                 phase == Phase.SETUP ? Timeline.EMPTY : timelineOf(steps, stepIndex, tokens),
-                programTimeline(controller.getProgram().getHeldStacks(), data.getNbTurn()));
+                programTimeline(controller.getProgram().getHeldStacks(), data.getNbTurn()),
+                world.getServer() == null ? PartyBank.Status.NONE : PartyBank.status(controller, world.getServer(), players.isEmpty() ? 4 : players.size()));
     }
 
     // ------------------------------------------------------------------ network
@@ -424,7 +427,9 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             boolean canEdit = buf.readBoolean(), following = buf.readBoolean(), locked = buf.readBoolean();
             return new PartyDashboardData(phase, round, rounds, roundsSetting, stepIndex, stepCount, action, detail,
                     currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf),
-                    buf.readBoolean(), readTimeline(buf), readTimeline(buf));
+                    buf.readBoolean(), readTimeline(buf), readTimeline(buf),
+                    new PartyBank.Status(PartyBank.State.values()[Math.clamp(buf.readVarInt(), 0, PartyBank.State.values().length - 1)],
+                            buf.readVarInt(), buf.readVarInt()));
         }
 
         @Override
@@ -450,6 +455,9 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             buf.writeBoolean(data.practiceRound);
             writeTimeline(buf, data.steps);
             writeTimeline(buf, data.program);
+            buf.writeVarInt(data.bank.state().ordinal());
+            buf.writeVarInt(data.bank.coins());
+            buf.writeVarInt(data.bank.stars());
         }
     };
 }

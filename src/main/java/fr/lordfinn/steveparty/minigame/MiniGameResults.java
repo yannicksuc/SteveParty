@@ -62,7 +62,7 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
      * @param place 1 for the winners, 2, 3... ; 0 for the participants (no place)
      * @param team  the team (0: A ... 3: D), -1 without teams
      * @param names the players of the line
-     * @param coins what each of them received
+     * @param coins what each of them received (in a team: the least one of them received, when the bank ran short)
      */
     public record Row(int place, int team, List<String> names, int coins, int stars) {
     }
@@ -102,6 +102,16 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
      */
     public static MiniGameResults of(String title, ItemStack coinItem, ItemStack starItem, MiniGameGains gains,
                                      Map<UUID, Integer> places, @Nullable TeamDisposition teams, Function<UUID, String> name) {
+        return of(title, coinItem, starItem, gains, places, teams, name, null);
+    }
+
+    /**
+     * The same, with what each player was really paid ({coins, stars}; a player missing from it was paid nothing):
+     * the amounts shown are those, not the gains of the places.
+     */
+    public static MiniGameResults of(String title, ItemStack coinItem, ItemStack starItem, MiniGameGains gains,
+                                     Map<UUID, Integer> places, @Nullable TeamDisposition teams, Function<UUID, String> name,
+                                     @Nullable Map<UUID, int[]> paid) {
         boolean teamGame = teams != null && !teams.isFreeForAll();
         List<Row> rows = new ArrayList<>();
         Map<Integer, Integer> teamRows = new LinkedHashMap<>();
@@ -109,14 +119,18 @@ public record MiniGameResults(String title, ItemStack coinItem, ItemStack starIt
             int place = entry.getValue();
             int team = teamGame ? teams.teamOf(entry.getKey()) : -1;
             Integer index = team >= 0 ? teamRows.get(team) : null;
+            int[] received = paid == null ? new int[]{gains.forPlace(PartyCurrency.COIN, place), gains.forPlace(PartyCurrency.STAR, place)}
+                    : paid.getOrDefault(entry.getKey(), new int[2]);
             if (index != null) {
-                rows.get(index).names().add(name.apply(entry.getKey()));
+                Row row = rows.get(index);
+                row.names().add(name.apply(entry.getKey()));
+                rows.set(index, new Row(row.place(), row.team(), row.names(), Math.min(row.coins(), received[0]), Math.min(row.stars(), received[1])));
                 continue;
             }
             List<String> names = new ArrayList<>();
             names.add(name.apply(entry.getKey()));
             if (team >= 0) teamRows.put(team, rows.size());
-            rows.add(new Row(place, team, names, gains.forPlace(PartyCurrency.COIN, place), gains.forPlace(PartyCurrency.STAR, place)));
+            rows.add(new Row(place, team, names, received[0], received[1]));
         }
         rows.sort(Comparator.comparingInt(row -> row.place() == 0 ? Integer.MAX_VALUE : row.place()));
         return new MiniGameResults(title, coinItem, starItem, rows, Kind.PAID);

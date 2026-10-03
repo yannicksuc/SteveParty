@@ -94,6 +94,8 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     private ItemStack coinItem = PartyCurrency.COIN.defaultStack();
     /** What the party pays at the end of each mini-game, by place (Gains page). */
     private MiniGameGains gains = MiniGameGains.DEFAULT;
+    /** The Chest Cartridge whose chest the gains are taken from (Gains page), empty for none: see {@link PartyBank}. */
+    private ItemStack bank = ItemStack.EMPTY;
     /** Rounds a party may have (Settings page). */
     public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
@@ -212,6 +214,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         nbt.put(PartyCurrency.STAR.nbtKey(), starItem.toNbt(wrapper));
         nbt.put(PartyCurrency.COIN.nbtKey(), coinItem.toNbt(wrapper));
         nbt.put("MiniGameGains", gains.toNbt());
+        if (!bank.isEmpty()) nbt.put("BankCartridge", bank.toNbt(wrapper));
         nbt.putBoolean("PracticeRound", practiceRound);
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
@@ -252,6 +255,8 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         starItem = readCurrency(nbt, wrapper, PartyCurrency.STAR);
         coinItem = readCurrency(nbt, wrapper, PartyCurrency.COIN);
         gains = MiniGameGains.fromNbt(nbt.getCompound("MiniGameGains"));
+        NbtElement bankElement = nbt.get("BankCartridge");
+        bank = bankElement == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, bankElement).orElse(ItemStack.EMPTY);
         practiceRound = !nbt.contains("PracticeRound") || nbt.getBoolean("PracticeRound");
         tokensToRelease.clear();
         nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
@@ -311,22 +316,53 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         markDirty();
     }
 
+    /** The Chest Cartridge of the bank (Gains page), empty for none. */
+    public ItemStack getBank() {
+        return bank;
+    }
+
+    public void setBank(ItemStack bank) {
+        this.bank = bank == null ? ItemStack.EMPTY : bank;
+        markDirty();
+    }
+
     /**
-     * Pays a player what his place in a mini-game is worth: the party's coins and stars, as items (what does not fit in
-     * his inventory falls at his feet).
+     * What a player was paid for his place in a mini-game.
+     *
+     * @param coins the coins he received
+     * @param stars the stars he received
+     * @param full  he received the whole gain of his place
+     */
+    public record Paid(int coins, int stars, boolean full) {
+        public int of(PartyCurrency currency) {
+            return currency == PartyCurrency.STAR ? stars : coins;
+        }
+    }
+
+    /**
+     * Pays a player what his place in a mini-game is worth, taken from the bank: the party's coins and stars, given
+     * as items (what does not fit in his inventory falls at his feet). Nothing is created: a bank short of them pays
+     * what it has, an absent bank (null) pays nothing.
      *
      * @param place 1 for the winners, 2, 3, 4; 0 (or more than 4) for the participants
+     * @param bank  the bank's chest ({@link PartyBank#inventory}), null for none
      */
-    public void payGains(ServerPlayerEntity player, int place) {
+    public Paid payGains(ServerPlayerEntity player, int place, @Nullable net.minecraft.inventory.Inventory bank) {
+        int[] paid = new int[2];
+        boolean full = true;
         for (PartyCurrency currency : PartyCurrency.values()) {
             int amount = gains.forPlace(currency, place);
             ItemStack template = getCurrency(currency);
-            while (amount > 0) {
-                int count = Math.min(amount, template.getMaxCount());
+            int taken = PartyBank.take(bank, template, amount);
+            if (taken < amount) full = false;
+            paid[currency == PartyCurrency.STAR ? 1 : 0] = taken;
+            while (taken > 0) {
+                int count = Math.min(taken, template.getMaxCount());
                 player.getInventory().offerOrDrop(template.copyWithCount(count));
-                amount -= count;
+                taken -= count;
             }
         }
+        return new Paid(paid[0], paid[1], full);
     }
 
     /**
