@@ -34,6 +34,12 @@ import java.util.function.UnaryOperator;
 public class RichTextBox extends ClickableWidget {
     private static final int PAD = 4, LINE_H = 10, SCROLLBAR = 4;
     private static final int TEXT = 0xFFE0E0E0, PLACEHOLDER = 0xFF7C868D, SELECTION = 0x903A78C8, SELECTION_IDLE = 0x60808890;
+    // The look: a sunken dark box (by default), or text written on paper (lines and edges drawn by the screen)
+    private boolean paper;
+    private int padLeft = PAD, padTop = PAD, padRight = PAD, fixedLines;
+    private int textColor = TEXT, placeholderColor = PLACEHOLDER, caretColor = 0xFFFFFFFF, selectionColor = SELECTION;
+    /** One line of plain text (a title): no formatting, Enter refused, written in bold when {@code bold}. */
+    private boolean plain, bold;
     private static final int UNDO_LIMIT = 100;
     private static final long MERGE_MS = 1000, DOUBLE_CLICK_MS = 300, REFUSED_MS = 400;
 
@@ -89,6 +95,46 @@ public class RichTextBox extends ClickableWidget {
     }
 
     // ------------------------------------------------------------------ the text
+
+    /**
+     * Writes the text on paper: no box, the text {@code padLeft} / {@code padTop} inside the widget, {@code lines} lines
+     * shown, in the paper's ink.
+     */
+    public RichTextBox paper(int padLeft, int padTop, int lines, int ink, int placeholderInk, int selection) {
+        this.paper = true;
+        this.padLeft = padLeft;
+        this.padTop = padTop;
+        this.padRight = 2;
+        this.fixedLines = lines;
+        this.textColor = ink;
+        this.placeholderColor = placeholderInk;
+        this.caretColor = ink;
+        this.selectionColor = selection;
+        this.dirty = true;
+        return this;
+    }
+
+    /** One line of plain text (no formatting), in bold or not. */
+    public RichTextBox plain(boolean bold) {
+        this.plain = true;
+        this.bold = bold;
+        this.dirty = true;
+        return this;
+    }
+
+    public String getPlain() {
+        return text.plain();
+    }
+
+    public void setPlain(String plainText) {
+        text = new RichText();
+        text.insert(0, plainText, RichText.Style.PLAIN);
+        caret = anchor = Math.min(caret, text.length());
+        typing = null;
+        undo.clear();
+        redo.clear();
+        dirty = true;
+    }
 
     public String getCodes() {
         return text.toCodes();
@@ -179,7 +225,7 @@ public class RichTextBox extends ClickableWidget {
     }
 
     private void format(UnaryOperator<RichText.Style> change) {
-        if (!editable) return;
+        if (!editable || plain) return;
         if (hasSelection()) {
             remember(false);
             text.apply(from(), to(), change);
@@ -224,6 +270,17 @@ public class RichTextBox extends ClickableWidget {
                 fitting.delete(i, i + 1);
                 fitting.insert(i, " ", style);
             }
+        }
+        if (plain) {
+            // One line: as much as the line holds
+            int lineWidth = width - padLeft - padRight;
+            String before = text.plain().substring(0, from()), after = text.plain().substring(to());
+            String add = fitting.plain().replace('\n', ' ');
+            while (!add.isEmpty() && font.getWidth(Text.literal(before + add + after).setStyle(net.minecraft.text.Style.EMPTY.withBold(bold))) > lineWidth)
+                add = add.substring(0, add.length() - 1);
+            RichText cut = new RichText();
+            cut.insert(0, add, RichText.Style.PLAIN);
+            fitting = cut;
         }
         if (fitting.length() == 0 && inserted.length() > 0) {
             refusedAt = Util.getMeasuringTimeMs();
@@ -466,8 +523,8 @@ public class RichTextBox extends ClickableWidget {
         if (!dragging || button != 0) return false;
         layout();
         // Above or under the box: it scrolls
-        if (mouseY < getY() + PAD) scroll = Math.max(0, scroll - 1);
-        else if (mouseY > getY() + height - PAD) scroll = Math.min(maxScroll(), scroll + 1);
+        if (mouseY < getY() + padTop) scroll = Math.max(0, scroll - 1);
+        else if (mouseY > getY() + padTop + shownLines() * LINE_H) scroll = Math.min(maxScroll(), scroll + 1);
         caret = positionAt(mouseX, mouseY);
         blinkFrom = Util.getMeasuringTimeMs();
         return true;
@@ -490,11 +547,18 @@ public class RichTextBox extends ClickableWidget {
     // ------------------------------------------------------------------ layout
 
     private int shownLines() {
+        if (fixedLines > 0) return fixedLines;
         return Math.max(1, (height - 2 * PAD + 1) / LINE_H);
     }
 
     private int maxScroll() {
         return Math.max(0, lines.size() - shownLines());
+    }
+
+    /** The style a character is drawn in (a bold title: bold throughout). */
+    private net.minecraft.text.Style style(int index) {
+        net.minecraft.text.Style style = mcStyle(text.styleAt(index));
+        return bold ? style.withBold(true) : style;
     }
 
     private static net.minecraft.text.Style mcStyle(RichText.Style style) {
@@ -507,7 +571,7 @@ public class RichTextBox extends ClickableWidget {
     private int charWidth(int index) {
         char c = text.charAt(index);
         if (c == '\n') return 0;
-        return font.getWidth(Text.literal(String.valueOf(c)).setStyle(mcStyle(text.styleAt(index))));
+        return font.getWidth(Text.literal(String.valueOf(c)).setStyle(style(index)));
     }
 
     /**
@@ -551,7 +615,7 @@ public class RichTextBox extends ClickableWidget {
         laidOutWidth = width;
         shownText = text.plain();
         // Laid out at the full width, then narrower if a scroll bar is needed
-        int textWidth = width - 2 * PAD;
+        int textWidth = width - padLeft - padRight;
         if (wrap(textWidth, null) > shownLines()) textWidth -= SCROLLBAR + 1;
         lines.clear();
         wrap(textWidth, lines);
@@ -604,10 +668,10 @@ public class RichTextBox extends ClickableWidget {
     }
 
     private int positionAt(double mouseX, double mouseY) {
-        int line = scroll + (int) Math.floor((mouseY - getY() - PAD) / LINE_H);
+        int line = scroll + (int) Math.floor((mouseY - getY() - padTop) / LINE_H);
         if (line < 0) return 0;
         if (line >= lines.size()) return text.length();
-        return positionIn(line, (int) Math.round(mouseX - getX() - PAD));
+        return positionIn(line, (int) Math.round(mouseX - getX() - padLeft));
     }
 
     private void ensureCaretShown() {
@@ -618,11 +682,11 @@ public class RichTextBox extends ClickableWidget {
     }
 
     private boolean overScrollbar(double mouseX) {
-        return lines.size() > shownLines() && mouseX >= getX() + width - PAD - SCROLLBAR;
+        return lines.size() > shownLines() && mouseX >= getX() + width - padRight - SCROLLBAR;
     }
 
     private void scrollTo(double mouseY) {
-        float t = (float) ((mouseY - getY() - PAD) / (height - 2 * PAD));
+        float t = (float) ((mouseY - getY() - padTop) / (shownLines() * LINE_H));
         scroll = Math.max(0, Math.min(maxScroll(), Math.round(t * maxScroll())));
     }
 
@@ -632,11 +696,12 @@ public class RichTextBox extends ClickableWidget {
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         layout();
         boolean refused = Util.getMeasuringTimeMs() - refusedAt < REFUSED_MS;
-        PartyGui.inset(context, getX(), getY(), width, height, insetBody, isFocused() || refused, false);
+        if (!paper) PartyGui.inset(context, getX(), getY(), width, height, insetBody, isFocused() || refused, false);
         if (refused) context.drawBorder(getX(), getY(), width, height, 0xFFD8323F);
-        int left = getX() + PAD, top = getY() + PAD;
-        if (text.length() == 0 && !isFocused()) {
-            context.drawText(font, placeholder, left, top, PLACEHOLDER, false);
+        int left = getX() + padLeft, top = getY() + padTop;
+        // On paper the placeholder stays while it is empty (the caret before it), like a form's hint
+        if (text.length() == 0 && (paper || !isFocused())) {
+            context.drawText(font, placeholder, left + (plain ? 2 : 0), top, placeholderColor, false);
         }
         int shown = shownLines();
         int from = from(), to = to();
@@ -648,15 +713,15 @@ public class RichTextBox extends ClickableWidget {
             if (from != to && from <= line.end() && to >= line.start()) {
                 int sx = xIn(index, Math.max(from, line.start())), ex = xIn(index, Math.min(to, line.end()));
                 if (to > line.end() && !wrapped(index)) ex += 3;
-                if (ex > sx) context.fill(left + sx, y - 1, left + ex, y + LINE_H - 1, isFocused() ? SELECTION : SELECTION_IDLE);
+                if (ex > sx) context.fill(left + sx, y - 1, left + ex, y + LINE_H - 1, isFocused() ? selectionColor : SELECTION_IDLE);
             }
             // The text, run by run of the same style
             int i = line.start();
             while (i < line.end()) {
                 int j = i + 1;
                 while (j < line.end() && text.styleAt(j).equals(text.styleAt(i))) j++;
-                MutableText run = Text.literal(shownText.substring(i, j)).setStyle(mcStyle(text.styleAt(i)));
-                context.drawText(font, run, left + caretX[i], y, TEXT, false);
+                MutableText run = Text.literal(shownText.substring(i, j)).setStyle(style(i));
+                context.drawText(font, run, left + caretX[i], y, textColor, false);
                 i = j;
             }
         }
@@ -665,16 +730,16 @@ public class RichTextBox extends ClickableWidget {
             int line = lineOf(caret);
             if (line >= scroll && line < scroll + shown) {
                 int cx = left + caretX[caret], cy = top + (line - scroll) * LINE_H;
-                context.fill(cx, cy - 1, cx + 1, cy + LINE_H - 1, 0xFFFFFFFF);
+                context.fill(cx, cy - 1, cx + 1, cy + LINE_H - 1, caretColor);
             }
         }
         // The scroll bar
         if (lines.size() > shown) {
-            int trackX = getX() + width - PAD - SCROLLBAR + 1, trackTop = getY() + PAD, trackH = height - 2 * PAD;
-            context.fill(trackX, trackTop, trackX + SCROLLBAR - 1, trackTop + trackH, 0x40FFFFFF);
+            int trackX = getX() + width - padRight - SCROLLBAR + 1, trackTop = getY() + padTop, trackH = shown * LINE_H - 2;
+            context.fill(trackX, trackTop, trackX + SCROLLBAR - 1, trackTop + trackH, paper ? 0x30000000 : 0x40FFFFFF);
             int thumbH = Math.max(6, trackH * shown / lines.size());
             int thumbY = trackTop + (trackH - thumbH) * scroll / Math.max(1, maxScroll());
-            context.fill(trackX, thumbY, trackX + SCROLLBAR - 1, thumbY + thumbH, 0xFFB8C0C6);
+            context.fill(trackX, thumbY, trackX + SCROLLBAR - 1, thumbY + thumbH, paper ? 0xFF8AA3A6 : 0xFFB8C0C6);
         }
     }
 
