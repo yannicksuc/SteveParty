@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.entities.custom;
 
 import fr.lordfinn.steveparty.entities.TokenBase;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -418,6 +419,9 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         if (linkState == null) return;
         // Only the blocks linked in the trader's own dimension
         linkState.getVendorLinks(this.getUuid(), world.getRegistryKey()).forEach(pos -> {
+            // not across the border of a mini-game zone: what is sold from a zone would come back with it, what is
+            // paid into one would go
+            if (ZoneBubbles.separated(world, this.getBlockPos(), pos)) return;
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof Inventory) {
                 if (blockEntity instanceof TradingStallBlockEntity)
@@ -484,8 +488,9 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         return false;
     }
 
-    private static boolean isRemovedStorage(Inventory inventory) {
-        return inventory instanceof BlockEntity blockEntity && blockEntity.isRemoved();
+    private boolean isRemovedStorage(Inventory inventory) {
+        return inventory instanceof BlockEntity blockEntity && (blockEntity.isRemoved()
+                || ZoneBubbles.separated(this.getWorld(), this.getBlockPos(), blockEntity.getPos()));
     }
 
     private void consumeStock(ItemStack itemStack) {
@@ -520,7 +525,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
             if (stack.isEmpty()) {
                 break;
             }
-            if (inventory.isRemoved()) continue;
+            if (isRemovedStorage(inventory)) continue;
             boolean modified = false;
             for (int slot = 0; slot < inventory.size() && !stack.isEmpty(); slot++) {
                 ItemStack targetStack = inventory.getStack(slot);

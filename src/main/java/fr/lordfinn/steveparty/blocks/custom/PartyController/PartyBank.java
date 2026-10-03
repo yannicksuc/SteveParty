@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.items.custom.ChestCartridgeItem;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
+import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CrafterBlockEntity;
 import net.minecraft.block.entity.DispenserBlockEntity;
@@ -74,6 +75,8 @@ public final class PartyBank {
 
     /** The container at {@code pos}, as an inventory (a double chest whole), or null if it is no bank. */
     public static @Nullable Inventory inventory(World world, BlockPos pos) {
+        // in a mini-game zone in session or being put back: what it pays would come back with the zone
+        if (ZoneBubbles.isInZone(world, pos)) return null;
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (!isBank(blockEntity)) return null;
         BlockState state = world.getBlockState(pos);

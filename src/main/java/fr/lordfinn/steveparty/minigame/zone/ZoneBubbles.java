@@ -339,6 +339,26 @@ public final class ZoneBubbles {
         return USABLE.contains(block);
     }
 
+    /** @return true if the player is of a session but does not play in its zone now (a spectator, a participant the mod took out): it touches nothing */
+    static boolean handsTied(ServerPlayerEntity player) {
+        ZoneBubble bubble = BY_PLAYER.get(player.getUuid());
+        return bubble != null && !bubble.plays(player);
+    }
+
+    /**
+     * @return true if two places are not on the same side of the border of a zone in session or being restored:
+     * what the mod links from afar (a merchant and its stock, a party and its bank) is not reached across it, else
+     * what is taken from a zone would come back with it, and what is put in one would go
+     */
+    public static boolean separated(World world, BlockPos a, BlockPos b) {
+        return ZoneBorder.ACTIVE && at(world, a.getX(), a.getY(), a.getZ()) != at(world, b.getX(), b.getY(), b.getZ());
+    }
+
+    /** @return true if the place is in a zone in session or being restored: what lies there will be put back as it was */
+    public static boolean isInZone(World world, BlockPos pos) {
+        return ZoneBorder.ACTIVE && at(world, pos.getX(), pos.getY(), pos.getZ()) != null;
+    }
+
     /** @return true if the player may not teleport to {@code to} (null: out of every zone) */
     static boolean blocksTeleport(ServerPlayerEntity player, @Nullable ZoneBubble to) {
         ZoneBubble side = sideOf(player);
