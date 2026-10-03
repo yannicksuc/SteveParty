@@ -429,7 +429,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                     currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf),
                     buf.readBoolean(), readTimeline(buf), readTimeline(buf),
                     new PartyBank.Status(PartyBank.State.values()[Math.clamp(buf.readVarInt(), 0, PartyBank.State.values().length - 1)],
-                            buf.readVarInt(), buf.readVarInt()));
+                            buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         }
 
         @Override
@@ -458,6 +458,8 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             buf.writeVarInt(data.bank.state().ordinal());
             buf.writeVarInt(data.bank.coins());
             buf.writeVarInt(data.bank.stars());
+            buf.writeVarInt(data.bank.absent());
+            buf.writeVarInt(data.bank.unloaded());
         }
     };
 }

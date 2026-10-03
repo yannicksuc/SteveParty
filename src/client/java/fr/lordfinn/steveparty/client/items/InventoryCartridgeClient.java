@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.client.items;
 
+import fr.lordfinn.steveparty.client.board.WorldDraw;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.minigame.ZoneCartridgeClient;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -20,17 +22,20 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 /**
- * The Inventory Cartridge on the client, in either hand: the container it remembers is outlined in the world (gold;
- * red when it is no container any more; a double chest whole), and the tools' HUD above the hotbar says which one
- * and how to choose one. The same for a board space's cartridge and for a Party Controller's bank.
+ * The Inventory Cartridge on the client, in either hand: each of its containers is outlined in the world with its
+ * number in the list (gold; red when it is no container any more; a double chest whole), and the tools' HUD above the
+ * hotbar says how many it has and how a click is read. Its destinations are shown as every cartridge's
+ * (DestinationsRenderer).
  */
 public final class InventoryCartridgeClient {
     private static final int CONTAINER = 0xFFC52E, GONE = 0xFF4040;
+    private static final float LABEL_SCALE = 1f / 40f;
 
     private InventoryCartridgeClient() {
     }
@@ -51,16 +56,24 @@ public final class InventoryCartridgeClient {
         ItemStack cartridge = held(client);
         MatrixStack matrices = context.matrixStack();
         if (cartridge == null || client.world == null || matrices == null) return;
-        GlobalPos target = InventoryCartridgeItem.getSavedContainer(cartridge, client.world.getRegistryKey());
-        if (target == null || !target.dimension().equals(client.world.getRegistryKey())) return;
-        BlockPos pos = target.pos();
-        Box box = new Box(pos);
-        BlockState state = client.world.getBlockState(pos);
-        if (state.getBlock() instanceof ChestBlock && state.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE)
-            box = box.union(new Box(pos.offset(ChestBlock.getFacing(state))));
-        boolean container = client.world.getBlockEntity(pos) instanceof Inventory;
+        List<GlobalPos> containers = CartridgeContainers.of(cartridge, client.world.getRegistryKey());
+        if (containers.isEmpty()) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
-        ZoneCartridgeClient.drawBox(matrices, consumers, context.camera().getPos(), box.expand(0.02), container ? CONTAINER : GONE, 0.12f, null);
+        for (int i = 0; i < containers.size(); i++) {
+            GlobalPos target = containers.get(i);
+            if (!target.dimension().equals(client.world.getRegistryKey())) continue;
+            BlockPos pos = target.pos();
+            Box box = new Box(pos);
+            BlockState state = client.world.getBlockState(pos);
+            if (state.getBlock() instanceof ChestBlock && state.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE)
+                box = box.union(new Box(pos.offset(ChestBlock.getFacing(state))));
+            boolean container = client.world.getBlockEntity(pos) instanceof Inventory;
+            ZoneCartridgeClient.drawBox(matrices, consumers, context.camera().getPos(), box.expand(0.02), container ? CONTAINER : GONE, 0.12f, null);
+            consumers.draw();
+            // Its number in the list, above it
+            WorldDraw.plateLabel(matrices, consumers, context.camera(), new Vec3d(pos.getX() + 0.5, box.maxY + 0.45, pos.getZ() + 0.5),
+                    Text.literal(Integer.toString(i + 1)), container ? WorldDraw.Plate.GOLD : WorldDraw.Plate.RED, WorldDraw.PLATE_TEXT, LABEL_SCALE);
+        }
         consumers.draw();
     }
 
@@ -68,22 +81,12 @@ public final class InventoryCartridgeClient {
         MinecraftClient client = MinecraftClient.getInstance();
         ItemStack cartridge = held(client);
         if (client.options.hudHidden || client.currentScreen != null || cartridge == null || client.world == null) return;
-        GlobalPos target = InventoryCartridgeItem.getSavedContainer(cartridge, client.world.getRegistryKey());
-        Text text;
-        ToolHud.Plate plate = ToolHud.Plate.TEAL;
-        if (target == null) {
-            text = Text.translatable("hud.steveparty.inventory_cartridge.none");
-        } else if (!target.dimension().equals(client.world.getRegistryKey())) {
-            text = Text.translatable("hud.steveparty.inventory_cartridge.away", target.dimension().getValue().toString());
-        } else {
-            BlockPos pos = target.pos();
-            text = Text.translatable("hud.steveparty.inventory_cartridge.chest", pos.getX(), pos.getY(), pos.getZ());
-            plate = ToolHud.Plate.GOLD;
-        }
-        Text shown = text;
-        ToolHud.Plate shownPlate = plate;
-        int top = ToolHud.rows(context, List.of(List.of(ToolHud.element(ToolHud.textPlateWidth(shown),
-                (x, y) -> ToolHud.textPlate(context, x, y, shown, shownPlate)))), 4);
+        int count = CartridgeContainers.of(cartridge, client.world.getRegistryKey()).size();
+        Text text = count == 0 ? Text.translatable("hud.steveparty.inventory_cartridge.none")
+                : Text.translatable("hud.steveparty.inventory_cartridge.count", count, CartridgeContainers.MAX);
+        ToolHud.Plate plate = count == 0 ? ToolHud.Plate.TEAL : ToolHud.Plate.GOLD;
+        int top = ToolHud.rows(context, List.of(List.of(ToolHud.element(ToolHud.textPlateWidth(text),
+                (x, y) -> ToolHud.textPlate(context, x, y, text, plate)))), 4);
         ToolHud.hint(context, Text.translatable("hud.steveparty.inventory_cartridge.hint"), context.getScaledWindowWidth() / 2, top);
     }
 }

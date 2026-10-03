@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -54,71 +55,68 @@ public class InventoryCartridgeItem extends CartridgeItem {
     }
 
     /**
-     * The container is chosen with the cartridge in either hand, before the container would open: a right-click on
-     * a container remembers it, a right-click on the one it remembers forgets it. In the main hand a board space or
-     * a router is left to the cartridge's other uses (put in, destinations); in the off hand anything with an
-     * inventory is taken, as before.
+     * A click decides by what it hits, the same in either hand:
+     * <ul>
+     *     <li>a container ({@link CartridgeContainers#accepts}): added to the cartridge's containers, or removed if it
+     *     is one; it does not open. With the cartridge in the off hand and nothing in the main hand, too;</li>
+     *     <li>a board space or a router, sneaking: added to the destinations, or removed ({@link #useOnBlock}). Not
+     *     sneaking, the board space opens its interface, where cartridges are put in, as for every cartridge;</li>
+     *     <li>anything else: its own use.</li>
+     * </ul>
      */
     public static void initialize() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             ItemStack stack = player.getStackInHand(hand);
+            // The off hand's cartridge with nothing in the main hand: the main hand's turn would open the container
+            if (hand == Hand.MAIN_HAND && stack.isEmpty() && player.getOffHandStack().getItem() instanceof InventoryCartridgeItem) {
+                stack = player.getOffHandStack();
+            }
             if (!(stack.getItem() instanceof InventoryCartridgeItem) || player.isSpectator()) return ActionResult.PASS;
             BlockPos pos = hit.getBlockPos().toImmutable();
-            BlockEntity blockEntity = world.getBlockEntity(pos);
-            if (!(blockEntity instanceof Inventory)) return ActionResult.PASS;
-            if (hand == Hand.MAIN_HAND && blockEntity instanceof CartridgeContainerBlockEntity) return ActionResult.PASS;
+            if (!CartridgeContainers.accepts(world, pos)) return ActionResult.PASS;
             if (world.isClient) return ActionResult.SUCCESS;
             choose(stack, world, pos, player);
             return ActionResult.SUCCESS;
         });
     }
 
-    /** Remembers the container at {@code pos}, or forgets it if it is the one remembered; the player is told. */
-    public static void choose(ItemStack stack, World world, BlockPos pos, @Nullable PlayerEntity player) {
-        boolean forget = pos.equals(getSavedInventoryPos(stack)) && world.getRegistryKey().equals(stack.getOrDefault(INVENTORY_DIMENSION, world.getRegistryKey()));
-        if (forget) {
-            stack.remove(INVENTORY_POS);
-            stack.remove(INVENTORY_DIMENSION);
-        } else {
-            stack.set(INVENTORY_POS, pos);
-            stack.set(INVENTORY_DIMENSION, world.getRegistryKey());
+    /** Adds the container at {@code pos} to the cartridge's, or removes it if it is one; the player is told. */
+    public static CartridgeContainers.Toggle choose(ItemStack stack, World world, BlockPos pos, @Nullable PlayerEntity player) {
+        CartridgeContainers.Toggle toggle = CartridgeContainers.toggle(stack, world, pos);
+        if (player == null) return toggle;
+        int count = CartridgeContainers.of(stack, world.getRegistryKey()).size();
+        switch (toggle) {
+            case ADDED -> {
+                ModSounds.playSelect(world, pos);
+                player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.added", count, pos.getX(), pos.getY(), pos.getZ()), true);
+            }
+            case REMOVED -> {
+                ModSounds.playCancel(world, pos);
+                player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.removed", pos.getX(), pos.getY(), pos.getZ(), count), true);
+            }
+            case FULL -> {
+                ModSounds.playCancel(world, pos);
+                player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.full", CartridgeContainers.MAX), true);
+            }
         }
-        if (player == null) return;
-        if (forget) {
-            ModSounds.playCancel(world, pos);
-            player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.cleared"), true);
-        } else {
-            ModSounds.playSelect(world, pos);
-            player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.set", pos.getX(), pos.getY(), pos.getZ()), true);
-        }
-    }
-
-    @Override
-    public ActionResult useOnBlock(ItemUsageContext context) {
-        PlayerEntity player = context.getPlayer();
-        World world = context.getWorld();
-        // A container was taken by initialize(); in the off hand anything else is no container
-        if (!world.isClient && player != null && context.getHand() == Hand.OFF_HAND
-                && !(world.getBlockEntity(context.getBlockPos()) instanceof Inventory)) {
-            MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.block_not_inventory"), MessageUtils.MessageType.ACTION_BAR);
-            return ActionResult.FAIL;
-        }
-        return super.useOnBlock(context);
-    }
-
-    /** The position of the container it remembers (in its dimension, see {@link #getSavedContainer}), null for none. */
-    public static @Nullable BlockPos getSavedInventoryPos(ItemStack stack) {
-        return stack.getOrDefault(INVENTORY_POS, null);
+        return toggle;
     }
 
     /**
-     * The container it remembers, null for none. A cartridge set before the dimension was remembered is taken in
-     * {@code fallback} (the world of whatever reads it).
+     * Reached when the block did not take the click (sneaking, or a block without a use): a board space or a router
+     * is added to the destinations (or removed), in either hand; anything else is left alone.
      */
-    public static @Nullable GlobalPos getSavedContainer(ItemStack stack, RegistryKey<World> fallback) {
-        if (!(stack.getItem() instanceof InventoryCartridgeItem)) return null;
-        BlockPos pos = getSavedInventoryPos(stack);
-        return pos == null ? null : GlobalPos.create(stack.getOrDefault(INVENTORY_DIMENSION, fallback), pos);
+    @Override
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        World world = context.getWorld();
+        if (fr.lordfinn.steveparty.board.BoardLinks.container(world, context.getBlockPos()) == null) return ActionResult.PASS;
+        return toggleDestination(context);
+    }
+
+    /** The position of its first container in its dimension, null for none (see {@link CartridgeContainers}). */
+    public static @Nullable BlockPos getSavedInventoryPos(ItemStack stack) {
+        List<GlobalPos> containers = CartridgeContainers.of(stack, World.OVERWORLD);
+        return containers.isEmpty() ? null : containers.getFirst().pos();
     }
 
     public static void setSelectionState(ItemStack stack, int state) {
@@ -139,22 +137,14 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     private static final List<CartridgeModule> MODULES = List.of(
             new GhostSlotsModule("items", K + "items"),
-            new InfoModule("chest", K + "chest", 2, InventoryCartridgeItem::chest, stack -> new ItemStack(Items.CHEST)),
+            // No title: its hint row says what it is, and it fits beside a tile with all its rows
+            new ContainersModule("chests", null),
             new ChoiceModule("mode", K + "mode",
                     List.of(new ChoiceModule.Option(K + "random", -1, "message.steveparty.button_state.random"),
                             new ChoiceModule.Option(K + "all", -1, "message.steveparty.button_state.all"),
                             new ChoiceModule.Option(K + "cycle", -1, "message.steveparty.button_state.cycle")),
                     InventoryCartridgeItem::getSelectionState,
                     (edit, value) -> setSelectionState(edit.stack(), value)));
-
-    /** The chest it gives from / takes to, and how to link one. */
-    private static List<InfoModule.Line> chest(InfoModule.Context context) {
-        BlockPos pos = context.stack().getOrDefault(INVENTORY_POS, null);
-        return List.of(pos != null
-                        ? InfoModule.Line.of(Text.translatable(K + "chest.at", pos.getX(), pos.getY(), pos.getZ()))
-                        : new InfoModule.Line(Text.translatable(K + "chest.none"), InfoModule.Tone.BAD),
-                new InfoModule.Line(Text.translatable(K + "chest.hint"), InfoModule.Tone.SOFT));
-    }
 
     @Override
     public List<CartridgeModule> modules() {
@@ -182,7 +172,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
                         .setStyle(Style.EMPTY.withColor(0xfcb017))));
 
         tooltip.add(Text.translatable("tooltip.steveparty.controls.select_destination",
-                Text.translatable("tooltip.steveparty.controls.right_hand")
+                Text.translatable("tooltip.steveparty.controls.board_space_click")
                         .setStyle(Style.EMPTY.withColor(0xfcb017))));
 
         tooltip.add(Text.translatable("tooltip.steveparty.controls.open_config",
@@ -191,13 +181,17 @@ public class InventoryCartridgeItem extends CartridgeItem {
         tooltip.add(Text.empty());
 
         // --- Container info ---
-        BlockPos pos = getSavedInventoryPos(stack);
-        if (pos != null) {
-            tooltip.add(Text.translatable("tooltip.steveparty.linked_container")
+        Entity viewer = stack.getHolder();
+        List<GlobalPos> containers = CartridgeContainers.of(stack, viewer == null ? World.OVERWORLD : viewer.getWorld().getRegistryKey());
+        if (!containers.isEmpty()) {
+            tooltip.add(Text.translatable("tooltip.steveparty.linked_containers", containers.size(), CartridgeContainers.MAX)
                     .setStyle(Style.EMPTY.withColor(0x167abf).withBold(true))); // Aqua
-            tooltip.add(Text.translatable("tooltip.steveparty.container_entry",
-                            pos.getX(), pos.getY(), pos.getZ())
-                    .setStyle(Style.EMPTY.withColor(0xFFFFFF))); // White
+            for (int i = 0; i < containers.size(); i++) {
+                BlockPos pos = containers.get(i).pos();
+                tooltip.add(Text.translatable("tooltip.steveparty.container_entry_indexed", i + 1, pos.getX(), pos.getY(), pos.getZ())
+                        .setStyle(Style.EMPTY.withColor(0xFFFFFF))); // White
+            }
+            tooltip.add(Text.translatable("tooltip.steveparty.containers_order").formatted(Formatting.DARK_GRAY));
         } else {
             tooltip.add(Text.translatable("tooltip.steveparty.no_container")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED).withItalic(true)));

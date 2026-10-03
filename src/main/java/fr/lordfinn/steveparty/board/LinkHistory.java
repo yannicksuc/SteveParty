@@ -63,16 +63,17 @@ public final class LinkHistory {
         }
     }
 
-    public record ChestChange(BlockPos pos, int slot, @Nullable BlockPos before, @Nullable BlockPos after) implements Change {
+    /** The containers of an Inventory Cartridge, before and after (in their order). */
+    public record ChestChange(BlockPos pos, int slot, java.util.List<net.minecraft.util.math.GlobalPos> before,
+                              java.util.List<net.minecraft.util.math.GlobalPos> after) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
             CartridgeContainerBlockEntity container = BoardLinks.container(world, pos);
             if (container == null) return false;
             ItemStack cartridge = container.getStack(slot);
-            if (cartridge.isEmpty() || !Objects.equals(cartridge.get(ModComponents.INVENTORY_POS), undo ? after : before)) return false;
-            BlockPos value = undo ? before : after;
-            if (value == null) cartridge.remove(ModComponents.INVENTORY_POS);
-            else cartridge.set(ModComponents.INVENTORY_POS, value);
+            if (cartridge.isEmpty() || !fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey())
+                    .equals(undo ? after : before)) return false;
+            fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, undo ? before : after);
             BoardLinks.sync(container);
             return true;
         }
