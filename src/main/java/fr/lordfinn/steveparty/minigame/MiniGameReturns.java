@@ -67,9 +67,16 @@ public final class MiniGameReturns extends PersistentState {
     public static void initialize() {
         // The only join hook of the mini-games: the bubble's inventory first, then the way back
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> onJoin(handler.getPlayer()));
-        // Back on its death screen: the way back waits for the respawn, which would undo it
+        // Back on its death screen: the way back waits for the respawn, which would undo it. And for the tick after:
+        // during the respawn its connection still holds (and a teleport still moves) the dead player, not the new one
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            if (!alive) bringBack(newPlayer, false);
+            if (alive || !get(newPlayer.server).pending.containsKey(newPlayer.getUuid())) return;
+            MinecraftServer server = newPlayer.server;
+            UUID id = newPlayer.getUuid();
+            fr.lordfinn.steveparty.Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 1, () -> {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
+                if (player != null && !player.isDead()) bringBack(player, false);
+            });
         });
     }
 
