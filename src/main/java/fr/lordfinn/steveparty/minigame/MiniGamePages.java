@@ -234,6 +234,13 @@ public final class MiniGamePages {
         return MiniGamePagesState.get(server).pagesAt(pos);
     }
 
+    /** The ids of the pages the block at {@code pos} is linked to (a podium, a goal pole base, a step controller...). */
+    public static List<UUID> pageIdsAt(net.minecraft.server.world.ServerWorld world, net.minecraft.util.math.BlockPos pos) {
+        List<UUID> ids = new ArrayList<>();
+        for (MiniGamePageData page : pagesAt(world.getServer(), GlobalPos.create(world.getRegistryKey(), pos))) ids.add(page.id());
+        return ids;
+    }
+
     // ------------------------------------------------------------------ rights
 
     /** Writing on a page takes the right to build: not in adventure, not as a spectator. */

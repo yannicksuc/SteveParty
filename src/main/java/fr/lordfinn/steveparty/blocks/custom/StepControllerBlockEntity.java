@@ -128,10 +128,7 @@ public class StepControllerBlockEntity extends BlockEntity implements GeoBlockEn
     /** The pages this controller is linked to (server: as the pages say now; client: as last told). */
     public java.util.List<java.util.UUID> getLinkedPages() {
         if (this.world instanceof ServerWorld serverWorld) {
-            java.util.List<java.util.UUID> pages = new java.util.ArrayList<>();
-            for (fr.lordfinn.steveparty.minigame.MiniGamePageData page : fr.lordfinn.steveparty.minigame.MiniGamePages.pagesAt(serverWorld.getServer(),
-                    net.minecraft.util.math.GlobalPos.create(serverWorld.getRegistryKey(), this.pos))) pages.add(page.id());
-            return pages;
+            return fr.lordfinn.steveparty.minigame.MiniGamePages.pageIdsAt(serverWorld, this.pos);
         }
         return linkedPages;
     }
