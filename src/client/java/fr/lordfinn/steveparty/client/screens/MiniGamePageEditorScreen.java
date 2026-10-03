@@ -250,6 +250,8 @@ public class MiniGamePageEditorScreen extends Screen {
         for (MiniGameMode mode : MiniGameMode.values()) {
             int i = mode.ordinal();
             PartyButton button = new PartyButton(rx + (i % 2) * 75, modesY + (i / 2) * (ROW + 2), 73, ROW, mode.text(), b -> toggle(mode));
+            // A too long label stops before the « ! » of its corner
+            button.reserveRight(4);
             button.setSelected(modes.contains(mode));
             button.active = canEdit;
             modeButtons[i] = addDrawableChild(button);

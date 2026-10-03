@@ -43,6 +43,14 @@ public class PartyButton extends PressableWidget {
         return this;
     }
 
+    /** Pixels on the right a too long label leaves free (for a badge on the button's corner). */
+    private int reservedRight;
+
+    public PartyButton reserveRight(int pixels) {
+        this.reservedRight = pixels;
+        return this;
+    }
+
     public void setSelected(boolean selected) {
         this.selected = selected;
     }
@@ -81,6 +89,12 @@ public class PartyButton extends PressableWidget {
             content.draw(context, textRenderer, centerX, centerY, textColor);
         } else {
             Text message = getMessage();
+            int room = w - 6 - reservedRight;
+            if (textRenderer.getWidth(message) > room) {
+                // Too long for the button: cut with « … », scrolling back and forth while hovered
+                drawLong(context, textRenderer, message, x + 3, centerY - 4, room, textColor);
+                return;
+            }
             int textX = centerX - textRenderer.getWidth(message) / 2;
             if (style == Style.PRIMARY && active) {
                 context.drawTextWithShadow(textRenderer, message, textX, centerY - 4, textColor);
@@ -88,6 +102,38 @@ public class PartyButton extends PressableWidget {
                 context.drawText(textRenderer, message, textX, centerY - 4, textColor, false);
             }
         }
+    }
+
+    private static final float MARQUEE_SPEED = 28F;
+    private static final long MARQUEE_PAUSE_MS = 700;
+    private long marqueeStart = -1;
+
+    private void drawLong(DrawContext context, TextRenderer textRenderer, Text message, int left, int top, int room, int color) {
+        boolean shadow = style == Style.PRIMARY && active;
+        if (!isHovered()) {
+            marqueeStart = -1;
+            String ellipsis = "…";
+            String cut = textRenderer.trimToWidth(message.getString(), Math.max(0, room - textRenderer.getWidth(ellipsis))).stripTrailing() + ellipsis;
+            Text shown = Text.literal(cut).setStyle(message.getStyle());
+            context.drawText(textRenderer, shown, left + (room - textRenderer.getWidth(shown)) / 2, top, color, shadow);
+            return;
+        }
+        long now = net.minecraft.util.Util.getMeasuringTimeMs();
+        if (marqueeStart < 0) marqueeStart = now;
+        int travel = textRenderer.getWidth(message) - room;
+        long moveMs = Math.max(1, (long) (travel / MARQUEE_SPEED * 1000F));
+        long t = (now - marqueeStart) % (2 * (MARQUEE_PAUSE_MS + moveMs));
+        float offset;
+        if (t < MARQUEE_PAUSE_MS) offset = 0;
+        else if (t < MARQUEE_PAUSE_MS + moveMs) offset = (t - MARQUEE_PAUSE_MS) / (float) moveMs * travel;
+        else if (t < 2 * MARQUEE_PAUSE_MS + moveMs) offset = travel;
+        else offset = travel - (t - 2 * MARQUEE_PAUSE_MS - moveMs) / (float) moveMs * travel;
+        context.enableScissor(left, top - 1, left + room, top + 10);
+        context.getMatrices().push();
+        context.getMatrices().translate(-offset, 0, 0);
+        context.drawText(textRenderer, message, left, top, color, shadow);
+        context.getMatrices().pop();
+        context.disableScissor();
     }
 
     @Override
