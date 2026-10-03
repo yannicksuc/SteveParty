@@ -16,16 +16,16 @@ import java.util.Locale;
  * ({@link #ofPipe}); the page's editor changes it.
  */
 public enum MiniGamePipeRole {
-    /** Where the players of a free-for-all come out, and those who come by an {@link #ENTRY} pipe. Green pipes. */
+    /** Where the players of a free-for-all come out, and those who come by an {@link #ENTRY} pipe. Green and lime pipes. */
     PLAYERS(0x5DB83A, "green", "lime"),
     /** Where the party's audience comes out. White and plain glass pipes. */
     SPECTATORS(0xE6E6E6, "white"),
-    /** Team A: the players on a positive tile. Blue pipes. */
-    TEAM_A(0x3F6FE0, "blue"),
+    /** Team A: the players on a positive tile. Blue, light blue and cyan pipes. */
+    TEAM_A(0x3F6FE0, "blue", "light_blue", "cyan"),
     /** Team B: the players on a negative tile. Red pipes. */
     TEAM_B(0xE0453A, "red"),
-    /** Purple pipes. */
-    TEAM_C(0xA85CE0, "purple"),
+    /** Purple and magenta pipes. */
+    TEAM_C(0xA85CE0, "purple", "magenta"),
     /** Orange pipes. */
     TEAM_D(0xE08A1E, "orange"),
     /** The default arrival of those who come by a mini-game pipe, out of a party. Black pipes. */
@@ -82,8 +82,9 @@ public enum MiniGamePipeRole {
     }
 
     /**
-     * The role a pipe gets from its colour: green players, white or plain glass spectators, blue team A, red team B,
-     * purple team C, orange team D, yellow the exit, black an entry; players for any other colour.
+     * The role a pipe gets from its colour, whatever its kind (opaque, windowed, stained glass): green or lime players,
+     * white or plain glass spectators, blue, light blue or cyan team A, red team B, purple or magenta team C, orange
+     * team D, yellow the exit, black an entry; players for any other colour.
      */
     public static MiniGamePipeRole ofPipe(BlockState state) {
         if (!(state.getBlock() instanceof PipeBlock pipe)) return PLAYERS;

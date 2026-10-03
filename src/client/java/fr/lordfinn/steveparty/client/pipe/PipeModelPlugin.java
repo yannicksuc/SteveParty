@@ -44,12 +44,13 @@ public class PipeModelPlugin implements ModelLoadingPlugin {
     /**
      * The texture of a part ({@link PipeGeometry#OUTER} .. {@link PipeGeometry#RIM}) of a pipe: plastic pipes have
      * their own wall sheets ({@code block/pipe/<kind>/<color>_outer} and {@code _inner}, 4 x 4 tiles), the rims the
-     * plastic block's; glass pipes are all vanilla glass or stained glass.
+     * plastic block's; glass pipes are a clean glass, rim only, without the streaks of the vanilla glass
+     * ({@code block/pipe/glass/clear} or the stained colour).
      */
     public static Identifier texture(PipeKind kind, int color, int part) {
         return switch (kind) {
-            case GLASS -> Identifier.ofVanilla("block/glass");
-            case STAINED_GLASS -> Identifier.ofVanilla("block/" + ModBlocks.COLORS[color] + "_stained_glass");
+            case GLASS -> Steveparty.id("block/pipe/glass/clear");
+            case STAINED_GLASS -> Steveparty.id("block/pipe/glass/" + ModBlocks.COLORS[color]);
             case COPPER, IRON, GOLDEN -> Steveparty.id("block/pipe/" + kind.folder + "/metal_" + PARTS[part]);
             default -> part == PipeGeometry.RIM ? Steveparty.id("block/plastic_block/" + ModBlocks.COLORS[color] + "_plastic_block")
                     : Steveparty.id("block/pipe/" + kind.folder + "/" + ModBlocks.COLORS[color] + "_" + PARTS[part]);
