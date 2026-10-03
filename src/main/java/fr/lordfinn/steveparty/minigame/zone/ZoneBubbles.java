@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.minigame.zone;
 
 import fr.lordfinn.steveparty.Steveparty;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -99,6 +101,17 @@ public final class ZoneBubbles {
             if (ZoneBorder.ACTIVE) tick(server);
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> settle(handler.getPlayer()));
+        // given back what it owns on its death screen: it keeps it when it respawns, whatever the keepInventory rule
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (!alive) ZonePlayerStash.afterRespawn(oldPlayer, newPlayer);
+        });
+        // nothing hurts across a border: neither an arrow, an explosion, a splash nor a mob of the other side
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> !ZoneBorder.ACTIVE || !ZoneBorder.blocksDamage(entity, source));
+        // a member dying where it may not drop anything drops no experience either: it is of the session
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
+            if (ZoneBorder.ACTIVE && entity instanceof ServerPlayerEntity player && ZoneBorder.blocksDrop(player)) ZonePlayerStash.dropNoExperience(player);
+            return true;
+        });
         // before the player is saved: it leaves with what it owns
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ZoneBubble bubble = BY_PLAYER.get(handler.getPlayer().getUuid());
@@ -231,12 +244,16 @@ public final class ZoneBubbles {
      * tied (it breaks, places, uses, picks up and drops nothing) until it is back in.
      */
     public static void allowTeleports(Runnable teleports) {
+        // who stepped out of its zone on its own (the border puts it back at the end of the tick) is not excused by a
+        // teleport of the mod meanwhile, made for someone else
+        Set<UUID> strays = new HashSet<>();
+        for (ZoneBubble bubble : live) if (bubble.isActive()) bubble.findStrays(strays);
         ZoneBorder.allow++;
         try {
             teleports.run();
         } finally {
             ZoneBorder.allow--;
-            for (ZoneBubble bubble : live) if (bubble.isActive()) bubble.markAway(bubble.world.getServer());
+            for (ZoneBubble bubble : live) if (bubble.isActive()) bubble.markAway(bubble.world.getServer(), strays);
         }
     }
 
@@ -337,6 +354,26 @@ public final class ZoneBubbles {
 
     static boolean isUsable(Block block) {
         return USABLE.contains(block);
+    }
+
+    /** @return true if the player is of a session but does not play in its zone now (a spectator, a participant the mod took out): it touches nothing */
+    static boolean handsTied(ServerPlayerEntity player) {
+        ZoneBubble bubble = BY_PLAYER.get(player.getUuid());
+        return bubble != null && !bubble.plays(player);
+    }
+
+    /**
+     * @return true if two places are not on the same side of the border of a zone in session or being restored:
+     * what the mod links from afar (a merchant and its stock, a party and its bank) is not reached across it, else
+     * what is taken from a zone would come back with it, and what is put in one would go
+     */
+    public static boolean separated(World world, BlockPos a, BlockPos b) {
+        return ZoneBorder.ACTIVE && at(world, a.getX(), a.getY(), a.getZ()) != at(world, b.getX(), b.getY(), b.getZ());
+    }
+
+    /** @return true if the place is in a zone in session or being restored: what lies there will be put back as it was */
+    public static boolean isInZone(World world, BlockPos pos) {
+        return ZoneBorder.ACTIVE && at(world, pos.getX(), pos.getY(), pos.getZ()) != null;
     }
 
     /** @return true if the player may not teleport to {@code to} (null: out of every zone) */

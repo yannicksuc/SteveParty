@@ -3,10 +3,17 @@ package fr.lordfinn.steveparty.minigame.zone;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -45,11 +52,15 @@ public final class ZoneBorder {
     static int bypass;
     /** The mod's own teleports of players pass the wall. */
     static int allow;
+    /** What a player drops is destroyed: its session inventory is being taken from it. */
+    static int discardDrops;
 
     private static int depth;
     private static World originWorld;
     private static int originX, originY, originZ;
     private static @Nullable ServerPlayerEntity originPlayer;
+    /** The origin is something a player does with its hands (not its own tick). */
+    private static boolean originAction;
 
     private ZoneBorder() {
     }
@@ -80,6 +91,16 @@ public final class ZoneBorder {
      * the rest of the world). Like a tick, the action of a player starts from the game loop.
      */
     public static void enterPlayer(ServerPlayerEntity player) {
+        enterPlayer(player, false);
+    }
+
+    /**
+     * Like {@link #enterPlayer(ServerPlayerEntity)}; {@code action}: it uses or breaks something. A member of a session
+     * whose hands are tied (a spectator, a participant out of its zone) changes no block and spawns nothing by its
+     * actions, on either side: the blocks it may still use (the session's own controls) do what they do, the item in
+     * its hand does nothing (a block of the session placed out of the zone, a spawn egg...).
+     */
+    public static void enterPlayer(ServerPlayerEntity player, boolean action) {
         if (Thread.currentThread() != thread) return;
         if (depth > 0 && originPlayer == player) {
             depth++;
@@ -88,6 +109,7 @@ public final class ZoneBorder {
         depth = 1;
         originWorld = player.getWorld();
         originPlayer = player;
+        originAction = action;
     }
 
     /** A block changes: until {@link #exitChange}, all it sets off stays on its side (or on the side of what made it change). */
@@ -134,9 +156,11 @@ public final class ZoneBorder {
         return originPlayer != null ? ZoneBubbles.sideOf(originPlayer) : ZoneBubbles.at(originWorld, originX, originY, originZ);
     }
 
-    /** @return true if what is going on started on the other side of a border from {@code x y z} */
+    /** @return true if what is going on started on the other side of a border from {@code x y z}, or by hands that are tied */
     private static boolean fromOtherSide(World world, int x, int y, int z) {
-        return depth > 0 && bypass == 0 && world == originWorld && ZoneBubbles.at(world, x, y, z) != originSide();
+        if (depth == 0 || bypass > 0 || world != originWorld) return false;
+        if (originPlayer != null && originAction && ZoneBubbles.handsTied(originPlayer)) return true;
+        return ZoneBubbles.at(world, x, y, z) != originSide();
     }
 
     // ------------------------------------------------------------------ blocks
@@ -150,7 +174,7 @@ public final class ZoneBorder {
         World world = chunk.getWorld();
         if (world.isClient || Thread.currentThread() != thread) return false;
         ZoneBubble bubble = ZoneBubbles.at(world, pos.getX(), pos.getY(), pos.getZ());
-        if (depth > 0 && bypass == 0 && world == originWorld && bubble != originSide()) return true;
+        if (fromOtherSide(world, pos.getX(), pos.getY(), pos.getZ())) return true;
         if (bubble == null) return false;
         BlockState old = chunk.getBlockState(pos);
         if (old == state) return false;
@@ -274,8 +298,81 @@ public final class ZoneBorder {
 
     /** @return true if what a player drops is destroyed instead: session items can't lie out of their zone */
     public static boolean blocksDrop(PlayerEntity player) {
-        if (bypass > 0 || !(player instanceof ServerPlayerEntity server) || Thread.currentThread() != thread) return false;
+        if (!(player instanceof ServerPlayerEntity server) || Thread.currentThread() != thread) return false;
+        // what a screen closed while the session inventory is taken back gives back (a crafting table's grid, an
+        // anvil's input...) is of the session: it never lies anywhere, whether the player stands in its zone or not
+        if (discardDrops > 0) return true;
+        if (bypass > 0) return false;
         return ZoneBubbles.blocksDrop(server);
+    }
+
+    /** Runs what destroys a player's session inventory: whatever the player drops meanwhile is destroyed. */
+    static void discardingDrops(Runnable action) {
+        discardDrops++;
+        try {
+            action.run();
+        } finally {
+            discardDrops--;
+        }
+    }
+
+    // ------------------------------------------------------------------ hurting across
+
+    private static @Nullable World explosionWorld;
+    private static @Nullable Vec3d explosionPos;
+
+    /** An explosion hurts the entities around it (null, null: it is done). */
+    public static void explosionAt(@Nullable World world, @Nullable Vec3d pos) {
+        explosionWorld = world;
+        explosionPos = pos;
+    }
+
+    /** The side of the border an entity is on: for a player, the zone it plays in (none if its hands are tied). */
+    private static @Nullable ZoneBubble sideOf(Entity entity) {
+        if (entity instanceof ServerPlayerEntity player) return ZoneBubbles.sideOf(player);
+        BlockPos pos = entity.getBlockPos();
+        return ZoneBubbles.at(entity.getWorld(), pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    /**
+     * @return true if an entity is not hurt: what hurts it (who, or else what, or else where it happened: an
+     * explosion, an arrow, a splash, a cloud) is on the other side of a border; or it is a piece of what goes on
+     * beyond its zone (a token of a running party), which the session must not touch. {@code /kill} and the void pass.
+     */
+    public static boolean blocksDamage(LivingEntity victim, DamageSource source) {
+        World world = victim.getWorld();
+        if (world.isClient || bypass > 0 || Thread.currentThread() != thread) return false;
+        if (source.isOf(DamageTypes.GENERIC_KILL) || source.isOf(DamageTypes.OUT_OF_WORLD)) return false;
+        ZoneBubble side = sideOf(victim);
+        if (!(victim instanceof PlayerEntity) && side != null && ZoneBubbles.isKeptLive(victim)) return true;
+        Entity cause = source.getAttacker() != null ? source.getAttacker() : source.getSource();
+        if (cause != null) return cause.getWorld() == world && sideOf(cause) != side;
+        Vec3d at = source.getPosition();
+        if (at == null && explosionWorld == world && source.isIn(DamageTypeTags.IS_EXPLOSION)) at = explosionPos;
+        return at != null && ZoneBubbles.at(world, MathHelper.floor(at.x), MathHelper.floor(at.y), MathHelper.floor(at.z)) != side;
+    }
+
+    /** @return true if an effect (a potion, a cloud, an arrow's) is not given: what gives it is on the other side of a border */
+    public static boolean blocksEffect(LivingEntity target, Entity source) {
+        if (target.getWorld().isClient || bypass > 0 || Thread.currentThread() != thread) return false;
+        return source.getWorld() == target.getWorld() && sideOf(source) != sideOf(target);
+    }
+
+    /**
+     * @return true if a projectile hits nothing there: the block or the entity it reaches is on the other side of a
+     * border (the move that would take it there stops at the border anyway: {@link #wall})
+     */
+    public static boolean blocksHit(Entity projectile, HitResult hit) {
+        World world = projectile.getWorld();
+        if (world.isClient || bypass > 0 || Thread.currentThread() != thread) return false;
+        BlockPos from = projectile.getBlockPos();
+        ZoneBubble side = ZoneBubbles.at(world, from.getX(), from.getY(), from.getZ());
+        if (hit instanceof EntityHitResult entityHit) return sideOf(entityHit.getEntity()) != side;
+        if (hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK) {
+            BlockPos pos = blockHit.getBlockPos();
+            return ZoneBubbles.at(world, pos.getX(), pos.getY(), pos.getZ()) != side;
+        }
+        return false;
     }
 
     /** @return true if a player may not pick this entity up (item, experience orb, arrow) */

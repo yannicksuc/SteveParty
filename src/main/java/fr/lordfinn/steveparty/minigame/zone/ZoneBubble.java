@@ -450,13 +450,24 @@ public final class ZoneBubble {
         return state == State.ACTIVE && member != null && member.participant && !member.away;
     }
 
-    /** The participants found out of the zone right after one of the mod's teleports are there with its leave. */
-    void markAway(MinecraftServer server) {
+    /** The participants found out of the zone right after one of the mod's teleports are there with its leave (but the {@code strays}, out before it). */
+    void markAway(MinecraftServer server, Set<UUID> strays) {
+        for (Map.Entry<UUID, Member> entry : members.entrySet()) {
+            Member member = entry.getValue();
+            if (!member.participant || member.away || strays.contains(entry.getKey())) continue;
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
+            if (player != null && !contains(player)) member.away = true;
+        }
+    }
+
+    /** Adds the participants out of the zone without leave: they are sent back at the end of the tick. */
+    void findStrays(Set<UUID> strays) {
+        MinecraftServer server = world.getServer();
         for (Map.Entry<UUID, Member> entry : members.entrySet()) {
             Member member = entry.getValue();
             if (!member.participant || member.away) continue;
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
-            if (player != null && !contains(player)) member.away = true;
+            if (player != null && !contains(player)) strays.add(entry.getKey());
         }
     }
 

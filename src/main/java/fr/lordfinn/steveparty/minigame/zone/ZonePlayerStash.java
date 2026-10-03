@@ -25,6 +25,11 @@ final class ZonePlayerStash {
      * inventory is the real one: the stash is from a time the server never saved).
      */
     static final String TAG = "steveparty.zone_bubble";
+    /**
+     * Worn by a player given back what it owns while on its death screen: its body holds it, and the player it
+     * respawns as takes it over ({@link #afterRespawn}), saved with it in between (it may log out, the server may stop).
+     */
+    static final String DEAD_TAG = "steveparty.zone_bubble.dead";
 
     private ZonePlayerStash() {
     }
@@ -59,11 +64,14 @@ final class ZonePlayerStash {
 
     /** The session inventory of the player is destroyed, and what it owned given back. */
     static void restore(ServerPlayerEntity player, NbtCompound stash) {
-        // nothing of the session follows the player: neither what its cursor or its crafting grid hold, nor a
-        // parrot of the zone on its shoulder
-        player.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
-        player.playerScreenHandler.getCraftingInput().clear();
-        player.closeHandledScreen();
+        // nothing of the session follows the player: neither what its cursor, its crafting grid or the inputs of the
+        // screen it has open (a crafting table, an anvil...) hold, which would be dropped where it stands if its
+        // inventory is full, nor a parrot of the zone on its shoulder
+        ZoneBorder.discardingDrops(() -> {
+            player.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
+            player.playerScreenHandler.getCraftingInput().clear();
+            player.closeHandledScreen();
+        });
         ((PlayerShoulderInvoker) player).steveparty$setShoulderEntityLeft(new NbtCompound());
         ((PlayerShoulderInvoker) player).steveparty$setShoulderEntityRight(new NbtCompound());
 
@@ -77,7 +85,25 @@ final class ZonePlayerStash {
         GameMode mode = GameMode.byId(stash.getInt("GameMode"));
         if (player.interactionManager.getGameMode() != mode) player.changeGameMode(mode);
         player.removeCommandTag(TAG);
+        // dead: the player it respawns as would leave all of it with its body (keepInventory off)
+        if (player.isDead()) player.addCommandTag(DEAD_TAG);
         player.currentScreenHandler.syncState();
+    }
+
+    /** A player given back what it owns on its death screen respawns: it takes it from its body. */
+    static void afterRespawn(ServerPlayerEntity body, ServerPlayerEntity player) {
+        if (!body.getCommandTags().contains(DEAD_TAG)) return;
+        player.removeCommandTag(DEAD_TAG);
+        player.getInventory().clone(body.getInventory());
+        setExperience(player, body.experienceLevel, body.experienceProgress, body.totalExperience);
+        player.currentScreenHandler.syncState();
+    }
+
+    /** The player dies where what it drops is destroyed: its session experience goes too, it drops no orb. */
+    static void dropNoExperience(ServerPlayerEntity player) {
+        player.experienceLevel = 0;
+        player.experienceProgress = 0;
+        player.totalExperience = 0;
     }
 
     private static void setExperience(ServerPlayerEntity player, int level, float progress, int total) {
