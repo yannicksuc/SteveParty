@@ -46,7 +46,7 @@ import java.util.UUID;
  * is missing for the mini-game to be played in each of the ways it ticks; on the Page tab, the ways to play that miss
  * pipes carry a « ! ».
  * <p>
- * The « Podiums » tab lists the podiums, the goal pole bases and the step controllers linked to the page (a click on
+ * The « Results » tab lists the podiums, the goal pole bases and the step controllers linked to the page (a click on
  * them, page in hand): the podiums are the places of the mini-game (the taller the column, the better the place), the
  * bases its counters, the step controllers what ends it with a redstone pulse. A
  * click on a card shows where it is, a right click unlinks it. Without any podium the mini-game names no winner (every
@@ -96,14 +96,18 @@ public class MiniGamePageEditorScreen extends Screen {
     /** The columns: two rows of four. */
     private static final MiniGamePipeRole[] COLUMNS = {MiniGamePipeRole.PLAYERS, MiniGamePipeRole.TEAM_A, MiniGamePipeRole.TEAM_B,
             MiniGamePipeRole.SPECTATORS, MiniGamePipeRole.TEAM_C, MiniGamePipeRole.TEAM_D, MiniGamePipeRole.ENTRY, MiniGamePipeRole.EXIT};
-    private static final int COLUMN_WIDTH = 74, COLUMN_GAP = 2, COLUMNS_TOP = 50, HEADER = 11, CARD = 12, CARDS_SHOWN = 3;
+    /** The tabs' content starts under the line of their « i » (how the tab is used: its popup, no paragraph). */
+    private static final int CONTENT_TOP = TOP + 12;
+    private static final int COLUMN_WIDTH = 74, COLUMN_GAP = 2, COLUMNS_TOP = CONTENT_TOP, HEADER = 11, CARD = 12, CARDS_SHOWN = 4;
     private static final int COLUMN_HEIGHT = HEADER + CARDS_SHOWN * CARD + 2, ROW_GAP = 3;
     private boolean pipesTab;
-    /** The « Podiums » tab (never with {@link #pipesTab}). */
+    /** The « Results » tab (never with {@link #pipesTab}): what ends the mini-game and gives the places. */
     private boolean podiumsTab;
     private PartyButton pageTabButton, pipesTabButton, podiumsTabButton;
     /** The podium cards: two columns, scrolled by row. */
-    private static final int PODIUM_CARD_WIDTH = 150, PODIUM_CARD = 13, PODIUM_ROWS = 7, PODIUMS_TOP = 74;
+    private static final int PODIUM_CARD_WIDTH = 150, PODIUM_CARD = 13, PODIUM_ROWS = 10, PODIUMS_TOP = CONTENT_TOP;
+    /** The « i » of the Pipes and Results tabs, at the top right of their content. */
+    private static final int INFO_SIZE = 9, INFO_X = WIDTH - MARGIN - INFO_SIZE, INFO_Y = TOP;
     private int podiumScroll;
     /** What is typed in the fields, kept while the other tab is shown. */
     private String titleValue, descriptionValue;
@@ -500,7 +504,8 @@ public class MiniGamePageEditorScreen extends Screen {
         if (removeButton != null) removeButton.active = canEdit && image != null;
         if (!pipesTab && !podiumsTab) refreshModeTooltips(data);
         super.render(context, mouseX, mouseY, delta);
-        if (pipesTab) drawPipesOverlay(context, mouseX, mouseY);
+        if ((pipesTab || podiumsTab) && overInfo(mouseX, mouseY)) drawInfo(context, mouseX, mouseY);
+        else if (pipesTab) drawPipesOverlay(context, mouseX, mouseY);
         else if (podiumsTab) drawPodiumsOverlay(context, mouseX, mouseY);
         else drawModeWarnings(context, data);
         // No podium: the mini-game names no winner. Said on the tab itself
@@ -536,10 +541,12 @@ public class MiniGamePageEditorScreen extends Screen {
         }
         if (pipesTab) {
             drawPipes(context, data, mouseX, mouseY);
+            drawInfoBadge(context, overInfo(mouseX, mouseY));
             return;
         }
         if (podiumsTab) {
             drawPodiums(context, data, mouseX, mouseY);
+            drawInfoBadge(context, overInfo(mouseX, mouseY));
             return;
         }
 
@@ -623,11 +630,8 @@ public class MiniGamePageEditorScreen extends Screen {
 
     private void drawPipes(DrawContext context, MiniGamePageData data, int mouseX, int mouseY) {
         int lx = x + MARGIN;
-        // How to link pipes
-        List<OrderedText> guide = textRenderer.wrapLines(Text.translatable(KEY + "pipes.guide"), WIDTH - 2 * MARGIN);
-        for (int i = 0; i < Math.min(3, guide.size()); i++) {
-            context.drawText(textRenderer, guide.get(i), lx, y + TOP + i * 10, PartyGui.TEXT_SOFT, false);
-        }
+        // The tab's heading line (how to link pipes: the « i »)
+        context.drawText(textRenderer, Text.translatable(KEY + "pipes.heading"), lx, y + TOP + 1, PartyGui.TEXT_DARK, false);
 
         int hovered = held != null && dragged ? columnAt(mouseX, mouseY) : -1;
         for (int column = 0; column < COLUMNS.length; column++) {
@@ -799,12 +803,56 @@ public class MiniGamePageEditorScreen extends Screen {
         if (client != null) client.getSoundManager().play(net.minecraft.client.sound.PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.2F));
     }
 
-    // ------------------------------------------------------------------ the « Podiums » tab
+    // ------------------------------------------------------------------ the « i » of the Pipes and Results tabs
 
-    private static Text podiumText(MiniGamePodiumLink link) {
+    private boolean overInfo(double mouseX, double mouseY) {
+        return mouseX >= x + INFO_X - 1 && mouseX < x + INFO_X + INFO_SIZE + 1 && mouseY >= y + INFO_Y - 1 && mouseY < y + INFO_Y + INFO_SIZE + 1;
+    }
+
+    /** The yellow « i » of the dashboard: how the tab is used, in its popup. */
+    private void drawInfoBadge(DrawContext context, boolean hovered) {
+        int bx = x + INFO_X, by = y + INFO_Y;
+        int edge = 0xFF6B4300, body = hovered ? 0xFFFFD86A : 0xFFFFC52E;
+        context.fill(bx + 1, by, bx + 8, by + 9, edge);
+        context.fill(bx, by + 1, bx + 9, by + 8, edge);
+        context.fill(bx + 1, by + 1, bx + 8, by + 8, body);
+        context.fill(bx + 4, by + 2, bx + 5, by + 3, 0xFF4A2C00);
+        context.fill(bx + 4, by + 4, bx + 5, by + 7, 0xFF4A2C00);
+    }
+
+    private void drawInfo(DrawContext context, int mouseX, int mouseY) {
+        String tab = pipesTab ? "pipes" : "podiums";
+        drawWrappedTooltip(context, List.of(Text.translatable(KEY + "tab." + tab).formatted(Formatting.GOLD),
+                Text.translatable(KEY + tab + ".info").formatted(Formatting.GRAY)), mouseX, mouseY);
+    }
+
+    // ------------------------------------------------------------------ the « Results » tab
+
+    /**
+     * A linked block's name: the block there (« Podium d'or ») when it is loaded here, else its kind's block (« Socle
+     * de mât d'arrivée », « Contrôleur de pas », « Podium »).
+     */
+    private Text podiumName(MiniGamePodiumLink link) {
+        if (client != null && client.world != null && client.world.getRegistryKey().equals(link.pos().dimension())
+                && client.world.isChunkLoaded(link.pos().pos())) {
+            net.minecraft.block.Block block = client.world.getBlockState(link.pos().pos()).getBlock();
+            boolean expected = switch (link.kind()) {
+                case PODIUM -> block instanceof fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
+                case COUNTER -> block == fr.lordfinn.steveparty.blocks.ModBlocks.GOAL_POLE_BASE;
+                default -> block == fr.lordfinn.steveparty.blocks.ModBlocks.STEP_CONTROLLER;
+            };
+            if (expected) return block.getName();
+        }
+        return switch (link.kind()) {
+            case PODIUM -> Text.translatable("block.steveparty.podium");
+            case COUNTER -> fr.lordfinn.steveparty.blocks.ModBlocks.GOAL_POLE_BASE.getName();
+            default -> fr.lordfinn.steveparty.blocks.ModBlocks.STEP_CONTROLLER.getName();
+        };
+    }
+
+    private static String podiumPos(MiniGamePodiumLink link) {
         net.minecraft.util.math.BlockPos pos = link.pos().pos();
-        return Text.translatable(KEY + "podiums.card." + link.kind().key(),
-                pos.getX() + " " + pos.getY() + " " + pos.getZ());
+        return pos.getX() + " " + pos.getY() + " " + pos.getZ();
     }
 
     private int podiumCardX(int index) {
@@ -827,10 +875,8 @@ public class MiniGamePageEditorScreen extends Screen {
 
     private void drawPodiums(DrawContext context, MiniGamePageData data, int mouseX, int mouseY) {
         int lx = x + MARGIN;
-        List<OrderedText> guide = textRenderer.wrapLines(Text.translatable(KEY + "podiums.guide"), WIDTH - 2 * MARGIN);
-        for (int i = 0; i < Math.min(5, guide.size()); i++) {
-            context.drawText(textRenderer, guide.get(i), lx, y + TOP + i * 10, PartyGui.TEXT_SOFT, false);
-        }
+        // The tab's heading line (how to link: the « i »)
+        context.drawText(textRenderer, Text.translatable(KEY + "podiums.heading"), lx, y + TOP + 1, PartyGui.TEXT_DARK, false);
         List<MiniGamePodiumLink> links = data.podiumLinks();
         int rows = (links.size() + 1) / 2;
         podiumScroll = Math.max(0, Math.min(podiumScroll, rows - PODIUM_ROWS));
@@ -854,7 +900,16 @@ public class MiniGamePageEditorScreen extends Screen {
                 context.fill(left + 8, top + 4, left + 9, top + 8, 0xFF2E7D32);
                 context.fill(left + 9, top + 5, left + 10, top + 7, 0xFF2E7D32);
             }
-            context.drawText(textRenderer, fit(podiumText(link), PODIUM_CARD_WIDTH - 16), left + 12, top + 2, 0xFF2E2E2E, false);
+            // Its block's name, then where it is, greyed (shortened when there is no room)
+            int room = PODIUM_CARD_WIDTH - 16;
+            OrderedText name = fit(podiumName(link), room);
+            int nameWidth = textRenderer.getWidth(name);
+            context.drawText(textRenderer, name, left + 12, top + 2, 0xFF2E2E2E, false);
+            net.minecraft.util.math.BlockPos pos = link.pos().pos();
+            String where = podiumPos(link);
+            if (textRenderer.getWidth(where) + 4 > room - nameWidth) where = pos.getX() + " " + pos.getZ();
+            if (textRenderer.getWidth(where) + 4 <= room - nameWidth)
+                context.drawText(textRenderer, where, left + 12 + room - textRenderer.getWidth(where), top + 2, 0xFF8A8F94, false);
         }
         if (podiumScroll > 0) context.drawText(textRenderer, "▲", x + WIDTH - MARGIN - 8, y + PODIUMS_TOP, 0xFFB8C0C6, false);
         if (podiumScroll + PODIUM_ROWS < rows) {
@@ -880,9 +935,7 @@ public class MiniGamePageEditorScreen extends Screen {
         MiniGamePodiumLink link = podiumAt(mouseX, mouseY);
         if (link == null) return;
         List<Text> lines = new java.util.ArrayList<>();
-        lines.add(podiumText(link).copy().formatted(Formatting.GOLD));
-        lines.add(Text.translatable(KEY + "pipes.card.position", link.pos().pos().getX() + " " + link.pos().pos().getY() + " " + link.pos().pos().getZ(),
-                link.pos().dimension().getValue().getPath()).formatted(Formatting.GRAY));
+        lines.add(podiumName(link).copy().formatted(Formatting.GOLD));
         lines.add(Text.translatable(KEY + "podiums.card." + link.kind().key() + ".hint").formatted(Formatting.GRAY));
         lines.add(Text.translatable(KEY + (canEdit ? "podiums.card.hint" : "pipes.card.hint.read_only")).formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
         drawWrappedTooltip(context, lines, mouseX, mouseY);
