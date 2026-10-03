@@ -1,6 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
-import fr.lordfinn.steveparty.items.custom.ChestCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
@@ -20,8 +20,8 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The bank of a Party Controller: the chest its Chest Cartridge points to (the cartridge in the controller's bank
- * slot, Gains page). The gains of the party's mini-games are taken from it, never created: what is not in it is not
+ * The bank of a Party Controller: the chest its Inventory Cartridge remembers (the cartridge in the controller's bank
+ * slot, Gains page; its item slots and its transfer mode, for board spaces, play no part here). The gains of the party's mini-games are taken from it, never created: what is not in it is not
  * paid.
  * <p>
  * A bank is a storage container: a chest (a double chest counts whole, whichever half was chosen), a trapped chest, a
@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 public final class PartyBank {
     /** What the bank can pay. */
     public enum State {
-        /** No Chest Cartridge in the controller (or one pointing nowhere). */
+        /** No Inventory Cartridge in the controller (or one pointing nowhere). */
         NONE,
         /** The cartridge's chest is gone, is no storage container, or is not loaded. */
         MISSING,
@@ -62,10 +62,18 @@ public final class PartyBank {
                 && !(blockEntity instanceof DispenserBlockEntity) && !(blockEntity instanceof CrafterBlockEntity);
     }
 
+    /**
+     * The chest a bank cartridge remembers, null for none. One set before the dimension was remembered (by the
+     * Wrench) is in the overworld.
+     */
+    public static @Nullable GlobalPos target(ItemStack cartridge) {
+        return InventoryCartridgeItem.getSavedContainer(cartridge, World.OVERWORLD);
+    }
+
     /** The chest a cartridge points to, as an inventory (a double chest whole), or null: none, gone, or not loaded. */
     @SuppressWarnings("deprecation") // isChunkLoaded(BlockPos): an unloaded chest is not loaded for the bank
     public static @Nullable Inventory inventory(MinecraftServer server, ItemStack cartridge) {
-        GlobalPos target = ChestCartridgeItem.target(cartridge);
+        GlobalPos target = target(cartridge);
         if (target == null) return null;
         ServerWorld world = server.getWorld(target.dimension());
         BlockPos pos = target.pos();
@@ -100,7 +108,7 @@ public final class PartyBank {
     /** The bank of a controller, and whether it can pay a whole mini-game for {@code players} players. */
     public static Status status(PartyControllerEntity controller, MinecraftServer server, int players) {
         ItemStack cartridge = controller.getBank();
-        if (ChestCartridgeItem.target(cartridge) == null) return Status.NONE;
+        if (target(cartridge) == null) return Status.NONE;
         Inventory inventory = inventory(server, cartridge);
         if (inventory == null) return new Status(State.MISSING, 0, 0);
         int coins = InventoryUtils.count(inventory, controller.getCurrency(PartyCurrency.COIN));

@@ -81,7 +81,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int PROGRAM_FIRST_SLOT = PLAYER_SLOTS + 36;
     public static final int PROGRAM_COLUMNS = 12;
     public static final int PROGRAM_X = CONTENT_X + (CONTENT_WIDTH - PROGRAM_COLUMNS * 18) / 2 + 1, PROGRAM_Y = CONTENT_Y + 33;
-    /** Gains page: the bank's Chest Cartridge (after the program's slots), at the content's top left. */
+    /** Gains page: the bank's Inventory Cartridge (after the program's slots), at the content's top left. */
     public static final int SLOT_BANK = PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS;
     public static final int BANK_X = CONTENT_X + 1, BANK_Y = CONTENT_Y + 1;
 
@@ -250,7 +250,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         }
     }
 
-    /** The bank's slot: a Chest Cartridge, changed only by a player who may edit the controller. */
+    /** The bank's slot: an Inventory Cartridge (its container is the bank), changed only by a player who may edit the controller. */
     private class BankSlot extends PageSlot {
         BankSlot(Inventory inventory) {
             super(inventory, 0, BANK_X, BANK_Y, EnumSet.of(Page.GAINS));
@@ -258,7 +258,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
         @Override
         public boolean canInsert(ItemStack stack) {
-            return stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.ChestCartridgeItem && mayEditProgram();
+            return stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem && mayEditProgram();
         }
 
         @Override
@@ -354,7 +354,7 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         ItemStack original = stack.copy();
         if (index == SLOT_CATALOGUE || isProgramSlot(index) || index == SLOT_BANK) {
             if (!slot.canTakeItems(player) || !insertItem(stack, PLAYER_SLOTS, PROGRAM_FIRST_SLOT, true)) return ItemStack.EMPTY;
-        } else if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.ChestCartridgeItem) {
+        } else if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem) {
             Slot bank = slots.get(SLOT_BANK);
             if (!bank.canInsert(stack) || bank.hasStack() || !insertItem(stack, SLOT_BANK, SLOT_BANK + 1, false)) return ItemStack.EMPTY;
         } else if (stack.getItem() instanceof PartyCardItem) {

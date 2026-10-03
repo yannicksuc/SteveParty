@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.client.renderer;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
-import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -127,14 +126,7 @@ public class DestinationsRenderer {
                 destinations.forEach(pos -> addDestination(pos, GlowingCuboidRenderer.GradientType.RAINBOW));
             }
         }
-
-        if (hand == Hand.OFF_HAND && heldStack.getItem() instanceof InventoryCartridgeItem) {
-            BlockPos savedPos = ((InventoryCartridgeItem) heldStack.getItem()).getSavedInventoryPos(heldStack);
-
-            if (savedPos != null) {
-                addDestination(savedPos, GlowingCuboidRenderer.GradientType.SOLID_COLOR);
-            }
-        }
+        // The container of an Inventory Cartridge, in either hand: InventoryCartridgeClient
     }
 
     private static void renderDestinations(WorldRenderContext context) {

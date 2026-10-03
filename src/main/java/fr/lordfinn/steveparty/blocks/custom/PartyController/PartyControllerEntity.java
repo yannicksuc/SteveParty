@@ -93,7 +93,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private ItemStack coinItem = PartyCurrency.COIN.defaultStack();
     /** What the party pays at the end of each mini-game, by place (Gains page). */
     private MiniGameGains gains = MiniGameGains.DEFAULT;
-    /** The Chest Cartridge whose chest the gains are taken from (Gains page), empty for none: see {@link PartyBank}. */
+    /** The Inventory Cartridge whose chest the gains are taken from (Gains page), empty for none: see {@link PartyBank}. */
     private ItemStack bank = ItemStack.EMPTY;
     /** Rounds a party may have (Settings page). */
     public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
@@ -327,7 +327,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         markDirty();
     }
 
-    /** The Chest Cartridge of the bank (Gains page), empty for none. */
+    /** The Inventory Cartridge of the bank (Gains page), empty for none. */
     public ItemStack getBank() {
         return bank;
     }
