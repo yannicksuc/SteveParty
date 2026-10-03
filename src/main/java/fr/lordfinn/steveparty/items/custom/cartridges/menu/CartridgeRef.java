@@ -71,8 +71,7 @@ public record CartridgeRef(Optional<BlockPos> pos, int index) {
         if (player.isSpectator()) return false;
         if (pos.isEmpty()) return hand() != null;
         BlockPos at = pos.get();
-        return player.canModifyBlocks() && player.getWorld().canPlayerModifyAt(player, at)
-                && ScreenHandlerChecks.isInReach(player, at) && holder(player.getWorld()) != null;
+        return ScreenHandlerChecks.canBuildAt(player, at) && ScreenHandlerChecks.isInReach(player, at) && holder(player.getWorld()) != null;
     }
 
     /** May {@code player} keep a menu on it open (the block still there and in reach)? */

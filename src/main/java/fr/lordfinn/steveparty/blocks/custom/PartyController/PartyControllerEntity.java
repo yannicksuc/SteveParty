@@ -394,7 +394,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
      * Game Master (a Tokenizer Wand enchanted with Game Master in hand), so that no player changes the rules mid-game.
      */
     public boolean canEdit(PlayerEntity player) {
-        if (world == null || player.isSpectator() || !player.canModifyBlocks() || !world.canPlayerModifyAt(player, pos)) return false;
+        if (world == null || !fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks.canBuildAt(player, pos)) return false;
         if (!partyData.isStarted()) return true;
         return player.hasPermissionLevel(2) || fr.lordfinn.steveparty.commands.PartyCommands.holdsGameMasterWand(player);
     }
