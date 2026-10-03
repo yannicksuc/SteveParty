@@ -42,10 +42,16 @@ import java.util.UUID;
  * @param coinItem      the item counted as coins by this party
  * @param standings     the party's tokens, in the turn order
  * @param effect        what the roll of the current turn does besides steps (coins, swap, a face 0)
+ * @param program       before the party's steps exist (the turn order rolls, the preparation): what its program will
+ *                      play, for the turn bar's strip of steps; empty afterwards (the steps say it)
  */
 public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean shopping, int absentSeconds,
-                            ItemStack starItem, ItemStack coinItem, List<Standing> standings, RollEffect effect) {
-    public static final PartyLiveData EMPTY = new PartyLiveData(0, 0, false, false, -1, ItemStack.EMPTY, ItemStack.EMPTY, List.of(), RollEffect.NONE);
+                            ItemStack starItem, ItemStack coinItem, List<Standing> standings, RollEffect effect,
+                            PartyDashboardData.Timeline program) {
+    public static final PartyLiveData EMPTY = new PartyLiveData(0, 0, false, false, -1, ItemStack.EMPTY, ItemStack.EMPTY, List.of(), RollEffect.NONE,
+            PartyDashboardData.Timeline.EMPTY);
+    /** The most steps of the program sent in {@link #program}. */
+    public static final int MAX_PROGRAM_STEPS = 32;
 
     /**
      * What the roll of the current turn does besides walking (see {@code DiceOutcome}).
@@ -100,7 +106,7 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         if (other == null || roll != other.roll || stepsLeft != other.stepsLeft || moving != other.moving
                 || shopping != other.shopping || absentSeconds != other.absentSeconds || !effect.equals(other.effect)
                 || !ItemStack.areEqual(starItem, other.starItem) || !ItemStack.areEqual(coinItem, other.coinItem)
-                || standings.size() != other.standings.size())
+                || standings.size() != other.standings.size() || !program.equals(other.program))
             return false;
         for (int i = 0; i < standings.size(); i++) {
             if (!standings.get(i).sameAs(other.standings.get(i))) return false;
@@ -132,7 +138,22 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         List<Standing> standings = new ArrayList<>();
         for (UUID token : data.getTokens()) standings.add(standingOf(controller, world, token));
         return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds,
-                controller.getCurrency(PartyCurrency.STAR), controller.getCurrency(PartyCurrency.COIN), standings, effect);
+                controller.getCurrency(PartyCurrency.STAR), controller.getCurrency(PartyCurrency.COIN), standings, effect,
+                programOf(controller, data));
+    }
+
+    /** What the program will play, while the party's steps are not generated yet (see {@link #program}). */
+    private static PartyDashboardData.Timeline programOf(PartyControllerEntity controller, PartyData data) {
+        PartyStep current = data.getCurrentStep();
+        if (current == null || (current.getType() != fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType.START_ROLLS
+                && current.getType() != fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType.BASIC_GAME_GENERATOR))
+            return PartyDashboardData.Timeline.EMPTY;
+        PartyDashboardData.Timeline program = PartyDashboardData.programTimeline(controller.getProgram().getHeldStacks(), data.getNbTurn());
+        // Without its first step (the turn order rolls: the current step, or the one just played)
+        List<PartyDashboardData.TimelineStep> steps = program.steps();
+        int to = Math.min(steps.size(), 1 + MAX_PROGRAM_STEPS);
+        if (steps.size() <= 1) return PartyDashboardData.Timeline.EMPTY;
+        return new PartyDashboardData.Timeline(List.copyOf(steps.subList(1, to)), 1, -1, program.more() + steps.size() - to);
     }
 
     /**
@@ -240,7 +261,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
             ItemStack coinItem = ItemStack.OPTIONAL_PACKET_CODEC.decode(buf);
             List<Standing> standings = STANDINGS_CODEC.decode(buf);
             RollEffect effect = new RollEffect(buf.readBoolean(), buf.readBoolean(), buf.readInt(), buf.readBoolean(), buf.readString());
-            return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds, starItem, coinItem, standings, effect);
+            return new PartyLiveData(roll, stepsLeft, moving, shopping, absentSeconds, starItem, coinItem, standings, effect,
+                    PartyDashboardData.readTimeline(buf));
         }
 
         @Override
@@ -258,6 +280,7 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
             buf.writeInt(data.effect.coins);
             buf.writeBoolean(data.effect.swap);
             buf.writeString(data.effect.swapWith);
+            PartyDashboardData.writeTimeline(buf, data.program);
         }
     };
 

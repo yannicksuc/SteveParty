@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
@@ -22,7 +23,7 @@ import java.util.UUID;
 
 /**
  * What the party HUDs show, worked out once each time the party data changes (never per frame): the players in the
- * turn order, the round, the current turn and what is happening now.
+ * turn order, the round, the current turn, what is happening now and the steps to come.
  */
 final class PartyHudModel {
     static final class Player {
@@ -45,6 +46,32 @@ final class PartyHudModel {
         /** Its roll for the turn order (start rolls), 0 if not rolled. */
         int startRoll;
     }
+
+    /** What a step of the strip is. */
+    enum StepKind {
+        START_ROLLS, PREPARING,
+        /** Not a step: a player rolling for the turn order, shown after the {@link #START_ROLLS} step being played. */
+        ROLL,
+        /** The turn of one token. */
+        TURN,
+        /** The turn of every token, in an order not known yet (before the turn order rolls are over). */
+        TURNS,
+        MINI_GAME, EVENT, END, OTHER
+    }
+
+    /** A step of the strip: the current one, or one to come. */
+    static final class Step {
+        StepKind kind = StepKind.OTHER;
+        /** Index in {@link #players} of its token ({@link StepKind#TURN}, {@link StepKind#ROLL}), -1 for none. */
+        int player = -1;
+        /** The round it starts (shown before it), 0 if it starts none. */
+        int round;
+        /** Its identity from a model to the next (its chip goes on, and slides to its new place). */
+        int key;
+    }
+
+    /** The most steps of the strip worked out (no bar shows that many). */
+    static final int MAX_STRIP = 48;
 
     /** What the action line says. */
     enum Action { NONE, START_ROLLS, PREPARING, MINI_GAME, ROLL, ROLLED, MOVING, SHOPPING, ABSENT, OTHER }
@@ -73,6 +100,12 @@ final class PartyHudModel {
     /** The items this party counts as stars and coins (their icons in the standings). */
     ItemStack starItem = ItemStack.EMPTY;
     ItemStack coinItem = ItemStack.EMPTY;
+    /** The step being played, then the ones to come, in the order they are played. */
+    final List<Step> strip = new ArrayList<>();
+    /** Steps coming after the last one of {@link #strip}. */
+    int stripMore;
+    /** Index of the step being played in the party's steps: another one, another step. */
+    int stepIndex;
 
     static PartyHudModel build(PartyData data, PartyLiveData live, @Nullable UUID me) {
         PartyHudModel model = new PartyHudModel();
@@ -170,7 +203,68 @@ final class PartyHudModel {
             model.set(Action.OTHER, HudDraw.ICON_PREPARING, Text.translatable(currentStep.getName()));
         }
         model.actionKey = java.util.Objects.hash(stepIndex, model.action, model.current, model.yourTurn);
+        model.stepIndex = stepIndex;
+
+        // The strip: the step being played and the ones to come (the same steps and rounds as the dashboard's timeline)
+        PartyDashboardData.Timeline timeline = PartyDashboardData.timelineOf(steps, stepIndex, data.getTokens());
+        if (timeline.current() >= 0) {
+            List<PartyDashboardData.TimelineStep> window = timeline.steps();
+            PartyDashboardData.TimelineStep now = window.get(timeline.current());
+            int size = steps.size();
+            model.strip.add(model.step(kindOf(now), now.player(), 0, size - stepIndex));
+            if (model.stepType == PartyStepType.START_ROLLS) {
+                for (int i = 0; i < model.players.size(); i++) model.strip.add(model.step(StepKind.ROLL, i, 0, -1000 - i));
+            }
+            if (beforeRounds) {
+                // The steps are not generated yet: what the program will play (the turn order is not known)
+                PartyDashboardData.Timeline program = live.program();
+                model.stripMore = program.more() + model.addSteps(program.steps(), 0, 0, i -> -1 - i);
+            } else {
+                int first = timeline.offset();
+                model.stripMore = timeline.more() + model.addSteps(window, timeline.current() + 1, now.round(), i -> size - (first + i));
+            }
+        }
         return model;
+    }
+
+    /**
+     * Adds steps to come to the strip, up to {@link #MAX_STRIP}: the first step of each new round carries its number.
+     *
+     * @param lastRound the round of the step before the first one added
+     * @param key       the key of a step, from its index in {@code steps}
+     * @return how many of them were left out
+     */
+    private int addSteps(List<PartyDashboardData.TimelineStep> steps, int from, int lastRound, java.util.function.IntUnaryOperator key) {
+        int i = from;
+        for (; i < steps.size() && strip.size() < MAX_STRIP; i++) {
+            PartyDashboardData.TimelineStep step = steps.get(i);
+            int round = step.round() > 0 && step.round() != lastRound ? step.round() : 0;
+            if (step.round() > 0) lastRound = step.round();
+            strip.add(step(kindOf(step), step.player(), round, key.applyAsInt(i)));
+        }
+        return steps.size() - i;
+    }
+
+    private Step step(StepKind kind, int player, int round, int key) {
+        Step step = new Step();
+        step.kind = kind;
+        step.player = player >= 0 && player < players.size() ? player : -1;
+        step.round = round;
+        step.key = key;
+        return step;
+    }
+
+    private static StepKind kindOf(PartyDashboardData.TimelineStep step) {
+        return switch (step.kind()) {
+            case START_ROLLS -> StepKind.START_ROLLS;
+            case PREPARING -> StepKind.PREPARING;
+            case TURN -> StepKind.TURN;
+            case TURNS -> StepKind.TURNS;
+            case MINI_GAME -> StepKind.MINI_GAME;
+            case EVENT -> StepKind.EVENT;
+            case END -> StepKind.END;
+            case OTHER -> StepKind.OTHER;
+        };
     }
 
     private static void describeTurn(PartyHudModel model, PartyLiveData live, @Nullable Player player) {
@@ -261,7 +355,10 @@ final class PartyHudModel {
 
     // ------------------------------------------------------------------ preview
 
-    /** A made-up party for the layout screen when no party is running: three players, the second one moving. */
+    /**
+     * A made-up party for the layout screen when no party is running: three players, the second one moving, in the
+     * third round of ten (the strip: the turns and the mini-game of each round to come, then the end).
+     */
     static PartyHudModel sample(@Nullable UUID me, String myName) {
         PartyHudModel model = new PartyHudModel();
         String[][] names = {{"Cochonou", "Alex"}, {"Meuh", myName}, {"Bêêê", "Steve"}};
@@ -295,6 +392,21 @@ final class PartyHudModel {
         model.set(Action.MOVING, HudDraw.ICON_STEPS, Text.translatable("hud.steveparty.party.moving"));
         model.badge = Text.translatable("hud.steveparty.party.steps", 4).getString();
         model.actionKey = 1;
+        int key = 1000;
+        model.strip.add(model.step(StepKind.TURN, 1, 0, key--));
+        model.strip.add(model.step(StepKind.TURN, 2, 0, key--));
+        model.strip.add(model.step(StepKind.MINI_GAME, -1, 0, key--));
+        int left = 0;
+        for (int round = model.round + 1; round <= model.rounds; round++) {
+            for (int i = 0; i <= names.length; i++, key--) {
+                if (model.strip.size() >= MAX_STRIP) left++;
+                else if (i < names.length) model.strip.add(model.step(StepKind.TURN, i, i == 0 ? round : 0, key));
+                else model.strip.add(model.step(StepKind.MINI_GAME, -1, 0, key));
+            }
+        }
+        if (model.strip.size() < MAX_STRIP) model.strip.add(model.step(StepKind.END, -1, 0, key));
+        else left++;
+        model.stripMore = left;
         return model;
     }
 }

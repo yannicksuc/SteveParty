@@ -32,6 +32,8 @@ import org.lwjgl.glfw.GLFW;
 public final class PartyHud {
     private static final double START = System.nanoTime();
     private static final float FADE_RATE = 0.3f;
+    /** The least width (unscaled) worth giving the turn bar beside the standings. */
+    private static final int TURN_BAR_BESIDE = 200;
 
     private static PartyData data = new PartyData();
     private static PartyLiveData live = PartyLiveData.EMPTY;
@@ -145,13 +147,31 @@ public final class PartyHud {
 
         int screenWidth = context.getScaledWindowWidth();
         int screenHeight = context.getScaledWindowHeight();
-        boolean turnBar = placeHud(Hud.TURN_BAR, drawn, current != null && turnBarShown, preview, TURN_BAR_ALPHA, delta, now, screenWidth, screenHeight);
-        boolean standings = placeHud(Hud.STANDINGS, drawn, current != null && standingsShown && !drawn.players.isEmpty(), preview, STANDINGS_ALPHA, delta, now, screenWidth, screenHeight);
+        boolean standings = placeHud(Hud.STANDINGS, drawn, current != null && standingsShown && !drawn.players.isEmpty(), preview, STANDINGS_ALPHA, delta, now, screenWidth, screenHeight, 0);
+        boolean turnBar = placeHud(Hud.TURN_BAR, drawn, current != null && turnBarShown, preview, TURN_BAR_ALPHA, delta, now, screenWidth, screenHeight,
+                turnBarRoom(standings, screenWidth, screenHeight));
         // The two never cover each other (but while the player drags one on the layout screen)
         if (turnBar && standings && !dragging) separate(screenWidth, screenHeight);
         if (turnBar) drawHud(context, Hud.TURN_BAR, TURN_BAR_ALPHA[0], preview, now);
         if (standings) drawHud(context, Hud.STANDINGS, STANDINGS_ALPHA[0], preview, now);
         if (current == null && TURN_BAR_ALPHA[0] <= 0 && STANDINGS_ALPHA[0] <= 0) shown = null;
+    }
+
+    /**
+     * The width the turn bar may take (it fills it with the steps to come): the screen's, or what the standings leave
+     * beside them when the bar is at their height and that is enough for a bar (else the bar takes the screen's width,
+     * and {@link #separate} puts the standings under it).
+     */
+    private static float turnBarRoom(boolean standings, int screenWidth, int screenHeight) {
+        float full = screenWidth - 2 * PartyHudLayout.MARGIN;
+        if (!standings) return full;
+        float scale = PartyHudLayout.get(Hud.TURN_BAR).scale;
+        float height = TurnBarHud.HEIGHT * scale;
+        float y = PartyHudLayout.y(Hud.TURN_BAR, screenHeight, height);
+        float[] list = BOUNDS[Hud.STANDINGS.ordinal()];
+        if (y >= list[1] + list[3] || list[1] >= y + height) return full;
+        float beside = Math.max(list[0], screenWidth - list[0] - list[2]) - 2 * PartyHudLayout.MARGIN;
+        return beside >= TURN_BAR_BESIDE * scale ? beside : full;
     }
 
     /**
@@ -191,7 +211,7 @@ public final class PartyHud {
 
     /** Fades a HUD, lays it out and places it (in {@link #BOUNDS}): false if it is not drawn. */
     private static boolean placeHud(Hud hud, PartyHudModel drawn, boolean wanted, boolean preview,
-                                    float[] alpha, float delta, double now, int screenWidth, int screenHeight) {
+                                    float[] alpha, float delta, double now, int screenWidth, int screenHeight, float room) {
         PartyHudLayout.Placement placement = PartyHudLayout.get(hud);
         float scale = placement.scale;
         if (preview) {
@@ -205,7 +225,7 @@ public final class PartyHud {
 
         int width, height;
         if (hud == Hud.TURN_BAR) {
-            TURN_BAR.update(drawn, (int) ((screenWidth - 2 * PartyHudLayout.MARGIN) / scale), now);
+            TURN_BAR.update(drawn, (int) (room / scale), now);
             width = TURN_BAR.width();
             height = TURN_BAR.height();
         } else {

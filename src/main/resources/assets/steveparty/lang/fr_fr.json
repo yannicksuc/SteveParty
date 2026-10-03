@@ -1928,5 +1928,13 @@
   "gui.steveparty.party_controller.timeline.event": "Évènement",
   "gui.steveparty.party_controller.timeline.event.channel": "Évènement (canal %s)",
   "gui.steveparty.party_controller.timeline.end": "Fin de la partie",
-  "gui.steveparty.party_controller.timeline.other": "Étape"
+  "gui.steveparty.party_controller.timeline.other": "Étape",
+  "hud.steveparty.party.round.short": "%s/%s",
+  "hud.steveparty.party.strip.round": "T%s",
+  "hud.steveparty.party.strip.turns": "Tours",
+  "hud.steveparty.party.strip.mini_game": "Mini-jeu",
+  "hud.steveparty.party.strip.event": "Évènement",
+  "hud.steveparty.party.strip.preparing": "Préparation",
+  "hud.steveparty.party.strip.end": "Fin",
+  "hud.steveparty.party.strip.other": "Étape"
 }

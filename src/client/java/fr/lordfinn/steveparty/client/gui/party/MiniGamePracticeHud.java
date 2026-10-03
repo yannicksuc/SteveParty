@@ -98,8 +98,12 @@ public final class MiniGamePracticeHud {
                 ? Text.translatable(ready ? "hud.steveparty.minigame.practice.ready" : "hud.steveparty.minigame.practice", keyText(), count, total)
                 : Text.translatable("hud.steveparty.minigame.practice.watching", count, total);
         OrderedText text = HudDraw.fit(label, screenWidth - 40);
-        // Under the party's turn bar (at the top by default) when it is shown
-        int y = PartyHud.model() != null ? TurnBarHud.HEIGHT + 6 : 6;
+        // Under the party's turn bar when it is shown at the top of the screen, over the middle
+        int y = 6;
+        float[] bar = PartyHud.bounds(PartyHudLayout.Hud.TURN_BAR);
+        if (PartyHud.model() != null && PartyHudLayout.get(PartyHudLayout.Hud.TURN_BAR).visible && bar[2] > 0
+                && bar[1] < 30 && bar[0] < screenWidth / 2f + 60 && bar[0] + bar[2] > screenWidth / 2f - 60)
+            y = Math.round(bar[1] + bar[3]) + 4;
         int width = font.getWidth(text) + 14, x = (screenWidth - width) / 2;
         HudDraw.plate(context, ready ? Plate.GREEN : Plate.ORANGE, x, y, width, CHIP_HEIGHT, 1);
         HudDraw.text(context, text, x + 7, y + 4, HudDraw.TEXT, 1);
