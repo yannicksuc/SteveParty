@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
@@ -36,7 +37,7 @@ public class DiceRollGameTests implements FabricGameTest {
     private static final String BATCH = "dice_rolls";
 
     private static int count(ServerPlayerEntity player, Item item) {
-        return PartyCurrency.count(player.getInventory(), new ItemStack(item));
+        return InventoryUtils.count(player.getInventory(), new ItemStack(item));
     }
 
     // ---------------------------------------------------------------- the faces themselves
@@ -212,11 +213,11 @@ public class DiceRollGameTests implements FabricGameTest {
     public void coinsAreGivenAndTakenByTheirTemplate(TestContext context) {
         ServerPlayerEntity player = player(context);
         ItemStack coin = new ItemStack(Items.EMERALD);
-        PartyCurrency.give(player, coin, 70);
+        InventoryUtils.giveOrDrop(player, coin, 70);
         context.assertEquals(count(player, Items.EMERALD), 70, "70 given (more than a stack)");
-        context.assertEquals(PartyCurrency.take(player.getInventory(), coin, 100), 70, "no more than held is taken");
+        context.assertEquals(InventoryUtils.take(player.getInventory(), coin, 100), 70, "no more than held is taken");
         context.assertEquals(count(player, Items.EMERALD), 0, "nothing left");
-        context.assertEquals(PartyCurrency.take(player.getInventory(), coin, 3), 0, "nothing to take");
+        context.assertEquals(InventoryUtils.take(player.getInventory(), coin, 3), 0, "nothing to take");
         context.complete();
     }
 

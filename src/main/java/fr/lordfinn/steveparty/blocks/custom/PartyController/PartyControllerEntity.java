@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -357,14 +358,10 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         for (PartyCurrency currency : PartyCurrency.values()) {
             int amount = gains.forPlace(currency, place);
             ItemStack template = getCurrency(currency);
-            int taken = PartyBank.take(bank, template, amount);
+            int taken = InventoryUtils.take(bank, template, amount);
             if (taken < amount) full = false;
             paid[currency == PartyCurrency.STAR ? 1 : 0] = taken;
-            while (taken > 0) {
-                int count = Math.min(taken, template.getMaxCount());
-                player.getInventory().offerOrDrop(template.copyWithCount(count));
-                taken -= count;
-            }
+            InventoryUtils.giveOrDrop(player, template, taken);
         }
         return new Paid(paid[0], paid[1], full);
     }

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
 import fr.lordfinn.steveparty.items.custom.ChestCartridgeItem;
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
@@ -83,37 +84,6 @@ public final class PartyBank {
         return (Inventory) blockEntity;
     }
 
-    /** How many items of exactly that kind (same item and components) the inventory holds. */
-    public static int count(@Nullable Inventory inventory, ItemStack template) {
-        if (inventory == null || template.isEmpty()) return 0;
-        int count = 0;
-        for (int slot = 0; slot < inventory.size(); slot++) {
-            ItemStack stack = inventory.getStack(slot);
-            if (ItemStack.areItemsAndComponentsEqual(stack, template)) count += stack.getCount();
-        }
-        return count;
-    }
-
-    /**
-     * Takes up to {@code amount} items of exactly that kind out of the inventory.
-     *
-     * @return how many were taken
-     */
-    public static int take(@Nullable Inventory inventory, ItemStack template, int amount) {
-        if (inventory == null || template.isEmpty() || amount <= 0) return 0;
-        int taken = 0;
-        for (int slot = 0; slot < inventory.size() && taken < amount; slot++) {
-            ItemStack stack = inventory.getStack(slot);
-            if (!ItemStack.areItemsAndComponentsEqual(stack, template)) continue;
-            int count = Math.min(stack.getCount(), amount - taken);
-            stack.decrement(count);
-            if (stack.isEmpty()) inventory.setStack(slot, ItemStack.EMPTY);
-            taken += count;
-        }
-        if (taken > 0) inventory.markDirty();
-        return taken;
-    }
-
     /**
      * What one mini-game pays at most for {@code players} players: the four places to the first ones, the
      * participants' gain to the others.
@@ -130,8 +100,8 @@ public final class PartyBank {
         if (ChestCartridgeItem.target(cartridge) == null) return Status.NONE;
         Inventory inventory = inventory(server, cartridge);
         if (inventory == null) return new Status(State.MISSING, 0, 0);
-        int coins = count(inventory, controller.getCurrency(PartyCurrency.COIN));
-        int stars = count(inventory, controller.getCurrency(PartyCurrency.STAR));
+        int coins = InventoryUtils.count(inventory, controller.getCurrency(PartyCurrency.COIN));
+        int stars = InventoryUtils.count(inventory, controller.getCurrency(PartyCurrency.STAR));
         MiniGameGains gains = controller.getGains();
         boolean enough = coins >= need(gains, PartyCurrency.COIN, players) && stars >= need(gains, PartyCurrency.STAR, players);
         return new Status(enough ? State.OK : State.SHORT, coins, stars);
