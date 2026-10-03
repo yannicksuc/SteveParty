@@ -34,6 +34,7 @@ import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
+import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.PartyMiniGameSession;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
@@ -757,5 +758,39 @@ public class MiniGameControllerGameTests implements FabricGameTest {
                 context.complete();
             });
         });
+    }
+
+    /**
+     * A player of a party who left the server during the practice round is brought back, when it comes again, where
+     * it stood before the mini-game; the others are brought back when the step ends.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_away", tickLimit = 100)
+    public void aPartyPlayerAwayAtTheEndIsBroughtBackWhenItComes(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 6.5, 1, 1.5), p2 = player(context, "b", 6.5, 1, 2.5);
+        MinecraftServer server = context.getWorld().getServer();
+        UUID id = page(context, green);
+        Vec3d start1 = p1.getPos(), start2 = p2.getPos();
+        GameProfile away = p2.getGameProfile();
+        ServerPlayerEntity back = null;
+        try {
+            alone(context, p1, p2);
+            home(context, HOME, id);
+            PartyControllerEntity controller = party(context, id, MiniGamePartyStep.Phase.COUNTDOWN, p1, p2);
+            MiniGamePartyStep step = step(controller);
+            step.leaveForMiniGame(controller);
+            context.assertTrue(step.isPractice() && step.isAway(p2.getUuid()), "the practice round, p2 sent to it");
+            Reconnect.leave(p2);
+            step.end(controller);
+            context.assertTrue(p1.getPos().distanceTo(start1) < 0.01, "p1, there, is back at once");
+            context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "p2, gone, is waited for");
+            back = Reconnect.join(context, away);
+            context.assertTrue(back.getPos().distanceTo(start2) < 0.01, "p2 comes back where it stood before the mini-game");
+            context.assertTrue(!MiniGameReturns.isPending(server, away.getId()), "once");
+        } finally {
+            if (back != null) cleanUp(context, id, back);
+            cleanUp(context, id, p1, p2);
+        }
+        context.complete();
     }
 }

@@ -1895,6 +1895,8 @@
   "gui.steveparty.mini_game_controller.status.zone_forbidden": "Bloc interdit dans la zone : %1$s en %2$s %3$s %4$s",
   "gui.steveparty.mini_game_page.test.tooltip.zone_forbidden": "Impossible de jouer : la zone du mini-jeu contient un bloc que le serveur y interdit (son Contrôleur dit lequel et où).",
   "message.steveparty.zone_bubble.inventory_back": "Ton inventaire d'avant le mini-jeu t'a été rendu.",
+  "message.steveparty.minigame.back_while_away": "Le mini-jeu s'est terminé pendant ton absence : te revoilà là où tu étais avant, avec ton inventaire.",
+  "message.steveparty.minigame.back_while_away.place": "Le mini-jeu s'est terminé pendant ton absence : te revoilà là où tu étais avant.",
   "message.steveparty.zone_bubble.wait_restore": "La zone du mini-jeu est remise en état : la manche commence dans un instant.",
   "message.steveparty.zone_bubble.party_unprotected": "%s Cette manche se joue sans la protection de la zone.",
   "message.steveparty.mini_game_controller.locked": "Pas pendant une manche du mini-jeu.",

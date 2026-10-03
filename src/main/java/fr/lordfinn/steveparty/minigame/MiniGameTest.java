@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGameTeleports;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
@@ -16,16 +15,13 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -125,9 +121,6 @@ public final class MiniGameTest implements MiniGameSession {
      */
     public record Plan(Status status, @Nullable MiniGameMode mode, @Nullable TeamDisposition teams, List<UUID> players,
                        List<UUID> spectators, Map<UUID, MiniGamePipeRole> ignored) {
-    }
-
-    private record ReturnPos(RegistryKey<World> dimension, Vec3d pos, float yaw, float pitch) {
     }
 
     private static final Map<UUID, MiniGameTest> TESTS = new LinkedHashMap<>();
@@ -279,7 +272,7 @@ public final class MiniGameTest implements MiniGameSession {
     private final List<UUID> players;
     private final List<UUID> spectators;
     private final @Nullable UUID observer;
-    private final Map<UUID, ReturnPos> returns = new LinkedHashMap<>();
+    private final Map<UUID, MiniGameReturns.Return> returns = new LinkedHashMap<>();
     private final List<UUID> tasks = new ArrayList<>();
     private Phase phase = Phase.COUNTDOWN;
     private boolean closed = false;
@@ -383,7 +376,7 @@ public final class MiniGameTest implements MiniGameSession {
         // Where everyone stands now: where they go back at the end
         for (ServerPlayerEntity player : audience()) {
             if (observer != null && observer.equals(player.getUuid())) continue;
-            returns.put(player.getUuid(), new ReturnPos(player.getWorld().getRegistryKey(), player.getPos(), player.getYaw(), player.getPitch()));
+            returns.put(player.getUuid(), MiniGameReturns.Return.of(player));
         }
         plan.ignored().forEach((uuid, role) -> {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
@@ -464,15 +457,8 @@ public final class MiniGameTest implements MiniGameSession {
     private boolean leaveEarly(ServerPlayerEntity player) {
         MiniGamePipes.leaveParty(player.getUuid());
         arena.leave(player);
-        return bringBack(player, returns.remove(player.getUuid()));
-    }
-
-    private boolean bringBack(ServerPlayerEntity player, @Nullable ReturnPos back) {
-        ServerWorld world = back == null ? null : server.getWorld(back.dimension());
-        if (world == null) return false;
-        if (player.hasVehicle()) player.stopRiding();
-        MiniGameTeleports.teleport(player, world, back.pos(), back.yaw(), back.pitch());
-        return true;
+        MiniGameReturns.Return back = returns.remove(player.getUuid());
+        return back != null && MiniGameReturns.bringBack(server, player.getUuid(), back);
     }
 
     @Override
@@ -541,10 +527,8 @@ public final class MiniGameTest implements MiniGameSession {
         List<UUID> seated = new ArrayList<>(players);
         seated.addAll(spectators);
         seated.forEach(MiniGamePipes::leaveParty);
-        returns.forEach((uuid, back) -> {
-            ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-            if (player != null) bringBack(player, back);
-        });
+        // Those who left the server meanwhile are brought back when they come
+        returns.forEach((uuid, back) -> MiniGameReturns.bringBack(server, uuid, back));
         returns.clear();
         TESTS.remove(pageId, this);
     }

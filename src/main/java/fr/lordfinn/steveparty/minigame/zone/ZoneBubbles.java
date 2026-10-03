@@ -99,7 +99,7 @@ public final class ZoneBubbles {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (ZoneBorder.ACTIVE) tick(server);
         });
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> settle(handler.getPlayer()));
+        // A player coming: settle, called by the one join hook of the mini-games (MiniGameReturns), which tells it
         // before the player is saved: it leaves with what it owns
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ZoneBubble bubble = BY_PLAYER.get(handler.getPlayer().getUuid());
@@ -401,8 +401,10 @@ public final class ZoneBubbles {
     /**
      * A player comes (back) on the server: whatever session it was in is over for it. If it was saved holding a
      * session inventory (the server crashed, or it left without a word), it gets back what it owns.
+     *
+     * @return true if it got back what it owns (the caller tells it)
      */
-    static void settle(ServerPlayerEntity player) {
+    public static boolean settle(ServerPlayerEntity player) {
         UUID id = player.getUuid();
         ZoneBubble bubble = BY_PLAYER.remove(id);
         if (bubble != null) bubble.drop(id);
@@ -413,13 +415,13 @@ public final class ZoneBubbles {
                 player.removeCommandTag(ZonePlayerStash.TAG);
                 Steveparty.LOGGER.warn("{} holds a mini-game session inventory but what it owns was not found", player.getName().getString());
             }
-            return;
+            return false;
         }
         Path file = ZoneStorage.stashFile(player.getServer(), id);
         if (!tagged) {
             // saved before its session began: what it holds is what it owns, the stash is from a time never saved
             ZoneStorage.delete(file);
-            return;
+            return false;
         }
         ZoneBorder.bypass++;
         try {
@@ -428,7 +430,7 @@ public final class ZoneBubbles {
             ZoneBorder.bypass--;
         }
         RETIRED.add(file);
-        player.sendMessage(Text.translatable("message.steveparty.zone_bubble.inventory_back"), false);
+        return true;
     }
 
     // ------------------------------------------------------------------ every tick
@@ -559,7 +561,9 @@ public final class ZoneBubbles {
             ZoneBorder.ACTIVE = true;
             bubble.restoreRecovered();
         }
-        for (ServerPlayerEntity player : new ArrayList<>(server.getPlayerManager().getPlayerList())) settle(player);
+        for (ServerPlayerEntity player : new ArrayList<>(server.getPlayerManager().getPlayerList())) {
+            if (settle(player)) player.sendMessage(Text.translatable("message.steveparty.zone_bubble.inventory_back"), false);
+        }
     }
 
     /**

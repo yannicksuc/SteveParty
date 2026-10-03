@@ -31,6 +31,7 @@ import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
+import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameTest.Status;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.podium.Podiums;
@@ -497,6 +498,38 @@ public class MiniGameTestGameTests implements FabricGameTest {
             context.assertTrue(MiniGameTest.of(id) == null, "checking starts nothing");
         } finally {
             cleanUp(context, id, p1);
+        }
+        context.complete();
+    }
+
+    /**
+     * A player who left the server during a test is not forgotten when it ends: it is brought back where it stood
+     * when it comes again, even after the server was restarted in between; the others at once.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_test_away", tickLimit = 100)
+    public void aPlayerAwayAtTheEndIsBroughtBackWhenItComes(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 0.5, 1, 1.5);
+        MinecraftServer server = context.getWorld().getServer();
+        UUID id = page(context, green);
+        Vec3d start1 = p1.getPos(), start2 = p2.getPos();
+        GameProfile away = p2.getGameProfile();
+        ServerPlayerEntity back = null;
+        try {
+            alone(context, p1, p2);
+            context.assertEquals(MiniGameTest.start(server, id, null, 0), Status.READY, "the test starts");
+            Reconnect.leave(p2);
+            MiniGameTest.stop(id);
+            context.assertTrue(at(p1, start1), "who is there is back at once");
+            context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "who left is waited for");
+            MiniGameReturns.simulateRestart(server);
+            context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "and still is after a restart");
+            back = Reconnect.join(context, away);
+            context.assertTrue(at(back, start2), "it comes back where it stood before the test");
+            context.assertTrue(!MiniGameReturns.isPending(server, away.getId()), "once");
+        } finally {
+            if (back != null) remove(context, back);
+            cleanUp(context, id, p1, p2);
         }
         context.complete();
     }

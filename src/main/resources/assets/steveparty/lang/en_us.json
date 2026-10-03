@@ -1895,6 +1895,8 @@
   "gui.steveparty.mini_game_controller.status.zone_forbidden": "Forbidden block in the zone: %1$s at %2$s %3$s %4$s",
   "gui.steveparty.mini_game_page.test.tooltip.zone_forbidden": "Can't play: the zone of the mini-game holds a block the server does not allow in it (its Controller says which and where).",
   "message.steveparty.zone_bubble.inventory_back": "Your inventory from before the mini-game has been given back to you.",
+  "message.steveparty.minigame.back_while_away": "The mini-game ended while you were away: you are back where you stood before it, with your own inventory.",
+  "message.steveparty.minigame.back_while_away.place": "The mini-game ended while you were away: you are back where you stood before it.",
   "message.steveparty.zone_bubble.wait_restore": "The mini-game zone is being put back as it was: the round starts in a moment.",
   "message.steveparty.zone_bubble.party_unprotected": "%s This round is played without the protection of the zone.",
   "message.steveparty.mini_game_controller.locked": "Not during a round of the mini-game.",
