@@ -8,6 +8,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SidedInventory;
+import net.minecraft.util.math.Direction;
 import net.minecraft.item.AirBlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -25,7 +27,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedScreenHandlerFactory, ImplementedInventory {
+public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedScreenHandlerFactory, ImplementedInventory, SidedInventory {
+    /** No side: see {@link #getAvailableSlots}. */
+    private static final int[] NO_SLOTS = new int[0];
+
     /** 9 columns of 3: two price rows and the sold item (an old stall's 28th slot is ignored when it loads). */
     public static final int SIZE = 27;
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(SIZE, ItemStack.EMPTY);
@@ -71,6 +76,26 @@ public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedS
 
     public Inventory getInventory() {
         return ImplementedInventory.of(items);
+    }
+
+    /**
+     * Its slots are the offers of the shop (two prices and the item sold, column by column), not stock: the merchant
+     * sells from its stock containers what the stall shows. A hopper or a dropper would change the offers themselves
+     * (or take the price models away), so automation sees no slot here; the stock and the till are open to it.
+     */
+    @Override
+    public int[] getAvailableSlots(Direction side) {
+        return NO_SLOTS;
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
+        return false;
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, Direction dir) {
+        return false;
     }
 
     @Override
