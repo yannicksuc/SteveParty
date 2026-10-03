@@ -513,10 +513,10 @@ public final class Podiums {
         String key = "message.steveparty.mini_game_page." + kind.key();
         if (MiniGamePages.removePodiumLinks(server, id, blocks)) {
             player.sendMessage(Text.translatable(key + ".unlinked", anchor.getX(), anchor.getY(), anchor.getZ()), true);
-            world.playSound(null, pos, ModSounds.CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            ModSounds.playCancel(world, pos);
         } else if (MiniGamePages.addPodiumLink(server, id, new MiniGamePodiumLink(GlobalPos.create(world.getRegistryKey(), anchor), kind))) {
             player.sendMessage(Text.translatable(key + ".linked", anchor.getX(), anchor.getY(), anchor.getZ()), true);
-            world.playSound(null, pos, ModSounds.SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            ModSounds.playSelect(world, pos);
         } else {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_page.podium.full", MiniGamePageData.MAX_PODIUM_LINKS)
                     .formatted(Formatting.RED), true);
