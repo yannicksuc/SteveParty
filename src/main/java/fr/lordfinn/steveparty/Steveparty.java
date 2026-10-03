@@ -71,7 +71,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.podium.Podiums.initialize();
         fr.lordfinn.steveparty.minigame.MiniGameTest.initialize();
         fr.lordfinn.steveparty.blocks.custom.PartyController.PartyChunkHolds.initialize();
-        fr.lordfinn.steveparty.items.custom.ChestCartridgeItem.initialize();
+        fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem.initialize();
         fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.initialize();
         // After the bubbles: its join hook gives a player its inventory back (ZoneBubbles.settle), then its place
         fr.lordfinn.steveparty.minigame.MiniGameReturns.initialize();

@@ -63,7 +63,7 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  *     <li><b>Program</b>: the catalogue slot (its mini-games in its tooltip), what the party will be made of, the
  *     party's program (2 rows of 12 card slots, the default party as ghost cards while it is empty, see
  *     {@link BasicGameGeneratorStep#defaultProgram}) and, under them, the timeline of what it will play.</li>
- *     <li><b>Gains</b>: the bank's Chest Cartridge, the Coin and Star items above their columns (click with an item to
+ *     <li><b>Gains</b>: the bank's Inventory Cartridge, the Coin and Star items above their columns (click with an item to
  *     pick it, with an empty hand to go back to the default one), what each place earns.</li>
  *     <li><b>Settings</b>: the rounds, the practice round.</li>
  * </ul>
@@ -399,7 +399,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
         // The empty catalogue and bank slots show, faded, the item they take (the currency slots are never empty)
         ghostItem(context, handler.getSlot(SLOT_CATALOGUE), ModItems.MINI_GAMES_CATALOGUE);
-        ghostItem(context, handler.getSlot(SLOT_BANK), ModItems.CHEST_CARTRIDGE);
+        ghostItem(context, handler.getSlot(SLOT_BANK), ModItems.INVENTORY_CARTRIDGE);
     }
 
     private void ghostItem(DrawContext context, Slot slot, Item item) {

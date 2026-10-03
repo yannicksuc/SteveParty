@@ -123,9 +123,12 @@ public class ModComponents {
     /** The box a Zone Cartridge is drawing, or has drawn (see ZoneCartridgeItem). */
     public static final ComponentType<ZoneSelection> ZONE_SELECTION =
             registerComponent("zone-selection", ZoneSelection.CODEC);
-    /** The chest a Chest Cartridge points to (the bank of a Party Controller). */
-    public static final ComponentType<net.minecraft.util.math.GlobalPos> CHEST_TARGET =
-            registerComponent("chest-target", net.minecraft.util.math.GlobalPos.CODEC);
+    /**
+     * The dimension of the container an Inventory Cartridge remembers ({@link #INVENTORY_POS}): a Party Controller
+     * takes its bank there, whatever its own dimension.
+     */
+    public static final ComponentType<net.minecraft.registry.RegistryKey<net.minecraft.world.World>> INVENTORY_DIMENSION =
+            registerComponent("inventory-dimension", net.minecraft.world.World.CODEC);
 
     /** Block a Box Costume looks like: the one the Boxed Trader's box looked like when it was taken from him. */
     public static final ComponentType<net.minecraft.block.BlockState> BOX_BLOCK =

@@ -3,22 +3,22 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.items.custom.ChestCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
 
-/** A Party Controller's bank for the tests: a chest holding coins and stars, and the Chest Cartridge pointing to it. */
+/** A Party Controller's bank for the tests: a chest holding coins and stars, and the Inventory Cartridge remembering it. */
 final class BankFixtures {
     private BankFixtures() {
     }
 
-    /** A Chest Cartridge pointing to the chest at the relative position {@code chest}. */
+    /** An Inventory Cartridge remembering the chest at the relative position {@code chest}. */
     static ItemStack cartridge(TestContext context, BlockPos chest) {
-        ItemStack cartridge = new ItemStack(ModItems.CHEST_CARTRIDGE);
-        ChestCartridgeItem.point(cartridge, context.getWorld(), context.getAbsolutePos(chest), null);
+        ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
+        InventoryCartridgeItem.choose(cartridge, context.getWorld(), context.getAbsolutePos(chest), null);
         return cartridge;
     }
 
