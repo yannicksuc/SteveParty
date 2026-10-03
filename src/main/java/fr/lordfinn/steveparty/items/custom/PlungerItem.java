@@ -18,14 +18,17 @@ public class PlungerItem extends Item {
     }
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        // The server decides (the client's idea of the flag may be stale): one message, the right one, and the sound
+        // for everyone around, the user included
+        if (user.getWorld().isClient) return ActionResult.SUCCESS;
         if (entity.isSilent()) {
             entity.setSilent(false);
             user.sendMessage(Text.translatable("message.steveparty.plunger.unsilenced"), true);
-            user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_OUT_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            user.getWorld().playSound(null, user.getBlockPos(), PLUNGER_SUCK_OUT_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
         } else {
             entity.setSilent(true);
             user.sendMessage(Text.translatable("message.steveparty.plunger.silenced"), true);
-            user.getWorld().playSound(user, user.getBlockPos(), PLUNGER_SUCK_IN_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            user.getWorld().playSound(null, user.getBlockPos(), PLUNGER_SUCK_IN_SOUND_EVENT, SoundCategory.PLAYERS, 1.0F, 1.0F);
         }
         return ActionResult.SUCCESS;
     }

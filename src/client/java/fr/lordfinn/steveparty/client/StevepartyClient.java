@@ -377,12 +377,14 @@ public class StevepartyClient implements ClientModInitializer {
 
     /** Client caches are per server connection: drop them on disconnect. */
     private static void resetClientState() {
-        PartyService.tokens.clear();
         PartyHud.clear();
         fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.clear();
         FloatingTextRenderer.clear();
         GoalPoleFlipTracker.clear();
         SquishAnimations.clear();
+        fr.lordfinn.steveparty.client.renderer.DestinationsRenderer.clear();
+        // The carriers of the last world, else kept (with their world) until a world renders again
+        fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity.CLIENT_CARRIERS.clear();
     }
 
     private static boolean lastPressed = false;

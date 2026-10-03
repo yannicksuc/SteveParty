@@ -640,6 +640,44 @@ public class ShopGameTests implements FabricGameTest {
         });
     }
 
+    /**
+     * The screens of a trading stall and of a cash register close once the block is gone or the player walked away
+     * (nothing put in a removed stall is lost with it); an emptied slot is empty again on the clients too.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void shopScreensCloseWhenTheBlockIsGone(TestContext context) {
+        BlockPos stallRelative = new BlockPos(1, 1, 1), registerRelative = new BlockPos(3, 1, 1);
+        context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
+        context.setBlockState(registerRelative, ModBlocks.CASH_REGISTER);
+        TradingStallBlockEntity stall = context.getBlockEntity(stallRelative);
+        CashRegisterBlockEntity register = context.getBlockEntity(registerRelative);
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        BlockPos stallPos = context.getAbsolutePos(stallRelative);
+        player.refreshPositionAndAngles(stallPos.getX() + 1.5, stallPos.getY(), stallPos.getZ() + 0.5, 0, 0);
+        var stallScreen = new fr.lordfinn.steveparty.screen_handlers.custom.TradingStallScreenHandler(1, player.getInventory(), stall);
+        var registerScreen = new fr.lordfinn.steveparty.screen_handlers.custom.CashRegisterScreenHandler(2, player.getInventory(), register);
+        context.assertTrue(stallScreen.canUse(player) && registerScreen.canUse(player), "next to them: open");
+        player.refreshPositionAndAngles(stallPos.getX() + 30, stallPos.getY(), stallPos.getZ(), 0, 0);
+        context.assertTrue(!stallScreen.canUse(player) && !registerScreen.canUse(player), "far away: closed");
+        player.refreshPositionAndAngles(stallPos.getX() + 1.5, stallPos.getY(), stallPos.getZ() + 0.5, 0, 0);
+        context.setBlockState(stallRelative, Blocks.AIR);
+        context.setBlockState(registerRelative, Blocks.AIR);
+        context.assertTrue(!stallScreen.canUse(player) && !registerScreen.canUse(player), "the blocks gone: closed");
+
+        // What the clients read: a slot emptied since the last update is empty
+        context.setBlockState(stallRelative, ModBlocks.TRADING_STALL);
+        TradingStallBlockEntity again = context.getBlockEntity(stallRelative);
+        var registries = context.getWorld().getRegistryManager();
+        again.setStack(0, new ItemStack(Items.EMERALD));
+        NbtCompound before = again.toInitialChunkDataNbt(registries);
+        again.setStack(0, ItemStack.EMPTY);
+        NbtCompound after = again.toInitialChunkDataNbt(registries);
+        again.read(before, registries);
+        again.read(after, registries);
+        context.assertTrue(again.getStack(0).isEmpty(), "an emptied slot is read as empty");
+        context.complete();
+    }
+
     private static RegistryEntry<Enchantment> sharpness(TestContext context) {
         return context.getWorld().getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(Enchantments.SHARPNESS);
     }

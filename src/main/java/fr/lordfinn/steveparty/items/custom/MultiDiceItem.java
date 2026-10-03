@@ -25,10 +25,6 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
         this.numberOfDice = numberOfDice;
     }
 
-    public int getNumberOfDice() {
-        return numberOfDice;
-    }
-
     @Override
     public ActionResult use(World world, PlayerEntity player, Hand hand) {
         if (isServerWorld(world)) {

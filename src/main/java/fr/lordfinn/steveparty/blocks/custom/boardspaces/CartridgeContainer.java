@@ -18,6 +18,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -103,26 +104,37 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         return null;
     }
 
-    /** Whether the cartridges spill out when {@code player} breaks it (a tile broken with Silk Touch keeps them). */
+    /**
+     * Whether the cartridges spill out when {@code player} breaks it. A container that keeps them (a tile broken with
+     * Silk Touch) records it on its block entity, read back by {@link #keepsContents} when the block goes.
+     */
     protected boolean dropsContentsOnBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
         return true;
     }
 
+    /** Whether the cartridges of {@code blockEntity} go with the dropped block instead of spilling out. */
+    protected boolean keepsContents(CartridgeContainerBlockEntity blockEntity) {
+        return false;
+    }
+
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-
-        if (blockEntity instanceof CartridgeContainerBlockEntity inventory && dropsContentsOnBreak(world, pos, state, player)) {
-            // Drop all items in the inventory
-            for (int i = 0; i < inventory.size(); i++) {
-                ItemStack stack = inventory.getStack(i);
-                if (!stack.isEmpty()) {
-                    dropStack(world, pos, stack);
-                }
-            }
-        }
-
+        // Decided here, where the player is known (a tile broken with Silk Touch keeps them): spilled when the block goes
+        if (world.getBlockEntity(pos) instanceof CartridgeContainerBlockEntity) dropsContentsOnBreak(world, pos, state, player);
         super.onBreak(world, pos, state, player);
         return state;
+    }
+
+    /**
+     * The cartridges spill out whatever removes the block (a player, an explosion, a command, a piston...), not only
+     * a player breaking it: they were lost otherwise.
+     */
+    @Override
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.isOf(newState.getBlock()) && !world.isClient
+                && world.getBlockEntity(pos) instanceof CartridgeContainerBlockEntity inventory && !keepsContents(inventory)) {
+            ItemScatterer.spawn(world, pos, inventory);
+        }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 }

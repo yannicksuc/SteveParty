@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -69,14 +70,14 @@ public final class AdvanceBackMoves {
         }
     }
 
-    private static final Map<UUID, Move> MOVES = new HashMap<>();
+    private static final Map<UUID, Move> MOVES = ServerMemory.forgetOnStop(new HashMap<>());
     /** Last board spaces of each token, the latest last. */
-    private static final Map<UUID, Deque<BlockPos>> TRAILS = new LinkedHashMap<>(16, 0.75f, true) {
+    private static final Map<UUID, Deque<BlockPos>> TRAILS = ServerMemory.forgetOnStop(new LinkedHashMap<UUID, Deque<BlockPos>>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<UUID, Deque<BlockPos>> eldest) {
             return size() > MAX_TRACKED_TOKENS;
         }
-    };
+    });
 
     private AdvanceBackMoves() {
     }

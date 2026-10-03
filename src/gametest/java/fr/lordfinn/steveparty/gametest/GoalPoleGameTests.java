@@ -10,6 +10,10 @@ import fr.lordfinn.steveparty.blocks.custom.GoalPoleBaseBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlock;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.payloads.ModPayloads;
+import fr.lordfinn.steveparty.payloads.custom.GoalPoleBasePayload;
+import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
+import net.minecraft.nbt.NbtCompound;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
 import fr.lordfinn.steveparty.recipes.FlagDyeRecipe;
 import net.minecraft.item.Items;
@@ -1052,6 +1056,54 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.setBlockState(BASE.up(4), pole(false, true));
         GoalPoleNetwork.processPending();
         context.assertTrue(poleEntity(context, BASE.up(4)).isFlagSteps(), "a new segment takes the pole's setting");
+        removeBase(context);
+        context.complete();
+    }
+
+    /**
+     * The screens of a base and of a pole open for anyone holding a Wrench, but what they send back only changes
+     * them for a player who may build there: an adventure player (a party's players) neither resets the points nor
+     * picks the players counted, nor changes the goal.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_rights")
+    public void onlyABuilderChangesTheSettingsFromTheScreens(TestContext context) {
+        GoalPoleBaseBlockEntity base = placeBase(context, base());
+        context.setBlockState(BASE.up(), pole(true, true));
+        GoalPoleNetwork.processPending();
+        GoalPoleBlockEntity pole = poleEntity(context, BASE.up());
+        BlockPos basePos = context.getAbsolutePos(BASE), polePos = context.getAbsolutePos(BASE.up());
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            Vec3d near = basePos.toCenterPos().add(1.5, 0, 0);
+            player.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
+            base.setSelector("@p");
+            base.credit("Alex", 3, null);
+            NbtCompound settings = base.writeSettings();
+            settings.putString("Selector", "Someone");
+            settings.putBoolean("Reset", true);
+            GoalPolePayload goal = new GoalPolePayload(polePos, GoalPoleBlockEntity.Comparator.EQUAL, 7, false, false, false);
+
+            player.changeGameMode(GameMode.ADVENTURE);
+            base.openScreen(player);
+            ModPayloads.applyGoalPoleBase(player, new GoalPoleBasePayload(basePos, settings));
+            context.assertTrue(base.getSelector().equals("@p") && base.getPoints("Alex") == 3,
+                    "adventure: the base keeps its selector and its points");
+            pole.openScreen(player);
+            ModPayloads.applyGoalPole(player, goal);
+            context.assertTrue(pole.getValue() != 7, "adventure: the pole keeps its goal");
+
+            player.changeGameMode(GameMode.SURVIVAL);
+            base.openScreen(player);
+            ModPayloads.applyGoalPoleBase(player, new GoalPoleBasePayload(basePos, settings));
+            context.assertTrue(base.getSelector().equals("Someone") && base.getPoints("Alex") == 0,
+                    "survival: the settings are applied");
+            pole.openScreen(player);
+            ModPayloads.applyGoalPole(player, goal);
+            context.assertTrue(pole.getValue() == 7, "survival: the goal is applied");
+        } finally {
+            player.closeHandledScreen();
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
         removeBase(context);
         context.complete();
     }

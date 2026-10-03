@@ -215,12 +215,13 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
         @Override
         public boolean canInsert(ItemStack stack) {
-            return stack.getItem() instanceof MiniGamesCatalogueItem;
+            return stack.getItem() instanceof MiniGamesCatalogueItem && mayEditProgram();
         }
 
         @Override
         public boolean canTakeItems(PlayerEntity playerEntity) {
-            return !isCatalogueLocked();
+            // Like the program: a party's players don't take its catalogue away
+            return !isCatalogueLocked() && mayEditProgram();
         }
 
         @Override

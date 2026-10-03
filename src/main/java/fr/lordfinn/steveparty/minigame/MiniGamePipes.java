@@ -15,7 +15,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -125,10 +124,10 @@ public final class MiniGamePipes {
         if (link != null) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.linked", pos.getX(), pos.getY(), pos.getZ(),
                     link.role().text()), true);
-            world.playSound(null, pos, ModSounds.SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            ModSounds.playSelect(world, pos);
         } else if (wasLinked) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.unlinked", pos.getX(), pos.getY(), pos.getZ()), true);
-            world.playSound(null, pos, ModSounds.CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+            ModSounds.playCancel(world, pos);
         } else {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_page.pipe.full", MiniGamePageData.MAX_PIPE_LINKS)
                     .formatted(Formatting.RED), true);

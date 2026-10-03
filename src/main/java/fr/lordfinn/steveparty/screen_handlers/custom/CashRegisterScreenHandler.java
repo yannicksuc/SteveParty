@@ -35,7 +35,8 @@ public class CashRegisterScreenHandler extends ScreenHandler {
     }
 
     public CashRegisterScreenHandler(int i, PlayerInventory playerInventory, BlockPosPayload blockPosPayload) {
-        this(i, playerInventory, (CashRegisterBlockEntity) playerInventory.player.getWorld().getBlockEntity(blockPosPayload.pos()));
+        this(i, playerInventory, playerInventory.player.getWorld().getBlockEntity(blockPosPayload.pos()) instanceof CashRegisterBlockEntity register
+                ? register : new SimpleInventory(27));
     }
 
     @Override
@@ -65,7 +66,8 @@ public class CashRegisterScreenHandler extends ScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return this.inventory.canPlayerUse(player);
+        // The block still there and in reach (the inventory alone always said yes)
+        return fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks.canUseInventory(this.inventory, player);
     }
 }
 

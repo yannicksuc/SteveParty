@@ -83,6 +83,8 @@ public class MiniGamesCatalogueItem extends Item {
 
 
     public static void setCurrentMiniGamePage(ItemStack catalogue, ItemStack miniGamePage) {
+        // No catalogue any more (taken out during the draw): never a component on the shared empty stack
+        if (catalogue.isEmpty()) return;
         catalogue.set(CURRENT_MINIGAME, miniGamePage);
     }
 

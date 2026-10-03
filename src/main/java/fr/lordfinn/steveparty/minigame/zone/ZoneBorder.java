@@ -126,6 +126,7 @@ public final class ZoneBorder {
     static void resetOrigin() {
         depth = 0;
         originPlayer = null;
+        originWorld = null;
     }
 
     /** The side what is going on started on: looked up every time, sessions and their players come and go. */

@@ -30,6 +30,14 @@ public final class ScreenHandlerChecks {
         return inventory.canPlayerUse(player);
     }
 
+    /**
+     * May the player change the block at {@code pos} (its settings, its links...)? Not a spectator, allowed to build
+     * (not in adventure mode) and not in a protected area (spawn protection, claims). Reach is checked apart.
+     */
+    public static boolean canBuildAt(PlayerEntity player, BlockPos pos) {
+        return !player.isSpectator() && player.canModifyBlocks() && player.getWorld().canPlayerModifyAt(player, pos);
+    }
+
     /** @return true if the player can interact with the block at {@code pos} (reach check). */
     public static boolean isInReach(PlayerEntity player, BlockPos pos) {
         return player.canInteractWithBlockAt(pos, REACH_TOLERANCE);

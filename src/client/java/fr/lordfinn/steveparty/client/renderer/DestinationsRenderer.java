@@ -154,6 +154,14 @@ public class DestinationsRenderer {
         DESTINATIONS.clear();
     }
 
+    /** Disconnected: nothing of the last world stays highlighted or blinking in the next one. */
+    public static void clear() {
+        DESTINATIONS.clear();
+        LAST_HELD_ITEM_STACKS[0] = ItemStack.EMPTY;
+        LAST_HELD_ITEM_STACKS[1] = ItemStack.EMPTY;
+        located = null;
+    }
+
     public static Map<BlockPos, GlowingCuboidRenderer.GradientType> getDestinations() {
         return DESTINATIONS;
     }

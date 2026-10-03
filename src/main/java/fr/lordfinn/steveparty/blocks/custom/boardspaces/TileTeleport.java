@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.events.TileReachedEvent;
 import fr.lordfinn.steveparty.particles.MulaSparkleEffect;
 import fr.lordfinn.steveparty.service.AdvanceBackMoves;
 import fr.lordfinn.steveparty.service.TokenMovementService;
+import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -71,12 +72,12 @@ public final class TileTeleport {
     private static final Identifier SHRINK_MODIFIER = Steveparty.id("teleport_shrink");
 
     /** Tokens being teleported (server thread). */
-    private static final Set<UUID> TELEPORTING = new HashSet<>();
+    private static final Set<UUID> TELEPORTING = ServerMemory.forgetOnStop(new HashSet<>());
     /**
      * Tokens pushed one space on after a teleport, until they land: whether that space triggers its effect (server
      * thread, not saved: a restart in the middle ends it as an ordinary move).
      */
-    private static final Map<UUID, Boolean> PUSHED = new HashMap<>();
+    private static final Map<UUID, Boolean> PUSHED = ServerMemory.forgetOnStop(new HashMap<>());
 
     /** A teleport, for the GameTests: the token, where it left from and where it arrived. Empty in normal play. */
     public record Teleported(UUID token, BlockPos from, BlockPos to) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.service;
 
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.properties.PropertyMap;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -227,10 +228,10 @@ public final class DiceRollEffects {
         int applied = 0;
         if (player != null) {
             if (coins > 0) {
-                PartyCurrency.give(player, coin, coins);
+                InventoryUtils.giveOrDrop(player, coin, coins);
                 applied = coins;
             } else if (coins < 0) {
-                applied = -PartyCurrency.take(player.getInventory(), coin, -coins);
+                applied = -InventoryUtils.take(player.getInventory(), coin, -coins);
             }
         }
         Text who = player != null ? player.getDisplayName() : token.getDisplayName();

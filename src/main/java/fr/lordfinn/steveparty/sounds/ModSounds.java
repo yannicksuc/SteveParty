@@ -82,4 +82,14 @@ public class ModSounds {
         Identifier identifier = Steveparty.id(name);
         return Registry.register(Registries.SOUND_EVENT, identifier, SoundEvent.of(identifier));
     }
+
+    /** The "linked" click of a block (a page, a pipe, a podium, a destination), heard by everyone around. */
+    public static void playSelect(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos) {
+        world.playSound(null, pos, SELECT_SOUND_EVENT, net.minecraft.sound.SoundCategory.BLOCKS, 1.0F, 1.0F);
+    }
+
+    /** The "unlinked" click of a block, heard by everyone around. */
+    public static void playCancel(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos) {
+        world.playSound(null, pos, CANCEL_SOUND_EVENT, net.minecraft.sound.SoundCategory.BLOCKS, 1.0F, 1.0F);
+    }
 }

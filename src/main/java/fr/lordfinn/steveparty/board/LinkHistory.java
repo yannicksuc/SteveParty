@@ -37,6 +37,9 @@ public final class LinkHistory {
     public sealed interface Change permits LinksChange, RotationChange, ChestChange, ShopChange, BlockChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
+
+        /** The block it changes. */
+        BlockPos pos();
     }
 
     public record LinksChange(BlockPos pos, int slot, List<BlockPos> before, List<BlockPos> after) implements Change {
@@ -179,11 +182,6 @@ public final class LinkHistory {
         REDO.remove(player.getUuid());
     }
 
-    /** Drops the action being recorded, if any. */
-    public static void abort(ServerPlayerEntity player) {
-        PENDING.remove(player.getUuid());
-    }
-
     private static void push(Map<UUID, Deque<Action>> stacks, UUID player, Action action) {
         Deque<Action> stack = stacks.computeIfAbsent(player, k -> new ArrayDeque<>());
         stack.push(action);
@@ -203,6 +201,9 @@ public final class LinkHistory {
      * @return false if there was nothing to undo / redo
      */
     public static boolean undo(ServerPlayerEntity player, boolean undo, @Nullable ItemStack wrench) {
+        // Changing the board again takes the right to build: not a spectator, not in adventure mode (a party started
+        // since), and only where the player may build (checked change by change, they may be far apart)
+        if (player.isSpectator() || !player.canModifyBlocks()) return false;
         Deque<Action> stack = (undo ? UNDO : REDO).get(player.getUuid());
         if (stack == null || stack.isEmpty()) {
             player.sendMessage(Text.translatable(undo ? "message.steveparty.wrench.undo.empty" : "message.steveparty.wrench.redo.empty"), true);
@@ -215,7 +216,7 @@ public final class LinkHistory {
         List<Change> changes = new ArrayList<>(action.changes());
         if (undo) java.util.Collections.reverse(changes);
         for (Change change : changes) {
-            if (!change.apply(world, undo)) skipped++;
+            if (!world.canPlayerModifyAt(player, change.pos()) || !change.apply(world, undo)) skipped++;
         }
         WrenchSnapshot snapshot = undo ? action.wrenchBefore() : action.wrenchAfter();
         if (wrench != null && snapshot != null && world == player.getWorld()) snapshot.restore(wrench);

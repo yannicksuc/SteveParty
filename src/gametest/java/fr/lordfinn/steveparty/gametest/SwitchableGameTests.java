@@ -196,4 +196,22 @@ public class SwitchableGameTests implements FabricGameTest {
                 "inventory item migrated");
         context.complete();
     }
+
+    /**
+     * The cartridge of a hop switch spills out whatever removes the block (here a command-like replacement, as an
+     * explosion would): it was only dropped when a player broke it, and lost otherwise.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aRemovedHopSwitchDropsItsCartridge(TestContext context) {
+        context.setBlockState(POS.down(), Blocks.STONE);
+        context.setBlockState(POS, ModBlocks.HOP_SWITCH);
+        BlockPos abs = context.getAbsolutePos(POS);
+        ServerWorld world = context.getWorld();
+        ((net.minecraft.inventory.Inventory) world.getBlockEntity(abs)).setStack(0, new ItemStack(net.minecraft.item.Items.PAPER));
+        context.setBlockState(POS, Blocks.AIR);
+        int count = itemsAround(world, abs).stream().filter(e -> e.getStack().isOf(net.minecraft.item.Items.PAPER))
+                .mapToInt(e -> e.getStack().getCount()).sum();
+        context.assertTrue(count == 1, "the cartridge dropped once, got " + count);
+        context.complete();
+    }
 }

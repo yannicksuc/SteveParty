@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -132,7 +133,7 @@ public class PodiumSharedPlaceGameTests implements FabricGameTest {
     }
 
     private static int coins(PartyControllerEntity controller, ServerPlayerEntity player) {
-        return PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN));
+        return InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN));
     }
 
     /** A mini-game page with the podiums linked to it. */

@@ -202,7 +202,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     @Override
     public void markRemoved() {
         super.markRemoved();
-        GoalPoleNetwork.unregister(this);
+        // Server only, as the registration: the client thread must not touch the server's maps (singleplayer)
+        if (world != null && !world.isClient) GoalPoleNetwork.unregister(this);
     }
 
     /** End of the tick it was loaded or placed in: objectives set up (legacy data converted), poles told the total. */
@@ -668,8 +669,7 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     public java.util.Set<UUID> linkedPages() {
         java.util.Set<UUID> pages = new java.util.LinkedHashSet<>();
         if (!(world instanceof ServerWorld serverWorld)) return pages;
-        for (fr.lordfinn.steveparty.minigame.MiniGamePageData page : fr.lordfinn.steveparty.minigame.MiniGamePages.pagesAt(serverWorld.getServer(),
-                net.minecraft.util.math.GlobalPos.create(serverWorld.getRegistryKey(), pos))) pages.add(page.id());
+        pages.addAll(fr.lordfinn.steveparty.minigame.MiniGamePages.pageIdsAt(serverWorld, pos));
         for (fr.lordfinn.steveparty.podium.PodiumGroup group : fr.lordfinn.steveparty.podium.Podiums.groupsOf(this)) pages.addAll(group.pages());
         return pages;
     }

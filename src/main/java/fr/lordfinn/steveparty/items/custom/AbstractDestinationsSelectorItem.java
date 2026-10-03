@@ -101,11 +101,11 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
     }
 
     protected static void playSelectSound(BlockPos clickedPos, PlayerEntity player) {
-        playSound(clickedPos, player, ModSounds.SELECT_SOUND_EVENT);
+        ModSounds.playSelect(player.getWorld(), clickedPos);
     }
 
     protected static void playCancelSound(BlockPos clickedPos, PlayerEntity player) {
-        playSound(clickedPos, player, ModSounds.CANCEL_SOUND_EVENT);
+        ModSounds.playCancel(player.getWorld(), clickedPos);
     }
 
     protected static void playSound(BlockPos clickedPos, PlayerEntity player, SoundEvent category) {

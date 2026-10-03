@@ -9,7 +9,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
@@ -143,7 +142,7 @@ public class MiniGamePipeBlock extends PipeBlock {
         MiniGamePages.refresh(player.server, page);
         pipe.setPage(page);
         if (!before.isEmpty()) player.getInventory().offerOrDrop(before);
-        player.getWorld().playSound(null, pos, ModSounds.SELECT_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+        ModSounds.playSelect(player.getWorld(), pos);
         player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.programmed", page.getName()), true);
         return true;
     }
@@ -159,7 +158,7 @@ public class MiniGamePipeBlock extends PipeBlock {
         pipe.setPage(ItemStack.EMPTY);
         if (player.getMainHandStack().isEmpty()) player.setStackInHand(Hand.MAIN_HAND, page);
         else player.getInventory().offerOrDrop(page);
-        player.getWorld().playSound(null, pos, ModSounds.CANCEL_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+        ModSounds.playCancel(player.getWorld(), pos);
         player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.page_taken"), true);
         return true;
     }

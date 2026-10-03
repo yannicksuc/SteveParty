@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
@@ -132,11 +133,11 @@ public class PartyBankGameTests implements FabricGameTest {
     }
 
     private static int coins(PartyControllerEntity controller, ServerPlayerEntity player) {
-        return PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN));
+        return InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN));
     }
 
     private static int stars(PartyControllerEntity controller, ServerPlayerEntity player) {
-        return PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.STAR));
+        return InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.STAR));
     }
 
     /** The coins shown on the results card for a player. */

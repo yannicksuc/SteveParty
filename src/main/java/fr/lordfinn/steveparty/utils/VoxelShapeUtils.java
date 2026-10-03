@@ -14,16 +14,6 @@ public class VoxelShapeUtils {
         return result.toArray(new Box[0]);
     }
 
-    public static VoxelShape[] rotationsOf(Box... boxes) {
-        VoxelShape[] result = new VoxelShape[4];
-        result[0] = shape(boxes);              //north
-        result[1] = shape(rotate(180, boxes)); //south
-        result[2] = shape(rotate(90, boxes));  //west
-        result[3] = shape(rotate(270, boxes)); //east
-
-        return result;
-    }
-
     public static VoxelShape shape(Box... boxes) {
         VoxelShape result = VoxelShapes.empty();
         for(Box box : boxes) {

@@ -54,6 +54,8 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         super.readNbt(nbt, registryLookup);
+        // Only the stacks there are written: a slot emptied since must not keep its old item (client updates)
+        items.clear();
         Inventories.readNbt(nbt, items, registryLookup);
     }
 
@@ -72,6 +74,13 @@ public class TradingStallBlockEntity extends BlockEntity implements NamedScreenH
 
     public Inventory getInventory() {
         return ImplementedInventory.of(items);
+    }
+
+    @Override
+    public void markDirty() {
+        super.markDirty();
+        // Its offers are drawn on the stall: the clients see every change, not only the next chunk load
+        if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), net.minecraft.block.Block.NOTIFY_LISTENERS);
     }
 
     @Nullable

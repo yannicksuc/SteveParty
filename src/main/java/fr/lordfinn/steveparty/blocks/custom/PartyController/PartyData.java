@@ -39,7 +39,7 @@ public class PartyData {
     }
 
     /**
-     * Populates the TokenData instance from an NBT tag.
+     * Reads the party (its steps, tokens, step and number of turns) from an NBT tag.
      *
      * @param nbt the NBT data
      */
@@ -60,7 +60,7 @@ public class PartyData {
     }
 
     /**
-     * Saves the TokenData instance to an NBT tag.
+     * Saves the party to an NBT tag.
      *
      * @param nbt the NBT tag to populate
      * @return the populated NBT tag
@@ -143,10 +143,6 @@ public class PartyData {
         return steps;
     }
 
-    public void setSteps(List<PartyStep> steps) {
-        this.steps = steps;
-    }
-
     public List<UUID> getTokens() {
         return tokens;
     }
@@ -175,10 +171,6 @@ public class PartyData {
 
     public void addStep(PartyStep step) {
         this.steps.addLast(step);
-    }
-
-    public void removeStep(PartyStep step) {
-        this.steps.remove(step);
     }
 
     public void removeToken(UUID uuid) {

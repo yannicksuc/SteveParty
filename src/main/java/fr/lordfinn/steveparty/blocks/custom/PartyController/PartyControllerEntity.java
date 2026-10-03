@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -18,7 +19,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.ScreenHandler;
 import fr.lordfinn.steveparty.payloads.custom.PartyLivePayload;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
@@ -63,7 +63,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     /** Server-side only registry of the loaded controllers, keyed by dimension + position. */
-    private static final Map<GlobalPos, PartyControllerEntity> ACTIVE_PARTY_CONTROLLERS = new LinkedHashMap<>();
+    private static final Map<GlobalPos, PartyControllerEntity> ACTIVE_PARTY_CONTROLLERS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new LinkedHashMap<>());
     private static final int START_TILES_SEARCH_RADIUS = 100;
     private final Set<UUID> interestedPlayers = new HashSet<>(); // New field
     /** Set once the step that was running when this controller was saved has been resumed. */
@@ -101,10 +101,6 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
     private boolean practiceRound = true;
 
-    static {
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_PARTY_CONTROLLERS.clear());
-    }
-
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
     }
@@ -127,7 +123,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     }
 
     private void unregister() {
-        if (this.world != null)
+        if (this.world instanceof ServerWorld)
             ACTIVE_PARTY_CONTROLLERS.remove(GlobalPos.create(this.world.getRegistryKey(), this.pos), this);
     }
 
@@ -135,18 +131,6 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     public static List<PartyControllerEntity> getActivePartyControllers() { return List.copyOf(ACTIVE_PARTY_CONTROLLERS.values()); }
     public static PartyControllerEntity getPartyControllerEntity(World world, BlockPos pos) {
         return ACTIVE_PARTY_CONTROLLERS.get(GlobalPos.create(world.getRegistryKey(), pos));
-    }
-
-    /**
-     * Closest started party controller in the given world, within {@code radius} blocks ({@code radius <= 0}: no limit).
-     */
-    public static Optional<PartyControllerEntity> getClosestActivePartyControllerEntity(@Nullable World world, BlockPos pos, int radius) {
-        return ACTIVE_PARTY_CONTROLLERS.values().stream()
-                .filter(entity -> !entity.isRemoved())
-                .filter(entity -> world == null || entity.getWorld() == world)
-                .filter(entity -> entity.getPartyData().isStarted())
-                .filter(entity -> radius <= 0 || entity.getPos().getSquaredDistance(pos) < (double) radius * radius)
-                .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
     }
 
     /**
@@ -188,7 +172,16 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     @Override
     protected void addComponents(ComponentMap.Builder componentMapBuilder) {
         super.addComponents(componentMapBuilder);
-        componentMapBuilder.add(CATALOGUE, this.catalogue);
+        // Its codec refuses an empty stack: an empty controller copied (pick block) would give an item that can be
+        // neither sent nor saved
+        if (!catalogue.isEmpty()) componentMapBuilder.add(CATALOGUE, this.catalogue);
+    }
+
+    @Override
+    public void removeFromCopiedStackNbt(NbtCompound nbt) {
+        super.removeFromCopiedStackNbt(nbt);
+        // Carried by the component on a copied item, not twice
+        nbt.remove("catalogue");
     }
 
     @Override
@@ -353,14 +346,10 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
         for (PartyCurrency currency : PartyCurrency.values()) {
             int amount = gains.forPlace(currency, place);
             ItemStack template = getCurrency(currency);
-            int taken = PartyBank.take(bank, template, amount);
+            int taken = InventoryUtils.take(bank, template, amount);
             if (taken < amount) full = false;
             paid[currency == PartyCurrency.STAR ? 1 : 0] = taken;
-            while (taken > 0) {
-                int count = Math.min(taken, template.getMaxCount());
-                player.getInventory().offerOrDrop(template.copyWithCount(count));
-                taken -= count;
-            }
+            InventoryUtils.giveOrDrop(player, template, taken);
         }
         return new Paid(paid[0], paid[1], full);
     }
@@ -393,7 +382,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
      * Game Master (a Tokenizer Wand enchanted with Game Master in hand), so that no player changes the rules mid-game.
      */
     public boolean canEdit(PlayerEntity player) {
-        if (world == null || player.isSpectator() || !player.canModifyBlocks() || !world.canPlayerModifyAt(player, pos)) return false;
+        if (world == null || !fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks.canBuildAt(player, pos)) return false;
         if (!partyData.isStarted()) return true;
         return player.hasPermissionLevel(2) || fr.lordfinn.steveparty.commands.PartyCommands.holdsGameMasterWand(player);
     }

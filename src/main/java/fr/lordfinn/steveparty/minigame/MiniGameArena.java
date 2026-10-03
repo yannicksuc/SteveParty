@@ -106,11 +106,6 @@ public final class MiniGameArena {
         return refusal == ZoneBubble.Refusal.DISABLED ? ZoneBubble.Refusal.NONE : refusal;
     }
 
-    /** @return true while a round is played in a bubble */
-    public boolean isPlayed() {
-        return bubble != null && bubble.isActive();
-    }
-
     /**
      * Runs {@code go} once the zone of the page is free of the round before: at once, unless it is still being put
      * back; then those of {@code audience} are told, and {@code go} runs when it is done, if {@code stillWanted}.

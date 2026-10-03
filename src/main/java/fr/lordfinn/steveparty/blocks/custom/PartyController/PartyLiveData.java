@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.utils.InventoryUtils;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -193,8 +194,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
         int stars = 0, coins = 0;
         List<ItemStack> powerUps = List.of();
         if (player != null) {
-            stars = PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.STAR));
-            coins = PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN));
+            stars = InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.STAR));
+            coins = InventoryUtils.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN));
             powerUps = powerUps(player.getInventory());
         }
         return new Standing(token, pawnName(controller, world, token, entity, ownerName), Optional.ofNullable(owner),
