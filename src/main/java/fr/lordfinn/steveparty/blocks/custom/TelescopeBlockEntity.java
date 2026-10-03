@@ -1,14 +1,10 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -24,7 +20,7 @@ import java.util.UUID;
  * anyone. That is all the clients are told (never saved): they draw that player at the eyepiece and the tube following
  * his eyes, from the look they already know of him. What he sees in it stays his own.
  */
-public class TelescopeBlockEntity extends BlockEntity {
+public class TelescopeBlockEntity extends SyncedBlockEntity {
     /** The watcher is checked this often (ticks). */
     private static final int CHECK_PERIOD = 5;
     /** Client: the watchers of the telescopes ticked since the last time it was taken. */
@@ -44,7 +40,7 @@ public class TelescopeBlockEntity extends BlockEntity {
     public void setWatcher(@Nullable UUID watcher) {
         if (java.util.Objects.equals(this.watcher, watcher)) return;
         this.watcher = watcher;
-        if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_LISTENERS);
+        syncToClients();
     }
 
     public static void tick(World world, BlockPos pos, BlockState state, TelescopeBlockEntity telescope) {
@@ -77,10 +73,5 @@ public class TelescopeBlockEntity extends BlockEntity {
         nbt.putBoolean("Watched", watcher != null);
         if (watcher != null) nbt.putUuid("Watcher", watcher);
         return nbt;
-    }
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
     }
 }

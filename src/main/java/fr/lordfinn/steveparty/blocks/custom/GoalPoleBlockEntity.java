@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleScreenHandler;
@@ -8,7 +9,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -16,9 +16,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.scoreboard.ScoreHolder;
 import net.minecraft.screen.ScreenHandler;
@@ -47,7 +44,7 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * its goal to set its comparator output. A landing on it is recognised with a timestamp per player (the block is told
  * every tick while a player stands on it), and handed to its base through {@link GoalPoleNetwork}.
  */
-public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPolePayload> {
+public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<GoalPolePayload> {
     // --- Cached base ---
     private GoalPoleBaseBlockEntity cachedBase;
     /** Whether {@link #cachedBase} was looked up (null then means "no base under this pole"). */
@@ -526,16 +523,6 @@ public class GoalPoleBlockEntity extends BlockEntity implements ExtendedScreenHa
     }
 
     // --- Client sync (the flag colour) ---
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
-    @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        return createNbt(registries);
-    }
-
     private boolean isTop() {
         BlockState state = getCachedState();
         return state.contains(GoalPoleBlock.TOP) && state.get(GoalPoleBlock.TOP);

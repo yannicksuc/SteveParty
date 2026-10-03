@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
@@ -8,16 +9,12 @@ import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleBaseScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.command.EntitySelector;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.scoreboard.ScoreHolder;
 import net.minecraft.scoreboard.Scoreboard;
@@ -86,7 +83,7 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
  * mini-game. Without a linked page it is the nearest party controller within {@value #PARTY_LINK_RADIUS} blocks (the
  * points also go back to 0 when that party starts).
  */
-public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<GoalPoleBasePayload> {
+public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<GoalPoleBasePayload> {
     /**
      * 3: players chosen in plain words ({@link Players}). 2: event-driven base, players by selector only (kept as the
      * advanced selector). 1 or missing: the ticking base, migrated when loaded.
@@ -888,16 +885,6 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
         NbtCompound seenNbt = new NbtCompound();
         sourceSeen.forEach(seenNbt::putInt);
         nbt.put("SourceSeen", seenNbt);
-    }
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
-    @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        return createNbt(registries);
     }
 
     /**

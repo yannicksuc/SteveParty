@@ -1,20 +1,17 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -28,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.block.Block.NOTIFY_ALL;
 
-public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+public class StencilMakerBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     ItemStack stencil = ItemStack.EMPTY;
     boolean stencilIn = false;
     public StencilMakerBlockEntity(BlockPos pos, BlockState state) {
@@ -56,19 +53,9 @@ public class StencilMakerBlockEntity extends BlockEntity implements ExtendedScre
             stencil = ItemStack.EMPTY;
     }
 
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
     private void updateListeners() {
         this.markDirty();
         this.getWorld().updateListeners(this.getPos(), this.getCachedState(), this.getCachedState(), NOTIFY_ALL);
-    }
-
-    @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registryLookup) {
-        return createNbt(registryLookup);
     }
 
     public void swapStencil(PlayerEntity player) {

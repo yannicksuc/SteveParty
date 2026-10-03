@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.PartyController;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -35,9 +36,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
@@ -59,7 +57,7 @@ import java.util.*;
 
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
-public class PartyControllerEntity extends BlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+public class PartyControllerEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     /** Server-side only registry of the loaded controllers, keyed by dimension + position. */
@@ -459,20 +457,8 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registryLookup) {
-        return createNbt(registryLookup);
-    }
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
-    @Override
     public void markDirty() {
-        if (this.world != null && !this.world.isClient && this.world instanceof ServerWorld) {
-            this.world.updateListeners(this.pos, this.getCachedState(), this.getCachedState(), 3);
-        }
+        syncToClients();
         super.markDirty();
         updatePhase();
         syncChunkHold();

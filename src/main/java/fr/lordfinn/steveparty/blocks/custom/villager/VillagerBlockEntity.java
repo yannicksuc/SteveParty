@@ -1,14 +1,13 @@
 package fr.lordfinn.steveparty.blocks.custom.villager;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerReaction.P;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.JukeboxBlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -30,9 +29,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -76,7 +72,7 @@ import java.util.UUID;
  * <b>Client</b>: plays the reaction's sounds and particles tick by tick ({@link VillagerReactionEffects}), follows
  * the nearest player (or the reaction's target) with its face, blinks; the client renderer turns that into a pose.
  */
-public class VillagerBlockEntity extends BlockEntity implements GameEventListener.Holder<VillagerBlockEntity.Listener> {
+public class VillagerBlockEntity extends SyncedBlockEntity implements GameEventListener.Holder<VillagerBlockEntity.Listener> {
     public static final int WATCH_RANGE = 16;
     public static final double GREET_RANGE = 4.5;
     public static final double LEAVE_RANGE = 8;
@@ -230,9 +226,7 @@ public class VillagerBlockEntity extends BlockEntity implements GameEventListene
         this.mode = mode;
         if (!mode.isDancing()) jukeboxPos = null;
         markDirty();
-        if (world != null && !world.isClient) {
-            world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_LISTENERS);
-        }
+        syncToClients();
     }
 
     public int getTotalPokes() {
@@ -785,11 +779,6 @@ public class VillagerBlockEntity extends BlockEntity implements GameEventListene
         if (nbt.contains("Pokes")) totalPokes = nbt.getInt("Pokes");
         if (nbt.contains(VillagerSoul.KEY, NbtElement.COMPOUND_TYPE)) soul = nbt.getCompound(VillagerSoul.KEY).copy();
         markDirty();
-    }
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
     }
 
     @Override
