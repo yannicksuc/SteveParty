@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
@@ -404,15 +405,18 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         for (Slot slot : handler.slots) {
             if (slot.isEnabled()) slotBox(context, x + slot.x - 1, y + slot.y - 1);
         }
-        // The empty catalogue slot shows, faded, the item it takes (the currency slots are never empty)
-        Slot catalogue = handler.getSlot(SLOT_CATALOGUE);
-        if (catalogue.isEnabled() && !catalogue.hasStack()) {
-            context.drawItem(new ItemStack(ModItems.MINI_GAMES_CATALOGUE), x + catalogue.x, y + catalogue.y);
-            context.getMatrices().push();
-            context.getMatrices().translate(0, 0, 250);
-            context.fill(x + catalogue.x, y + catalogue.y, x + catalogue.x + 16, y + catalogue.y + 16, 0x998B8B8B);
-            context.getMatrices().pop();
-        }
+        // The empty catalogue and bank slots show, faded, the item they take (the currency slots are never empty)
+        ghostItem(context, handler.getSlot(SLOT_CATALOGUE), ModItems.MINI_GAMES_CATALOGUE);
+        ghostItem(context, handler.getSlot(PartyControllerScreenHandler.SLOT_BANK), ModItems.CHEST_CARTRIDGE);
+    }
+
+    private void ghostItem(DrawContext context, Slot slot, net.minecraft.item.Item item) {
+        if (!slot.isEnabled() || slot.hasStack()) return;
+        context.drawItem(new ItemStack(item), x + slot.x, y + slot.y);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 250);
+        context.fill(x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0x998B8B8B);
+        context.getMatrices().pop();
     }
 
     private static void slotBox(DrawContext context, int sx, int sy) {
@@ -607,11 +611,36 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         } else {
             checks.add(new Check(Check.OK, Text.translatable(KEY + "check.catalogue.ok", data.pages().size()), Text.translatable(KEY + "check.catalogue.ok.hint"), Page.PROGRAM));
         }
-        // Currencies and rounds
-        checks.add(new Check(Check.OK, Text.translatable(KEY + "check.currencies", currency(PartyCurrency.STAR).getName(), currency(PartyCurrency.COIN).getName()),
-                Text.translatable(KEY + "check.currencies.hint"), Page.GAINS));
+        // The bank of the gains (never blocks the launch: a party can be played without gains), and the currencies
+        PartyBank.Status bank = data.bank();
+        Text bankHint = Text.empty().append(Text.translatable(KEY + "check.bank.hint")).append("\n").append(Text.translatable(KEY + "check.currencies.hint"));
+        checks.add(switch (bank.state()) {
+            case NONE -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.none"), bankHint, Page.GAINS);
+            case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing"), bankHint, Page.GAINS);
+            case SHORT -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.short", bank.coins(), currency(PartyCurrency.COIN).getName(),
+                    bank.stars(), currency(PartyCurrency.STAR).getName()), bankHint, Page.GAINS);
+            case OK -> new Check(Check.OK, Text.translatable(KEY + "check.bank.ok", bank.coins(), currency(PartyCurrency.COIN).getName(),
+                    bank.stars(), currency(PartyCurrency.STAR).getName()), bankHint, Page.GAINS);
+        });
         checks.add(new Check(Check.OK, Text.translatable(KEY + "check.rounds", data.roundsSetting()), Text.translatable(KEY + "check.rounds.hint"), Page.SETTINGS));
         return checks;
+    }
+
+    /** The bank's tooltip: what it is, what it holds, why it can't pay. */
+    private List<Text> bankTooltip(PartyBank.Status bank) {
+        List<Text> lines = new ArrayList<>();
+        lines.add(Text.translatable(KEY + "gains.bank.title").formatted(Formatting.GOLD));
+        switch (bank.state()) {
+            case NONE -> lines.add(Text.translatable(KEY + "gains.bank.none.hint").formatted(Formatting.GRAY));
+            case MISSING -> lines.add(Text.translatable(KEY + "gains.bank.missing.hint").formatted(Formatting.RED));
+            case OK, SHORT -> {
+                lines.add(Text.translatable(KEY + "gains.bank.holds", bank.coins(), currency(PartyCurrency.COIN).getName(),
+                        bank.stars(), currency(PartyCurrency.STAR).getName()).formatted(Formatting.GRAY));
+                if (bank.state() == PartyBank.State.SHORT) lines.add(Text.translatable(KEY + "gains.bank.short").formatted(Formatting.GOLD));
+                lines.add(Text.translatable(KEY + "gains.bank.hint").formatted(Formatting.DARK_GRAY));
+            }
+        }
+        return lines;
     }
 
     /** Joins texts with line breaks (tooltips). */
@@ -1008,9 +1037,25 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     // ------------------------------------------------------------------ Gains page
 
+    private static final int COLOR_SHORT = 0xFFC86400;
+    /** Gains page: where the bank's line (after its slot) starts, and its counts (after the currency slots). */
+    private static final int BANK_TEXT_X = PartyControllerScreenHandler.BANK_X + 20;
+
     private void drawGains(DrawContext context, PartyDashboardData data) {
-        // No « Read only » here: the currency slots share the title's line (the greyed steppers and their tooltip say it)
-        heading(context, Text.translatable(KEY + "tab.gains"), false);
+        // The title's line is the bank's: its cartridge slot, what it holds next to the currency slots (no title, no
+        // « Read only »: the greyed steppers and their tooltip say it)
+        PartyBank.Status bank = data.bank();
+        int room = COIN_X - 4 - BANK_TEXT_X;
+        switch (bank.state()) {
+            case NONE, MISSING -> context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank." + (bank.state() == PartyBank.State.NONE ? "none" : "missing")), room),
+                    BANK_TEXT_X, HEADING_Y, PartyGui.TEXT_ERROR, false);
+            case OK, SHORT -> {
+                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank").formatted(Formatting.BOLD), room), BANK_TEXT_X, HEADING_Y, PartyGui.TEXT_DARK, false);
+                int color = bank.state() == PartyBank.State.SHORT ? COLOR_SHORT : PartyGui.TEXT_DARK;
+                context.drawText(textRenderer, Integer.toString(bank.coins()), COIN_X + 18, HEADING_Y, color, false);
+                context.drawText(textRenderer, Integer.toString(bank.stars()), STAR_X + 18, HEADING_Y, color, false);
+            }
+        }
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             int top = GAINS_Y + row * GAINS_ROW;
             if (row == MiniGameGains.PARTICIPANTS) {
@@ -1084,6 +1129,13 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             lines.add(Text.translatable(KEY + "gains." + name + ".hint").formatted(Formatting.GRAY));
             if (!data.canEdit()) lines.add(Text.translatable(KEY + "locked").formatted(Formatting.RED));
             tooltip(context, lines, mouseX, mouseY);
+            return;
+        }
+        // The bank: its line, its counts, its empty slot
+        if (data != null && page() == Page.GAINS && emptyHand && (in(mx, my, BANK_TEXT_X, 3, COIN_X - 4 - BANK_TEXT_X, 18)
+                || in(mx, my, COIN_X + 17, 3, 22, 18) || in(mx, my, STAR_X + 17, 3, 22, 18)
+                || (focusedSlot != null && focusedSlot.id == PartyControllerScreenHandler.SLOT_BANK && !focusedSlot.hasStack()))) {
+            tooltip(context, bankTooltip(data.bank()), mouseX, mouseY);
             return;
         }
         if (focusedSlot != null && focusedSlot.id == SLOT_CATALOGUE && emptyHand && data != null) {
