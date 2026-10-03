@@ -29,9 +29,11 @@ import java.util.UUID;
  *     <li>breaking: only the owner, or an operator in creative mode;</li>
  *     <li>opening a stock container: only the owner, a creative player or an operator (same bypass as the shop
  *     GUIs, see {@code ShopkeeperKeyItem#canOpenShopBlock}); stalls and registers keep their own GUI rule;</li>
- *     <li>explosions don't destroy them, hoppers and hopper minecarts don't pull from them (mixins).</li>
+ *     <li>explosions don't destroy them (mixin).</li>
  * </ul>
- * Blocks of shops without owner (trader never claimed, or not linked at all) keep the vanilla behaviour.
+ * Blocks of shops without owner (trader never claimed, or not linked at all) keep the vanilla behaviour for these.
+ * <p>
+ * Automation is another rule, for every merchant, owned or not: see {@link #blocksAutomation}.
  */
 public final class ShopProtection {
     private ShopProtection() {
@@ -77,7 +79,7 @@ public final class ShopProtection {
         if (world.isClient || world.getServer() == null) return owners;
         VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
         if (state == null) return owners;
-        Set<UUID> traders = new HashSet<>(state.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), pos)));
+        Set<UUID> traders = state.getVendorsLinkedTo(GlobalPos.create(world.getRegistryKey(), pos));
         for (UUID trader : traders) {
             UUID owner = state.getOwner(trader);
             if (owner != null) owners.add(owner);
@@ -92,13 +94,18 @@ public final class ShopProtection {
     }
 
     /**
-     * Like {@link #isProtected(World, BlockPos)}, for the whole container opened at this position: the two halves
-     * of a double chest share one inventory, so a double chest is protected if either half is.
+     * No automation with a merchant: a block linked to a trader (its trading stalls, cash registers and stock
+     * containers, owned or not) gives nothing to and takes nothing from a hopper, a hopper minecart or a dropper, nor
+     * from whatever finds containers through the vanilla look-up (mixins). A double chest is a merchant's if either
+     * half is. One look-up in the links' reverse index, nothing at all while no block is linked.
      */
-    public static boolean isContainerProtected(World world, BlockPos pos) {
-        if (isProtected(world, pos)) return true;
+    public static boolean blocksAutomation(World world, BlockPos pos) {
+        if (world.isClient || world.getServer() == null) return false;
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
+        if (state == null || state.hasNoLinks()) return false;
+        if (state.isLinked(GlobalPos.create(world.getRegistryKey(), pos))) return true;
         BlockPos other = getOtherChestHalf(world.getBlockState(pos), pos);
-        return other != null && isProtected(world, other);
+        return other != null && state.isLinked(GlobalPos.create(world.getRegistryKey(), other));
     }
 
     private static BlockPos getOtherChestHalf(BlockState state, BlockPos pos) {

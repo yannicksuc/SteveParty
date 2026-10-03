@@ -40,6 +40,24 @@ public class VendorLinkPersistentState extends PersistentState {
      * saved on the trader entity, so it can be checked while the trader is not loaded.
      */
     private final Map<UUID, UUID> vendorOwners = new HashMap<>();
+    /**
+     * Reverse index, position to the vendors linked there (and the same for the legacy dimension-less positions):
+     * what the hoppers ask every tick, answered without walking every vendor. Built on the first question after a
+     * change ({@link #markDirty} drops it: every change of the links goes through it), links change rarely.
+     */
+    private @Nullable Map<GlobalPos, Set<UUID>> byPos;
+    private @Nullable Map<BlockPos, Set<UUID>> legacyByPos;
+
+    /** The state of the running server, kept to answer the hoppers without a lookup (dropped when it stops). */
+    private static @Nullable MinecraftServer cachedServer;
+    private static @Nullable VendorLinkPersistentState cached;
+
+    static {
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            cachedServer = null;
+            cached = null;
+        });
+    }
 
     public VendorLinkPersistentState() {
         super();
@@ -206,7 +224,43 @@ public class VendorLinkPersistentState extends PersistentState {
     }
 
     public static VendorLinkPersistentState get(MinecraftServer server) {
-        return VendorLinkPersistentState.getOrCreate(server, TYPE, "vendor_links");
+        if (server == cachedServer && cached != null) return cached;
+        VendorLinkPersistentState state = VendorLinkPersistentState.getOrCreate(server, TYPE, "vendor_links");
+        if (state != null) {
+            cachedServer = server;
+            cached = state;
+        }
+        return state;
+    }
+
+    /** Any change of the links: saved, and the reverse index built again when next needed. */
+    @Override
+    public void markDirty() {
+        byPos = null;
+        legacyByPos = null;
+        super.markDirty();
+    }
+
+    /** @return true if no block is linked to any vendor (most worlds) */
+    public boolean hasNoLinks() {
+        return vendorLinks.isEmpty() && legacyVendorLinks.isEmpty();
+    }
+
+    /** @return true if the block at this position is linked to a vendor: one look-up in the reverse index */
+    public boolean isLinked(GlobalPos pos) {
+        if (hasNoLinks()) return false;
+        index();
+        return byPos.containsKey(pos) || legacyByPos.containsKey(pos.pos());
+    }
+
+    private void index() {
+        if (byPos != null && legacyByPos != null) return;
+        Map<GlobalPos, Set<UUID>> positions = new HashMap<>();
+        vendorLinks.forEach((vendor, linked) -> linked.forEach(pos -> positions.computeIfAbsent(pos, k -> new HashSet<>()).add(vendor)));
+        Map<BlockPos, Set<UUID>> legacy = new HashMap<>();
+        legacyVendorLinks.forEach((vendor, linked) -> linked.forEach(pos -> legacy.computeIfAbsent(pos, k -> new HashSet<>()).add(vendor)));
+        byPos = positions;
+        legacyByPos = legacy;
     }
 
     public void linkBlock(UUID vendorId, GlobalPos pos) {
@@ -285,15 +339,13 @@ public class VendorLinkPersistentState extends PersistentState {
         return result;
     }
 
-    /** Every vendor the block at this position is linked to. */
+    /** Every vendor the block at this position is linked to (a new set: the caller may keep or change it). */
     public Set<UUID> getVendorsLinkedTo(GlobalPos pos) {
         Set<UUID> vendors = new HashSet<>();
-        vendorLinks.forEach((vendorId, positions) -> {
-            if (positions.contains(pos)) vendors.add(vendorId);
-        });
-        legacyVendorLinks.forEach((vendorId, positions) -> {
-            if (positions.contains(pos.pos())) vendors.add(vendorId);
-        });
+        if (hasNoLinks()) return vendors;
+        index();
+        vendors.addAll(byPos.getOrDefault(pos, Set.of()));
+        vendors.addAll(legacyByPos.getOrDefault(pos.pos(), Set.of()));
         return vendors;
     }
 
