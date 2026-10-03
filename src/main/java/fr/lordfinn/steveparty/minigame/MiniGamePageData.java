@@ -38,7 +38,10 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     public static final int MAX_PODIUM_LINKS = 32;
     public static final int MAX_INTRO_SHOTS = 32;
     public static final int MAX_TITLE_LENGTH = 40;
+    /** The description's characters shown (its formatting codes not counted). */
     public static final int MAX_DESCRIPTION_LENGTH = 400;
+    /** The description as stored: its characters and its formatting codes. */
+    public static final int MAX_DESCRIPTION_STORED = 2000;
     public static final int MAX_DESCRIPTION_LINES = 8;
     public static final int MIN_PLAYERS = 1;
     public static final int MAX_PLAYERS = 16;
@@ -212,7 +215,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         if (description == null) return "";
         StringBuilder clean = new StringBuilder();
         int lines = 1;
-        for (int i = 0; i < description.length() && clean.length() < MAX_DESCRIPTION_LENGTH; i++) {
+        for (int i = 0; i < description.length() && clean.length() < MAX_DESCRIPTION_STORED; i++) {
             char c = description.charAt(i);
             if (c == '\n') {
                 if (lines >= MAX_DESCRIPTION_LINES) break;
@@ -222,7 +225,14 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
                 clean.append(c);
             }
         }
-        return clean.toString().stripTrailing();
+        String text = clean.toString().stripTrailing();
+        // At most the characters shown that the editor lets type
+        if (MiniGameText.strip(text).length() > MAX_DESCRIPTION_LENGTH) {
+            RichText rich = RichText.fromCodes(text);
+            rich.truncate(MAX_DESCRIPTION_LENGTH);
+            text = rich.toCodes().stripTrailing();
+        }
+        return text;
     }
 
     // ------------------------------------------------------------------ saving
@@ -295,7 +305,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     private void write(PacketByteBuf buf) {
         buf.writeUuid(id);
         buf.writeString(title, MAX_TITLE_LENGTH);
-        buf.writeString(description, MAX_DESCRIPTION_LENGTH);
+        buf.writeString(description, MAX_DESCRIPTION_STORED);
         buf.writeBoolean(image != null);
         if (image != null) image.write(buf);
         buf.writeByte(MiniGameMode.toMask(modes));
@@ -315,7 +325,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     private static MiniGamePageData read(PacketByteBuf buf) {
         UUID id = buf.readUuid();
         String title = buf.readString(MAX_TITLE_LENGTH);
-        String description = buf.readString(MAX_DESCRIPTION_LENGTH);
+        String description = buf.readString(MAX_DESCRIPTION_STORED);
         MiniGamePageImage image = buf.readBoolean() ? MiniGamePageImage.read(buf) : null;
         int modes = buf.readByte();
         int min = buf.readByte(), max = buf.readByte();

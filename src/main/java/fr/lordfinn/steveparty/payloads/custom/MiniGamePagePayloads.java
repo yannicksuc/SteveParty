@@ -315,12 +315,12 @@ public final class MiniGamePagePayloads {
             buf.writeEnumConstant(payload.hand);
             buf.writeUuid(payload.page);
             buf.writeString(payload.title, MiniGamePageData.MAX_TITLE_LENGTH);
-            buf.writeString(payload.description, MiniGamePageData.MAX_DESCRIPTION_LENGTH);
+            buf.writeString(payload.description, MiniGamePageData.MAX_DESCRIPTION_STORED);
             buf.writeByte(payload.modes);
             buf.writeByte(payload.minPlayers);
             buf.writeByte(payload.maxPlayers);
         }, buf -> new Edit(buf.readEnumConstant(Hand.class), buf.readUuid(), buf.readString(MiniGamePageData.MAX_TITLE_LENGTH),
-                buf.readString(MiniGamePageData.MAX_DESCRIPTION_LENGTH), buf.readByte(), buf.readByte(), buf.readByte()));
+                buf.readString(MiniGamePageData.MAX_DESCRIPTION_STORED), buf.readByte(), buf.readByte(), buf.readByte()));
 
         @Override
         public Id<? extends CustomPayload> getId() {

@@ -18,7 +18,8 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.EditBoxWidget;
+import fr.lordfinn.steveparty.client.gui.RichTextBox;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.sound.SoundEvents;
@@ -72,7 +73,10 @@ public class MiniGamePageEditorScreen extends Screen {
 
     private int x, y;
     private TextFieldWidget titleField;
-    private EditBoxWidget descriptionBox;
+    private RichTextBox descriptionBox;
+    /** The description's toolbar: bold, italic, colour (its palette), clear the formatting. */
+    private PartyButton boldButton, italicButton, colorButton, clearButton;
+    private boolean palette;
     private final EnumSet<MiniGameMode> modes;
     private int minPlayers, maxPlayers;
     private final PartyButton[] modeButtons = new PartyButton[MiniGameMode.values().length];
@@ -122,8 +126,12 @@ public class MiniGamePageEditorScreen extends Screen {
     /** Ticks a located pipe blinks in the world. */
     private static final int LOCATE_TICKS = 100;
     private static final int ORDER_BUTTON = 9;
-    /** The codes of the description's formatting buttons: bold, italic, four colours, back to plain. */
-    private static final String[] FORMAT_CODES = {"&l", "&o", "&c", "&6", "&a", "&b", "&r"};
+    /** The description's toolbar: buttons of {@code TOOL} px, on the line of its label, at its right. */
+    private static final int TOOL = 14, TOOL_GAP = 2, TOOLBAR_Y = TOP + 29, DESCRIPTION_Y = TOP + 46, DESCRIPTION_HEIGHT = 52;
+    /** The palette's colours (0: the text's own), in two rows; its swatches. */
+    private static final char[] PALETTE = {0, 'f', '7', 'c', '6', 'e', 'a', 'b', '9', 'd'};
+    private static final int SWATCH = 12, SWATCH_GAP = 2, PALETTE_COLUMNS = 5;
+    private static final int PALETTE_WIDTH = PALETTE_COLUMNS * SWATCH + (PALETTE_COLUMNS - 1) * SWATCH_GAP + 6, PALETTE_HEIGHT = 2 * SWATCH + SWATCH_GAP + 6;
 
     public MiniGamePageEditorScreen(Hand hand, MiniGamePageData data, boolean canEdit, boolean linked, @Nullable String status) {
         super(Text.translatable(KEY + "title"));
@@ -172,6 +180,8 @@ public class MiniGamePageEditorScreen extends Screen {
         if (pipesTab || podiumsTab) {
             titleField = null;
             descriptionBox = null;
+            boldButton = italicButton = colorButton = clearButton = null;
+            palette = false;
             removeButton = null;
             return;
         }
@@ -210,31 +220,30 @@ public class MiniGamePageEditorScreen extends Screen {
         titleField.setEditable(canEdit);
         addDrawableChild(titleField);
 
-        descriptionBox = new InsetEditBox(textRenderer, rx, y + TOP + 41, COLUMN, 56,
-                Text.translatable(KEY + "field.description.placeholder"), Text.translatable(KEY + "field.description"));
-        descriptionBox.setMaxLength(MiniGamePageData.MAX_DESCRIPTION_LENGTH);
-        descriptionBox.setText(description);
-        descriptionBox.active = canEdit;
+        // The description: edited as it is shown (never its codes)
+        descriptionBox = new RichTextBox(textRenderer, rx, y + DESCRIPTION_Y, COLUMN, DESCRIPTION_HEIGHT, Text.translatable(KEY + "field.description"),
+                Text.translatable(KEY + "field.description.placeholder"), MiniGamePageData.MAX_DESCRIPTION_LENGTH, MiniGamePageData.MAX_DESCRIPTION_LINES, FIELD_BODY);
+        descriptionBox.setCodes(description);
+        descriptionBox.setEditable(canEdit);
         addDrawableChild(descriptionBox);
 
-        // The description's formatting: each button writes its code where the cursor is
-        for (int i = 0; i < FORMAT_CODES.length; i++) {
-            String code = FORMAT_CODES[i];
-            Formatting formatting = Formatting.byCode(code.charAt(1));
-            PartyButton button = new PartyButton(rx + COLUMN - (FORMAT_CODES.length - i) * 10 + 1, y + TOP + 30, 9, 9, Text.empty(), b -> insertCode(code));
-            button.content((context, renderer, centerX, centerY, color) -> {
-                if (formatting != null && formatting.isColor() && formatting.getColorValue() != null) {
-                    context.fill(centerX - 2, centerY - 2, centerX + 3, centerY + 3, 0xFF000000 | formatting.getColorValue());
-                } else {
-                    Text letter = Text.translatable(KEY + "format." + code.charAt(1) + ".letter").styled(style -> formatting == null || formatting == Formatting.RESET ? style : style.withFormatting(formatting));
-                    context.drawText(renderer, letter, centerX - renderer.getWidth(letter) / 2, centerY - 4, color, false);
-                }
-            });
-            button.setTooltip(Tooltip.of(Text.translatable(KEY + "format." + code.charAt(1)).append("\n")
-                    .append(Text.translatable(KEY + "format.hint", code).formatted(Formatting.GRAY))));
-            button.active = canEdit;
-            addDrawableChild(button);
-        }
+        // Its toolbar, on the line of its label: on the selection, or on what is typed next
+        int tx = rx + COLUMN - 4 * TOOL - 3 * TOOL_GAP, ty = y + TOOLBAR_Y;
+        boldButton = toolButton(tx, ty, "bold", "Ctrl+B", () -> descriptionBox.toggleBold(), (context, renderer, centerX, centerY, color) ->
+                glyph(context, Text.translatable(KEY + "format.bold.letter").formatted(Formatting.BOLD), centerX, centerY, color));
+        italicButton = toolButton(tx + (TOOL + TOOL_GAP), ty, "italic", "Ctrl+I", () -> descriptionBox.toggleItalic(), (context, renderer, centerX, centerY, color) ->
+                glyph(context, Text.translatable(KEY + "format.italic.letter").formatted(Formatting.ITALIC), centerX, centerY, color));
+        colorButton = toolButton(tx + 2 * (TOOL + TOOL_GAP), ty, "color", null, () -> palette = !palette, this::drawColorTool);
+        clearButton = toolButton(tx + 3 * (TOOL + TOOL_GAP), ty, "clear", null, () -> descriptionBox.clearFormatting(), (context, renderer, centerX, centerY, color) -> {
+            // A « T » crossed by a small red cross: the formatting taken off
+            glyph(context, Text.literal("T"), centerX - 2, centerY, color);
+            int cross = active(clearButton) ? 0xFFD8323F : color;
+            for (int i = 0; i < 4; i++) {
+                PartyGui.pixel(context, centerX + 2 + i, centerY + 1 + i, cross);
+                PartyGui.pixel(context, centerX + 5 - i, centerY + 1 + i, cross);
+            }
+        });
+        palette = false;
 
         // ---- Right: type of mini-game (several can be ticked)
         int modesY = y + TOP + 112;
@@ -266,11 +275,103 @@ public class MiniGamePageEditorScreen extends Screen {
         }
     }
 
-    /** Writes a formatting code in the description, where its cursor is. */
-    private void insertCode(String code) {
-        if (descriptionBox == null || !canEdit) return;
-        setFocused(descriptionBox);
-        for (char c : code.toCharArray()) descriptionBox.charTyped(c, 0);
+    /** A button of the description's toolbar: what it does, its shortcut in its tooltip. */
+    private PartyButton toolButton(int left, int top, String name, @Nullable String shortcut, Runnable action, PartyButton.Content content) {
+        PartyButton button = new PartyButton(left, top, TOOL, TOOL, Text.translatable(KEY + "format." + name), b -> {
+            if (canEdit && descriptionBox != null) action.run();
+        });
+        button.content(content);
+        net.minecraft.text.MutableText tooltip = Text.translatable(KEY + "format." + name);
+        if (shortcut != null) tooltip.append(Text.literal("  " + shortcut).formatted(Formatting.GRAY));
+        tooltip.append("\n").append(Text.translatable(KEY + "format." + name + ".hint").formatted(Formatting.DARK_GRAY));
+        button.setTooltip(Tooltip.of(tooltip));
+        button.active = canEdit;
+        return addDrawableChild(button);
+    }
+
+    private static boolean active(@Nullable PartyButton button) {
+        return button != null && button.active;
+    }
+
+    /** A letter centred on the button, its own pixels (not the font's advance) in the middle. */
+    private void glyph(DrawContext context, Text letter, int centerX, int centerY, int color) {
+        int width = textRenderer.getWidth(letter) - 1;
+        context.drawText(textRenderer, letter, centerX - width / 2, centerY - 3, color, false);
+    }
+
+    /** The colour button: a swatch of the colour (of the selection, or of what is typed next), as in its palette. */
+    private void drawColorTool(DrawContext context, TextRenderer renderer, int centerX, int centerY, int color) {
+        context.fill(centerX - 4, centerY - 4, centerX + 4, centerY + 4, active(colorButton) ? 0xFF2E2E2E : color);
+        int current = descriptionBox == null ? 0 : descriptionBox.color();
+        if (!active(colorButton)) {
+            context.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, 0xFFB0B0B0);
+        } else if (current < 0) {
+            // Several colours: a bit of each
+            context.fill(centerX - 3, centerY - 3, centerX, centerY, 0xFFFF5555);
+            context.fill(centerX, centerY - 3, centerX + 3, centerY, 0xFFFFAA00);
+            context.fill(centerX - 3, centerY, centerX, centerY + 3, 0xFF55FF55);
+            context.fill(centerX, centerY, centerX + 3, centerY + 3, 0xFF5555FF);
+        } else {
+            context.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, swatchColor((char) current));
+            // The text's own colour: crossed, as in the palette
+            if (current == 0) for (int d = 0; d < 6; d++) PartyGui.pixel(context, centerX - 3 + d, centerY + 2 - d, 0xFFD8323F);
+        }
+    }
+
+    /** What a colour of the palette looks like (0: the text's own colour). */
+    private static int swatchColor(char code) {
+        Formatting formatting = code == 0 ? null : Formatting.byCode(code);
+        return formatting != null && formatting.getColorValue() != null ? 0xFF000000 | formatting.getColorValue() : 0xFFE0E0E0;
+    }
+
+    private int paletteX() {
+        return x + RIGHT_X + COLUMN - PALETTE_WIDTH;
+    }
+
+    private int paletteY() {
+        return y + TOOLBAR_Y + TOOL + 2;
+    }
+
+    /** The swatch of the palette under the mouse, -1 for none. */
+    private int swatchAt(double mouseX, double mouseY) {
+        for (int i = 0; i < PALETTE.length; i++) {
+            int sx = paletteX() + 3 + (i % PALETTE_COLUMNS) * (SWATCH + SWATCH_GAP), sy = paletteY() + 3 + (i / PALETTE_COLUMNS) * (SWATCH + SWATCH_GAP);
+            if (mouseX >= sx && mouseX < sx + SWATCH && mouseY >= sy && mouseY < sy + SWATCH) return i;
+        }
+        return -1;
+    }
+
+    /** The palette, open under the colour button: its swatches, the colour in use outlined. */
+    private void drawPalette(DrawContext context, int mouseX, int mouseY) {
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 300);
+        int px = paletteX(), py = paletteY();
+        PartyGui.panel(context, px, py, PALETTE_WIDTH, PALETTE_HEIGHT, PartyGui.PANEL);
+        int current = descriptionBox.color(), hovered = swatchAt(mouseX, mouseY);
+        for (int i = 0; i < PALETTE.length; i++) {
+            int sx = px + 3 + (i % PALETTE_COLUMNS) * (SWATCH + SWATCH_GAP), sy = py + 3 + (i / PALETTE_COLUMNS) * (SWATCH + SWATCH_GAP);
+            int outline = i == hovered ? 0xFFFFFFFF : PALETTE[i] == current ? 0xFFFFC52E : 0xFF2E2E2E;
+            context.fill(sx, sy, sx + SWATCH, sy + SWATCH, outline);
+            if (i == hovered || PALETTE[i] == current) context.fill(sx + 1, sy + 1, sx + SWATCH - 1, sy + SWATCH - 1, 0xFF2E2E2E);
+            context.fill(sx + 2, sy + 2, sx + SWATCH - 2, sy + SWATCH - 2, swatchColor(PALETTE[i]));
+            if (PALETTE[i] == 0) {
+                // The text's own colour: crossed
+                for (int d = 0; d < SWATCH - 4; d++) PartyGui.pixel(context, sx + 2 + d, sy + SWATCH - 3 - d, 0xFFD8323F);
+            }
+        }
+        if (hovered >= 0) {
+            context.drawTooltip(textRenderer, Text.translatable(KEY + "format.color." + (PALETTE[hovered] == 0 ? "none" : String.valueOf(PALETTE[hovered]))), mouseX, mouseY);
+        }
+        context.getMatrices().pop();
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (palette && keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+            palette = false;
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     /**
@@ -315,7 +416,7 @@ public class MiniGamePageEditorScreen extends Screen {
 
     private void keepTexts() {
         if (titleField != null) titleValue = titleField.getText();
-        if (descriptionBox != null) descriptionValue = descriptionBox.getText();
+        if (descriptionBox != null) descriptionValue = descriptionBox.getCodes();
     }
 
     private void showTab(boolean pipes, boolean podiums) {
@@ -503,11 +604,18 @@ public class MiniGamePageEditorScreen extends Screen {
         MiniGamePageImage image = pendingImage != null ? pendingImage : data.image();
         if (removeButton != null) removeButton.active = canEdit && image != null;
         if (!pipesTab && !podiumsTab) refreshModeTooltips(data);
+        if (descriptionBox != null) {
+            // The toolbar's buttons are lit when the selection (or what is typed next) is so
+            boldButton.setSelected(canEdit && descriptionBox.isBold());
+            italicButton.setSelected(canEdit && descriptionBox.isItalic());
+            colorButton.setSelected(palette);
+        }
         super.render(context, mouseX, mouseY, delta);
-        if ((pipesTab || podiumsTab) && overInfo(mouseX, mouseY)) drawInfo(context, mouseX, mouseY);
+        if (overInfo(mouseX, mouseY) && !palette) drawInfo(context, mouseX, mouseY);
         else if (pipesTab) drawPipesOverlay(context, mouseX, mouseY);
         else if (podiumsTab) drawPodiumsOverlay(context, mouseX, mouseY);
         else drawModeWarnings(context, data);
+        if (palette && descriptionBox != null) drawPalette(context, mouseX, mouseY);
         // No podium: the mini-game names no winner. Said on the tab itself
         if (!data.hasPodium() && podiumsTabButton != null) {
             int left = podiumsTabButton.getX() + podiumsTabButton.getWidth() - 6, top = podiumsTabButton.getY() - 3;
@@ -577,8 +685,18 @@ public class MiniGamePageEditorScreen extends Screen {
         // ---- Texts
         context.drawText(textRenderer, Text.translatable(KEY + "field.title"), rx, y + TOP, PartyGui.TEXT_DARK, false);
         PartyGui.inset(context, rx, y + TOP + 10, COLUMN, ROW + 2, FIELD_BODY, titleField != null && titleField.isFocused(), false);
-        context.drawText(textRenderer, Text.translatable(KEY + "field.description"), rx, y + TOP + 31, PartyGui.TEXT_DARK, false);
+        // The label on the middle of its toolbar's line
+        context.drawText(textRenderer, Text.translatable(KEY + "field.description"), rx, y + TOOLBAR_Y + 3, PartyGui.TEXT_DARK, false);
         context.drawText(textRenderer, Text.translatable(KEY + "field.type"), rx, y + TOP + 102, PartyGui.TEXT_DARK, false);
+        if (descriptionBox != null) {
+            // The characters shown, out of how many: orange near the end, red at it (and when one was refused)
+            int count = descriptionBox.visibleLength(), max = descriptionBox.maxVisible();
+            boolean refused = net.minecraft.util.Util.getMeasuringTimeMs() - descriptionBox.refusedAt() < 600;
+            int color = count >= max || refused ? PartyGui.TEXT_ERROR : count >= max * 9 / 10 ? 0xFFC86400 : PartyGui.TEXT_SOFT;
+            String counter = count + "/" + max;
+            context.drawText(textRenderer, counter, rx + COLUMN - textRenderer.getWidth(counter) + 1, y + TOP + 102, color, false);
+        }
+        drawInfoBadge(context, overInfo(mouseX, mouseY));
 
         // ---- Players
         int playersY = y + TOP + 162;
@@ -821,7 +939,7 @@ public class MiniGamePageEditorScreen extends Screen {
     }
 
     private void drawInfo(DrawContext context, int mouseX, int mouseY) {
-        String tab = pipesTab ? "pipes" : "podiums";
+        String tab = pipesTab ? "pipes" : podiumsTab ? "podiums" : "page";
         drawWrappedTooltip(context, List.of(Text.translatable(KEY + "tab." + tab).formatted(Formatting.GOLD),
                 Text.translatable(KEY + tab + ".info").formatted(Formatting.GRAY)), mouseX, mouseY);
     }
@@ -943,6 +1061,24 @@ public class MiniGamePageEditorScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (palette) {
+            // The palette open: a swatch picks its colour, a click elsewhere closes it
+            int swatch = swatchAt(mouseX, mouseY);
+            palette = false;
+            if (swatch >= 0 && descriptionBox != null && button == 0) {
+                descriptionBox.setColor(PALETTE[swatch]);
+                setFocused(descriptionBox);
+                if (client != null) client.getSoundManager().play(net.minecraft.client.sound.PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.2F));
+            }
+            return true;
+        }
+        if (descriptionBox != null) {
+            boolean handled = super.mouseClicked(mouseX, mouseY, button);
+            // After a toolbar button, the typing goes on in the description
+            Element focused = getFocused();
+            if (focused == boldButton || focused == italicButton || focused == clearButton) setFocused(descriptionBox);
+            return handled;
+        }
         if (podiumsTab) {
             MiniGamePodiumLink link = podiumAt(mouseX, mouseY);
             if (link != null && button == 1) {
@@ -1035,17 +1171,5 @@ public class MiniGamePageEditorScreen extends Screen {
         if (textRenderer.getWidth(text) <= width) return text.asOrderedText();
         return net.minecraft.util.Language.getInstance().reorder(net.minecraft.text.StringVisitable.concat(
                 textRenderer.trimToWidth(text, Math.max(0, width - textRenderer.getWidth("…"))), net.minecraft.text.StringVisitable.plain("…")));
-    }
-
-    /** The vanilla multi-line box, in the sunken box of the mod's screens. */
-    private static final class InsetEditBox extends EditBoxWidget {
-        InsetEditBox(TextRenderer textRenderer, int x, int y, int width, int height, Text placeholder, Text message) {
-            super(textRenderer, x, y, width, height, placeholder, message);
-        }
-
-        @Override
-        protected void drawBox(DrawContext context, int x, int y, int width, int height) {
-            PartyGui.inset(context, x, y, width, height, FIELD_BODY, isFocused(), false);
-        }
     }
 }
