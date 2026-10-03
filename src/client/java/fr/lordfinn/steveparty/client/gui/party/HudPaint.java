@@ -213,18 +213,28 @@ final class HudPaint {
      * of a row). Up: the picture is 3 rows higher, the body under the pointer; left: 3 columns wider.
      */
     static Tex bubble(int w, boolean left) {
-        String key = "b" + w + left;
+        return bubble(w, left ? Pointer.LEFT : Pointer.UP);
+    }
+
+    /** Where a bubble's pointer is: up (under a chip), left or right (beside a row). */
+    enum Pointer { UP, LEFT, RIGHT }
+
+    /** A yellow bubble whose pointer is on one side: the picture is 3 pixels higher (up) or wider (left, right). */
+    static Tex bubble(int w, Pointer pointer) {
+        String key = "b" + w + pointer;
         int pad = HudShapes.PAD, h = 12;
-        int width = w + 2 * pad + (left ? 3 : 0), height = h + 2 * pad + (left ? 0 : 3);
+        boolean side = pointer != Pointer.UP;
+        int width = w + 2 * pad + (side ? 3 : 0), height = h + 2 * pad + (side ? 0 : 3);
         return texture(key, width, height, out -> {
             int[][] body = new int[h + 2 * pad][w + 2 * pad];
             paint(body, HudShapes.padded(HudShapes.mask(Form.PILL, w, h)), GOLD, SHADOW | OUTLINE);
-            int ox = left ? 3 : 0, oy = left ? 0 : 3;
+            int ox = pointer == Pointer.LEFT ? 3 : 0, oy = side ? 0 : 3;
             for (int y = 0; y < body.length; y++) for (int x = 0; x < body[y].length; x++) out[y + oy][x + ox] = body[y][x];
-            if (left) {
+            if (side) {
                 int cy = pad + 6;
                 for (int i = 0; i < 3; i++) {
-                    for (int y = cy - i - 1; y <= cy + i; y++) out[y][pad + i] = y == cy - i - 1 || y == cy + i ? GOLD.outline() : GOLD.body();
+                    int column = pointer == Pointer.LEFT ? pad + i : width - 1 - pad - i;
+                    for (int y = cy - i - 1; y <= cy + i; y++) out[y][column] = y == cy - i - 1 || y == cy + i ? GOLD.outline() : GOLD.body();
                 }
             } else {
                 int cx = pad + w / 2;
