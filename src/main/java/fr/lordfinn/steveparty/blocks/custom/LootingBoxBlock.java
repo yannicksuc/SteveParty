@@ -59,10 +59,6 @@ public class LootingBoxBlock extends CartridgeContainer implements BlockEntityPr
     @Override
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
-            // Clean up the block entity when the block is destroyed/replaced
-            if (!world.isClient) {
-                world.removeBlockEntity(pos);
-            }
             super.onStateReplaced(state, world, pos, newState, moved);
             return;
         }

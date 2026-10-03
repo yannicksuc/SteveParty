@@ -264,7 +264,7 @@ public class HopSwitchBlock extends CartridgeContainer {
         }
     }
 
-    // Cartridge drops on break are handled by CartridgeContainer#onBreak
+    // Cartridge drops are handled by CartridgeContainer#onStateReplaced
 
     // -----------------------------
     // Redstone neighbor update

@@ -21,7 +21,6 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -64,14 +63,17 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         return BlockRenderType.MODEL;
     }
 
-    // This method will drop all items onto the ground when the block is broken
+    /** Broken with Silk Touch: the cartridges stay in the tile's item (the others spill out, see the parent). */
+    @Override
+    protected boolean keepsContents(CartridgeContainerBlockEntity blockEntity) {
+        return blockEntity instanceof BoardSpaceBlockEntity tile && tile.keepsContents();
+    }
+
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         BoardSpaceBlockEntity tileEntity = getBoardSpaceEntity(world, pos);
         if (tileEntity == null) return;
         if (state.getBlock() != newState.getBlock()) {
-            // Broken with Silk Touch: the cartridges stay in the tile's item
-            if (!tileEntity.keepsContents()) ItemScatterer.spawn(world, pos, tileEntity);
             world.updateComparators(pos,this);
             tileEntity.hideDestinations();
         }
