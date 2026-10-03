@@ -32,7 +32,6 @@ final class StandingsHud {
     private static final HudPaint.Ramp[] RANKS = {HudPaint.GOLD, HudPaint.SILVER, HudPaint.BRONZE};
 
     private PartyHudModel model;
-    private boolean bubbleLeft;
     private StandingsLayout.Layout layout;
     private final Map<UUID, Row> rows = new HashMap<>();
     private final List<Row> shown = new ArrayList<>();
@@ -58,19 +57,19 @@ final class StandingsHud {
         return layout == null ? 0 : layout.height();
     }
 
-    void update(PartyHudModel model, int room, double now, boolean bubbleLeft) {
-        if (model == this.model && bubbleLeft == this.bubbleLeft) return;
+    void update(PartyHudModel model, int room, double now) {
+        if (model == this.model) return;
         this.model = model;
-        this.bubbleLeft = bubbleLeft;
         // The players, best first (the turn order between equals)
         List<StandingsLayout.Entry> ranked = new ArrayList<>();
         for (int i = 0; i < model.players.size(); i++) {
             PartyHudModel.Player p = model.players.get(i);
-            ranked.add(new StandingsLayout.Entry(i, model.hasStandings ? p.rank : 1, p.name, p.stars, p.coins,
+            // No rank before someone holds stars or coins (no medallion: everybody would be « 1st »)
+            ranked.add(new StandingsLayout.Entry(i, model.hasStandings ? p.rank : 0, p.name, p.stars, p.coins,
                     Math.min(StandingsLayout.BONUS_SLOTS, p.bonuses.size()), p.mine));
         }
         ranked.sort((a, b) -> Integer.compare(a.rank(), b.rank()));
-        layout = StandingsLayout.layout(ranked, ClientHudTexts.INSTANCE, bubbleLeft);
+        layout = StandingsLayout.layout(ranked, ClientHudTexts.INSTANCE);
         Map<UUID, Row> kept = new HashMap<>();
         shown.clear();
         gaps.clear();
@@ -104,14 +103,16 @@ final class StandingsHud {
         int px = layout.plateX();
         // The header: the items over their columns, « bonus » over its slots
         if (alpha > 0.6f) {
-            icon(context, model.starItem, px + layout.starColumn() + (layout.digitsWidth() - 16) / 2 + 1, 4);
-            icon(context, model.coinItem, px + layout.coinColumn() + (layout.digitsWidth() - 16) / 2 + 1, 4);
+            int top = StandingsLayout.TOP;
+            int twoDigits = ClientHudTexts.INSTANCE.width("88");
+            icon(context, model.starItem, px + layout.iconX(layout.starColumn(), twoDigits), top);
+            icon(context, model.coinItem, px + layout.iconX(layout.coinColumn(), twoDigits), top);
         }
         if (layout.bonuses()) {
             int bx = px + layout.bonusColumn() - 2;
-            HudPaint.draw(context, HudPaint.shape(Form.PILL, 34 + 4, 12, HudPaint.NEUTRAL, HudPaint.OUTLINE), bx - PAD, 4 + 2 - PAD, alpha);
+            HudPaint.draw(context, HudPaint.shape(Form.PILL, 34 + 4, 12, HudPaint.NEUTRAL, HudPaint.OUTLINE), bx - PAD, StandingsLayout.TOP + 2 - PAD, alpha);
             TurnBarHud.darkText(context, net.minecraft.text.Text.translatable("hud.steveparty.party.bonus").getString(),
-                    px + layout.bonusColumn() + 3, 4 + 4, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
+                    px + layout.bonusColumn() + 3, StandingsLayout.TOP + 4, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
         }
         for (StandingsLayout.Row gap : gaps) {
             String n = Integer.toString(gap.hidden());
@@ -132,18 +133,21 @@ final class StandingsHud {
         StandingsLayout.Entry entry = row.entry;
         PartyHudModel.Player player = row.player;
         int px = layout.plateX(), h = StandingsLayout.ROW_H, rx = layout.rankX();
-        // The rank medallion
+        // The rank medallion, once someone is ranked
         int rank = entry.rank();
-        HudPaint.Ramp rampRank = rank >= 1 && rank <= 3 && model.hasStandings ? RANKS[rank - 1] : HudPaint.NEUTRAL;
-        int d = StandingsLayout.BADGE;
-        HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, rampRank, HudPaint.OUTLINE | HudPaint.BAND), rx - PAD, y + 1 - PAD, alpha);
-        String r = model.hasStandings ? Integer.toString(rank) : "-";
-        int rw = ClientHudTexts.INSTANCE.width(r);
-        TurnBarHud.darkText(context, r, rx + (d - rw - 1) / 2, y + 1 + (d - 8) / 2, rampRank.outline(),
-                rampRank == HudPaint.NEUTRAL ? 0xFFFFFFFF : rampRank.hi(), alpha);
-        // The plate, the head, the pawn's name
+        if (layout.ranked() && rank > 0) {
+            HudPaint.Ramp rampRank = rank <= 3 ? RANKS[rank - 1] : HudPaint.NEUTRAL;
+            int d = StandingsLayout.BADGE;
+            HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, rampRank, HudPaint.OUTLINE | HudPaint.BAND), rx - PAD, y + 1 - PAD, alpha);
+            String r = Integer.toString(rank);
+            int rw = ClientHudTexts.INSTANCE.width(r);
+            TurnBarHud.darkText(context, r, rx + (d - rw - 1) / 2, y + 1 + (d - 8) / 2, rampRank.outline(),
+                    rampRank == HudPaint.NEUTRAL ? 0xFFFFFFFF : rampRank.hi(), alpha);
+        }
+        // The plate (mine: a gold outline round it), the head, the pawn's name
         HudPaint.draw(context, HudPaint.shape(Form.PILL, layout.plateWidth(), h, player.ramp.pastel(), HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND),
                 px - PAD, y - PAD, alpha);
+        if (entry.mine()) HudPaint.draw(context, HudPaint.ring(Form.PILL, layout.plateWidth(), h, HudPaint.GOLD.body()), px - PAD, y - PAD, alpha);
         int head = StandingsLayout.HEAD;
         HudPaint.draw(context, HudPaint.shape(Form.CUT1, head, head, HudPaint.white(player.ramp.outline()), HudPaint.OUTLINE),
                 px + 3 - PAD, y + (h - head) / 2 - PAD, alpha);
@@ -162,13 +166,6 @@ final class StandingsHud {
                         HudPaint.OUTLINE), sx - PAD, sy - PAD, alpha);
                 if (has && alpha > 0.6f) smallItem(context, player.bonuses.get(k), sx + 1, sy + 1);
             }
-        }
-        if (entry.mine()) {
-            // « toi » after my row, or before it pointing right when the table is anchored on the right
-            int bx = layout.bubbleX();
-            boolean left = layout.bubbleLeft();
-            HudPaint.draw(context, HudPaint.bubble(layout.bubbleWidth(), left ? HudPaint.Pointer.RIGHT : HudPaint.Pointer.LEFT), bx - PAD, y + 1 - PAD, alpha);
-            TurnBarHud.darkText(context, ClientHudTexts.INSTANCE.toi(), bx + (left ? 0 : 3) + 4, y + 1 + 2, HudPaint.GOLD.outline(), HudPaint.GOLD.hi(), alpha);
         }
     }
 

@@ -208,6 +208,17 @@ final class HudPaint {
         });
     }
 
+    /** A ring of one pixel round a shape's outline (my row in the standings: gold). */
+    static Tex ring(Form form, int w, int h, int colour) {
+        String key = "r" + form + w + "x" + h + Integer.toHexString(colour);
+        return texture(key, w + 2 * HudShapes.PAD, h + 2 * HudShapes.PAD, out -> {
+            boolean[][] outline = HudShapes.dilate(HudShapes.padded(HudShapes.mask(form, w, h)), 1);
+            boolean[][] ring = HudShapes.dilate(outline, 1);
+            for (int y = 0; y < out.length; y++)
+                for (int x = 0; x < out[y].length; x++) if (ring[y][x] && !outline[y][x]) out[y][x] = colour;
+        });
+    }
+
     /**
      * A yellow bubble: its body ({@code w} x 12, a drop shadow) and its pointer, up (under a chip) or left (at the end
      * of a row). Up: the picture is 3 rows higher, the body under the pointer; left: 3 columns wider.

@@ -194,6 +194,32 @@ public class PartyHudGameTests implements FabricGameTest {
     }
 
     /**
+     * A pawn renamed during the party (a name tag): its new name is sent at once (not at the next step), and the party
+     * remembers it for while the pawn is unloaded.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_rename")
+    public void renamedPawnIsSentAtOnce(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            PigEntity pig = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
+            pig.setCustomName(Text.literal("Rose"));
+            PartyControllerEntity controller = startParty(context, pig.getUuid(), UUID.randomUUID());
+            controller.addInterestedPlayer(player);
+            controller.syncLiveData(context.getWorld());
+            context.assertEquals(controller.getLastLiveData().standings().getFirst().tokenName(), "Rose", "its name");
+            pig.setCustomName(Text.literal("Truffe"));
+            context.assertEquals(controller.getLastLiveData().standings().getFirst().tokenName(), "Truffe", "renamed: sent at once");
+            boolean remembered = controller.getPartyData().getSteps().stream().anyMatch(step -> step instanceof TokenTurnPartyStep turn
+                    && pig.getUuid().equals(turn.getTokenUUID()) && turn.getTokenDisplayName(null).getString().equals("Truffe"));
+            context.assertTrue(remembered, "remembered by the party for while it is unloaded");
+            context.setBlockState(CONTROLLER, Blocks.AIR);
+            context.complete();
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+    }
+
+    /**
      * The standings show the pawn's name: its own (a custom name), else its player's, else what it is.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_pawn_name")

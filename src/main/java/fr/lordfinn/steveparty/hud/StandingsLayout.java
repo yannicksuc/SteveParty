@@ -27,7 +27,9 @@ public final class StandingsLayout {
     public static final int BONUS_SLOTS = 3;
     public static final int ROW_H = 14, BADGE = 12, HEAD = 10, SLOT = 10, ICON = 16, GAP_H = 10;
     /** Where the plates start: after the rank medallion. */
-    public static final int PLATE_X = 4 + BADGE + GAP + 1;
+    /** The table's frame hugs what it draws: the rank medallions' outline on its left, the items on its top. */
+    public static final int LEFT = 1, TOP = 0;
+    public static final int PLATE_X = LEFT + BADGE + GAP + 1;
     /** The header (the items over their columns): its height. */
     public static final int HEADER_H = 20;
 
@@ -60,17 +62,23 @@ public final class StandingsLayout {
      * @param bonuses     the bonus column shows
      * @param starColumn  where the stars' digits start, from a plate's left (then the coins', the bonuses')
      * @param digitsWidth a column of digits: « 888 »
-     * @param bubbleWidth the « toi » bubble (its body), at the end of my row, or before it ({@code bubbleLeft})
-     * @param rankX       where the rank medallions start (after the bubble when it is on the left)
+     * @param ranked      someone holds stars or coins: the rank medallions show (before that, no column for them)
+     * @param rankX       where the rank medallions start
      * @param plateX      where the rows' plates start
-     * @param bubbleX     where my bubble's picture starts (its pointer included), from the table's left
      */
     public record Layout(List<Row> rows, int nameWidth, int plateWidth, boolean bonuses, int starColumn, int coinColumn,
-                         int bonusColumn, int digitsWidth, int bubbleWidth, int width, int height, boolean bubbleLeft,
-                         int rankX, int plateX, int bubbleX) {
+                         int bonusColumn, int digitsWidth, int width, int height, boolean ranked, int rankX, int plateX) {
         /** The names of the players shown, fitted. */
         public int nameX() {
             return 17;
+        }
+
+        /**
+         * Where a currency's item (16 px) goes over its column, from a plate's left: centred over the column's last
+         * two digits (the numbers are right-aligned: most are one or two digits long).
+         */
+        public int iconX(int column, int twoDigits) {
+            return column + digitsWidth - (twoDigits + 1) / 2 - ICON / 2;
         }
     }
 
@@ -106,48 +114,35 @@ public final class StandingsLayout {
     }
 
     /**
-     * Lays the table out.
+     * Lays the table out. Ranked players (a rank above 0) show a rank medallion before their row; until someone holds
+     * stars or coins nobody is ranked, and the table has no medallion column. My row is marked by a gold outline (a
+     * pixel round its plate): no room taken.
      *
      * @param ranked the players, best first
      */
     public static Layout layout(List<Entry> ranked, HudTexts texts) {
-        return layout(ranked, texts, false);
-    }
-
-    /**
-     * Lays the table out; {@code bubbleLeft}: my « toi » bubble before my row (the table anchored on the right: the
-     * rows' ends stay on the screen's edge), else after it.
-     */
-    public static Layout layout(List<Entry> ranked, HudTexts texts, boolean bubbleLeft) {
         List<Row> shown = collapse(ranked);
         int nameW = 0;
-        boolean bonuses = false;
-        for (Entry entry : ranked) bonuses |= entry.bonuses() > 0;
+        boolean bonuses = false, ranks = false;
+        for (Entry entry : ranked) {
+            bonuses |= entry.bonuses() > 0;
+            ranks |= entry.rank() > 0;
+        }
         for (Row row : shown) if (!row.gap()) nameW = Math.max(nameW, texts.width(row.entry().name()));
         nameW = Math.min(NAME_CAP, nameW);
         int digits = texts.width("888");
         int star = 17 + nameW + 6, coin = star + digits + 6, bonus = coin + digits + 6;
         // The plate ends a pixel after the last bonus slot, or after the coins' column and its margin
         int plate = HudShapes.odd(bonuses ? bonus + BONUS_SLOTS * 12 - 1 : bonus - 1);
-        int bubble = HudShapes.odd(texts.width(texts.toi()) + 1 + 8);
         List<Row> rows = new ArrayList<>();
-        int y = 4 + HEADER_H;
-        boolean mine = false;
+        int y = TOP + HEADER_H;
         for (Row row : shown) {
             rows.add(new Row(row.entry(), row.hidden(), y));
-            if (row.gap()) {
-                y += GAP_H + GAP;
-            } else {
-                mine |= row.entry().mine();
-                y += ROW_H + GAP;
-            }
+            y += row.gap() ? GAP_H + GAP : ROW_H + GAP;
         }
-        // My bubble: after my row, or before the rank medallions (pointing right at them)
-        int bubbleRoom = mine ? bubble + 3 + GAP + 1 : 0;
-        int shift = bubbleLeft ? bubbleRoom : 0;
-        int plateX = PLATE_X + shift, rankX = 4 + shift;
-        int bubbleX = bubbleLeft ? rankX - GAP - 1 - (bubble + 3) : plateX + plate + GAP + 1;
-        int width = plateX + plate + (bubbleLeft ? 0 : bubbleRoom) + 6;
-        return new Layout(rows, nameW, plate, bonuses, star, coin, bonus, digits, bubble, width, y + 4, bubbleLeft, rankX, plateX, bubbleX);
+        // My row's gold outline: a pixel round the plate's outline, on every side
+        int plateX = ranks ? PLATE_X : LEFT + 1;
+        int width = plateX + plate + 2;
+        return new Layout(rows, nameW, plate, bonuses, star, coin, bonus, digits, width, y, ranks, LEFT, plateX);
     }
 }
