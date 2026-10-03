@@ -70,6 +70,7 @@
       "fr.lordfinn.steveparty.gametest.VillagerBlockSoulGameTests",
       "fr.lordfinn.steveparty.gametest.PipeGameTests",
       "fr.lordfinn.steveparty.gametest.MiniGamePageGameTests",
+      "fr.lordfinn.steveparty.gametest.RichTextGameTests",
       "fr.lordfinn.steveparty.gametest.MiniGamePipeGameTests",
       "fr.lordfinn.steveparty.gametest.ZoneBubbleGameTests",
       "fr.lordfinn.steveparty.gametest.MiniGameZoneGameTests",
