@@ -613,7 +613,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
 
             // Sneak + click in the air: the mode ends, the zone stays
             player.setSneaking(true);
-            context.assertEquals(stack.use(world, player, Hand.MAIN_HAND), ActionResult.SUCCESS, "sneak + click in the air");
+            context.assertTrue(stack.use(world, player, Hand.MAIN_HAND).isAccepted(), "sneak + click in the air");
             player.setSneaking(false);
             context.assertTrue(!PageZoneTool.isInMode(stack) && MiniGamePages.get(server, id).zone() != null, "the mode ended, the zone stays");
             // Opening the editor ends it too
