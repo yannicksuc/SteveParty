@@ -35,7 +35,8 @@ public record StencilMakerActionPayload(Action action, byte[] shape) implements 
     public void handle(ServerPlayerEntity player) {
         if (!(player.currentScreenHandler instanceof StencilMakerScreenHandler handler)) return;
         StencilMakerBlockEntity maker = handler.getBlockEntity();
-        if (maker == null || !ScreenHandlerChecks.isInReach(player, maker.getPos())) return;
+        // The maker still there (not broken meanwhile) and in reach
+        if (maker == null || maker.isRemoved() || !ScreenHandlerChecks.isInReach(player, maker.getPos())) return;
         if (action == Action.TAKE_OUT) {
             maker.takeOutStencil(player);
             player.closeHandledScreen();
