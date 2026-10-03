@@ -686,7 +686,6 @@
   "status.finished": "Finished",
   "key.steveparty.party_hud_layout": "Party HUD Layout",
   "hud.steveparty.party.round": "Round %s/%s",
-  "hud.steveparty.party.round.only": "Round %s",
   "hud.steveparty.party.round.start": "Start",
   "hud.steveparty.party.start_rolls": "Turn order: roll your dice",
   "hud.steveparty.party.start_rolls.you": "Roll your die for the turn order!",
@@ -1928,9 +1927,6 @@
   "gui.steveparty.party_controller.timeline.event.channel": "Event (channel %s)",
   "gui.steveparty.party_controller.timeline.end": "End of the party",
   "gui.steveparty.party_controller.timeline.other": "Step",
-  "hud.steveparty.party.round.short": "%s/%s",
-  "hud.steveparty.party.strip.round": "R%s",
-  "hud.steveparty.party.strip.turns": "Turns",
   "hud.steveparty.party.strip.mini_game": "Mini-game",
   "hud.steveparty.party.strip.event": "Event",
   "hud.steveparty.party.strip.preparing": "Setup",
@@ -1961,5 +1957,12 @@
   "hud.steveparty.chest_cartridge.none": "No chest",
   "hud.steveparty.chest_cartridge.chest": "Chest: %1$s %2$s %3$s",
   "hud.steveparty.chest_cartridge.away": "Chest in %s",
-  "hud.steveparty.chest_cartridge.hint": "Right-click a chest: choose it · sneak + right-click in the air: none"
+  "hud.steveparty.chest_cartridge.hint": "Right-click a chest: choose it · sneak + right-click in the air: none",
+  "hud.steveparty.party.strip.pinned": "in %s",
+  "hud.steveparty.party.toi": "you",
+  "hud.steveparty.party.toi.now": "your turn!",
+  "hud.steveparty.party.toi.in": "you in %s",
+  "hud.steveparty.party.bonus": "bonus",
+  "screen.steveparty.party_hud_layout.notice": "Notice",
+  "screen.steveparty.party_hud_layout.reset_notice": "Reset notice"
 }

@@ -1,12 +1,11 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
-import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
-import net.minecraft.client.font.TextRenderer;
+import fr.lordfinn.steveparty.hud.HudShapes;
+import fr.lordfinn.steveparty.hud.HudShapes.Form;
+import fr.lordfinn.steveparty.hud.StandingsLayout;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
@@ -15,305 +14,193 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static fr.lordfinn.steveparty.hud.HudShapes.GAP;
+import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
+
 /**
- * The standings, Mario Party style: one plate per player, best first, each with its rank (« 1er » on gold, « 2e » on
- * silver, « 3e » on bronze), its face framed with its token's colour (a crown for the first), the token's name and its
- * player's name, its stars and coins (the party's items, with their icons) and the power-ups its player holds. The
- * player whose turn it is gets a gold plate, slid a little to the right.
+ * The standings, « tableau des scores » (the approved mock-up S5, see {@link StandingsLayout}): the party's star and
+ * coin items once, full size, over their columns, then one thin row per player, best first (rank medallion: gold for
+ * the first, silver, bronze, then neutral; head; pawn's name; stars and coins right-aligned; bonuses), « toi » at the
+ * end of my row, and past eight players the first three, me and my neighbours, the last one.
  * <p>
- * Animated: plates glide to their new place when the ranks change, « +N » / « -N » rises from the stars or the coins
- * when they change, a power-up pops when one more is held. Too many players for the room: compact rows (no player name, power-ups
- * smaller, on the same line).
+ * Animated: the rows glide to their new place when the ranks change, a number pops when it changes. Items are never
+ * faded (they can't be): they are left out while the HUD fades.
  */
 final class StandingsHud {
-    private static final int ROW = 24;
-    private static final int ROW_COMPACT = 18;
-    private static final int ROW_GAP = 2;
-    private static final int RANK = 18;
-    private static final int FACE = 16;
-    private static final int NAME_MAX = 56;
-    private static final int POWER_UPS_SHOWN = 3;
-    private static final float CURRENT_SHIFT = 4;
-    private static final float FLOATER_TICKS = 26;
     private static final float POP_TICKS = 8;
+    private static final float GLIDE = 0.3f;
+    private static final HudPaint.Ramp[] RANKS = {HudPaint.GOLD, HudPaint.SILVER, HudPaint.BRONZE};
 
     private PartyHudModel model;
-    private int roomHeight = -1;
-    private boolean compact;
-    private int rowHeight = ROW;
-    private int width;
-    private int height;
-    private int nameColumn;
-    private int rightColumn;
-    private int rankColumn = RANK;
-    /** The rows in the order of the model's players, and the order they are shown in (best first). */
-    private final List<Row> rows = new ArrayList<>();
-    private final Map<UUID, Row> rowsByToken = new HashMap<>();
+    private StandingsLayout.Layout layout;
+    private final Map<UUID, Row> rows = new HashMap<>();
+    private final List<Row> shown = new ArrayList<>();
+    private final List<StandingsLayout.Row> gaps = new ArrayList<>();
     private double lastFrame;
 
+    /** A player's row: where it goes, where it is, its numbers' pops. */
     private static final class Row {
-        UUID token;
+        StandingsLayout.Entry entry;
         PartyHudModel.Player player;
-        OrderedText name;
-        OrderedText owner;
-        int ownerColor;
-        Text rankText;
-        int rankWidth;
-        final Counter stars = new Counter();
-        final Counter coins = new Counter();
-        String more;
-        Plate rankPlate;
-        int targetY;
+        String name;
+        int y;
         float shownY = Float.NaN;
-        float shownShift;
-        boolean current;
-        // animations
-        boolean firstUpdate = true;
-        Map<String, Integer> lastCounts = new HashMap<>();
-        double[] powerUpPopAt = new double[POWER_UPS_SHOWN];
+        int lastStars = Integer.MIN_VALUE, lastCoins = Integer.MIN_VALUE;
+        double starsAt = -1000, coinsAt = -1000;
     }
-
-    /** A number with its item: pops, and lets a « +N » / « -N » rise, when it changes. */
-    private static final class Counter {
-        String text = "0";
-        int width;
-        int last = Integer.MIN_VALUE;
-        String floater;
-        int floaterColor;
-        double floaterAt = -1000;
-        double popAt = -1000;
-
-        void update(int value, double now, TextRenderer font) {
-            text = Integer.toString(value);
-            width = font.getWidth(text);
-            if (last != Integer.MIN_VALUE && value != last) {
-                int gain = value - last;
-                floater = (gain > 0 ? "+" : "") + gain;
-                floaterColor = gain > 0 ? 0xFF2E9E2E : HudDraw.TEXT_WARN;
-                floaterAt = now;
-                popAt = now;
-            }
-            last = value;
-        }
-
-        /** Width of the item and the number. */
-        int fullWidth() {
-            return COUNTER_ICON + 1 + width;
-        }
-    }
-
-    private static final int COUNTER_ICON = 10;
-    private static final int COUNTER_GAP = 4;
 
     int width() {
-        return width;
+        return layout == null ? 0 : layout.width();
     }
 
     int height() {
-        return height;
+        return layout == null ? 0 : layout.height();
     }
 
-    /** Takes a new model or new room (unscaled height it may use): lays out again only then. */
     void update(PartyHudModel model, int room, double now) {
-        if (model == this.model && room == roomHeight) return;
+        if (model == this.model) return;
         this.model = model;
-        this.roomHeight = room;
-        TextRenderer font = HudDraw.font();
-        int count = model.players.size();
-        compact = count * (ROW + ROW_GAP) > room;
-        rowHeight = compact ? ROW_COMPACT : ROW;
-
-        // Rows kept by token, so that their animations go on
-        List<Row> ordered = new ArrayList<>(count);
+        // The players, best first (the turn order between equals)
+        List<StandingsLayout.Entry> ranked = new ArrayList<>();
+        for (int i = 0; i < model.players.size(); i++) {
+            PartyHudModel.Player p = model.players.get(i);
+            ranked.add(new StandingsLayout.Entry(i, model.hasStandings ? p.rank : 1, p.name, p.stars, p.coins,
+                    Math.min(StandingsLayout.BONUS_SLOTS, p.bonuses.size()), p.mine));
+        }
+        ranked.sort((a, b) -> Integer.compare(a.rank(), b.rank()));
+        layout = StandingsLayout.layout(ranked, ClientHudTexts.INSTANCE);
         Map<UUID, Row> kept = new HashMap<>();
-        for (int i = 0; i < count; i++) {
-            PartyHudModel.Player player = model.players.get(i);
-            Row row = rowsByToken.getOrDefault(player.token, new Row());
-            row.token = player.token;
+        shown.clear();
+        gaps.clear();
+        for (StandingsLayout.Row r : layout.rows()) {
+            if (r.gap()) {
+                gaps.add(r);
+                continue;
+            }
+            PartyHudModel.Player player = model.players.get(r.entry().index());
+            Row row = rows.getOrDefault(player.token, new Row());
+            row.entry = r.entry();
             row.player = player;
-            row.current = i == model.current;
-            ordered.add(row);
+            row.name = ClientHudTexts.INSTANCE.fit(player.name, layout.nameWidth());
+            row.y = r.y();
+            if (Float.isNaN(row.shownY)) row.shownY = row.y;
+            if (row.lastStars != Integer.MIN_VALUE && row.lastStars != player.stars) row.starsAt = now;
+            if (row.lastCoins != Integer.MIN_VALUE && row.lastCoins != player.coins) row.coinsAt = now;
+            row.lastStars = player.stars;
+            row.lastCoins = player.coins;
             kept.put(player.token, row);
+            shown.add(row);
         }
-        rowsByToken.clear();
-        rowsByToken.putAll(kept);
         rows.clear();
-        rows.addAll(ordered);
-
-        // Texts and widths
-        nameColumn = 0;
-        rightColumn = 0;
-        rankColumn = RANK;
-        for (Row row : rows) {
-            PartyHudModel.Player player = row.player;
-            row.name = HudDraw.fit(Text.literal(player.name), NAME_MAX);
-            Text owner;
-            if (player.owner == null) {
-                owner = Text.translatable("hud.steveparty.party.anyone");
-                row.ownerColor = HudDraw.TEXT_SOFT;
-            } else if (!player.online) {
-                owner = Text.translatable("hud.steveparty.party.offline", player.ownerName);
-                row.ownerColor = HudDraw.TEXT_WARN;
-            } else {
-                owner = Text.literal(player.ownerName);
-                row.ownerColor = player.mine ? HudDraw.TEXT_MINE : HudDraw.TEXT_SOFT;
-            }
-            row.owner = HudDraw.fit(owner, NAME_MAX);
-            nameColumn = Math.max(nameColumn, font.getWidth(row.name));
-            if (!compact) nameColumn = Math.max(nameColumn, font.getWidth(row.owner));
-            row.rankText = model.hasStandings ? Text.translatable("hud.steveparty.party.rank." + Math.min(player.rank, 9)) : Text.literal("-");
-            row.rankWidth = font.getWidth(row.rankText);
-            rankColumn = Math.max(rankColumn, row.rankWidth + 7);
-            row.rankPlate = !model.hasStandings ? Plate.TEAL : switch (player.rank) {
-                case 1 -> Plate.GOLD;
-                case 2 -> Plate.TEAL;
-                case 3 -> Plate.ORANGE;
-                default -> Plate.PURPLE;
-            };
-            // Stars and coins, animated when they change
-            row.stars.update(player.stars, now, font);
-            row.coins.update(player.coins, now, font);
-            boolean firstUpdate = row.firstUpdate;
-            row.firstUpdate = false;
-            int shown = Math.min(POWER_UPS_SHOWN, player.powerUps.size());
-            row.more = player.powerUps.size() > shown ? "+" + (player.powerUps.size() - shown) : null;
-            int itemSize = compact ? 10 : 12;
-            int powerUps = shown * itemSize + (row.more != null ? font.getWidth(row.more) + 1 : 0);
-            int currencies = row.stars.fullWidth() + COUNTER_GAP + row.coins.fullWidth();
-            rightColumn = Math.max(rightColumn, compact ? currencies + (powerUps > 0 ? powerUps + 3 : 0) : Math.max(currencies, powerUps));
-            Map<String, Integer> counts = new HashMap<>();
-            for (int i = 0; i < player.powerUps.size(); i++) {
-                ItemStack stack = player.powerUps.get(i);
-                String key = stack.getItem().toString() + stack.getComponentChanges().hashCode();
-                counts.put(key, stack.getCount());
-                Integer before = row.lastCounts.get(key);
-                if (i < POWER_UPS_SHOWN && !firstUpdate && (before == null || stack.getCount() > before))
-                    row.powerUpPopAt[i] = now;
-            }
-            row.lastCounts = counts;
-        }
-        nameColumn = Math.min(nameColumn, NAME_MAX);
-
-        // Order: best rank first, the turn order between ties
-        List<Row> byRank = new ArrayList<>(rows);
-        byRank.sort((a, b) -> Integer.compare(a.player.rank, b.player.rank));
-        for (int i = 0; i < byRank.size(); i++) {
-            Row row = byRank.get(i);
-            row.targetY = i * (rowHeight + ROW_GAP);
-            if (Float.isNaN(row.shownY)) row.shownY = row.targetY;
-        }
-        width = 2 + rankColumn + 3 + FACE + 4 + nameColumn + 6 + rightColumn + 5 + (int) CURRENT_SHIFT;
-        height = Math.max(0, count * (rowHeight + ROW_GAP) - ROW_GAP);
+        rows.putAll(kept);
     }
 
     void draw(DrawContext context, float alpha, double now) {
-        if (model == null || alpha <= 0.02f) return;
+        if (model == null || layout == null || alpha <= 0.02f) return;
         float delta = (float) MathHelper.clamp(now - lastFrame, 0, 5);
         lastFrame = now;
-        int rowWidth = width - (int) CURRENT_SHIFT;
-        // The current player's row last: drawn over the others while they swap
-        for (int pass = 0; pass < 2; pass++) {
-            for (Row row : rows) {
-                if (row.current != (pass == 1)) continue;
-                row.shownY = HudDraw.approach(row.shownY, row.targetY, 0.3f, delta);
-                row.shownShift = HudDraw.approach(row.shownShift, row.current ? CURRENT_SHIFT : 0, 0.35f, delta);
-                drawRow(context, row, Math.round(row.shownShift), Math.round(row.shownY), rowWidth, alpha, now);
-            }
-        }
-    }
-
-    private void drawRow(DrawContext context, Row row, int x, int y, int rowWidth, float alpha, double now) {
-        PartyHudModel.Player player = row.player;
-        TextRenderer font = HudDraw.font();
-        HudDraw.plate(context, row.current ? Plate.GOLD : Plate.TEAL, x, y, rowWidth, rowHeight, alpha);
-        // Rank
-        int rankSize = compact ? rowHeight - 4 : RANK;
-        int rankWidth = rankColumn - (RANK - rankSize);
-        int rankY = y + (rowHeight - rankSize) / 2;
-        HudDraw.plate(context, row.rankPlate, x + 2, rankY, rankWidth, rankSize, alpha);
-        HudDraw.text(context, row.rankText, x + 2 + (rankWidth - row.rankWidth) / 2 + 1, rankY + (rankSize - 8) / 2 + 1, HudDraw.TEXT, alpha);
-        // Face (a crown on the first's)
-        int faceSize = compact ? 14 : FACE;
-        int faceX = x + 2 + rankColumn + 3;
-        int faceY = y + (rowHeight - faceSize) / 2;
-        HudDraw.face(context, player.owner, player.name, player.color, faceX, faceY, faceSize, alpha, false);
-        if (model.hasStandings && player.rank == 1 && (player.stars > 0 || player.coins > 0) && !compact)
-            HudDraw.icon(context, HudDraw.ICON_CROWN, faceX + faceSize - 6, faceY - 4, alpha);
-        // Names
-        int nameX = faceX + FACE + 4;
-        if (compact) {
-            HudDraw.text(context, row.name, nameX, y + (rowHeight - 8) / 2, player.mine ? HudDraw.TEXT_MINE : HudDraw.TEXT, alpha);
-        } else {
-            HudDraw.text(context, row.name, nameX, y + 4, HudDraw.TEXT, alpha);
-            HudDraw.text(context, row.owner, nameX, y + 13, row.ownerColor, alpha);
-        }
-        // Stars and coins (their « +N » rise at the end, above everything)
-        int rightX = nameX + nameColumn + 6;
-        int countersY = compact ? y + (rowHeight - COUNTER_ICON) / 2 : y + 2;
-        MatrixStack matrices = context.getMatrices();
-        drawCounter(context, model.starItem, row.stars, rightX, countersY, alpha, now);
-        int coinsX = rightX + row.stars.fullWidth() + COUNTER_GAP;
-        drawCounter(context, model.coinItem, row.coins, coinsX, countersY, alpha, now);
-        // Power-ups
-        int shown = Math.min(POWER_UPS_SHOWN, player.powerUps.size());
-        int itemSize = compact ? 10 : 12;
-        int itemsX = compact ? coinsX + row.coins.fullWidth() + 3 : rightX;
-        int itemsY = compact ? y + (rowHeight - itemSize) / 2 : y + rowHeight - itemSize - 1;
+        int px = StandingsLayout.PLATE_X;
+        // The header: the items over their columns, « bonus » over its slots
         if (alpha > 0.6f) {
-            for (int i = 0; i < shown; i++) {
-                ItemStack stack = player.powerUps.get(i);
-                float itemPop = (float) ((now - row.powerUpPopAt[i]) / POP_TICKS);
-                float scale = itemSize / 16f * (itemPop < 1 ? 1 + 0.6f * (1 - HudDraw.easeOutBack(itemPop)) : 1);
-                matrices.push();
-                matrices.translate(itemsX + i * itemSize + itemSize / 2f, itemsY + itemSize / 2f, 0);
-                matrices.scale(scale, scale, 1);
-                context.drawItem(stack, -8, -8);
-                if (stack.getCount() > 1) context.drawStackOverlay(font, stack, -8, -8);
-                matrices.pop();
+            icon(context, model.starItem, px + layout.starColumn() + (layout.digitsWidth() - 16) / 2 + 1, 4);
+            icon(context, model.coinItem, px + layout.coinColumn() + (layout.digitsWidth() - 16) / 2 + 1, 4);
+        }
+        if (layout.bonuses()) {
+            int bx = px + layout.bonusColumn() - 2;
+            HudPaint.draw(context, HudPaint.shape(Form.PILL, 34 + 4, 12, HudPaint.NEUTRAL, HudPaint.OUTLINE), bx - PAD, 4 + 2 - PAD, alpha);
+            TurnBarHud.darkText(context, net.minecraft.text.Text.translatable("hud.steveparty.party.bonus").getString(),
+                    px + layout.bonusColumn() + 3, 4 + 4, HudPaint.NEUTRAL.outline(), 0xFFFFFFFF, alpha);
+        }
+        for (StandingsLayout.Row gap : gaps) {
+            String n = Integer.toString(gap.hidden());
+            int w = ClientHudTexts.INSTANCE.width("… " + n) + 11;
+            int gx = px + 12, gy = gap.y();
+            HudPaint.draw(context, HudPaint.shape(Form.PILL, w, StandingsLayout.GAP_H, HudPaint.NEUTRAL, HudPaint.OUTLINE), gx - PAD, gy - PAD, alpha);
+            HudPaint.draw(context, HudPaint.dots(0xFFFFFFFF), gx + 5, gy + 2, alpha);
+            HudPaint.draw(context, HudPaint.dots(HudPaint.NEUTRAL.outline()), gx + 4, gy + 1, alpha);
+            HudPaint.small(context, n, gx + 4 + 8, gy + 2, HudPaint.NEUTRAL.outline(), alpha);
+        }
+        for (Row row : shown) {
+            row.shownY = HudDraw.approach(row.shownY, row.y, GLIDE, delta);
+            drawRow(context, row, Math.round(row.shownY), alpha, now);
+        }
+    }
+
+    private void drawRow(DrawContext context, Row row, int y, float alpha, double now) {
+        StandingsLayout.Entry entry = row.entry;
+        PartyHudModel.Player player = row.player;
+        int px = StandingsLayout.PLATE_X, h = StandingsLayout.ROW_H;
+        // The rank medallion
+        int rank = entry.rank();
+        HudPaint.Ramp rampRank = rank >= 1 && rank <= 3 && model.hasStandings ? RANKS[rank - 1] : HudPaint.NEUTRAL;
+        int d = StandingsLayout.BADGE;
+        HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, rampRank, HudPaint.OUTLINE | HudPaint.BAND), 4 - PAD, y + 1 - PAD, alpha);
+        String r = model.hasStandings ? Integer.toString(rank) : "-";
+        int rw = ClientHudTexts.INSTANCE.width(r);
+        TurnBarHud.darkText(context, r, 4 + (d - rw - 1) / 2, y + 1 + (d - 8) / 2, rampRank.outline(),
+                rampRank == HudPaint.NEUTRAL ? 0xFFFFFFFF : rampRank.hi(), alpha);
+        // The plate, the head, the pawn's name
+        HudPaint.draw(context, HudPaint.shape(Form.PILL, layout.plateWidth(), h, player.ramp.pastel(), HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND),
+                px - PAD, y - PAD, alpha);
+        int head = StandingsLayout.HEAD;
+        HudPaint.draw(context, HudPaint.shape(Form.CUT1, head, head, HudPaint.white(player.ramp.outline()), HudPaint.OUTLINE),
+                px + 3 - PAD, y + (h - head) / 2 - PAD, alpha);
+        TurnBarHud.head(context, player, px + 3 + (head - 8) / 2, y + (h - head) / 2 + (head - 8) / 2, alpha);
+        int textY = y + (h - 8) / 2;
+        TurnBarHud.darkText(context, row.name, px + layout.nameX(), textY, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
+        // Stars and coins, right-aligned three-digit columns
+        digits(context, player.stars, px + layout.starColumn(), textY, row.starsAt, alpha, now);
+        digits(context, player.coins, px + layout.coinColumn(), textY, row.coinsAt, alpha, now);
+        // Bonuses
+        if (layout.bonuses()) {
+            for (int k = 0; k < StandingsLayout.BONUS_SLOTS; k++) {
+                int sx = px + layout.bonusColumn() + k * 12, sy = y + (h - StandingsLayout.SLOT) / 2;
+                boolean has = k < player.bonuses.size();
+                HudPaint.draw(context, HudPaint.shape(Form.PILL, StandingsLayout.SLOT, StandingsLayout.SLOT, has ? HudPaint.NEUTRAL : HudPaint.EMPTY_SLOT,
+                        HudPaint.OUTLINE), sx - PAD, sy - PAD, alpha);
+                if (has && alpha > 0.6f) smallItem(context, player.bonuses.get(k), sx + 1, sy + 1);
             }
         }
-        if (row.more != null)
-            HudDraw.text(context, row.more, itemsX + shown * itemSize + 1, itemsY + (itemSize - 8) / 2 + 1, HudDraw.TEXT_SOFT, alpha);
-        drawFloater(context, font, row.stars, rightX, countersY, alpha, now);
-        drawFloater(context, font, row.coins, coinsX, countersY, alpha, now);
-    }
-
-    /** The currency's item (10 px) and its number, which pops when it changes. */
-    private static void drawCounter(DrawContext context, ItemStack icon, Counter counter, int x, int y, float alpha, double now) {
-        MatrixStack matrices = context.getMatrices();
-        if (alpha > 0.6f && !icon.isEmpty()) {
-            matrices.push();
-            matrices.translate(x + COUNTER_ICON / 2f, y + COUNTER_ICON / 2f, 0);
-            matrices.scale(COUNTER_ICON / 16f, COUNTER_ICON / 16f, 1);
-            context.drawItem(icon, -8, -8);
-            matrices.pop();
-        }
-        float numberX = x + COUNTER_ICON + 1;
-        float pop = (float) ((now - counter.popAt) / POP_TICKS);
-        if (pop < 1) {
-            float scale = 1 + 0.5f * (1 - HudDraw.easeOutBack(pop));
-            matrices.push();
-            // In front of the item (drawn at a depth of its own)
-            matrices.translate(numberX + counter.width / 2f, y + 5, 200);
-            matrices.scale(scale, scale, 1);
-            HudDraw.text(context, counter.text, -counter.width / 2, -4, HudDraw.TEXT, alpha);
-            matrices.pop();
-        } else {
-            HudDraw.text(context, counter.text, Math.round(numberX), y + 1, HudDraw.TEXT, alpha);
+        if (entry.mine()) {
+            int bx = px + layout.plateWidth() + GAP + 1;
+            HudPaint.draw(context, HudPaint.bubble(layout.bubbleWidth(), true), bx - PAD, y + 1 - PAD, alpha);
+            TurnBarHud.darkText(context, ClientHudTexts.INSTANCE.toi(), bx + 3 + 4, y + 1 + 2, HudPaint.GOLD.outline(), HudPaint.GOLD.hi(), alpha);
         }
     }
 
-    /** The « +N » / « -N » rising from a counter that changed. */
-    private static void drawFloater(DrawContext context, TextRenderer font, Counter counter, int x, int y, float alpha, double now) {
-        float floater = (float) ((now - counter.floaterAt) / FLOATER_TICKS);
-        if (counter.floater == null || floater >= 1) return;
-        int fy = Math.round(y - 2 - HudDraw.easeOutCubic(floater) * 10);
-        float fade = alpha * (floater < 0.6f ? 1 : 1 - (floater - 0.6f) / 0.4f);
-        // Above the items (drawn at a depth of their own) and the next rows
+    /** A number right-aligned in a « 888 » column; it pops when it changes. */
+    private void digits(DrawContext context, int value, int x, int y, double changedAt, float alpha, double now) {
+        String s = Integer.toString(value);
+        int w = ClientHudTexts.INSTANCE.width(s);
+        int tx = x + layout.digitsWidth() - w;
+        float pop = (float) ((now - changedAt) / POP_TICKS);
+        if (pop >= 1) {
+            TurnBarHud.darkText(context, s, tx, y, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
+            return;
+        }
+        float scale = 1 + 0.5f * (1 - HudDraw.easeOutBack(pop));
         MatrixStack matrices = context.getMatrices();
         matrices.push();
-        matrices.translate(0, 0, 400);
-        context.drawText(font, counter.floater, x + COUNTER_ICON + 1 + counter.width + 2, fy, HudDraw.fade(counter.floaterColor, fade), true);
+        float cx = tx + w / 2f, cy = y + 4;
+        matrices.translate(cx, cy, 50);
+        matrices.scale(scale, scale, 1);
+        matrices.translate(-cx, -cy, 0);
+        TurnBarHud.darkText(context, s, tx, y, HudPaint.TEXT_DARK, 0xFFFFFFFF, alpha);
+        matrices.pop();
+    }
+
+    /** An item at its full size, 16 x 16 (any item, block items too). */
+    private static void icon(DrawContext context, ItemStack stack, int x, int y) {
+        if (!stack.isEmpty()) context.drawItem(stack, x, y);
+    }
+
+    /** An item at half size, 8 x 8 (a bonus in its slot). */
+    private static void smallItem(DrawContext context, ItemStack stack, int x, int y) {
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(x + 4, y + 4, 0);
+        matrices.scale(0.5f, 0.5f, 1);
+        context.drawItem(stack, -8, -8);
         matrices.pop();
     }
 }

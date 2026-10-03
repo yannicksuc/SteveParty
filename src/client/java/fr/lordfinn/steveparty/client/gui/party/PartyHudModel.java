@@ -40,6 +40,10 @@ final class PartyHudModel {
         int stars;
         int coins;
         List<ItemStack> powerUps = List.of();
+        /** The bonuses it carries (the standings' « bonus » column), none yet in the mod. */
+        List<ItemStack> bonuses = List.of();
+        /** Its colours on the HUDs: its token's colour, the nearest of the players' palette. */
+        HudPaint.Ramp ramp = HudPaint.PLAYERS[0];
         int rank = 1;
         /** Its turn of the current round is over. */
         boolean played;
@@ -64,7 +68,7 @@ final class PartyHudModel {
         StepKind kind = StepKind.OTHER;
         /** Index in {@link #players} of its token ({@link StepKind#TURN}, {@link StepKind#ROLL}), -1 for none. */
         int player = -1;
-        /** The round it starts (shown before it), 0 if it starts none. */
+        /** The round it belongs to (1-based), 0 for none (the turn order rolls, the end). */
         int round;
         /** Its identity from a model to the next (its chip goes on, and slides to its new place). */
         int key;
@@ -106,6 +110,8 @@ final class PartyHudModel {
     int stripMore;
     /** Index of the step being played in the party's steps: another one, another step. */
     int stepIndex;
+    /** Index in {@link #players} of the (first) token of the player of this client, -1 for none (a spectator). */
+    int me = -1;
 
     static PartyHudModel build(PartyData data, PartyLiveData live, @Nullable UUID me) {
         PartyHudModel model = new PartyHudModel();
@@ -128,14 +134,17 @@ final class PartyHudModel {
                 player.stars = standing.stars();
                 player.coins = standing.coins();
                 player.powerUps = standing.powerUps();
+                player.bonuses = standing.bonuses();
             } else if (turn != null) {
                 player.name = turn.getTokenDisplayName(null).getString();
                 player.owner = turn.getOwnerUUID();
             }
             if (player.ownerName.isEmpty() && player.owner != null) player.ownerName = listedName(player.owner);
             if (player.name.isEmpty()) player.name = player.ownerName.isEmpty() ? token.toString().substring(0, 8) : player.ownerName;
-            player.color = HudDraw.tokenColor(standing != null ? standing.color() : -1, model.players.size());
+            player.ramp = HudPaint.playerRamp(standing != null ? standing.color() : -1, model.players.size());
+            player.color = player.ramp.body();
             player.mine = me != null && me.equals(player.owner);
+            if (player.mine && model.me < 0) model.me = model.players.size();
             model.players.add(player);
         }
         model.starItem = live.starItem();
@@ -211,36 +220,33 @@ final class PartyHudModel {
             List<PartyDashboardData.TimelineStep> window = timeline.steps();
             PartyDashboardData.TimelineStep now = window.get(timeline.current());
             int size = steps.size();
-            model.strip.add(model.step(kindOf(now), now.player(), 0, size - stepIndex));
-            if (model.stepType == PartyStepType.START_ROLLS) {
-                for (int i = 0; i < model.players.size(); i++) model.strip.add(model.step(StepKind.ROLL, i, 0, -1000 - i));
-            }
+            model.strip.add(model.step(kindOf(now), now.player(), now.round(), size - stepIndex));
             if (beforeRounds) {
-                // The steps are not generated yet: what the program will play (the turn order is not known)
+                // The steps are not generated yet: what the program will play, a round at a time (the turn order is
+                // not known: its turns, then its mini-game)
                 PartyDashboardData.Timeline program = live.program();
-                model.stripMore = program.more() + model.addSteps(program.steps(), 0, 0, i -> -1 - i);
+                model.stripMore = program.more() + model.addSteps(program.steps(), 0, i -> -1 - i);
+                for (PartyDashboardData.TimelineStep step : program.steps()) model.rounds = Math.max(model.rounds, step.round());
+                if (program.more() > 0) model.rounds = Math.max(model.rounds, model.rounds + (program.more() + 1) / 2);
             } else {
                 int first = timeline.offset();
-                model.stripMore = timeline.more() + model.addSteps(window, timeline.current() + 1, now.round(), i -> size - (first + i));
+                model.stripMore = timeline.more() + model.addSteps(window, timeline.current() + 1, i -> size - (first + i));
             }
         }
         return model;
     }
 
     /**
-     * Adds steps to come to the strip, up to {@link #MAX_STRIP}: the first step of each new round carries its number.
+     * Adds steps to come to the strip, up to {@link #MAX_STRIP}.
      *
-     * @param lastRound the round of the step before the first one added
-     * @param key       the key of a step, from its index in {@code steps}
+     * @param key the key of a step, from its index in {@code steps}
      * @return how many of them were left out
      */
-    private int addSteps(List<PartyDashboardData.TimelineStep> steps, int from, int lastRound, java.util.function.IntUnaryOperator key) {
+    private int addSteps(List<PartyDashboardData.TimelineStep> steps, int from, java.util.function.IntUnaryOperator key) {
         int i = from;
         for (; i < steps.size() && strip.size() < MAX_STRIP; i++) {
             PartyDashboardData.TimelineStep step = steps.get(i);
-            int round = step.round() > 0 && step.round() != lastRound ? step.round() : 0;
-            if (step.round() > 0) lastRound = step.round();
-            strip.add(step(kindOf(step), step.player(), round, key.applyAsInt(i)));
+            strip.add(step(kindOf(step), step.player(), step.round(), key.applyAsInt(i)));
         }
         return steps.size() - i;
     }
@@ -356,14 +362,16 @@ final class PartyHudModel {
     // ------------------------------------------------------------------ preview
 
     /**
-     * A made-up party for the layout screen when no party is running: three players, the second one moving, in the
-     * third round of ten (the strip: the turns and the mini-game of each round to come, then the end).
+     * A made-up party for the layout screen when no party is running, showing everything the HUDs can show: six
+     * players in the third round of ten, the player of this client next (« toi » under its chip), the next mini-game
+     * far enough to be pinned on a narrow bar, two players tied, and bonuses (in this sample only: the mod has none
+     * yet).
      */
     static PartyHudModel sample(@Nullable UUID me, String myName) {
         PartyHudModel model = new PartyHudModel();
-        String[][] names = {{"Cochonou", "Alex"}, {"Meuh", myName}, {"Bêêê", "Steve"}};
-        int[] stars = {1, 2, 1};
-        int[] coins = {12, 8, 5};
+        String[][] names = {{"Cochonou", "Alex"}, {"Meuh", "Sam"}, {"Bêêê", myName}, {"Coin-coin", "Steve"}, {"Groin", "Zoé"}, {"Plume", "Léo"}};
+        int[] stars = {2, 3, 1, 2, 0, 1};
+        int[] coins = {18, 42, 25, 18, 31, 12};
         model.starItem = PartyCurrency.STAR.defaultStack();
         model.coinItem = PartyCurrency.COIN.defaultStack();
         for (int i = 0; i < names.length; i++) {
@@ -371,19 +379,23 @@ final class PartyHudModel {
             player.token = new UUID(0x5A3B1EL, i);
             player.name = names[i][0];
             player.ownerName = names[i][1];
-            player.owner = i == 1 ? me : new UUID(0x5A3B1EL, 100 + i);
-            player.mine = i == 1 && me != null;
-            player.color = HudDraw.tokenColor(-1, i);
+            player.owner = i == 2 ? me : new UUID(0x5A3B1EL, 100 + i);
+            player.mine = i == 2 && me != null;
+            player.ramp = HudPaint.playerRamp(-1, i);
+            player.color = player.ramp.body();
             player.stars = stars[i];
             player.coins = coins[i];
-            player.played = i == 0;
             model.players.add(player);
         }
-        model.players.get(1).powerUps = List.of(new ItemStack(ModItems.DOUBLE_DICE, 2), new ItemStack(ModItems.TRIPLE_DICE));
-        model.players.get(0).powerUps = List.of(new ItemStack(ModItems.DOUBLE_DICE));
-        model.players.get(0).rank = 2;
-        model.players.get(1).rank = 1;
-        model.players.get(2).rank = 3;
+        model.me = me != null ? 2 : -1;
+        // Bonuses, as an example of the column
+        model.players.get(1).bonuses = List.of(new ItemStack(ModItems.DOUBLE_DICE), new ItemStack(ModItems.TRIPLE_DICE));
+        model.players.get(2).bonuses = List.of(new ItemStack(ModItems.DOUBLE_DICE));
+        List<PartyLiveData.Standing> standings = new ArrayList<>();
+        for (Player player : model.players)
+            standings.add(new PartyLiveData.Standing(player.token, "", java.util.Optional.empty(), "", -1, true, player.stars, player.coins, List.of()));
+        int[] ranks = PartyLiveData.ranks(standings);
+        for (int i = 0; i < ranks.length; i++) model.players.get(i).rank = ranks[i];
         model.hasStandings = true;
         model.stepType = PartyStepType.TOKEN_TURN;
         model.current = 1;
@@ -393,15 +405,14 @@ final class PartyHudModel {
         model.badge = Text.translatable("hud.steveparty.party.steps", 4).getString();
         model.actionKey = 1;
         int key = 1000;
-        model.strip.add(model.step(StepKind.TURN, 1, 0, key--));
-        model.strip.add(model.step(StepKind.TURN, 2, 0, key--));
-        model.strip.add(model.step(StepKind.MINI_GAME, -1, 0, key--));
+        for (int i = 1; i < names.length; i++) model.strip.add(model.step(StepKind.TURN, i, 3, key--));
+        model.strip.add(model.step(StepKind.MINI_GAME, -1, 3, key--));
         int left = 0;
         for (int round = model.round + 1; round <= model.rounds; round++) {
             for (int i = 0; i <= names.length; i++, key--) {
                 if (model.strip.size() >= MAX_STRIP) left++;
-                else if (i < names.length) model.strip.add(model.step(StepKind.TURN, i, i == 0 ? round : 0, key));
-                else model.strip.add(model.step(StepKind.MINI_GAME, -1, 0, key));
+                else if (i < names.length) model.strip.add(model.step(StepKind.TURN, i, round, key));
+                else model.strip.add(model.step(StepKind.MINI_GAME, -1, round, key));
             }
         }
         if (model.strip.size() < MAX_STRIP) model.strip.add(model.step(StepKind.END, -1, 0, key));
