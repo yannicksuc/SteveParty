@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.minigame.zone;
 
 import fr.lordfinn.steveparty.Steveparty;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -99,6 +101,17 @@ public final class ZoneBubbles {
             if (ZoneBorder.ACTIVE) tick(server);
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> settle(handler.getPlayer()));
+        // given back what it owns on its death screen: it keeps it when it respawns, whatever the keepInventory rule
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (!alive) ZonePlayerStash.afterRespawn(oldPlayer, newPlayer);
+        });
+        // nothing hurts across a border: neither an arrow, an explosion, a splash nor a mob of the other side
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> !ZoneBorder.ACTIVE || !ZoneBorder.blocksDamage(entity, source));
+        // a member dying where it may not drop anything drops no experience either: it is of the session
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
+            if (ZoneBorder.ACTIVE && entity instanceof ServerPlayerEntity player && ZoneBorder.blocksDrop(player)) ZonePlayerStash.dropNoExperience(player);
+            return true;
+        });
         // before the player is saved: it leaves with what it owns
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ZoneBubble bubble = BY_PLAYER.get(handler.getPlayer().getUuid());

@@ -24,7 +24,7 @@ public abstract class ZoneBubbleInteractionManagerMixin {
 
     @Inject(method = {"interactBlock", "interactItem", "tryBreakBlock"}, at = @At("HEAD"))
     private void steveparty$enterPlayerAction(CallbackInfoReturnable<?> cir) {
-        if (ZoneBorder.ACTIVE) ZoneBorder.enterPlayer(player);
+        if (ZoneBorder.ACTIVE) ZoneBorder.enterPlayer(player, true);
     }
 
     @Inject(method = {"interactBlock", "interactItem", "tryBreakBlock"}, at = @At("RETURN"))
@@ -34,7 +34,7 @@ public abstract class ZoneBubbleInteractionManagerMixin {
 
     @Inject(method = "processBlockBreakingAction", at = @At("HEAD"))
     private void steveparty$enterPlayerBreaking(CallbackInfo ci) {
-        if (ZoneBorder.ACTIVE) ZoneBorder.enterPlayer(player);
+        if (ZoneBorder.ACTIVE) ZoneBorder.enterPlayer(player, true);
     }
 
     @Inject(method = "processBlockBreakingAction", at = @At("RETURN"))
