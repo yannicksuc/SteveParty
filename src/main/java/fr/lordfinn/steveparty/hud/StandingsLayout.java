@@ -60,10 +60,14 @@ public final class StandingsLayout {
      * @param bonuses     the bonus column shows
      * @param starColumn  where the stars' digits start, from a plate's left (then the coins', the bonuses')
      * @param digitsWidth a column of digits: « 888 »
-     * @param bubbleWidth the « toi » bubble (its body), at the end of my row
+     * @param bubbleWidth the « toi » bubble (its body), at the end of my row, or before it ({@code bubbleLeft})
+     * @param rankX       where the rank medallions start (after the bubble when it is on the left)
+     * @param plateX      where the rows' plates start
+     * @param bubbleX     where my bubble's picture starts (its pointer included), from the table's left
      */
     public record Layout(List<Row> rows, int nameWidth, int plateWidth, boolean bonuses, int starColumn, int coinColumn,
-                         int bonusColumn, int digitsWidth, int bubbleWidth, int width, int height) {
+                         int bonusColumn, int digitsWidth, int bubbleWidth, int width, int height, boolean bubbleLeft,
+                         int rankX, int plateX, int bubbleX) {
         /** The names of the players shown, fitted. */
         public int nameX() {
             return 17;
@@ -107,6 +111,14 @@ public final class StandingsLayout {
      * @param ranked the players, best first
      */
     public static Layout layout(List<Entry> ranked, HudTexts texts) {
+        return layout(ranked, texts, false);
+    }
+
+    /**
+     * Lays the table out; {@code bubbleLeft}: my « toi » bubble before my row (the table anchored on the right: the
+     * rows' ends stay on the screen's edge), else after it.
+     */
+    public static Layout layout(List<Entry> ranked, HudTexts texts, boolean bubbleLeft) {
         List<Row> shown = collapse(ranked);
         int nameW = 0;
         boolean bonuses = false;
@@ -130,7 +142,12 @@ public final class StandingsLayout {
                 y += ROW_H + GAP;
             }
         }
-        int width = PLATE_X + plate + (mine ? GAP + 1 + bubble + 3 : 0) + 6;
-        return new Layout(rows, nameW, plate, bonuses, star, coin, bonus, digits, bubble, width, y + 4);
+        // My bubble: after my row, or before the rank medallions (pointing right at them)
+        int bubbleRoom = mine ? bubble + 3 + GAP + 1 : 0;
+        int shift = bubbleLeft ? bubbleRoom : 0;
+        int plateX = PLATE_X + shift, rankX = 4 + shift;
+        int bubbleX = bubbleLeft ? rankX - GAP - 1 - (bubble + 3) : plateX + plate + GAP + 1;
+        int width = plateX + plate + (bubbleLeft ? 0 : bubbleRoom) + 6;
+        return new Layout(rows, nameW, plate, bonuses, star, coin, bonus, digits, bubble, width, y + 4, bubbleLeft, rankX, plateX, bubbleX);
     }
 }

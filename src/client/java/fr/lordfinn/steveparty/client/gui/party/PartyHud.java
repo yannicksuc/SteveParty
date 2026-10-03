@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.gui.party;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
-import fr.lordfinn.steveparty.client.gui.party.PartyHudLayout.Hud;
+import fr.lordfinn.steveparty.hud.HudPlacements.Hud;
 import fr.lordfinn.steveparty.client.mixin.BossBarHudAccessor;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -54,7 +54,7 @@ public final class PartyHud {
     /** Where each HUD was drawn last (x, y, width, height once scaled): for the layout screen. */
     private static final float[][] BOUNDS = new float[Hud.values().length][4];
 
-    private static KeyBinding layoutKey;
+    private static KeyBinding layoutKey, toggleKey;
     /** While the layout screen is open it draws the HUDs itself. */
     static boolean editing;
     /** A HUD is being dragged on the layout screen: drawn where the mouse puts it. */
@@ -67,9 +67,19 @@ public final class PartyHud {
         PartyHudLayout.load();
         layoutKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.steveparty.party_hud_layout",
                 InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_M, "category.steveparty"));
+        // Shows or hides the whole party HUD (remembered; the layout screen shows it all the same)
+        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.steveparty.party_hud_toggle",
+                InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.steveparty"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (layoutKey.wasPressed()) {
                 if (client.currentScreen == null) client.setScreen(new PartyHudEditScreen(null));
+            }
+            while (toggleKey.wasPressed()) {
+                boolean hidden = !PartyHudLayout.hidden();
+                PartyHudLayout.setHidden(hidden);
+                if (client.player != null)
+                    client.player.sendMessage(net.minecraft.text.Text.translatable(hidden ? "hud.steveparty.party.hidden" : "hud.steveparty.party.shown",
+                            toggleKey.getBoundKeyLocalizedText()), true);
             }
         });
         HudRenderCallback.EVENT.register(PartyHud::render);
@@ -151,17 +161,102 @@ public final class PartyHud {
 
         int screenWidth = context.getScaledWindowWidth();
         int screenHeight = context.getScaledWindowHeight();
-        boolean notice = placeHud(Hud.NOTICE, drawn, current != null && drawn.action != PartyHudModel.Action.NONE, preview, NOTICE_ALPHA, delta, now, screenWidth, screenHeight,
-                screenWidth - 2 * PartyHudLayout.MARGIN);
-        boolean standings = placeHud(Hud.STANDINGS, drawn, current != null && standingsShown && !drawn.players.isEmpty(), preview, STANDINGS_ALPHA, delta, now, screenWidth, screenHeight, 0);
-        boolean turnBar = placeHud(Hud.TURN_BAR, drawn, current != null && turnBarShown, preview, TURN_BAR_ALPHA, delta, now, screenWidth, screenHeight,
+        // Hidden with the toggle key: they fade out (the layout screen shows them all the same)
+        boolean on = current != null && (preview || !PartyHudLayout.hidden());
+        boolean standings = placeHud(Hud.STANDINGS, drawn, on && standingsShown && !drawn.players.isEmpty(), preview, STANDINGS_ALPHA, delta, now, screenWidth, screenHeight, 0);
+        boolean turnBar = placeHud(Hud.TURN_BAR, drawn, on && turnBarShown, preview, TURN_BAR_ALPHA, delta, now, screenWidth, screenHeight,
                 turnBarRoom(standings, screenWidth, screenHeight));
         // The two never cover each other (but while the player drags one on the layout screen)
         if (turnBar && standings && !dragging) separate(screenWidth, screenHeight);
+        // The notice: under the turn bar while attached to it (and away with it under the player list), else where
+        // the player put it; never over the standings
+        fr.lordfinn.steveparty.hud.HudPlacements.Placement noticePlace = PartyHudLayout.get(Hud.NOTICE);
+        boolean attached = noticePlace.attached;
+        boolean notice = placeHud(Hud.NOTICE, drawn, on && drawn.action != PartyHudModel.Action.NONE && (turnBarShown || noticePlace.anchor.fy > 0.5f),
+                preview, NOTICE_ALPHA, delta, now, screenWidth, screenHeight, screenWidth - 2 * PartyHudLayout.MARGIN);
+        if (notice && attached) underTurnBar(turnBar, screenWidth, screenHeight);
+        if (notice && standings && !dragging) clearOfStandings(Hud.NOTICE, screenWidth, screenHeight);
+        // The chat at the bottom left: the standings go up over it while it shows lines
+        if (standings && !preview) clearOfChat(Hud.STANDINGS, screenHeight);
         if (turnBar) drawHud(context, Hud.TURN_BAR, TURN_BAR_ALPHA[0], preview, now);
         if (standings) drawHud(context, Hud.STANDINGS, STANDINGS_ALPHA[0], preview, now);
         if (notice) drawHud(context, Hud.NOTICE, NOTICE_ALPHA[0], preview, now);
         if (current == null && TURN_BAR_ALPHA[0] <= 0 && STANDINGS_ALPHA[0] <= 0 && NOTICE_ALPHA[0] <= 0) shown = null;
+    }
+
+    /**
+     * The attached notice over the turn bar instead of under it (the sentence on top, the strip under it): the other
+     * reading of the default layout, one switch away.
+     */
+    private static final boolean NOTICE_OVER_TURN_BAR = false;
+
+    /** The attached notice: centred under the turn bar (its bubbles included), where the bar is or would be. */
+    private static void underTurnBar(boolean turnBar, int screenWidth, int screenHeight) {
+        float[] bar = BOUNDS[Hud.TURN_BAR.ordinal()];
+        float[] notice = BOUNDS[Hud.NOTICE.ordinal()];
+        float scale = PartyHudLayout.get(Hud.TURN_BAR).scale;
+        float centre = turnBar ? bar[0] + bar[2] / 2 : screenWidth / 2f;
+        notice[0] = Math.clamp(Math.round(centre - notice[2] / 2), 0, Math.max(0, screenWidth - notice[2]));
+        if (NOTICE_OVER_TURN_BAR) {
+            notice[1] = turnBar ? bar[1] : PartyHudLayout.MARGIN;
+            if (turnBar) bar[1] = Math.min(notice[1] + notice[3] + 2, Math.max(0, screenHeight - bar[3]));
+            return;
+        }
+        float top = turnBar ? bar[1] + bar[3] : PartyHudLayout.MARGIN + TurnBarHud.HEIGHT * scale;
+        notice[1] = Math.min(top + 2, Math.max(0, screenHeight - notice[3]));
+    }
+
+    /**
+     * A HUD over the standings goes beside them if there is room (on the side of the screen's middle), else the
+     * standings go under it.
+     */
+    private static void clearOfStandings(Hud hud, int screenWidth, int screenHeight) {
+        float[] b = BOUNDS[hud.ordinal()];
+        float[] list = BOUNDS[Hud.STANDINGS.ordinal()];
+        boolean overlap = b[0] < list[0] + list[2] && list[0] < b[0] + b[2] && b[1] < list[1] + list[3] && list[1] < b[1] + b[3];
+        if (!overlap) return;
+        int margin = PartyHudLayout.MARGIN;
+        boolean listOnTheLeft = list[0] + list[2] / 2 < screenWidth / 2f;
+        float besideX = listOnTheLeft ? list[0] + list[2] + margin : list[0] - margin - b[2];
+        if (besideX >= margin && besideX + b[2] <= screenWidth - margin) b[0] = besideX;
+        else list[1] = Math.min(b[1] + b[3] + margin, Math.max(0, screenHeight - list[3]));
+    }
+
+    /**
+     * A HUD over the chat's lines (shown: recent ones, or the chat open) goes up above them, as far as the screen
+     * allows.
+     */
+    private static void clearOfChat(Hud hud, int screenHeight) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        net.minecraft.client.gui.hud.ChatHud chat = client.inGameHud.getChatHud();
+        int ticks = client.inGameHud.getTicks(), lines = 0;
+        boolean open = chat.isChatFocused();
+        for (net.minecraft.client.gui.hud.ChatHudLine.Visible line : ((fr.lordfinn.steveparty.client.mixin.ChatHudAccessor) chat).steveparty$getVisibleMessages()) {
+            if (!open && ticks - line.addedTime() >= 200) break;
+            if (++lines >= chat.getVisibleLineCount()) break;
+        }
+        if (lines == 0) return;
+        double scale = chat.getChatScale();
+        float right = (float) ((chat.getWidth() + 12) * scale), top = (float) (screenHeight - 40 - lines * 9 * scale);
+        float[] b = BOUNDS[hud.ordinal()];
+        if (b[0] < right && b[1] + b[3] > top) b[1] = Math.max(0, top - b[3] - 2);
+    }
+
+    /** Where the practice round's chip goes: centred under the notice when it is at the top, else under the bar. */
+    static float[] practiceSpot(int screenWidth) {
+        for (Hud hud : new Hud[]{Hud.NOTICE, Hud.TURN_BAR}) {
+            float[] b = BOUNDS[hud.ordinal()];
+            fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
+            float[] alpha = hud == Hud.NOTICE ? NOTICE_ALPHA : TURN_BAR_ALPHA;
+            if (model() != null && alpha[0] > 0.02f && b[2] > 0 && b[1] < 80 && placement.anchor.fy < 0.5f)
+                return new float[]{b[0] + b[2] / 2, b[1] + b[3] + 4};
+        }
+        return new float[]{screenWidth / 2f, 6};
+    }
+
+    /** The standings' bounds when shown (the practice chip keeps clear of them), null otherwise. */
+    static float @Nullable [] standingsBounds() {
+        return STANDINGS_ALPHA[0] > 0.02f ? BOUNDS[Hud.STANDINGS.ordinal()] : null;
     }
 
     /**
@@ -203,7 +298,7 @@ public final class PartyHud {
     }
 
     private static void drawHud(DrawContext context, Hud hud, float alpha, boolean preview, double now) {
-        PartyHudLayout.Placement placement = PartyHudLayout.get(hud);
+        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
         float[] bounds = BOUNDS[hud.ordinal()];
         // Sliding in from its edge while fading in
         float slide = preview ? 0 : (1 - HudDraw.easeOutCubic(alpha)) * 6 * (placement.anchor.fy > 0.5f ? 1 : -1);
@@ -222,7 +317,7 @@ public final class PartyHud {
     /** Fades a HUD, lays it out and places it (in {@link #BOUNDS}): false if it is not drawn. */
     private static boolean placeHud(Hud hud, PartyHudModel drawn, boolean wanted, boolean preview,
                                     float[] alpha, float delta, double now, int screenWidth, int screenHeight, float room) {
-        PartyHudLayout.Placement placement = PartyHudLayout.get(hud);
+        fr.lordfinn.steveparty.hud.HudPlacements.Placement placement = PartyHudLayout.get(hud);
         float scale = placement.scale;
         if (preview) {
             alpha[0] = placement.visible ? 1 : 0.35f;
@@ -241,7 +336,8 @@ public final class PartyHud {
                 height = TURN_BAR.height();
             }
             case STANDINGS -> {
-                STANDINGS.update(drawn, (int) (screenHeight * 0.55f / scale), now);
+                // Anchored on the right: my « toi » bubble goes before my row, the rows end on the screen's edge
+                STANDINGS.update(drawn, (int) (screenHeight * 0.55f / scale), now, placement.anchor.fx > 0.5f);
                 width = STANDINGS.width();
                 height = STANDINGS.height();
             }
@@ -271,9 +367,9 @@ public final class PartyHud {
      *
      * @param bottom the notice's bottom where the layout puts it
      */
-    private static float noticeLift(PartyHudLayout.Placement placement, float bottom, boolean preview, float delta) {
+    private static float noticeLift(fr.lordfinn.steveparty.hud.HudPlacements.Placement placement, float bottom, boolean preview, float delta) {
         float target = 0;
-        if (!preview && placement.anchor == PartyHudLayout.Anchor.BOTTOM) {
+        if (!preview && placement.anchor == fr.lordfinn.steveparty.hud.HudPlacements.Anchor.BOTTOM) {
             MinecraftClient client = MinecraftClient.getInstance();
             int toolTop = fr.lordfinn.steveparty.client.gui.ToolHud.occupiedTop();
             // The held item's name goes over the tools' HUD: room for it

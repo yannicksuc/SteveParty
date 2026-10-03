@@ -722,8 +722,8 @@
   "screen.steveparty.party_hud_layout.reset_standings": "Reset standings",
   "screen.steveparty.party_hud_layout.reset_all": "Reset all",
   "screen.steveparty.party_hud_layout.label": "%s ×%s",
-  "screen.steveparty.party_hud_layout.help": "Drag a HUD to move it; drag its corner or use the mouse wheel over it to resize it. HUDs snap to the edges and to the centre.",
-  "screen.steveparty.party_hud_layout.sample": "(example party: no party is running)",
+  "screen.steveparty.party_hud_layout.help": "Drag a HUD to move it: it anchors to the point (corner, edge or centre) of the zone you drop it in, and grows from there. Its corner or the mouse wheel over it resizes it. The 3x3 grid picks its anchor, the arrow puts it back in place. The « Show / hide the party HUD » key (H by default) hides or shows all of it.",
+  "screen.steveparty.party_hud_layout.sample": "(sample party)",
   "category.steveparty": "Steve Party",
   "title.steveparty.mini_game_catalogue": "Mini-Games Catalogue",
   "item.steveparty.stencil": "Stencil",
@@ -1959,5 +1959,9 @@
   "hud.steveparty.party.toi.in": "you in %s",
   "hud.steveparty.party.bonus": "bonus",
   "screen.steveparty.party_hud_layout.notice": "Notice",
-  "screen.steveparty.party_hud_layout.reset_notice": "Reset notice"
+  "screen.steveparty.party_hud_layout.reset_notice": "Reset notice",
+  "key.steveparty.party_hud_toggle": "Show / hide the party HUD",
+  "hud.steveparty.party.hidden": "Party HUD hidden (%s to show it)",
+  "hud.steveparty.party.shown": "Party HUD shown (%s to hide it)",
+  "screen.steveparty.party_hud_layout.anchor": "Anchor of « %s »: click a point"
 }

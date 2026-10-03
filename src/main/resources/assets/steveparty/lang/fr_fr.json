@@ -1004,8 +1004,8 @@
   "screen.steveparty.party_hud_layout.reset_standings": "Réinit. classement",
   "screen.steveparty.party_hud_layout.reset_all": "Tout réinitialiser",
   "screen.steveparty.party_hud_layout.label": "%s ×%s",
-  "screen.steveparty.party_hud_layout.help": "Glisse une interface pour la déplacer ; son coin ou la molette au-dessus la redimensionne. Elle s'aimante aux bords et au centre.",
-  "screen.steveparty.party_hud_layout.sample": "(partie d'exemple : aucune partie en cours)",
+  "screen.steveparty.party_hud_layout.help": "Glisse une interface pour la déplacer : elle s'ancre au point (coin, bord ou centre) de la zone où tu la lâches, et grandit depuis ce point. Son coin ou la molette au-dessus la redimensionne. La grille 3x3 choisit son ancrage, la flèche la remet à sa place. La touche « Afficher / masquer l'interface de partie » (H par défaut) la masque ou l'affiche en entier.",
+  "screen.steveparty.party_hud_layout.sample": "(partie d'exemple)",
   "category.steveparty": "Steve Party",
   "title.steveparty.mini_game_catalogue": "Catalogue de mini-jeux",
   "item.steveparty.dice_face_1": "Face de dé 1",
@@ -1959,5 +1959,9 @@
   "hud.steveparty.party.toi.in": "toi dans %s",
   "hud.steveparty.party.bonus": "bonus",
   "screen.steveparty.party_hud_layout.notice": "Annonce",
-  "screen.steveparty.party_hud_layout.reset_notice": "Réinit. annonce"
+  "screen.steveparty.party_hud_layout.reset_notice": "Réinit. annonce",
+  "key.steveparty.party_hud_toggle": "Afficher / masquer l'interface de partie",
+  "hud.steveparty.party.hidden": "Interface de partie masquée (%s pour l'afficher)",
+  "hud.steveparty.party.shown": "Interface de partie affichée (%s pour la masquer)",
+  "screen.steveparty.party_hud_layout.anchor": "Ancrage de « %s » : clique un point"
 }
