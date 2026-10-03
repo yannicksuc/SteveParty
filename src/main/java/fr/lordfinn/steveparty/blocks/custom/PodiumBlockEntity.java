@@ -1,20 +1,16 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.PodiumSignal;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -34,7 +30,7 @@ import java.util.UUID;
  * ({@link PodiumSignal}) and the pattern stamped on its banner. The top block watches the players sneaking on it.
  * What registering means, the groups and the places are in {@link Podiums}.
  */
-public class PodiumBlockEntity extends BlockEntity implements TickableBlockEntity {
+public class PodiumBlockEntity extends SyncedBlockEntity implements TickableBlockEntity {
     private static final int CHECK_INTERVAL_TICKS = 2;
 
     // --- Kept by the bottom block of the column
@@ -94,7 +90,7 @@ public class PodiumBlockEntity extends BlockEntity implements TickableBlockEntit
 
     private void sync() {
         markDirty();
-        if (world != null && !world.isClient) world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
+        syncToClients();
     }
 
     // ---------------------------------------------------------------- sneaking on its top
@@ -145,16 +141,6 @@ public class PodiumBlockEntity extends BlockEntity implements TickableBlockEntit
     }
 
     // ---------------------------------------------------------------- saving and sync
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
-    @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        return createNbt(registries);
-    }
 
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {

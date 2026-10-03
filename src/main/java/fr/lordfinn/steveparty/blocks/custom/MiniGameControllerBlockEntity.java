@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.components.ZoneSelection;
 import fr.lordfinn.steveparty.items.custom.ZoneCartridgeItem;
@@ -18,9 +19,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -49,7 +47,7 @@ import java.util.WeakHashMap;
  * </ul>
  * The page and the cartridge are synced to the clients (what the block shows of its mini-game).
  */
-public class MiniGameControllerBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
     public static final int SLOT_PAGE = 0, SLOT_ZONE = 1, SLOTS = 2;
     /** How often a controller says again which page it holds (a copied controller gives its page back). */
     private static final int CLAIM_INTERVAL_TICKS = 40;
@@ -273,18 +271,8 @@ public class MiniGameControllerBlockEntity extends BlockEntity implements Extend
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registryLookup) {
-        return createNbt(registryLookup);
-    }
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
-    @Override
     public void markDirty() {
-        if (world instanceof ServerWorld) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        syncToClients();
         super.markDirty();
     }
 

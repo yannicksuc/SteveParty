@@ -73,6 +73,8 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.blocks.custom.PartyController.PartyChunkHolds.initialize();
         fr.lordfinn.steveparty.items.custom.ChestCartridgeItem.initialize();
         fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.initialize();
+        // After the bubbles: its join hook gives a player its inventory back (ZoneBubbles.settle), then its place
+        fr.lordfinn.steveparty.minigame.MiniGameReturns.initialize();
         fr.lordfinn.steveparty.minigame.MiniGameArena.initialize();
         // The names the iron and golden mini-game pipes (and their block entity) had
         fr.lordfinn.steveparty.registry.RegistryAliases.add(id("super_golden_minigame_pipe"), id("iron_minigame_pipe"));

@@ -521,7 +521,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                         for (PolishedTilesColor b : tiles.colors()) {
                             if (a == b) continue;
                             RegistryKey<Recipe<?>> checker = polishedTilesRecipe(name + "_" + a.asString() + "_" + b.asString());
-                            exporter.accept(checker, new ShapedRecipe(name + "_" + a.asString(), CraftingRecipeCategory.BUILDING,
+                            exporter.accept(checker, new fr.lordfinn.steveparty.recipes.UnmirroredShapedRecipe(name + "_" + a.asString(), CraftingRecipeCategory.BUILDING,
                                     RawShapedRecipe.create(Map.of('A', Ingredient.ofItem(polished), 'B', Ingredient.ofItem(tiles.polished(b))), "AB", "BA"),
                                     tiles.stack(a, b, 4), true), null);
                             unlocked.addRecipe(checker).addRecipe(polishedTilesRecipe(name + "_" + b.asString() + "_" + a.asString()));

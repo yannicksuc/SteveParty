@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.minigame.zone;
 
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.Steveparty;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -272,7 +273,7 @@ public final class ZoneBubble {
 
     static ZoneBubble start(MinecraftServer server, UUID sessionId, MiniGameZone zone, ServerWorld world,
                             Collection<ServerPlayerEntity> participants, Collection<ServerPlayerEntity> spectators, Options options) {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         ZoneBubble bubble = new ZoneBubble(sessionId, zone, options, world, Refusal.NONE);
         bubble.holdChunks();
         List<BlockEntity> found = bubble.findBlockEntities();
@@ -534,7 +535,7 @@ public final class ZoneBubble {
 
     void tick() {
         if (state == State.ACTIVE) journal.flush();
-        else if (state == State.RESTORING) restore(ZoneBubbleConfig.get().miniGameBubbleRestorePerTick);
+        else if (state == State.RESTORING) restore(ServerConfig.get().miniGameBubbleRestorePerTick);
     }
 
     /** What the session journaled so far goes to its file (the world is about to be saved). */
@@ -563,7 +564,7 @@ public final class ZoneBubble {
         } finally {
             ZoneBorder.bypass--;
         }
-        restore(now ? Integer.MAX_VALUE : ZoneBubbleConfig.get().miniGameBubbleRestorePerTick);
+        restore(now ? Integer.MAX_VALUE : ServerConfig.get().miniGameBubbleRestorePerTick);
     }
 
     /** A bubble read back after a crash: its zone is put back at once. */

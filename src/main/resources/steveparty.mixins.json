@@ -28,6 +28,7 @@
     "MixinPistonBlock",
     "ServerScoreboardMixin",
     "HopperBlockEntityMixin",
+    "DropperBlockMixin",
     "ExplosionImplMixin",
     "PipeDismountMixin",
     "PlayerShoulderInvoker",

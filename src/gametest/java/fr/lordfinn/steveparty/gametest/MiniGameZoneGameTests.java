@@ -29,9 +29,10 @@ import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
+import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubbleConfig;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
@@ -395,7 +396,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
     public void aZoneThatCantTakeARoundOutOfAParty(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int maxSize = config.miniGameBubbleMaxSize, maxBlockEntities = config.miniGameBubbleMaxBlockEntities;
         ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5);
         UUID id = arena(context, true);
@@ -539,7 +540,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
     /** In a party, a zone that can't take a round never holds the party up: the round is played without its protection. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_party_refused")
     public void aPartyIsNeverHeldUpByAZone(TestContext context) {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int maxSize = config.miniGameBubbleMaxSize;
         ServerPlayerEntity p1 = player(context, "a", 7.5, 1, 1.5), p2 = player(context, "b", 7.5, 1, 2.5);
         UUID id = arena(context, true);
@@ -557,6 +558,43 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue(step.getPhase() == MiniGamePartyStep.Phase.FINISHED && coins(p1) == 10 && coins(p2) == 5, "and paid");
         } finally {
             config.miniGameBubbleMaxSize = maxSize;
+            cleanUp(context, id, p1, p2);
+        }
+        done(context);
+    }
+
+    /**
+     * A player who leaves the server during a round in a zone takes what it owns with it, and only that; when it comes
+     * back after the round, it is brought back where it stood before it, and given nothing twice.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_away")
+    public void aPlayerAwayAtTheEndOfARoundInAZone(TestContext context) {
+        MinecraftServer server = context.getWorld().getServer();
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5);
+        UUID id = arena(context, true);
+        Vec3d start2 = p2.getPos();
+        GameProfile away = p2.getGameProfile();
+        ServerPlayerEntity back = null;
+        try {
+            alone(context, p1, p2);
+            p2.getInventory().setStack(0, new ItemStack(Items.COBBLESTONE, 12));
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played");
+            context.assertTrue(ZoneBubbles.ofPlayer(p2) != null && p2.getInventory().isEmpty(), "p2 plays with a session inventory");
+            p2.getInventory().insertStack(new ItemStack(Items.DIAMOND, 3));
+            Reconnect.leave(p2);
+            context.assertTrue(server.getPlayerManager().getPlayer(away.getId()) == null, "p2 left the server");
+            context.assertTrue(p2.getInventory().count(Items.COBBLESTONE) == 12, "it left with what it owns");
+            context.assertTrue(p2.getInventory().count(Items.DIAMOND) == 0, "nothing of the round");
+            context.assertTrue(!p2.getCommandTags().contains(STASH_TAG), "no mark of a session");
+            MiniGameTest.stop(id);
+            context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "the round is over: p2 is waited for");
+            back = Reconnect.join(context, away);
+            context.assertTrue(back.getPos().distanceTo(start2) < 0.01, "back where it stood before the round");
+            context.assertTrue(back.getInventory().count(Items.COBBLESTONE) == 12 && back.getInventory().count(Items.DIAMOND) == 0,
+                    "with what it owns, once");
+            context.assertTrue(ZoneBubbles.ofPlayer(back) == null && !back.getCommandTags().contains(STASH_TAG), "of no session");
+        } finally {
+            if (back != null) cleanUp(context, id, back);
             cleanUp(context, id, p1, p2);
         }
         done(context);

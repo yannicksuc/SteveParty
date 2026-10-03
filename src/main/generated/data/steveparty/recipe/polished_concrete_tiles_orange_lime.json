@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "steveparty:shaped_unmirrored",
   "category": "building",
   "group": "polished_concrete_tiles_orange",
   "key": {

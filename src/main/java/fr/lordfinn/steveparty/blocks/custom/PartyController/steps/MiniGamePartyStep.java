@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
+import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameArena;
 import fr.lordfinn.steveparty.minigame.MiniGameIntro;
 import fr.lordfinn.steveparty.minigame.MiniGameMode;
@@ -29,8 +30,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -39,9 +38,6 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -87,7 +83,6 @@ public class MiniGamePartyStep extends PartyStep {
     private static final int EMERGE_GAP_TICKS = 8;
 
     /** Where a player sent to the mini-game stood before it. */
-    private record ReturnPos(RegistryKey<World> dimension, double x, double y, double z, float yaw, float pitch) {}
 
     // No initializer: it would run after super(nbt) and wipe what fromNbt just read
     private List<UUID> tokens;
@@ -95,7 +90,7 @@ public class MiniGamePartyStep extends PartyStep {
     private Phase phase;
     /** Players taking part (owners of the tokens), in turn order. */
     private List<UUID> participants;
-    private Map<UUID, ReturnPos> returnPositions;
+    private Map<UUID, MiniGameReturns.Return> returnPositions;
     private List<UUID> winners;
     /** The place of each participant once the mini-game is over (0: none, a « participant »), in turn order. */
     private Map<UUID, Integer> places;
@@ -568,8 +563,7 @@ public class MiniGamePartyStep extends PartyStep {
             pipes.forEach((uuid, link) -> {
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
                 if (player == null) return;
-                returnPositions.putIfAbsent(uuid, new ReturnPos(player.getWorld().getRegistryKey(), player.getX(), player.getY(), player.getZ(),
-                        player.getYaw(), player.getPitch()));
+                returnPositions.putIfAbsent(uuid, MiniGameReturns.Return.of(player));
                 seat(controller, uuid);
                 int wait = queues.merge(link, 1, Integer::sum) - 1;
                 if (wait == 0) {
@@ -663,16 +657,13 @@ public class MiniGamePartyStep extends PartyStep {
      * @return false if the player is not away in this mini-game
      */
     public boolean leaveEarly(PartyControllerEntity controller, ServerPlayerEntity player) {
-        ReturnPos back = returnPositions.remove(player.getUuid());
+        MiniGameReturns.Return back = returnPositions.remove(player.getUuid());
         MiniGamePipes.leaveParty(player.getUuid());
         // Out of the round: what it owns first, then the way back
         arena.leave(player);
         if (back == null) return false;
-        ServerWorld world = player.server.getWorld(back.dimension());
-        if (world == null) return false;
-        MiniGameTeleports.teleport(player, world, new Vec3d(back.x(), back.y(), back.z()), back.yaw(), back.pitch());
         controller.markDirty();
-        return true;
+        return MiniGameReturns.bringBack(player.server, player.getUuid(), back);
     }
 
     // ---------------------------------------------------------------- the card of the mini-game
@@ -908,18 +899,16 @@ public class MiniGamePartyStep extends PartyStep {
         });
     }
 
-    /** Brings everyone sent to the mini-game and still online back where they stood before it. */
+    /**
+     * Brings everyone sent to the mini-game back where they stood before it: now if they are online, else when they
+     * come (see {@link MiniGameReturns}).
+     */
     private void returnPlayers(PartyControllerEntity controller) {
         participants.forEach(MiniGamePipes::leaveParty);
         if (returnPositions.isEmpty() || !(controller.getWorld() instanceof ServerWorld world)) return;
-        for (Map.Entry<UUID, ReturnPos> entry : returnPositions.entrySet()) {
+        for (Map.Entry<UUID, MiniGameReturns.Return> entry : returnPositions.entrySet()) {
             MiniGamePipes.leaveParty(entry.getKey());
-            ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(entry.getKey());
-            ReturnPos back = entry.getValue();
-            ServerWorld there = world.getServer().getWorld(back.dimension());
-            if (player == null || there == null) continue;
-            if (player.hasVehicle()) player.stopRiding();
-            MiniGameTeleports.teleport(player, there, new Vec3d(back.x(), back.y(), back.z()), back.yaw(), back.pitch());
+            MiniGameReturns.bringBack(world.getServer(), entry.getKey(), entry.getValue());
         }
         returnPositions.clear();
         controller.markDirty();
@@ -1130,12 +1119,7 @@ public class MiniGamePartyStep extends PartyStep {
         NbtCompound returnsNbt = nbt.getCompound("ReturnPositions");
         for (String key : returnsNbt.getKeys()) {
             try {
-                NbtCompound back = returnsNbt.getCompound(key);
-                Identifier dimension = Identifier.tryParse(back.getString("Dimension"));
-                returnPositions.put(UUID.fromString(key), new ReturnPos(
-                        dimension == null || back.getString("Dimension").isEmpty() ? World.OVERWORLD : RegistryKey.of(RegistryKeys.WORLD, dimension),
-                        back.getDouble("X"), back.getDouble("Y"),
-                        back.getDouble("Z"), back.getFloat("Yaw"), back.getFloat("Pitch")));
+                returnPositions.put(UUID.fromString(key), MiniGameReturns.Return.fromNbt(returnsNbt.getCompound(key)));
             } catch (IllegalArgumentException ignored) {
             }
         }
@@ -1173,16 +1157,7 @@ public class MiniGamePartyStep extends PartyStep {
         }
         if (!returnPositions.isEmpty()) {
             NbtCompound returnsNbt = new NbtCompound();
-            returnPositions.forEach((uuid, back) -> {
-                NbtCompound backNbt = new NbtCompound();
-                backNbt.putString("Dimension", back.dimension().getValue().toString());
-                backNbt.putDouble("X", back.x());
-                backNbt.putDouble("Y", back.y());
-                backNbt.putDouble("Z", back.z());
-                backNbt.putFloat("Yaw", back.yaw());
-                backNbt.putFloat("Pitch", back.pitch());
-                returnsNbt.put(uuid.toString(), backNbt);
-            });
+            returnPositions.forEach((uuid, back) -> returnsNbt.put(uuid.toString(), back.toNbt()));
             nbtCompound.put("ReturnPositions", returnsNbt);
         }
         if (chosenPageSlot > 0)

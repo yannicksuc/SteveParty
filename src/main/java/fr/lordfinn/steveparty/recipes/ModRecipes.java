@@ -10,6 +10,9 @@ public class ModRecipes {
     /** Shaped recipe whose tag ingredient (planks, rock, plastic) becomes what the crafted sign is made of. */
     public static final MaterialShapedRecipe.Serializer MATERIAL_SHAPED = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("material_shaped"), new MaterialShapedRecipe.Serializer());
+    /** A shaped recipe without its mirror image (the Polished Tiles checker). */
+    public static final UnmirroredShapedRecipe.Serializer SHAPED_UNMIRRORED = Registry.register(Registries.RECIPE_SERIALIZER,
+            Steveparty.id("shaped_unmirrored"), new UnmirroredShapedRecipe.Serializer());
     public static final RecipeSerializer<StencilCopyRecipe> STENCIL_COPY = Registry.register(Registries.RECIPE_SERIALIZER,
             Steveparty.id("crafting_special_stencil_copy"), new SpecialCraftingRecipe.SpecialRecipeSerializer<>(StencilCopyRecipe::new));
     /** Mini-game page + paper: linked copies of the page. */

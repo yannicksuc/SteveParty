@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubbleConfig;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -907,7 +907,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         floor(context);
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int journal = config.miniGameBubbleMaxJournal, blockEntities = config.miniGameBubbleMaxBlockEntities;
         try {
             BlockPos corner = context.getAbsolutePos(at(1, 1, 1));
@@ -951,7 +951,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_slow", tickLimit = 100)
     public void bigRestorationsTakeSeveralTicks(TestContext context) {
         floor(context);
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int perTick = config.miniGameBubbleRestorePerTick;
         config.miniGameBubbleRestorePerTick = 16;
         ServerPlayerEntity player = player(context, "slow", 2.5, 5, 2.5);
@@ -982,7 +982,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_off")
     public void switchTurnsEverythingOff(TestContext context) {
         floor(context);
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         config.miniGameBubble = false;
         try {
             ServerPlayerEntity player = player(context, "off", 2.5, 1, 2.5);

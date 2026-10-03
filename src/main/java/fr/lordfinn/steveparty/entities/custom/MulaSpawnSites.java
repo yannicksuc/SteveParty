@@ -64,7 +64,7 @@ public class MulaSpawnSites extends PersistentState {
 
     /** The most sites a dimension keeps (the config's {@code mulaMaxSites}). */
     public static int maxSites() {
-        return Math.max(1, fr.lordfinn.steveparty.minigame.zone.ZoneBubbleConfig.get().mulaMaxSites);
+        return Math.max(1, fr.lordfinn.steveparty.config.ServerConfig.get().mulaMaxSites);
     }
 
     /**

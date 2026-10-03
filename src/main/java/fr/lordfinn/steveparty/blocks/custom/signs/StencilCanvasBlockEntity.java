@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.blocks.custom.signs;
 
+import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.StencilCanvasComponent;
@@ -7,15 +8,11 @@ import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.blockview.v2.RenderDataBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
@@ -37,7 +34,7 @@ import java.util.Objects;
  * </ul>
  * All of it is kept by the item when the block is broken (see {@link #addComponents}).
  */
-public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataBlockEntity {
+public class StencilCanvasBlockEntity extends SyncedBlockEntity implements RenderDataBlockEntity {
     private static final String SHAPE_KEY = "SymbolShape";
     private static final String COLOR_KEY = "Color";
     private static final String ENGRAVED_KEY = "Engraved";
@@ -176,19 +173,7 @@ public class StencilCanvasBlockEntity extends BlockEntity implements RenderDataB
     private void onChanged() {
         renderCache = null;
         markDirty();
-        if (world != null && !world.isClient) {
-            world.updateListeners(pos, getCachedState(), getCachedState(), Block.NOTIFY_ALL);
-        }
-    }
-
-    @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
-    }
-
-    @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        return createNbt(registries);
+        syncToClients();
     }
 
     /**

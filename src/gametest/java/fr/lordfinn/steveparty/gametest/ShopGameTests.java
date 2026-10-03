@@ -476,34 +476,73 @@ public class ShopGameTests implements FabricGameTest {
                 new BlockHitResult(pos.toCenterPos(), Direction.UP, pos, false));
     }
 
-    /** Hoppers don't pull from an owned shop's stock chest nor its cash register; an unowned chest is drained as usual. */
+    /**
+     * No automation with a merchant, owned or not: hoppers don't pull from its stock chest nor its register, a hopper
+     * above its register pushes nothing in, a dropper facing its chest drops nothing into it. A chest linked to no
+     * merchant is drained as usual.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
-    public void hoppersDontPullFromOwnedShopBlocks(TestContext context) {
+    public void noAutomationWithAMerchant(TestContext context) {
         BlockPos chest = new BlockPos(1, 2, 1);
         BlockPos register = new BlockPos(3, 2, 1);
         BlockPos unownedChest = new BlockPos(5, 2, 1);
+        BlockPos plainChest = new BlockPos(7, 2, 1);
+        BlockPos fedRegister = new BlockPos(1, 2, 4);
+        BlockPos dropper = new BlockPos(3, 2, 4), droppedChest = new BlockPos(4, 2, 4);
         context.setBlockState(chest, Blocks.CHEST);
         context.setBlockState(register, ModBlocks.CASH_REGISTER);
         context.setBlockState(unownedChest, Blocks.CHEST);
-        for (BlockPos pos : List.of(chest, register, unownedChest)) {
+        context.setBlockState(plainChest, Blocks.CHEST);
+        for (BlockPos pos : List.of(chest, register, unownedChest, plainChest)) {
             context.setBlockState(pos.down(), Blocks.HOPPER);
         }
+        context.setBlockState(fedRegister, ModBlocks.CASH_REGISTER);
+        context.setBlockState(fedRegister.up(), Blocks.HOPPER);
+        context.setBlockState(droppedChest, Blocks.CHEST);
+        context.setBlockState(dropper, Blocks.DROPPER.getDefaultState().with(net.minecraft.block.DispenserBlock.FACING, Direction.EAST));
         inventoryAt(context, chest).setStack(0, new ItemStack(Items.DIAMOND, 10));
         inventoryAt(context, register).setStack(0, new ItemStack(Items.EMERALD, 10));
         inventoryAt(context, unownedChest).setStack(0, new ItemStack(Items.DIAMOND, 10));
-        UUID shop = shopOf(context, UUID.randomUUID(), chest, register);
-        UUID unownedShop = shopOf(context, null, unownedChest);
+        inventoryAt(context, plainChest).setStack(0, new ItemStack(Items.DIAMOND, 10));
+        inventoryAt(context, fedRegister.up()).setStack(0, new ItemStack(Items.GOLD_INGOT, 5));
+        inventoryAt(context, dropper).setStack(0, new ItemStack(Items.IRON_INGOT, 5));
+        UUID shop = shopOf(context, UUID.randomUUID(), chest, register, fedRegister);
+        UUID unownedShop = shopOf(context, null, unownedChest, droppedChest);
+        // A pulse: the dropper fires once
+        context.setBlockState(dropper.down(), Blocks.REDSTONE_BLOCK);
 
         context.waitAndRun(40, () -> {
             try {
                 context.assertEquals(inventoryAt(context, chest).count(Items.DIAMOND), 10, "owned stock not pulled");
                 context.assertEquals(inventoryAt(context, register).count(Items.EMERALD), 10, "owned register not pulled");
-                context.assertTrue(inventoryAt(context, unownedChest).count(Items.DIAMOND) < 10, "unowned chest pulled as usual");
+                context.assertEquals(inventoryAt(context, unownedChest).count(Items.DIAMOND), 10, "a stock without owner is a merchant's too: not pulled");
+                context.assertTrue(inventoryAt(context, plainChest).count(Items.DIAMOND) < 10, "a chest of no merchant is pulled as usual");
+                context.assertEquals(inventoryAt(context, fedRegister).count(Items.GOLD_INGOT), 0, "nothing pushed into a register");
+                context.assertEquals(inventoryAt(context, fedRegister.up()).count(Items.GOLD_INGOT), 5, "the hopper keeps its gold");
+                context.assertEquals(inventoryAt(context, droppedChest).count(Items.IRON_INGOT), 0, "nothing dropped into the stock");
+                context.assertEquals(inventoryAt(context, dropper).count(Items.IRON_INGOT), 5, "the dropper keeps its iron");
             } finally {
                 forgetShops(context, shop, unownedShop);
             }
             context.complete();
         });
+    }
+
+    /** The links' reverse index follows every change: a link, an unlink, a merchant forgotten. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theMerchantOfABlockIsKnownAtOnce(TestContext context) {
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(context.getWorld().getServer());
+        GlobalPos pos = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(new BlockPos(1, 1, 1)));
+        UUID vendor = UUID.randomUUID(), other = UUID.randomUUID();
+        context.assertTrue(!state.isLinked(pos), "nothing linked there");
+        state.linkBlock(vendor, pos);
+        state.linkBlock(other, pos);
+        context.assertTrue(state.isLinked(pos) && state.getVendorsLinkedTo(pos).equals(java.util.Set.of(vendor, other)), "two merchants there");
+        state.unlinkBlock(vendor, pos);
+        context.assertTrue(state.getVendorsLinkedTo(pos).equals(java.util.Set.of(other)), "one left");
+        state.forgetVendor(other);
+        context.assertTrue(!state.isLinked(pos) && state.getVendorsLinkedTo(pos).isEmpty(), "none any more");
+        context.complete();
     }
 
     private static Inventory inventoryAt(TestContext context, BlockPos relative) {
