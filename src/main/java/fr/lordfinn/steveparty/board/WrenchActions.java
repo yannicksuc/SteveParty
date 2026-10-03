@@ -630,7 +630,8 @@ public final class WrenchActions {
             }
             case SLOT -> {
                 BlockPos origin = origin(wrench, world);
-                CartridgeContainerBlockEntity container = origin == null ? null : BoardLinks.container(world, origin);
+                // A wheel turn never loads the chunk of a far origin (each packet would)
+                CartridgeContainerBlockEntity container = origin == null || !world.isChunkLoaded(origin) ? null : BoardLinks.container(world, origin);
                 if (container == null || container.size() <= 1) return;
                 // -1 (the active slot, the redstone's), then 0..15
                 int slot = Math.floorMod(state.slot() + 1 + direction, container.size() + 1) - 1;

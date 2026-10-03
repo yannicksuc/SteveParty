@@ -557,4 +557,24 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(BoardLinks.rotationToward(world, t.get(1), t.get(0)), 7, "north-west");
         });
     }
+
+    /**
+     * Undoing or redoing a board edit takes the right to build: a player put in adventure mode since (a party started)
+     * changes nothing; back in survival, the undo works.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void undoTakesTheRightToBuild(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack wrench = wrench(player);
+            for (BlockPos pos : t) click(player, wrench, context, pos);
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "linked");
+            player.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
+            context.assertTrue(!fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, wrench), "adventure: nothing undone");
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "adventure: still linked");
+            player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, wrench), "survival: undone");
+            context.assertEquals(links(context, t.get(0)), List.of(), "survival: the link is gone");
+        });
+    }
 }
