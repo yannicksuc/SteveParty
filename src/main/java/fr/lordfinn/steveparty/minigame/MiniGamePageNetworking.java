@@ -106,6 +106,8 @@ public final class MiniGamePageNetworking {
             ensureSinglePage(player, hand);
         }
         MiniGamePages.refresh(player.server, stack);
+        // Opening the editor ends the zone mode
+        PageZoneTool.end(null, stack);
         MiniGamePageRef ref = stack.get(ModComponents.MINI_GAME_PAGE);
         send(player, new MiniGamePagePayloads.Open(hand, MiniGamePages.get(player.server, ref.id()), canEdit, ref.linked()));
     }
@@ -148,8 +150,7 @@ public final class MiniGamePageNetworking {
         if (stack == null) return false;
         MiniGamePageData data = MiniGamePages.get(player.server, payload.page())
                 .withTexts(payload.title(), payload.description())
-                .withModes(MiniGameMode.fromMask(payload.modes()))
-                .withPlayers(payload.minPlayers(), payload.maxPlayers());
+                .withFormats(payload.formats());
         MiniGamePages.update(player.server, data);
         MiniGamePages.refresh(player.server, stack);
         return true;
@@ -170,7 +171,10 @@ public final class MiniGamePageNetworking {
     }
 
     private static MiniGamePagePayloads.TestStatus testStatus(UUID page, MiniGameTest.Plan plan) {
-        return new MiniGamePagePayloads.TestStatus(page, plan.status().ordinal(), plan.players().size(), plan.mode() == null ? -1 : plan.mode().ordinal());
+        MiniGameTest.Shortfall shortfall = plan.shortfall();
+        int[] missing = shortfall == null ? new int[0]
+                : new int[]{shortfall.format(), shortfall.role(), shortfall.count(), shortfall.min(), Math.min(shortfall.max(), 255)};
+        return new MiniGamePagePayloads.TestStatus(page, plan.status().ordinal(), plan.players().size(), plan.format(), missing);
     }
 
     /** The editor asks whether its page can be tested now (the state of its « Test » button). */
@@ -237,6 +241,15 @@ public final class MiniGamePageNetworking {
             case CLEAR_IMAGE -> {
                 if (!MiniGamePages.clearImage(server, payload.page())) return false;
                 send(player, new Status(payload.page(), Status.Code.IMAGE_CLEARED));
+            }
+            // The editor closes itself: the page in hand draws the zone
+            case DRAW_ZONE -> {
+                return PageZoneTool.start(player, payload.hand());
+            }
+            case CLEAR_ZONE -> {
+                MiniGamePageData data = MiniGamePages.get(server, payload.page());
+                if (data.zone() == null) return false;
+                MiniGamePages.update(server, data.withZone(null));
             }
         }
         return true;

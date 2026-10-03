@@ -26,8 +26,8 @@ public class MouseScrollMixin {
         else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.board.WrenchClient.onScroll(vertical)) ci.cancel();
         // Sneak + wheel with a Move Forward / Back cartridge: its number of spaces
         else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.gui.AdvanceBackCartridgeControls.onScroll(vertical)) ci.cancel();
-        // Sneak + wheel with a Zone Cartridge: the face of its box looked at
-        else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.minigame.ZoneCartridgeClient.onScroll(vertical)) ci.cancel();
+        // Sneak + wheel with a Mini-game Page in zone mode: the face of its zone looked at
+        else if (window == client.getWindow().getHandle() && fr.lordfinn.steveparty.client.minigame.PageZoneClient.onScroll(vertical)) ci.cancel();
         // Sneak + wheel with a Shop Cartridge: the purchases a stop allows
         else if (window == client.getWindow().getHandle() && steveparty$shopCartridgeScroll(vertical)) ci.cancel();
     }

@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.PageZoneTool;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
@@ -31,6 +32,8 @@ import static fr.lordfinn.steveparty.utils.RaycastUtils.isTargetingBlock;
  * page says (title, description, picture, accepted team layouts, players) is kept by the server
  * ({@link MiniGamePages}), so every copy of a page shows the same thing. Right-clicked in hand, it opens its editor;
  * a click on a pipe mouth links that pipe to the page, or unlinks it (see {@code PipeBlock}, {@code MiniGamePipes#click}).
+ * In zone mode, its clicks draw the zone of the page instead ({@link PageZoneTool}); sneak + right-click in the air
+ * ends the mode, and so does putting it away (out of the hands).
  */
 public class MiniGamePageItem extends Item {
     /** What the tooltip of a page shows under its name: the page's picture and summary (drawn by the client). */
@@ -46,6 +49,10 @@ public class MiniGamePageItem extends Item {
 
     @Override
     public ActionResult use(World world, PlayerEntity player, Hand hand) {
+        if (PageZoneTool.isInMode(player.getStackInHand(hand)) && player.isSneaking()) {
+            if (!world.isClient) PageZoneTool.end(player, player.getStackInHand(hand));
+            return ActionResult.SUCCESS;
+        }
         if (world.isClient) {
             return ActionResult.PASS;
         }
@@ -72,7 +79,11 @@ public class MiniGamePageItem extends Item {
     /** Keeps the title shown by the item up to date with the page (changed through a linked copy, for instance). */
     @Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
-        if (world.isClient || world.getServer() == null || (world.getTime() + slot) % 20 != 0) return;
+        if (world.isClient || world.getServer() == null) return;
+        // Zone mode lasts while the page is in a hand
+        if (entity instanceof PlayerEntity player && player.getMainHandStack() != stack && player.getOffHandStack() != stack
+                && PageZoneTool.end(null, stack)) return;
+        if ((world.getTime() + slot) % 20 != 0) return;
         // Pages no longer keep positions of their own: the pipes are on the page's content
         if (stack.contains(ModComponents.DESTINATIONS_COMPONENT)) stack.remove(ModComponents.DESTINATIONS_COMPONENT);
         MiniGamePages.refresh(world.getServer(), stack);

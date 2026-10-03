@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameReturns;
 import fr.lordfinn.steveparty.minigame.MiniGameArena;
 import fr.lordfinn.steveparty.minigame.MiniGameIntro;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -567,13 +566,13 @@ public class MiniGamePartyStep extends PartyStep {
                 seat(controller, uuid);
                 int wait = queues.merge(link, 1, Integer::sum) - 1;
                 if (wait == 0) {
-                    comeOut(server, link, uuid);
+                    comeOut(server, link, uuid, page == null ? null : page.id());
                 } else {
                     UUID task = UUID.randomUUID();
                     emergeTasks.add(task);
                     Steveparty.SCHEDULER.schedule(task, wait * EMERGE_GAP_TICKS, () -> {
                         emergeTasks.remove(task);
-                        if (isStillActive(controller)) comeOut(server, link, uuid);
+                        if (isStillActive(controller)) comeOut(server, link, uuid, page == null ? null : page.id());
                     });
                 }
             });
@@ -636,13 +635,14 @@ public class MiniGamePartyStep extends PartyStep {
 
     /** {@code uuid} is away in this mini-game (free pipes, the exit pipe) for as long as it is this party's step. */
     private void seat(PartyControllerEntity controller, UUID uuid) {
-        MiniGamePipes.enterParty(uuid, leaving -> leaveEarly(controller, leaving), () -> isStillActive(controller));
+        UUID page = MiniGamePages.idOf(MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
+        MiniGamePipes.enterParty(uuid, page == null ? MiniGamePageData.NO_ID : page, leaving -> leaveEarly(controller, leaving), () -> isStillActive(controller));
     }
 
-    private void comeOut(MinecraftServer server, MiniGamePipeLink link, UUID uuid) {
+    private void comeOut(MinecraftServer server, MiniGamePipeLink link, UUID uuid, @Nullable UUID pageId) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
         if (player == null) return;
-        if (!MiniGamePipes.emerge(server, link, player)) {
+        if (!MiniGamePipes.emergeInRound(server, link, player, pageId)) {
             // No pipe to come out of any more: it stays where it is, with what it owns
             arena.leave(player);
             MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED),
@@ -651,19 +651,17 @@ public class MiniGamePartyStep extends PartyStep {
     }
 
     /**
-     * A player leaves the mini-game before its end (the exit pipe): back where it stood before it. The mini-game
-     * goes on for the others.
-     *
-     * @return false if the player is not away in this mini-game
+     * A player leaves the mini-game before its end (a pipe linked to its page, see {@link MiniGamePipes}): out of the
+     * round, what it owns given back; the way out decides where it goes (the return position given back, null if it
+     * had none). The mini-game goes on for the others.
      */
-    public boolean leaveEarly(PartyControllerEntity controller, ServerPlayerEntity player) {
+    public MiniGameReturns.@Nullable Return leaveEarly(PartyControllerEntity controller, ServerPlayerEntity player) {
         MiniGameReturns.Return back = returnPositions.remove(player.getUuid());
         MiniGamePipes.leaveParty(player.getUuid());
-        // Out of the round: what it owns first, then the way back
+        // Out of the round: what it owns first
         arena.leave(player);
-        if (back == null) return false;
-        controller.markDirty();
-        return MiniGameReturns.bringBack(player.server, player.getUuid(), back);
+        if (back != null) controller.markDirty();
+        return back;
     }
 
     // ---------------------------------------------------------------- the card of the mini-game
@@ -689,8 +687,8 @@ public class MiniGamePartyStep extends PartyStep {
         MiniGamePageData data = MiniGamePages.of(controller.getWorld().getServer(), page);
         if (data == null) data = MiniGamePageData.empty(MiniGamePageData.NO_ID);
         if (!data.hasTitle()) data = data.withTexts(page.getName().getString(), data.description());
-        MiniGameMode mode = MiniGameMode.of(MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue));
-        MiniGamePagePayloads.Preview payload = new MiniGamePagePayloads.Preview(true, data, mode.ordinal(), countdown);
+        int format = data.formatFor(counts(MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(controller.catalogue)));
+        MiniGamePagePayloads.Preview payload = new MiniGamePagePayloads.Preview(true, data, format, countdown);
         for (ServerPlayerEntity player : previewAudience(controller)) {
             if (ServerPlayNetworking.canSend(player, MiniGamePagePayloads.Preview.ID)) ServerPlayNetworking.send(player, payload);
         }
@@ -1025,6 +1023,15 @@ public class MiniGamePartyStep extends PartyStep {
         // Store the final selection
         MiniGamesCatalogueItem.setCurrentMiniGamePage(partyControllerEntity.catalogue, chosenMiniGame);
         miniGameChosen = true;
+        // The board's groups take the sides of the format played (side 1 team A, out of the blue pipes...)
+        MinecraftServer server = partyControllerEntity.getWorld() == null ? null : partyControllerEntity.getWorld().getServer();
+        MiniGamePageData chosenData = server == null ? null : MiniGamePages.of(server, chosenMiniGame);
+        TeamDisposition drawn = MiniGamesCatalogueItem.getCurrentMiniGameTeamDisposition(partyControllerEntity.catalogue);
+        if (chosenData != null && drawn != null) {
+            TeamDisposition played = arrange(chosenData, drawn);
+            if (!played.equals(drawn)) MiniGamesCatalogueItem.setCurrentMiniGameTeamDisposition(partyControllerEntity.catalogue, played);
+            tellSides(server, chosenData, played);
+        }
         List<ItemStack> pages = MiniGamesCatalogueItem.getStoredPages(partyControllerEntity.catalogue);
         chosenPageSlot = 0;
         for (int slot = 0; slot < pages.size(); slot++) {
@@ -1081,12 +1088,57 @@ public class MiniGamePartyStep extends PartyStep {
     }
 
     /**
-     * @return true if the page's mini-game can be played by these teams: the page ticks that team layout, accepts
-     * that many players, and has a pipe for each team to come out of (the players pipes without teams)
+     * @return true if the page's mini-game can be played by these teams: one of its formats fits them (see
+     * {@link fr.lordfinn.steveparty.minigame.MiniGameFormat#matches}) and has a pipe for each team to come out of (the
+     * players pipes without teams)
      */
     public static boolean pagePlayable(MinecraftServer server, ItemStack page, TeamDisposition disposition) {
         MiniGamePageData data = MiniGamePages.of(server, page);
-        return data != null && data.isPlayable(disposition.size(), MiniGameMode.of(disposition));
+        return data != null && data.isPlayable(counts(disposition));
+    }
+
+    /**
+     * The teams as the page's format plays them: the board's groups (positive tiles, negative tiles...) given to the
+     * format's sides by their sizes ({@link fr.lordfinn.steveparty.minigame.MiniGameFormat#assignment}): side 1 is team
+     * A, side 2 team B... The board's order is kept when it already fits. Unchanged without teams, or when no format of
+     * the page fits.
+     */
+    public static TeamDisposition arrange(MiniGamePageData page, TeamDisposition disposition) {
+        List<Integer> counts = counts(disposition);
+        fr.lordfinn.steveparty.minigame.MiniGameFormat format = page.format(page.formatFor(counts));
+        if (format == null || format.kind() != fr.lordfinn.steveparty.minigame.MiniGameFormat.Kind.TEAMS) return disposition;
+        int[] order = format.assignment(counts);
+        if (order == null) return disposition;
+        List<java.util.Set<UUID>> groups = new ArrayList<>();
+        for (java.util.Set<UUID> team : disposition.teams()) if (!team.isEmpty()) groups.add(team);
+        List<java.util.Set<UUID>> sides = new ArrayList<>(List.of(java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), java.util.Set.of()));
+        for (int side = 0; side < order.length; side++) sides.set(side, new java.util.LinkedHashSet<>(groups.get(order[side])));
+        return new TeamDisposition(sides.get(0), sides.get(1), sides.get(2), sides.get(3));
+    }
+
+    /** Each player is told which team he plays, in its colour (the colour of the pipes he will come out of). */
+    private static void tellSides(MinecraftServer server, MiniGamePageData page, TeamDisposition teams) {
+        if (teams.isFreeForAll()) return;
+        for (int team = 0; team < 4; team++) {
+            fr.lordfinn.steveparty.minigame.MiniGamePipeRole role = fr.lordfinn.steveparty.minigame.MiniGamePipeRole.ofTeam(team);
+            for (UUID uuid : teams.teams().get(team)) {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+                if (player == null) continue;
+                player.sendMessage(Text.translatable("message.steveparty.minigame.your_side",
+                        role.text().copy().styled(style -> style.withColor(role.color()).withBold(true))), false);
+            }
+        }
+    }
+
+    /**
+     * The players of each team of a composition, its empty teams left out (one count when everyone is on one side, as
+     * in free for all), for {@link MiniGamePageData#formatFor}.
+     */
+    public static List<Integer> counts(@org.jetbrains.annotations.Nullable TeamDisposition disposition) {
+        List<Integer> counts = new ArrayList<>();
+        if (disposition == null) return counts;
+        for (java.util.Set<UUID> team : disposition.teams()) if (!team.isEmpty()) counts.add(team.size());
+        return counts;
     }
 
     @Override

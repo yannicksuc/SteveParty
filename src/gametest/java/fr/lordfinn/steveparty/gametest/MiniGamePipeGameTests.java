@@ -21,7 +21,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
+import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -145,8 +145,9 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             }
         });
         context.assertEquals(MiniGamePipeRole.ofPipe(ModBlocks.GLASS_PIPE.getDefaultState()), MiniGamePipeRole.SPECTATORS, "plain glass: spectators");
-        context.assertEquals(MiniGamePipeRole.needed(MiniGameMode.FREE_FOR_ALL), List.of(MiniGamePipeRole.PLAYERS), "free for all: players pipes");
-        context.assertEquals(MiniGamePipeRole.needed(MiniGameMode.THREE_TEAMS),
+        context.assertEquals(MiniGamePipeRole.needed(MiniGameFormat.freeForAll(2, 8)), List.of(MiniGamePipeRole.PLAYERS), "free for all: players pipes");
+        context.assertEquals(MiniGamePipeRole.needed(MiniGameFormat.allTogether(2, 4)), List.of(MiniGamePipeRole.PLAYERS), "all together: players pipes");
+        context.assertEquals(MiniGamePipeRole.needed(MiniGameFormat.GALLERY.get(5)),
                 List.of(MiniGamePipeRole.TEAM_A, MiniGamePipeRole.TEAM_B, MiniGamePipeRole.TEAM_C), "3 teams: A, B and C pipes");
         context.complete();
     }
@@ -222,7 +223,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         }
     }
 
-    /** The page tells what is missing for each way to play it ticks, and can only be drawn with the pipes of that way. */
+    /** The page tells what is missing for each of its formats, and can only be drawn in a format whose pipes it has. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void pageTellsWhichPipesAreMissing(TestContext context) {
         MinecraftServer server = context.getWorld().getServer();
@@ -235,29 +236,32 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, freeForAll), "a page never opened can't be drawn");
 
         UUID id = page(context, stack, blue);
-        context.assertEquals(MiniGamePages.get(server, id).modes(), EnumSet.of(MiniGameMode.FREE_FOR_ALL), "a new page ticks free for all only");
-        MiniGamePages.update(server, MiniGamePages.get(server, id).withModes(EnumSet.of(MiniGameMode.FREE_FOR_ALL, MiniGameMode.TWO_TEAMS)));
+        MiniGameFormat any = MiniGameFormat.freeForAll(1, MiniGameFormat.Side.INFINITE), two = MiniGameFormat.blank();
+        context.assertEquals(MiniGamePages.get(server, id).formats(), List.of(any), "a new page: free for all, any number");
+        MiniGamePages.update(server, MiniGamePages.get(server, id).withFormats(List.of(any, two)));
         MiniGamePageData data = MiniGamePages.get(server, id);
-        context.assertEquals(data.missing(MiniGameMode.TWO_TEAMS), List.of(MiniGamePipeRole.TEAM_B), "2 teams ticked but no team B pipe");
-        context.assertEquals(data.missing(MiniGameMode.FREE_FOR_ALL), List.of(MiniGamePipeRole.PLAYERS), "free for all ticked but no players pipe");
+        context.assertEquals(data.missing(two), List.of(MiniGamePipeRole.TEAM_B), "2 teams but no team B pipe");
+        context.assertEquals(data.missing(any), List.of(MiniGamePipeRole.PLAYERS), "free for all but no players pipe");
         context.assertTrue(!data.isPlayable(), "nothing can be played yet");
         context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, oneVsTwo), "no team B pipe: not drawn for two teams");
 
         MiniGamePages.toggleLink(server, id, global(context, red), Direction.UP, MiniGamePipeRole.TEAM_B);
         data = MiniGamePages.get(server, id);
-        context.assertTrue(data.missing(MiniGameMode.TWO_TEAMS).isEmpty() && data.isPlayable(), "two teams have their pipes");
+        context.assertTrue(data.missing(two).isEmpty() && data.isPlayable(), "two teams have their pipes");
         context.assertTrue(MiniGamePartyStep.pagePlayable(server, stack, oneVsTwo), "drawn for two teams");
         context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, freeForAll), "still no players pipe: not for free for all");
-        context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, three), "3 teams is not ticked");
+        context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, three), "no 3-team format");
 
-        // Three teams: ticked, and a team C pipe
-        MiniGamePages.update(server, data.withModes(EnumSet.of(MiniGameMode.THREE_TEAMS)));
-        context.assertEquals(MiniGamePages.get(server, id).missing(MiniGameMode.THREE_TEAMS), List.of(MiniGamePipeRole.TEAM_C), "team C pipe missing");
+        // Three teams: a format, and a team C pipe
+        MiniGameFormat threeTeams = MiniGameFormat.GALLERY.get(5);
+        MiniGamePages.update(server, data.withFormats(List.of(threeTeams)));
+        context.assertEquals(MiniGamePages.get(server, id).missing(threeTeams), List.of(MiniGamePipeRole.TEAM_C), "team C pipe missing");
         MiniGamePages.toggleLink(server, id, global(context, purple), Direction.UP, MiniGamePipeRole.ofPipe(context.getBlockState(purple)));
         context.assertTrue(MiniGamePartyStep.pagePlayable(server, stack, three), "three players, one per team: drawn");
-        context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, oneVsTwo), "two teams no longer ticked");
-        MiniGamePages.update(server, MiniGamePages.get(server, id).withPlayers(4, 8));
-        context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, three), "too few players for the page");
+        context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, oneVsTwo), "no 2-team format any more");
+        MiniGamePages.update(server, MiniGamePages.get(server, id).withFormats(List.of(MiniGameFormat.teams(false, MiniGameFormat.Side.atLeast(2),
+                MiniGameFormat.Side.atLeast(2), MiniGameFormat.Side.atLeast(2)))));
+        context.assertTrue(!MiniGamePartyStep.pagePlayable(server, stack, three), "too few players for its teams");
         context.complete();
     }
 
@@ -275,7 +279,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         TeamDisposition lone = ways.iterator().next();
         context.assertEquals(MiniGamePipes.roleOf(lone, p1), MiniGamePipeRole.TEAM_B, "the lone negative player uses the team B pipes");
         context.assertEquals(MiniGamePipes.roleOf(lone, p3), MiniGamePipeRole.TEAM_A, "a positive player the team A pipes");
-        context.assertEquals(MiniGameMode.of(lone), MiniGameMode.TWO_TEAMS, "two teams");
+        context.assertEquals(MiniGamePartyStep.counts(lone), List.of(4, 1), "two teams: 4 and 1");
 
         // One positive against three negative (1 v 3)
         ways = TeamDispositionGenerator.generateTeamDispositions(List.of(new Seat(p1, Status.GOOD), new Seat(p2, Status.BAD),
@@ -291,7 +295,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         // Everyone on the same side: no teams
         ways = TeamDispositionGenerator.generateTeamDispositions(List.of(new Seat(p1, Status.GOOD), new Seat(p2, Status.GOOD)));
         context.assertEquals(ways, Set.of(TeamDisposition.freeForAll(List.of(p1, p2))), "all positive: free for all");
-        context.assertEquals(MiniGameMode.of(ways.iterator().next()), MiniGameMode.FREE_FOR_ALL, "free for all");
+        context.assertEquals(MiniGamePartyStep.counts(ways.iterator().next()), List.of(2), "free for all: one group");
         context.assertEquals(MiniGamePipes.roleOf(ways.iterator().next(), p1), MiniGamePipeRole.PLAYERS, "players pipes without teams");
 
         // Two neutral players: free for all, or one against the other either way
@@ -310,21 +314,21 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         TeamDisposition three = new TeamDisposition(Set.of(p2), Set.of(p1), Set.of(p3), Set.of());
         context.assertEquals(ways, Set.of(new TeamDisposition(Set.of(p2, p3), Set.of(p1)), three),
                 "2 v 1, or one per team: the first positive in A, the negative in B, the other in C");
-        context.assertEquals(MiniGameMode.of(three), MiniGameMode.THREE_TEAMS, "three teams");
+        context.assertEquals(MiniGamePartyStep.counts(three), List.of(1, 1, 1), "three teams");
         context.assertEquals(MiniGamePipes.roleOf(three, p3), MiniGamePipeRole.TEAM_C, "team C pipes");
 
         ways = TeamDispositionGenerator.generateTeamDispositions(List.of(new Seat(p1, Status.NEUTRAL), new Seat(p2, Status.NEUTRAL),
                 new Seat(p3, Status.BAD), new Seat(p4, Status.GOOD)));
         TeamDisposition four = new TeamDisposition(Set.of(p4), Set.of(p3), Set.of(p1), Set.of(p2));
         context.assertTrue(ways.contains(four), "one per team: positive A, negative B, the neutral ones C and D in turn order: " + ways);
-        context.assertEquals(MiniGameMode.of(four), MiniGameMode.FOUR_TEAMS, "four teams");
+        context.assertEquals(MiniGamePartyStep.counts(four), List.of(1, 1, 1, 1), "four teams");
         context.assertEquals(four.teamOf(p2), 3, "team D");
         context.assertEquals(ways.size(), 5, "four ways to split the two neutral players in two teams, and one per team");
 
         // Five players: no three- or four-team way
         ways = TeamDispositionGenerator.generateTeamDispositions(List.of(new Seat(p1, Status.GOOD), new Seat(p2, Status.BAD), new Seat(p3, Status.BAD),
                 new Seat(p4, Status.BAD), new Seat(UUID.randomUUID(), Status.BAD)));
-        context.assertTrue(ways.stream().allMatch(way -> MiniGameMode.of(way) == MiniGameMode.TWO_TEAMS), "five players: two teams only");
+        context.assertTrue(ways.stream().allMatch(way -> MiniGamePartyStep.counts(way).size() == 2), "five players: two teams only");
         context.complete();
     }
 
@@ -814,5 +818,55 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             remove(context, player);
         }
         context.complete();
+    }
+
+    // ------------------------------------------------------------------ a visit in the page's zone
+
+    /**
+     * A mini-game entered by its mini-game pipe, out of any round, is played in its page's zone too: the visitor
+     * leaves what it owns at the door and plays in the bubble of the visits; a way out takes it out of the bubble
+     * (what it owns given back, the zone put back once the last visitor is gone); a round of the page ends the visits.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_pipe_visit_zone", tickLimit = 300)
+    public void aMiniGameEnteredByItsPipeIsPlayedInItsZone(TestContext context) {
+        ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
+        BlockPos black = mouth(context, BLACK, 5, 5);
+        ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
+        UUID id = page(context, stack, black);
+        MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(new fr.lordfinn.steveparty.minigame.PageZone(world.getRegistryKey(),
+                net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(3, 1, 3)), context.getAbsolutePos(new BlockPos(7, 5, 7))))));
+        BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
+        ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
+        player.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 3));
+        Runnable cleanup = () -> {
+            fr.lordfinn.steveparty.minigame.MiniGameArena.endVisits(id);
+            for (fr.lordfinn.steveparty.minigame.zone.ZoneBubble left : fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all()) left.endNow();
+            remove(context, player);
+        };
+        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
+        when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> guarded(context, cleanup, () -> {
+            fr.lordfinn.steveparty.minigame.zone.ZoneBubble bubble = fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player);
+            context.assertTrue(bubble != null && bubble.isActive() && bubble.isParticipant(player.getUuid()), "the visitor plays in the bubble of the zone");
+            context.assertTrue(player.getInventory().count(Items.DIAMOND) == 0, "it left what it owns at the door");
+            context.setBlockState(new BlockPos(4, 2, 4), Blocks.GOLD_BLOCK);
+
+            // A way out (a linked pipe): out of the bubble, what it owns back, the zone put back
+            context.assertTrue(MiniGamePipes.wayOut(server, player, id), "a way out");
+            context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null && player.getInventory().count(Items.DIAMOND) == 3, "out of the bubble, its diamonds back");
+            context.assertTrue(!bubble.isActive(), "the last visitor gone: the visits are over");
+            context.waitAndRun(PipeTravel.COOLDOWN + 20, () -> guarded(context, cleanup, () -> {
+                context.expectBlock(Blocks.AIR, new BlockPos(4, 2, 4));
+                // Visiting again (asked directly), then a round of the page begins: the visits end
+                context.assertTrue(fr.lordfinn.steveparty.minigame.MiniGameArena.visit(server, id, player), "visiting again");
+                context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) != null && player.getInventory().count(Items.DIAMOND) == 0, "in the bubble again");
+                new fr.lordfinn.steveparty.minigame.MiniGameArena().whenZoneFree(server, id, () -> true, List::of, () -> {
+                });
+                context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null && player.getInventory().count(Items.DIAMOND) == 3,
+                        "a round of the page: the visits end, the visitor has what it owns");
+                cleanup.run();
+                context.complete();
+            }));
+        }));
     }
 }

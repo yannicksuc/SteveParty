@@ -2,19 +2,21 @@ package fr.lordfinn.steveparty.client.minigame;
 
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
-import fr.lordfinn.steveparty.components.ZoneSelection;
-import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
-import fr.lordfinn.steveparty.items.custom.ZoneCartridgeItem;
+import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.PageZone;
+import fr.lordfinn.steveparty.minigame.PageZoneTool;
 import fr.lordfinn.steveparty.minigame.ZoneFaces;
-import fr.lordfinn.steveparty.payloads.custom.ZoneCartridgeScrollPayload;
+import fr.lordfinn.steveparty.payloads.custom.PageZonePayload;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.RenderLayer;
@@ -32,6 +34,7 @@ import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -40,60 +43,77 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * The Zone Cartridge on the client: what its holder sees and its mouse wheel.
+ * The zone of a Mini-game Page on the client ({@link PageZoneTool}): what its holder sees, its mouse wheel, Échap.
  * <ul>
- *     <li>In the world (drawn like the Wrench's overlay, stuck to the blocks): the box of the cartridge held, as an
- *     outline with see-through faces (red when too big), the face looked at brighter, the first corner of a box
- *     being drawn with the box a click would make; and, cartridge, Mini-game Page or Wrench in hand, the zone of the
- *     Mini-game Controllers around (green).</li>
- *     <li>Above the hotbar (the tools' HUD): the size of the box, and the gestures available now.</li>
- *     <li>Sneak + wheel, a face looked at: the face moves (the server finds the face again and decides).</li>
+ *     <li>In the world (drawn like the Wrench's overlay, stuck to the blocks): the zone of the page held, in zone mode
+ *     or not, as an outline with see-through faces; in zone mode, the face looked at brighter, and the first corner
+ *     of a box being drawn with the box a click would make (red when too big). Page or Wrench in hand: the zones of
+ *     the pages of the Mini-game Controllers around (green).</li>
+ *     <li>Above the hotbar, in zone mode (the tools' HUD): the size of the zone, and the gestures available now.</li>
+ *     <li>Sneak + wheel, in zone mode, a face looked at: the face moves (the server finds the face again and decides).</li>
+ *     <li>Échap (the game menu opening) in zone mode: the mode ends.</li>
  * </ul>
  */
-public final class ZoneCartridgeClient {
+public final class PageZoneClient {
     private static final int HELD = 0x3FD0FF, TOO_BIG = 0xFF4040, HOME = 0x4CFF4C, CORNER = 0xFFD83D;
     /** Blocks around the player within which the zones of the controllers are shown. */
     private static final double SHOW_RADIUS = 64;
     private static final float FACE_ALPHA = 0.08f, LOOKED_ALPHA = 0.24f;
 
-    /** The face of the held cartridge's box the player looks at, null for none. */
+    /** The face of the held page's zone the player looks at (zone mode), null for none. */
     private static @Nullable Direction lookedFace;
+    /** The end of the mode was asked for since the game menu opened. */
+    private static boolean endAsked;
 
-    private ZoneCartridgeClient() {
+    private PageZoneClient() {
     }
 
     public static void initialize() {
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(ZoneCartridgeClient::render);
-        HudRenderCallback.EVENT.register(ZoneCartridgeClient::renderHud);
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(PageZoneClient::render);
+        HudRenderCallback.EVENT.register(PageZoneClient::renderHud);
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (!(client.currentScreen instanceof GameMenuScreen)) {
+                endAsked = false;
+                return;
+            }
+            if (!endAsked && client.player != null && PageZoneTool.held(client.player) != null
+                    && ClientPlayNetworking.canSend(PageZonePayload.ID)) {
+                ClientPlayNetworking.send(new PageZonePayload(0));
+                endAsked = true;
+            }
+        });
     }
 
-    private static boolean isCartridge(ItemStack stack) {
-        return stack.getItem() instanceof ZoneCartridgeItem;
+    /** The zone of the page {@code stack} is, in the dimension the player is in; null otherwise. */
+    private static @Nullable PageZone zoneOf(MinecraftClient client, ItemStack stack) {
+        UUID id = MiniGamePages.idOf(stack);
+        MiniGamePageData data = id == null ? null : MiniGamePageClient.page(id);
+        PageZone zone = data == null ? null : data.zone();
+        return zone != null && client.world != null && zone.dimension().equals(client.world.getRegistryKey()) ? zone : null;
     }
 
-    /** The selection of the cartridge in the main hand, in the dimension the player is in; null otherwise. */
-    private static @Nullable ZoneSelection mainSelection(MinecraftClient client) {
-        if (client.player == null || client.world == null || !isCartridge(client.player.getMainHandStack())) return null;
-        ZoneSelection selection = ZoneCartridgeItem.selection(client.player.getMainHandStack());
-        return selection != null && selection.dimension().equals(client.world.getRegistryKey()) ? selection : null;
+    /** The page in zone mode in the main hand, null for none. */
+    private static @Nullable ItemStack drawing(MinecraftClient client) {
+        return client.player != null && PageZoneTool.isInMode(client.player.getMainHandStack()) ? client.player.getMainHandStack() : null;
     }
 
     /**
-     * Mouse wheel hook: sneaking with a cartridge that has a box in the main hand, the wheel moves the face looked at
-     * (up: outward, down: inward; Ctrl: four blocks) instead of changing the hotbar slot.
+     * Mouse wheel hook: sneaking with a page in zone mode that has a zone in the main hand, the wheel moves the face
+     * looked at (up: outward, down: inward; Ctrl: four blocks) instead of changing the hotbar slot.
      *
      * @return true if the scroll was used
      */
     public static boolean onScroll(double vertical) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.currentScreen != null || client.player == null || !client.player.isSneaking()) return false;
-        ZoneSelection selection = mainSelection(client);
-        if (selection == null || selection.box().isEmpty()) return false;
+        ItemStack page = drawing(client);
+        if (page == null || zoneOf(client, page) == null) return false;
         if (vertical == 0) return true;
-        int amount = (vertical > 0 ? 1 : -1) * (Screen.hasControlDown() ? ZoneCartridgeItem.FAST_STEP : 1);
-        ClientPlayNetworking.send(new ZoneCartridgeScrollPayload(amount));
+        int amount = (vertical > 0 ? 1 : -1) * (Screen.hasControlDown() ? PageZoneTool.FAST_STEP : 1);
+        ClientPlayNetworking.send(new PageZonePayload(amount));
         return true;
     }
 
@@ -107,38 +127,36 @@ public final class ZoneCartridgeClient {
         lookedFace = null;
         if (player == null || world == null || matrices == null) return;
         ItemStack main = player.getMainHandStack(), off = player.getOffHandStack();
-        ItemStack cartridge = isCartridge(main) ? main : isCartridge(off) ? off : null;
-        boolean showsHomes = cartridge != null || main.getItem() instanceof MiniGamePageItem || off.getItem() instanceof MiniGamePageItem
-                || main.getItem() instanceof WrenchItem || off.getItem() instanceof WrenchItem;
-        if (!showsHomes) return;
+        ItemStack page = MiniGamePages.isPage(main) ? main : MiniGamePages.isPage(off) ? off : null;
+        if (page == null && !(main.getItem() instanceof WrenchItem) && !(off.getItem() instanceof WrenchItem)) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         Vec3d camera = context.camera().getPos();
         float tickDelta = context.tickCounter().getTickDelta(true);
+        UUID held = page == null ? null : MiniGamePages.idOf(page);
 
-        // The zones of the controllers around
+        // The zones of the controllers' pages around
         for (MiniGameControllerBlockEntity controller : MiniGameControllerBlockEntity.clientLoaded(world)) {
-            ZoneSelection home = controller.getSelection();
-            if (home == null || home.box().isEmpty() || !home.dimension().equals(world.getRegistryKey())
-                    || !controller.getPos().isWithinDistance(player.getPos(), SHOW_RADIUS)) continue;
-            BlockBox box = home.box().get();
-            drawBox(matrices, consumers, camera, PageZone.bounds(box), PageZone.tooBig(box) ? TOO_BIG : HOME, FACE_ALPHA, null);
+            UUID id = controller.getPageId();
+            if (id == null || id.equals(held) || !controller.getPos().isWithinDistance(player.getPos(), SHOW_RADIUS)) continue;
+            PageZone home = zoneOf(client, controller.getPage());
+            if (home != null) drawBox(matrices, consumers, camera, PageZone.bounds(home.box()), HOME, FACE_ALPHA, null);
         }
 
-        // The cartridge held: its box, the face looked at, the corner of the box being drawn
-        ZoneSelection selection = cartridge == null ? null : ZoneCartridgeItem.selection(cartridge);
-        if (selection != null && selection.dimension().equals(world.getRegistryKey())) {
-            if (selection.box().isPresent()) {
-                Box bounds = PageZone.bounds(selection.box().get());
-                if (cartridge == main) lookedFace = ZoneFaces.lookedAt(player.getCameraPosVec(tickDelta), player.getRotationVec(tickDelta), bounds);
-                drawBox(matrices, consumers, camera, bounds, PageZone.tooBig(selection.box().get()) ? TOO_BIG : HELD,
-                        selection.corner().isPresent() ? FACE_ALPHA / 2 : FACE_ALPHA, selection.corner().isPresent() ? null : lookedFace);
+        // The page held: its zone, and in zone mode the face looked at and the corner of the box being drawn
+        if (page != null) {
+            boolean mode = PageZoneTool.isInMode(page);
+            PageZone zone = zoneOf(client, page);
+            GlobalPos corner = mode ? PageZoneTool.corner(page).filter(at -> at.dimension().equals(world.getRegistryKey())).orElse(null) : null;
+            if (zone != null) {
+                Box bounds = PageZone.bounds(zone.box());
+                if (mode && page == main && corner == null) lookedFace = ZoneFaces.lookedAt(player.getCameraPosVec(tickDelta), player.getRotationVec(tickDelta), bounds);
+                drawBox(matrices, consumers, camera, bounds, HELD, corner != null ? FACE_ALPHA / 2 : FACE_ALPHA, lookedFace);
             }
-            if (selection.corner().isPresent()) {
-                BlockPos corner = selection.corner().get();
-                drawBox(matrices, consumers, camera, new Box(corner), CORNER, 0.3f, null);
+            if (corner != null) {
+                drawBox(matrices, consumers, camera, new Box(corner.pos()), CORNER, 0.3f, null);
                 // The box a click on the block aimed at would make
-                if (cartridge == main && client.crosshairTarget instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
-                    BlockBox preview = BlockBox.create(corner, hit.getBlockPos());
+                if (page == main && client.crosshairTarget instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK) {
+                    BlockBox preview = BlockBox.create(corner.pos(), hit.getBlockPos());
                     drawBox(matrices, consumers, camera, PageZone.bounds(preview), PageZone.tooBig(preview) ? TOO_BIG : CORNER, FACE_ALPHA, null);
                 }
             }
@@ -211,36 +229,32 @@ public final class ZoneCartridgeClient {
 
     // ------------------------------------------------------------------ above the hotbar
 
-    /** The cartridge's HUD, in the tools' look ({@link ToolHud}): the size of its box (red when too big), and what can be done now. */
+    /** Zone mode's HUD, in the tools' look ({@link ToolHud}): the size of the zone, and what can be done now. */
     private static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.options.hudHidden || client.currentScreen != null || client.player == null || client.world == null
-                || !isCartridge(client.player.getMainHandStack())) return;
-        ZoneSelection selection = mainSelection(client);
+        if (client.options.hudHidden || client.currentScreen != null || client.world == null) return;
+        ItemStack page = drawing(client);
+        if (page == null) return;
+        PageZone zone = zoneOf(client, page);
+        GlobalPos corner = PageZoneTool.corner(page).filter(at -> at.dimension().equals(client.world.getRegistryKey())).orElse(null);
         List<ToolHud.Element> plates = new ArrayList<>();
-        BlockBox box = selection == null ? null : selection.box().orElse(null);
-        if (box == null) {
-            plates.add(plate(context, Text.translatable("hud.steveparty.zone_cartridge.none"), ToolHud.Plate.TEAL));
-        } else if (PageZone.tooBig(box)) {
-            plates.add(plate(context, Text.translatable("hud.steveparty.zone_cartridge.too_big", ZoneCartridgeItem.size(box), PageZone.MAX_SIDE), ToolHud.Plate.RED));
-        } else {
-            plates.add(plate(context, ZoneCartridgeItem.size(box), ToolHud.Plate.TEAL));
-        }
-        boolean drawing = selection != null && selection.corner().isPresent();
-        if (drawing) {
-            BlockPos corner = selection.corner().get();
-            plates.add(plate(context, Text.translatable("hud.steveparty.zone_cartridge.corner", corner.getX(), corner.getY(), corner.getZ()), ToolHud.Plate.GOLD));
-        } else if (box != null && lookedFace != null) {
-            plates.add(plate(context, Text.translatable("hud.steveparty.zone_cartridge.face",
-                    Text.translatable("hud.steveparty.zone_cartridge.face." + lookedFace.asString())), ToolHud.Plate.GOLD));
+        plates.add(plate(Text.translatable("hud.steveparty.page_zone.mode"), ToolHud.Plate.GOLD, context));
+        plates.add(plate(zone == null ? Text.translatable("hud.steveparty.page_zone.none")
+                : Text.translatable("hud.steveparty.page_zone.zone", PageZoneTool.size(zone.box())), ToolHud.Plate.TEAL, context));
+        if (corner != null) {
+            BlockPos at = corner.pos();
+            plates.add(plate(Text.translatable("hud.steveparty.page_zone.corner", at.getX(), at.getY(), at.getZ()), ToolHud.Plate.GOLD, context));
+        } else if (zone != null && lookedFace != null) {
+            plates.add(plate(Text.translatable("hud.steveparty.page_zone.face",
+                    Text.translatable("hud.steveparty.page_zone.face." + lookedFace.asString())), ToolHud.Plate.GOLD, context));
         }
         int top = ToolHud.rows(context, List.of(plates), 4);
-        Text hint = Text.translatable(drawing ? "hud.steveparty.zone_cartridge.hint.corner"
-                : box == null ? "hud.steveparty.zone_cartridge.hint.none" : "hud.steveparty.zone_cartridge.hint.box");
+        Text hint = Text.translatable(corner != null ? "hud.steveparty.page_zone.hint.corner"
+                : zone == null ? "hud.steveparty.page_zone.hint.none" : "hud.steveparty.page_zone.hint.box");
         ToolHud.hint(context, hint, context.getScaledWindowWidth() / 2, top);
     }
 
-    private static ToolHud.Element plate(DrawContext context, Text text, ToolHud.Plate plate) {
+    private static ToolHud.Element plate(Text text, ToolHud.Plate plate, DrawContext context) {
         return ToolHud.element(ToolHud.textPlateWidth(text), (x, y) -> ToolHud.textPlate(context, x, y, text, plate));
     }
 }

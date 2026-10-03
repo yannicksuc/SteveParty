@@ -132,15 +132,15 @@ public final class MiniGamePagePayloads {
      *
      * @param show      false: the card goes away (the players leave for the mini-game, or it is called off)
      * @param data      the page drawn
-     * @param mode      ordinal of the {@link fr.lordfinn.steveparty.minigame.MiniGameMode} it will be played in
+     * @param format    the index of the page's format it will be played in, -1 when not known
      * @param countdown seconds before the departure, 0 while it has not started
      */
-    public record Preview(boolean show, MiniGamePageData data, int mode, int countdown) implements CustomPayload {
+    public record Preview(boolean show, MiniGamePageData data, int format, int countdown) implements CustomPayload {
         public static final Id<Preview> ID = id("preview");
         public static final PacketCodec<PacketByteBuf, Preview> CODEC = PacketCodec.of((payload, buf) -> {
             buf.writeBoolean(payload.show);
             MiniGamePageData.PACKET_CODEC.encode(buf, payload.data);
-            buf.writeByte(payload.mode);
+            buf.writeByte(payload.format);
             buf.writeByte(payload.countdown);
         }, buf -> new Preview(buf.readBoolean(), MiniGamePageData.PACKET_CODEC.decode(buf), buf.readByte(), buf.readByte()));
 
@@ -234,14 +234,27 @@ public final class MiniGamePagePayloads {
      * @param players the players who would play
      * @param mode    ordinal of the way it would be played, -1 for none
      */
-    public record TestStatus(UUID page, int status, int players, int mode) implements CustomPayload {
+    /**
+     * Whether a page can be tested now: its {@link fr.lordfinn.steveparty.minigame.MiniGameTest.Status}, with how many
+     * players and in which of its formats ({@code format}, -1 when it can't); when nobody fits, the closest format and
+     * what it misses ({@code shortfall}: format, role, count, min, max, see
+     * {@link fr.lordfinn.steveparty.minigame.MiniGameTest.Shortfall}; empty otherwise).
+     */
+    public record TestStatus(UUID page, int status, int players, int format, int[] shortfall) implements CustomPayload {
         public static final Id<TestStatus> ID = id("test_status");
         public static final PacketCodec<PacketByteBuf, TestStatus> CODEC = PacketCodec.of((payload, buf) -> {
             buf.writeUuid(payload.page);
             buf.writeByte(payload.status);
             buf.writeByte(payload.players);
-            buf.writeByte(payload.mode);
-        }, buf -> new TestStatus(buf.readUuid(), buf.readByte(), buf.readByte(), buf.readByte()));
+            buf.writeByte(payload.format);
+            buf.writeVarInt(payload.shortfall.length);
+            for (int value : payload.shortfall) buf.writeVarInt(value);
+        }, buf -> {
+            TestStatus head = new TestStatus(buf.readUuid(), buf.readByte(), buf.readByte(), buf.readByte(), new int[0]);
+            int[] shortfall = new int[Math.min(buf.readVarInt(), 5)];
+            for (int i = 0; i < shortfall.length; i++) shortfall[i] = buf.readVarInt();
+            return new TestStatus(head.page, head.status, head.players, head.format, shortfall);
+        });
 
         @Override
         public Id<? extends CustomPayload> getId() {
@@ -309,18 +322,17 @@ public final class MiniGamePagePayloads {
     }
 
     /** The texts and settings written in the editor, for the page {@code page} held in {@code hand}. */
-    public record Edit(Hand hand, UUID page, String title, String description, int modes, int minPlayers, int maxPlayers) implements CustomPayload {
+    public record Edit(Hand hand, UUID page, String title, String description, java.util.List<fr.lordfinn.steveparty.minigame.MiniGameFormat> formats)
+            implements CustomPayload {
         public static final Id<Edit> ID = id("edit");
         public static final PacketCodec<PacketByteBuf, Edit> CODEC = PacketCodec.of((payload, buf) -> {
             buf.writeEnumConstant(payload.hand);
             buf.writeUuid(payload.page);
             buf.writeString(payload.title, MiniGamePageData.MAX_TITLE_LENGTH);
             buf.writeString(payload.description, MiniGamePageData.MAX_DESCRIPTION_STORED);
-            buf.writeByte(payload.modes);
-            buf.writeByte(payload.minPlayers);
-            buf.writeByte(payload.maxPlayers);
+            fr.lordfinn.steveparty.minigame.MiniGameFormat.writeList(buf, payload.formats);
         }, buf -> new Edit(buf.readEnumConstant(Hand.class), buf.readUuid(), buf.readString(MiniGamePageData.MAX_TITLE_LENGTH),
-                buf.readString(MiniGamePageData.MAX_DESCRIPTION_STORED), buf.readByte(), buf.readByte(), buf.readByte()));
+                buf.readString(MiniGamePageData.MAX_DESCRIPTION_STORED), fr.lordfinn.steveparty.minigame.MiniGameFormat.readList(buf)));
 
         @Override
         public Id<? extends CustomPayload> getId() {
@@ -330,7 +342,7 @@ public final class MiniGamePagePayloads {
 
     /** A button of the editor, for the page {@code page} held in {@code hand}. */
     public record Action(Hand hand, UUID page, Kind kind) implements CustomPayload {
-        public enum Kind { COPY, UNLINK, CLEAR_IMAGE }
+        public enum Kind { COPY, UNLINK, CLEAR_IMAGE, DRAW_ZONE, CLEAR_ZONE }
 
         public static final Id<Action> ID = id("action");
         public static final PacketCodec<PacketByteBuf, Action> CODEC = PacketCodec.of((payload, buf) -> {

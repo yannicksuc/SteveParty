@@ -2,7 +2,6 @@ package fr.lordfinn.steveparty.client.gui;
 
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import net.fabricmc.fabric.api.client.rendering.v1.TooltipComponentCallback;
@@ -21,8 +20,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A mini-game page in a tooltip (inventory, catalogue, party controller): its picture, how it is played, and the
- * start of its description. Empty until the page's content is known (it is asked to the server).
+ * A mini-game page in a tooltip (inventory, catalogue, party controller): its picture, its formats (pawn chips), and
+ * the start of its description. Empty until the page's content is known (it is asked to the server).
  */
 public class MiniGamePageTooltipComponent implements TooltipComponent {
     private static final int WIDTH = 144, PICTURE_HEIGHT = 81;
@@ -39,23 +38,18 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
                 ? new MiniGamePageTooltipComponent(tooltip.page()) : null);
     }
 
-    /** « Free for all · 2 teams » : the ways a mini-game can be played. */
-    public static MutableText modesText(MiniGamePageData data) {
+    /** « 2 contre 2 · 1 contre 3+ » : the formats of a mini-game, by name. */
+    public static MutableText formatsText(MiniGamePageData data) {
         MutableText text = Text.empty();
-        boolean first = true;
-        for (MiniGameMode mode : data.modes()) {
-            if (!first) text.append(" · ");
-            text.append(mode.text());
-            first = false;
+        for (int i = 0; i < data.formats().size(); i++) {
+            if (i > 0) text.append(" · ");
+            text.append(data.formats().get(i).name());
         }
         return text;
     }
 
-    /** « 2 to 4 players », « 4 players ». */
-    public static Text playersText(MiniGamePageData data) {
-        return data.minPlayers() == data.maxPlayers()
-                ? Text.translatable("tooltip.steveparty.mini_game_page.players.exact", data.minPlayers())
-                : Text.translatable("tooltip.steveparty.mini_game_page.players", data.minPlayers(), data.maxPlayers());
+    private static FormatChips.Look look(MiniGamePageData data, int index) {
+        return new FormatChips.Look(false, false, !data.hasPipesFor(data.formats().get(index)), false, 13);
     }
 
     private static List<OrderedText> lines(TextRenderer textRenderer, Text text, int max) {
@@ -81,7 +75,8 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
         MiniGamePageData data = MiniGamePageClient.page(page);
         if (data == null || data.isBlank()) return 0;
         int height = data.image() != null ? PICTURE_HEIGHT + 3 : 0;
-        height += 10 * lines(textRenderer, modesText(data), 2).size() + 10;
+        java.util.List<int[]> chips = FormatChips.flow(textRenderer, data.formats(), i -> look(data, i), WIDTH, 3);
+        height += chips.getLast()[1] + 13 + 3;
         if (!data.isPlayable()) height += 10;
         if (!data.description().isEmpty()) height += 2 + 10 * lines(textRenderer, MiniGameText.parse(data.description()), MAX_DESCRIPTION_LINES).size();
         return height + 2;
@@ -104,12 +99,7 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
             if (picture != null) picture.draw(context, x, top, WIDTH, PICTURE_HEIGHT, 0xFFFFFFFF);
             top += PICTURE_HEIGHT + 3;
         }
-        for (OrderedText line : lines(textRenderer, modesText(data), 2)) {
-            context.drawText(textRenderer, line, x, top, COLOR_TYPE, true);
-            top += 10;
-        }
-        context.drawText(textRenderer, playersText(data), x, top, COLOR_DESCRIPTION, true);
-        top += 10;
+        top += FormatChips.drawFlow(context, textRenderer, data.formats(), i -> look(data, i), x, top, WIDTH, 3) + 3;
         if (!data.isPlayable()) {
             context.drawText(textRenderer, Text.translatable("tooltip.steveparty.mini_game_page.not_playable"), x, top, 0xFFFF7A7A, true);
             top += 10;

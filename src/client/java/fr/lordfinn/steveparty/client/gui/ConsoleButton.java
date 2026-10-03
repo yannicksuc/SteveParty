@@ -99,8 +99,9 @@ public class ConsoleButton extends PressableWidget {
         ConsolePaint.Ramp ramp = shown.ramp;
         if (held) ramp = new ConsolePaint.Ramp(ramp.outline(), ramp.shadow(), ramp.body(), ramp.hi());
         ConsolePaint.box(context, getX(), getY(), width, height, ramp, 1, 1);
-        if (highlighted && !held) context.fill(getX() + 1, getY() + 1, getX() + width - 1, getY() + height - 1, shown.paper() ? 0x30FFFFFF : 0x22FFFFFF);
-        if (highlighted) context.drawBorder(getX(), getY(), width, height, shown.paper() ? 0xFF008C95 : 0xFFFFFFFF);
+        // The highlight follows the button's cut corners
+        if (highlighted) ConsolePaint.highlight(context, getX(), getY(), width, height, 1, shown.paper() ? 0xFF008C95 : 0xFFFFFFFF,
+                held ? 0 : shown.paper() ? 0x30FFFFFF : 0x22FFFFFF);
         if (decoration != null) {
             decoration.draw(context, this);
             return;

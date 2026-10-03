@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.items;
 
 import fr.lordfinn.steveparty.client.board.WorldDraw;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
-import fr.lordfinn.steveparty.client.minigame.ZoneCartridgeClient;
+import fr.lordfinn.steveparty.client.minigame.PageZoneClient;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -68,7 +68,7 @@ public final class InventoryCartridgeClient {
             if (state.getBlock() instanceof ChestBlock && state.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE)
                 box = box.union(new Box(pos.offset(ChestBlock.getFacing(state))));
             boolean container = client.world.getBlockEntity(pos) instanceof Inventory;
-            ZoneCartridgeClient.drawBox(matrices, consumers, context.camera().getPos(), box.expand(0.02), container ? CONTAINER : GONE, 0.12f, null);
+            PageZoneClient.drawBox(matrices, consumers, context.camera().getPos(), box.expand(0.02), container ? CONTAINER : GONE, 0.12f, null);
             consumers.draw();
             // Its number in the list, above it
             WorldDraw.plateLabel(matrices, consumers, context.camera(), new Vec3d(pos.getX() + 0.5, box.maxY + 0.45, pos.getZ() + 0.5),

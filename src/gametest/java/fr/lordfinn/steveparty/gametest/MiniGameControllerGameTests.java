@@ -19,10 +19,15 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.ZoneSelection;
-import fr.lordfinn.steveparty.items.custom.ZoneCartridgeItem;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.ZoneFaces;
+import fr.lordfinn.steveparty.minigame.PageZoneTool;
+import fr.lordfinn.steveparty.minigame.MiniGameArena;
+import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.item.Items;
+import net.minecraft.world.World;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
@@ -76,8 +81,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The Mini-game Controller: its page going in and out (one controller per page), « Play » out of a party, and in a
- * party the practice round, the ready vote and the real round (the only one that pays). And the Zone Cartridge: its
- * box drawn by clicks and face moves the server decides, and the zone it gives the mini-game of a controller.
+ * party the practice round, the ready vote and the real round (the only one that pays). And the page's zone: drawn in
+ * zone mode by clicks and face moves the server decides, shared by the page's copies, read by every reader of the
+ * zone, and the zone of an old Zone Cartridge moved into its page.
  */
 public class MiniGameControllerGameTests implements FabricGameTest {
     private static final int GREEN = 13;
@@ -494,7 +500,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
         context.complete();
     }
 
-    // ------------------------------------------------------------------ the Zone Cartridge
+    // ------------------------------------------------------------------ the page's zone
 
     private static void lookFrom(TestContext context, ServerPlayerEntity player, double x, double y, double z, float yaw, float pitch) {
         Vec3d abs = context.getAbsolute(new Vec3d(x, y, z));
@@ -532,78 +538,129 @@ public class MiniGameControllerGameTests implements FabricGameTest {
     }
 
     /**
-     * The gestures of the cartridge, as the server takes them: two clicks on blocks draw the box, a sneaking scroll
-     * moves the face the player is found looking at (from outside, from inside), sneak + click in the air clears it.
+     * The zone mode of a page, as the server takes it: the editor's button starts it (not without the right to
+     * build), two clicks on blocks draw the page's zone (every block is a corner, a controller too), a box too big
+     * is refused, a sneaking scroll moves the face the player is found looking at (from outside, from inside), sneak
+     * + click in the air or opening the editor end it, and so does putting the page away.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_zone")
-    public void theZoneCartridgeDrawsItsBox(TestContext context) {
+    public void thePageDrawsItsZoneInZoneMode(TestContext context) {
         ServerPlayerEntity player = player(context, "z", 3.5, 2, 3.5);
         ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
+        UUID id = page(context);
         try {
             BlockPos a = new BlockPos(2, 1, 2), b = new BlockPos(5, 4, 5);
             context.setBlockState(a, Blocks.STONE);
             context.setBlockState(b, Blocks.STONE);
-            ItemStack stack = new ItemStack(ModItems.ZONE_CARTRIDGE);
+            ItemStack stack = pageItem(id);
             player.setStackInHand(Hand.MAIN_HAND, stack);
-            context.assertTrue(ZoneCartridgeItem.zone(stack).isEmpty(), "a new cartridge has no zone");
+            context.assertTrue(MiniGamePages.get(server, id).zone() == null && !PageZoneTool.isInMode(stack), "a new page has no zone, and is not in zone mode");
+            context.assertEquals(UseBlockCallback.EVENT.invoker().interact(player, world, Hand.MAIN_HAND, hit(context, a)), ActionResult.PASS,
+                    "out of the mode, a click on a block is the block's (a pipe is linked as ever)");
+            context.assertTrue(!PageZoneTool.click(player, stack, context.getAbsolutePos(a)), "out of the mode: no corner");
 
-            // Two clicks: two corners
-            stack.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND, hit(context, a)));
-            ZoneSelection selection = ZoneCartridgeItem.selection(stack);
-            context.assertTrue(selection != null && selection.corner().equals(Optional.of(context.getAbsolutePos(a))) && selection.box().isEmpty(), "first corner");
-            context.assertTrue(!ZoneCartridgeItem.scroll(player, stack, 1), "no box yet: nothing to move");
-            stack.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND, hit(context, b)));
+            // The editor's button: the page in hand in zone mode
+            context.assertTrue(MiniGamePageNetworking.action(player, new MiniGamePagePayloads.Action(Hand.MAIN_HAND, id, MiniGamePagePayloads.Action.Kind.DRAW_ZONE)),
+                    "« Tracer la zone »");
+            context.assertTrue(PageZoneTool.isInMode(stack) && PageZoneTool.corner(stack).isEmpty(), "zone mode, no corner yet");
+
+            // Two clicks: two corners, the page's zone (a controller clicked is a corner, it does not take the page)
+            home(context, HOME, null);
+            context.assertEquals(UseBlockCallback.EVENT.invoker().interact(player, world, Hand.MAIN_HAND, hit(context, HOME)), ActionResult.SUCCESS,
+                    "in the mode, every block is a corner");
+            context.assertTrue(MiniGamePages.isPage(player.getMainHandStack()) && this.<MiniGameControllerBlockEntity>at(context, HOME).getPage().isEmpty(),
+                    "the controller did not take the page");
+            context.assertEquals(PageZoneTool.corner(stack), Optional.of(global(context, HOME)), "first corner");
+            context.assertTrue(!PageZoneTool.scroll(player, stack, 1), "no zone yet: nothing to move");
+            UseBlockCallback.EVENT.invoker().interact(player, world, Hand.MAIN_HAND, hit(context, a));
+            BlockBox first = BlockBox.create(context.getAbsolutePos(HOME), context.getAbsolutePos(a));
+            context.assertEquals(MiniGamePages.get(server, id).zone(), new PageZone(world.getRegistryKey(), first), "second corner: the page's zone");
+            context.assertTrue(PageZoneTool.isInMode(stack) && PageZoneTool.corner(stack).isEmpty(), "still in the mode, no corner");
+            PageZoneTool.click(player, stack, context.getAbsolutePos(a));
+            PageZoneTool.click(player, stack, context.getAbsolutePos(b));
             BlockBox box = BlockBox.create(context.getAbsolutePos(a), context.getAbsolutePos(b));
-            context.assertEquals(ZoneCartridgeItem.selection(stack), new ZoneSelection(world.getRegistryKey(), Optional.empty(), Optional.of(box)), "second corner: the box");
-            context.assertEquals(ZoneCartridgeItem.zone(stack), Optional.of(new PageZone(world.getRegistryKey(), box)), "the cartridge carries the zone");
+            context.assertEquals(MiniGamePages.get(server, id).zone(), new PageZone(world.getRegistryKey(), box), "drawn again");
+
+            // Too big: refused, the first corner kept
+            PageZoneTool.click(player, stack, context.getAbsolutePos(a));
+            context.assertTrue(!PageZoneTool.click(player, stack, context.getAbsolutePos(a).east(PageZone.MAX_SIDE + 5)), "too big: refused");
+            context.assertEquals(MiniGamePages.get(server, id).zone().box(), box, "the zone stays");
+            context.assertEquals(PageZoneTool.corner(stack), Optional.of(global(context, a)), "the first corner is kept for another try");
+            context.assertTrue(PageZoneTool.click(PageZoneTool.corner(stack), GlobalPos.create(World.NETHER, BlockPos.ORIGIN)).corner().isPresent(),
+                    "another dimension: a first corner there");
+            PageZoneTool.click(player, stack, context.getAbsolutePos(b));
 
             // From outside, looking east at its west face
             lookFrom(context, player, -2.5, 2, 3.5, -90, 0);
-            context.assertTrue(!ZoneCartridgeItem.scroll(player, stack, 1), "not sneaking: the wheel is the hotbar's");
+            context.assertTrue(!PageZoneTool.scroll(player, stack, 1), "not sneaking: the wheel is the hotbar's");
             player.setSneaking(true);
-            context.assertTrue(ZoneCartridgeItem.scroll(player, stack, 1), "sneak + wheel up");
-            context.assertEquals(ZoneCartridgeItem.selection(stack).box().get().getMinX(), box.getMinX() - 1, "the west face moved outward by one");
-            context.assertTrue(ZoneCartridgeItem.scroll(player, stack, -ZoneCartridgeItem.FAST_STEP), "sneak + Ctrl + wheel down");
-            context.assertEquals(ZoneCartridgeItem.selection(stack).box().get().getMinX(), box.getMinX() + 3, "inward by four, never thinner than a block");
-            context.assertTrue(!ZoneCartridgeItem.scroll(player, stack, -1), "one block thick: refused");
-            context.assertTrue(ZoneCartridgeItem.scroll(player, stack, 50), "a made-up amount");
-            context.assertEquals(ZoneCartridgeItem.selection(stack).box().get().getMinX(), box.getMinX() - 1, "moves four blocks at most");
-
+            context.assertTrue(PageZoneTool.scroll(player, stack, 1), "sneak + wheel up");
+            context.assertEquals(MiniGamePages.get(server, id).zone().box().getMinX(), box.getMinX() - 1, "the west face moved outward by one");
+            context.assertTrue(PageZoneTool.scroll(player, stack, -PageZoneTool.FAST_STEP), "sneak + Ctrl + wheel down");
+            context.assertEquals(MiniGamePages.get(server, id).zone().box().getMinX(), box.getMinX() + 3, "inward by four, never thinner than a block");
+            context.assertTrue(!PageZoneTool.scroll(player, stack, -1), "one block thick: refused");
+            context.assertTrue(PageZoneTool.scroll(player, stack, 50), "a made-up amount");
+            context.assertEquals(MiniGamePages.get(server, id).zone().box().getMinX(), box.getMinX() - 1, "moves four blocks at most");
             // Looking away: no face; from inside, looking up: the top face
             lookFrom(context, player, -2.5, 2, 3.5, 90, 0);
-            context.assertTrue(!ZoneCartridgeItem.scroll(player, stack, 1), "no face looked at: nothing moves");
+            context.assertTrue(!PageZoneTool.scroll(player, stack, 1), "no face looked at: nothing moves");
             lookFrom(context, player, 3.5, 2, 3.5, 0, -90);
-            context.assertTrue(ZoneCartridgeItem.scroll(player, stack, 1), "from inside");
-            context.assertEquals(ZoneCartridgeItem.selection(stack).box().get().getMaxY(), box.getMaxY() + 1, "the top face moved up");
-            // Another hand's cartridge is not moved by the main hand's wheel
-            context.assertTrue(!ZoneCartridgeItem.scroll(player, new ItemStack(Blocks.STONE), 1), "only a Zone Cartridge");
+            context.assertTrue(PageZoneTool.scroll(player, stack, 1), "from inside");
+            context.assertEquals(MiniGamePages.get(server, id).zone().box().getMaxY(), box.getMaxY() + 1, "the top face moved up");
+            context.assertTrue(!PageZoneTool.scroll(player, pageItem(id), 1), "only a page in zone mode");
             player.setSneaking(false);
 
-            // A new first corner keeps the box until the second one
-            stack.useOnBlock(new ItemUsageContext(player, Hand.MAIN_HAND, hit(context, b)));
-            context.assertTrue(ZoneCartridgeItem.selection(stack).corner().isPresent() && ZoneCartridgeItem.selection(stack).box().isPresent(), "a new corner, the box kept");
-            context.assertEquals(ZoneCartridgeItem.click(ZoneCartridgeItem.selection(stack), net.minecraft.world.World.NETHER, BlockPos.ORIGIN),
-                    new ZoneSelection(net.minecraft.world.World.NETHER, Optional.of(BlockPos.ORIGIN), Optional.empty()), "another dimension: another selection");
-
-            // Sneak + click in the air: cleared
-            context.assertEquals(stack.use(world, player, Hand.MAIN_HAND), ActionResult.PASS, "a plain click in the air does nothing");
-            context.assertTrue(ZoneCartridgeItem.selection(stack) != null, "kept");
+            // Sneak + click in the air: the mode ends, the zone stays
             player.setSneaking(true);
-            stack.use(world, player, Hand.MAIN_HAND);
+            context.assertTrue(stack.use(world, player, Hand.MAIN_HAND).isAccepted(), "sneak + click in the air");
             player.setSneaking(false);
-            context.assertTrue(ZoneCartridgeItem.selection(stack) == null && ZoneCartridgeItem.zone(stack).isEmpty(), "sneak + click in the air: cleared");
+            context.assertTrue(!PageZoneTool.isInMode(stack) && MiniGamePages.get(server, id).zone() != null, "the mode ended, the zone stays");
+            // Opening the editor ends it too
+            PageZoneTool.start(player, Hand.MAIN_HAND);
+            MiniGamePageNetworking.open(player, Hand.MAIN_HAND);
+            context.assertTrue(!PageZoneTool.isInMode(stack), "the editor opened: the mode ended");
+            // Put away (out of the hands): it ends
+            PageZoneTool.start(player, Hand.MAIN_HAND);
+            player.getInventory().setStack(5, stack);
+            player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+            stack.inventoryTick(world, player, 5, false);
+            context.assertTrue(!PageZoneTool.isInMode(stack), "put away: the mode ended");
+
+            // Without the right to build: no mode, and a page in the mode draws nothing
+            player.setStackInHand(Hand.MAIN_HAND, stack);
+            player.getInventory().setStack(5, ItemStack.EMPTY);
+            PageZoneTool.start(player, Hand.MAIN_HAND);
+            player.changeGameMode(GameMode.ADVENTURE);
+            context.assertTrue(!PageZoneTool.start(player, Hand.MAIN_HAND) || !MiniGamePages.canEdit(player), "adventure: no mode");
+            PageZoneTool.click(player, stack, context.getAbsolutePos(a));
+            context.assertTrue(PageZoneTool.corner(stack).isEmpty() && !PageZoneTool.isInMode(stack), "adventure: no corner, and the mode ends");
+            player.changeGameMode(GameMode.CREATIVE);
+
+            // The editor's ×: the page has no zone any more
+            context.assertTrue(MiniGamePageNetworking.action(player, new MiniGamePagePayloads.Action(Hand.MAIN_HAND, id, MiniGamePagePayloads.Action.Kind.CLEAR_ZONE)),
+                    "the zone cleared");
+            context.assertTrue(MiniGamePages.get(server, id).zone() == null, "no zone");
+            context.assertTrue(MiniGamePages.get(server, id).withZone(new PageZone(world.getRegistryKey(), new BlockBox(0, 0, 0, PageZone.MAX_SIDE, 1, 1))).zone() == null,
+                    "a page never holds a zone too big");
         } finally {
-            cleanUp(context, UUID.randomUUID(), player);
+            cleanUp(context, id, player);
         }
         context.complete();
     }
 
+    @SuppressWarnings("unchecked")
+    private <T> T at(TestContext context, BlockPos pos) {
+        return (T) context.getBlockEntity(pos);
+    }
+
     /**
-     * The cartridge in a controller gives its zone to the mini-game of the controller's page ({@code zoneOf}); no
-     * page, no cartridge, no box or a box too big: no zone. The zone is saved with the controllers.
+     * The zone is the page's: its linked copies share it (drawn with one, seen through the others), a page unlinked
+     * takes a copy of it of its own; every reader of the zone reads the page (no controller needed), saved and sent
+     * with the page; the controller's screen has no slot for it any more and shows the page's.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_zone_of")
-    public void theCartridgeInAControllerIsTheZoneOfItsPage(TestContext context) {
+    public void theZoneIsThePagesAndSharedByItsCopies(TestContext context) {
         ServerPlayerEntity player = player(context, "z", 4.5, 1, 4.5);
         MinecraftServer server = context.getWorld().getServer();
         ServerWorld world = context.getWorld();
@@ -611,57 +668,106 @@ public class MiniGameControllerGameTests implements FabricGameTest {
         try {
             BlockBox box = new BlockBox(10, 60, 10, 30, 70, 40);
             PageZone zone = new PageZone(world.getRegistryKey(), box);
-            ItemStack cartridge = new ItemStack(ModItems.ZONE_CARTRIDGE);
-            cartridge.set(ModComponents.ZONE_SELECTION, new ZoneSelection(world.getRegistryKey(), Optional.empty(), Optional.of(box)));
+            ItemStack original = pageItem(id), copy = MiniGamePages.linkedCopy(original, 1);
+            player.setStackInHand(Hand.MAIN_HAND, copy);
+            PageZoneTool.start(player, Hand.MAIN_HAND);
+            PageZoneTool.click(player, copy, new BlockPos(10, 60, 10));
+            PageZoneTool.click(player, copy, new BlockPos(30, 70, 40));
+            context.assertEquals(MiniGamePages.of(server, original).zone(), zone, "drawn with a linked copy: the zone of every copy");
 
+            // Its readers: no controller needed
+            context.assertEquals(MiniGameControllers.zoneOf(server, id), Optional.of(zone), "the zone of the page's mini-game, without controller");
+            context.assertTrue(MiniGameArena.zoneOf(server, id) != null && MiniGameArena.zoneOf(server, id).box().equals(box), "the bubble's zone");
+            // Saved and sent with the page
+            context.assertEquals(MiniGamePageData.fromNbt(MiniGamePages.get(server, id).toNbt()).zone(), zone, "saved with the page");
+            net.minecraft.network.PacketByteBuf buf = new net.minecraft.network.PacketByteBuf(io.netty.buffer.Unpooled.buffer());
+            MiniGamePageData.PACKET_CODEC.encode(buf, MiniGamePages.get(server, id));
+            context.assertEquals(MiniGamePageData.PACKET_CODEC.decode(buf).zone(), zone, "sent with the page");
+
+            // The controller: one slot, the page's; its screen shows the page's zone
             MiniGameControllerBlockEntity controller = home(context, HOME, id);
-            context.assertTrue(MiniGameControllers.zoneOf(server, id).isEmpty(), "a controller without cartridge: no zone");
-            // A click with the cartridge puts it in its slot
-            player.setStackInHand(Hand.MAIN_HAND, cartridge);
-            context.getBlockState(HOME).onUseWithItem(player.getMainHandStack(), world, player, Hand.MAIN_HAND, hit(context, HOME));
-            context.assertTrue(player.getMainHandStack().isEmpty() && controller.getCartridge().isOf(ModItems.ZONE_CARTRIDGE), "the cartridge went in");
-            context.assertEquals(MiniGameControllers.zoneOf(server, id), Optional.of(zone), "the zone of the page's mini-game");
             MiniGameControllerScreenHandler screen = new MiniGameControllerScreenHandler(1, player.getInventory(), controller);
-            context.assertTrue(java.util.Arrays.equals(screen.zoneSize(), new int[]{21, 11, 31}), "its screen shows the size of the zone");
-            context.assertTrue(!screen.getSlot(MiniGameControllerScreenHandler.SLOT_ZONE).canInsert(pageItem(id))
-                    && screen.getSlot(MiniGameControllerScreenHandler.SLOT_ZONE).canInsert(new ItemStack(ModItems.ZONE_CARTRIDGE)), "the zone slot only takes Zone Cartridges");
+            context.assertTrue(MiniGameControllerScreenHandler.PLAYER_SLOTS == 1 && screen.slots.size() == 1 + 36, "one slot of its own, then the inventory");
+            context.assertTrue(!screen.getSlot(MiniGameControllerScreenHandler.SLOT_PAGE).canInsert(new ItemStack(Items.STONE)), "its slot only takes pages");
+            context.assertTrue(java.util.Arrays.equals(screen.zoneSize(), new int[]{21, 11, 31}), "its screen shows the size of the page's zone");
+            context.assertEquals(controller.getZone(), Optional.of(zone), "the controller's zone is its page's");
+            ItemStack stone = new ItemStack(Items.STONE, 3);
+            player.getInventory().setStack(9, stone);
+            screen.quickMove(player, 1 + 0);
+            context.assertTrue(player.getInventory().getStack(9).getCount() == 3, "a shift-click on anything else: nothing goes in");
 
-            // Saved with the controllers
-            MiniGameControllers read = MiniGameControllers.fromNbt(MiniGameControllers.get(server).writeNbt(new NbtCompound(), world.getRegistryManager()),
-                    world.getRegistryManager());
-            context.assertTrue(read.zone(id).equals(Optional.of(zone)) && read.home(id).equals(Optional.of(global(context, HOME))), "the home and the zone are saved");
-
-            // The page out: no zone; back in: the zone again
-            ItemStack page = controller.getPage();
-            controller.setPage(ItemStack.EMPTY);
-            context.assertTrue(MiniGameControllers.zoneOf(server, id).isEmpty(), "no page in the controller: no zone");
-            controller.setPage(page);
-            context.assertEquals(MiniGameControllers.zoneOf(server, id), Optional.of(zone), "the page back: its zone again");
-
-            // A cartridge without box, or with a box too big: no zone
-            controller.setCartridge(new ItemStack(ModItems.ZONE_CARTRIDGE));
-            context.assertTrue(MiniGameControllers.zoneOf(server, id).isEmpty(), "a blank cartridge: no zone");
-            ItemStack big = new ItemStack(ModItems.ZONE_CARTRIDGE);
-            big.set(ModComponents.ZONE_SELECTION, new ZoneSelection(world.getRegistryKey(), Optional.empty(), Optional.of(new BlockBox(0, 60, 0, 200, 70, 40))));
-            controller.setCartridge(big);
-            context.assertTrue(MiniGameControllers.zoneOf(server, id).isEmpty(), "a box too big: no zone");
-            screen.onButtonClick(player, MiniGameControllerScreenHandler.BUTTON_READY);
-            context.assertEquals(screen.zoneSize()[0], 201, "its screen still shows its size (in red)");
-            ItemStack good = new ItemStack(ModItems.ZONE_CARTRIDGE);
-            good.set(ModComponents.ZONE_SELECTION, new ZoneSelection(world.getRegistryKey(), Optional.empty(), Optional.of(box)));
-            controller.setCartridge(good);
-            context.assertEquals(MiniGameControllers.zoneOf(server, id), Optional.of(zone), "a good cartridge again");
-
-            // Sneaking, empty hands: the page first, then the cartridge
-            player.setSneaking(true);
-            context.getBlockState(HOME).onUse(world, player, hit(context, HOME));
-            context.assertTrue(MiniGamePages.isPage(player.getMainHandStack()) && MiniGameControllers.zoneOf(server, id).isEmpty(), "the page came back first");
-            player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
-            context.getBlockState(HOME).onUse(world, player, hit(context, HOME));
-            player.setSneaking(false);
-            context.assertTrue(player.getMainHandStack().isOf(ModItems.ZONE_CARTRIDGE) && controller.getCartridge().isEmpty(), "then the cartridge");
+            // Unlinked: a copy of the zone of its own
+            MiniGamePageData unlinked = MiniGamePages.unlink(server, copy);
+            context.assertTrue(unlinked != null && !unlinked.id().equals(id) && zone.equals(unlinked.zone()), "unlinked: a page of its own, with a copy of the zone");
+            MiniGamePages.update(server, unlinked.withZone(null));
+            context.assertEquals(MiniGamePages.get(server, id).zone(), zone, "its zone cleared: the other page keeps its own");
+            context.assertTrue(new MiniGameControllerScreenHandler(2, player.getInventory(), controller).zoneSize()[0] == 21, "the controller's page still has its zone");
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(null));
+            context.assertTrue(new MiniGameControllerScreenHandler(3, player.getInventory(), controller).zoneSize()[0] == 0, "no zone: « Pas de zone »");
+            context.assertTrue(MiniGameControllers.zoneOf(server, id).isEmpty() && MiniGameArena.zoneOf(server, id) == null, "nor for its readers");
         } finally {
             cleanUp(context, id, player);
+        }
+        context.complete();
+    }
+
+    /**
+     * A zone kept by an earlier version, in a controller's Zone Cartridge (in its slot, and with the controllers'
+     * homes), goes to the page when it has none; a page with a zone keeps its own. The cartridge is gone: an item the
+     * game no longer knows, it reads as nothing.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_zone_migration")
+    public void aCartridgeZoneMovesIntoItsPage(TestContext context) {
+        MinecraftServer server = context.getWorld().getServer();
+        ServerWorld world = context.getWorld();
+        net.minecraft.registry.RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
+        UUID id = page(context), other = page(context), kept = page(context);
+        try {
+            BlockBox box = new BlockBox(10, 60, 10, 30, 70, 40), own = new BlockBox(0, 60, 0, 3, 63, 3);
+            PageZone zone = new PageZone(world.getRegistryKey(), box);
+            MiniGamePages.update(server, MiniGamePages.get(server, kept).withZone(new PageZone(world.getRegistryKey(), own)));
+
+            // In a controller's slot, as saved before
+            NbtCompound cartridge = new NbtCompound();
+            cartridge.putString("id", "steveparty:zone_cartridge");
+            cartridge.putInt("count", 1);
+            NbtCompound selection = new NbtCompound();
+            selection.putString("dimension", world.getRegistryKey().getValue().toString());
+            selection.put("box", BlockBox.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, box).getOrThrow());
+            NbtCompound components = new NbtCompound();
+            components.put("steveparty:zone-selection", selection);
+            cartridge.put("components", components);
+            context.assertTrue(ItemStack.fromNbt(registries, cartridge).isEmpty(), "the cartridge is an unknown item: it reads as nothing");
+            context.assertEquals(MiniGameControllerBlockEntity.oldZone(cartridge), zone, "its zone is read from what was saved");
+
+            MiniGameControllerBlockEntity controller = home(context, HOME, null);
+            NbtCompound saved = controller.createNbt(registries);
+            saved.put("Page", pageItem(id).toNbt(registries));
+            saved.put("ZoneCartridge", cartridge);
+            controller.read(saved, registries);
+            controller.serverTick(world);
+            context.assertEquals(MiniGamePages.get(server, id).zone(), zone, "the controller's page took the zone of its cartridge");
+            context.assertTrue(!controller.createNbt(registries).contains("ZoneCartridge"), "the cartridge is gone");
+
+            // With the controllers' homes, as saved before
+            NbtCompound homes = new NbtCompound();
+            net.minecraft.nbt.NbtList list = new net.minecraft.nbt.NbtList();
+            for (UUID page : List.of(other, kept)) {
+                NbtCompound home = new NbtCompound();
+                home.putUuid("Page", page);
+                home.putString("Dimension", world.getRegistryKey().getValue().toString());
+                home.putLong("Pos", context.getAbsolutePos(HOME).asLong());
+                home.put("Zone", PageZone.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, zone).getOrThrow());
+                list.add(home);
+            }
+            homes.put("Homes", list);
+            MiniGameControllers read = MiniGameControllers.fromNbt(homes, registries);
+            read.adoptOldZones(server);
+            context.assertEquals(MiniGamePages.get(server, other).zone(), zone, "a page without zone takes the one saved with its home");
+            context.assertEquals(MiniGamePages.get(server, kept).zone().box(), own, "a page with a zone keeps its own");
+            context.assertTrue(!read.writeNbt(new NbtCompound(), registries).getList("Homes", 10).getCompound(0).contains("Zone"), "the homes no longer keep zones");
+        } finally {
+            cleanUp(context, id);
         }
         context.complete();
     }

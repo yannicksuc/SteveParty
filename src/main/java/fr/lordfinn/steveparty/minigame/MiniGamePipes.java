@@ -45,8 +45,18 @@ import java.util.function.Predicate;
  *     a team A pipe... A player who goes in the mini-game pipe's own mouth, or by a colour the page has no pipe for,
  *     comes out of the default arrival: the first role with a pipe among {@link #DEFAULT_ARRIVALS} (the entry pipes
  *     first). Each role's pipes in turn, or at random if the page says so. However far, in any dimension.</li>
- *     <li><b>Exit</b>: a player going in an exit pipe goes back where it came from: in a party, where it stood before
- *     the mini-game; out of a party, out of the mouth it went in by to come.</li>
+ *     <li><b>Ways out</b>: during a round (a party's, or one played out of a party) and for those who came by a
+ *     mini-game pipe, every pipe linked to the page is a way out of the mini-game, the exit pipe as the others. The
+ *     player leaves the mini-game (in a round: as by the exit pipe before, he is no longer one of its players; his
+ *     places and his gains stay as the round gives them) and his name loses its side's colour; he comes out:
+ *     <ol>
+ *         <li>of the mouth he went in by to come by a mini-game pipe, if he came that way;</li>
+ *         <li>else of the mini-game pipe programmed with the page nearest to him (same dimension, straight distance,
+ *         from {@link MiniGamePipeIndex}: its chunk does not need to be loaded);</li>
+ *         <li>else where he stood before the round sent him (the round's return position).</li>
+ *     </ol>
+ *     The mouth he comes out of stays closed to him until he moves away (no bounce back in). Out of any round, for the
+ *     others, the linked pipes are pipes like any other.</li>
  * </ul>
  * Only players are concerned: mobs and items travel through these pipes like through any other. Nothing is scanned:
  * the pages are asked when a player goes in a mouth ({@link PipeTravel.Gate}).
@@ -64,8 +74,11 @@ public final class MiniGamePipes {
     }
 
     private static final Map<UUID, Visit> VISITS = new HashMap<>();
-    /** A player in a party's mini-game: how it leaves by an exit pipe, and whether that mini-game is still on. */
-    private record Seat(Predicate<ServerPlayerEntity> leave, BooleanSupplier stillOn) {
+    /**
+     * A player in a round: its page, how it leaves the round (it returns where the round would have brought it back,
+     * null if nowhere; the player is not moved), and whether that round is still on.
+     */
+    private record Seat(UUID page, java.util.function.Function<ServerPlayerEntity, MiniGameReturns.@Nullable Return> leave, BooleanSupplier stillOn) {
     }
 
     private static final Map<UUID, Seat> IN_PARTY = new HashMap<>();
@@ -194,26 +207,39 @@ public final class MiniGamePipes {
         return opening != null && PipeTravel.emerge(world, new PipeNetworks.End(link.mouth().pos(), opening, false), player, PipeTravel.BASE_SPEED);
     }
 
+    /**
+     * A round sends its player out of the pipe of his side ({@link #emerge}): his name takes the colour of that pipe
+     * until he leaves the round ({@link MiniGameNameColors}).
+     */
+    public static boolean emergeInRound(MinecraftServer server, MiniGamePipeLink link, ServerPlayerEntity player, @Nullable UUID page) {
+        boolean out = emerge(server, link, player);
+        if (out && page != null) MiniGameNameColors.apply(player, link.role(), page);
+        return out;
+    }
+
     // ------------------------------------------------------------------ party
 
     /**
-     * {@code player} is in a party's mini-game: it travels for free, and an exit pipe makes it leave with {@code leave}
-     * (false if it can't) until {@link #leaveParty}, or until {@code stillOn} says the mini-game is over (a party
-     * controller broken while it was played).
+     * {@code player} is in a round of the mini-game of {@code page}: it travels for free, and a pipe linked to the page
+     * makes it leave with {@code leave} (see the class) until {@link #leaveParty}, or until {@code stillOn} says the
+     * round is over (a party controller broken while it was played).
      */
-    public static void enterParty(UUID player, Predicate<ServerPlayerEntity> leave, BooleanSupplier stillOn) {
-        IN_PARTY.put(player, new Seat(leave, stillOn));
+    public static void enterParty(UUID player, UUID page, java.util.function.Function<ServerPlayerEntity, MiniGameReturns.@Nullable Return> leave,
+                                  BooleanSupplier stillOn) {
+        IN_PARTY.put(player, new Seat(page, leave, stillOn));
         VISITS.remove(player);
     }
 
     public static void leaveParty(UUID player) {
         IN_PARTY.remove(player);
+        MiniGameNameColors.restore(player);
     }
 
     public static boolean isInParty(UUID player) {
         Seat seat = IN_PARTY.get(player);
         if (seat != null && !seat.stillOn().getAsBoolean()) {
             IN_PARTY.remove(player);
+            MiniGameNameColors.restore(player);
             return false;
         }
         return seat != null;
@@ -289,6 +315,8 @@ public final class MiniGamePipes {
             ServerWorld there = link == null ? null : server.getWorld(link.mouth().dimension());
             Direction opening = there == null ? null : openingOf(there, link);
             if (opening == null) return null;
+            // The zone of the mini-game, if it has one: its bubble of visits
+            if (!MiniGameArena.visit(server, data.id(), player)) return null;
             if (enteredBy != null) {
                 VISITS.put(player.getUuid(), new Visit(data.id(), GlobalPos.create(world.getRegistryKey(), enteredBy.pos()), enteredBy.dir()));
             }
@@ -308,23 +336,68 @@ public final class MiniGamePipes {
         if (programmed != null && !isInParty(id) && DEFAULT_ARRIVALS.stream().anyMatch(role -> !programmed.pipes(role).isEmpty())) {
             return new PipeTravel.Passage(traveller -> {
                 MiniGamePipeLink link = arrivalFrom(world, mouth, programmed, null, traveller);
-                if (link == null || !emerge(server, link, traveller)) return false;
+                if (link == null || !MiniGameArena.visit(server, programmed.id(), traveller)) return false;
+                if (!emerge(server, link, traveller)) {
+                    MiniGameArena.endVisit(traveller);
+                    return false;
+                }
                 VISITS.put(traveller.getUuid(), new Visit(programmed.id(), here, opening));
                 return true;
             });
         }
         for (MiniGamePagesState.Linked linked : MiniGamePages.linksAt(server, here)) {
-            if (linked.link().role() != MiniGamePipeRole.EXIT) continue;
-            if (isInParty(id)) return new PipeTravel.Passage(IN_PARTY.get(id).leave());
+            UUID page = linked.page().id();
+            Seat seat = isInParty(id) ? IN_PARTY.get(id) : null;
             Visit visit = VISITS.get(id);
-            if (visit == null || !visit.page().equals(linked.page().id())) continue;
-            MiniGamePipeLink back = new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY);
-            return new PipeTravel.Passage(traveller -> {
-                if (!emerge(server, back, traveller)) return false;
-                VISITS.remove(traveller.getUuid());
-                return true;
-            });
+            boolean inRound = seat != null && seat.page().equals(page), visiting = visit != null && visit.page().equals(page);
+            if (!inRound && !visiting) continue;
+            return new PipeTravel.Passage(traveller -> wayOut(server, traveller, page, inRound ? seat : null));
         }
         return null;
+    }
+
+    /**
+     * {@code player} takes a way out of the mini-game of {@code page} (see the class): out of its round, then out of
+     * the mouth he came by, else of the nearest mini-game pipe programmed with the page, else where the round found him.
+     *
+     * @return false if he could be sent nowhere (he comes back out of the mouth he went in)
+     */
+    public static boolean wayOut(MinecraftServer server, ServerPlayerEntity player, UUID page) {
+        Seat seat = isInParty(player.getUuid()) ? IN_PARTY.get(player.getUuid()) : null;
+        return wayOut(server, player, page, seat != null && seat.page().equals(page) ? seat : null);
+    }
+
+    /** {@code player} came to the mini-game of {@code page} by a mini-game pipe, in by {@code mouth}: its first way out. */
+    public static void visit(UUID player, UUID page, GlobalPos mouth, Direction opening) {
+        VISITS.put(player, new Visit(page, mouth, opening));
+    }
+
+    private static boolean wayOut(MinecraftServer server, ServerPlayerEntity player, UUID page, @Nullable Seat seat) {
+        UUID id = player.getUuid();
+        MiniGameReturns.Return back = seat == null ? null : seat.leave().apply(player);
+        leaveParty(id);
+        Visit visit = VISITS.remove(id);
+        // Out of the bubble of the visits first: the way out is out of the zone
+        MiniGameArena.endVisit(player);
+        if (visit != null && emerge(server, new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY), player)) return true;
+        GlobalPos nearest = MiniGamePipeIndex.nearest(server, page, GlobalPos.create(player.getWorld().getRegistryKey(), player.getBlockPos()));
+        if (nearest != null && emerge(server, new MiniGamePipeLink(nearest, Direction.UP, MiniGamePipeRole.ENTRY), player)) return true;
+        return back != null && MiniGameReturns.bringBack(server, id, back);
+    }
+
+    /** {@code player} is no longer visiting a mini-game (he was sent out of its zone): no way out to remember. */
+    public static void forgetVisit(UUID player) {
+        VISITS.remove(player);
+    }
+
+    /** The visits of the mini-game of {@code page} are over (a round of it begins). */
+    public static void forgetVisits(UUID page) {
+        VISITS.values().removeIf(visit -> visit.page().equals(page));
+    }
+
+    /** The page of the round {@code player} is in, null for none. */
+    public static @Nullable UUID roundOf(UUID player) {
+        Seat seat = isInParty(player) ? IN_PARTY.get(player) : null;
+        return seat == null ? null : seat.page();
     }
 }

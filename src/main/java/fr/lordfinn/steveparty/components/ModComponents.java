@@ -121,9 +121,9 @@ public class ModComponents {
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 
-    /** The box a Zone Cartridge is drawing, or has drawn (see ZoneCartridgeItem). */
-    public static final ComponentType<ZoneSelection> ZONE_SELECTION =
-            registerComponent("zone-selection", ZoneSelection.CODEC);
+    /** A Mini-game Page in zone mode: its clicks draw the zone of its page (see PageZoneTool). */
+    public static final ComponentType<PageZoneMode> PAGE_ZONE_MODE =
+            registerComponent("page-zone-mode", PageZoneMode.CODEC);
     /** Legacy: the dimension of {@link #INVENTORY_POS}. */
     public static final ComponentType<net.minecraft.registry.RegistryKey<net.minecraft.world.World>> INVENTORY_DIMENSION =
             registerComponent("inventory-dimension", net.minecraft.world.World.CODEC);

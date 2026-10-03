@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.client.gui.party;
 import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.ToolHud.Plate;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGameText;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -37,7 +36,8 @@ public final class MiniGameCardHud {
     private static final float STAY_TICKS = 20 * 12, STAY_COUNTDOWN_TICKS = 20 * 3;
 
     private static @Nullable MiniGamePageData data;
-    private static MiniGameMode mode = MiniGameMode.FREE_FOR_ALL;
+    /** The index of the page's format played, -1 when not known. */
+    private static int format = -1;
     private static int countdown;
     private static double shownAt, leaveAt, hidingAt = -1, countdownAt;
 
@@ -49,13 +49,12 @@ public final class MiniGameCardHud {
     }
 
     /** Shows the card of a mini-game, or updates it (its countdown). */
-    public static void show(MiniGamePageData page, int modeOrdinal, int seconds) {
+    public static void show(MiniGamePageData page, int formatIndex, int seconds) {
         double now = PartyHud.now();
         if (data == null || hidingAt >= 0) shownAt = now;
         hidingAt = -1;
         data = page;
-        MiniGameMode[] modes = MiniGameMode.values();
-        mode = modes[Math.floorMod(modeOrdinal, modes.length)];
+        format = formatIndex;
         if (seconds != countdown) countdownAt = now;
         countdown = seconds;
         leaveAt = now + (seconds > 0 ? STAY_COUNTDOWN_TICKS : STAY_TICKS);
@@ -93,10 +92,10 @@ public final class MiniGameCardHud {
         if (alpha < 0.08f) return;
         // Slides down into place, leaves upwards
         float slide = (1 - in) * -10 + (1 - out) * -6;
-        draw(context, data, mode, countdown, alpha, slide, now);
+        draw(context, data, format, countdown, alpha, slide, now);
     }
 
-    private static void draw(DrawContext context, MiniGamePageData page, MiniGameMode mode, int countdown, float alpha, float slide, double now) {
+    private static void draw(DrawContext context, MiniGamePageData page, int played, int countdown, float alpha, float slide, double now) {
         TextRenderer font = HudDraw.font();
         int screenWidth = context.getScaledWindowWidth(), screenHeight = context.getScaledWindowHeight();
         boolean hasPicture = page.image() != null;
@@ -111,7 +110,9 @@ public final class MiniGameCardHud {
             width = pictureWidth + 2 * PAD;
             description = page.description().isEmpty() ? List.of()
                     : MiniGamePageTooltipComponent.wrap(font, MiniGameText.parse(page.description()), pictureWidth, MAX_DESCRIPTION_LINES);
-            height = PAD + 12 + (hasPicture ? pictureHeight + 2 + 4 : 0) + 13 + (description.isEmpty() ? 0 : 3 + 10 * description.size()) + PAD;
+            int chipsHeight = fr.lordfinn.steveparty.client.gui.FormatChips.flow(font, page.formats(),
+                    i -> fr.lordfinn.steveparty.client.gui.FormatChips.Look.READ_ONLY, pictureWidth, 3).getLast()[1] + 13;
+            height = PAD + 12 + (hasPicture ? pictureHeight + 2 + 4 : 0) + chipsHeight + (description.isEmpty() ? 0 : 3 + 10 * description.size()) + PAD;
             if (width <= screenWidth - 16 && height <= screenHeight - ROOM_ABOVE - ROOM_BELOW) break;
         }
         int x = (screenWidth - width) / 2;
@@ -138,17 +139,17 @@ public final class MiniGameCardHud {
             top += pictureHeight + 2 + 4;
         }
 
-        // How it is played: the layout drawn for this mini-game, then what the page says of its players
-        Text modeText = mode.text();
-        int chipWidth = font.getWidth(modeText) + 10;
-        Text players = MiniGamePageTooltipComponent.playersText(page);
-        boolean showPlayers = chipWidth + 6 + font.getWidth(players) <= pictureWidth;
-        int rowWidth = chipWidth + (showPlayers ? 6 + font.getWidth(players) : 0);
-        int rowX = x + (width - rowWidth) / 2;
-        HudDraw.plate(context, Plate.GOLD, rowX, top, chipWidth, 12, alpha);
-        HudDraw.text(context, modeText, rowX + 5, top + 2, HudDraw.TEXT, alpha);
-        if (showPlayers) HudDraw.text(context, players, rowX + chipWidth + 6, top + 2, HudDraw.TEXT_SOFT, alpha);
-        top += 13;
+        // How it is played: its formats (pawn chips), the one played gold rimmed; once faded in (the chips don't fade)
+        java.util.List<fr.lordfinn.steveparty.minigame.MiniGameFormat> formats = page.formats();
+        java.util.function.IntFunction<fr.lordfinn.steveparty.client.gui.FormatChips.Look> look =
+                i -> new fr.lordfinn.steveparty.client.gui.FormatChips.Look(false, i == played, false, false, 13);
+        java.util.List<int[]> at = fr.lordfinn.steveparty.client.gui.FormatChips.flow(font, formats, look, pictureWidth, 3);
+        int rowWidth = 0;
+        for (int[] chip : at) if (chip[1] == 0) rowWidth = chip[0] + chip[2];
+        if (alpha > 0.6f) {
+            fr.lordfinn.steveparty.client.gui.FormatChips.drawFlow(context, font, formats, look, x + (width - rowWidth) / 2, top, pictureWidth, 3);
+        }
+        top += at.getLast()[1] + 13;
 
         if (!description.isEmpty()) {
             top += 3;

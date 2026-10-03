@@ -97,7 +97,7 @@ public final class MiniGamePageClient {
         ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Preview.ID, (payload, context) -> context.client().execute(() -> {
             if (payload.show()) {
                 if (!payload.data().id().equals(MiniGamePageData.NO_ID)) put(payload.data());
-                MiniGameCardHud.show(payload.data(), payload.mode(), payload.countdown());
+                MiniGameCardHud.show(payload.data(), payload.format(), payload.countdown());
             } else {
                 MiniGameCardHud.hide();
             }
@@ -108,7 +108,7 @@ public final class MiniGamePageClient {
                 context.client().execute(() -> fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.show(payload)));
         ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.TestStatus.ID, (payload, context) -> context.client().execute(() -> {
             if (context.client().currentScreen instanceof MiniGamePageEditorScreen editor)
-                editor.onTestStatus(payload.page(), payload.status(), payload.players(), payload.mode());
+                editor.onTestStatus(payload.page(), payload.status(), payload.players(), payload.format(), payload.shortfall());
         }));
         ClientPlayNetworking.registerGlobalReceiver(MiniGamePagePayloads.Results.ID, (payload, context) ->
                 context.client().execute(() -> MiniGameResultsHud.show(payload.results())));
