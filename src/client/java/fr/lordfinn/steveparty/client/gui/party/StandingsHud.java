@@ -32,6 +32,7 @@ final class StandingsHud {
     private static final HudPaint.Ramp[] RANKS = {HudPaint.GOLD, HudPaint.SILVER, HudPaint.BRONZE};
 
     private PartyHudModel model;
+    private boolean bubbleLeft;
     private StandingsLayout.Layout layout;
     private final Map<UUID, Row> rows = new HashMap<>();
     private final List<Row> shown = new ArrayList<>();
@@ -57,9 +58,10 @@ final class StandingsHud {
         return layout == null ? 0 : layout.height();
     }
 
-    void update(PartyHudModel model, int room, double now) {
-        if (model == this.model) return;
+    void update(PartyHudModel model, int room, double now, boolean bubbleLeft) {
+        if (model == this.model && bubbleLeft == this.bubbleLeft) return;
         this.model = model;
+        this.bubbleLeft = bubbleLeft;
         // The players, best first (the turn order between equals)
         List<StandingsLayout.Entry> ranked = new ArrayList<>();
         for (int i = 0; i < model.players.size(); i++) {
@@ -68,7 +70,7 @@ final class StandingsHud {
                     Math.min(StandingsLayout.BONUS_SLOTS, p.bonuses.size()), p.mine));
         }
         ranked.sort((a, b) -> Integer.compare(a.rank(), b.rank()));
-        layout = StandingsLayout.layout(ranked, ClientHudTexts.INSTANCE);
+        layout = StandingsLayout.layout(ranked, ClientHudTexts.INSTANCE, bubbleLeft);
         Map<UUID, Row> kept = new HashMap<>();
         shown.clear();
         gaps.clear();
@@ -99,7 +101,7 @@ final class StandingsHud {
         if (model == null || layout == null || alpha <= 0.02f) return;
         float delta = (float) MathHelper.clamp(now - lastFrame, 0, 5);
         lastFrame = now;
-        int px = StandingsLayout.PLATE_X;
+        int px = layout.plateX();
         // The header: the items over their columns, « bonus » over its slots
         if (alpha > 0.6f) {
             icon(context, model.starItem, px + layout.starColumn() + (layout.digitsWidth() - 16) / 2 + 1, 4);
@@ -129,15 +131,15 @@ final class StandingsHud {
     private void drawRow(DrawContext context, Row row, int y, float alpha, double now) {
         StandingsLayout.Entry entry = row.entry;
         PartyHudModel.Player player = row.player;
-        int px = StandingsLayout.PLATE_X, h = StandingsLayout.ROW_H;
+        int px = layout.plateX(), h = StandingsLayout.ROW_H, rx = layout.rankX();
         // The rank medallion
         int rank = entry.rank();
         HudPaint.Ramp rampRank = rank >= 1 && rank <= 3 && model.hasStandings ? RANKS[rank - 1] : HudPaint.NEUTRAL;
         int d = StandingsLayout.BADGE;
-        HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, rampRank, HudPaint.OUTLINE | HudPaint.BAND), 4 - PAD, y + 1 - PAD, alpha);
+        HudPaint.draw(context, HudPaint.shape(Form.PILL, d, d, rampRank, HudPaint.OUTLINE | HudPaint.BAND), rx - PAD, y + 1 - PAD, alpha);
         String r = model.hasStandings ? Integer.toString(rank) : "-";
         int rw = ClientHudTexts.INSTANCE.width(r);
-        TurnBarHud.darkText(context, r, 4 + (d - rw - 1) / 2, y + 1 + (d - 8) / 2, rampRank.outline(),
+        TurnBarHud.darkText(context, r, rx + (d - rw - 1) / 2, y + 1 + (d - 8) / 2, rampRank.outline(),
                 rampRank == HudPaint.NEUTRAL ? 0xFFFFFFFF : rampRank.hi(), alpha);
         // The plate, the head, the pawn's name
         HudPaint.draw(context, HudPaint.shape(Form.PILL, layout.plateWidth(), h, player.ramp.pastel(), HudPaint.SHADOW | HudPaint.OUTLINE | HudPaint.BAND),
@@ -162,9 +164,11 @@ final class StandingsHud {
             }
         }
         if (entry.mine()) {
-            int bx = px + layout.plateWidth() + GAP + 1;
-            HudPaint.draw(context, HudPaint.bubble(layout.bubbleWidth(), true), bx - PAD, y + 1 - PAD, alpha);
-            TurnBarHud.darkText(context, ClientHudTexts.INSTANCE.toi(), bx + 3 + 4, y + 1 + 2, HudPaint.GOLD.outline(), HudPaint.GOLD.hi(), alpha);
+            // « toi » after my row, or before it pointing right when the table is anchored on the right
+            int bx = layout.bubbleX();
+            boolean left = layout.bubbleLeft();
+            HudPaint.draw(context, HudPaint.bubble(layout.bubbleWidth(), left ? HudPaint.Pointer.RIGHT : HudPaint.Pointer.LEFT), bx - PAD, y + 1 - PAD, alpha);
+            TurnBarHud.darkText(context, ClientHudTexts.INSTANCE.toi(), bx + (left ? 0 : 3) + 4, y + 1 + 2, HudPaint.GOLD.outline(), HudPaint.GOLD.hi(), alpha);
         }
     }
 
