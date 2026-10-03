@@ -202,7 +202,7 @@ public final class PartyHud {
             if (turnBar) bar[1] = Math.min(notice[1] + notice[3] + 2, Math.max(0, screenHeight - bar[3]));
             return;
         }
-        float top = turnBar ? bar[1] + bar[3] : PartyHudLayout.MARGIN + TurnBarHud.HEIGHT * scale;
+        float top = turnBar ? bar[1] + bar[3] : PartyHudLayout.MARGIN + TURN_BAR.height() * scale;
         notice[1] = Math.min(top + 2, Math.max(0, screenHeight - notice[3]));
     }
 
@@ -268,7 +268,7 @@ public final class PartyHud {
         float full = screenWidth - 2 * PartyHudLayout.MARGIN;
         if (!standings) return full;
         float scale = PartyHudLayout.get(Hud.TURN_BAR).scale;
-        float height = TurnBarHud.HEIGHT * scale;
+        float height = TURN_BAR.height() * scale;
         float y = PartyHudLayout.y(Hud.TURN_BAR, screenHeight, height);
         float[] list = BOUNDS[Hud.STANDINGS.ordinal()];
         if (y >= list[1] + list[3] || list[1] >= y + height) return full;
@@ -336,8 +336,7 @@ public final class PartyHud {
                 height = TURN_BAR.height();
             }
             case STANDINGS -> {
-                // Anchored on the right: my « toi » bubble goes before my row, the rows end on the screen's edge
-                STANDINGS.update(drawn, (int) (screenHeight * 0.55f / scale), now, placement.anchor.fx > 0.5f);
+                STANDINGS.update(drawn, (int) (screenHeight * 0.55f / scale), now);
                 width = STANDINGS.width();
                 height = STANDINGS.height();
             }

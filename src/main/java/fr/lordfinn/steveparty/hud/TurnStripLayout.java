@@ -168,11 +168,24 @@ public final class TurnStripLayout {
      *
      * @param steps  the step being played first, then the ones to come
      * @param rounds the party's rounds (0 if unknown)
-     * @param me     index in the party's players of the token of this client's player, -1 for none
+     * @param mine   indexes in the party's players of the tokens of this client's player (none: a spectator)
      * @param names  the names of the party's players (their tokens), in their order
      * @param width  the room for the strip, in pixels
      */
-    public record Input(List<Step> steps, int rounds, int me, List<String> names, int width) {
+    public record Input(List<Step> steps, int rounds, java.util.Set<Integer> mine, List<String> names, int width) {
+        /** One token of mine ({@code me}: its index, -1 for none). */
+        public Input(List<Step> steps, int rounds, int me, List<String> names, int width) {
+            this(steps, rounds, me >= 0 ? java.util.Set.of(me) : java.util.Set.of(), names, width);
+        }
+
+        boolean mine(Step step) {
+            return step != null && step.kind() == Kind.TURN && mine.contains(step.player());
+        }
+
+        /** Every token of the party is mine (alone, or playing them all): « toi » says nothing. */
+        boolean allMine() {
+            return !names.isEmpty() && mine.size() >= names.size();
+        }
     }
 
     /**
@@ -189,6 +202,31 @@ public final class TurnStripLayout {
         public El get(String key) {
             for (El el : elements) if (el.key.equals(key)) return el;
             return null;
+        }
+
+        /**
+         * What the bar really draws: from its highest to its lowest drawn row, its leftmost to its rightmost column
+         * ({left, top, right, bottom}, inclusive): the shapes, their outlines and halos, the half-transparent edge of
+         * the halo and the drop shadows under them. Nothing is reserved for what is not shown (the marker on my
+         * turn, the bubbles when there are none).
+         */
+        public int[] drawn() {
+            int left = Integer.MAX_VALUE, top = Integer.MAX_VALUE, right = Integer.MIN_VALUE, bottom = Integer.MIN_VALUE;
+            for (El el : elements) {
+                // A halo's half-transparent edge: a pixel more round it
+                int edge = el.halo ? 1 : 0;
+                int[][] rows = el.profile();
+                for (int row = 0; row < rows.length; row++) {
+                    if (rows[row][0] < 0) continue;
+                    left = Math.min(left, el.x + rows[row][0] - edge);
+                    right = Math.max(right, el.x + rows[row][1] + edge);
+                    top = Math.min(top, el.y + row - edge);
+                    bottom = Math.max(bottom, el.y + row);
+                }
+            }
+            if (left == Integer.MAX_VALUE) return new int[]{0, 0, 0, 0};
+            // The drop shadows: two rows under the lowest shapes
+            return new int[]{left, top, right, bottom + 2};
         }
 
         /** Where the bar's pictures end (its width) and their lowest row (its height). */
@@ -226,7 +264,7 @@ public final class TurnStripLayout {
         for (int i = 1; i < steps.size(); i++) {
             Step s = steps.get(i);
             if (kMini < 0 && s.kind() == Kind.MINI_GAME) kMini = i;
-            if (kMe < 0 && s.kind() == Kind.TURN && s.player() == input.me() && input.me() >= 0) kMe = i;
+            if (kMe < 0 && input.mine(s)) kMe = i;
         }
         int shownRound = Math.max(1, steps.getFirst().round());
         int lastRound = steps.getFirst().round();
@@ -293,7 +331,7 @@ public final class TurnStripLayout {
 
         // Over the current step: the marker (not on my turn); under the strip: my bubbles
         El first = strip.getFirst();
-        boolean mineNow = first.step != null && first.step.kind() == Kind.TURN && first.step.player() == input.me() && input.me() >= 0;
+        boolean mineNow = input.mine(first.step);
         int stripBottom = 0;
         for (El el : strip) stripBottom = Math.max(stripBottom, el.y + el.bottom());
         List<El> bubbles = new ArrayList<>();
@@ -305,12 +343,16 @@ public final class TurnStripLayout {
             marker.y = first.y + first.top() - GAP - MARKER_H - PAD;
             els.add(marker);
         }
-        for (El el : strip) {
-            if (el != first && el.type == Type.PLAYER && el.step.player() == input.me() && input.me() >= 0)
-                bubbles.add(bubbleUnder("toi" + el.key, texts.toi(), el, stripBottom, texts));
+        // « toi » under my next turn only (after the current step), « toi dans N » under « +N » when it is hidden;
+        // neither when every token is mine
+        boolean tell = !input.allMine() && kMe >= 0;
+        if (tell && kMe < cut) {
+            El next = null;
+            for (El el : strip) if (el != first && el.step != null && el.step.key() == steps.get(kMe).key()) next = el;
+            if (next != null) bubbles.add(bubbleUnder("toi" + next.key, texts.toi(), next, stripBottom, texts));
         }
         int toiIn = -1;
-        if (morePill != null && kMe >= cut) {
+        if (tell && morePill != null && kMe >= cut) {
             toiIn = kMe - 1;
             bubbles.add(bubbleUnder("toi_more", texts.toiIn(toiIn), morePill, stripBottom, texts));
         }

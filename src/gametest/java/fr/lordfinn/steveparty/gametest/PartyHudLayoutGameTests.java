@@ -176,6 +176,55 @@ public class PartyHudLayoutGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /**
+     * One « toi » only, under my next turn (not under each of my turns shown); none at all when every token is mine
+     * (alone, or playing them all): only « à toi ! » on my turn.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void oneToiBubbleAtMost(TestContext context) {
+        List<Step> two = party(2, 1, 6, 0);                         // Nora, Tom, the mini-game, Nora, Tom...
+        TurnStripLayout.Result wide = layout(two, 6, 1, NAMES.subList(0, 2), 600);
+        long tois = wide.elements().stream().filter(el -> el.type == Type.BUBBLE && el.key.startsWith("toi") && !el.key.equals("toi_more")).count();
+        long tomShown = wide.elements().stream().filter(el -> el.type == Type.PLAYER && el.step.player() == 1).count();
+        context.assertTrue(tomShown >= 2, "several of my turns on the strip: " + tomShown);
+        context.assertEquals(tois, 1L, "one « toi »");
+        context.assertTrue(wide.get("toi" + "s" + two.get(1).key()) != null, "under my next turn");
+
+        // Solo: every token is mine
+        List<Step> solo = party(1, 1, 10, 0);
+        TurnStripLayout.Result alone = layout(solo, 10, 0, NAMES.subList(0, 1), 400);
+        context.assertTrue(alone.mineNow() && alone.get("toi_now") != null, "my turn: « à toi ! »");
+        context.assertTrue(alone.elements().stream().noneMatch(el -> el.type == Type.BUBBLE && !el.key.equals("toi_now")), "no other bubble");
+        TurnStripLayout.Result aloneMini = layout(solo.subList(1, solo.size()), 10, 0, NAMES.subList(0, 1), 120);
+        context.assertTrue(aloneMini.elements().stream().noneMatch(el -> el.type == Type.BUBBLE), "the mini-game being played: no bubble at all");
+        // Playing all the tokens of the party
+        TurnStripLayout.Result all = TurnStripLayout.layout(new TurnStripLayout.Input(two.subList(1, two.size()), 6, java.util.Set.of(0, 1),
+                NAMES.subList(0, 2), 600), TEXTS);
+        context.assertTrue(all.elements().stream().noneMatch(el -> el.type == Type.BUBBLE && !el.key.equals("toi_now")), "all mine: « à toi ! » only");
+        context.complete();
+    }
+
+    /** The bar's frame hugs what it draws: the marker's row only when it is shown, the bubbles' only when there are some. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void barHugsWhatItDraws(TestContext context) {
+        List<Step> steps = party(4, 3, 12, 1);                     // Tom plays
+        TurnStripLayout.Result spectator = layout(steps, 12, -1, NAMES.subList(0, 4), 236);
+        El marker = spectator.get("marker");
+        int[] drawn = spectator.drawn();
+        context.assertEquals(drawn[1], marker.y + HudShapes.PAD, "the top: the marker's first row");
+        int stripBottom = Integer.MIN_VALUE;
+        for (El el : strip(spectator)) stripBottom = Math.max(stripBottom, el.y + el.bottom());
+        context.assertEquals(drawn[3], stripBottom + 2, "no bubble: the bottom is the strip's drop shadow");
+
+        TurnStripLayout.Result mine = layout(steps.subList(1, steps.size()), 12, 2, NAMES.subList(0, 4), 236);
+        El big = mine.elements().getFirst();
+        context.assertEquals(mine.drawn()[1], big.y + big.top() - 1, "my turn, no marker: the top is the big chip's halo");
+        El bubble = mine.get("toi_now");
+        context.assertEquals(mine.drawn()[3], bubble.y + bubble.bottom() + 2, "« à toi ! »: down to its drop shadow");
+        context.assertTrue(mine.drawn()[1] > drawn[1], "less room over the strip without the marker");
+        context.complete();
+    }
+
     /** Before the turn order: « Départ » big, then the rounds as capsules, « +N » for the others. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void startShowsTheRounds(TestContext context) {

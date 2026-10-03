@@ -50,12 +50,15 @@ final class NoticeHud {
     private double changedAt = -1000, badgeAt = -1000;
     private String lastBadge;
 
+    /** The frame hugs the plates: their outline (a pixel round the shapes) and drop shadow (two rows under them). */
+    private static final int EDGE = PAD - 1;
+
     int width() {
-        return line.width;
+        return line.width - 2 * EDGE;
     }
 
     int height() {
-        return H + 2 * PAD;
+        return 1 + H + 1 + 2;
     }
 
     void update(PartyHudModel model, int room, double now) {
@@ -105,6 +108,13 @@ final class NoticeHud {
     /** Draws the notice with its top-left corner at (0, 0) of the current matrices, centred in its width. */
     void draw(DrawContext context, float alpha, double now) {
         if (model == null || alpha <= 0.02f) return;
+        context.getMatrices().push();
+        context.getMatrices().translate(-EDGE, -EDGE, 0);
+        drawLines(context, alpha, now);
+        context.getMatrices().pop();
+    }
+
+    private void drawLines(DrawContext context, float alpha, double now) {
         float t = (float) ((now - changedAt) / CROSSFADE_TICKS);
         if (t < 1 && previous.text != null) {
             float in = HudDraw.easeOutCubic(t);
