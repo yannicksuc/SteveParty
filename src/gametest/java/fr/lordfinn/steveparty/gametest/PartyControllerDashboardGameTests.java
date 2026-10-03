@@ -526,4 +526,69 @@ public class PartyControllerDashboardGameTests implements FabricGameTest {
         }
         context.complete();
     }
+
+    /**
+     * A controller copied as an item (pick block with its data) gives an item that can be saved and sent, with or
+     * without a catalogue in it: the catalogue component never holds an empty stack.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCopiedControllerIsAValidItem(TestContext context) {
+        PartyControllerEntity controller = place(context);
+        var ops = context.getWorld().getRegistryManager().getOps(com.mojang.serialization.JsonOps.INSTANCE);
+        ItemStack empty = new ItemStack(ModBlocks.PARTY_CONTROLLER);
+        empty.applyComponentsFrom(controller.createComponentMap());
+        context.assertTrue(ItemStack.CODEC.encodeStart(ops, empty).isSuccess(), "empty controller: a valid item");
+        controller.putCatalogue(new ItemStack(ModItems.MINI_GAMES_CATALOGUE));
+        ItemStack full = new ItemStack(ModBlocks.PARTY_CONTROLLER);
+        full.applyComponentsFrom(controller.createComponentMap());
+        context.assertTrue(ItemStack.CODEC.encodeStart(ops, full).isSuccess() && full.get(ModComponents.CATALOGUE) != null,
+                "with its catalogue: a valid item that carries it");
+        context.complete();
+    }
+
+    /**
+     * The catalogue goes in and out by clicking the block only for a player who may edit the controller, and the
+     * redstone lock holds against a swap as against taking it out.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_dashboard_catalogue")
+    public void theCatalogueIsLockedAgainstSwapsAndPlayers(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            PartyControllerEntity controller = place(context);
+            BlockPos pos = context.getAbsolutePos(CONTROLLER);
+            ItemStack first = new ItemStack(ModItems.MINI_GAMES_CATALOGUE);
+            first.set(DataComponentTypes.CUSTOM_NAME, Text.literal("first"));
+            controller.putCatalogue(first);
+            var hit = new net.minecraft.util.hit.BlockHitResult(pos.toCenterPos(), net.minecraft.util.math.Direction.UP, pos, false);
+            var hand = net.minecraft.util.Hand.MAIN_HAND;
+
+            // Powered: a second catalogue does not replace the first
+            context.setBlockState(CONTROLLER.east(), Blocks.REDSTONE_BLOCK);
+            player.changeGameMode(GameMode.SURVIVAL);
+            player.setStackInHand(hand, new ItemStack(ModItems.MINI_GAMES_CATALOGUE));
+            context.getWorld().getBlockState(pos).onUseWithItem(player.getStackInHand(hand), context.getWorld(), player, hand, hit);
+            context.assertTrue(controller.getCatalogue() == first && !player.getStackInHand(hand).isEmpty(),
+                    "powered: the catalogue stays, the one in hand too");
+            context.setBlockState(CONTROLLER.east(), Blocks.AIR);
+
+            // Adventure: neither swapped nor taken out
+            player.changeGameMode(GameMode.ADVENTURE);
+            context.getWorld().getBlockState(pos).onUseWithItem(player.getStackInHand(hand), context.getWorld(), player, hand, hit);
+            context.assertTrue(controller.getCatalogue() == first, "adventure: not swapped");
+            player.setStackInHand(hand, ItemStack.EMPTY);
+            player.setSneaking(true);
+            context.getWorld().getBlockState(pos).onUse(context.getWorld(), player, hit);
+            context.assertTrue(controller.getCatalogue() == first, "adventure: not taken out");
+            PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
+            context.assertTrue(!handler.getSlot(SLOT_CATALOGUE).canTakeItems(player), "adventure: not taken from the screen");
+
+            // A builder takes it out
+            player.changeGameMode(GameMode.SURVIVAL);
+            context.getWorld().getBlockState(pos).onUse(context.getWorld(), player, hit);
+            context.assertTrue(controller.getCatalogue().isEmpty(), "survival: taken out");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+        context.complete();
+    }
 }

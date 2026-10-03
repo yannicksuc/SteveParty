@@ -96,9 +96,12 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
 
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (world.isClient) return ActionResult.PASS;
+        // Taking the catalogue out takes the right to edit the controller (not a party's adventure players)
         if (player.isSneaking()) {
+            if (!(world.getBlockEntity(pos) instanceof PartyControllerEntity controller) || !controller.canEdit(player))
+                return ActionResult.SUCCESS;
             if (world.isReceivingRedstonePower(pos)) {
-                MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.party_controller.catalogue_locked").withColor(Color.RED.getColor()), MessageUtils.MessageType.CHAT);
+                sendCatalogueLocked(player);
                 return ActionResult.PASS;
             }
             ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
@@ -116,11 +119,21 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
         if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
         // The Wrench checks the board (see WrenchActions)
         if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.WrenchItem) return ActionResult.PASS;
-        if (stack.getItem() instanceof MiniGamesCatalogueItem) {
+        // Swapping the catalogue takes the same as taking it out: the right to edit, and no redstone lock
+        if (stack.getItem() instanceof MiniGamesCatalogueItem
+                && world.getBlockEntity(pos) instanceof PartyControllerEntity controller && controller.canEdit(player)) {
+            if (controller.isCatalogueLocked() && !controller.catalogue.isEmpty()) {
+                sendCatalogueLocked(player);
+                return ActionResult.SUCCESS;
+            }
             ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state, player);
             if (success != null) return success;
         }
         return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
+    }
+
+    private static void sendCatalogueLocked(PlayerEntity player) {
+        MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.party_controller.catalogue_locked").withColor(Color.RED.getColor()), MessageUtils.MessageType.CHAT);
     }
 
     private static ActionResult.@Nullable Success toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state) {

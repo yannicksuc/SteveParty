@@ -183,7 +183,16 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     @Override
     protected void addComponents(ComponentMap.Builder componentMapBuilder) {
         super.addComponents(componentMapBuilder);
-        componentMapBuilder.add(CATALOGUE, this.catalogue);
+        // Its codec refuses an empty stack: an empty controller copied (pick block) would give an item that can be
+        // neither sent nor saved
+        if (!catalogue.isEmpty()) componentMapBuilder.add(CATALOGUE, this.catalogue);
+    }
+
+    @Override
+    public void removeFromCopiedStackNbt(NbtCompound nbt) {
+        super.removeFromCopiedStackNbt(nbt);
+        // Carried by the component on a copied item, not twice
+        nbt.remove("catalogue");
     }
 
     @Override
