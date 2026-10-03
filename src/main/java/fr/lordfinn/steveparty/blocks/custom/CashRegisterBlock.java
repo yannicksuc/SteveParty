@@ -35,7 +35,8 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
     private static final Map<Direction, VoxelShape> SHAPES = new HashMap<>();
 
     public CashRegisterBlock(Settings settings) {
-        super(settings.nonOpaque().strength(1.0f));
+        // Mined as easily as before, never broken by an explosion (see ModBlocks.BOARD_RESISTANCE)
+        super(settings.nonOpaque().strength(1.0f, fr.lordfinn.steveparty.blocks.ModBlocks.BOARD_RESISTANCE));
         this.setDefaultState(this.stateManager.getDefaultState()
                 .with(POWERED, false)
                 .with(Properties.HORIZONTAL_FACING, Direction.NORTH));

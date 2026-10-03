@@ -31,6 +31,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ModBlocks {
+    /**
+     * The explosion resistance of the blocks a game is built with (board spaces, controllers, podiums, goal poles,
+     * mini-game pipes, the shop's blocks...), bedrock's: no explosion breaks a board, and they are still mined as
+     * usual. The same blocks are in the {@code minecraft:wither_immune} and {@code minecraft:dragon_immune} tags.
+     */
+    public static final float BOARD_RESISTANCE = 3_600_000f;
     public static final String[] COLORS = {"white", "orange", "magenta", "light_blue",
             "yellow", "lime", "pink", "gray",
             "light_gray", "cyan", "purple", "blue",
@@ -151,7 +157,7 @@ public class ModBlocks {
                                 : new fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock(kind, color, settings),
                         Block.Settings.create()
                                 .mapColor(miniGame ? MapColor.GOLD : kind.colored ? DyeColor.byName(COLORS[i], DyeColor.WHITE).getMapColor() : MapColor.CLEAR)
-                                .strength(miniGame ? 1.5f : kind.isPlastic() ? 1.0f : 0.3f, miniGame ? 6.0f : 1.0f)
+                                .strength(miniGame ? 1.5f : kind.isPlastic() ? 1.0f : 0.3f, miniGame ? BOARD_RESISTANCE : 1.0f)
                                 .sounds(miniGame ? BlockSoundGroup.METAL : kind.isPlastic() ? BlockSoundGroup.BAMBOO_WOOD : BlockSoundGroup.GLASS)
                                 .nonOpaque()
                                 .suffocates((state, world, pos) -> false)
@@ -384,28 +390,28 @@ public class ModBlocks {
 
     public static final Block TRADING_STALL = register(TradingStallBlock::new,
             Block.Settings.create()
-                    .strength(2.5f, 2.5f)
+                    .strength(2.5f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.WOOD)
                     .nonOpaque(),
             "trading_stall", true);
 
     public static final Block STENCIL_MAKER = register(StencilMakerBlock::new,
             Block.Settings.create()
-                    .strength(3.0f, 9.0f)
+                    .strength(3.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
             "stencil_maker", true);
 
     public static final Block ADVANCED_TILE = register(AdvancedTileBlock::new,
             Block.Settings.create()
-                    .strength(2f, 3600000.0f)
+                    .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
             "advanced_tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
 
     public static final Block TILE = register(TileBlock::new,
             Block.Settings.create()
-                    .strength(2f, 3600000.0f)
+                    .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
             "tile", true, fr.lordfinn.steveparty.items.custom.TileBlockItem::new);
@@ -414,7 +420,7 @@ public class ModBlocks {
     public static final Block TILE_PART = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("tile_part")),
             fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock::new,
             Block.Settings.create()
-                    .strength(2f, 3600000.0f)
+                    .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .nonOpaque()
                     .dynamicBounds()
@@ -423,7 +429,7 @@ public class ModBlocks {
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()
-                    .strength(2f, 3600000.0f)
+                    .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.AMETHYST_BLOCK)
                     .nonOpaque()
                     .luminance(state -> 5)
@@ -432,14 +438,14 @@ public class ModBlocks {
 
     public static final Block PARTY_CONTROLLER = register(PartyController::new,
             Block.Settings.create()
-                    .strength(4.0f, 30.0f)
+                    .strength(4.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
             "party_controller", true);
 
     public static final Block MINI_GAME_CONTROLLER = register(MiniGameControllerBlock::new,
             Block.Settings.create()
-                    .strength(4.0f, 30.0f)
+                    .strength(4.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .nonOpaque()
                     .requiresTool(),
@@ -456,7 +462,7 @@ public class ModBlocks {
 
     public static final Block CASH_REGISTER = register(CashRegisterBlock::new,
             Block.Settings.create()
-                    .strength(2.0f, 6.0f)  // Reasonably durable
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)  // Metallic sound for a register
                     .nonOpaque()  // Allows for visual transparency, if any
                     .luminance(state -> 3)  // Low glow to suggest activity or power
@@ -464,7 +470,7 @@ public class ModBlocks {
             "cash_register", true);
     public static final Block STEP_CONTROLLER = register(StepControllerBlock::new,
             Block.Settings.create()
-                    .strength(3.0f, 9.0f)  // Stronger than the cash register due to its mechanical components
+                    .strength(3.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)  // Stone-like sound for a mechanical device
                     .luminance(state -> 5)  // Slightly brighter to signify active operation
                     .nonOpaque()  // Non-opaque to allow transparency for hourglass visualization
@@ -472,7 +478,7 @@ public class ModBlocks {
             "step_controller", true);
     public static final Block PARTY_BELL = register(PartyBellBlock::new,
             Block.Settings.create()
-                    .strength(1.5f, 6.0f)
+                    .strength(1.5f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .nonOpaque()
                     .requiresTool(),
@@ -480,48 +486,48 @@ public class ModBlocks {
     /** Podiums: four looks (classic, gold, silver, bronze); the place of a podium is the height of its column. */
     public static final Block PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.CLASSIC),
             Block.Settings.create()
-                    .strength(2.0f, 6.0f)
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "podium", true);
     public static final Block GOLD_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.GOLD),
             Block.Settings.create()
-                    .strength(2.0f, 6.0f)
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "gold_podium", true);
     public static final Block SILVER_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.SILVER),
             Block.Settings.create()
-                    .strength(2.0f, 6.0f)
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "silver_podium", true);
     public static final Block BRONZE_PODIUM = register(settings -> new PodiumBlock(settings, PodiumBlock.Style.BRONZE),
             Block.Settings.create()
-                    .strength(2.0f, 6.0f)
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.STONE)
                     .nonOpaque()
                     .requiresTool(),
             "bronze_podium", true);
     public static final Block PIGGY_BANK = register(PiggyBankBlock::new,
             Block.Settings.create()
-                    .strength(1.0f, 3.0f)
+                    .strength(1.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.DECORATED_POT)
                     .nonOpaque()
                     .requiresTool(),
             "piggy_bank", true);
     public static final Block BOARD_SPACE_REDSTONE_ROUTER = register(BoardSpaceRedstoneRouterBlock::new,
             Block.Settings.create()
-                    .strength(3.0f, 9.0f)  // Stronger than the cash register due to its mechanical components
+                    .strength(3.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)  // Stone-like sound for a mechanical device
                     .requiresTool(),  // Requires a pickaxe or equivalent tool to break
             "board_space_redstone_router", true);
     public static final Block HOP_SWITCH = register(HopSwitchBlock::new,
             Block.Settings.create()
-                    .strength(0.5f)
+                    .strength(0.5f, BOARD_RESISTANCE)
                     .nonOpaque()
                     .sounds(BlockSoundGroup.BONE),
             "hop_switch", true);
@@ -568,20 +574,20 @@ public class ModBlocks {
 
     public static final Block GOAL_POLE_BASE = register(GoalPoleBaseBlock::new,
             Block.Settings.create()
-                    .strength(2.0f, 6.0f)
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.STONE)
                     .requiresTool(),
             "goal_pole_base", true);
     public static final Block GOAL_POLE = register(GoalPoleBlock::new,
             Block.Settings.create()
-                    .strength(3.0f, 6.0f)
+                    .strength(3.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .requiresTool(),
             "goal_pole", true);
 
     public static final Block LOOTING_BOX = register(LootingBoxBlock::new,
             Block.Settings.create()
-                    .strength(2.0f, 4.0f)
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .nonOpaque()
                     .notSolid()
@@ -643,7 +649,7 @@ public class ModBlocks {
 
     public static final Block DICE_FORGE = register(DiceForgeBlock::new,
             Block.Settings.create()
-                    .strength(2.0f, 4.0f)
+                    .strength(2.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.STONE)
                     .requiresTool(),
             "dice_forge", true);
@@ -652,7 +658,7 @@ public class ModBlocks {
     public static final Block TELESCOPE = register(TelescopeBlock::new,
             Block.Settings.create()
                     .mapColor(MapColor.ORANGE)
-                    .strength(1.0f, 3.0f)
+                    .strength(1.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.COPPER)
                     .nonOpaque()
                     .pistonBehavior(PistonBehavior.DESTROY),

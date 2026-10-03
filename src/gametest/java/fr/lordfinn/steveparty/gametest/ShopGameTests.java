@@ -563,21 +563,27 @@ public class ShopGameTests implements FabricGameTest {
         return (Inventory) context.getWorld().getBlockEntity(context.getAbsolutePos(relative));
     }
 
-    /** An explosion spares the blocks of an owned shop and still destroys the others. */
+    /**
+     * An explosion spares the stock of an owned shop and still destroys the others; stalls and registers are never
+     * broken by one, owned or not (they are of the board blocks, see BoardExplosionGameTests).
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void explosionsSpareOwnedShopBlocks(TestContext context) {
-        BlockPos stall = new BlockPos(2, 1, 1);
-        BlockPos unownedStall = new BlockPos(2, 1, 3);
-        context.setBlockState(stall, ModBlocks.TRADING_STALL);
+        BlockPos stock = new BlockPos(2, 1, 1);
+        BlockPos unownedStock = new BlockPos(2, 1, 3);
+        BlockPos unownedStall = new BlockPos(3, 1, 3);
+        context.setBlockState(stock, Blocks.CHEST);
+        context.setBlockState(unownedStock, Blocks.CHEST);
         context.setBlockState(unownedStall, ModBlocks.TRADING_STALL);
-        UUID shop = shopOf(context, UUID.randomUUID(), stall);
-        UUID unownedShop = shopOf(context, null, unownedStall);
+        UUID shop = shopOf(context, UUID.randomUUID(), stock);
+        UUID unownedShop = shopOf(context, null, unownedStock, unownedStall);
         try {
             BlockPos center = context.getAbsolutePos(new BlockPos(2, 1, 2));
             context.getWorld().createExplosion(null, center.getX() + 0.5, center.getY() + 0.5, center.getZ() + 0.5,
                     4.0f, World.ExplosionSourceType.TNT);
-            context.assertTrue(context.getBlockState(stall).isOf(ModBlocks.TRADING_STALL), "owned stall kept");
-            context.assertTrue(context.getBlockState(unownedStall).isAir(), "unowned stall destroyed as usual");
+            context.assertTrue(context.getBlockState(stock).isOf(Blocks.CHEST), "owned stock kept");
+            context.assertTrue(context.getBlockState(unownedStock).isAir(), "unowned stock destroyed as usual");
+            context.assertTrue(context.getBlockState(unownedStall).isOf(ModBlocks.TRADING_STALL), "a stall, even unowned, is never blown up");
         } finally {
             forgetShops(context, shop, unownedShop);
         }
