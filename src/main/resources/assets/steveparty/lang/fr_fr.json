@@ -969,7 +969,6 @@
   "message.steveparty.wrench_required": "Il faut une Clé pour modifier le contenu de ce bloc",
   "key.steveparty.party_hud_layout": "Configurer l'interface de partie",
   "hud.steveparty.party.round": "Tour %s/%s",
-  "hud.steveparty.party.round.only": "Tour %s",
   "hud.steveparty.party.round.start": "Départ",
   "hud.steveparty.party.start_rolls": "Ordre de jeu : lancez vos dés",
   "hud.steveparty.party.start_rolls.you": "Lance ton dé pour l'ordre de jeu !",
@@ -1929,9 +1928,6 @@
   "gui.steveparty.party_controller.timeline.event.channel": "Évènement (canal %s)",
   "gui.steveparty.party_controller.timeline.end": "Fin de la partie",
   "gui.steveparty.party_controller.timeline.other": "Étape",
-  "hud.steveparty.party.round.short": "%s/%s",
-  "hud.steveparty.party.strip.round": "T%s",
-  "hud.steveparty.party.strip.turns": "Tours",
   "hud.steveparty.party.strip.mini_game": "Mini-jeu",
   "hud.steveparty.party.strip.event": "Évènement",
   "hud.steveparty.party.strip.preparing": "Préparation",
@@ -1962,5 +1958,12 @@
   "hud.steveparty.chest_cartridge.none": "Aucun coffre",
   "hud.steveparty.chest_cartridge.chest": "Coffre : %1$s %2$s %3$s",
   "hud.steveparty.chest_cartridge.away": "Coffre dans %s",
-  "hud.steveparty.chest_cartridge.hint": "Clic droit sur un coffre : le choisir · accroupi + clic droit dans le vide : aucun"
+  "hud.steveparty.chest_cartridge.hint": "Clic droit sur un coffre : le choisir · accroupi + clic droit dans le vide : aucun",
+  "hud.steveparty.party.strip.pinned": "dans %s",
+  "hud.steveparty.party.toi": "toi",
+  "hud.steveparty.party.toi.now": "à toi !",
+  "hud.steveparty.party.toi.in": "toi dans %s",
+  "hud.steveparty.party.bonus": "bonus",
+  "screen.steveparty.party_hud_layout.notice": "Annonce",
+  "screen.steveparty.party_hud_layout.reset_notice": "Réinit. annonce"
 }

@@ -59,8 +59,10 @@ public final class PartyHudLayout {
     public enum Hud {
         /** The turn bar at the top: round, turn order, what is happening. */
         TURN_BAR(Anchor.TOP, 0, MARGIN),
-        /** The standings: rank, stars, coins and power-ups of each player. */
-        STANDINGS(Anchor.TOP_LEFT, MARGIN, MARGIN);
+        /** The standings: rank, stars, coins and bonuses of each player. */
+        STANDINGS(Anchor.TOP_LEFT, MARGIN, MARGIN),
+        /** The notice: what is happening now, at the action bar's place (over the held item's name). */
+        NOTICE(Anchor.BOTTOM, 0, -57);
 
         final Anchor defaultAnchor;
         final int defaultDx, defaultDy;
@@ -107,6 +109,7 @@ public final class PartyHudLayout {
     private static final class Saved {
         Placement turnBar;
         Placement standings;
+        Placement notice;
     }
 
     private static final Map<Hud, Placement> PLACEMENTS = new EnumMap<>(Hud.class);
@@ -184,6 +187,7 @@ public final class PartyHudLayout {
                 if (saved != null) {
                     if (saved.turnBar != null) PLACEMENTS.put(Hud.TURN_BAR, saved.turnBar.sanitized(Hud.TURN_BAR));
                     if (saved.standings != null) PLACEMENTS.put(Hud.STANDINGS, saved.standings.sanitized(Hud.STANDINGS));
+                    if (saved.notice != null) PLACEMENTS.put(Hud.NOTICE, saved.notice.sanitized(Hud.NOTICE));
                 }
             } catch (IOException | JsonParseException | IllegalStateException e) {
                 LOGGER.warn("Unreadable {}, using the default party HUD layout", FILE_NAME, e);
@@ -197,6 +201,7 @@ public final class PartyHudLayout {
         Saved saved = new Saved();
         saved.turnBar = get(Hud.TURN_BAR);
         saved.standings = get(Hud.STANDINGS);
+        saved.notice = get(Hud.NOTICE);
         Path file = file();
         Path temp = file.resolveSibling(FILE_NAME + ".tmp");
         try {

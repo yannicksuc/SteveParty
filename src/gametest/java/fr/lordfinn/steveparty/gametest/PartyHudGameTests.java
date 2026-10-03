@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyStrip;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -195,36 +194,28 @@ public class PartyHudGameTests implements FabricGameTest {
     }
 
     /**
-     * The turn bar's strip of steps fits the width it is given, whatever the number of steps: the next ones in full,
-     * then small ones, then « +N »; never wider than the room, and two steps to come stay shown when the room is
-     * small.
+     * The standings show the pawn's name: its own (a custom name), else its player's, else what it is.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void stripOfStepsFitsItsRoom(TestContext context) {
-        int[] full = new int[16], small = new int[16];
-        java.util.Arrays.fill(full, 49);
-        java.util.Arrays.fill(small, 19);
-        java.util.function.IntUnaryOperator more = hidden -> 20;
-
-        context.assertEquals(PartyStrip.fit(full, small, 16 * 49, 0, more), new PartyStrip.Fit(16, 0, 0), "room for all: all in full");
-        context.assertEquals(PartyStrip.fit(full, small, 16 * 49, 30, more), new PartyStrip.Fit(15, 1, 30),
-                "steps beyond: one step gives its room to the « +N »");
-        // 3 in full (147), 1 small (166), « +42 » (186); a second small one would leave no room for the « +N »
-        context.assertEquals(PartyStrip.fit(full, small, 190, 30, more), new PartyStrip.Fit(3, 1, 42), "a party of 16: in full, then small, then « +N »");
-        for (int room = 0; room <= 900; room += 7) {
-            PartyStrip.Fit fit = PartyStrip.fit(full, small, room, 30, more);
-            context.assertEquals(fit.shown() + fit.hidden(), 16 + 30, "every step is shown or counted (room " + room + ")");
-            int used = fit.full() * 49 + fit.compact() * 19;
-            context.assertTrue(used <= room, "never wider than the room (room " + room + ")");
-            context.assertTrue(used + 20 <= room || fit.shown() <= PartyStrip.MIN_SHOWN, "the « +N » fits too, but for the least shown (room " + room + ")");
-            context.assertTrue(room < 2 * 19 || fit.shown() >= PartyStrip.MIN_SHOWN, "two steps to come stay shown (room " + room + ")");
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_pawn_name")
+    public void standingsShowThePawnsName(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            PigEntity named = spawnToken(context, new BlockPos(2, 1, 2), player.getUuid());
+            named.setCustomName(Text.literal("Cochonou"));
+            PigEntity plain = spawnToken(context, new BlockPos(3, 1, 2), player.getUuid());
+            PartyControllerEntity controller = startParty(context, named.getUuid(), plain.getUuid());
+            context.assertEquals(PartyLiveData.standingOf(controller, context.getWorld(), named.getUuid()).tokenName(), "Cochonou", "its own name");
+            context.assertEquals(PartyLiveData.standingOf(controller, context.getWorld(), plain.getUuid()).tokenName(), player.getNameForScoreboard(),
+                    "no name of its own: its player's");
+            PigEntity nobody = spawnToken(context, new BlockPos(4, 1, 2), null);
+            context.assertEquals(PartyLiveData.pawnName(controller, context.getWorld(), nobody.getUuid(), nobody, ""), nobody.getName().getString(),
+                    "no name, no player: what it is");
+            context.assertTrue(PartyLiveData.standingOf(controller, context.getWorld(), named.getUuid()).bonuses().isEmpty(), "no bonuses yet");
+            context.setBlockState(CONTROLLER, Blocks.AIR);
+            context.complete();
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
         }
-        // One step in full would be alone: two small ones instead, before the « +N »
-        context.assertEquals(PartyStrip.fit(full, small, 50, 30, more), new PartyStrip.Fit(0, 2, 44), "a small room: the two next steps, small");
-        context.assertEquals(PartyStrip.fit(full, small, 70, 30, more), new PartyStrip.Fit(0, 2, 44), "and the « +N » once it fits");
-        context.assertEquals(PartyStrip.fit(new int[]{49}, new int[]{19}, 60, 0, more), new PartyStrip.Fit(1, 0, 0), "one player, one step left");
-        context.assertEquals(PartyStrip.fit(new int[0], new int[0], 200, 0, more), new PartyStrip.Fit(0, 0, 0), "the last step: nothing to come");
-        context.complete();
     }
 
     /**

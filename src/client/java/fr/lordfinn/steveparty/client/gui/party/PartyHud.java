@@ -44,8 +44,12 @@ public final class PartyHud {
 
     private static final TurnBarHud TURN_BAR = new TurnBarHud();
     private static final StandingsHud STANDINGS = new StandingsHud();
+    private static final NoticeHud NOTICE = new NoticeHud();
     private static final float[] TURN_BAR_ALPHA = {0};
     private static final float[] STANDINGS_ALPHA = {0};
+    private static final float[] NOTICE_ALPHA = {0};
+    /** How far up the notice is moved (eased) to clear the vanilla action bar and the tools' HUD. */
+    private static float noticeLift;
     private static double lastFrame;
     /** Where each HUD was drawn last (x, y, width, height once scaled): for the layout screen. */
     private static final float[][] BOUNDS = new float[Hud.values().length][4];
@@ -147,6 +151,8 @@ public final class PartyHud {
 
         int screenWidth = context.getScaledWindowWidth();
         int screenHeight = context.getScaledWindowHeight();
+        boolean notice = placeHud(Hud.NOTICE, drawn, current != null && drawn.action != PartyHudModel.Action.NONE, preview, NOTICE_ALPHA, delta, now, screenWidth, screenHeight,
+                screenWidth - 2 * PartyHudLayout.MARGIN);
         boolean standings = placeHud(Hud.STANDINGS, drawn, current != null && standingsShown && !drawn.players.isEmpty(), preview, STANDINGS_ALPHA, delta, now, screenWidth, screenHeight, 0);
         boolean turnBar = placeHud(Hud.TURN_BAR, drawn, current != null && turnBarShown, preview, TURN_BAR_ALPHA, delta, now, screenWidth, screenHeight,
                 turnBarRoom(standings, screenWidth, screenHeight));
@@ -154,7 +160,8 @@ public final class PartyHud {
         if (turnBar && standings && !dragging) separate(screenWidth, screenHeight);
         if (turnBar) drawHud(context, Hud.TURN_BAR, TURN_BAR_ALPHA[0], preview, now);
         if (standings) drawHud(context, Hud.STANDINGS, STANDINGS_ALPHA[0], preview, now);
-        if (current == null && TURN_BAR_ALPHA[0] <= 0 && STANDINGS_ALPHA[0] <= 0) shown = null;
+        if (notice) drawHud(context, Hud.NOTICE, NOTICE_ALPHA[0], preview, now);
+        if (current == null && TURN_BAR_ALPHA[0] <= 0 && STANDINGS_ALPHA[0] <= 0 && NOTICE_ALPHA[0] <= 0) shown = null;
     }
 
     /**
@@ -204,8 +211,11 @@ public final class PartyHud {
         matrices.push();
         matrices.translate(bounds[0], bounds[1] + slide, 0);
         matrices.scale(placement.scale, placement.scale, 1);
-        if (hud == Hud.TURN_BAR) TURN_BAR.draw(context, alpha, now);
-        else STANDINGS.draw(context, alpha, now);
+        switch (hud) {
+            case TURN_BAR -> TURN_BAR.draw(context, alpha, now);
+            case STANDINGS -> STANDINGS.draw(context, alpha, now);
+            case NOTICE -> NOTICE.draw(context, alpha, now);
+        }
         matrices.pop();
     }
 
@@ -224,25 +234,55 @@ public final class PartyHud {
         if (alpha[0] <= 0.02f) return false;
 
         int width, height;
-        if (hud == Hud.TURN_BAR) {
-            TURN_BAR.update(drawn, (int) (room / scale), now);
-            width = TURN_BAR.width();
-            height = TURN_BAR.height();
-        } else {
-            STANDINGS.update(drawn, (int) (screenHeight * 0.55f / scale), now);
-            width = STANDINGS.width();
-            height = STANDINGS.height();
+        switch (hud) {
+            case TURN_BAR -> {
+                TURN_BAR.update(drawn, (int) (room / scale), now);
+                width = TURN_BAR.width();
+                height = TURN_BAR.height();
+            }
+            case STANDINGS -> {
+                STANDINGS.update(drawn, (int) (screenHeight * 0.55f / scale), now);
+                width = STANDINGS.width();
+                height = STANDINGS.height();
+            }
+            default -> {
+                NOTICE.update(drawn, (int) (room / scale), now);
+                width = NOTICE.width();
+                height = NOTICE.height();
+            }
         }
         float scaledWidth = width * scale, scaledHeight = height * scale;
         float x = PartyHudLayout.x(hud, screenWidth, scaledWidth);
         float y = PartyHudLayout.y(hud, screenHeight, scaledHeight);
-        y = keepClear(x, y, scaledWidth, scaledHeight, screenWidth, screenHeight);
+        if (hud == Hud.NOTICE) y -= noticeLift(placement, y + scaledHeight, preview, delta);
+        else y = keepClear(x, y, scaledWidth, scaledHeight, screenWidth, screenHeight);
         float[] bounds = BOUNDS[hud.ordinal()];
         bounds[0] = x;
         bounds[1] = y;
         bounds[2] = scaledWidth;
         bounds[3] = scaledHeight;
         return true;
+    }
+
+    /**
+     * The notice at its place over the hotbar (its default anchor): it goes up over the vanilla action bar while a
+     * message shows there (rather than hiding: nothing is lost), and over the tools' HUD (Wrench, Stencil Hammer...)
+     * and the held item's name above it. Moved elsewhere by the player, it stays where it was put.
+     *
+     * @param bottom the notice's bottom where the layout puts it
+     */
+    private static float noticeLift(PartyHudLayout.Placement placement, float bottom, boolean preview, float delta) {
+        float target = 0;
+        if (!preview && placement.anchor == PartyHudLayout.Anchor.BOTTOM) {
+            MinecraftClient client = MinecraftClient.getInstance();
+            int toolTop = fr.lordfinn.steveparty.client.gui.ToolHud.occupiedTop();
+            // The held item's name goes over the tools' HUD: room for it
+            if (toolTop >= 0) target = Math.max(0, bottom - (toolTop - 14));
+            if (((fr.lordfinn.steveparty.client.mixin.InGameHudAccessor) client.inGameHud).steveparty$getOverlayRemaining() > 0)
+                target += 14;
+        }
+        noticeLift = HudDraw.approach(noticeLift, target, 0.4f, delta);
+        return Math.round(noticeLift);
     }
 
     /**

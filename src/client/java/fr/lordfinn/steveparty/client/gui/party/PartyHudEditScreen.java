@@ -27,7 +27,7 @@ public class PartyHudEditScreen extends Screen {
     private float resizeStartDistance, resizeStartScale;
     private boolean snappedX, snappedY;
     private float snapLineX = -1, snapLineY = -1;
-    private ButtonWidget turnBarToggle, standingsToggle;
+    private ButtonWidget turnBarToggle, standingsToggle, noticeToggle;
     private PartyHudModel sample;
 
     public PartyHudEditScreen(@Nullable Screen parent) {
@@ -40,27 +40,41 @@ public class PartyHudEditScreen extends Screen {
         MinecraftClient client = MinecraftClient.getInstance();
         sample = PartyHudModel.sample(client.player == null ? null : client.player.getUuid(),
                 client.player == null ? "Steve" : client.player.getGameProfile().getName());
+        // Two rows in the middle of the screen: clear of the HUDs' default places (the bar and the standings at the
+        // top, the notice over the hotbar)
         int centerX = width / 2;
-        int bottom = height - 28;
-        addDrawableChild(ButtonWidget.builder(Text.translatable("gui.done"), button -> close())
-                .dimensions(centerX - 100, bottom, 200, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.party_hud_layout.reset_turn_bar"), button -> reset(Hud.TURN_BAR))
-                .dimensions(centerX - 154, bottom - 24, 100, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.party_hud_layout.reset_standings"), button -> reset(Hud.STANDINGS))
-                .dimensions(centerX - 50, bottom - 24, 100, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.party_hud_layout.reset_all"), button -> {
-            reset(Hud.TURN_BAR);
-            reset(Hud.STANDINGS);
-        }).dimensions(centerX + 54, bottom - 24, 100, 20).build());
+        int top = buttonsTop();
         turnBarToggle = addDrawableChild(ButtonWidget.builder(toggleText(Hud.TURN_BAR), button -> toggle(Hud.TURN_BAR))
-                .dimensions(centerX - 154, bottom - 48, 152, 20).build());
+                .dimensions(centerX - 206, top, 100, 20).build());
         standingsToggle = addDrawableChild(ButtonWidget.builder(toggleText(Hud.STANDINGS), button -> toggle(Hud.STANDINGS))
-                .dimensions(centerX + 2, bottom - 48, 152, 20).build());
+                .dimensions(centerX - 102, top, 100, 20).build());
+        noticeToggle = addDrawableChild(ButtonWidget.builder(toggleText(Hud.NOTICE), button -> toggle(Hud.NOTICE))
+                .dimensions(centerX + 2, top, 100, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.translatable("gui.done"), button -> close())
+                .dimensions(centerX + 106, top, 100, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.party_hud_layout.reset_turn_bar"), button -> reset(Hud.TURN_BAR))
+                .dimensions(centerX - 206, top + 24, 100, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.party_hud_layout.reset_standings"), button -> reset(Hud.STANDINGS))
+                .dimensions(centerX - 102, top + 24, 100, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.party_hud_layout.reset_notice"), button -> reset(Hud.NOTICE))
+                .dimensions(centerX + 2, top + 24, 100, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.party_hud_layout.reset_all"), button -> {
+            for (Hud hud : Hud.values()) reset(hud);
+        }).dimensions(centerX + 106, top + 24, 100, 20).build());
         PartyHud.editing = true;
     }
 
+    /** The buttons' first row: a little under the middle of the screen. */
+    private int buttonsTop() {
+        return height / 2 - 6;
+    }
+
     private static Text hudName(Hud hud) {
-        return Text.translatable(hud == Hud.TURN_BAR ? "screen.steveparty.party_hud_layout.turn_bar" : "screen.steveparty.party_hud_layout.standings");
+        return Text.translatable(switch (hud) {
+            case TURN_BAR -> "screen.steveparty.party_hud_layout.turn_bar";
+            case STANDINGS -> "screen.steveparty.party_hud_layout.standings";
+            case NOTICE -> "screen.steveparty.party_hud_layout.notice";
+        });
     }
 
     private static Text toggleText(Hud hud) {
@@ -71,14 +85,18 @@ public class PartyHudEditScreen extends Screen {
         PartyHudLayout.Placement placement = PartyHudLayout.get(hud);
         placement.visible = !placement.visible;
         PartyHudLayout.changed();
+        refreshToggles();
+    }
+
+    private void refreshToggles() {
         turnBarToggle.setMessage(toggleText(Hud.TURN_BAR));
         standingsToggle.setMessage(toggleText(Hud.STANDINGS));
+        noticeToggle.setMessage(toggleText(Hud.NOTICE));
     }
 
     private void reset(Hud hud) {
         PartyHudLayout.reset(hud);
-        turnBarToggle.setMessage(toggleText(Hud.TURN_BAR));
-        standingsToggle.setMessage(toggleText(Hud.STANDINGS));
+        refreshToggles();
     }
 
     @Override
@@ -98,16 +116,16 @@ public class PartyHudEditScreen extends Screen {
         PartyHud.draw(context, real != null ? real : sample, true, true, true);
         for (Hud hud : Hud.values()) drawFrame(context, hud, mouseX, mouseY);
 
-        // How it works, in the middle
-        List<OrderedText> lines = textRenderer.wrapLines(Text.translatable("screen.steveparty.party_hud_layout.help"), Math.min(300, width - 40));
-        int y = height / 2 - lines.size() * 5;
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, y - 14, 0xFFFFFFFF);
+        // How it works, over the buttons
+        List<OrderedText> lines = textRenderer.wrapLines(Text.translatable("screen.steveparty.party_hud_layout.help"), Math.min(320, width - 40));
+        int y = buttonsTop() - 4 - lines.size() * 10 - (real == null ? 10 : 0);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, y - 12, 0xFFFFFFFF);
         for (OrderedText line : lines) {
             context.drawCenteredTextWithShadow(textRenderer, line, width / 2, y, 0xFFD0D0D0);
             y += 10;
         }
         if (real == null)
-            context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.steveparty.party_hud_layout.sample"), width / 2, y + 4, 0xFF9A9A9A);
+            context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.steveparty.party_hud_layout.sample"), width / 2, y, 0xFF9A9A9A);
         super.render(context, mouseX, mouseY, delta);
     }
 

@@ -92,6 +92,11 @@ public final class ToolHud {
         return Math.max(0, context.getScaledWindowHeight() - bottomFromScreenBottom - (occupiedTop - 2));
     }
 
+    /** Top of the tool HUD drawn in the last frames (its hint included), -1 when none is shown. */
+    public static int occupiedTop() {
+        return framesSinceDrawn <= 4 ? occupiedTop : -1;
+    }
+
     /** Bottom of the held item's name, as vanilla places it. */
     public static int itemNameBottom() {
         MinecraftClient client = MinecraftClient.getInstance();

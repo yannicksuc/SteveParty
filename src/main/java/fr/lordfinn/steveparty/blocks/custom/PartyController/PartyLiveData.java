@@ -73,7 +73,8 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
     /**
      * A token of the party.
      *
-     * @param tokenName its name (its custom name, else the last name known by the party)
+     * @param tokenName its pawn's name: the token's own (custom) name, else its player's name, else what it is
+     *                  (« Cochon »); an unloaded token: the name the party remembers
      * @param owner     the player playing it, empty for a token anyone may play
      * @param ownerName the owner's name, empty if unknown
      * @param color     its colour (0xRRGGBB: the one given by the Tokenizer Wand, else the colour of its name), -1: none
@@ -81,19 +82,43 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
      * @param stars     the party's stars in the owner's inventory: the ranking criterion
      * @param coins     the party's coins in the owner's inventory: the tie-breaker
      * @param powerUps  the power-ups the owner holds (one stack per kind, its count the number held)
+     * @param bonuses   the bonuses the token carries (the standings' « bonus » column: {@value #MAX_BONUSES} at most;
+     *                  see {@link #bonusesOf})
      */
     public record Standing(UUID token, String tokenName, Optional<UUID> owner, String ownerName, int color,
-                           boolean online, int stars, int coins, List<ItemStack> powerUps) {
+                           boolean online, int stars, int coins, List<ItemStack> powerUps, List<ItemStack> bonuses) {
+        public Standing(UUID token, String tokenName, Optional<UUID> owner, String ownerName, int color,
+                        boolean online, int stars, int coins, List<ItemStack> powerUps) {
+            this(token, tokenName, owner, ownerName, color, online, stars, coins, powerUps, List.of());
+        }
+
         boolean sameAs(Standing other) {
             if (!token.equals(other.token) || !tokenName.equals(other.tokenName) || !owner.equals(other.owner)
                     || !ownerName.equals(other.ownerName) || color != other.color || online != other.online
-                    || stars != other.stars || coins != other.coins || powerUps.size() != other.powerUps.size())
+                    || stars != other.stars || coins != other.coins || powerUps.size() != other.powerUps.size()
+                    || bonuses.size() != other.bonuses.size())
                 return false;
             for (int i = 0; i < powerUps.size(); i++) {
                 if (!ItemStack.areEqual(powerUps.get(i), other.powerUps.get(i))) return false;
             }
+            for (int i = 0; i < bonuses.size(); i++) {
+                if (!ItemStack.areEqual(bonuses.get(i), other.bonuses.get(i))) return false;
+            }
             return true;
         }
+    }
+
+    /** Bonuses sent per token at most (the standings' « bonus » column has as many slots). */
+    public static final int MAX_BONUSES = 3;
+
+    /**
+     * The bonuses a token carries, shown in the « bonus » column of the standings (one item per bonus, its icon drawn
+     * half size in a slot; the column hides itself while nobody has any). The mod has no bonuses yet: none. To feed
+     * the column, return here the items standing for the token's bonuses (at most {@value #MAX_BONUSES} are sent);
+     * they are captured with the standings and sent when they change, like the stars and coins.
+     */
+    public static List<ItemStack> bonusesOf(PartyControllerEntity controller, ServerWorld world, UUID token) {
+        return List.of();
     }
 
     /** The roll of the current turn in words: "7", "0", "\u22123" (backward), "+5 coins", "Swap", "3, +2 coins"... */
@@ -172,8 +197,19 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
             coins = PartyCurrency.count(player.getInventory(), controller.getCurrency(PartyCurrency.COIN));
             powerUps = powerUps(player.getInventory());
         }
-        return new Standing(token, controller.getTokenDisplayName(world, token).getString(), Optional.ofNullable(owner),
-                ownerName, colorOf(entity), owner == null || player != null, stars, coins, powerUps);
+        return new Standing(token, pawnName(controller, world, token, entity, ownerName), Optional.ofNullable(owner),
+                ownerName, colorOf(entity), owner == null || player != null, stars, coins, powerUps,
+                bonusesOf(controller, world, token));
+    }
+
+    /**
+     * A pawn's name in the standings: its own (a custom name: the Tokenizer Wand's, a name tag's), else its player's,
+     * else what it is (« Cochon »). Unloaded, the name the party remembered of it.
+     */
+    public static String pawnName(PartyControllerEntity controller, ServerWorld world, UUID token, @Nullable Entity entity, String ownerName) {
+        if (entity == null) return controller.getTokenDisplayName(world, token).getString();
+        if (entity.getCustomName() != null) return entity.getCustomName().getString();
+        return ownerName.isEmpty() ? entity.getName().getString() : ownerName;
     }
 
     private static @Nullable UUID ownerFromTurns(PartyData data, UUID token) {
@@ -302,7 +338,10 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
                 int powerUpCount = Math.min(buf.readVarInt(), MAX_POWER_UPS);
                 List<ItemStack> powerUps = new ArrayList<>(powerUpCount);
                 for (int j = 0; j < powerUpCount; j++) powerUps.add(ItemStack.PACKET_CODEC.decode(buf));
-                standings.add(new Standing(token, tokenName, owner, ownerName, color, online, stars, coins, powerUps));
+                int bonusCount = Math.min(buf.readVarInt(), MAX_BONUSES);
+                List<ItemStack> bonuses = new ArrayList<>(bonusCount);
+                for (int j = 0; j < bonusCount; j++) bonuses.add(ItemStack.PACKET_CODEC.decode(buf));
+                standings.add(new Standing(token, tokenName, owner, ownerName, color, online, stars, coins, powerUps, bonuses));
             }
             return standings;
         }
@@ -323,6 +362,9 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
                 List<ItemStack> powerUps = standing.powerUps.size() > MAX_POWER_UPS ? standing.powerUps.subList(0, MAX_POWER_UPS) : standing.powerUps;
                 buf.writeVarInt(powerUps.size());
                 for (ItemStack stack : powerUps) ItemStack.PACKET_CODEC.encode(buf, stack);
+                List<ItemStack> bonuses = standing.bonuses.size() > MAX_BONUSES ? standing.bonuses.subList(0, MAX_BONUSES) : standing.bonuses;
+                buf.writeVarInt(bonuses.size());
+                for (ItemStack stack : bonuses) ItemStack.PACKET_CODEC.encode(buf, stack);
             }
         }
     };
