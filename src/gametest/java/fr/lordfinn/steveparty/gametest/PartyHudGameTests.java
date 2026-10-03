@@ -2,10 +2,14 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyStrip;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.EndPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -13,12 +17,14 @@ import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
+import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -185,6 +191,85 @@ public class PartyHudGameTests implements FabricGameTest {
             standings.add(new PartyLiveData.Standing(UUID.randomUUID(), "", Optional.empty(), "", -1, true, starsCoins[0], starsCoins[1], List.of()));
         int[] ranks = PartyLiveData.ranks(standings);
         context.assertTrue(java.util.Arrays.equals(ranks, new int[]{3, 1, 3, 5, 2}), "ranks " + java.util.Arrays.toString(ranks));
+        context.complete();
+    }
+
+    /**
+     * The turn bar's strip of steps fits the width it is given, whatever the number of steps: the next ones in full,
+     * then small ones, then « +N »; never wider than the room, and two steps to come stay shown when the room is
+     * small.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stripOfStepsFitsItsRoom(TestContext context) {
+        int[] full = new int[16], small = new int[16];
+        java.util.Arrays.fill(full, 49);
+        java.util.Arrays.fill(small, 19);
+        java.util.function.IntUnaryOperator more = hidden -> 20;
+
+        context.assertEquals(PartyStrip.fit(full, small, 16 * 49, 0, more), new PartyStrip.Fit(16, 0, 0), "room for all: all in full");
+        context.assertEquals(PartyStrip.fit(full, small, 16 * 49, 30, more), new PartyStrip.Fit(15, 1, 30),
+                "steps beyond: one step gives its room to the « +N »");
+        // 3 in full (147), 1 small (166), « +42 » (186); a second small one would leave no room for the « +N »
+        context.assertEquals(PartyStrip.fit(full, small, 190, 30, more), new PartyStrip.Fit(3, 1, 42), "a party of 16: in full, then small, then « +N »");
+        for (int room = 0; room <= 900; room += 7) {
+            PartyStrip.Fit fit = PartyStrip.fit(full, small, room, 30, more);
+            context.assertEquals(fit.shown() + fit.hidden(), 16 + 30, "every step is shown or counted (room " + room + ")");
+            int used = fit.full() * 49 + fit.compact() * 19;
+            context.assertTrue(used <= room, "never wider than the room (room " + room + ")");
+            context.assertTrue(used + 20 <= room || fit.shown() <= PartyStrip.MIN_SHOWN, "the « +N » fits too, but for the least shown (room " + room + ")");
+            context.assertTrue(room < 2 * 19 || fit.shown() >= PartyStrip.MIN_SHOWN, "two steps to come stay shown (room " + room + ")");
+        }
+        // One step in full would be alone: two small ones instead, before the « +N »
+        context.assertEquals(PartyStrip.fit(full, small, 50, 30, more), new PartyStrip.Fit(0, 2, 44), "a small room: the two next steps, small");
+        context.assertEquals(PartyStrip.fit(full, small, 70, 30, more), new PartyStrip.Fit(0, 2, 44), "and the « +N » once it fits");
+        context.assertEquals(PartyStrip.fit(new int[]{49}, new int[]{19}, 60, 0, more), new PartyStrip.Fit(1, 0, 0), "one player, one step left");
+        context.assertEquals(PartyStrip.fit(new int[0], new int[0], 200, 0, more), new PartyStrip.Fit(0, 0, 0), "the last step: nothing to come");
+        context.complete();
+    }
+
+    /**
+     * Before the party's steps exist (the turn order rolls), the live state carries what the program will play, for
+     * the turn bar's strip; once the steps are generated, they say it: nothing more is sent.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "party_hud_program")
+    public void programIsSentUntilTheStepsExist(TestContext context) {
+        context.setBlockState(CONTROLLER.down(), Blocks.STONE);
+        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+        PartyData data = new PartyData();
+        data.setNbTurn(2);
+        data.addToken(a);
+        data.addToken(b);
+        data.addStep(new StartRollsStep());
+        data.addStep(new BasicGameGeneratorStep());
+        controller.setPartyData(data);
+        controller.nextStep();
+        context.assertTrue(data.getCurrentStep() instanceof StartRollsStep, "rolling for the turn order");
+
+        PartyLiveData live = capture(context, controller);
+        List<PartyDashboardData.StepKind> kinds = live.program().steps().stream().map(PartyDashboardData.TimelineStep::kind).toList();
+        context.assertEquals(kinds, List.of(PartyDashboardData.StepKind.TURNS, PartyDashboardData.StepKind.MINI_GAME,
+                PartyDashboardData.StepKind.TURNS, PartyDashboardData.StepKind.MINI_GAME, PartyDashboardData.StepKind.END),
+                "the default party of two rounds, after the turn order rolls");
+        context.assertEquals(live.program().steps().get(2).round(), 2, "the rounds");
+        context.assertEquals(live.program().more(), 0, "all of it");
+        RegistryByteBuf buf = new RegistryByteBuf(Unpooled.buffer(), context.getWorld().getRegistryManager());
+        PartyLiveData.PACKET_CODEC.encode(buf, live);
+        PartyLiveData received = PartyLiveData.PACKET_CODEC.decode(buf);
+        context.assertEquals(received.program(), live.program(), "sent to the clients");
+        context.assertTrue(live.sameAs(received), "the same state");
+
+        // A long program: its first steps, the others counted
+        data.setNbTurn(40);
+        live = capture(context, controller);
+        context.assertEquals(live.program().steps().size(), PartyLiveData.MAX_PROGRAM_STEPS, "a long program: its first steps");
+        context.assertEquals(live.program().steps().size() + live.program().more(), 40 * 2 + 1, "the others are counted");
+        context.assertTrue(!live.sameAs(received), "another program: a new state");
+
+        // The turns exist: the program is not sent any more
+        context.assertTrue(capture(context, startParty(context, a, b)).program().steps().isEmpty(), "a turn: the steps say what comes");
+        context.setBlockState(CONTROLLER, Blocks.AIR);
         context.complete();
     }
 

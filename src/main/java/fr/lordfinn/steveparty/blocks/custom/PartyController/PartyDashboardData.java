@@ -383,7 +383,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         }
     };
 
-    private static Timeline readTimeline(RegistryByteBuf buf) {
+    static Timeline readTimeline(RegistryByteBuf buf) {
         int count = Math.min(buf.readVarInt(), MAX_TIMELINE_STEPS);
         List<TimelineStep> steps = new ArrayList<>(count);
         StepKind[] kinds = StepKind.values();
@@ -393,7 +393,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         return new Timeline(steps, buf.readVarInt(), buf.readVarInt() - 1, buf.readVarInt());
     }
 
-    private static void writeTimeline(RegistryByteBuf buf, Timeline timeline) {
+    static void writeTimeline(RegistryByteBuf buf, Timeline timeline) {
         List<TimelineStep> steps = timeline.steps().size() > MAX_TIMELINE_STEPS ? timeline.steps().subList(0, MAX_TIMELINE_STEPS) : timeline.steps();
         buf.writeVarInt(steps.size());
         for (TimelineStep step : steps) {

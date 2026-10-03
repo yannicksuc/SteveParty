@@ -1927,5 +1927,13 @@
   "gui.steveparty.party_controller.timeline.event": "Event",
   "gui.steveparty.party_controller.timeline.event.channel": "Event (channel %s)",
   "gui.steveparty.party_controller.timeline.end": "End of the party",
-  "gui.steveparty.party_controller.timeline.other": "Step"
+  "gui.steveparty.party_controller.timeline.other": "Step",
+  "hud.steveparty.party.round.short": "%s/%s",
+  "hud.steveparty.party.strip.round": "R%s",
+  "hud.steveparty.party.strip.turns": "Turns",
+  "hud.steveparty.party.strip.mini_game": "Mini-game",
+  "hud.steveparty.party.strip.event": "Event",
+  "hud.steveparty.party.strip.preparing": "Setup",
+  "hud.steveparty.party.strip.end": "End",
+  "hud.steveparty.party.strip.other": "Step"
 }
