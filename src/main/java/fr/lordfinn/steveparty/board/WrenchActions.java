@@ -56,8 +56,8 @@ public final class WrenchActions {
     private record LastUse(BlockPos pos, long tick) {
     }
 
-    private static final Map<UUID, LastUse> LAST_USES = new HashMap<>();
-    private static final Map<UUID, Text> LAST_LABELS = new HashMap<>();
+    private static final Map<UUID, LastUse> LAST_USES = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, Text> LAST_LABELS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
 
     private WrenchActions() {
     }

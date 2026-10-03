@@ -202,7 +202,8 @@ public class GoalPoleBaseBlockEntity extends BlockEntity implements ExtendedScre
     @Override
     public void markRemoved() {
         super.markRemoved();
-        GoalPoleNetwork.unregister(this);
+        // Server only, as the registration: the client thread must not touch the server's maps (singleplayer)
+        if (world != null && !world.isClient) GoalPoleNetwork.unregister(this);
     }
 
     /** End of the tick it was loaded or placed in: objectives set up (legacy data converted), poles told the total. */

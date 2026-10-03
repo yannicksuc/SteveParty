@@ -49,8 +49,8 @@ public final class MulaEphemeride {
         final java.util.Set<java.util.UUID> sited = new java.util.HashSet<>();
     }
 
-    private static final Map<RegistryKey<World>, Long> ROLLED = new HashMap<>();
-    private static final Map<RegistryKey<World>, Event> EVENTS = new HashMap<>();
+    private static final Map<RegistryKey<World>, Long> ROLLED = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<RegistryKey<World>, Event> EVENTS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
 
     public static void initialize() {
         ServerTickEvents.END_WORLD_TICK.register(MulaEphemeride::tick);

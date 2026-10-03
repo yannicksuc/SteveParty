@@ -18,7 +18,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.ScreenHandler;
 import fr.lordfinn.steveparty.payloads.custom.PartyLivePayload;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
@@ -63,7 +62,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     public ItemStack catalogue = ItemStack.EMPTY;
     private PartyData partyData = new PartyData();
     /** Server-side only registry of the loaded controllers, keyed by dimension + position. */
-    private static final Map<GlobalPos, PartyControllerEntity> ACTIVE_PARTY_CONTROLLERS = new LinkedHashMap<>();
+    private static final Map<GlobalPos, PartyControllerEntity> ACTIVE_PARTY_CONTROLLERS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new LinkedHashMap<>());
     private static final int START_TILES_SEARCH_RADIUS = 100;
     private final Set<UUID> interestedPlayers = new HashSet<>(); // New field
     /** Set once the step that was running when this controller was saved has been resumed. */
@@ -101,10 +100,6 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
     private boolean practiceRound = true;
 
-    static {
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_PARTY_CONTROLLERS.clear());
-    }
-
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
     }
@@ -127,7 +122,7 @@ public class PartyControllerEntity extends BlockEntity implements ExtendedScreen
     }
 
     private void unregister() {
-        if (this.world != null)
+        if (this.world instanceof ServerWorld)
             ACTIVE_PARTY_CONTROLLERS.remove(GlobalPos.create(this.world.getRegistryKey(), this.pos), this);
     }
 

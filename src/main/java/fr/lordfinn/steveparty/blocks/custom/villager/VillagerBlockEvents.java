@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * </ul>
  */
 public final class VillagerBlockEvents {
-    private static final Map<UUID, Integer> CHAT_COUNTS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> CHAT_COUNTS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new ConcurrentHashMap<>());
 
     private VillagerBlockEvents() {
     }

@@ -40,7 +40,7 @@ import static net.minecraft.util.ActionResult.SUCCESS;
 public class StartTileBehavior extends ABoardSpaceBehavior {
     private static final double AMPLITUDE = 0.2;
     private static final double SPEED = 0.05f;
-    private static final Set<UUID> recentlyUnboundEntities = new HashSet<>();
+    private static final Set<UUID> recentlyUnboundEntities = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashSet<>());
 
     public StartTileBehavior() {
         super(BoardSpaceType.TILE_START);

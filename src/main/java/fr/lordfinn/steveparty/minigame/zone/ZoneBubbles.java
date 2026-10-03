@@ -579,5 +579,7 @@ public final class ZoneBubbles {
         LAST_WARNING.clear();
         ZoneBorder.ACTIVE = false;
         ZoneBorder.resetOrigin();
+        // The stopped server's thread is not kept alive by the hooks
+        ZoneBorder.thread = null;
     }
 }
