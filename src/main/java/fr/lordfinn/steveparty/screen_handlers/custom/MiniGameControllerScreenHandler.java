@@ -86,7 +86,9 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     private static final int P_STATE = 0, P_PLAYERS = 1, P_MODE = 2, P_READY = 3, P_VOTERS = 4, P_FLAGS = 5,
             P_ZONE_X = 6, P_ZONE_Y = 7, P_ZONE_Z = 8,
             // a block id and a position, each over two properties: a property carries 16 bits
-            P_FORBIDDEN_BLOCK = 9, P_FORBIDDEN_X = 11, P_FORBIDDEN_Y = 13, P_FORBIDDEN_Z = 15, PROPERTIES = 17;
+            P_FORBIDDEN_BLOCK = 9, P_FORBIDDEN_X = 11, P_FORBIDDEN_Y = 13, P_FORBIDDEN_Z = 15,
+            // the closest format and what it misses, when nobody fits (format, role, count, min, max)
+            P_SHORTFALL = 17, PROPERTIES = 22;
     private static final int FLAG_VOTER = 1, FLAG_READY = 2, FLAG_ADVENTURE = 4, FLAG_LOCKED = 8;
 
     private final @Nullable MiniGameControllerBlockEntity controller;
@@ -170,6 +172,9 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         if (party.isPresent() && party.get().getPartyData().getCurrentStep() instanceof MiniGamePartyStep step) {
             state = step.isPractice() ? State.PARTY_PRACTICE : State.PARTY_PLAYING;
             players = step.getParticipants().size();
+            fr.lordfinn.steveparty.minigame.MiniGamePageData data = fr.lordfinn.steveparty.minigame.MiniGamePages.get(server, page);
+            mode = data.formatFor(MiniGamePartyStep.counts(fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem
+                    .getCurrentMiniGameTeamDisposition(party.get().catalogue)));
             if (step.isPractice()) {
                 List<MiniGamePagePayloads.Practice.Voter> votes = step.voters(party.get());
                 voters = votes.size();
@@ -202,7 +207,13 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
                 }
             }
             players = plan.players().size();
-            mode = plan.mode() == null ? -1 : plan.mode().ordinal();
+            mode = plan.format();
+            MiniGameTest.Shortfall shortfall = plan.shortfall();
+            properties.set(P_SHORTFALL, shortfall == null ? -1 : shortfall.format());
+            properties.set(P_SHORTFALL + 1, shortfall == null ? 0 : shortfall.role());
+            properties.set(P_SHORTFALL + 2, shortfall == null ? 0 : shortfall.count());
+            properties.set(P_SHORTFALL + 3, shortfall == null ? 0 : shortfall.min());
+            properties.set(P_SHORTFALL + 4, shortfall == null ? 0 : Math.min(255, shortfall.max()));
         }
         if (controller.isAdventure()) flags |= FLAG_ADVENTURE;
         if (controller.isLockedFor(player)) flags |= FLAG_LOCKED;
@@ -235,9 +246,19 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         return properties.get(P_PLAYERS);
     }
 
-    /** Ordinal of the way it would be played out of a party, -1 for none. */
-    public int mode() {
+    /** The index of the page's format it would be played in (out of a party) or is played in (a party), -1 for none. */
+    public int format() {
         return properties.get(P_MODE);
+    }
+
+    /**
+     * When nobody fits ({@link State#NOT_ENOUGH}): the closest format, the role whose players don't fit (-1: the teams
+     * are not of the same size), how many there are, how many it wants (at most 255: no limit); null otherwise.
+     */
+    public int @org.jetbrains.annotations.Nullable [] shortfall() {
+        if (properties.get(P_SHORTFALL) < 0 || state() != State.NOT_ENOUGH) return null;
+        return new int[]{properties.get(P_SHORTFALL), properties.get(P_SHORTFALL + 1), properties.get(P_SHORTFALL + 2),
+                properties.get(P_SHORTFALL + 3), properties.get(P_SHORTFALL + 4)};
     }
 
     /** The players of the practice round who are ready. */

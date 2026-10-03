@@ -76,9 +76,9 @@ public enum MiniGamePipeRole {
         return ordinal >= 0 && ordinal < VALUES.length ? VALUES[ordinal] : null;
     }
 
-    /** The roles a mini-game needs a pipe of, to be played in {@code mode}. */
-    public static List<MiniGamePipeRole> needed(MiniGameMode mode) {
-        return mode == MiniGameMode.FREE_FOR_ALL ? List.of(PLAYERS) : TEAMS.subList(0, mode.teams());
+    /** The roles a mini-game needs a pipe of, to be played in {@code format}. */
+    public static List<MiniGamePipeRole> needed(MiniGameFormat format) {
+        return format.neededRoles();
     }
 
     /**

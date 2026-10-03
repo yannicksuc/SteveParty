@@ -148,8 +148,7 @@ public final class MiniGamePageNetworking {
         if (stack == null) return false;
         MiniGamePageData data = MiniGamePages.get(player.server, payload.page())
                 .withTexts(payload.title(), payload.description())
-                .withModes(MiniGameMode.fromMask(payload.modes()))
-                .withPlayers(payload.minPlayers(), payload.maxPlayers());
+                .withFormats(payload.formats());
         MiniGamePages.update(player.server, data);
         MiniGamePages.refresh(player.server, stack);
         return true;
@@ -170,7 +169,10 @@ public final class MiniGamePageNetworking {
     }
 
     private static MiniGamePagePayloads.TestStatus testStatus(UUID page, MiniGameTest.Plan plan) {
-        return new MiniGamePagePayloads.TestStatus(page, plan.status().ordinal(), plan.players().size(), plan.mode() == null ? -1 : plan.mode().ordinal());
+        MiniGameTest.Shortfall shortfall = plan.shortfall();
+        int[] missing = shortfall == null ? new int[0]
+                : new int[]{shortfall.format(), shortfall.role(), shortfall.count(), shortfall.min(), Math.min(shortfall.max(), 255)};
+        return new MiniGamePagePayloads.TestStatus(page, plan.status().ordinal(), plan.players().size(), plan.format(), missing);
     }
 
     /** The editor asks whether its page can be tested now (the state of its « Test » button). */

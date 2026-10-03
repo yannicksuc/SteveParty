@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.StartRollsStep
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.board.BoardValidator;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import net.minecraft.item.ItemStack;
@@ -319,7 +318,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             MiniGamePageData content = world.getServer() == null ? null : MiniGamePages.of(world.getServer(), page);
             int pipes = content == null ? 0 : content.pipeLinks().size(), playable = 0;
             if (content != null) {
-                for (MiniGameMode mode : content.modes()) if (content.hasPipesFor(mode)) playable++;
+                for (fr.lordfinn.steveparty.minigame.MiniGameFormat format : content.formats()) if (content.hasPipesFor(format)) playable++;
             }
             int podiums = content == null ? 0 : (int) content.podiumLinks().stream()
                     .filter(link -> link.kind() == fr.lordfinn.steveparty.minigame.MiniGamePodiumLink.Kind.PODIUM).count();

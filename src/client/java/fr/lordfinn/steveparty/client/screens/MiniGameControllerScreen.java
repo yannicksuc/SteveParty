@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent;
 import fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud;
 import fr.lordfinn.steveparty.client.minigame.MiniGamePageClient;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.PageZone;
@@ -76,7 +75,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     }
 
     private Object signature() {
-        return List.of(state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.mode(),
+        return List.of(state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.format(), java.util.Arrays.toString(handler.shortfall()),
                 handler.isAdventure(), handler.isLocked(), handler.forbiddenPos());
     }
 
@@ -140,7 +139,13 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     /** What the mini-game is doing, or why it can't be played now. */
     private Text statusText(State state) {
         return switch (state) {
-            case READY -> Text.translatable(KEY + "status.ready", handler.players(), modeText(handler.mode()));
+            case READY -> Text.translatable(KEY + "status.ready", handler.players(), formatName(handler.format()));
+            case NOT_ENOUGH -> {
+                MiniGamePageData data = page();
+                int[] shortfall = handler.shortfall();
+                yield data == null || shortfall == null ? Text.translatable(KEY + "status.not_enough")
+                        : fr.lordfinn.steveparty.client.gui.FormatChips.shortfallText(data, shortfall);
+            }
             case PARTY_PRACTICE -> Text.translatable(KEY + "status.party_practice", handler.readyCount(), handler.voters());
             case ZONE_FORBIDDEN -> Text.translatable(KEY + "status.zone_forbidden", handler.forbiddenBlock().getName(),
                     handler.forbiddenPos().getX(), handler.forbiddenPos().getY(), handler.forbiddenPos().getZ());
@@ -148,10 +153,14 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         };
     }
 
-    private static Text modeText(int mode) {
-        MiniGameMode[] ways = MiniGameMode.values();
-        return mode >= 0 && mode < ways.length ? ways[mode].text() : Text.empty();
+    private Text formatName(int index) {
+        MiniGamePageData data = page();
+        fr.lordfinn.steveparty.minigame.MiniGameFormat format = data == null ? null : data.format(index);
+        return format == null ? Text.empty() : format.name();
     }
+
+    /** The chips shown on the monitor this frame: {x, y, w, index}, for their tooltips. */
+    private final List<int[]> chipsShown = new java.util.ArrayList<>();
 
     /** The status line's colour, on the monitor's dark screen. */
     private static int statusColor(State state) {
@@ -175,6 +184,10 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
                 && (focusedSlot.id == SLOT_PAGE || focusedSlot.id == SLOT_ZONE)) {
             context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(
                     Text.translatable(KEY + (focusedSlot.id == SLOT_PAGE ? "slot.page" : "slot.zone")), 180), mouseX, mouseY);
+        } else if (chipAt(mouseX, mouseY) >= 0 && page() != null) {
+            // A format chip: its name, what it means
+            fr.lordfinn.steveparty.minigame.MiniGameFormat format = page().format(chipAt(mouseX, mouseY));
+            if (format != null) context.drawTooltip(textRenderer, List.of(format.name(), format.meaning().formatted(Formatting.GRAY)), mouseX, mouseY);
         } else {
             // The zone's line, when it had to be cut: whole in a tooltip
             Text zone = zoneText();
@@ -232,6 +245,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private void drawMonitor(DrawContext context) {
         ItemStack stack = handler.getSlot(SLOT_PAGE).getStack();
         int px = x + SX + 1, py = y + SY + 1, tx = x + TX, ty = y + SY;
+        chipsShown.clear();
         if (stack.isEmpty()) {
             context.drawItem(new ItemStack(ModItems.MINI_GAME_PAGE), px + 32, py + 15);
             veil(context, px + 32, py + 15, 0x80000000 | (SCREEN & 0xFFFFFF));
@@ -252,26 +266,31 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         List<OrderedText> lines = textRenderer.wrapLines(status, TW + 1);
         boolean modeRow = data != null && lines.size() <= 2;
         if (modeRow) {
-            // Its way to play (the one chosen, else the page's first) in a gold pill, then its players
-            int mode = handler.mode() >= 0 ? handler.mode() : data.modes().isEmpty() ? -1 : data.modes().iterator().next().ordinal();
+            // Its formats (pawn chips, the one played gold rimmed, a « ! » on those without their pipes), on one row
             int left = tx;
-            if (mode >= 0) {
-                Text modeLabel = modeText(mode);
-                int pw = Math.min(TW, textRenderer.getWidth(modeLabel) - 1 + 10);
-                ConsolePaint.pill(context, tx, ty + 10, pw, 12, GOLD, true);
-                OrderedText fitted = fitOrdered(modeLabel, pw - 10);
-                context.drawText(textRenderer, fitted, tx + 6, ty + 13, 0xFFFFE3A3, false);
-                context.drawText(textRenderer, fitted, tx + 5, ty + 12, 0xFF5B2E00, false);
-                left = tx + pw + 4;
+            for (int i = 0; i < data.formats().size(); i++) {
+                fr.lordfinn.steveparty.minigame.MiniGameFormat format = data.formats().get(i);
+                fr.lordfinn.steveparty.client.gui.FormatChips.Look look =
+                        new fr.lordfinn.steveparty.client.gui.FormatChips.Look(false, i == handler.format(), !data.hasPipesFor(format), false, 13);
+                int w = fr.lordfinn.steveparty.client.gui.FormatChips.width(textRenderer, format, look);
+                if (left + w > tx + TW) break;
+                fr.lordfinn.steveparty.client.gui.FormatChips.draw(context, textRenderer, format, look, left, ty + 10);
+                chipsShown.add(new int[]{left, ty + 10, w, i});
+                left += w + 3;
             }
-            int room = tx + TW - left;
-            if (room > 12) context.drawText(textRenderer, fitOrdered(MiniGamePageTooltipComponent.playersText(data), room), left, ty + 12, SCREEN_SOFT, true);
             for (int i = 0; i < lines.size(); i++) context.drawText(textRenderer, lines.get(i), tx, ty + 27 + i * 10, statusColor(state), true);
         } else {
             // A long reason: under the title, on up to four lines
             int step = lines.size() > 3 ? 9 : 10;
             for (int i = 0; i < Math.min(4, lines.size()); i++) context.drawText(textRenderer, lines.get(i), tx, ty + 10 + i * step, statusColor(state), true);
         }
+    }
+
+    private int chipAt(int mouseX, int mouseY) {
+        for (int[] chip : chipsShown) {
+            if (mouseX >= chip[0] && mouseX < chip[0] + chip[2] && mouseY >= chip[1] && mouseY < chip[1] + 13) return chip[3];
+        }
+        return -1;
     }
 
     private Text zoneText() {

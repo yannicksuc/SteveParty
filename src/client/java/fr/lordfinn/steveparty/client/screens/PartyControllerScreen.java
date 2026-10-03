@@ -452,10 +452,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     /** The « i »: a 12 px teal LED button, its « i » with its shadow. */
     private static void infoButton(DrawContext context, int ix, int iy) {
-        ConsolePaint.disc(context, ix, iy, ROW_H, TEAL);
-        int[][] light = {{5, 2}, {5, 4}, {5, 5}, {5, 6}, {5, 7}, {5, 8}}, dark = {{6, 3}, {6, 5}, {6, 6}, {6, 7}, {6, 8}, {6, 9}};
-        for (int[] p : dark) PartyGui.pixel(context, ix + p[0], iy + p[1], 0xFF006666);
-        for (int[] p : light) PartyGui.pixel(context, ix + p[0], iy + p[1], WHITE);
+        ConsolePaint.infoButton(context, ix, iy);
     }
 
     /**

@@ -80,11 +80,11 @@ public final class MiniGameTest implements MiniGameSession {
     public enum Status {
         READY,
         RUNNING,
-        /** No way to play ticked on the page has the pipes its players come out of. */
+        /** No format of the page has the pipes its players come out of. */
         NO_PIPE,
         /** Nobody stands near a players or team pipe of the page. */
         NOBODY,
-        /** Those near the pipes are too few (or too many), or a team has nobody. */
+        /** Those near the pipes fit no format of the page ({@link Plan#shortfall} says the closest and what it misses). */
         NOT_ENOUGH,
         /** A party is playing this mini-game. */
         PARTY_PLAYING,
@@ -115,12 +115,29 @@ public final class MiniGameTest implements MiniGameSession {
     /**
      * How a test would be played with those near the pipes.
      *
-     * @param mode    the way to play, null when it can't be tested
-     * @param teams   the teams (everyone in « team B » without teams), null when it can't be tested
-     * @param ignored those near a pipe whose role the way to play does not use, with that role
+     * @param format    the index of the page's format played, -1 when it can't be tested
+     * @param teams     the teams (everyone in « team B » without teams), null when it can't be tested
+     * @param ignored   those near a pipe whose role the format does not use, with that role
+     * @param shortfall when nobody fits ({@link Status#NOT_ENOUGH}): the closest format and what it misses, else null
      */
-    public record Plan(Status status, @Nullable MiniGameMode mode, @Nullable TeamDisposition teams, List<UUID> players,
-                       List<UUID> spectators, Map<UUID, MiniGamePipeRole> ignored) {
+    public record Plan(Status status, int format, @Nullable TeamDisposition teams, List<UUID> players,
+                       List<UUID> spectators, Map<UUID, MiniGamePipeRole> ignored, @Nullable Shortfall shortfall) {
+        Plan(Status status, List<UUID> spectators) {
+            this(status, -1, null, List.of(), spectators, Map.of(), null);
+        }
+    }
+
+    /**
+     * What keeps those near the pipes from playing the page's closest format.
+     *
+     * @param format the index of that format
+     * @param role   the ordinal of the role whose players don't fit ({@link MiniGamePipeRole}), -1 when they all fit
+     *               but the teams are not of the same size
+     * @param count  how many stand near its pipes
+     * @param min    how many its side wants at least
+     * @param max    and at most ({@link MiniGameFormat.Side#INFINITE}: no limit)
+     */
+    public record Shortfall(int format, int role, int count, int min, int max) {
     }
 
     private static final Map<UUID, MiniGameTest> TESTS = new LinkedHashMap<>();
@@ -163,17 +180,11 @@ public final class MiniGameTest implements MiniGameSession {
         return recruits;
     }
 
-    /** The roles of the players of a way to play: the players pipes without teams, else one role per team. */
-    private static List<MiniGamePipeRole> playerRoles(MiniGameMode mode) {
-        if (mode.teams() <= 1) return List.of(MiniGamePipeRole.PLAYERS);
-        List<MiniGamePipeRole> roles = new ArrayList<>();
-        for (int team = 0; team < mode.teams(); team++) roles.add(MiniGamePipeRole.ofTeam(team));
-        return roles;
-    }
-
     /**
-     * How the page would be tested with {@code recruits}: among the ways to play it ticks (and has the pipes of), the
-     * one that takes the most of them, each of its teams having someone and their number being within the page's.
+     * How the page would be tested with {@code recruits}: among its formats (that have their pipes), those the teams
+     * near the pipes fit in order (the players near the team A pipes play side 1, those near the B pipes side 2...;
+     * without teams, those near the players pipes); of them the one that takes the most players, the most specific when
+     * equal. When none fits, the closest one (the fewest players missing or too many) and what it misses.
      *
      * @param recruits those near its pipes with their role, in order ({@link #recruit})
      */
@@ -184,12 +195,15 @@ public final class MiniGameTest implements MiniGameSession {
             if (recruit.getValue() == MiniGamePipeRole.SPECTATORS) spectators.add(recruit.getKey());
             else candidates++;
         }
-        if (!page.isPlayable()) return new Plan(Status.NO_PIPE, null, null, List.of(), spectators, Map.of());
-        if (candidates == 0) return new Plan(Status.NOBODY, null, null, List.of(), spectators, Map.of());
+        if (!page.isPlayable()) return new Plan(Status.NO_PIPE, spectators);
+        if (candidates == 0) return new Plan(Status.NOBODY, spectators);
         Plan best = null;
-        for (MiniGameMode mode : MiniGameMode.values()) {
-            if (!page.modes().contains(mode) || !page.hasPipesFor(mode)) continue;
-            List<MiniGamePipeRole> roles = playerRoles(mode);
+        Shortfall closest = null;
+        int closestDistance = Integer.MAX_VALUE, closestSpecificity = Integer.MAX_VALUE;
+        for (int i = 0; i < page.formats().size(); i++) {
+            MiniGameFormat format = page.formats().get(i);
+            if (!page.hasPipesFor(format)) continue;
+            List<MiniGamePipeRole> roles = format.neededRoles();
             List<UUID> players = new ArrayList<>();
             Map<UUID, MiniGamePipeRole> ignored = new LinkedHashMap<>();
             List<Set<UUID>> teams = List.of(new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
@@ -202,14 +216,38 @@ public final class MiniGameTest implements MiniGameSession {
                     ignored.put(recruit.getKey(), recruit.getValue());
                 }
             }
-            if (players.size() < page.minPlayers() || players.size() > page.maxPlayers()) continue;
-            if (mode.teams() > 1 && teams.subList(0, mode.teams()).stream().anyMatch(Set::isEmpty)) continue;
-            if (best != null && players.size() <= best.players().size()) continue;
-            TeamDisposition disposition = mode.teams() <= 1 ? TeamDisposition.freeForAll(players)
-                    : new TeamDisposition(teams.get(0), teams.get(1), teams.get(2), teams.get(3));
-            best = new Plan(Status.READY, mode, disposition, players, spectators, ignored);
+            List<Integer> counts = new ArrayList<>();
+            if (format.kind() == MiniGameFormat.Kind.TEAMS) for (int team = 0; team < roles.size(); team++) counts.add(teams.get(team).size());
+            else counts.add(players.size());
+            if (format.matchesInOrder(counts)) {
+                if (best != null && (players.size() < best.players().size()
+                        || players.size() == best.players().size() && format.specificity() >= page.formats().get(best.format()).specificity())) continue;
+                TeamDisposition disposition = format.kind() != MiniGameFormat.Kind.TEAMS ? TeamDisposition.freeForAll(players)
+                        : new TeamDisposition(teams.get(0), teams.get(1), teams.get(2), teams.get(3));
+                best = new Plan(Status.READY, i, disposition, players, spectators, ignored, null);
+                continue;
+            }
+            // Not this one: how far from it
+            // Not this one: how far from it (the teams near the pipes are in order: team A near the A pipes...)
+            int distance = format.distanceInOrder(counts);
+            Shortfall shortfall = null;
+            for (int side = 0; side < counts.size() && shortfall == null; side++) {
+                MiniGameFormat.Side range = format.sides().get(side);
+                if (!range.contains(counts.get(side))) shortfall = new Shortfall(i, roles.get(side).ordinal(), counts.get(side), range.min(), range.max());
+            }
+            if (shortfall == null) {
+                // Every team fits its range, they are not of the same size
+                distance = 1;
+                shortfall = new Shortfall(i, -1, 0, 0, 0);
+            }
+            if (distance < closestDistance || distance == closestDistance && format.specificity() < closestSpecificity) {
+                closestDistance = distance;
+                closestSpecificity = format.specificity();
+                closest = shortfall;
+            }
         }
-        return best != null ? best : new Plan(Status.NOT_ENOUGH, null, null, List.of(), spectators, Map.of());
+        if (best != null) return best;
+        return new Plan(Status.NOT_ENOUGH, -1, null, List.of(), spectators, Map.of(), closest);
     }
 
     // ------------------------------------------------------------------ the tests of a server
@@ -230,13 +268,12 @@ public final class MiniGameTest implements MiniGameSession {
 
     /** Whether the page can be tested now, and with whom. */
     public static Plan check(MinecraftServer server, UUID pageId) {
-        if (TESTS.containsKey(pageId)) return new Plan(Status.RUNNING, null, null, List.of(), List.of(), Map.of());
-        if (PartyControllerEntity.getPartyPlayingPage(List.of(pageId)).isPresent())
-            return new Plan(Status.PARTY_PLAYING, null, null, List.of(), List.of(), Map.of());
+        if (TESTS.containsKey(pageId)) return new Plan(Status.RUNNING, List.of());
+        if (PartyControllerEntity.getPartyPlayingPage(List.of(pageId)).isPresent()) return new Plan(Status.PARTY_PLAYING, List.of());
         MiniGamePageData page = MiniGamePages.get(server, pageId);
         Plan plan = plan(page, recruit(server, page));
         Status zone = plan.status() == Status.READY ? Status.ofZone(MiniGameArena.check(server, pageId)) : null;
-        return zone == null ? plan : new Plan(zone, null, null, List.of(), plan.spectators(), Map.of());
+        return zone == null ? plan : new Plan(zone, plan.spectators());
     }
 
     /**
@@ -267,7 +304,7 @@ public final class MiniGameTest implements MiniGameSession {
 
     private final MinecraftServer server;
     private final UUID pageId;
-    private final MiniGameMode mode;
+    private final int format;
     private final TeamDisposition disposition;
     private final List<UUID> players;
     private final List<UUID> spectators;
@@ -283,7 +320,7 @@ public final class MiniGameTest implements MiniGameSession {
     private MiniGameTest(MinecraftServer server, UUID pageId, Plan plan, @Nullable ServerPlayerEntity starter) {
         this.server = server;
         this.pageId = pageId;
-        this.mode = plan.mode();
+        this.format = plan.format();
         this.disposition = plan.teams();
         this.players = List.copyOf(plan.players());
         this.spectators = List.copyOf(plan.spectators());
@@ -298,8 +335,9 @@ public final class MiniGameTest implements MiniGameSession {
         return phase;
     }
 
-    public MiniGameMode mode() {
-        return mode;
+    /** The index of the page's format played. */
+    public int format() {
+        return format;
     }
 
     public List<UUID> spectators() {
@@ -372,6 +410,12 @@ public final class MiniGameTest implements MiniGameSession {
         });
     }
 
+    /** The name of the format played. */
+    private Text formatName() {
+        MiniGameFormat played = page().format(format);
+        return played == null ? Text.empty() : played.name();
+    }
+
     private void begin(Plan plan, int countdownSeconds) {
         // Where everyone stands now: where they go back at the end
         for (ServerPlayerEntity player : audience()) {
@@ -380,13 +424,13 @@ public final class MiniGameTest implements MiniGameSession {
         }
         plan.ignored().forEach((uuid, role) -> {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-            if (player != null) player.sendMessage(Text.translatable("message.steveparty.minigame.test.ignored", role.text(), mode.text())
+            if (player != null) player.sendMessage(Text.translatable("message.steveparty.minigame.test.ignored", role.text(), formatName())
                     .formatted(Formatting.GOLD), false);
         });
         // Away in this mini-game from now on (nobody in two mini-games at once): free pipes, the exit pipe brings back
-        for (UUID uuid : returns.keySet()) MiniGamePipes.enterParty(uuid, this::leaveEarly, () -> !closed);
+        for (UUID uuid : returns.keySet()) MiniGamePipes.enterParty(uuid, pageId, this::leaveEarly, () -> !closed);
         send(new MiniGamePagePayloads.TestLabel(true, page().title()));
-        MessageUtils.sendToPlayers(audience(), Text.translatable("message.steveparty.minigame.test.start", players.size(), mode.text())
+        MessageUtils.sendToPlayers(audience(), Text.translatable("message.steveparty.minigame.test.start", players.size(), formatName())
                 .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
         countdown(countdownSeconds);
     }
@@ -401,7 +445,7 @@ public final class MiniGameTest implements MiniGameSession {
             });
             return;
         }
-        send(new MiniGamePagePayloads.Preview(true, page(), mode.ordinal(), seconds));
+        send(new MiniGamePagePayloads.Preview(true, page(), format, seconds));
         playSoundToPlayers(onlinePlayers(), SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), SoundCategory.PLAYERS, 1f, 1f);
         later(20, () -> countdown(seconds - 1));
     }
@@ -436,7 +480,7 @@ public final class MiniGameTest implements MiniGameSession {
 
     private void comeOut(MiniGamePipeLink link, UUID uuid) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-        if (player != null && !MiniGamePipes.emerge(server, link, player)) {
+        if (player != null && !MiniGamePipes.emergeInRound(server, link, player, pageId)) {
             // No pipe to come out of any more: it stays where it is, with what it owns
             arena.leave(player);
             player.sendMessage(Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED), false);
@@ -453,12 +497,11 @@ public final class MiniGameTest implements MiniGameSession {
         return online;
     }
 
-    /** A player takes the exit pipe: back where it stood, the test goes on for the others. */
-    private boolean leaveEarly(ServerPlayerEntity player) {
+    /** A player takes a way out (a pipe linked to the page): out of the test, which goes on for the others. */
+    private MiniGameReturns.@Nullable Return leaveEarly(ServerPlayerEntity player) {
         MiniGamePipes.leaveParty(player.getUuid());
         arena.leave(player);
-        MiniGameReturns.Return back = returns.remove(player.getUuid());
-        return back != null && MiniGameReturns.bringBack(server, player.getUuid(), back);
+        return returns.remove(player.getUuid());
     }
 
     @Override

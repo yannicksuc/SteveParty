@@ -106,6 +106,21 @@ public final class ConsolePaint {
         pattern(context, "gamepad", GAMEPAD, GAMEPAD_COLOURS, x, y);
     }
 
+    /** A picture made of pixels ({@code [y][x]}, ARGB, 0: nothing), painted once under {@code key}. */
+    public static void image(DrawContext context, String key, java.util.function.Supplier<int[][]> pixels, int x, int y) {
+        Tex known = TEXTURES.get("x" + key);
+        if (known == null) known = register("x" + key, pixels.get());
+        draw(context, known, x, y);
+    }
+
+    /** The « i » of every menu of the mod: a 12 px teal disc, its « i » white with its dark shadow. */
+    public static void infoButton(DrawContext context, int ix, int iy) {
+        disc(context, ix, iy, 12, Ramp.of(0x002a2a, 0xa0ffff, 0x00bbbb, 0x008c8c));
+        int[][] light = {{5, 2}, {5, 4}, {5, 5}, {5, 6}, {5, 7}, {5, 8}}, dark = {{6, 3}, {6, 5}, {6, 6}, {6, 7}, {6, 8}, {6, 9}};
+        for (int[] p : dark) context.fill(ix + p[0], iy + p[1], ix + p[0] + 1, iy + p[1] + 1, 0xFF006666);
+        for (int[] p : light) context.fill(ix + p[0], iy + p[1], ix + p[0] + 1, iy + p[1] + 1, 0xFFFFFFFF);
+    }
+
     /** A small icon from rows of characters, each one a colour (others: nothing). */
     public static void pattern(DrawContext context, String key, String[] rows, Map<Character, Integer> colours, int x, int y) {
         Tex known = TEXTURES.get("i" + key);

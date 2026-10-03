@@ -4,7 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDispositio
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
+import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImage;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
@@ -81,8 +81,8 @@ public class MiniGamePageGameTests implements FabricGameTest {
         return player.getMainHandStack();
     }
 
-    private static MiniGamePagePayloads.Edit edit(UUID page, String title, String description, Set<MiniGameMode> modes, int min, int max) {
-        return new MiniGamePagePayloads.Edit(Hand.MAIN_HAND, page, title, description, MiniGameMode.toMask(modes), min, max);
+    private static MiniGamePagePayloads.Edit edit(UUID page, String title, String description, List<MiniGameFormat> formats) {
+        return new MiniGamePagePayloads.Edit(Hand.MAIN_HAND, page, title, description, formats);
     }
 
     /** A picture with details everywhere (gradient and noise), as a photo would be. */
@@ -117,7 +117,8 @@ public class MiniGamePageGameTests implements FabricGameTest {
         UUID id = UUID.randomUUID(), uploader = UUID.randomUUID();
         MiniGamePageData page = new MiniGamePageData(id, "Course de cochons", "Premier arrivé gagne.\nAttention à la lave !",
                 new MiniGamePageImage("0123456789abcdef0123456789abcdef", 640, 360, 45678, "LordFinn", uploader),
-                EnumSet.of(MiniGameMode.FREE_FOR_ALL, MiniGameMode.THREE_TEAMS), 2, 6,
+                List.of(MiniGameFormat.freeForAll(2, 6), MiniGameFormat.teams(false, MiniGameFormat.Side.exactly(1), MiniGameFormat.Side.exactly(1),
+                        MiniGameFormat.Side.atLeast(2))),
                 List.of(new MiniGamePipeLink(GlobalPos.create(World.NETHER, new BlockPos(4, 70, -12)), net.minecraft.util.math.Direction.EAST,
                         fr.lordfinn.steveparty.minigame.MiniGamePipeRole.TEAM_B)));
         MiniGamePageData blank = MiniGamePageData.empty(UUID.randomUUID());
@@ -172,13 +173,12 @@ public class MiniGamePageGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void pageDataIsCleaned(TestContext context) {
         MiniGamePageData page = new MiniGamePageData(UUID.randomUUID(), "  Titre\n§cpiégé " + "x".repeat(100), "a\n".repeat(30),
-                null, EnumSet.noneOf(MiniGameMode.class), 9, 3, null);
+                null, List.of(), null);
         context.assertTrue(page.title().length() <= MiniGamePageData.MAX_TITLE_LENGTH, "title cut");
         context.assertTrue(!page.title().contains("\n") && !page.title().contains("§"), "title on one line, no formatting code");
         context.assertTrue(page.description().split("\n").length <= MiniGamePageData.MAX_DESCRIPTION_LINES, "description lines cut");
-        context.assertEquals(page.modes(), EnumSet.of(MiniGameMode.FREE_FOR_ALL), "no mode ticked: free for all");
-        context.assertEquals(page.minPlayers(), 9, "min kept");
-        context.assertEquals(page.maxPlayers(), 9, "max raised to min");
+        context.assertEquals(page.formats(), List.of(MiniGameFormat.freeForAll(1, MiniGameFormat.Side.INFINITE)), "no format: free for all, any number");
+        context.assertEquals(new MiniGameFormat.Side(9, 3), new MiniGameFormat.Side(9, 9), "a side's max raised to its min");
         context.assertTrue(page.pipeLinks().isEmpty(), "no pipe link yet");
         context.complete();
     }
@@ -202,15 +202,14 @@ public class MiniGamePageGameTests implements FabricGameTest {
                     "both are marked as linked");
 
             int changes = CHANGES.get();
-            context.assertTrue(MiniGamePageNetworking.edit(player, edit(id, "Course", "Vite !", EnumSet.of(MiniGameMode.TWO_TEAMS), 2, 4)),
+            context.assertTrue(MiniGamePageNetworking.edit(player, edit(id, "Course", "Vite !", List.of(TWO_V_TWO))),
                     "the edit is accepted");
             context.assertEquals(CHANGES.get(), changes + 1, "the change event fired once");
             context.assertEquals(lastChanged, id, "for this page");
             MiniGamePageData seenByCopy = MiniGamePages.of(server, copy);
             context.assertEquals(seenByCopy.title(), "Course", "the copy shows the title");
             context.assertEquals(seenByCopy.description(), "Vite !", "and the description");
-            context.assertEquals(seenByCopy.modes(), EnumSet.of(MiniGameMode.TWO_TEAMS), "and the modes");
-            context.assertEquals(seenByCopy.maxPlayers(), 4, "and the players");
+            context.assertEquals(seenByCopy.formats(), List.of(TWO_V_TWO), "and the formats");
 
             context.assertEquals(page.getName().getString(), "Course", "the edited item is named after its title");
             context.assertTrue(MiniGamePages.refresh(server, copy), "the copy's title is brought up to date");
@@ -218,7 +217,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(MiniGamePages.displayName(server, copy).getString(), "Course", "the roulette shows the title");
 
             // The same edit again changes nothing
-            MiniGamePageNetworking.edit(player, edit(id, "Course", "Vite !", EnumSet.of(MiniGameMode.TWO_TEAMS), 2, 4));
+            MiniGamePageNetworking.edit(player, edit(id, "Course", "Vite !", List.of(TWO_V_TWO)));
             context.assertEquals(CHANGES.get(), changes + 1, "no event for no change");
 
             // The « Copy » button: a linked copy in the inventory
@@ -276,7 +275,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
         try {
             ItemStack page = openedPage(player);
             UUID id = MiniGamePages.idOf(page);
-            MiniGamePageNetworking.edit(player, edit(id, "Bataille", "Dernier debout.", EnumSet.of(MiniGameMode.FREE_FOR_ALL), 2, 8));
+            MiniGamePageNetworking.edit(player, edit(id, "Bataille", "Dernier debout.", List.of(MiniGameFormat.freeForAll(2, 8))));
             context.assertEquals(MiniGamePages.setImage(server, id, MiniGamePageImages.prepare(photo(320, 180, false)), "LordFinn", player.getUuid()),
                     MiniGamePages.ImageResult.SAVED, "picture saved");
             ItemStack original = MiniGamePages.linkedCopy(page, 1);
@@ -291,7 +290,7 @@ public class MiniGamePageGameTests implements FabricGameTest {
             context.assertEquals(copy.withId(id), MiniGamePages.get(server, id), "same content: texts, picture, settings");
             context.assertTrue(MiniGamePages.imageBytes(server, copy.image().hash()) != null, "the picture is still there");
 
-            MiniGamePageNetworking.edit(player, edit(newId, "Bataille navale", "", EnumSet.of(MiniGameMode.TWO_TEAMS), 2, 2));
+            MiniGamePageNetworking.edit(player, edit(newId, "Bataille navale", "", List.of(DUEL)));
             context.assertEquals(MiniGamePages.of(server, original).title(), "Bataille", "the other page did not change");
             context.assertEquals(MiniGamePages.of(server, unlinked).title(), "Bataille navale", "the unlinked one did");
 
@@ -354,13 +353,13 @@ public class MiniGamePageGameTests implements FabricGameTest {
             ItemStack page = openedPage(player);
             UUID id = MiniGamePages.idOf(page);
             context.assertTrue(MiniGamePages.canEdit(player), "survival: can edit");
-            context.assertTrue(MiniGamePageNetworking.edit(player, edit(id, "Écrit", "", EnumSet.allOf(MiniGameMode.class), 1, 16)), "survival writes");
+            context.assertTrue(MiniGamePageNetworking.edit(player, edit(id, "Écrit", "", MiniGameFormat.GALLERY)), "survival writes");
             byte[] picture = MiniGamePageImages.prepare(photo(200, 100, false));
 
             for (GameMode mode : new GameMode[]{GameMode.ADVENTURE, GameMode.SPECTATOR}) {
                 player.changeGameMode(mode);
                 context.assertTrue(!MiniGamePages.canEdit(player), mode + ": can't edit");
-                context.assertTrue(!MiniGamePageNetworking.edit(player, edit(id, "Piraté", "", EnumSet.allOf(MiniGameMode.class), 1, 16)),
+                context.assertTrue(!MiniGamePageNetworking.edit(player, edit(id, "Piraté", "", MiniGameFormat.GALLERY)),
                         mode + ": edit refused");
                 for (MiniGamePagePayloads.Action.Kind kind : MiniGamePagePayloads.Action.Kind.values()) {
                     context.assertTrue(!MiniGamePageNetworking.action(player, new MiniGamePagePayloads.Action(Hand.MAIN_HAND, id, kind)),
@@ -379,10 +378,10 @@ public class MiniGamePageGameTests implements FabricGameTest {
 
             // A builder, but not holding that page: refused
             player.changeGameMode(GameMode.CREATIVE);
-            context.assertTrue(!MiniGamePageNetworking.edit(player, edit(id, "Piraté", "", EnumSet.allOf(MiniGameMode.class), 1, 16)),
+            context.assertTrue(!MiniGamePageNetworking.edit(player, edit(id, "Piraté", "", MiniGameFormat.GALLERY)),
                     "a page that is not in hand can't be written on");
             player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
-            context.assertTrue(!MiniGamePageNetworking.edit(player, edit(id, "Piraté", "", EnumSet.allOf(MiniGameMode.class), 1, 16)),
+            context.assertTrue(!MiniGamePageNetworking.edit(player, edit(id, "Piraté", "", MiniGameFormat.GALLERY)),
                     "nor with an empty hand");
             context.assertEquals(MiniGamePages.get(server, id).title(), "Écrit", "still as written");
             context.complete();
@@ -474,39 +473,6 @@ public class MiniGamePageGameTests implements FabricGameTest {
         }
     }
 
-    // ------------------------------------------------------------------ accepted modes
-
-    /** A page says which team layouts and how many players its mini-game accepts. */
-    @GameTest(templateName = EMPTY_STRUCTURE)
-    public void pagesAcceptTheLayoutsTheyTick(TestContext context) {
-        MiniGamePageData page = MiniGamePageData.empty(UUID.randomUUID());
-        // A new page: free for all only, the other ways to play are ticked by who writes it
-        context.assertEquals(page.modes(), EnumSet.of(MiniGameMode.FREE_FOR_ALL), "a new page ticks free for all only");
-        for (MiniGameMode mode : MiniGameMode.values()) {
-            context.assertEquals(page.accepts(1, mode) && page.accepts(MiniGamePageData.MAX_PLAYERS, mode), mode == MiniGameMode.FREE_FOR_ALL,
-                    "a blank page and " + mode);
-        }
-        MiniGamePageData duel = page.withModes(EnumSet.of(MiniGameMode.TWO_TEAMS, MiniGameMode.FOUR_TEAMS)).withPlayers(2, 4);
-        context.assertTrue(duel.accepts(4, MiniGameMode.TWO_TEAMS), "2 teams, 4 players");
-        context.assertTrue(duel.accepts(2, MiniGameMode.FOUR_TEAMS), "4 teams, 2 players");
-        context.assertTrue(!duel.accepts(4, MiniGameMode.FREE_FOR_ALL), "free for all is not ticked");
-        context.assertTrue(!duel.accepts(4, MiniGameMode.THREE_TEAMS), "nor 3 teams");
-        context.assertTrue(!duel.accepts(1, MiniGameMode.TWO_TEAMS), "too few players");
-        context.assertTrue(!duel.accepts(5, MiniGameMode.TWO_TEAMS), "too many players");
-        context.assertTrue(!duel.accepts(3, null), "no layout");
-
-        context.assertEquals(MiniGameMode.ofTeams(0), MiniGameMode.FREE_FOR_ALL, "no team");
-        context.assertEquals(MiniGameMode.ofTeams(3), MiniGameMode.THREE_TEAMS, "3 teams");
-        context.assertTrue(MiniGameMode.ofTeams(7) == null, "no mode with 7 teams");
-        context.assertEquals(MiniGameMode.fromMask(MiniGameMode.toMask(duel.modes())), duel.modes(), "modes as a mask and back");
-
-        // The teams the party controller draws: none (free for all) or two (2 vs 2 as well as 1 vs 3)
-        UUID a = UUID.randomUUID(), b = UUID.randomUUID(), c = UUID.randomUUID(), d = UUID.randomUUID();
-        TeamDisposition freeForAll = new TeamDisposition(Set.of(), Set.of(a, b, c, d));
-        TeamDisposition oneVsThree = new TeamDisposition(Set.of(a), Set.of(b, c, d));
-        context.assertEquals(MiniGameMode.of(freeForAll), MiniGameMode.FREE_FOR_ALL, "no team A: free for all");
-        context.assertEquals(MiniGameMode.of(oneVsThree), MiniGameMode.TWO_TEAMS, "1 vs 3: two teams");
-
-        context.complete();
-    }
+    private static final MiniGameFormat TWO_V_TWO = MiniGameFormat.teams(false, MiniGameFormat.Side.exactly(2), MiniGameFormat.Side.exactly(2));
+    private static final MiniGameFormat DUEL = MiniGameFormat.teams(false, MiniGameFormat.Side.exactly(1), MiniGameFormat.Side.exactly(1));
 }

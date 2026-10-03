@@ -68,6 +68,7 @@ public class Steveparty implements ModInitializer {
         ModScoreboardCriteria.initialize();
         fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork.initialize();
         fr.lordfinn.steveparty.minigame.MiniGamePipes.initialize();
+        fr.lordfinn.steveparty.minigame.MiniGameNameColors.initialize();
         fr.lordfinn.steveparty.podium.Podiums.initialize();
         fr.lordfinn.steveparty.minigame.MiniGameTest.initialize();
         fr.lordfinn.steveparty.blocks.custom.PartyController.PartyChunkHolds.initialize();

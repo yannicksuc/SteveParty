@@ -21,7 +21,7 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
-import fr.lordfinn.steveparty.minigame.MiniGameMode;
+import fr.lordfinn.steveparty.minigame.MiniGameFormat;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
 import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
@@ -189,7 +189,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
             expected.put(w.getUuid(), MiniGamePipeRole.SPECTATORS);
             context.assertEquals(recruits, expected, "each near a pipe takes the role of the nearest; the exit pipe and 5 blocks away: nobody");
             // Someone already in a mini-game is not recruited
-            MiniGamePipes.enterParty(g.getUuid(), player -> false, () -> true);
+            MiniGamePipes.enterParty(g.getUuid(), id, player -> null, () -> true);
             context.assertTrue(!MiniGameTest.recruit(server, MiniGamePages.get(server, id)).containsKey(g.getUuid()), "nobody in two mini-games at once");
         } finally {
             remove(context, g, b, w, exit, far);
@@ -197,12 +197,14 @@ public class MiniGameTestGameTests implements FabricGameTest {
         context.complete();
     }
 
-    private static MiniGamePageData pageOf(Set<MiniGameMode> modes, MiniGamePipeRole... pipes) {
+    private static final MiniGameFormat ANY = MiniGameFormat.freeForAll(1, MiniGameFormat.Side.INFINITE), TWO = MiniGameFormat.blank();
+
+    private static MiniGamePageData pageOf(List<MiniGameFormat> formats, MiniGamePipeRole... pipes) {
         List<MiniGamePipeLink> links = new ArrayList<>();
         for (int i = 0; i < pipes.length; i++) {
             links.add(new MiniGamePipeLink(GlobalPos.create(net.minecraft.world.World.OVERWORLD, new BlockPos(i, 0, 0)), Direction.UP, pipes[i]));
         }
-        return MiniGamePageData.empty(UUID.randomUUID()).withModes(modes).withPipeLinks(links);
+        return MiniGamePageData.empty(UUID.randomUUID()).withFormats(formats).withPipeLinks(links);
     }
 
     private static Map<UUID, MiniGamePipeRole> recruits(Object... pairs) {
@@ -221,33 +223,36 @@ public class MiniGameTestGameTests implements FabricGameTest {
         MiniGamePipeRole players = MiniGamePipeRole.PLAYERS, teamA = MiniGamePipeRole.TEAM_A, teamB = MiniGamePipeRole.TEAM_B, watch = MiniGamePipeRole.SPECTATORS;
 
         // Free for all: the players pipes; someone near a team pipe is left out, the spectator watches
-        MiniGameTest.Plan plan = MiniGameTest.plan(pageOf(EnumSet.of(MiniGameMode.FREE_FOR_ALL), players, teamA, watch), recruits(a, players, b, teamA, s, watch));
-        context.assertTrue(plan.status() == Status.READY && plan.mode() == MiniGameMode.FREE_FOR_ALL, "free for all");
+        MiniGameTest.Plan plan = MiniGameTest.plan(pageOf(List.of(ANY), players, teamA, watch), recruits(a, players, b, teamA, s, watch));
+        context.assertTrue(plan.status() == Status.READY && plan.format() == 0, "free for all");
         context.assertEquals(plan.players(), List.of(a), "the one near the players pipe plays");
         context.assertEquals(plan.ignored(), Map.of(b, teamA), "the one near a team pipe is left out, with its role");
         context.assertEquals(plan.spectators(), List.of(s), "the one near the spectators pipe watches");
         context.assertTrue(plan.teams() != null && plan.teams().isFreeForAll(), "no team");
 
         // Two teams: each needs someone
-        MiniGamePageData twoTeams = pageOf(EnumSet.of(MiniGameMode.TWO_TEAMS), teamA, teamB);
+        MiniGamePageData twoTeams = pageOf(List.of(TWO), teamA, teamB);
         context.assertEquals(MiniGameTest.plan(twoTeams, recruits(a, teamA)).status(), Status.NOT_ENOUGH, "a team without anyone");
         plan = MiniGameTest.plan(twoTeams, recruits(a, teamA, b, teamB, c, teamB));
-        context.assertTrue(plan.status() == Status.READY && plan.mode() == MiniGameMode.TWO_TEAMS, "two teams");
+        context.assertTrue(plan.status() == Status.READY && plan.format() == 0, "two teams");
         context.assertEquals(plan.teams(), new TeamDisposition(Set.of(a), Set.of(b, c)), "1 v 2: the teams of the pipes");
 
         // Both ticked: the way that takes the most players (free for all when equal)
-        MiniGamePageData both = pageOf(EnumSet.of(MiniGameMode.FREE_FOR_ALL, MiniGameMode.TWO_TEAMS), players, teamA, teamB);
-        context.assertEquals(MiniGameTest.plan(both, recruits(a, players, b, teamA, c, teamB)).mode(), MiniGameMode.TWO_TEAMS, "two in teams, one alone: teams");
-        context.assertEquals(MiniGameTest.plan(both, recruits(a, players, d, players, b, teamA, c, teamB)).mode(), MiniGameMode.FREE_FOR_ALL, "two and two: free for all");
+        MiniGamePageData both = pageOf(List.of(ANY, TWO), players, teamA, teamB);
+        context.assertEquals(MiniGameTest.plan(both, recruits(a, players, b, teamA, c, teamB)).format(), 1, "two in teams, one alone: teams");
+        context.assertEquals(MiniGameTest.plan(both, recruits(a, players, d, players, b, teamA, c, teamB)).format(), 0,
+                "two and two: the more specific (free for all, one range)");
 
         // Why not
-        context.assertEquals(MiniGameTest.plan(pageOf(EnumSet.of(MiniGameMode.FREE_FOR_ALL), watch), recruits(s, watch)).status(), Status.NO_PIPE, "no players pipe");
-        context.assertEquals(MiniGameTest.plan(pageOf(EnumSet.of(MiniGameMode.TWO_TEAMS), players), recruits(a, players)).status(), Status.NO_PIPE,
-                "the way ticked has no pipe of its own");
-        context.assertEquals(MiniGameTest.plan(pageOf(EnumSet.of(MiniGameMode.FREE_FOR_ALL), players, watch), recruits(s, watch)).status(), Status.NOBODY, "only a spectator");
-        context.assertEquals(MiniGameTest.plan(pageOf(EnumSet.of(MiniGameMode.FREE_FOR_ALL), players), recruits()).status(), Status.NOBODY, "nobody");
-        context.assertEquals(MiniGameTest.plan(pageOf(EnumSet.of(MiniGameMode.FREE_FOR_ALL), players).withPlayers(2, 4), recruits(a, players)).status(),
-                Status.NOT_ENOUGH, "fewer than the page's players");
+        context.assertEquals(MiniGameTest.plan(pageOf(List.of(ANY), watch), recruits(s, watch)).status(), Status.NO_PIPE, "no players pipe");
+        context.assertEquals(MiniGameTest.plan(pageOf(List.of(TWO), players), recruits(a, players)).status(), Status.NO_PIPE,
+                "the format has no pipe of its own");
+        context.assertEquals(MiniGameTest.plan(pageOf(List.of(ANY), players, watch), recruits(s, watch)).status(), Status.NOBODY, "only a spectator");
+        context.assertEquals(MiniGameTest.plan(pageOf(List.of(ANY), players), recruits()).status(), Status.NOBODY, "nobody");
+        MiniGameTest.Plan few = MiniGameTest.plan(pageOf(List.of(MiniGameFormat.freeForAll(2, 4)), players), recruits(a, players));
+        context.assertEquals(few.status(), Status.NOT_ENOUGH, "fewer than the format's players");
+        context.assertEquals(few.shortfall(), new MiniGameTest.Shortfall(0, MiniGamePipeRole.PLAYERS.ordinal(), 1, 2, 4),
+                "the closest format says what it misses: 1 near the players pipes, 2 to 4 wanted");
         context.complete();
     }
 
@@ -491,9 +496,9 @@ public class MiniGameTestGameTests implements FabricGameTest {
             Vec3d near = context.getAbsolute(new Vec3d(1.5, 1, 2.5));
             p1.refreshPositionAndAngles(near.x, near.y, near.z, 0, 0);
             MiniGameTest.Plan ready = MiniGameTest.check(server, id);
-            context.assertTrue(ready.status() == Status.READY && ready.players().equals(List.of(p1.getUuid())) && ready.mode() == MiniGameMode.FREE_FOR_ALL,
+            context.assertTrue(ready.status() == Status.READY && ready.players().equals(List.of(p1.getUuid())) && ready.format() == 0,
                     "someone near the pipe: ready, alone, free for all");
-            MiniGamePages.update(server, MiniGamePages.get(server, id).withPlayers(2, 4));
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withFormats(List.of(MiniGameFormat.freeForAll(2, 4))));
             context.assertEquals(MiniGameTest.check(server, id).status(), Status.NOT_ENOUGH, "the page wants two players");
             context.assertTrue(MiniGameTest.of(id) == null, "checking starts nothing");
         } finally {
