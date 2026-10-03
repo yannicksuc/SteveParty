@@ -932,6 +932,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         int chipY = top + TIMELINE_LABELS;
         // More on the left
         if (scroll > 0 || timeline.offset() > 0) light(context, Text.literal("‹"), left - 5, chipY + (chip - 8) / 2, INK_SOFT);
+        // More on the right: steps (or the « +N » after them) past the last chip shown
+        if (scroll + shown < steps.size() + (timeline.more() > 0 ? 1 : 0))
+            light(context, Text.literal("›"), left + shown * pitch - TIMELINE_GAP + 2, chipY + (chip - 8) / 2, INK_SOFT);
         for (int slot = 0; slot < shown; slot++) {
             int index = scroll + slot, cx = left + slot * pitch;
             if (index >= steps.size()) {
