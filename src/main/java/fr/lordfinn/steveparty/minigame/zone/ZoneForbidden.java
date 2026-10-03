@@ -1,6 +1,11 @@
 package fr.lordfinn.steveparty.minigame.zone;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BundleContentsComponent;
+import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -45,6 +50,8 @@ import java.util.function.Predicate;
  */
 public final class ZoneForbidden {
     private static final Identifier ID = Steveparty.id("zone_forbidden");
+    /** How deep items held in items are looked into (a bundle in a shulker box in a shulker box...). */
+    private static final int MAX_NESTING = 4;
     public static final TagKey<Block> BLOCKS = TagKey.of(RegistryKeys.BLOCK, ID);
     public static final TagKey<Item> ITEMS = TagKey.of(RegistryKeys.ITEM, ID);
     public static final TagKey<EntityType<?>> ENTITIES = TagKey.of(RegistryKeys.ENTITY_TYPE, ID);
@@ -106,10 +113,22 @@ public final class ZoneForbidden {
         return false;
     }
 
+    /** @return true if the item is forbidden, or holds one that is (a shulker box, a bundle, a catalogue: what they carry goes with them) */
     public static boolean isForbidden(ItemStack stack) {
+        return isForbidden(stack, 0);
+    }
+
+    private static boolean isForbidden(ItemStack stack, int depth) {
         if (stack.isEmpty()) return false;
         if (stack.isIn(ITEMS) || items.ones.contains(stack.getItem())) return true;
         for (TagKey<Item> tag : items.tags) if (stack.isIn(tag)) return true;
+        if (depth >= MAX_NESTING) return false;
+        ContainerComponent container = stack.get(DataComponentTypes.CONTAINER);
+        if (container != null) for (ItemStack held : container.iterateNonEmpty()) if (isForbidden(held, depth + 1)) return true;
+        BundleContentsComponent bundle = stack.get(DataComponentTypes.BUNDLE_CONTENTS);
+        if (bundle != null) for (ItemStack held : bundle.iterate()) if (isForbidden(held, depth + 1)) return true;
+        InventoryComponent inventory = stack.get(ModComponents.INVENTORY_COMPONENT);
+        if (inventory != null) for (ItemStack held : inventory.getItems()) if (isForbidden(held, depth + 1)) return true;
         return false;
     }
 
