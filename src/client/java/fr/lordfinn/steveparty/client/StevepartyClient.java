@@ -186,7 +186,7 @@ public class StevepartyClient implements ClientModInitializer {
         fr.lordfinn.steveparty.client.gui.party.MiniGameCardHud.initialize();
         fr.lordfinn.steveparty.client.gui.party.MiniGameResultsHud.initialize();
         fr.lordfinn.steveparty.client.gui.party.MiniGamePracticeHud.initialize();
-        fr.lordfinn.steveparty.client.minigame.ZoneCartridgeClient.initialize();
+        fr.lordfinn.steveparty.client.minigame.PageZoneClient.initialize();
         fr.lordfinn.steveparty.client.minigame.ChestCartridgeClient.initialize();
         fr.lordfinn.steveparty.client.gui.MiniGamePageTooltipComponent.register();
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(StevepartyClient::resetClientState));

@@ -75,7 +75,6 @@ public class ModItems {
                     fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior.COLOR));
     public static final Item TELEPORT_CARTRIDGE = register(TeleportCartridgeItem.class, "teleport_cartridge");
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
-    public static final Item ZONE_CARTRIDGE = registerUnstackable(fr.lordfinn.steveparty.items.custom.ZoneCartridgeItem.class, "zone_cartridge");
     /** Points to a chest: in a Party Controller, the bank its mini-games' gains are taken from. */
     public static final Item CHEST_CARTRIDGE = registerUnstackable(fr.lordfinn.steveparty.items.custom.ChestCartridgeItem.class, "chest_cartridge");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -244,7 +243,6 @@ public class ModItems {
             itemGroup.add(PARTY_CONTROLLER);
             itemGroup.add(STEP_CONTROLLER);
             itemGroup.add(MINI_GAME_CONTROLLER);
-            itemGroup.add(ZONE_CARTRIDGE);
             itemGroup.add(CHEST_CARTRIDGE);
             itemGroup.add(PARTY_CARD_TURNS);
             itemGroup.add(PARTY_CARD_MINIGAME);

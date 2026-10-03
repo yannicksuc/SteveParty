@@ -131,6 +131,7 @@ public class MiniGamePageEditorScreen extends Screen {
     /** The formats as edited (sent when the editor closes). */
     private final List<MiniGameFormat> formats;
     private ConsoleButton removeButton;
+    private @Nullable ConsoleButton clearZoneButton;
     /**
      * The « Test » button, on every tab: plays the mini-game out of any party with those near its pipes, or stops the
      * test being played. Whether it can is asked to the server every second ({@link #onTestStatus}).
@@ -173,6 +174,8 @@ public class MiniGamePageEditorScreen extends Screen {
     private static final int AREA_LINES = (BOTTOM_Y - 4 - AREA_Y) / 10, AREA_H = AREA_LINES * 10 + 1;
     /** The page tab's formats: their label and the chips under it, in the right column. */
     private static final int FORMATS_Y = M + 34, CHIPS_Y = FORMATS_Y + 12;
+    /** The page's zone: its size on a line, then « Tracer la zone » and its ×, level with the picture's buttons. */
+    private static final int ZONE_ROW_Y = M + 84, ZONE_TEXT_Y = ZONE_ROW_Y - 11;
     /** The palette's colours (0: the text's own), in two rows; its swatches. */
     private static final char[] PALETTE = {0, 'f', '7', 'c', '6', 'e', 'a', 'b', '9', 'd'};
     private static final int SWATCH = 12, SWATCH_GAP = 2, PALETTE_COLUMNS = 5;
@@ -241,6 +244,7 @@ public class MiniGamePageEditorScreen extends Screen {
             boldTool = italicTool = colorTool = clearTool = null;
             palette = false;
             removeButton = null;
+            clearZoneButton = null;
             return;
         }
 
@@ -262,6 +266,26 @@ public class MiniGamePageEditorScreen extends Screen {
             }
         });
         removeButton.setTooltip(Tooltip.of(Text.translatable(KEY + "image.remove")));
+
+        // ---- Right, level with the picture's buttons: the zone, drawn with the page in hand (the editor closes)
+        ConsoleButton draw = addDrawableChild(new ConsoleButton(rx, y + ZONE_ROW_Y, CW - 20, 16, Text.translatable(KEY + "zone.draw"),
+                ConsoleButton.Kind.PAPER_TEAL, null, () -> {
+            save();
+            send(new MiniGamePagePayloads.Action(hand, page, MiniGamePagePayloads.Action.Kind.DRAW_ZONE));
+            close();
+        }));
+        draw.setTooltip(Tooltip.of(Text.translatable(KEY + "zone.draw.hint", fr.lordfinn.steveparty.minigame.PageZone.MAX_SIDE)));
+        draw.active = canEdit;
+        clearZoneButton = addDrawableChild(new ConsoleButton(rx + CW - 16, y + ZONE_ROW_Y, 16, 16, Text.translatable(KEY + "zone.clear"),
+                ConsoleButton.Kind.PAPER, null, () -> send(new MiniGamePagePayloads.Action(hand, page, MiniGamePagePayloads.Action.Kind.CLEAR_ZONE))))
+                .decoration((context, button) -> {
+                    int colour = button.active ? RED : INK3;
+                    for (int d = 0; d < 6; d++) {
+                        PartyGui.pixel(context, button.getX() + 5 + d, button.getY() + 5 + d, colour);
+                        PartyGui.pixel(context, button.getX() + 10 - d, button.getY() + 5 + d, colour);
+                    }
+                });
+        clearZoneButton.setTooltip(Tooltip.of(Text.translatable(KEY + "zone.clear")));
 
         // ---- The bottom row, on the left: the copies
         ConsoleButton copy = addDrawableChild(new ConsoleButton(lx, y + BOTTOM_Y, 70, BOTTOM_H, Text.translatable(KEY + "copy"), ConsoleButton.Kind.PAPER, null, () -> {
@@ -638,9 +662,10 @@ public class MiniGamePageEditorScreen extends Screen {
         if (status != null) {
             int colour = statusIsError ? RED : GREEN2;
             if (tab == Tab.PAGE) {
+                // Between the formats and the zone
                 List<OrderedText> lines = textRenderer.wrapLines(status, CW + 1);
-                int top = Math.max(y + M + 80, y + CHIPS_Y + pageChipsHeight(data) + 3);
-                for (int i = 0; i < Math.min(2, lines.size()) && top + i * 10 + 8 <= y + TOOLBAR_Y - 2; i++)
+                int top = y + CHIPS_Y + pageChipsHeight(data) + 3;
+                for (int i = 0; i < Math.min(2, lines.size()) && top + i * 10 + 8 <= y + ZONE_TEXT_Y - 2; i++)
                     context.drawText(textRenderer, lines.get(i), rx, top + i * 10, colour, false);
             } else {
                 context.drawText(textRenderer, fit(status, FULL - 124 - 6), lx, y + BOTTOM_Y + 4, colour, false);
@@ -807,6 +832,17 @@ public class MiniGamePageEditorScreen extends Screen {
         context.drawText(textRenderer, link, rx + CW - lw, y + FORMATS_Y, overLink ? TEAL : TEAL2, false);
         context.fill(rx + CW - lw, y + FORMATS_Y + 8, rx + CW, y + FORMATS_Y + 9, overLink ? TEAL : TEAL2);
         FormatChips.drawFlow(context, textRenderer, data.formats(), i -> pageLook(data, i), rx, y + CHIPS_Y, CW, 3);
+        // ---- The zone: its size, or none
+        fr.lordfinn.steveparty.minigame.PageZone zone = data.zone();
+        if (clearZoneButton != null) clearZoneButton.active = canEdit && zone != null;
+        if (zone == null) {
+            context.drawText(textRenderer, Text.translatable(KEY + "zone.none"), rx, y + ZONE_TEXT_Y, INK3, false);
+        } else {
+            Text label = Text.translatable(KEY + "zone.label");
+            context.drawText(textRenderer, label, rx, y + ZONE_TEXT_Y, INK2, false);
+            context.drawText(textRenderer, fit(fr.lordfinn.steveparty.minigame.PageZoneTool.size(zone.box()), CW - textRenderer.getWidth(label) - 3),
+                    rx + textRenderer.getWidth(label) + 3, y + ZONE_TEXT_Y, INK, false);
+        }
 
         // ---- The description, across the page: its label and toolbar, its ruled lines and margin, its counter on the last line
         context.drawText(textRenderer, Text.translatable(KEY + "field.description"), lx, y + TOOLBAR_Y + 3, INK2, false);

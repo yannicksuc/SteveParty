@@ -37,9 +37,8 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The Mini-game Controller block (see {@link MiniGameControllerBlockEntity}). A click with a Mini-game Page (or a
- * Zone Cartridge) puts it in when its slot is free; a sneaking click with empty hands takes the page back (the
- * cartridge when there is no page); any other click opens its screen. Putting in and taking out take the right to
+ * The Mini-game Controller block (see {@link MiniGameControllerBlockEntity}). A click with a Mini-game Page puts it
+ * in when its slot is free; a sneaking click with empty hands takes the page back; any other click opens its screen. Putting in and taking out take the right to
  * build. No redstone, no comparator, no light.
  * <p>
  * Its look: a referee on a cloud, facing whoever placed it ({@link #FACING}), holding the page it was given
@@ -142,8 +141,7 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
             player.openHandledScreen(controller);
             return ActionResult.SUCCESS;
         }
-        boolean takesPage = !controller.getPage().isEmpty();
-        ItemStack held = takesPage ? controller.getPage() : controller.getCartridge();
+        ItemStack held = controller.getPage();
         if (held.isEmpty()) return ActionResult.PASS;
         if (!MiniGamePages.canEdit(player)) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.no_build").formatted(Formatting.RED), true);
@@ -153,8 +151,7 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.locked").formatted(Formatting.RED), true);
             return ActionResult.SUCCESS;
         }
-        if (takesPage) controller.setPage(ItemStack.EMPTY);
-        else controller.setCartridge(ItemStack.EMPTY);
+        controller.setPage(ItemStack.EMPTY);
         player.getInventory().offerOrDrop(held);
         world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_REMOVE_ITEM, SoundCategory.BLOCKS, 1f, 1f);
         return ActionResult.SUCCESS;
@@ -164,12 +161,11 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         // The Wrench is not for this block
         if (stack.getItem() instanceof WrenchItem) return ActionResult.PASS;
-        boolean isPage = MiniGamePages.isPage(stack), isCartridge = MiniGameControllerBlockEntity.isZoneCartridge(stack);
-        if ((!isPage && !isCartridge) || hand == Hand.OFF_HAND) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        if (!MiniGamePages.isPage(stack) || hand == Hand.OFF_HAND) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
         if (world.isClient) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller)) return ActionResult.PASS;
         // Its slot is taken: the screen (where it can be swapped)
-        if (!(isPage ? controller.getPage() : controller.getCartridge()).isEmpty()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        if (!controller.getPage().isEmpty()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
         if (!MiniGamePages.canEdit(player)) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.no_build").formatted(Formatting.RED), true);
             return ActionResult.SUCCESS;
@@ -178,13 +174,11 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.locked").formatted(Formatting.RED), true);
             return ActionResult.SUCCESS;
         }
-        if (isPage && !controller.accepts(stack)) {
+        if (!controller.accepts(stack)) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.other_home").formatted(Formatting.RED), true);
             return ActionResult.SUCCESS;
         }
-        ItemStack put = stack.split(1);
-        if (isPage) controller.setPage(put);
-        else controller.setCartridge(put);
+        controller.setPage(stack.split(1));
         world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_ADD_ITEM, SoundCategory.BLOCKS, 1f, 1f);
         return ActionResult.SUCCESS;
     }
@@ -193,7 +187,7 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, java.util.List<Text> tooltip,
                               net.minecraft.item.tooltip.TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : java.util.List.of("page", "play", "zone")) {
+        for (String line : java.util.List.of("page", "play")) {
             tooltip.add(Text.translatable("tooltip.steveparty.mini_game_controller." + line).formatted(Formatting.GRAY));
         }
     }

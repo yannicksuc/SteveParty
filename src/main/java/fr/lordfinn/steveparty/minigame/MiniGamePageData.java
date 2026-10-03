@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.minigame;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import org.jetbrains.annotations.Nullable;
@@ -30,15 +31,18 @@ import java.util.UUID;
  * @param randomRoles the roles whose players are sent to a pipe picked at random (the others: each pipe in turn)
  * @param intro       the shots of the introduction shown before the players leave, empty for none
  * @param podiumLinks the podiums (the places of the mini-game) and the goal pole bases (its counters) linked to the page
+ * @param zone        the zone its rounds are played in, in a bubble ({@code MiniGameArena}); null for none. Drawn with
+ *                    the page in hand ({@link PageZoneTool}); a zone too big is not kept
  */
 public record MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
                                List<MiniGameFormat> formats, List<MiniGamePipeLink> pipeLinks,
-                               Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro, List<MiniGamePodiumLink> podiumLinks) {
+                               Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro, List<MiniGamePodiumLink> podiumLinks,
+                               @Nullable PageZone zone) {
     /**
      * The version of the saved form: 2 added the random roles, the introduction and the text markup; 3 the podiums; 4
-     * the formats (in place of the ways to play and the players range, see {@link MiniGameFormat#migrate}).
+     * the formats (in place of the ways to play and the players range, see {@link MiniGameFormat#migrate}); 5 the zone.
      */
-    public static final int FORMAT = 4;
+    public static final int FORMAT = 5;
     public static final int MAX_FORMATS = 8;
     public static final int MAX_PODIUM_LINKS = 32;
     public static final int MAX_INTRO_SHOTS = 32;
@@ -72,6 +76,13 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         intro = intro == null ? List.of() : List.copyOf(intro.size() > MAX_INTRO_SHOTS ? intro.subList(0, MAX_INTRO_SHOTS) : intro);
         podiumLinks = podiumLinks == null ? List.of()
                 : List.copyOf(podiumLinks.size() > MAX_PODIUM_LINKS ? podiumLinks.subList(0, MAX_PODIUM_LINKS) : podiumLinks);
+        if (zone != null && zone.tooBig()) zone = null;
+    }
+
+    public MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
+                            List<MiniGameFormat> formats, List<MiniGamePipeLink> pipeLinks,
+                            Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro, List<MiniGamePodiumLink> podiumLinks) {
+        this(id, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, null);
     }
 
     public MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
@@ -160,23 +171,28 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     }
 
     public MiniGamePageData withId(UUID newId) {
-        return new MiniGamePageData(newId, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks);
+        return new MiniGamePageData(newId, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone);
+    }
+
+    /** A zone too big gives a page without zone. */
+    public MiniGamePageData withZone(@Nullable PageZone newZone) {
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, newZone);
     }
 
     public MiniGamePageData withTexts(String newTitle, String newDescription) {
-        return new MiniGamePageData(id, newTitle, newDescription, image, formats, pipeLinks, randomRoles, intro, podiumLinks);
+        return new MiniGamePageData(id, newTitle, newDescription, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone);
     }
 
     public MiniGamePageData withImage(@Nullable MiniGamePageImage newImage) {
-        return new MiniGamePageData(id, title, description, newImage, formats, pipeLinks, randomRoles, intro, podiumLinks);
+        return new MiniGamePageData(id, title, description, newImage, formats, pipeLinks, randomRoles, intro, podiumLinks, zone);
     }
 
     public MiniGamePageData withFormats(List<MiniGameFormat> newFormats) {
-        return new MiniGamePageData(id, title, description, image, newFormats, pipeLinks, randomRoles, intro, podiumLinks);
+        return new MiniGamePageData(id, title, description, image, newFormats, pipeLinks, randomRoles, intro, podiumLinks, zone);
     }
 
     public MiniGamePageData withPipeLinks(List<MiniGamePipeLink> links) {
-        return new MiniGamePageData(id, title, description, image, formats, links, randomRoles, intro, podiumLinks);
+        return new MiniGamePageData(id, title, description, image, formats, links, randomRoles, intro, podiumLinks, zone);
     }
 
     /** The players of {@code role} are sent to a pipe picked at random ({@code random}), or to each pipe in turn. */
@@ -185,15 +201,15 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         roles.addAll(randomRoles);
         if (random) roles.add(role);
         else roles.remove(role);
-        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, roles, intro, podiumLinks);
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, roles, intro, podiumLinks, zone);
     }
 
     public MiniGamePageData withIntro(List<MiniGameIntroShot> shots) {
-        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, shots, podiumLinks);
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, shots, podiumLinks, zone);
     }
 
     public MiniGamePageData withPodiumLinks(List<MiniGamePodiumLink> links) {
-        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, links);
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, links, zone);
     }
 
     /** The index of the link to the block at {@code pos}, -1 if it is not linked. */
@@ -279,6 +295,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
             podiumLinks.forEach(link -> podiums.add(link.toNbt()));
             nbt.put("Podiums", podiums);
         }
+        if (zone != null) PageZone.CODEC.encodeStart(NbtOps.INSTANCE, zone).result().ifPresent(encoded -> nbt.put("Zone", encoded));
         return nbt;
     }
 
@@ -313,7 +330,8 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         }
         return new MiniGamePageData(nbt.getUuid("Id"), nbt.getString("Title"), nbt.getString("Description"),
                 nbt.contains("Image", NbtElement.COMPOUND_TYPE) ? MiniGamePageImage.fromNbt(nbt.getCompound("Image")) : null,
-                formats, links, rolesFromMask(nbt.getInt("RandomRoles")), shots, podiums);
+                formats, links, rolesFromMask(nbt.getInt("RandomRoles")), shots, podiums,
+                nbt.contains("Zone") ? PageZone.CODEC.parse(NbtOps.INSTANCE, nbt.get("Zone")).result().orElse(null) : null);
     }
 
     private static Set<MiniGamePipeRole> rolesFromMask(int mask) {
@@ -338,6 +356,8 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         intro.forEach(shot -> shot.write(buf));
         buf.writeVarInt(podiumLinks.size());
         podiumLinks.forEach(link -> link.write(buf));
+        buf.writeBoolean(zone != null);
+        if (zone != null) zone.write(buf);
     }
 
     private static MiniGamePageData read(PacketByteBuf buf) {
@@ -356,6 +376,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         int podiumCount = Math.min(buf.readVarInt(), MAX_PODIUM_LINKS);
         List<MiniGamePodiumLink> podiums = new ArrayList<>(podiumCount);
         for (int i = 0; i < podiumCount; i++) podiums.add(MiniGamePodiumLink.read(buf));
-        return new MiniGamePageData(id, title, description, image, formats, links, random, shots, podiums);
+        PageZone zone = buf.readBoolean() ? PageZone.read(buf) : null;
+        return new MiniGamePageData(id, title, description, image, formats, links, random, shots, podiums, zone);
     }
 }

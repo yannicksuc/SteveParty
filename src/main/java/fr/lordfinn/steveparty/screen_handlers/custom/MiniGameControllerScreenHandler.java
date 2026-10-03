@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The Mini-game Controller's screen: its two slots (the Mini-game Page, the Zone Cartridge), the player's inventory,
+ * The Mini-game Controller's screen: its slot (the Mini-game Page; the zone is the page's), the player's inventory,
  * and what the mini-game of the page is doing, worked out by the server a few times a second and synced as
  * properties ({@link State}, who would play, the votes of a practice round). Its buttons: « Play » / « Stop » out of
  * a party, « Ready » during a party's practice round, and the « adventure mode » option of its zone. Changing the
@@ -39,7 +39,7 @@ import java.util.UUID;
  * controller standing in the zone it is played in); playing and voting ask for neither.
  */
 public class MiniGameControllerScreenHandler extends ScreenHandler {
-    public static final int SLOT_PAGE = 0, SLOT_ZONE = 1, PLAYER_SLOTS = 2;
+    public static final int SLOT_PAGE = 0, PLAYER_SLOTS = 1;
     public static final int BUTTON_PLAY = 0, BUTTON_READY = 1, BUTTON_ADVENTURE = 2;
     /** Ticks between two looks at the mini-game. */
     public static final int SYNC_INTERVAL = 5;
@@ -51,7 +51,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     public static final int INVENTORY_GRID_X = (WIDTH - 162) / 2, INVENTORY_GRID_Y = INVENTORY_Y + 8;
     /** The console's two rows (their slot's top left corner, its item at + 1). */
     public static final int ROW1_Y = 89, ROW2_Y = 109;
-    public static final int PAGE_X = 11, PAGE_Y = ROW1_Y + 1, ZONE_X = 11, ZONE_Y = ROW2_Y + 1;
+    public static final int PAGE_X = 11, PAGE_Y = ROW1_Y + 1;
 
     /** What the mini-game of the page is doing. */
     public enum State {
@@ -118,22 +118,6 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
             @Override
             public boolean canInsert(ItemStack stack) {
                 return MiniGamePages.isPage(stack) && mayChange(player) && (controller == null || controller.accepts(stack));
-            }
-
-            @Override
-            public boolean canTakeItems(PlayerEntity playerEntity) {
-                return mayChange(playerEntity);
-            }
-
-            @Override
-            public int getMaxItemCount() {
-                return 1;
-            }
-        });
-        addSlot(new Slot(inventory, MiniGameControllerBlockEntity.SLOT_ZONE, ZONE_X, ZONE_Y) {
-            @Override
-            public boolean canInsert(ItemStack stack) {
-                return MiniGameControllerBlockEntity.isZoneCartridge(stack) && mayChange(player);
             }
 
             @Override
@@ -223,8 +207,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         properties.set(P_READY, ready);
         properties.set(P_VOTERS, voters);
         properties.set(P_FLAGS, flags);
-        fr.lordfinn.steveparty.components.ZoneSelection selection = controller.getSelection();
-        net.minecraft.util.math.BlockBox box = selection == null ? null : selection.box().orElse(null);
+        net.minecraft.util.math.BlockBox box = controller.getZone().map(fr.lordfinn.steveparty.minigame.PageZone::box).orElse(null);
         properties.set(P_ZONE_X, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountX()));
         properties.set(P_ZONE_Y, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountY()));
         properties.set(P_ZONE_Z, box == null ? 0 : Math.min(Short.MAX_VALUE, box.getBlockCountZ()));
@@ -309,7 +292,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         return new BlockPos(wide(P_FORBIDDEN_X), wide(P_FORBIDDEN_Y), wide(P_FORBIDDEN_Z));
     }
 
-    /** The size of the box of the Zone Cartridge (0, 0, 0: none); a side over {@code PageZone.MAX_SIDE}: too big, no zone. */
+    /** The size of the zone of the page (0, 0, 0: none). */
     public int[] zoneSize() {
         return new int[]{properties.get(P_ZONE_X), properties.get(P_ZONE_Y), properties.get(P_ZONE_Z)};
     }
@@ -364,9 +347,9 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         if (index < PLAYER_SLOTS) {
             if (!slot.canTakeItems(player) || !insertItem(stack, PLAYER_SLOTS, slots.size(), true)) return ItemStack.EMPTY;
         } else {
-            int target = MiniGamePages.isPage(stack) ? SLOT_PAGE : MiniGameControllerBlockEntity.isZoneCartridge(stack) ? SLOT_ZONE : -1;
-            if (target < 0 || slots.get(target).hasStack() || !slots.get(target).canInsert(stack)) return ItemStack.EMPTY;
-            slots.get(target).setStack(stack.split(1));
+            Slot target = slots.get(SLOT_PAGE);
+            if (!MiniGamePages.isPage(stack) || target.hasStack() || !target.canInsert(stack)) return ItemStack.EMPTY;
+            target.setStack(stack.split(1));
         }
         if (stack.isEmpty()) slot.setStack(ItemStack.EMPTY);
         else slot.markDirty();

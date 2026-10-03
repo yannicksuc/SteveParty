@@ -819,4 +819,54 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         }
         context.complete();
     }
+
+    // ------------------------------------------------------------------ a visit in the page's zone
+
+    /**
+     * A mini-game entered by its mini-game pipe, out of any round, is played in its page's zone too: the visitor
+     * leaves what it owns at the door and plays in the bubble of the visits; a way out takes it out of the bubble
+     * (what it owns given back, the zone put back once the last visitor is gone); a round of the page ends the visits.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_pipe_visit_zone", tickLimit = 300)
+    public void aMiniGameEnteredByItsPipeIsPlayedInItsZone(TestContext context) {
+        ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
+        BlockPos black = mouth(context, BLACK, 5, 5);
+        ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
+        UUID id = page(context, stack, black);
+        MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(new fr.lordfinn.steveparty.minigame.PageZone(world.getRegistryKey(),
+                net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(3, 1, 3)), context.getAbsolutePos(new BlockPos(7, 5, 7))))));
+        BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
+        ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
+        player.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 3));
+        Runnable cleanup = () -> {
+            fr.lordfinn.steveparty.minigame.MiniGameArena.endVisits(id);
+            for (fr.lordfinn.steveparty.minigame.zone.ZoneBubble left : fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all()) left.endNow();
+            remove(context, player);
+        };
+        context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
+        when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> guarded(context, cleanup, () -> {
+            fr.lordfinn.steveparty.minigame.zone.ZoneBubble bubble = fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player);
+            context.assertTrue(bubble != null && bubble.isActive() && bubble.isParticipant(player.getUuid()), "the visitor plays in the bubble of the zone");
+            context.assertTrue(player.getInventory().count(Items.DIAMOND) == 0, "it left what it owns at the door");
+            context.setBlockState(new BlockPos(4, 2, 4), Blocks.GOLD_BLOCK);
+
+            // A way out (a linked pipe): out of the bubble, what it owns back, the zone put back
+            context.assertTrue(MiniGamePipes.wayOut(server, player, id), "a way out");
+            context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null && player.getInventory().count(Items.DIAMOND) == 3, "out of the bubble, its diamonds back");
+            context.assertTrue(!bubble.isActive(), "the last visitor gone: the visits are over");
+            context.waitAndRun(PipeTravel.COOLDOWN + 20, () -> guarded(context, cleanup, () -> {
+                context.expectBlock(Blocks.AIR, new BlockPos(4, 2, 4));
+                // Visiting again (asked directly), then a round of the page begins: the visits end
+                context.assertTrue(fr.lordfinn.steveparty.minigame.MiniGameArena.visit(server, id, player), "visiting again");
+                context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) != null && player.getInventory().count(Items.DIAMOND) == 0, "in the bubble again");
+                new fr.lordfinn.steveparty.minigame.MiniGameArena().whenZoneFree(server, id, () -> true, List::of, () -> {
+                });
+                context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null && player.getInventory().count(Items.DIAMOND) == 3,
+                        "a round of the page: the visits end, the visitor has what it owns");
+                cleanup.run();
+                context.complete();
+            }));
+        }));
+    }
 }

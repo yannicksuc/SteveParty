@@ -44,7 +44,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(StencilGunScrollPayload.ID, StencilGunScrollPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ShopCartridgeScrollPayload.ID, ShopCartridgeScrollPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(ZoneCartridgeScrollPayload.ID, ZoneCartridgeScrollPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(PageZonePayload.ID, PageZonePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(AdvanceBackScrollPayload.ID, AdvanceBackScrollPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(StencilMakerActionPayload.ID, StencilMakerActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
@@ -120,7 +120,7 @@ public class ModPayloads {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> payload.handle(player));
         });
-        ServerPlayNetworking.registerGlobalReceiver(ZoneCartridgeScrollPayload.ID, (payload, context) -> {
+        ServerPlayNetworking.registerGlobalReceiver(PageZonePayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> payload.handle(player));
         });

@@ -106,6 +106,8 @@ public final class MiniGamePageNetworking {
             ensureSinglePage(player, hand);
         }
         MiniGamePages.refresh(player.server, stack);
+        // Opening the editor ends the zone mode
+        PageZoneTool.end(null, stack);
         MiniGamePageRef ref = stack.get(ModComponents.MINI_GAME_PAGE);
         send(player, new MiniGamePagePayloads.Open(hand, MiniGamePages.get(player.server, ref.id()), canEdit, ref.linked()));
     }
@@ -239,6 +241,15 @@ public final class MiniGamePageNetworking {
             case CLEAR_IMAGE -> {
                 if (!MiniGamePages.clearImage(server, payload.page())) return false;
                 send(player, new Status(payload.page(), Status.Code.IMAGE_CLEARED));
+            }
+            // The editor closes itself: the page in hand draws the zone
+            case DRAW_ZONE -> {
+                return PageZoneTool.start(player, payload.hand());
+            }
+            case CLEAR_ZONE -> {
+                MiniGamePageData data = MiniGamePages.get(server, payload.page());
+                if (data.zone() == null) return false;
+                MiniGamePages.update(server, data.withZone(null));
             }
         }
         return true;

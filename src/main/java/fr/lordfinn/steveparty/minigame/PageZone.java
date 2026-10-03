@@ -8,8 +8,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 
 /**
- * The zone of a mini-game: a box of blocks in a dimension, drawn with a Zone Cartridge and given to the mini-game by
- * putting the cartridge in its Mini-game Controller ({@link MiniGameControllers#zoneOf}).
+ * The zone of a mini-game: a box of blocks in a dimension, kept by its page ({@link MiniGamePageData#zone()}) and
+ * drawn with the page in hand ({@link PageZoneTool}).
  *
  * @param dimension the dimension the box is in
  * @param box       the blocks of the zone, both corners included
@@ -42,6 +42,23 @@ public record PageZone(RegistryKey<World> dimension, BlockBox box) {
 
     public static boolean tooBig(BlockBox box) {
         return box.getBlockCountX() > MAX_SIDE || box.getBlockCountY() > MAX_SIDE || box.getBlockCountZ() > MAX_SIDE;
+    }
+
+    public void write(net.minecraft.network.PacketByteBuf buf) {
+        buf.writeRegistryKey(dimension);
+        buf.writeInt(box.getMinX());
+        buf.writeInt(box.getMinY());
+        buf.writeInt(box.getMinZ());
+        buf.writeInt(box.getMaxX());
+        buf.writeInt(box.getMaxY());
+        buf.writeInt(box.getMaxZ());
+    }
+
+    public static PageZone read(net.minecraft.network.PacketByteBuf buf) {
+        RegistryKey<World> dimension = buf.readRegistryKey(net.minecraft.registry.RegistryKeys.WORLD);
+        int minX = buf.readInt(), minY = buf.readInt(), minZ = buf.readInt();
+        return new PageZone(dimension, BlockBox.create(new net.minecraft.util.math.BlockPos(minX, minY, minZ),
+                new net.minecraft.util.math.BlockPos(buf.readInt(), buf.readInt(), buf.readInt())));
     }
 
     /** The box in world coordinates: from the low corner of its first block to the high corner of its last. */

@@ -120,9 +120,9 @@ public class ModComponents {
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);
 
-    /** The box a Zone Cartridge is drawing, or has drawn (see ZoneCartridgeItem). */
-    public static final ComponentType<ZoneSelection> ZONE_SELECTION =
-            registerComponent("zone-selection", ZoneSelection.CODEC);
+    /** A Mini-game Page in zone mode: its clicks draw the zone of its page (see PageZoneTool). */
+    public static final ComponentType<PageZoneMode> PAGE_ZONE_MODE =
+            registerComponent("page-zone-mode", PageZoneMode.CODEC);
     /** The chest a Chest Cartridge points to (the bank of a Party Controller). */
     public static final ComponentType<net.minecraft.util.math.GlobalPos> CHEST_TARGET =
             registerComponent("chest-target", net.minecraft.util.math.GlobalPos.CODEC);

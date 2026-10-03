@@ -315,6 +315,8 @@ public final class MiniGamePipes {
             ServerWorld there = link == null ? null : server.getWorld(link.mouth().dimension());
             Direction opening = there == null ? null : openingOf(there, link);
             if (opening == null) return null;
+            // The zone of the mini-game, if it has one: its bubble of visits
+            if (!MiniGameArena.visit(server, data.id(), player)) return null;
             if (enteredBy != null) {
                 VISITS.put(player.getUuid(), new Visit(data.id(), GlobalPos.create(world.getRegistryKey(), enteredBy.pos()), enteredBy.dir()));
             }
@@ -334,7 +336,11 @@ public final class MiniGamePipes {
         if (programmed != null && !isInParty(id) && DEFAULT_ARRIVALS.stream().anyMatch(role -> !programmed.pipes(role).isEmpty())) {
             return new PipeTravel.Passage(traveller -> {
                 MiniGamePipeLink link = arrivalFrom(world, mouth, programmed, null, traveller);
-                if (link == null || !emerge(server, link, traveller)) return false;
+                if (link == null || !MiniGameArena.visit(server, programmed.id(), traveller)) return false;
+                if (!emerge(server, link, traveller)) {
+                    MiniGameArena.endVisit(traveller);
+                    return false;
+                }
                 VISITS.put(traveller.getUuid(), new Visit(programmed.id(), here, opening));
                 return true;
             });
@@ -371,10 +377,22 @@ public final class MiniGamePipes {
         MiniGameReturns.Return back = seat == null ? null : seat.leave().apply(player);
         leaveParty(id);
         Visit visit = VISITS.remove(id);
+        // Out of the bubble of the visits first: the way out is out of the zone
+        MiniGameArena.endVisit(player);
         if (visit != null && emerge(server, new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY), player)) return true;
         GlobalPos nearest = MiniGamePipeIndex.nearest(server, page, GlobalPos.create(player.getWorld().getRegistryKey(), player.getBlockPos()));
         if (nearest != null && emerge(server, new MiniGamePipeLink(nearest, Direction.UP, MiniGamePipeRole.ENTRY), player)) return true;
         return back != null && MiniGameReturns.bringBack(server, id, back);
+    }
+
+    /** {@code player} is no longer visiting a mini-game (he was sent out of its zone): no way out to remember. */
+    public static void forgetVisit(UUID player) {
+        VISITS.remove(player);
+    }
+
+    /** The visits of the mini-game of {@code page} are over (a round of it begins). */
+    public static void forgetVisits(UUID page) {
+        VISITS.values().removeIf(visit -> visit.page().equals(page));
     }
 
     /** The page of the round {@code player} is in, null for none. */

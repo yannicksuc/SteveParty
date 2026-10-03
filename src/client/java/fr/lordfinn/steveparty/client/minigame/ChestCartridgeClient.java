@@ -59,7 +59,7 @@ public final class ChestCartridgeClient {
             box = box.union(new Box(pos.offset(ChestBlock.getFacing(state))));
         boolean bank = PartyBank.isBank(client.world.getBlockEntity(pos));
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
-        ZoneCartridgeClient.drawBox(matrices, consumers, context.camera().getPos(), box.expand(0.02), bank ? CHEST : GONE, 0.12f, null);
+        PageZoneClient.drawBox(matrices, consumers, context.camera().getPos(), box.expand(0.02), bank ? CHEST : GONE, 0.12f, null);
         consumers.draw();
     }
 

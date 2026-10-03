@@ -18,7 +18,6 @@ import fr.lordfinn.steveparty.blocks.custom.pipe.PipeKind;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeSolid;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
-import fr.lordfinn.steveparty.components.ZoneSelection;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
@@ -70,7 +69,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A mini-game whose page has a zone (the Zone Cartridge of its Mini-game Controller) is played, round after round,
+ * A mini-game whose page has a zone ({@code MiniGamePageData#zone}) is played, round after round,
  * in a bubble: out of a party, in a party's practice round and in its real round. Each round starts from the arena
  * as it was built and from empty session inventories; what the round pays goes to what the players own; a zone that
  * can't take a round stops one out of a party, never a party.
@@ -123,16 +122,10 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         return MiniGameZone.of(context.getWorld().getRegistryKey(), context.getAbsolutePos(new BlockPos(0, 1, 0)), context.getAbsolutePos(new BlockPos(6, 6, 6)));
     }
 
-    private static ItemStack cartridge(TestContext context, BlockBox box) {
-        ItemStack cartridge = new ItemStack(ModItems.ZONE_CARTRIDGE);
-        cartridge.set(ModComponents.ZONE_SELECTION, new ZoneSelection(context.getWorld().getRegistryKey(), Optional.empty(), Optional.of(box)));
-        return cartridge;
-    }
-
     /**
      * The arena: a floor, a players pipe, two podiums, a stone block and a chest of diamonds, and the page of it all.
      *
-     * @param zoned its controller holds a Zone Cartridge with the zone of the arena
+     * @param zoned its page has the zone of the arena
      * @return the id of its page
      */
     private static UUID arena(TestContext context, boolean zoned) {
@@ -154,7 +147,8 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         context.setBlockState(HOME, ModBlocks.MINI_GAME_CONTROLLER);
         MiniGameControllerBlockEntity controller = context.getBlockEntity(HOME);
         controller.setPage(pageItem(id));
-        if (zoned) controller.setCartridge(cartridge(context, zone(context).box()));
+        if (zoned) MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(
+                new fr.lordfinn.steveparty.minigame.PageZone(context.getWorld().getRegistryKey(), zone(context).box())));
         return id;
     }
 
@@ -262,7 +256,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
     /**
      * A round out of a party, in a zone: its players leave what they own at the door, the round is played to its
      * podiums, and when its results are read the arena is as it was built (block, chest, item on the ground), the
-     * inventories are given back and the controller, which stands in the zone, still holds its page and cartridge.
+     * inventories are given back and the controller, which stands in the zone, still holds its page.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_play")
     public void aRoundOutOfAPartyIsPlayedInItsZone(TestContext context) {
@@ -308,7 +302,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue(p2.getInventory().count(Items.COBBLESTONE) == 12 && p2.getInventory().count(Items.EMERALD) == 0, "p2 has its cobblestone, not the emerald");
             context.assertTrue(!p1.getCommandTags().contains(STASH_TAG), "nobody holds a session inventory any more");
             controller = context.getBlockEntity(HOME);
-            context.assertTrue(id.equals(controller.getPageId()) && controller.getZone().isPresent(), "the controller still holds its page and its cartridge");
+            context.assertTrue(id.equals(controller.getPageId()) && controller.getZone().isPresent(), "the controller still holds its page, the zone of its page");
             context.assertTrue(MiniGameControllers.zoneOf(server, id).isPresent(), "and its mini-game still has its zone");
         } finally {
             cleanUp(context, id, p1, p2);
@@ -334,19 +328,20 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue(ZoneBubbles.ofPlayer(p1) != null && p1.getInventory().isEmpty(), "in its bubble");
             spoil(context, p1);
             world.breakBlock(context.getAbsolutePos(HOME), true);
-            context.assertTrue(MiniGameControllers.zoneOf(server, id).isEmpty(), "the controller was broken during the round");
+            context.assertTrue(MiniGameControllers.of(server, id).isEmpty() && MiniGameControllers.zoneOf(server, id).isPresent(),
+                    "the controller was broken during the round: the page keeps its zone");
 
             MiniGameTest.stop(id);
             context.assertTrue(MiniGameTest.of(id) == null && ZoneBubbles.all().isEmpty(), "stopped: no round, no bubble");
             expectArenaAsBuilt(context);
             context.assertTrue(p1.getInventory().getStack(0).isOf(Items.DIAMOND_SWORD) && p1.getInventory().count(Items.DIAMOND) == 0, "p1 has what it owns, nothing of the round");
             MiniGameControllerBlockEntity controller = context.getBlockEntity(HOME);
-            context.assertTrue(id.equals(controller.getPageId()) && controller.getZone().isPresent(), "the controller is back with its page and its cartridge");
+            context.assertTrue(id.equals(controller.getPageId()) && controller.getZone().isPresent(), "the controller is back with its page");
             controller.serverTick(world);
-            context.assertTrue(MiniGameControllers.zoneOf(server, id).isPresent(), "and, from its first tick, the home of its page again");
+            context.assertTrue(MiniGameControllers.of(server, id).isPresent(), "and, from its first tick, the home of its page again");
 
-            // Without the cartridge: the mini-game has no zone, and is played as it always was
-            controller.setCartridge(ItemStack.EMPTY);
+            // A page without zone: the mini-game is played as it always was
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(null));
             screen = new MiniGameControllerScreenHandler(1, p1.getInventory(), controller);
             context.assertTrue(screen.onButtonClick(p1, MiniGameControllerScreenHandler.BUTTON_PLAY), "Play, without zone");
             context.assertTrue(MiniGameTest.of(id) != null && ZoneBubbles.all().isEmpty() && ZoneBubbles.ofPlayer(p1) == null, "a round, and no bubble");
@@ -372,7 +367,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue(screen.onButtonClick(p1, MiniGameControllerScreenHandler.BUTTON_ADVENTURE), "its button");
             context.assertTrue(screen.isAdventure() && controller.isAdventure() && MiniGameControllers.isAdventure(server, id), "the option is on, and known of its page");
             MiniGameControllers read = MiniGameControllers.fromNbt(MiniGameControllers.get(server).writeNbt(new NbtCompound(), world.getRegistryManager()), world.getRegistryManager());
-            context.assertTrue(read.adventure(id) && read.zone(id).isPresent(), "saved with the controllers");
+            context.assertTrue(read.adventure(id) && read.home(id).isPresent(), "saved with the controllers");
             MiniGameControllerBlockEntity copy = new MiniGameControllerBlockEntity(controller.getPos(), controller.getCachedState());
             copy.read(controller.createNbt(world.getRegistryManager()), world.getRegistryManager());
             context.assertTrue(copy.isAdventure(), "and with the controller");
