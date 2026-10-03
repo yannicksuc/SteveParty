@@ -153,11 +153,15 @@ public final class BoardBlueprint {
                 }
                 cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(moved, links.world()));
             }
-            BlockPos chest = cartridge.get(ModComponents.INVENTORY_POS);
-            if (chest != null) {
-                BlockPos target = follow.apply(chest);
-                if (target == null) cartridge.remove(ModComponents.INVENTORY_POS);
-                else cartridge.set(ModComponents.INVENTORY_POS, target);
+            // Its containers follow too (those that fall outside are dropped), in the world it is pasted in
+            if (!fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) {
+                var dimension = container.getWorld() == null ? net.minecraft.world.World.OVERWORLD : container.getWorld().getRegistryKey();
+                List<net.minecraft.util.math.GlobalPos> chests = new ArrayList<>();
+                for (net.minecraft.util.math.GlobalPos chest : fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, dimension)) {
+                    BlockPos target = follow.apply(chest.pos());
+                    if (target != null) chests.add(net.minecraft.util.math.GlobalPos.create(dimension, target));
+                }
+                fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, chests);
             }
             cartridge.remove(ModComponents.TB_START_BOUND_ENTITY);
         }
@@ -195,13 +199,20 @@ public final class BoardBlueprint {
                     WrenchActions.writeLinks(player, world, container, slot, shifted);
                     moved += changed;
                 }
-                BlockPos chest = cartridge.get(ModComponents.INVENTORY_POS);
-                if (chest != null && former.contains(chest)) {
-                    BlockPos target = chest.add(offset);
-                    cartridge.set(ModComponents.INVENTORY_POS, target);
-                    LinkHistory.record(player, new LinkHistory.ChestChange(pos.toImmutable(), slot, chest, target));
+                // Its containers that were in the former area follow it
+                List<net.minecraft.util.math.GlobalPos> chests = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey());
+                List<net.minecraft.util.math.GlobalPos> followed = new ArrayList<>();
+                int chestsMoved = 0;
+                for (net.minecraft.util.math.GlobalPos chest : chests) {
+                    boolean inside = chest.dimension().equals(world.getRegistryKey()) && former.contains(chest.pos());
+                    followed.add(inside ? net.minecraft.util.math.GlobalPos.create(chest.dimension(), chest.pos().add(offset)) : chest);
+                    if (inside) chestsMoved++;
+                }
+                if (chestsMoved > 0) {
+                    fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, followed);
+                    LinkHistory.record(player, new LinkHistory.ChestChange(pos.toImmutable(), slot, chests, followed));
                     BoardLinks.sync(container);
-                    moved++;
+                    moved += chestsMoved;
                 }
             }
         }

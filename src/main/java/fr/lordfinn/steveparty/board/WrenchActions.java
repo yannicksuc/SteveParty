@@ -521,16 +521,23 @@ public final class WrenchActions {
         });
     }
 
-    /** Links (or, the same chest again, unlinks) {@code chest} to the inventory cartridge in {@code slot}. */
+    /**
+     * Adds {@code chest} to the containers of the inventory cartridge in {@code slot} (at the end), or removes it if
+     * it is one of them; a full list takes no more.
+     */
     private static void linkChest(ServerPlayerEntity player, ServerWorld world, CartridgeContainerBlockEntity container, int slot, BlockPos chest) {
         ItemStack cartridge = container.getStack(slot);
-        BlockPos before = cartridge.get(ModComponents.INVENTORY_POS);
-        BlockPos after = chest.equals(before) ? null : chest;
-        if (after == null) cartridge.remove(ModComponents.INVENTORY_POS);
-        else cartridge.set(ModComponents.INVENTORY_POS, after);
+        java.util.List<net.minecraft.util.math.GlobalPos> before = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey());
+        var toggle = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.toggle(cartridge, world, chest);
+        if (toggle == fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.Toggle.FULL) {
+            say(player, Text.translatable("message.steveparty.inventory_cartridge.full", fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.MAX));
+            playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 0.7f);
+            return;
+        }
         BoardLinks.sync(container);
-        LinkHistory.record(player, new LinkHistory.ChestChange(container.getPos().toImmutable(), slot, before, after));
-        if (after != null) {
+        LinkHistory.record(player, new LinkHistory.ChestChange(container.getPos().toImmutable(), slot, before,
+                fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.of(cartridge, world.getRegistryKey())));
+        if (toggle == fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.Toggle.ADDED) {
             BoardLinks.trail(world, container.getPos(), chest, 0x3C8CFF);
             say(player, Text.translatable("message.steveparty.wrench.chest.linked", BoardText.pos(chest), BoardText.pos(container.getPos())));
             playSound(world, player, ModSounds.SELECT_SOUND_EVENT, 1.1f);

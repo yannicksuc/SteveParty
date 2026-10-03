@@ -5,9 +5,17 @@ import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.utils.MessageUtils;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.math.GlobalPos;
+import org.jetbrains.annotations.Nullable;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
@@ -46,39 +54,69 @@ public class InventoryCartridgeItem extends CartridgeItem {
         return BoardSpaceType.TILE_INVENTORY_INTERACTOR;
     }
 
-    @Override
-    public ActionResult useOnBlock(ItemUsageContext context) {
-        PlayerEntity player = context.getPlayer();
-        World world = context.getWorld();
-        Hand hand = context.getHand();
-        if (!world.isClient && player != null && hand == Hand.OFF_HAND) {
+    /**
+     * A click decides by what it hits, the same in either hand:
+     * <ul>
+     *     <li>a container ({@link CartridgeContainers#accepts}): added to the cartridge's containers, or removed if it
+     *     is one; it does not open. With the cartridge in the off hand and nothing in the main hand, too;</li>
+     *     <li>a board space or a router, sneaking: added to the destinations, or removed ({@link #useOnBlock}). Not
+     *     sneaking, the board space opens its interface, where cartridges are put in, as for every cartridge;</li>
+     *     <li>anything else: its own use.</li>
+     * </ul>
+     */
+    public static void initialize() {
+        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             ItemStack stack = player.getStackInHand(hand);
-            if (stack.getItem() instanceof InventoryCartridgeItem) {
-                BlockPos blockPos = context.getBlockPos();
-                if (world.getBlockEntity(blockPos) instanceof Inventory) {
-                    if (blockPos.equals(getSavedInventoryPos(stack))) {
-                        playCancelSound(blockPos, player);
-                        saveBlockPos(stack, null);
-                    } else {
-                        playSelectSound(blockPos, player);
-                        saveBlockPos(stack, blockPos);
-                    }
-                    return ActionResult.SUCCESS;
-                } else {
-                    MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.block_not_inventory"), MessageUtils.MessageType.ACTION_BAR);
-                    return ActionResult.FAIL;
-                }
+            // The off hand's cartridge with nothing in the main hand: the main hand's turn would open the container
+            if (hand == Hand.MAIN_HAND && stack.isEmpty() && player.getOffHandStack().getItem() instanceof InventoryCartridgeItem) {
+                stack = player.getOffHandStack();
+            }
+            if (!(stack.getItem() instanceof InventoryCartridgeItem) || player.isSpectator()) return ActionResult.PASS;
+            BlockPos pos = hit.getBlockPos().toImmutable();
+            if (!CartridgeContainers.accepts(world, pos)) return ActionResult.PASS;
+            if (world.isClient) return ActionResult.SUCCESS;
+            choose(stack, world, pos, player);
+            return ActionResult.SUCCESS;
+        });
+    }
+
+    /** Adds the container at {@code pos} to the cartridge's, or removes it if it is one; the player is told. */
+    public static CartridgeContainers.Toggle choose(ItemStack stack, World world, BlockPos pos, @Nullable PlayerEntity player) {
+        CartridgeContainers.Toggle toggle = CartridgeContainers.toggle(stack, world, pos);
+        if (player == null) return toggle;
+        int count = CartridgeContainers.of(stack, world.getRegistryKey()).size();
+        switch (toggle) {
+            case ADDED -> {
+                ModSounds.playSelect(world, pos);
+                player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.added", count, pos.getX(), pos.getY(), pos.getZ()), true);
+            }
+            case REMOVED -> {
+                ModSounds.playCancel(world, pos);
+                player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.removed", pos.getX(), pos.getY(), pos.getZ(), count), true);
+            }
+            case FULL -> {
+                ModSounds.playCancel(world, pos);
+                player.sendMessage(Text.translatable("message.steveparty.inventory_cartridge.full", CartridgeContainers.MAX), true);
             }
         }
-        return super.useOnBlock(context);
+        return toggle;
     }
 
-    private void saveBlockPos(ItemStack stack, BlockPos pos) {
-        stack.set(INVENTORY_POS, pos);
+    /**
+     * Reached when the block did not take the click (sneaking, or a block without a use): a board space or a router
+     * is added to the destinations (or removed), in either hand; anything else is left alone.
+     */
+    @Override
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        World world = context.getWorld();
+        if (fr.lordfinn.steveparty.board.BoardLinks.container(world, context.getBlockPos()) == null) return ActionResult.PASS;
+        return toggleDestination(context);
     }
 
-    public BlockPos getSavedInventoryPos(ItemStack stack) {
-        return stack.getOrDefault(INVENTORY_POS, null);
+    /** The position of its first container in its dimension, null for none (see {@link CartridgeContainers}). */
+    public static @Nullable BlockPos getSavedInventoryPos(ItemStack stack) {
+        List<GlobalPos> containers = CartridgeContainers.of(stack, World.OVERWORLD);
+        return containers.isEmpty() ? null : containers.getFirst().pos();
     }
 
     public static void setSelectionState(ItemStack stack, int state) {
@@ -99,22 +137,14 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     private static final List<CartridgeModule> MODULES = List.of(
             new GhostSlotsModule("items", K + "items"),
-            new InfoModule("chest", K + "chest", 2, InventoryCartridgeItem::chest, stack -> new ItemStack(Items.CHEST)),
+            // No title: its hint row says what it is, and it fits beside a tile with all its rows
+            new ContainersModule("chests", null),
             new ChoiceModule("mode", K + "mode",
                     List.of(new ChoiceModule.Option(K + "random", -1, "message.steveparty.button_state.random"),
                             new ChoiceModule.Option(K + "all", -1, "message.steveparty.button_state.all"),
                             new ChoiceModule.Option(K + "cycle", -1, "message.steveparty.button_state.cycle")),
                     InventoryCartridgeItem::getSelectionState,
                     (edit, value) -> setSelectionState(edit.stack(), value)));
-
-    /** The chest it gives from / takes to, and how to link one. */
-    private static List<InfoModule.Line> chest(InfoModule.Context context) {
-        BlockPos pos = context.stack().getOrDefault(INVENTORY_POS, null);
-        return List.of(pos != null
-                        ? InfoModule.Line.of(Text.translatable(K + "chest.at", pos.getX(), pos.getY(), pos.getZ()))
-                        : new InfoModule.Line(Text.translatable(K + "chest.none"), InfoModule.Tone.BAD),
-                new InfoModule.Line(Text.translatable(K + "chest.hint"), InfoModule.Tone.SOFT));
-    }
 
     @Override
     public List<CartridgeModule> modules() {
@@ -138,11 +168,11 @@ public class InventoryCartridgeItem extends CartridgeItem {
                 .setStyle(Style.EMPTY.withBold(true).withColor(0xfcb017)));
 
         tooltip.add(Text.translatable("tooltip.steveparty.controls.select_container",
-                Text.translatable("tooltip.steveparty.controls.left_hand")
+                Text.translatable("tooltip.steveparty.controls.container_click")
                         .setStyle(Style.EMPTY.withColor(0xfcb017))));
 
         tooltip.add(Text.translatable("tooltip.steveparty.controls.select_destination",
-                Text.translatable("tooltip.steveparty.controls.right_hand")
+                Text.translatable("tooltip.steveparty.controls.board_space_click")
                         .setStyle(Style.EMPTY.withColor(0xfcb017))));
 
         tooltip.add(Text.translatable("tooltip.steveparty.controls.open_config",
@@ -151,13 +181,17 @@ public class InventoryCartridgeItem extends CartridgeItem {
         tooltip.add(Text.empty());
 
         // --- Container info ---
-        BlockPos pos = getSavedInventoryPos(stack);
-        if (pos != null) {
-            tooltip.add(Text.translatable("tooltip.steveparty.linked_container")
+        Entity viewer = stack.getHolder();
+        List<GlobalPos> containers = CartridgeContainers.of(stack, viewer == null ? World.OVERWORLD : viewer.getWorld().getRegistryKey());
+        if (!containers.isEmpty()) {
+            tooltip.add(Text.translatable("tooltip.steveparty.linked_containers", containers.size(), CartridgeContainers.MAX)
                     .setStyle(Style.EMPTY.withColor(0x167abf).withBold(true))); // Aqua
-            tooltip.add(Text.translatable("tooltip.steveparty.container_entry",
-                            pos.getX(), pos.getY(), pos.getZ())
-                    .setStyle(Style.EMPTY.withColor(0xFFFFFF))); // White
+            for (int i = 0; i < containers.size(); i++) {
+                BlockPos pos = containers.get(i).pos();
+                tooltip.add(Text.translatable("tooltip.steveparty.container_entry_indexed", i + 1, pos.getX(), pos.getY(), pos.getZ())
+                        .setStyle(Style.EMPTY.withColor(0xFFFFFF))); // White
+            }
+            tooltip.add(Text.translatable("tooltip.steveparty.containers_order").formatted(Formatting.DARK_GRAY));
         } else {
             tooltip.add(Text.translatable("tooltip.steveparty.no_container")
                     .setStyle(Style.EMPTY.withColor(Formatting.RED).withItalic(true)));

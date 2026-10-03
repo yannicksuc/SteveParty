@@ -179,10 +179,13 @@ public final class BoardGraph {
 
     private static @Nullable InventoryIssue inventoryIssue(World world, ItemStack cartridge) {
         if (!(cartridge.getItem() instanceof InventoryCartridgeItem)) return null;
-        BlockPos chest = cartridge.get(ModComponents.INVENTORY_POS);
-        if (chest == null) return InventoryIssue.NO_CHEST;
-        if (!world.isChunkLoaded(chest)) return null;
-        return world.getBlockEntity(chest) instanceof Inventory ? null : InventoryIssue.CHEST_GONE;
+        List<BlockPos> chests = fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(cartridge, world);
+        if (fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) return InventoryIssue.NO_CHEST;
+        // One of its containers gone (an unloaded one is not looked at)
+        for (BlockPos chest : chests) {
+            if (world.isChunkLoaded(chest) && !(world.getBlockEntity(chest) instanceof Inventory)) return InventoryIssue.CHEST_GONE;
+        }
+        return null;
     }
 
     @SuppressWarnings("deprecation") // isChunkLoaded(BlockPos): the chunk must not be loaded for this

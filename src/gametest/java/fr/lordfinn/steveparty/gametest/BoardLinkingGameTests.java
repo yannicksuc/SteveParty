@@ -323,7 +323,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             click(player, wrench, context, t.get(0)); // starts the chain, no cartridge yet
             click(player, wrench, context, t.get(1)); // links: the inventory cartridge goes in the first tile
             ItemStack cartridge = boardSpace(context, t.get(0)).getStack(0);
-            context.assertEquals(cartridge.get(ModComponents.INVENTORY_POS), near, "the nearest chest");
+            context.assertEquals(fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(cartridge, context.getWorld()), List.of(near), "the nearest chest");
 
             // Origin back on the first tile (Edit), click the far chest
             player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
@@ -332,7 +332,13 @@ public class BoardLinkingGameTests implements FabricGameTest {
             click(player, wrench, context, t.get(0));
             net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
                     new net.minecraft.util.hit.BlockHitResult(far.toCenterPos(), net.minecraft.util.math.Direction.UP, far, false));
-            context.assertEquals(boardSpace(context, t.get(0)).getStack(0).get(ModComponents.INVENTORY_POS), far, "the clicked chest");
+            context.assertEquals(fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(boardSpace(context, t.get(0)).getStack(0), context.getWorld()),
+                    List.of(near, far), "the clicked chest, after the first (a cartridge holds a list)");
+            // The same chest again: out of the list
+            net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(near.toCenterPos(), net.minecraft.util.math.Direction.UP, near, false));
+            context.assertEquals(fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(boardSpace(context, t.get(0)).getStack(0), context.getWorld()),
+                    List.of(far), "the near one clicked again: removed");
         });
     }
 

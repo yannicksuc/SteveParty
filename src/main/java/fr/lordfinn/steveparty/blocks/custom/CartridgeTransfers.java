@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.blocks.custom;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.utils.InventoryChain;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -16,7 +19,7 @@ import java.util.function.IntSupplier;
 import static fr.lordfinn.steveparty.components.ModComponents.*;
 
 /**
- * Item transfers between the container linked to an inventory cartridge and a player, like the inventory board
+ * Item transfers between the containers linked to an inventory cartridge (in their order) and a player, like the inventory board
  * spaces: the items of the cartridge are given to the player from the container, items marked negative are taken
  * from the player into the container. Selection of the cartridge: all items, next item in turn, or a random one.
  * <p>
@@ -26,11 +29,15 @@ import static fr.lordfinn.steveparty.components.ModComponents.*;
 public final class CartridgeTransfers {
     private CartridgeTransfers() {}
 
-    /** @return the container linked to the cartridge, if it is an inventory cartridge linked to a loaded container */
-    public static Inventory getLinkedInventory(World world, ItemStack cartridge) {
+    /**
+     * The containers of an inventory cartridge that are there now (loaded, still containers), end to end in their
+     * order ({@link InventoryChain}): taking walks them in order, giving fills the first one with room first. Null
+     * for none.
+     */
+    public static @Nullable Inventory getLinkedInventory(World world, ItemStack cartridge) {
         if (!(cartridge.getItem() instanceof InventoryCartridgeItem)) return null;
-        if (!(cartridge.get(INVENTORY_POS) instanceof BlockPos linkedPos) || !world.isChunkLoaded(linkedPos)) return null;
-        return world.getBlockEntity(linkedPos) instanceof Inventory inventory ? inventory : null;
+        List<Inventory> available = CartridgeContainers.available(cartridge, world);
+        return available.isEmpty() ? null : new InventoryChain(available);
     }
 
     /**
@@ -85,7 +92,7 @@ public final class CartridgeTransfers {
         if (isNegative(stack)) {
             // What does not fit in the container stays with the player
             return InventoryInteractorTileBehavior.extractMatching(stack, player.getInventory(),
-                    toMove -> InventoryInteractorTileBehavior.insertIntoInventory(toMove, linked));
+                    toMove -> InventoryInteractorTileBehavior.insertLinked(toMove, linked));
         }
         // What does not fit in the player's inventory is dropped at their feet
         int moved = InventoryInteractorTileBehavior.extractMatching(stack, linked, toMove -> {

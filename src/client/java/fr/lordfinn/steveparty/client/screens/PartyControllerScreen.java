@@ -63,7 +63,7 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  *     <li><b>Program</b>: the catalogue slot (its mini-games in its tooltip), what the party will be made of, the
  *     party's program (2 rows of 12 card slots, the default party as ghost cards while it is empty, see
  *     {@link BasicGameGeneratorStep#defaultProgram}) and, under them, the timeline of what it will play.</li>
- *     <li><b>Gains</b>: the bank's Chest Cartridge, the Coin and Star items above their columns (click with an item to
+ *     <li><b>Gains</b>: the bank's Inventory Cartridge, the Coin and Star items above their columns (click with an item to
  *     pick it, with an empty hand to go back to the default one), what each place earns.</li>
  *     <li><b>Settings</b>: the rounds, the practice round.</li>
  * </ul>
@@ -399,7 +399,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
         // The empty catalogue and bank slots show, faded, the item they take (the currency slots are never empty)
         ghostItem(context, handler.getSlot(SLOT_CATALOGUE), ModItems.MINI_GAMES_CATALOGUE);
-        ghostItem(context, handler.getSlot(SLOT_BANK), ModItems.CHEST_CARTRIDGE);
+        ghostItem(context, handler.getSlot(SLOT_BANK), ModItems.INVENTORY_CARTRIDGE);
     }
 
     private void ghostItem(DrawContext context, Slot slot, Item item) {
@@ -616,14 +616,25 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         Text bankHint = Text.empty().append(Text.translatable(KEY + "check.bank.hint")).append("\n").append(Text.translatable(KEY + "check.currencies.hint"));
         checks.add(switch (bank.state()) {
             case NONE -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.none"), bankHint, Page.GAINS);
-            case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing"), bankHint, Page.GAINS);
+            case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing").append(skipped(bank)), bankHint, Page.GAINS);
             case SHORT -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.short", bank.coins(), currency(PartyCurrency.COIN).getName(),
-                    bank.stars(), currency(PartyCurrency.STAR).getName()), bankHint, Page.GAINS);
-            case OK -> new Check(Check.INFO, Text.translatable(KEY + "check.bank.ok", bank.coins(), currency(PartyCurrency.COIN).getName(),
-                    bank.stars(), currency(PartyCurrency.STAR).getName()), bankHint, Page.GAINS);
+                    bank.stars(), currency(PartyCurrency.STAR).getName()).append(skipped(bank)), bankHint, Page.GAINS);
+            case OK -> new Check(skipped(bank).getString().isEmpty() ? Check.INFO : Check.WARN, Text.translatable(KEY + "check.bank.ok", bank.coins(), currency(PartyCurrency.COIN).getName(),
+                    bank.stars(), currency(PartyCurrency.STAR).getName()).append(skipped(bank)), bankHint, Page.GAINS);
         });
         checks.add(new Check(Check.INFO, Text.translatable(KEY + "check.rounds", data.roundsSetting()), Text.translatable(KEY + "check.rounds.hint"), Page.SETTINGS));
         return checks;
+    }
+
+    /**
+     * The containers of the bank left out of its total, « · 1 absent, 1 non chargé », empty when none is: those gone
+     * (or no storage container), those whose chunk is not loaded. The others pay.
+     */
+    private static Text skipped(PartyBank.Status bank) {
+        if (bank.absent() == 0 && bank.unloaded() == 0) return Text.empty();
+        if (bank.unloaded() == 0) return Text.translatable(KEY + "bank.skipped.absent", bank.absent());
+        if (bank.absent() == 0) return Text.translatable(KEY + "bank.skipped.unloaded", bank.unloaded());
+        return Text.translatable(KEY + "bank.skipped.both", bank.absent(), bank.unloaded());
     }
 
     /** The bank's tooltip: what it is, what it holds, why it can't pay. */
@@ -632,10 +643,11 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         lines.add(Text.translatable(KEY + "gains.bank.title").formatted(Formatting.GOLD));
         switch (bank.state()) {
             case NONE -> lines.add(Text.translatable(KEY + "gains.bank.none.hint").formatted(Formatting.GRAY));
-            case MISSING -> lines.add(Text.translatable(KEY + "gains.bank.missing.hint").formatted(Formatting.RED));
+            case MISSING -> lines.add(Text.translatable(KEY + "gains.bank.missing.hint").append(skipped(bank)).formatted(Formatting.RED));
             case OK, SHORT -> {
                 lines.add(Text.translatable(KEY + "gains.bank.holds", bank.coins(), currency(PartyCurrency.COIN).getName(),
                         bank.stars(), currency(PartyCurrency.STAR).getName()).formatted(Formatting.GRAY));
+                if (!skipped(bank).getString().isEmpty()) lines.add(Text.translatable(KEY + "gains.bank.skipped").append(skipped(bank)).formatted(Formatting.RED));
                 if (bank.state() == PartyBank.State.SHORT) lines.add(Text.translatable(KEY + "gains.bank.short").formatted(Formatting.GOLD));
                 lines.add(Text.translatable(KEY + "gains.bank.hint").formatted(Formatting.DARK_GRAY));
             }
@@ -929,6 +941,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         int chipY = top + TIMELINE_LABELS;
         // More on the left
         if (scroll > 0 || timeline.offset() > 0) light(context, Text.literal("‹"), left - 5, chipY + (chip - 8) / 2, INK_SOFT);
+        // More on the right: steps (or the « +N » after them) past the last chip shown
+        if (scroll + shown < steps.size() + (timeline.more() > 0 ? 1 : 0))
+            light(context, Text.literal("›"), left + shown * pitch - TIMELINE_GAP + 2, chipY + (chip - 8) / 2, INK_SOFT);
         for (int slot = 0; slot < shown; slot++) {
             int index = scroll + slot, cx = left + slot * pitch;
             if (index >= steps.size()) {
@@ -1019,8 +1034,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         switch (bank.state()) {
             case NONE, MISSING -> context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank." + (bank.state() == PartyBank.State.NONE ? "none" : "missing")), room),
                     tx, CY + 5, INK_RED, true);
-            case OK, SHORT -> context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank"), room), tx, CY + 5,
-                    bank.state() == PartyBank.State.SHORT ? COLOR_SHORT : WHITE, true);
+            // Some containers skipped (gone, not loaded): said on the line, in the colour of « short »
+            case OK, SHORT -> context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank").append(skipped(bank)), room), tx, CY + 5,
+                    bank.state() == PartyBank.State.SHORT || !skipped(bank).getString().isEmpty() ? COLOR_SHORT : WHITE, true);
         }
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             int top = GAINS_Y + row * GAINS_ROW;

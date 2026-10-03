@@ -168,8 +168,8 @@ public final class PageZoneClient {
      * A box as an outline with see-through faces, {@code bright} brighter. Each face is drawn a hair toward the
      * camera, so that it does not flicker on the blocks it lies on, and the farthest first.
      */
-    static void drawBox(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, Box box, int rgb, float alpha,
-                        @Nullable Direction bright) {
+    public static void drawBox(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, Box box, int rgb, float alpha,
+                                @Nullable Direction bright) {
         float red = ((rgb >> 16) & 0xFF) / 255f, green = ((rgb >> 8) & 0xFF) / 255f, blue = (rgb & 0xFF) / 255f;
         Vec3d center = box.getCenter();
         double far = Math.sqrt(camera.squaredDistanceTo(center)) + box.getLengthX() + box.getLengthY() + box.getLengthZ();

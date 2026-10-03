@@ -15,7 +15,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TeamDisposition;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.items.custom.ChestCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGameResults;
@@ -57,7 +56,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * The bank of a Party Controller: the chest of its Chest Cartridge, the only source of the mini-games' gains. Paid in
+ * The bank of a Party Controller: the chest its Inventory Cartridge remembers, the only source of the mini-games' gains. Paid in
  * the order of the places (the 1st first, the participants last), partially when the chest runs short, never
  * created; the results card says what was really paid; the dashboard says what the chest holds.
  */
@@ -152,7 +151,7 @@ public class PartyBankGameTests implements FabricGameTest {
 
     /** The containers a bank may be, and the cartridge: set on a chest (which does not open), cleared, put in the controller's slot. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void chestCartridgeAndBankSlot(TestContext context) {
+    public void inventoryCartridgeAndBankSlot(TestContext context) {
         ServerWorld world = context.getWorld();
         for (var block : List.of(Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL, Blocks.SHULKER_BOX)) {
             context.setBlockState(CHEST, block);
@@ -165,27 +164,33 @@ public class PartyBankGameTests implements FabricGameTest {
         context.setBlockState(CHEST, Blocks.CHEST);
         ServerPlayerEntity player = player(context, "c", 1.5);
         try {
-            ItemStack cartridge = new ItemStack(ModItems.CHEST_CARTRIDGE);
-            context.assertTrue(ChestCartridgeItem.target(cartridge) == null, "a new cartridge points nowhere");
+            ItemStack cartridge = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
+            context.assertTrue(PartyBank.target(cartridge) == null, "a new cartridge remembers nothing");
             player.setStackInHand(Hand.MAIN_HAND, cartridge);
             BlockPos abs = context.getAbsolutePos(CHEST);
-            player.interactionManager.interactBlock(player, world, cartridge, Hand.MAIN_HAND,
-                    new net.minecraft.util.hit.BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false));
-            context.assertTrue(ChestCartridgeItem.target(cartridge) != null && ChestCartridgeItem.target(cartridge).pos().equals(abs)
-                    && ChestCartridgeItem.target(cartridge).dimension().equals(world.getRegistryKey()), "a click on the chest: it points there");
+            var hit = new net.minecraft.util.hit.BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false);
+            player.interactionManager.interactBlock(player, world, cartridge, Hand.MAIN_HAND, hit);
+            context.assertTrue(PartyBank.target(cartridge) != null && PartyBank.target(cartridge).pos().equals(abs)
+                    && PartyBank.target(cartridge).dimension().equals(world.getRegistryKey()), "main hand, a click on the chest: it remembers it");
             context.assertTrue(!(player.currentScreenHandler instanceof net.minecraft.screen.GenericContainerScreenHandler), "the chest did not open");
+            player.interactionManager.interactBlock(player, world, cartridge, Hand.MAIN_HAND, hit);
+            context.assertTrue(PartyBank.target(cartridge) == null, "a click on the same chest: forgotten");
+            // In the off hand (sneaking, as the main hand would open the chest): the same
+            player.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
+            player.setStackInHand(Hand.OFF_HAND, cartridge);
             player.setSneaking(true);
-            cartridge.getItem().use(world, player, Hand.MAIN_HAND);
-            context.assertTrue(ChestCartridgeItem.target(cartridge) == null, "sneak + right-click in the air: cleared");
+            player.interactionManager.interactBlock(player, world, cartridge, Hand.OFF_HAND, hit);
+            context.assertTrue(PartyBank.target(cartridge) != null && PartyBank.target(cartridge).pos().equals(abs), "off hand: it remembers it too");
             player.setSneaking(false);
+            player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
 
-            // The controller's bank slot: a Chest Cartridge only, for who may edit the controller
+            // The controller's bank slot: an Inventory Cartridge only, for who may edit the controller
             PartyControllerEntity controller = controller(context);
             PartyControllerScreenHandler handler = new PartyControllerScreenHandler(1, player.getInventory(), controller);
             var slot = handler.getSlot(PartyControllerScreenHandler.SLOT_BANK);
             context.assertTrue(!slot.canInsert(new ItemStack(Items.CHEST)), "not a chest");
             ItemStack set = BankFixtures.cartridge(context, CHEST);
-            context.assertTrue(slot.canInsert(set), "a Chest Cartridge");
+            context.assertTrue(slot.canInsert(set), "an Inventory Cartridge");
             slot.setStack(set);
             context.assertTrue(ItemStack.areEqual(controller.getBank(), set), "it is the controller's bank");
             context.assertEquals(status(context, controller, 4).state(), PartyBank.State.SHORT, "an empty chest: too little");

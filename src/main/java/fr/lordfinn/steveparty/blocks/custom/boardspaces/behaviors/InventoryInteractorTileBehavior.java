@@ -39,7 +39,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         if (AdvancedTileBlock.getBoardSpaceEntity(world, pos) instanceof BoardSpaceBlockEntity tileEntity &&
                 tileEntity.getActiveCartridgeItemStack() instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory &&
-                itemStack.get(INVENTORY_POS) instanceof BlockPos connectedInventoryPos  && world.getBlockEntity(connectedInventoryPos) instanceof Inventory connectedInventory) {
+                fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers.getLinkedInventory(world, itemStack) instanceof Inventory connectedInventory) {
 
             int selectionState = InventoryCartridgeItem.getSelectionState(itemStack);
             switch (selectionState) {
@@ -102,7 +102,7 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         boolean shouldTakeFromPlayer = Boolean.TRUE.equals(stack.get(IS_NEGATIVE));
         if (shouldTakeFromPlayer) {
             // What does not fit in the connected inventory stays in the player's inventory
-            extractMatching(stack, player.getInventory(), toMove -> insertIntoInventory(toMove, connectedInventory));
+            extractMatching(stack, player.getInventory(), toMove -> insertLinked(toMove, connectedInventory));
         } else {
             // What does not fit in the player's inventory is dropped at the player's feet
             extractMatching(stack, connectedInventory, toMove -> {
@@ -141,6 +141,19 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
         }
         if (moved > 0) source.markDirty();
         return moved;
+    }
+
+    /**
+     * Inserts into the containers of a cartridge: in their order, the first filled up before the next one (see
+     * {@code CartridgeContainers#insertInOrder}). {@code stack} is decremented by what went in.
+     *
+     * @return the number of items inserted
+     */
+    public static int insertLinked(ItemStack stack, Inventory linked) {
+        if (linked instanceof fr.lordfinn.steveparty.utils.InventoryChain chain) {
+            return fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.insertInOrder(stack, chain.inventories());
+        }
+        return insertIntoInventory(stack, linked);
     }
 
     /**

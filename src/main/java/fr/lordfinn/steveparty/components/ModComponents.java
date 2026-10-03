@@ -71,6 +71,7 @@ public class ModComponents {
             registerComponent("is-negative", Codec.BOOL);
     public static final ComponentType<InventoryComponent> INVENTORY_COMPONENT =
             registerComponent("inventory-cartridge", InventoryComponent.CODEC);
+    /** Legacy: the one container of an Inventory Cartridge before it held a list (read as its list of one, see CartridgeContainers). */
     public static final ComponentType<BlockPos> INVENTORY_POS =
             registerComponent("inventory-pos", BlockPos.CODEC);
     /** Move Forward / Back cartridge: spaces a token landing on its tile moves on (1..6 forward, -1..-6 back). */
@@ -123,9 +124,15 @@ public class ModComponents {
     /** A Mini-game Page in zone mode: its clicks draw the zone of its page (see PageZoneTool). */
     public static final ComponentType<PageZoneMode> PAGE_ZONE_MODE =
             registerComponent("page-zone-mode", PageZoneMode.CODEC);
-    /** The chest a Chest Cartridge points to (the bank of a Party Controller). */
-    public static final ComponentType<net.minecraft.util.math.GlobalPos> CHEST_TARGET =
-            registerComponent("chest-target", net.minecraft.util.math.GlobalPos.CODEC);
+    /** Legacy: the dimension of {@link #INVENTORY_POS}. */
+    public static final ComponentType<net.minecraft.registry.RegistryKey<net.minecraft.world.World>> INVENTORY_DIMENSION =
+            registerComponent("inventory-dimension", net.minecraft.world.World.CODEC);
+    /**
+     * The containers of an Inventory Cartridge, in order (at most CartridgeContainers.MAX): a board space takes from
+     * and gives to them in this order, a Party Controller pays its gains from them in this order.
+     */
+    public static final ComponentType<java.util.List<net.minecraft.util.math.GlobalPos>> INVENTORY_CONTAINERS =
+            registerComponent("inventory-containers", net.minecraft.util.math.GlobalPos.CODEC.listOf());
 
     /** Block a Box Costume looks like: the one the Boxed Trader's box looked like when it was taken from him. */
     public static final ComponentType<net.minecraft.block.BlockState> BOX_BLOCK =
