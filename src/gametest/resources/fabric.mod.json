@@ -73,7 +73,8 @@
       "fr.lordfinn.steveparty.gametest.MiniGamePipeGameTests",
       "fr.lordfinn.steveparty.gametest.ZoneBubbleGameTests",
       "fr.lordfinn.steveparty.gametest.MiniGameZoneGameTests",
-      "fr.lordfinn.steveparty.gametest.ZoneForbiddenGameTests"
+      "fr.lordfinn.steveparty.gametest.ZoneForbiddenGameTests",
+      "fr.lordfinn.steveparty.gametest.PolishedTilesGameTests"
     ]
   },
   "depends": {
