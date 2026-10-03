@@ -31,7 +31,7 @@ public final class ConsolePaint {
     }
 
     private static final Map<String, Tex> TEXTURES = new HashMap<>();
-    private static final int MAX_TEXTURES = 128;
+    private static final int MAX_TEXTURES = 256;
     private static int serial;
 
     private ConsolePaint() {
@@ -50,14 +50,78 @@ public final class ConsolePaint {
         return m;
     }
 
+    /** {@code inner} with one pixel of margin all round: its outline. */
+    private static boolean[][] margin(boolean[][] inner, int w, int h) {
+        boolean[][] m = new boolean[h][w];
+        for (int y = 0; y < inner.length; y++) System.arraycopy(inner[y], 0, m[y + 1], 1, inner[y].length);
+        return m;
+    }
+
     /** A kit shape exactly {@code w} x {@code h}, its outline included (PartyGui.button: bevel 1, cut 1; panels: 2, 2). */
     public static void box(DrawContext context, int x, int y, int w, int h, Ramp ramp, int bevel, int cut) {
-        draw(context, texture("b" + w + "x" + h + ramp + bevel + "/" + cut, w, h, () -> cut(w - 2, h - 2, cut), ramp, bevel, false), x, y);
+        draw(context, texture("b" + w + "x" + h + ramp + bevel + "/" + cut, w, h, () -> margin(cut(w - 2, h - 2, cut), w, h), ramp, bevel, false), x, y);
     }
 
     /** A pill exactly {@code w} x {@code h}, its outline included, with or without its glossy band. */
     public static void pill(DrawContext context, int x, int y, int w, int h, Ramp ramp, boolean band) {
-        draw(context, texture("p" + w + "x" + h + ramp + band, w, h, () -> HudShapes.mask(HudShapes.Form.PILL, w - 2, h - 2), ramp, 1, band), x, y);
+        draw(context, texture("p" + w + "x" + h + ramp + band, w, h, () -> margin(HudShapes.mask(HudShapes.Form.PILL, w - 2, h - 2), w, h), ramp, 1, band), x, y);
+    }
+
+    /**
+     * A panel and its selected tab as ONE shape (the creative inventory's way): their union outlined and bevelled once
+     * (bevel {@code b} - 2), then the screen, with its 1 px edge, flowing from the panel up into the tab.
+     *
+     * @param x    the panel's left
+     * @param y    the tabs' top (the panel starts {@code tabsH} lower)
+     * @param tabX the selected tab's left, from the panel's
+     */
+    public static void tabbedBezel(DrawContext context, int x, int y, int w, int tabsH, int panelH, int tabX, int tabW, int b, Ramp ramp,
+                                   int screen, int edge) {
+        int h = tabsH + panelH;
+        draw(context, texture("t" + w + "x" + tabsH + "/" + panelH + "@" + tabX + "/" + tabW + ramp + b, w, h, () -> {
+            boolean[][] m = new boolean[h][w];
+            int py = tabsH;
+            // Inside the outline: the panel, its corners cut by one more pixel...
+            for (int yy = py + 1; yy <= py + panelH - 2; yy++) for (int xx = 1; xx <= w - 2; xx++) m[yy][xx] = true;
+            m[py + 1][1] = m[py + 1][w - 2] = m[py + panelH - 2][1] = m[py + panelH - 2][w - 2] = false;
+            // ...and the tab, down into the panel's top edge, its top corners cut
+            for (int yy = 1; yy <= py + 2; yy++) for (int xx = tabX + 1; xx <= tabX + tabW - 2; xx++) m[yy][xx] = true;
+            m[1][tabX + 1] = m[1][tabX + tabW - 2] = false;
+            return m;
+        }, ramp, Math.max(1, b - 2), false), x, y);
+        int py = y + tabsH;
+        context.fill(x + b - 1, py + b - 1, x + w - b + 1, py + panelH - b + 1, edge);
+        context.fill(x + tabX + 3, y + 3, x + tabX + tabW - 3, py + b, edge);
+        context.fill(x + b, py + b, x + w - b, py + panelH - b, screen);
+        context.fill(x + tabX + 4, y + 4, x + tabX + tabW - 4, py + b + 1, screen);
+    }
+
+    // ------------------------------------------------------------------ pixel icons
+
+    /** The mini-game's icon, 10 x 8 (even: it centres in the 20 and 16 px chips and the HUD's medallions). */
+    public static final String[] GAMEPAD = {"..######..", ".#wwwwww#.", "#wdwwwwrw#", "#dddwwbwr#", "#wdwwwwbw#", "#ww####ww#", "#w#....#w#", ".#......#."};
+    public static final Map<Character, Integer> GAMEPAD_COLOURS = Map.of('#', 0xFF2A2F36, 'w', 0xFFE6E9EE, 'd', 0xFF3A3F48, 'r', 0xFFE8413C, 'b', 0xFF3A9BFF);
+
+    public static void gamepad(DrawContext context, int x, int y) {
+        pattern(context, "gamepad", GAMEPAD, GAMEPAD_COLOURS, x, y);
+    }
+
+    /** A small icon from rows of characters, each one a colour (others: nothing). */
+    public static void pattern(DrawContext context, String key, String[] rows, Map<Character, Integer> colours, int x, int y) {
+        Tex known = TEXTURES.get("i" + key);
+        if (known == null) {
+            int w = 0;
+            for (String row : rows) w = Math.max(w, row.length());
+            int[][] out = new int[rows.length][w];
+            for (int yy = 0; yy < rows.length; yy++) {
+                for (int xx = 0; xx < rows[yy].length(); xx++) {
+                    Integer c = colours.get(rows[yy].charAt(xx));
+                    if (c != null) out[yy][xx] = c;
+                }
+            }
+            known = register("i" + key, out);
+        }
+        draw(context, known, x, y);
     }
 
     /** A disc {@code d} pixels across, its outline included. */
@@ -87,12 +151,12 @@ public final class ConsolePaint {
     private static Tex texture(String key, int w, int h, java.util.function.Supplier<boolean[][]> mask, Ramp ramp, int bevel, boolean band) {
         Tex known = TEXTURES.get(key);
         if (known != null) return known;
+        return register(key, paint(mask.get(), ramp, bevel, band));
+    }
+
+    private static Tex register(String key, int[][] out) {
         if (TEXTURES.size() >= MAX_TEXTURES) clear();
-        // The mask with one pixel of margin all round: its outline
-        boolean[][] inner = mask.get();
-        boolean[][] m = new boolean[h][w];
-        for (int y = 0; y < inner.length; y++) System.arraycopy(inner[y], 0, m[y + 1], 1, inner[y].length);
-        int[][] out = paint(m, ramp, bevel, band);
+        int h = out.length, w = out[0].length;
         NativeImage image = new NativeImage(w, h, true);
         for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) image.setColorArgb(x, y, out[y][x]);
         Identifier id = Steveparty.id("console/painted_" + serial++);

@@ -75,7 +75,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     /** Players who won the last mini-game (piggy banks may reward them). */
     private final List<UUID> lastWinners = new ArrayList<>();
     /** The party program: party cards read in order (dashboard, Program page). Empty: the default party. */
-    public static final int PROGRAM_SLOTS = 18;
+    /** 2 rows of 12 (the 18 of the 9 x 2 grid first: a saved program keeps its cards in their order). */
+    public static final int PROGRAM_SLOTS = 24;
     private final SimpleInventory program = new SimpleInventory(PROGRAM_SLOTS) {
         @Override
         public void markDirty() {

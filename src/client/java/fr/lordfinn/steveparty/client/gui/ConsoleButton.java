@@ -16,10 +16,12 @@ import org.jetbrains.annotations.Nullable;
 public class ConsoleButton extends PressableWidget {
     public enum Kind {
         NEUTRAL(ConsolePaint.Ramp.of(0x000000, 0xffffff, 0xe2e2e2, 0x8a8a8a)),
-        GOLD(ConsolePaint.Ramp.of(0x3b2600, 0xfff2a8, 0xffc52e, 0xb5761a)),
+        GOLD(ConsolePaint.Ramp.of(0x8a4a00, 0xffe36a, 0xffc600, 0xffaa00)),
         GREEN(ConsolePaint.Ramp.of(0x08270a, 0xa6ef8a, 0x46ae2e, 0x1f6a14)),
         RED(ConsolePaint.Ramp.of(0x33030a, 0xff8f8f, 0xd9283b, 0x8e1022)),
-        OFF(ConsolePaint.Ramp.of(0x3a3a3a, 0xd0d0d0, 0xa8a8a8, 0x808080));
+        OFF(ConsolePaint.Ramp.of(0x3a3a3a, 0xd0d0d0, 0xa8a8a8, 0x808080)),
+        /** On a dark screen: the screen's colours, a light label. */
+        SCREEN(ConsolePaint.Ramp.of(0x0d0a18, 0x3d3a66, 0x262350, 0x0d0a18));
 
         final ConsolePaint.Ramp ramp;
 
@@ -49,6 +51,11 @@ public class ConsoleButton extends PressableWidget {
     private Kind kind;
     private @Nullable Icon icon;
 
+    public void setKind(Kind kind, @Nullable Icon icon) {
+        this.kind = kind;
+        this.icon = icon;
+    }
+
     public ConsoleButton(int x, int y, int width, int height, Text message, Kind kind, @Nullable Icon icon, Runnable onPress) {
         super(x, y, width, height, message);
         this.kind = kind;
@@ -63,7 +70,8 @@ public class ConsoleButton extends PressableWidget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        Kind shown = active ? kind : Kind.OFF;
+        // Greyed when it can't be pressed (the screen's buttons stay dark, their label dimmed)
+        Kind shown = active || kind == Kind.SCREEN ? kind : Kind.OFF;
         boolean highlighted = active && (isHovered() || isFocused());
         boolean held = highlighted && isHovered() && MinecraftClient.getInstance().mouse.wasLeftButtonClicked();
         ConsolePaint.Ramp ramp = shown.ramp;
@@ -78,9 +86,9 @@ public class ConsoleButton extends PressableWidget {
         int tx = getX() + (width - iconWidth - font.getWidth(label) + 1) / 2;
         int ty = getY() + (height - 8) / 2 + (held ? 1 : 0);
         // Light labels with their dark shadow on the green and red buttons, dark ones with a light shadow on the others
-        boolean light = shown == Kind.GREEN || shown == Kind.RED;
-        int colour = light ? 0xFFFFFFFF : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
-        int shade = light ? 0xFF3F3F3F : shown == Kind.OFF ? 0xFFC8C8C8 : shown.ramp.hi();
+        boolean light = shown == Kind.GREEN || shown == Kind.RED || shown == Kind.SCREEN;
+        int colour = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : light ? 0xFFFFFFFF : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
+        int shade = light ? (colour & 0xFCFCFC) >> 2 | 0xFF000000 : shown == Kind.OFF ? 0xFFC8C8C8 : shown.ramp.hi();
         if (icon != null) {
             for (int row = 0; row < icon.rows.length; row++) {
                 for (int col = 0; col < icon.width(); col++) {

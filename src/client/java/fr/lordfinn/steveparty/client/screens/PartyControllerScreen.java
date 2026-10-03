@@ -4,21 +4,30 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
-import fr.lordfinn.steveparty.items.custom.PartyCardItem;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Blocker;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Phase;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyLiveData;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.BasicGameGeneratorStep;
+import fr.lordfinn.steveparty.client.gui.ConsoleButton;
+import fr.lordfinn.steveparty.client.gui.ConsolePaint;
+import fr.lordfinn.steveparty.client.gui.ConsolePaint.Ramp;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
+import fr.lordfinn.steveparty.client.gui.party.HudPaint;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.PartyCardItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler.Page;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
+import net.minecraft.client.gui.widget.PressableWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -28,6 +37,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,70 +49,82 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.CLOSE_TILE_GUI_SOUND_EVENT
 import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
 
 /**
- * The Party Controller's dashboard: sober and compact (with its tabs and the player's inventory it fits a 427 x 240
- * screen, a large GUI scale, leaving the bottom of the screen free). No paragraph on the pages: what a page is for is in the yellow « i » of its top right
- * corner, what a slot or a control does in a short tooltip.
+ * The Party Controller's dashboard: the block's little computer, as its approved mock-up (the art sources
+ * build_party_controller_screen_v3.py, « direction 1, v3 »). Its screen in the gold bezel, the selected tab and the
+ * bezel one shape opening into it; the inventory in its own bezel below. What a tab is for is in the « i » of its top
+ * right corner, what a slot or a control does in a short tooltip; a tab that blocks the party says it with its red label.
  * <ul>
  *     <li><b>Status</b>: before a party, a checklist of what a party needs (board, tokens on the start tiles, mini-game
- *     catalogue, currencies, rounds), each line leading to the tab where it is fixed, and « Start the party » (active
- *     only when ready, else it says why); during a party, a timeline of its steps (the current one highlighted, the
- *     next ones at a glance, a number where a round begins: wheel or drag to scroll it), what is happening now, the
- *     round, the leader; once over, the podium and « Start a new party ».</li>
- *     <li><b>Players</b>: the tokens in the turn order with their player, whether they are connected, their stars,
- *     coins and rank (before a party: the tokens on the start tiles, who will play). The list scrolls.</li>
- *     <li><b>Program</b>: the catalogue slot and the mini-games it brings (a scrolling grid: how many times each was
- *     played, whether it has somewhere to send the players), then the party's program, its card slots, and under
- *     them the timeline of what that program will play (its loops unrolled). Without any
- *     card, the slots show the default party as see-through ghost cards (the players' turn, a mini-game, repeated as
- *     many times as rounds): exactly what will be played, see {@link BasicGameGeneratorStep#defaultProgram}.</li>
- *     <li><b>Gains</b>: what the party pays at the end of each mini-game, a row per place (1st to 4th, then the
- *     participants), an amount of coins and of stars each; above each column, the item that counts as that currency
- *     (click the slot with an item to pick it, with an empty hand to go back to the default one).</li>
- *     <li><b>Settings</b>: a row per setting (the rounds, the practice round), its control on the right.</li>
+ *     catalogue, bank, rounds), each line leading to the tab where it is fixed, and « Start the party » (active only
+ *     when ready, else it says why); during a party, the round, a timeline of its steps (the current one framed, the
+ *     past ones dimmed: wheel or drag to scroll it), what is happening now, the step and the leader; once over, the
+ *     standings and « Start a new party ». « Follow » shows the party's HUDs.</li>
+ *     <li><b>Players</b>: the tokens in the turn order with their rank, player, stars and coins (it scrolls).</li>
+ *     <li><b>Program</b>: the catalogue slot (its mini-games in its tooltip), what the party will be made of, the
+ *     party's program (2 rows of 12 card slots, the default party as ghost cards while it is empty, see
+ *     {@link BasicGameGeneratorStep#defaultProgram}) and, under them, the timeline of what it will play.</li>
+ *     <li><b>Gains</b>: the bank's Chest Cartridge, the Coin and Star items above their columns (click with an item to
+ *     pick it, with an empty hand to go back to the default one), what each place earns.</li>
+ *     <li><b>Settings</b>: the rounds, the practice round.</li>
  * </ul>
- * The tabs carry a red « ! » when something blocks (no board, no token, no catalogue) and a yellow one for a warning.
  * Everything shown comes from the server ({@link PartyDashboardData}), every action is checked there.
  */
 public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHandler> {
     private static final String KEY = "gui.steveparty.party_controller.";
-    /** A tab stands on the panel's top edge, the selected one a little taller. */
-    private static final int TAB_HEIGHT = TABS_HEIGHT - 2, TAB_RAISE = 2;
-    private static final int PAD = 8;
-    private static final int LINE = 13;
-    /** Room kept free under the dashboard when the screen allows it (a recipe viewer's search field). */
-    private static final int ROOM_BELOW = 24;
-    /** Wide enough for one idea per line. */
-    private static final int TOOLTIP_WIDTH = 236;
-    private static final int COLOR_WARN = 0xFFB36200;
-    private static final int COLOR_GOLD = 0xFF8A5A00;
-    /** The « i » of a page: top right corner. */
-    private static final int INFO_SIZE = 9, INFO_X = WIDTH - PAD - INFO_SIZE, INFO_Y = 8;
-    /** Players rows. */
-    private static final int ROW = 18, PLAYER_ROWS = 5, LIST_Y = 19;
-    /** Program page: the grid of the catalogue's mini-games, the timeline of the program under the cards. */
-    private static final int GRID_X = CATALOGUE_X + 22, GRID_COLUMNS = 10, GRID_ROWS = 1, GRID_Y = CATALOGUE_Y - 1;
-    private static final int PROGRAM_TIMELINE_Y = PROGRAM_Y + 2 * 18 + 3, PROGRAM_CHIP = 15;
-    /** Status page: the timeline of the running party. */
-    private static final int STEPS_TIMELINE_Y = 19, STEPS_CHIP = 20;
-    /** The row of round numbers above the chips of a timeline, the gap between two chips. */
-    private static final int TIMELINE_LABELS = 9, TIMELINE_GAP = 2;
+    // The grid of the mock-up (GUI px, from the panel's corner)
+    private static final int BEZEL = 4, CX = CONTENT_X, CY = CONTENT_Y, CW = CONTENT_WIDTH, CONTENT_BOTTOM = PANEL_HEIGHT - CONTENT_Y;
+    private static final int ROW_H = 12, BTN_H = 18, STEP = 16, TAB_PAD = 5, TAB_GAP = 2, TAB_LABEL_Y = 7;
+    private static final int INFO_X = CX + CW - ROW_H;
+    private static final int BUTTON_Y = CY + 87;
+    /** Status: the running party's timeline (its round labels, then its 20 px chips), the three lines under it. */
+    private static final int STEPS_LABELS_Y = CY + 15, STEPS_CHIP = 20, STEPS_LEFT = CX + 1, STEPS_WIDTH = 10 * 22 - 2;
+    private static final int LINES_Y = CY + 50, LINE = 13;
+    /** Status before a party: the checklist. */
+    private static final int CHECK_Y = CY + 16, CHECK_ROW = 14;
+    /** Players: the rows. */
+    private static final int ROWS_Y = CY + 16, ROW = 18, PLAYER_ROWS = 4;
+    /** Program: the summary line, the timeline under the cards (16 px chips on the cards' columns). */
+    private static final int SUMMARY_Y = CY + 21, PROGRAM_LABELS_Y = CY + 72, PROGRAM_CHIP = 16, PROGRAM_LEFT = PROGRAM_X;
+    private static final int PROGRAM_WIDTH = PROGRAM_COLUMNS * 18 - 2;
+    /** The rows of round numbers above the chips of a timeline, the gap between two chips. */
+    private static final int TIMELINE_LABELS = 10, TIMELINE_GAP = 2;
     /** The running party's timeline keeps this many past steps on the left of the current one. */
     private static final int TIMELINE_PAST = 2;
-    /** Gains page: a row per place, a stepper of coins and one of stars. */
-    private static final int GAINS_Y = 25, GAINS_ROW = 17, GAINS_STEP = 16, GAINS_FIELD = GAINS_COLUMN - 2 * GAINS_STEP - 2;
-    /** Settings page: a row per setting. */
-    private static final int SETTINGS_Y = 21, SETTINGS_ROW = 22;
-    private static final int SCROLLBAR = 5;
-    private static final PartyGui.Theme TAB_IDLE = new PartyGui.Theme(0xFF000000, 0xFFE9E9E9, 0xFFA9A9A9, 0xFF4A4A4A);
-    private static final PartyGui.Theme GOLD = new PartyGui.Theme(0xFF3B2600, 0xFFFFF2A8, 0xFFFFC52E, 0xFFB5761A);
-    private static final PartyGui.Theme SILVER = new PartyGui.Theme(0xFF202020, 0xFFFFFFFF, 0xFFC9D3DA, 0xFF7C8A94);
-    private static final PartyGui.Theme BRONZE = new PartyGui.Theme(0xFF2A1405, 0xFFF4B98A, 0xFFC9793F, 0xFF7A4118);
-    private static final PartyGui.Theme OTHER = new PartyGui.Theme(0xFF1A1030, 0xFFD9C8FF, 0xFF9C7FD6, 0xFF5B438F);
+    /** Gains: a row per place. */
+    private static final int GAINS_Y = CY + 21, GAINS_ROW = 17, GAINS_FIELD = GAINS_COLUMN - 2 * STEP - 4;
+    /** Settings: a row per setting. */
+    private static final int SETTINGS_Y = CY + 18, SETTINGS_ROW = 22;
+    private static final int TOOLTIP_WIDTH = 236;
+
+    // The colours of the mock-up: the block's yellows, its dark screen
+    private static final Ramp FRAME = Ramp.of(0x9a5200, 0xffdf62, 0xffc600, 0xffaa00);
+    private static final Ramp TAB_IDLE = Ramp.of(0x9a5200, 0xffffff, 0xecf7fe, 0xbcc3bf);
+    private static final Ramp TAB_IDLE_HOVER = Ramp.of(0x9a5200, 0xffffff, 0xfdfeff, 0xd4dad7);
+    private static final Ramp TEAL = Ramp.of(0x002a2a, 0xa0ffff, 0x00bbbb, 0x008c8c);
+    private static final Ramp CHIP_GAME = Ramp.of(0x0b2a12, 0xc9f2c0, 0x8fd67f, 0x4e9a45);
+    private static final Ramp CHIP_EVENT = Ramp.of(0x3a2400, 0xffe2a8, 0xf4b24a, 0xb5761a);
+    private static final Ramp NEUTRAL = Ramp.of(0x2f3a44, 0xffffff, 0xc9d3da, 0x8a96a0);
+    private static final Ramp RANK_GOLD = Ramp.of(0x5b2e00, 0xfff87e, 0xffc900, 0xff9e00);
+    private static final Ramp RANK_SILVER = Ramp.of(0x2f3a44, 0xffffff, 0xd6dde3, 0xa7b2bc);
+    private static final Ramp RANK_BRONZE = Ramp.of(0x4a2410, 0xffd2a8, 0xd98a4a, 0xa8612c);
+    private static final Ramp OK = Ramp.of(0x0e3a12, 0xc6f5ae, 0x6ccb52, 0x45a03a);
+    private static final Ramp ERROR = Ramp.of(0x4a0808, 0xffb7ae, 0xe8413c, 0xb02e26);
+    private static final Ramp WARN = Ramp.of(0x5a2800, 0xffd6a0, 0xf9901d, 0xcc6a10);
+    private static final Ramp SWITCH_ON = Ramp.of(0x08270a, 0xa6ef8a, 0x46ae2e, 0x1f6a14);
+    private static final Ramp SWITCH_OFF = Ramp.of(0x0d0a18, 0x6a66a8, 0x3d3a66, 0x2c2858);
+    private static final Ramp KNOB = Ramp.of(0x2f3a44, 0xffffff, 0xffffff, 0xdfe6ea);
+    private static final Ramp HEAD_FRAME = Ramp.of(0x1b1937, 0xffffff, 0xffffff, 0xdfe6ea);
+    private static final int SCREEN = 0xFF1B1937, SCREEN_EDGE = 0xFF0D0A18;
+    private static final int SLOT_BODY = 0xFF2C2858, SLOT_EDGE = 0xFF0D0A18, SLOT_LOW = 0xFF6A66A8;
+    private static final int INK = 0xFFE0EEF3, INK_SOFT = 0xFF9E9CC8, INK_DIM = 0xFF5E5C88, INK_GOLD = 0xFFFFD24A, INK_RED = 0xFFFF8F8F,
+            INK_GREEN = 0xFF8FE07A, INK_WARN = 0xFFFFB54A, INK_BLUE = 0xFF8FC0FF, WHITE = 0xFFFFFFFF;
+    private static final int GOLD_DARK = 0xFF5B2E00, GOLD_LIGHT = 0xFFFFE3A3;
+    private static final int TAB_INK = 0xFF4A3A10, TAB_RED = 0xFFB3202A, TAB_WARN = 0xFFB36200;
     private static final float MARQUEE_SPEED = 28F;
     private static final long MARQUEE_PAUSE_MS = 700;
 
     private boolean openSoundPlayed;
-    private int playersScroll, pagesScroll;
+    private int playersScroll;
     /** A local refusal shown on the page for a few seconds (currency slots). */
     private @Nullable Text flash;
     private long flashUntil;
@@ -122,25 +144,25 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     public PartyControllerScreen(PartyControllerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         this.backgroundWidth = WIDTH;
+        this.backgroundHeight = INVENTORY_Y + INVENTORY_PANEL_HEIGHT;
+    }
+
+    private @Nullable PartyDashboardData data() {
+        return handler.getData();
     }
 
     private Page page() {
         return handler.getPage();
     }
 
-    private boolean showsInventory() {
-        return page() == Page.PROGRAM || page() == Page.GAINS;
-    }
-
     @Override
     protected void init() {
-        backgroundHeight = showsInventory() ? INVENTORY_Y + INVENTORY_PANEL_HEIGHT : PANEL_HEIGHT;
         super.init();
-        // Room for the tabs above the panel
-        y = Math.max(TABS_HEIGHT + 2, Math.min((height - backgroundHeight + TABS_HEIGHT) / 2, height - ROOM_BELOW - backgroundHeight));
-        builtFor = handler.getData();
+        // The tabs above the panel: the whole dashboard centred
+        y = Math.max(TABS_HEIGHT, (height - backgroundHeight - TABS_HEIGHT) / 2 + TABS_HEIGHT);
+        builtFor = data();
         addTabs();
-        PartyDashboardData data = handler.getData();
+        PartyDashboardData data = data();
         if (data != null) {
             switch (page()) {
                 case STATE -> addStateButtons(data);
@@ -158,7 +180,6 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         if (page == page()) return;
         handler.setPage(page);
         playersScroll = 0;
-        pagesScroll = 0;
         clearAndInit();
     }
 
@@ -166,43 +187,37 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     protected void handledScreenTick() {
         super.handledScreenTick();
         // New state from the server: the buttons follow (enabled, labels, tooltips)
-        if (handler.getData() != builtFor) clearAndInit();
+        if (data() != builtFor) clearAndInit();
     }
 
     // ------------------------------------------------------------------ tabs
 
-    /** Left edge (from the panel's) and width of each tab: as wide as its name needs, the room left shared out. */
+    /** Left edge (from the panel's) and width of each tab: its name and 5 px each side, 2 px apart. */
     private final int[] tabLeft = new int[Page.values().length], tabWide = new int[Page.values().length];
 
     private void layoutTabs() {
         Page[] tabs = Page.values();
-        int room = WIDTH - 8 - 2 * (tabs.length - 1), names = 0;
-        for (Page tab : tabs) names += textRenderer.getWidth(Text.translatable(KEY + "tab." + key(tab)));
-        int pad = Math.max(0, room - names) / tabs.length, left = 4;
+        int room = WIDTH - 2 * BEZEL - TAB_GAP * (tabs.length - 1), total = 0;
+        for (Page tab : tabs) total += textRenderer.getWidth(tabName(tab)) - 1 + 2 * TAB_PAD;
+        int left = BEZEL;
         for (Page tab : tabs) {
             int index = tab.ordinal();
             // Names too long for the row (a wordy language): tabs of the same width, their names cut
-            tabWide[index] = names > room - 4 * tabs.length ? room / tabs.length
-                    : textRenderer.getWidth(Text.translatable(KEY + "tab." + key(tab))) + pad;
+            tabWide[index] = total > room ? room / tabs.length : textRenderer.getWidth(tabName(tab)) - 1 + 2 * TAB_PAD;
             tabLeft[index] = left;
-            left += tabWide[index] + 2;
+            left += tabWide[index] + TAB_GAP;
         }
     }
 
-    private int tabWidth(int index) {
-        return tabWide[index];
-    }
-
-    private int tabX(int index) {
-        return x + tabLeft[index];
+    private Text tabName(Page tab) {
+        return Text.translatable(KEY + "tab." + key(tab));
     }
 
     private void addTabs() {
         layoutTabs();
         for (Page tab : Page.values()) {
             int index = tab.ordinal();
-            PartyButton button = new PartyButton(tabX(index), y - TAB_HEIGHT, tabWidth(index), TAB_HEIGHT,
-                    Text.translatable(KEY + "tab." + key(tab)), b -> showPage(tab)) {
+            PartyButton button = new PartyButton(x + tabLeft[index], y - TABS_HEIGHT, tabWide[index], TABS_HEIGHT, tabName(tab), b -> showPage(tab)) {
                 @Override
                 protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
                     // Drawn with the panel (drawBackground): the button only handles clicks, focus and tooltip
@@ -223,9 +238,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     private record Badge(boolean error, Text reason) {}
 
-    /** What needs the player's attention on a tab, null for nothing. */
+    /** What needs the player's attention on a tab (its label turns red, or orange), null for nothing. */
     private @Nullable Badge badge(Page tab) {
-        PartyDashboardData data = handler.getData();
+        PartyDashboardData data = data();
         if (data == null) return null;
         switch (tab) {
             case STATE -> {
@@ -266,68 +281,53 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         return page.name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    private void drawTabs(DrawContext context, int mouseX, int mouseY, boolean selectedPass) {
+    /** The tabs at rest, behind the panel (their foot under its top edge). */
+    private void drawIdleTabs(DrawContext context, int mouseX, int mouseY) {
         for (Page tab : Page.values()) {
-            boolean selected = tab == page();
-            if (selected != selectedPass) continue;
-            int tx = tabX(tab.ordinal()), ty = y - TAB_HEIGHT - (selected ? TAB_RAISE : 0), tw = tabWidth(tab.ordinal());
-            boolean hovered = mouseX >= tx && mouseX < tx + tw && mouseY >= y - TAB_HEIGHT && mouseY < y;
-            PartyGui.Theme theme = selected ? PartyGui.PANEL : hovered ? TAB_IDLE.brighter() : TAB_IDLE;
-            // Like the creative inventory's: a tab goes down behind the panel's top edge (the panel, drawn after the
-            // tabs at rest, cuts them there); the selected one, drawn after the panel, opens into it
-            PartyGui.panel(context, tx, ty, tw, y + 4 - ty, theme);
-            if (selected) {
-                PartyGui.Theme panel = PartyGui.PANEL;
-                // No border between the tab and the page: the tab's bottom edge and the panel's top edge go
-                context.fill(tx, y + 3, tx + tw, y + 4, panel.body());
-                context.fill(tx + 3, y, tx + tw - 3, y + 3, panel.body());
-                // The panel's light top edge goes on, on each side, from the foot of the tab
-                context.fill(tx, y + 1, tx + 3, y + 3, panel.highlight());
-                context.fill(tx + tw - 3, y + 1, tx + tw, y + 3, panel.highlight());
-            }
-            OrderedText label = fit(Text.translatable(KEY + "tab." + key(tab)), tw - 4);
-            int cx = tx + (tw - textRenderer.getWidth(label)) / 2;
-            int cy = ty + 6;
-            context.drawText(textRenderer, label, cx, cy, selected ? PartyGui.TEXT_DARK : 0xFF2E2E2E, false);
-            Badge badge = badge(tab);
-            if (badge != null) drawBadge(context, tx + tw - 8, ty - 1, badge.error ? 0xFFD8323F : 0xFFF0A020, badge.error ? 0xFF5E0A12 : 0xFF6B4300, false);
+            if (tab == page()) continue;
+            int index = tab.ordinal(), tx = x + tabLeft[index], tw = tabWide[index], ty = y - TABS_HEIGHT;
+            boolean hovered = mouseX >= tx && mouseX < tx + tw && mouseY >= ty && mouseY < y;
+            ConsolePaint.box(context, tx, ty, tw, TABS_HEIGHT + 3, hovered ? TAB_IDLE_HOVER : TAB_IDLE, 2, 2);
         }
     }
 
-    /** A round mark, 9 px: « ! » in the corner of a tab (red when it blocks, orange for a warning), or the « i » of a page. */
-    private static void drawBadge(DrawContext context, int bx, int by, int body, int outline, boolean info) {
-        context.fill(bx + 1, by, bx + 8, by + 9, outline);
-        context.fill(bx, by + 1, bx + 9, by + 8, outline);
-        context.fill(bx + 1, by + 1, bx + 8, by + 8, body);
-        int mark = info ? 0xFF4A2C00 : 0xFFFFFFFF;
-        if (info) {
-            context.fill(bx + 4, by + 2, bx + 5, by + 3, mark);
-            context.fill(bx + 4, by + 4, bx + 5, by + 7, mark);
-        } else {
-            context.fill(bx + 4, by + 2, bx + 5, by + 5, mark);
-            context.fill(bx + 4, by + 6, bx + 5, by + 7, mark);
+    /** The tabs' names: dark on the tabs at rest, light in the selected one; red (orange) on a tab that blocks (warns). */
+    private void drawTabLabels(DrawContext context) {
+        for (Page tab : Page.values()) {
+            int index = tab.ordinal(), tw = tabWide[index];
+            int tx = x + tabLeft[index], ty = y - TABS_HEIGHT + TAB_LABEL_Y;
+            Badge badge = badge(tab);
+            OrderedText label = fit(tabName(tab), tw - 2 * TAB_PAD + 1);
+            int lx = tx + (tw - textRenderer.getWidth(label) + 1) / 2;
+            if (tab == page()) {
+                context.drawText(textRenderer, label, lx, ty, badge == null ? WHITE : badge.error ? INK_RED : INK_WARN, true);
+            } else {
+                dark(context, label, lx, ty, badge == null ? TAB_INK : badge.error ? TAB_RED : TAB_WARN, WHITE);
+            }
         }
     }
 
     // ------------------------------------------------------------------ buttons of the pages
 
     private void addStateButtons(PartyDashboardData data) {
-        int buttonY = y + PANEL_HEIGHT - 6 - 18;
-        // Follow the party: its HUDs on screen
-        PartyButton follow = addDrawableChild(new PartyButton(x + PAD, buttonY, 70, 18,
-                Text.translatable(KEY + (data.following() ? "follow.on" : "follow.off")), b -> click(BUTTON_FOLLOW)));
-        follow.setSelected(data.following());
+        // Follow the party: its HUDs on screen (at the bottom right during a party, else at the bottom left)
+        Text followText = Text.translatable(KEY + (data.following() ? "follow.on" : "follow.off"));
+        int followWidth = textRenderer.getWidth(followText) - 1 + 20;
+        int followX = data.phase() == Phase.RUNNING ? CX + CW - followWidth : CX;
+        ConsoleButton follow = addDrawableChild(new ConsoleButton(x + followX, y + BUTTON_Y, followWidth, BTN_H, followText,
+                data.following() ? ConsoleButton.Kind.GOLD : ConsoleButton.Kind.SCREEN, null, () -> click(BUTTON_FOLLOW)));
         follow.setTooltip(Tooltip.of(Text.translatable(KEY + "follow.tooltip")));
 
         if (data.phase() == Phase.RUNNING) return;
         // The main action (the board is checked again every two seconds while the dashboard is open, and at the launch)
         Blocker blocker = data.launchBlocker();
-        int launchWidth = WIDTH - 2 * PAD - 73;
-        PartyButton launch = addDrawableChild(new PartyButton(x + WIDTH - PAD - launchWidth, buttonY, launchWidth, 18,
-                Text.translatable(KEY + (data.phase() == Phase.ENDED ? "launch.again" : "launch")), b -> {
-                    click(BUTTON_LAUNCH);
-                    close();
-                }).style(PartyButton.Style.PRIMARY));
+        Text launchText = Text.translatable(KEY + (data.phase() == Phase.ENDED ? "launch.again" : "launch"));
+        int launchWidth = textRenderer.getWidth(launchText) - 1 + 20;
+        ConsoleButton launch = addDrawableChild(new ConsoleButton(x + CX + CW - launchWidth, y + BUTTON_Y, launchWidth, BTN_H, launchText,
+                ConsoleButton.Kind.GREEN, null, () -> {
+            click(BUTTON_LAUNCH);
+            close();
+        }));
         launch.active = blocker == Blocker.NONE;
         launch.setTooltip(Tooltip.of(blocker == Blocker.NONE
                 ? Text.translatable(KEY + "launch.tooltip")
@@ -336,26 +336,21 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     private void addSettingsButtons(PartyDashboardData data) {
-        int rowY = y + SETTINGS_Y;
+        int rowY = y + SETTINGS_Y + 1, sx = x + CX + CW - 68;
         boolean editable = data.canEdit() && data.phase() != Phase.RUNNING;
         Text why = !data.canEdit() ? Text.translatable(KEY + "locked") : Text.translatable(KEY + "settings.rounds.running");
-        PartyButton minus = addDrawableChild(new PartyButton(x + WIDTH - PAD - 72, rowY, 18, 18, Text.literal("-"),
-                b -> click(BUTTON_ROUNDS_DOWN, Screen.hasShiftDown() ? 5 : 1))
-                .content((context, font, cx, cy, color) -> context.fill(cx - 4, cy - 1, cx + 4, cy + 1, color)));
-        PartyButton plus = addDrawableChild(new PartyButton(x + WIDTH - PAD - 18, rowY, 18, 18, Text.literal("+"),
-                b -> click(BUTTON_ROUNDS_UP, Screen.hasShiftDown() ? 5 : 1))
-                .content((context, font, cx, cy, color) -> {
-                    context.fill(cx - 4, cy - 1, cx + 4, cy + 1, color);
-                    context.fill(cx - 1, cy - 4, cx + 1, cy + 4, color);
-                }));
+        ConsoleButton minus = addDrawableChild(new ConsoleButton(sx, rowY, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,
+                () -> click(BUTTON_ROUNDS_DOWN, Screen.hasShiftDown() ? 5 : 1)));
+        ConsoleButton plus = addDrawableChild(new ConsoleButton(sx + 52, rowY, STEP, STEP, Text.literal("+"), ConsoleButton.Kind.SCREEN, null,
+                () -> click(BUTTON_ROUNDS_UP, Screen.hasShiftDown() ? 5 : 1)));
         minus.active = editable && data.roundsSetting() > PartyControllerEntity.MIN_ROUNDS;
         plus.active = editable && data.roundsSetting() < PartyControllerEntity.MAX_ROUNDS;
         minus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.less") : why));
         plus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.more") : why));
-        // A practice round before each mini-game: on / off
-        PartyButton practice = addDrawableChild(new PartyButton(x + WIDTH - PAD - 72, rowY + SETTINGS_ROW, 72, 18,
-                Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off")), b -> click(BUTTON_PRACTICE)));
-        practice.setSelected(data.practiceRound());
+        // A practice round before each mini-game: a switch, its state on its left
+        Text state = Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off"));
+        int width = textRenderer.getWidth(state) - 1 + 4 + 24;
+        PracticeSwitch practice = addDrawableChild(new PracticeSwitch(x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H, state, data.practiceRound()));
         practice.active = data.canEdit();
         practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
     }
@@ -366,15 +361,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 int left = x + (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X), top = y + GAINS_Y + row * GAINS_ROW;
                 int amount = data.gains().amount(currency, row);
                 int less = gainButton(row, currency, false), more = gainButton(row, currency, true);
-                PartyButton minus = addDrawableChild(new PartyButton(left, top, GAINS_STEP, GAINS_STEP, Text.literal("-"),
-                        b -> click(less, Screen.hasShiftDown() ? 5 : 1))
-                        .content((context, font, cx, cy, color) -> context.fill(cx - 3, cy - 1, cx + 3, cy + 1, color)));
-                PartyButton plus = addDrawableChild(new PartyButton(left + GAINS_STEP + GAINS_FIELD + 2, top, GAINS_STEP, GAINS_STEP, Text.literal("+"),
-                        b -> click(more, Screen.hasShiftDown() ? 5 : 1))
-                        .content((context, font, cx, cy, color) -> {
-                            context.fill(cx - 3, cy - 1, cx + 3, cy + 1, color);
-                            context.fill(cx - 1, cy - 3, cx + 1, cy + 3, color);
-                        }));
+                ConsoleButton minus = addDrawableChild(new ConsoleButton(left, top, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,
+                        () -> click(less, Screen.hasShiftDown() ? 5 : 1)));
+                ConsoleButton plus = addDrawableChild(new ConsoleButton(left + GAINS_COLUMN - STEP, top, STEP, STEP, Text.literal("+"), ConsoleButton.Kind.SCREEN, null,
+                        () -> click(more, Screen.hasShiftDown() ? 5 : 1)));
                 minus.active = data.canEdit() && amount > 0;
                 plus.active = data.canEdit() && amount < MiniGameGains.MAX;
                 Text why = data.canEdit() ? Text.translatable(KEY + "gains.step") : Text.translatable(KEY + "locked");
@@ -397,33 +387,42 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        drawTabs(context, mouseX, mouseY, false);
-        PartyGui.panel(context, x, y, WIDTH, PANEL_HEIGHT, PartyGui.PANEL);
-        drawTabs(context, mouseX, mouseY, true);
-        if (showsInventory()) PartyGui.panel(context, x, y + INVENTORY_Y, WIDTH, INVENTORY_PANEL_HEIGHT, PartyGui.PANEL);
-        // Slot boxes of the page
+        // The tabs at rest, then the panel and the selected tab as one shape, the inventory in its own bezel
+        drawIdleTabs(context, mouseX, mouseY);
+        int selected = page().ordinal();
+        ConsolePaint.tabbedBezel(context, x, y - TABS_HEIGHT, WIDTH, TABS_HEIGHT, PANEL_HEIGHT, tabLeft[selected], tabWide[selected], BEZEL, FRAME,
+                SCREEN, SCREEN_EDGE);
+        ConsolePaint.bezel(context, x, y + INVENTORY_Y, WIDTH, INVENTORY_PANEL_HEIGHT, BEZEL, FRAME, SCREEN, SCREEN_EDGE);
+        drawTabLabels(context);
         for (Slot slot : handler.slots) {
-            if (slot.isEnabled()) slotBox(context, x + slot.x - 1, y + slot.y - 1);
+            if (slot.isEnabled()) ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
         }
         // The empty catalogue and bank slots show, faded, the item they take (the currency slots are never empty)
         ghostItem(context, handler.getSlot(SLOT_CATALOGUE), ModItems.MINI_GAMES_CATALOGUE);
-        ghostItem(context, handler.getSlot(PartyControllerScreenHandler.SLOT_BANK), ModItems.CHEST_CARTRIDGE);
+        ghostItem(context, handler.getSlot(SLOT_BANK), ModItems.CHEST_CARTRIDGE);
     }
 
-    private void ghostItem(DrawContext context, Slot slot, net.minecraft.item.Item item) {
+    private void ghostItem(DrawContext context, Slot slot, Item item) {
         if (!slot.isEnabled() || slot.hasStack()) return;
-        PartyGui.ghostItem(context, new ItemStack(item), x + slot.x, y + slot.y, null);
+        ghost(context, new ItemStack(item), x + slot.x, y + slot.y, false);
     }
 
-    private static void slotBox(DrawContext context, int sx, int sy) {
-        PartyGui.inset(context, sx, sy, 18, 18, 0xFF8B8B8B, false, false);
+    /** A faded item (an empty slot's, a ghost card): under the slot's colour, its count with it. */
+    private void ghost(DrawContext context, ItemStack stack, int gx, int gy, boolean count) {
+        context.drawItem(stack, gx, gy);
+        if (count) context.drawStackOverlay(textRenderer, stack, gx, gy);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 250);
+        context.fill(gx, gy, gx + 16, gy + 16, 0xA6000000 | (SLOT_BODY & 0xFFFFFF));
+        context.getMatrices().pop();
     }
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        PartyDashboardData data = handler.getData();
+        PartyDashboardData data = data();
         if (data == null) {
-            centered(context, Text.translatable(KEY + "loading"), PANEL_HEIGHT / 2 - 4, PartyGui.TEXT_SOFT);
+            OrderedText loading = fit(Text.translatable(KEY + "loading"), CW);
+            context.drawText(textRenderer, loading, (WIDTH - textRenderer.getWidth(loading)) / 2, PANEL_HEIGHT / 2 - 4, INK_SOFT, true);
             return;
         }
         int mx = mouseX - x, my = mouseY - y;
@@ -434,38 +433,61 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             case GAINS -> drawGains(context, data);
             case SETTINGS -> drawSettings(context, data);
         }
-        drawBadge(context, INFO_X, INFO_Y, 0xFFFFC52E, 0xFF6B4300, true);
+        infoButton(context, INFO_X, infoY());
         if (flash != null && Util.getMeasuringTimeMs() < flashUntil) {
             int w = textRenderer.getWidth(flash) + 8;
-            int fx = (WIDTH - w) / 2, fy = PANEL_HEIGHT - 16;
+            int fx = (WIDTH - w) / 2, fy = CONTENT_BOTTOM - 14;
             context.getMatrices().push();
             context.getMatrices().translate(0, 0, 300);
-            PartyGui.button(context, fx, fy, w, 13, new PartyGui.Theme(0xFF33030A, 0xFFFF8F8F, 0xFFD9283B, 0xFF8E1022), false);
-            context.drawTextWithShadow(textRenderer, flash, fx + 4, fy + 3, 0xFFFFFFFF);
+            ConsolePaint.box(context, fx, fy, w, 14, Ramp.of(0x33030a, 0xff8f8f, 0xd9283b, 0x8e1022), 1, 1);
+            context.drawTextWithShadow(textRenderer, flash, fx + 4, fy + 3, WHITE);
             context.getMatrices().pop();
         }
     }
 
-    private static final int HEADING_Y = 8;
-
-    /**
-     * The title of the page, and « Read only » next to the « i » for who may not change what the page sets.
-     *
-     * @return where the room left on the title's line starts
-     */
-    private int heading(DrawContext context, Text text, boolean readOnly) {
-        Text title = text.copy().formatted(Formatting.BOLD);
-        Text locked = Text.translatable(KEY + "read_only");
-        int room = INFO_X - PAD - 4 - (readOnly ? textRenderer.getWidth(locked) + 6 : 0);
-        OrderedText line = fit(title, room);
-        context.drawText(textRenderer, line, PAD, HEADING_Y, PartyGui.TEXT_DARK, false);
-        if (readOnly) context.drawText(textRenderer, locked, INFO_X - 4 - textRenderer.getWidth(locked), HEADING_Y, PartyGui.TEXT_ERROR, false);
-        return PAD + textRenderer.getWidth(line) + 8;
+    /** The « i » of the tab: on its header row, or centred on its slot's row (Program, Gains). */
+    private int infoY() {
+        return page() == Page.PROGRAM || page() == Page.GAINS ? CY + 3 : CY;
     }
 
-    private void centered(DrawContext context, Text text, int ty, int color) {
-        OrderedText line = fit(text, WIDTH - 2 * PAD);
-        context.drawText(textRenderer, line, (WIDTH - textRenderer.getWidth(line)) / 2, ty, color, false);
+    /** The « i »: a 12 px teal LED button, its « i » with its shadow. */
+    private static void infoButton(DrawContext context, int ix, int iy) {
+        ConsolePaint.disc(context, ix, iy, ROW_H, TEAL);
+        int[][] light = {{5, 2}, {5, 4}, {5, 5}, {5, 6}, {5, 7}, {5, 8}}, dark = {{6, 3}, {6, 5}, {6, 6}, {6, 7}, {6, 8}, {6, 9}};
+        for (int[] p : dark) PartyGui.pixel(context, ix + p[0], iy + p[1], 0xFF006666);
+        for (int[] p : light) PartyGui.pixel(context, ix + p[0], iy + p[1], WHITE);
+    }
+
+    /**
+     * A header row (12 px): its title (or a pill) on the left, « Read only » before the « i » for who may not change
+     * what the tab sets.
+     */
+    private void header(DrawContext context, Text title, boolean readOnly) {
+        int room = INFO_X - 4 - CX;
+        if (readOnly) {
+            Text locked = Text.translatable(KEY + "read_only");
+            int lw = textRenderer.getWidth(locked) - 1;
+            context.drawText(textRenderer, locked, INFO_X - 4 - lw, CY + 2, INK_RED, true);
+            room -= lw + 6;
+        }
+        context.drawText(textRenderer, fit(title, room), CX, CY + 2, WHITE, true);
+    }
+
+    /** A gold pill on the header row, its label dark (the round). */
+    private void headerPill(DrawContext context, Text label) {
+        int w = textRenderer.getWidth(label) - 1 + 10;
+        ConsolePaint.pill(context, CX, CY, w, ROW_H, FRAME, true);
+        dark(context, label.asOrderedText(), CX + 5, CY + 2, GOLD_DARK, GOLD_LIGHT);
+    }
+
+    /** Dark text with a light shadow (the mock-ups' {@code dark}). */
+    private void dark(DrawContext context, OrderedText text, int tx, int ty, int colour, int shade) {
+        context.drawText(textRenderer, text, tx + 1, ty + 1, shade, false);
+        context.drawText(textRenderer, text, tx, ty, colour, false);
+    }
+
+    private void light(DrawContext context, Text text, int tx, int ty, int colour) {
+        context.drawText(textRenderer, text, tx, ty, colour, true);
     }
 
     private void drawSmallItem(DrawContext context, ItemStack stack, int ix, int iy, int size) {
@@ -482,58 +504,43 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         return handler.getSlot(currency == PartyCurrency.STAR ? SLOT_STAR : SLOT_COIN).getStack();
     }
 
-    /** « [star] 3  [coin] 12 », returns the width. */
-    private int drawCounts(DrawContext context, int stars, int coins, int cx, int cy, int color) {
-        int start = cx;
-        drawSmallItem(context, currency(PartyCurrency.STAR), cx, cy - 1, 10);
-        cx += 11;
-        context.drawText(textRenderer, Integer.toString(stars), cx, cy, color, false);
-        cx += textRenderer.getWidth(Integer.toString(stars)) + 5;
-        drawSmallItem(context, currency(PartyCurrency.COIN), cx, cy - 1, 10);
-        cx += 11;
-        context.drawText(textRenderer, Integer.toString(coins), cx, cy, color, false);
-        cx += textRenderer.getWidth(Integer.toString(coins));
-        return cx - start;
-    }
-
-    private static void warnIcon(DrawContext context, int ix, int iy) {
-        context.fill(ix + 1, iy, ix + 6, iy + 7, 0xFF6B4300);
-        context.fill(ix, iy + 1, ix + 7, iy + 6, 0xFF6B4300);
-        context.fill(ix + 1, iy + 1, ix + 6, iy + 6, 0xFFF0A020);
-        context.fill(ix + 3, iy + 1, ix + 4, iy + 4, 0xFFFFFFFF);
-        context.fill(ix + 3, iy + 5, ix + 4, iy + 6, 0xFFFFFFFF);
+    /** « [star] 3  [coin] 12 » at the right of a row (56 px). */
+    private void drawCounts(DrawContext context, int stars, int coins, int cx, int cy) {
+        drawSmallItem(context, currency(PartyCurrency.STAR), cx, cy, 8);
+        light(context, Text.literal(Integer.toString(stars)), cx + 10, cy, WHITE);
+        drawSmallItem(context, currency(PartyCurrency.COIN), cx + 26, cy, 8);
+        light(context, Text.literal(Integer.toString(coins)), cx + 36, cy, WHITE);
     }
 
     private Text blockerText(Blocker blocker) {
         return Text.translatable(KEY + "blocker." + blocker.name().toLowerCase(java.util.Locale.ROOT));
     }
 
-    /** A scrollbar in the mod's look: a sunken track, a raised thumb. */
+    /** A scroll bar on the screen: a dark track, a lighter thumb. */
     private static void scrollbar(DrawContext context, int sx, int sy, int height, int scroll, int maxScroll, int shown, int total) {
-        PartyGui.inset(context, sx, sy, SCROLLBAR, height, 0xFF6F6F6F, false, false);
-        int thumb = Math.max(8, (height - 1) * shown / Math.max(shown, total));
-        int travel = height - 1 - thumb;
-        int ty = sy + 1 + (maxScroll == 0 ? 0 : travel * scroll / maxScroll);
-        PartyGui.button(context, sx + 1, ty, SCROLLBAR - 1, thumb, PartyGui.BUTTON, false);
+        context.fill(sx, sy, sx + 3, sy + height, SLOT_BODY);
+        int thumb = Math.max(8, height * shown / Math.max(shown, total));
+        int ty = sy + (maxScroll == 0 ? 0 : (height - thumb) * scroll / maxScroll);
+        context.fill(sx, ty, sx + 3, ty + thumb, SLOT_LOW);
     }
 
     // ------------------------------------------------------------------ one-line texts that may not fit
 
     private OrderedText fit(Text text, int width) {
-        if (textRenderer.getWidth(text) <= width) return text.asOrderedText();
+        if (textRenderer.getWidth(text) - 1 <= width) return text.asOrderedText();
         String ellipsis = "…";
         String cut = textRenderer.trimToWidth(text.getString(), Math.max(0, width - textRenderer.getWidth(ellipsis)));
         return Text.literal(cut.stripTrailing() + ellipsis).setStyle(text.getStyle()).asOrderedText();
     }
 
     /**
-     * Draws {@code text} in a box {@code maxWidth} wide (panel coordinates): as is when it fits; else cut with « … »,
-     * and scrolling back and forth, clipped to the box, while {@code hovered} (like the cartridge menu's lines).
+     * Draws {@code text} (light, shadowed) in a box {@code maxWidth} wide (panel coordinates): as is when it fits; else
+     * cut with « … », and scrolling back and forth, clipped to the box, while {@code hovered}.
      */
     private void drawFitted(DrawContext context, Text text, int tx, int ty, int maxWidth, int color, boolean hovered) {
-        int width = textRenderer.getWidth(text);
+        int width = textRenderer.getWidth(text) - 1;
         if (width <= maxWidth || !hovered) {
-            context.drawText(textRenderer, fit(text, maxWidth), tx, ty, color, false);
+            context.drawText(textRenderer, fit(text, maxWidth), tx, ty, color, true);
             return;
         }
         long now = Util.getMeasuringTimeMs();
@@ -551,10 +558,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         else if (t < 2 * MARQUEE_PAUSE_MS + moveMs) offset = travel;
         else offset = travel - (t - 2 * MARQUEE_PAUSE_MS - moveMs) / (float) moveMs * travel;
         // The scissor is in screen coordinates, the page is drawn from the panel's corner
-        context.enableScissor(x + tx, y + ty - 1, x + tx + maxWidth, y + ty + 10);
+        context.enableScissor(x + tx, y + ty - 1, x + tx + maxWidth + 1, y + ty + 10);
         context.getMatrices().push();
         context.getMatrices().translate(-offset, 0, 0);
-        context.drawText(textRenderer, text, tx, ty, color, false);
+        context.drawText(textRenderer, text, tx, ty, color, true);
         context.getMatrices().pop();
         context.disableScissor();
     }
@@ -567,7 +574,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     /** A line of the checklist: its state, its text, its hint (tooltip) and the tab that fixes it. */
     private record Check(int state, Text text, Text hint, @Nullable Page target) {
-        static final int OK = 0, WARN = 1, ERROR = 2;
+        static final int OK = 0, WARN = 1, ERROR = 2, INFO = 3;
     }
 
     private List<Check> checklist(PartyDashboardData data) {
@@ -615,10 +622,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             case MISSING -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.missing"), bankHint, Page.GAINS);
             case SHORT -> new Check(Check.WARN, Text.translatable(KEY + "check.bank.short", bank.coins(), currency(PartyCurrency.COIN).getName(),
                     bank.stars(), currency(PartyCurrency.STAR).getName()), bankHint, Page.GAINS);
-            case OK -> new Check(Check.OK, Text.translatable(KEY + "check.bank.ok", bank.coins(), currency(PartyCurrency.COIN).getName(),
+            case OK -> new Check(Check.INFO, Text.translatable(KEY + "check.bank.ok", bank.coins(), currency(PartyCurrency.COIN).getName(),
                     bank.stars(), currency(PartyCurrency.STAR).getName()), bankHint, Page.GAINS);
         });
-        checks.add(new Check(Check.OK, Text.translatable(KEY + "check.rounds", data.roundsSetting()), Text.translatable(KEY + "check.rounds.hint"), Page.SETTINGS));
+        checks.add(new Check(Check.INFO, Text.translatable(KEY + "check.rounds", data.roundsSetting()), Text.translatable(KEY + "check.rounds.hint"), Page.SETTINGS));
         return checks;
     }
 
@@ -657,33 +664,35 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
     }
 
-    private static final int CHECK_Y = 21;
-
     private void drawState(DrawContext context, PartyDashboardData data, int mx, int my) {
         switch (data.phase()) {
             case SETUP -> {
-                heading(context, Text.translatable(KEY + "state.setup"), false);
+                header(context, Text.translatable(KEY + "state.setup"), false);
                 List<Check> checks = checklist(data);
                 for (int i = 0; i < checks.size(); i++) {
                     Check check = checks.get(i);
-                    int ly = CHECK_Y + i * LINE;
-                    boolean hovered = in(mx, my, PAD - 2, ly - 3, WIDTH - 2 * PAD + 4, LINE);
-                    if (hovered) context.fill(PAD - 2, ly - 3, WIDTH - PAD + 2, ly + LINE - 4, 0x30FFFFFF);
-                    if (check.state() == Check.WARN) warnIcon(context, PAD, ly);
-                    else PartyGui.statusIcon(context, PAD, ly, check.state() == Check.OK);
-                    int color = check.state() == Check.ERROR ? PartyGui.TEXT_ERROR : check.state() == Check.WARN ? COLOR_WARN : PartyGui.TEXT_DARK;
-                    drawFitted(context, check.text(), PAD + 11, ly, WIDTH - 2 * PAD - 20, color, hovered);
-                    if (check.target() != null)
-                        context.drawText(textRenderer, "›", WIDTH - PAD - 5, ly, PartyGui.TEXT_SOFT, false);
+                    int ly = CHECK_Y + i * CHECK_ROW;
+                    boolean hovered = check.target() != null && in(mx, my, CX, ly, CW, ROW_H);
+                    if (hovered) context.fill(CX - 2, ly, CX + CW + 2, ly + ROW_H, 0x22FFFFFF);
+                    Ramp disc = switch (check.state()) {
+                        case Check.OK -> OK;
+                        case Check.ERROR -> ERROR;
+                        case Check.WARN -> WARN;
+                        default -> NEUTRAL;
+                    };
+                    ConsolePaint.disc(context, CX, ly + 2, 8, disc);
+                    int color = switch (check.state()) {
+                        case Check.OK -> INK;
+                        case Check.ERROR -> INK_RED;
+                        case Check.WARN -> INK_WARN;
+                        default -> INK_SOFT;
+                    };
+                    drawFitted(context, check.text(), CX + 12, ly + 2, CW - 12, color, hovered);
                 }
             }
             case RUNNING -> {
-                heading(context, Text.translatable(KEY + "state.running"), false);
-                Text round = data.round() == 0 ? Text.translatable("hud.steveparty.party.round.start")
-                        : Text.translatable("hud.steveparty.party.round", data.round(), data.rounds());
-                int rw = textRenderer.getWidth(round) + 10, rx = INFO_X - 4 - rw;
-                PartyGui.button(context, rx, HEADING_Y - 3, rw, 13, GOLD, false);
-                context.drawText(textRenderer, round, rx + 5, HEADING_Y, 0xFF4A2C00, false);
+                headerPill(context, data.round() == 0 ? Text.translatable("hud.steveparty.party.round.start")
+                        : Text.translatable(KEY + "state.round", data.round(), data.rounds()));
                 // The steps of the party: the current one stays near the left until the timeline is scrolled
                 PartyDashboardData.Timeline steps = data.steps();
                 int current = steps.offset() + steps.current();
@@ -692,42 +701,26 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                     stepsScrolled = false;
                 }
                 if (!stepsScrolled) stepsScroll = Math.max(0, steps.current() - TIMELINE_PAST);
-                stepsScroll = drawTimeline(context, data, steps, PAD, STEPS_TIMELINE_Y, WIDTH - 2 * PAD, STEPS_CHIP, stepsScroll, mx, my);
-                // What is happening now
-                int ay = STEPS_TIMELINE_Y + TIMELINE_LABELS + STEPS_CHIP + 4;
-                // « Step 3/20 », at the end of that line
-                Text stepText = Text.translatable(KEY + "state.step", data.stepIndex() + 1, data.stepCount());
-                int stepWidth = textRenderer.getWidth(stepText);
-                context.drawText(textRenderer, stepText, WIDTH - PAD - stepWidth, ay, PartyGui.TEXT_SOFT, false);
-                int actionRoom = WIDTH - 2 * PAD - stepWidth - 6;
-                drawFitted(context, data.action(), PAD, ay, actionRoom, COLOR_GOLD, in(mx, my, PAD, ay - 1, actionRoom, 10));
+                stepsScroll = drawTimeline(context, data, steps, STEPS_LEFT, STEPS_LABELS_Y, STEPS_WIDTH, STEPS_CHIP, stepsScroll, data.round(), mx, my);
+                // What is happening now, then the step and the leader
+                drawFitted(context, data.action(), CX, LINES_Y, CW, WHITE, in(mx, my, CX, LINES_Y - 1, CW, 10));
                 if (!data.actionDetail().getString().isEmpty())
-                    drawFitted(context, data.actionDetail(), PAD, ay + 11, WIDTH - 2 * PAD, PartyGui.TEXT_DARK, in(mx, my, PAD, ay + 10, WIDTH - 2 * PAD, 10));
-                // The leader
+                    drawFitted(context, data.actionDetail(), CX, LINES_Y + LINE, CW, INK_SOFT, in(mx, my, CX, LINES_Y + LINE - 1, CW, 10));
+                net.minecraft.text.MutableText step = Text.translatable(KEY + "state.step", data.stepIndex() + 1, data.stepCount());
                 PartyLiveData.Standing leader = leader(data);
-                if (leader != null) {
-                    int ly = 76;
-                    OrderedText label = fit(Text.translatable(KEY + "state.leader", leader.tokenName()), WIDTH - 2 * PAD - 64);
-                    context.drawText(textRenderer, label, PAD, ly, PartyGui.TEXT_DARK, false);
-                    drawCounts(context, leader.stars(), leader.coins(), PAD + textRenderer.getWidth(label) + 5, ly, PartyGui.TEXT_DARK);
-                }
+                if (leader != null) step.append(" · ").append(Text.translatable(KEY + "state.leader", leader.tokenName()));
+                drawFitted(context, step, CX, LINES_Y + 2 * LINE, CW, INK_SOFT, in(mx, my, CX, LINES_Y + 2 * LINE - 1, CW, 10));
             }
             case ENDED -> {
                 List<PartyLiveData.Standing> players = data.players();
                 int[] ranks = PartyLiveData.ranks(players);
                 List<Integer> order = byRank(ranks);
-                // The winner in the title
-                heading(context, players.isEmpty() ? Text.translatable(KEY + "state.ended")
+                // The winner in the title, the standings under it
+                header(context, players.isEmpty() ? Text.translatable(KEY + "state.ended")
                         : Text.translatable(KEY + "state.winner", players.get(order.getFirst()).tokenName()), false);
-                int py = 22;
-                for (int i = 0; i < Math.min(order.size(), 5); i++) {
+                for (int i = 0; i < Math.min(order.size(), PLAYER_ROWS); i++) {
                     int index = order.get(i);
-                    PartyLiveData.Standing player = players.get(index);
-                    drawRankPlate(context, ranks[index], PAD, py - 3);
-                    context.drawText(textRenderer, fit(Text.literal(player.tokenName()), 76), PAD + 26, py, PartyGui.TEXT_DARK, false);
-                    context.drawText(textRenderer, fit(owner(player), 46), PAD + 106, py, PartyGui.TEXT_SOFT, false);
-                    drawCounts(context, player.stars(), player.coins(), WIDTH - PAD - 58, py, PartyGui.TEXT_DARK);
-                    py += 13;
+                    playerRow(context, data, players.get(index), i, ranks[index], ROWS_Y + i * ROW, CW, false, true, mx, my);
                 }
             }
         }
@@ -748,16 +741,21 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         return order;
     }
 
-    private void drawRankPlate(DrawContext context, int rank, int px, int py) {
-        PartyGui.Theme theme = switch (rank) {
-            case 1 -> GOLD;
-            case 2 -> SILVER;
-            case 3 -> BRONZE;
-            default -> OTHER;
+    private static Ramp rankRamp(int rank) {
+        return switch (rank) {
+            case 1 -> RANK_GOLD;
+            case 2 -> RANK_SILVER;
+            case 3 -> RANK_BRONZE;
+            default -> NEUTRAL;
         };
-        PartyGui.button(context, px, py, 22, 14, theme, false);
-        Text text = Text.translatable("hud.steveparty.party.rank." + Math.min(rank, 9));
-        context.drawText(textRenderer, text, px + (22 - textRenderer.getWidth(text)) / 2, py + 3, 0xFF2E2E2E, false);
+    }
+
+    /** A 12 px disc in the rank's colour, its number dark. */
+    private void rankDisc(DrawContext context, int rank, int dx, int dy) {
+        Ramp ramp = rankRamp(rank);
+        ConsolePaint.disc(context, dx, dy, ROW_H, ramp);
+        Text number = Text.literal(Integer.toString(Math.min(rank, 9)));
+        dark(context, number.asOrderedText(), dx + (ROW_H - textRenderer.getWidth(number) + 1) / 2, dy + 2, ramp.outline(), ramp.hi());
     }
 
     private Text owner(PartyLiveData.Standing player) {
@@ -770,41 +768,49 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     private void drawPlayers(DrawContext context, PartyDashboardData data, int mx, int my) {
         List<PartyLiveData.Standing> players = data.players();
-        heading(context, Text.translatable(data.phase() == Phase.SETUP ? KEY + "players.setup" : KEY + "players.party", players.size()), false);
+        header(context, Text.translatable(data.phase() == Phase.SETUP ? KEY + "players.setup" : KEY + "players.party", players.size()), false);
         if (players.isEmpty()) {
-            context.drawText(textRenderer, fit(Text.translatable(KEY + "check.tokens.none"), WIDTH - 2 * PAD), PAD, LIST_Y + 4, PartyGui.TEXT_ERROR, false);
+            context.drawText(textRenderer, fit(Text.translatable(KEY + "check.tokens.none"), CW), CX, ROWS_Y + 4, INK_RED, true);
             return;
         }
         boolean ranked = data.phase() != Phase.SETUP && players.stream().anyMatch(p -> p.stars() != 0 || p.coins() != 0);
         int[] ranks = PartyLiveData.ranks(players);
         int maxScroll = Math.max(0, players.size() - PLAYER_ROWS);
         playersScroll = Math.clamp(playersScroll, 0, maxScroll);
-        int rowWidth = WIDTH - 2 * PAD - (maxScroll > 0 ? SCROLLBAR + 3 : 0);
-        int ry = LIST_Y;
+        int rowWidth = CW - (maxScroll > 0 ? 6 : 0);
         for (int i = playersScroll; i < Math.min(players.size(), playersScroll + PLAYER_ROWS); i++) {
-            PartyLiveData.Standing player = players.get(i);
-            boolean current = i == data.currentPlayer();
-            boolean hovered = in(mx, my, PAD, ry, rowWidth, ROW - 1);
-            PartyGui.inset(context, PAD, ry, rowWidth, ROW - 2, current ? 0xFFFFE08A : 0xFFB9B9B9, false, false);
-            // Turn order, rank
-            context.drawText(textRenderer, Integer.toString(i + 1), PAD + 4, ry + 5, PartyGui.TEXT_SOFT, false);
-            if (ranked) drawRankPlate(context, ranks[i], PAD + 14, ry + 2);
-            // Colour and names
-            int nameX = PAD + (ranked ? 40 : 16);
-            int color = player.color() < 0 ? 0xFF8B8B8B : 0xFF000000 | player.color();
-            context.fill(nameX, ry + 4, nameX + 8, ry + 12, 0xFF202020);
-            context.fill(nameX + 1, ry + 5, nameX + 7, ry + 11, color);
-            int countsX = PAD + rowWidth - 56;
-            int namesRoom = countsX - nameX - 16, tokenRoom = namesRoom * 3 / 5, ownerRoom = namesRoom - tokenRoom - 4;
-            drawFitted(context, Text.literal(player.tokenName()), nameX + 12, ry + 5, tokenRoom, PartyGui.TEXT_DARK, hovered);
-            int ownerColor = player.owner().isEmpty() ? PartyGui.TEXT_SOFT : player.online() ? 0xFF2E5E8E : COLOR_WARN;
-            context.drawText(textRenderer, fit(owner(player), ownerRoom), nameX + 12 + tokenRoom + 4, ry + 5, ownerColor, false);
-            // Stars and coins
-            drawCounts(context, player.stars(), player.coins(), countsX, ry + 5, PartyGui.TEXT_DARK);
-            ry += ROW;
+            playerRow(context, data, players.get(i), i, ranks[i], ROWS_Y + (i - playersScroll) * ROW, rowWidth, i == data.currentPlayer(), ranked, mx, my);
         }
         if (maxScroll > 0)
-            scrollbar(context, WIDTH - PAD - SCROLLBAR, LIST_Y, PLAYER_ROWS * ROW - 2, playersScroll, maxScroll, PLAYER_ROWS, players.size());
+            scrollbar(context, CX + CW - 3, ROWS_Y, PLAYER_ROWS * ROW - 2, playersScroll, maxScroll, PLAYER_ROWS, players.size());
+    }
+
+    /** A player's row: its turn, its rank, its head, its token and player, its stars and coins. */
+    private void playerRow(DrawContext context, PartyDashboardData data, PartyLiveData.Standing player, int index, int rank, int ry, int rowWidth,
+                           boolean current, boolean ranked, int mx, int my) {
+        boolean hovered = in(mx, my, CX, ry, rowWidth, ROW - 2);
+        ConsolePaint.inset(context, CX, ry, rowWidth - 1, 15, current ? 0xFF3D3460 : SLOT_BODY, current ? 0xFFFFC52E : SLOT_EDGE, SLOT_LOW);
+        light(context, Text.literal(Integer.toString(index + 1)), CX + 4, ry + 4, INK_SOFT);
+        if (ranked) rankDisc(context, rank, CX + 14, ry + 2);
+        ConsolePaint.box(context, CX + 30, ry + 3, 10, 10, HEAD_FRAME, 1, 1);
+        head(context, player, CX + 31, ry + 4);
+        int countsX = CX + rowWidth - 56;
+        int namesRoom = countsX - (CX + 44) - 4, tokenRoom = Math.min(36, namesRoom / 2), ownerRoom = namesRoom - tokenRoom - 4;
+        drawFitted(context, Text.literal(player.tokenName()), CX + 44, ry + 4, tokenRoom, WHITE, hovered);
+        int ownerColor = player.owner().isEmpty() ? INK_SOFT : player.online() ? INK_BLUE : INK_WARN;
+        context.drawText(textRenderer, fit(owner(player), ownerRoom), CX + 44 + tokenRoom + 4, ry + 4, ownerColor, true);
+        drawCounts(context, player.stars(), player.coins(), countsX, ry + 4);
+    }
+
+    /** A token's head, 8 x 8: its player's skin's face, else its colour. */
+    private static void head(DrawContext context, PartyLiveData.Standing player, int hx, int hy) {
+        if (player.owner().isPresent()) {
+            Identifier skin = fr.lordfinn.steveparty.client.utils.SkinUtils.getPlayerSkin(player.owner().get());
+            context.drawTexture(RenderLayer::getGuiTextured, skin, hx, hy, 8, 8, 8, 8, 8, 8, 64, 64);
+            context.drawTexture(RenderLayer::getGuiTextured, skin, hx, hy, 40, 8, 8, 8, 8, 8, 64, 64);
+        } else {
+            context.fill(hx, hy, hx + 8, hy + 8, player.color() < 0 ? 0xFF8B8B8B : 0xFF000000 | player.color());
+        }
     }
 
     // ------------------------------------------------------------------ Program page
@@ -842,81 +848,50 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     /**
-     * The mini-games of the catalogue in a scrolling grid next to its slot, a line saying what the party will be
-     * made of (the same expansion as the party generator), then the card slots, with the default party as ghost cards
-     * while no card is placed.
+     * The catalogue slot and what it brings (its mini-games are in its tooltip), what the party will be made of, the
+     * card slots (the default party as ghost cards while no card is placed), the timeline of what they will play.
      */
     private void drawProgram(DrawContext context, PartyDashboardData data, int mx, int my) {
-        int summaryX = heading(context, Text.translatable(KEY + "tab.program"), !data.canEdit());
-        // The mini-games
-        int gridWidth = GRID_COLUMNS * 18;
-        Badge problem = catalogueBadge(data);
-        if (data.pages().isEmpty()) {
-            Text text = Text.translatable(KEY + (data.hasCatalogue() ? "program.catalogue.empty" : "program.catalogue.none"));
-            drawFitted(context, text, GRID_X + 2, CATALOGUE_Y + 4, gridWidth, PartyGui.TEXT_ERROR, in(mx, my, GRID_X, CATALOGUE_Y, gridWidth, 16));
-        } else {
-            int total = data.pages().size();
-            int maxScroll = Math.max(0, (total + GRID_COLUMNS - 1) / GRID_COLUMNS - GRID_ROWS);
-            pagesScroll = Math.clamp(pagesScroll, 0, maxScroll);
-            for (int cell = 0; cell < GRID_COLUMNS * GRID_ROWS; cell++) {
-                int index = pagesScroll * GRID_COLUMNS + cell;
-                int cx = GRID_X + (cell % GRID_COLUMNS) * 18, cy = GRID_Y + (cell / GRID_COLUMNS) * 18;
-                slotBox(context, cx, cy);
-                if (index >= total) continue;
-                PartyDashboardData.Page page = data.pages().get(index);
-                if (page.slot() == data.currentPage()) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFFFC52E);
-                else if (page.playable() == 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFFE0707A);
-                else if (page.played() > 0) context.fill(cx + 1, cy + 1, cx + 18, cy + 18, 0xFF8FCF7A);
-                context.drawItem(page.page(), cx + 1, cy + 1);
-                context.getMatrices().push();
-                context.getMatrices().translate(0, 0, 200);
-                if (page.played() > 0) PartyGui.statusIcon(context, cx + 10, cy + 1, true);
-                if (page.playable() == 0) PartyGui.statusIcon(context, cx + 10, cy + 10, false);
-                context.getMatrices().pop();
-            }
-            if (maxScroll > 0)
-                scrollbar(context, GRID_X + gridWidth + 3, GRID_Y, GRID_ROWS * 18, pagesScroll, maxScroll, GRID_ROWS, (total + GRID_COLUMNS - 1) / GRID_COLUMNS);
+        int tx = CX + 22, room = INFO_X - 4 - tx;
+        if (!data.canEdit()) {
+            Text locked = Text.translatable(KEY + "read_only");
+            int lw = textRenderer.getWidth(locked) - 1;
+            context.drawText(textRenderer, locked, INFO_X - 4 - lw, CY + 5, INK_RED, true);
+            room -= lw + 6;
         }
+        // Next to the catalogue: its mini-games, or what is wrong with them
+        Badge problem = catalogueBadge(data);
+        long played = data.pages().stream().filter(p -> p.played() > 0).count();
+        Text catalogue = problem != null ? problem.reason() : Text.translatable(KEY + "program.catalogue.summary", data.pages().size(), played);
+        drawFitted(context, catalogue, tx, CY + 5, room, problem == null ? WHITE : problem.error() ? INK_RED : INK_WARN, in(mx, my, tx, CY + 4, room, 10));
         // What the party will be made of
         List<ItemStack> cards = cards();
         BasicGameGeneratorStep.Summary made = BasicGameGeneratorStep.summary(cards, data.roundsSetting());
-        Text summary = Text.translatable(cards.isEmpty() ? KEY + "program.default" : KEY + "program.summary",
-                made.turns(), made.miniGames(), made.events());
-        // On the title's line: mini-games without their pipes, whom the program is for during a party, else the summary
-        int summaryWidth = INFO_X - 4 - summaryX - (data.canEdit() ? 0 : textRenderer.getWidth(Text.translatable(KEY + "read_only")) + 6);
-        boolean overTitle = in(mx, my, summaryX, HEADING_Y - 1, summaryWidth, 10);
-        if (problem != null && !data.pages().isEmpty()) {
-            warnIcon(context, summaryX, HEADING_Y);
-            drawFitted(context, problem.reason(), summaryX + 10, HEADING_Y, summaryWidth - 10, COLOR_WARN, overTitle);
-        } else {
-            drawFitted(context, data.phase() == Phase.RUNNING ? Text.translatable(KEY + "program.running") : summary,
-                    summaryX, HEADING_Y, summaryWidth, PartyGui.TEXT_SOFT, overTitle);
-        }
+        Text summary = data.phase() == Phase.RUNNING ? Text.translatable(KEY + "program.running")
+                : Text.translatable(cards.isEmpty() ? KEY + "program.default" : KEY + "program.summary", made.turns(), made.miniGames(), made.events());
+        drawFitted(context, summary, CX, SUMMARY_Y, CW, INK_SOFT, in(mx, my, CX, SUMMARY_Y - 1, CW, 10));
         // The default party, as ghost cards
         List<ItemStack> ghosts = ghosts(data);
-        for (int i = 0; i < ghosts.size(); i++) {
-            int gx = PROGRAM_X + (i % 9) * 18, gy = PROGRAM_Y + (i / 9) * 18;
-            PartyGui.ghostItem(context, ghosts.get(i), gx, gy, textRenderer);
+        for (int i = 0; i < ghosts.size() && i < PartyControllerEntity.PROGRAM_SLOTS; i++) {
+            ghost(context, ghosts.get(i), PROGRAM_X + (i % PROGRAM_COLUMNS) * 18, PROGRAM_Y + (i / PROGRAM_COLUMNS) * 18, true);
         }
-        // Under the cards: what the program will play, its loops unrolled
-        programScroll = drawTimeline(context, data, data.program(), PAD, PROGRAM_TIMELINE_Y, WIDTH - 2 * PAD, PROGRAM_CHIP, programScroll, mx, my);
+        // Under the cards, on their columns: what the program will play, its loops unrolled
+        programScroll = drawTimeline(context, data, data.program(), PROGRAM_LEFT, PROGRAM_LABELS_Y, PROGRAM_WIDTH, PROGRAM_CHIP, programScroll, 1, mx, my);
     }
 
     // ------------------------------------------------------------------ timelines
 
-    private static final net.minecraft.util.Identifier ICON_DICE = fr.lordfinn.steveparty.Steveparty.id("party_hud/dice"),
+    private static final Identifier ICON_DICE = fr.lordfinn.steveparty.Steveparty.id("party_hud/dice"),
             ICON_GEAR = fr.lordfinn.steveparty.Steveparty.id("party_hud/gear"), ICON_STEPS = fr.lordfinn.steveparty.Steveparty.id("party_hud/steps"),
-            ICON_GAMEPAD = fr.lordfinn.steveparty.Steveparty.id("party_hud/gamepad"), ICON_CLOCK = fr.lordfinn.steveparty.Steveparty.id("party_hud/clock"),
+            ICON_CLOCK = fr.lordfinn.steveparty.Steveparty.id("party_hud/clock"),
             ICON_CROWN = fr.lordfinn.steveparty.Steveparty.id("party_hud/crown"), ICON_MARKER = fr.lordfinn.steveparty.Steveparty.id("party_hud/marker");
-    private static final PartyGui.Theme CHIP_GAME = new PartyGui.Theme(0xFF0B2A12, 0xFFC9F2C0, 0xFF8FD67F, 0xFF4E9A45);
-    private static final PartyGui.Theme CHIP_EVENT = new PartyGui.Theme(0xFF3A2400, 0xFFFFE2A8, 0xFFF4B24A, 0xFFB5761A);
 
-    private static net.minecraft.util.Identifier icon(PartyDashboardData.StepKind kind) {
+    private static @Nullable Identifier icon(PartyDashboardData.StepKind kind) {
         return switch (kind) {
             case START_ROLLS -> ICON_DICE;
             case PREPARING -> ICON_GEAR;
             case TURN, TURNS -> ICON_STEPS;
-            case MINI_GAME -> ICON_GAMEPAD;
+            case MINI_GAME -> null;
             case EVENT -> ICON_CLOCK;
             case END -> ICON_CROWN;
             case OTHER -> ICON_MARKER;
@@ -941,27 +916,28 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     /**
-     * A timeline: a row of chips, one per step (its icon: the head of the player whose turn it is, else what the step
-     * is), the current one gold and framed, the past ones dimmed; above the first chip of each round, its number.
-     * Shown from {@code scroll}; « +N » after the last step sent when the party has more.
+     * A timeline: a row of chips, one per step (the head of the player whose turn it is on his colour, the mini-game's
+     * gamepad, else what the step is), the current one framed in gold, the past ones dimmed; above the first chip of
+     * each round its name (« Round 4 », « R4 » when short of room), the round {@code highlight} in gold. Shown from
+     * {@code scroll}; « +N » after the last step sent when the party has more.
      *
      * @return the scroll, kept within the timeline
      */
     private int drawTimeline(DrawContext context, PartyDashboardData data, PartyDashboardData.Timeline timeline, int left, int top, int width,
-                             int chip, int scroll, int mx, int my) {
+                             int chip, int scroll, int highlight, int mx, int my) {
         List<PartyDashboardData.TimelineStep> steps = timeline.steps();
         int pitch = chip + TIMELINE_GAP, shown = (width + TIMELINE_GAP) / pitch;
         int total = steps.size() + (timeline.more() > 0 ? 2 : 0);
         scroll = Math.clamp(scroll, 0, Math.max(0, total - shown));
         int chipY = top + TIMELINE_LABELS;
         // More on the left
-        if (scroll > 0 || timeline.offset() > 0) context.drawText(textRenderer, "‹", left - 5, chipY + (chip - 8) / 2, PartyGui.TEXT_SOFT, false);
+        if (scroll > 0 || timeline.offset() > 0) light(context, Text.literal("‹"), left - 5, chipY + (chip - 8) / 2, INK_SOFT);
         for (int slot = 0; slot < shown; slot++) {
             int index = scroll + slot, cx = left + slot * pitch;
             if (index >= steps.size()) {
                 // « +N »: the steps the party has after those sent
                 if (index == steps.size() && timeline.more() > 0)
-                    context.drawText(textRenderer, "+" + timeline.more(), cx + 2, chipY + (chip - 8) / 2, PartyGui.TEXT_SOFT, false);
+                    light(context, Text.literal("+" + timeline.more()), cx + 2, chipY + (chip - 8) / 2, INK_SOFT);
                 break;
             }
             PartyDashboardData.TimelineStep step = steps.get(index);
@@ -973,38 +949,57 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 int room = pitch - TIMELINE_GAP;
                 for (int next = index + 1; next < steps.size() && steps.get(next).round() == step.round() && next - scroll < shown; next++) room += pitch;
                 Text label = Text.translatable(KEY + "timeline.round", step.round());
-                if (textRenderer.getWidth(label) > room) label = Text.literal(Integer.toString(step.round()));
-                context.drawText(textRenderer, label, cx + 1, top, past ? 0xFF8A8A8A : PartyGui.TEXT_SOFT, false);
-                if (begins && slot > 0) context.fill(cx - TIMELINE_GAP, top + 1, cx - TIMELINE_GAP + 1, chipY + chip, 0xFF8A8A8A);
+                if (textRenderer.getWidth(label) - 1 > room - 2) label = Text.translatable(KEY + "timeline.round.short", step.round());
+                light(context, label, cx + 1, top, past ? INK_DIM : step.round() == highlight ? INK_GOLD : INK_SOFT);
             }
-            PartyGui.Theme theme = current ? GOLD : step.kind() == PartyDashboardData.StepKind.MINI_GAME ? CHIP_GAME
-                    : step.kind() == PartyDashboardData.StepKind.EVENT ? CHIP_EVENT : PartyGui.BUTTON;
-            PartyGui.button(context, cx, chipY, chip, chip, hovered ? theme.brighter() : theme, false);
-            // The player whose turn it is: his head, on the colour of his token
             PartyLiveData.Standing player = step.player() >= 0 && step.player() < data.players().size() ? data.players().get(step.player()) : null;
-            int head = chip >= 20 ? 16 : 8, inside = (chip - head) / 2;
-            if (player != null && player.color() >= 0) context.fill(cx + 1, chipY + 1, cx + chip - 1, chipY + chip - 1, 0xFF000000 | player.color());
-            if (player != null && player.owner().isPresent()) {
-                net.minecraft.util.Identifier skin = fr.lordfinn.steveparty.client.utils.SkinUtils.getPlayerSkin(player.owner().get());
-                context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, skin, cx + inside, chipY + inside, 8, 8, head, head, 8, 8, 64, 64);
-                context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, skin, cx + inside, chipY + inside, 40, 8, head, head, 8, 8, 64, 64);
+            Ramp ramp = step.kind() == PartyDashboardData.StepKind.MINI_GAME ? CHIP_GAME
+                    : step.kind() == PartyDashboardData.StepKind.EVENT ? CHIP_EVENT
+                    : player != null ? chipRamp(player, step.player()) : NEUTRAL;
+            ConsolePaint.box(context, cx, chipY, chip, chip, ramp, 1, 1);
+            if (player != null && step.kind() == PartyDashboardData.StepKind.TURN) {
+                head(context, player, cx + (chip - 8) / 2, chipY + (chip - 8) / 2);
+            } else if (step.kind() == PartyDashboardData.StepKind.MINI_GAME) {
+                ConsolePaint.gamepad(context, cx + (chip - 10) / 2, chipY + (chip - 8) / 2);
             } else {
-                context.drawGuiTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, icon(step.kind()), cx + (chip - 9) / 2, chipY + (chip - 9) / 2, 9, 9);
+                Identifier icon = icon(step.kind());
+                if (icon != null) context.drawGuiTexture(RenderLayer::getGuiTextured, icon, cx + (chip - 9) / 2, chipY + (chip - 9) / 2, 9, 9);
             }
-            if (past) context.fill(cx + 1, chipY + 1, cx + chip - 1, chipY + chip - 1, 0x9CC6C6C6);
-            if (current) context.drawBorder(cx - 1, chipY - 1, chip + 2, chip + 2, 0xFFFFFFFF);
+            if (past) context.fill(cx, chipY, cx + chip, chipY + chip, 0x8C000000 | (SCREEN & 0xFFFFFF));
+            if (hovered && !past) context.fill(cx + 1, chipY + 1, cx + chip - 1, chipY + chip - 1, 0x30FFFFFF);
+            if (current) halo(context, cx, chipY, chip);
             if (hovered) hoveredStep = stepText(data, step, current);
         }
         return scroll;
     }
 
+    /** The colour of a player's chip: his token's (the HUDs' ramps). */
+    private static Ramp chipRamp(PartyLiveData.Standing player, int index) {
+        HudPaint.Ramp ramp = HudPaint.playerRamp(player.color(), index);
+        return new Ramp(ramp.outline(), ramp.hi(), ramp.body(), ramp.shadow());
+    }
+
+    /** The current step's frame: one pale gold pixel all round the chip (its cut corners filled). */
+    private static void halo(DrawContext context, int hx, int hy, int size) {
+        int c = 0xFFFFF87E;
+        context.fill(hx, hy - 1, hx + size, hy, c);
+        context.fill(hx, hy + size, hx + size, hy + size + 1, c);
+        context.fill(hx - 1, hy, hx, hy + size, c);
+        context.fill(hx + size, hy, hx + size + 1, hy + size, c);
+        PartyGui.pixel(context, hx, hy, c);
+        PartyGui.pixel(context, hx + size - 1, hy, c);
+        PartyGui.pixel(context, hx, hy + size - 1, c);
+        PartyGui.pixel(context, hx + size - 1, hy + size - 1, c);
+    }
+
     /** @return true if the mouse is over the timeline of the page shown. */
     private boolean overTimeline(double mouseX, double mouseY) {
-        PartyDashboardData data = handler.getData();
+        PartyDashboardData data = data();
         if (data == null) return false;
         int mx = (int) mouseX - x, my = (int) mouseY - y;
-        if (page() == Page.STATE && data.phase() == Phase.RUNNING) return in(mx, my, PAD - 6, STEPS_TIMELINE_Y, WIDTH - 2 * PAD + 12, TIMELINE_LABELS + STEPS_CHIP);
-        return page() == Page.PROGRAM && in(mx, my, PAD - 6, PROGRAM_TIMELINE_Y, WIDTH - 2 * PAD + 12, TIMELINE_LABELS + PROGRAM_CHIP);
+        if (page() == Page.STATE && data.phase() == Phase.RUNNING)
+            return in(mx, my, STEPS_LEFT - 6, STEPS_LABELS_Y, STEPS_WIDTH + 12, TIMELINE_LABELS + STEPS_CHIP);
+        return page() == Page.PROGRAM && in(mx, my, PROGRAM_LEFT - 6, PROGRAM_LABELS_Y, PROGRAM_WIDTH + 12, TIMELINE_LABELS + PROGRAM_CHIP);
     }
 
     private void scrollTimeline(int steps) {
@@ -1016,51 +1011,34 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         }
     }
 
-    private @Nullable PartyDashboardData.Page pageAt(double mouseX, double mouseY) {
-        PartyDashboardData data = handler.getData();
-        if (data == null || page() != Page.PROGRAM || data.pages().isEmpty()) return null;
-        int col = (int) Math.floor((mouseX - x - GRID_X) / 18), row = (int) Math.floor((mouseY - y - GRID_Y) / 18);
-        if (col < 0 || col >= GRID_COLUMNS || row < 0 || row >= GRID_ROWS) return null;
-        int index = (pagesScroll + row) * GRID_COLUMNS + col;
-        return index < data.pages().size() ? data.pages().get(index) : null;
-    }
-
     // ------------------------------------------------------------------ Gains page
 
-    private static final int COLOR_SHORT = 0xFFC86400;
-    /** Gains page: where the bank's line (after its slot) starts, and its counts (after the currency slots). */
-    private static final int BANK_TEXT_X = PartyControllerScreenHandler.BANK_X + 20;
+    private static final int COLOR_SHORT = 0xFFFFB54A;
 
     private void drawGains(DrawContext context, PartyDashboardData data) {
-        // The title's line is the bank's: its cartridge slot, what it holds next to the currency slots (no title, no
-        // « Read only »: the greyed steppers and their tooltip say it)
+        // The bank's line: its cartridge slot, its name (what it holds in its tooltip)
         PartyBank.Status bank = data.bank();
-        int room = COIN_X - 4 - BANK_TEXT_X;
+        int tx = CX + 22, room = COIN_X - 1 - 4 - tx;
         switch (bank.state()) {
             case NONE, MISSING -> context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank." + (bank.state() == PartyBank.State.NONE ? "none" : "missing")), room),
-                    BANK_TEXT_X, HEADING_Y, PartyGui.TEXT_ERROR, false);
-            case OK, SHORT -> {
-                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank").formatted(Formatting.BOLD), room), BANK_TEXT_X, HEADING_Y, PartyGui.TEXT_DARK, false);
-                int color = bank.state() == PartyBank.State.SHORT ? COLOR_SHORT : PartyGui.TEXT_DARK;
-                context.drawText(textRenderer, Integer.toString(bank.coins()), COIN_X + 18, HEADING_Y, color, false);
-                context.drawText(textRenderer, Integer.toString(bank.stars()), STAR_X + 18, HEADING_Y, color, false);
-            }
+                    tx, CY + 5, INK_RED, true);
+            case OK, SHORT -> context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.bank"), room), tx, CY + 5,
+                    bank.state() == PartyBank.State.SHORT ? COLOR_SHORT : WHITE, true);
         }
         for (int row = 0; row < MiniGameGains.ROWS; row++) {
             int top = GAINS_Y + row * GAINS_ROW;
             if (row == MiniGameGains.PARTICIPANTS) {
-                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.participants"), GAINS_COIN_X - PAD - 4), PAD, top + 4, PartyGui.TEXT_DARK, false);
+                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.participants"), GAINS_COIN_X - CX - 4), CX, top + 4, WHITE, true);
             } else {
-                drawRankPlate(context, row + 1, PAD, top + 1);
-                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.place"), GAINS_COIN_X - PAD - 30), PAD + 26, top + 4, PartyGui.TEXT_SOFT, false);
+                rankDisc(context, row + 1, CX, top + 2);
+                context.drawText(textRenderer, fit(Text.translatable(KEY + "gains.place"), GAINS_COIN_X - CX - 20), CX + 16, top + 4, INK_SOFT, true);
             }
             for (PartyCurrency currency : new PartyCurrency[]{PartyCurrency.COIN, PartyCurrency.STAR}) {
-                int left = (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X) + GAINS_STEP + 1;
+                int left = (currency == PartyCurrency.COIN ? GAINS_COIN_X : GAINS_STAR_X) + STEP + 2;
                 int amount = data.gains().amount(currency, row);
-                PartyGui.inset(context, left, top, GAINS_FIELD, GAINS_STEP, 0xFF3B4247, false, false);
+                ConsolePaint.inset(context, left, top, GAINS_FIELD - 1, 15, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
                 String value = Integer.toString(amount);
-                context.drawText(textRenderer, value, left + (GAINS_FIELD - textRenderer.getWidth(value)) / 2 + 1, top + 4,
-                        amount == 0 ? 0xFF8E979D : 0xFFFFFFFF, false);
+                light(context, Text.literal(value), left + (GAINS_FIELD - textRenderer.getWidth(value) + 1) / 2, top + 4, amount == 0 ? INK_SOFT : WHITE);
             }
         }
     }
@@ -1068,14 +1046,44 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     // ------------------------------------------------------------------ Settings page
 
     private void drawSettings(DrawContext context, PartyDashboardData data) {
-        heading(context, Text.translatable(KEY + "tab.settings"), !data.canEdit());
-        int room = WIDTH - 2 * PAD - 78;
-        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.rounds"), room), PAD, SETTINGS_Y + 5, PartyGui.TEXT_DARK, false);
+        header(context, Text.translatable(KEY + "tab.settings"), !data.canEdit());
+        int room = CW - 72;
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.rounds"), room), CX, SETTINGS_Y + 5, WHITE, true);
         String value = Integer.toString(data.roundsSetting());
-        int fieldX = WIDTH - PAD - 52, fieldW = 32;
-        PartyGui.inset(context, fieldX, SETTINGS_Y, fieldW, 18, 0xFF3B4247, false, false);
-        context.drawText(textRenderer, value, fieldX + (fieldW - textRenderer.getWidth(value)) / 2 + 1, SETTINGS_Y + 5, 0xFFFFFFFF, false);
-        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.practice"), room), PAD, SETTINGS_Y + SETTINGS_ROW + 5, PartyGui.TEXT_DARK, false);
+        int fieldX = CX + CW - 68 + 18;
+        ConsolePaint.inset(context, fieldX, SETTINGS_Y + 1, 31, 15, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
+        light(context, Text.literal(value), fieldX + (32 - textRenderer.getWidth(value) + 1) / 2, SETTINGS_Y + 5, WHITE);
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.practice"), room), CX, SETTINGS_Y + SETTINGS_ROW + 5, WHITE, true);
+    }
+
+    /** The practice round: its state, then a switch (green and to the right when on). */
+    private final class PracticeSwitch extends PressableWidget {
+        private final boolean on;
+
+        PracticeSwitch(int x, int y, int width, int height, Text message, boolean on) {
+            super(x, y, width, height, message);
+            this.on = on;
+        }
+
+        @Override
+        public void onPress() {
+            click(BUTTON_PRACTICE);
+        }
+
+        @Override
+        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            int sx = getX() + width - 24, sy = getY() + 3;
+            ConsolePaint.pill(context, sx, sy, 24, 12, on ? SWITCH_ON : SWITCH_OFF, true);
+            ConsolePaint.disc(context, sx + (on ? 13 : 1), sy + 1, 10, KNOB);
+            if (active && (isHovered() || isFocused())) context.drawBorder(sx - 1, sy - 1, 26, 14, WHITE);
+            TextRenderer font = MinecraftClient.getInstance().textRenderer;
+            context.drawText(font, getMessage(), getX(), getY() + 5, !active ? INK_DIM : on ? INK_GREEN : INK_SOFT, true);
+        }
+
+        @Override
+        protected void appendClickableNarrations(NarrationMessageBuilder builder) {
+            appendDefaultNarrations(builder);
+        }
     }
 
     // ------------------------------------------------------------------ tooltips and input
@@ -1095,7 +1103,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     @Override
     protected void drawMouseoverTooltip(DrawContext context, int mouseX, int mouseY) {
-        PartyDashboardData data = handler.getData();
+        PartyDashboardData data = data();
         int mx = mouseX - x, my = mouseY - y;
         boolean emptyHand = handler.getCursorStack().isEmpty();
         // A step of a timeline
@@ -1106,7 +1114,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             return;
         }
         // The « i » of the page: what it is for and how it is used
-        if (data != null && in(mx, my, INFO_X - 1, INFO_Y - 1, INFO_SIZE + 2, INFO_SIZE + 2)) {
+        if (data != null && in(mx, my, INFO_X, infoY(), ROW_H, ROW_H)) {
             tooltip(context, List.of(Text.translatable(KEY + "tab." + key(page())).formatted(Formatting.GOLD),
                     Text.translatable(KEY + "info." + key(page())).formatted(Formatting.GRAY)), mouseX, mouseY);
             return;
@@ -1121,25 +1129,22 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             tooltip(context, lines, mouseX, mouseY);
             return;
         }
-        // The bank: its line, its counts, its empty slot
-        if (data != null && page() == Page.GAINS && emptyHand && (in(mx, my, BANK_TEXT_X, 3, COIN_X - 4 - BANK_TEXT_X, 18)
-                || in(mx, my, COIN_X + 17, 3, 22, 18) || in(mx, my, STAR_X + 17, 3, 22, 18)
-                || (focusedSlot != null && focusedSlot.id == PartyControllerScreenHandler.SLOT_BANK && !focusedSlot.hasStack()))) {
+        // The bank: its line, its empty slot
+        if (data != null && page() == Page.GAINS && emptyHand && (in(mx, my, CX + 20, CY, COIN_X - 1 - CX - 24, 18)
+                || (focusedSlot != null && focusedSlot.id == SLOT_BANK && !focusedSlot.hasStack()))) {
             tooltip(context, bankTooltip(data.bank()), mouseX, mouseY);
             return;
         }
-        if (focusedSlot != null && focusedSlot.id == SLOT_CATALOGUE && emptyHand && data != null) {
-            if (!focusedSlot.hasStack()) {
+        // The catalogue: what it is, its mini-games
+        if (data != null && page() == Page.PROGRAM && emptyHand
+                && ((focusedSlot != null && focusedSlot.id == SLOT_CATALOGUE) || in(mx, my, CX + 20, CY, INFO_X - 4 - CX - 20, 18))) {
+            ItemStack catalogue = handler.getSlot(SLOT_CATALOGUE).getStack();
+            if (catalogue.isEmpty()) {
                 tooltip(context, List.of(Text.translatable(KEY + "program.catalogue").formatted(Formatting.GOLD),
                         Text.translatable(KEY + "program.catalogue.hint").formatted(Formatting.GRAY)), mouseX, mouseY);
                 return;
             }
-            List<Text> lines = new ArrayList<>();
-            lines.add(focusedSlot.getStack().getName().copy().formatted(Formatting.GOLD));
-            long played = data.pages().stream().filter(p -> p.played() > 0).count();
-            lines.add(Text.translatable(KEY + "program.catalogue.summary", data.pages().size(), played).formatted(Formatting.GRAY));
-            if (data.catalogueLocked()) lines.add(Text.translatable(KEY + "program.catalogue.locked").formatted(Formatting.RED));
-            tooltip(context, lines, mouseX, mouseY);
+            tooltip(context, catalogueTooltip(data, catalogue), mouseX, mouseY);
             return;
         }
         if (focusedSlot != null && isProgramSlot(focusedSlot.id) && !focusedSlot.hasStack() && emptyHand && data != null) {
@@ -1157,23 +1162,6 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             tooltip(context, lines, mouseX, mouseY);
             return;
         }
-        PartyDashboardData.Page hoveredPage = pageAt(mouseX, mouseY);
-        if (hoveredPage != null && emptyHand) {
-            List<Text> lines = new ArrayList<>(Screen.getTooltipFromItem(client, hoveredPage.page()));
-            lines.add(hoveredPage.played() == 0 ? Text.translatable(KEY + "mini_games.page.not_played").formatted(Formatting.GRAY)
-                    : Text.translatable(KEY + "mini_games.page.played", hoveredPage.played()).formatted(Formatting.GREEN));
-            if (hoveredPage.playable() == 0) {
-                lines.add(Text.translatable(hoveredPage.pipes() == 0 ? KEY + "mini_games.page.no_pipe" : KEY + "mini_games.page.not_playable").formatted(Formatting.RED));
-            } else {
-                lines.add(Text.translatable(KEY + "mini_games.page.pipes", hoveredPage.pipes()).formatted(Formatting.GRAY));
-            }
-            lines.add(hoveredPage.podiums() == 0 ? Text.translatable(KEY + "mini_games.page.no_podium").formatted(Formatting.YELLOW)
-                    : Text.translatable(KEY + "mini_games.page.podiums", hoveredPage.podiums()).formatted(Formatting.GRAY));
-            if (data != null && hoveredPage.slot() == data.currentPage())
-                lines.add(Text.translatable(KEY + "mini_games.page.current").formatted(Formatting.GOLD));
-            tooltip(context, lines, mouseX, mouseY);
-            return;
-        }
         if (data != null && page() == Page.STATE && data.phase() == Phase.SETUP) {
             int index = checkAt(mouseX, mouseY, data);
             if (index >= 0) {
@@ -1187,7 +1175,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             }
         }
         // The label of a setting: what it does
-        if (data != null && page() == Page.SETTINGS && emptyHand && mx >= PAD && mx < WIDTH - PAD - 76) {
+        if (data != null && page() == Page.SETTINGS && emptyHand && mx >= CX && mx < CX + CW - 72) {
             int row = Math.floorDiv(my - SETTINGS_Y, SETTINGS_ROW);
             if (my >= SETTINGS_Y && row >= 0 && row < 2 && my < SETTINGS_Y + row * SETTINGS_ROW + 18) {
                 String key = row == 0 ? "settings.rounds" : "settings.practice";
@@ -1198,17 +1186,35 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         super.drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
+    /** The catalogue's tooltip: its name, its count, then a line per mini-game (played, without its pipes, current). */
+    private List<Text> catalogueTooltip(PartyDashboardData data, ItemStack catalogue) {
+        List<Text> lines = new ArrayList<>();
+        lines.add(catalogue.getName().copy().formatted(Formatting.GOLD));
+        long played = data.pages().stream().filter(p -> p.played() > 0).count();
+        lines.add(Text.translatable(KEY + "program.catalogue.summary", data.pages().size(), played).formatted(Formatting.GRAY));
+        for (PartyDashboardData.Page page : data.pages()) {
+            net.minecraft.text.MutableText line = Text.literal("• ").append(page.page().getName());
+            if (page.slot() == data.currentPage()) line.append(" · ").append(Text.translatable(KEY + "mini_games.page.current"));
+            else if (page.playable() == 0) line.append(" · ").append(Text.translatable(page.pipes() == 0 ? KEY + "mini_games.page.no_pipe" : KEY + "mini_games.page.not_playable"));
+            else if (page.played() > 0) line.append(" · ").append(Text.translatable(KEY + "mini_games.page.played", page.played()));
+            lines.add(line.formatted(page.slot() == data.currentPage() ? Formatting.GOLD : page.playable() == 0 ? Formatting.RED
+                    : page.played() > 0 ? Formatting.GREEN : Formatting.WHITE));
+        }
+        if (data.catalogueLocked()) lines.add(Text.translatable(KEY + "program.catalogue.locked").formatted(Formatting.RED));
+        return lines;
+    }
+
     private int checkAt(double mouseX, double mouseY, PartyDashboardData data) {
         double mx = mouseX - x, my = mouseY - y;
-        if (mx < PAD - 2 || mx >= WIDTH - PAD + 2) return -1;
-        int index = (int) Math.floor((my - CHECK_Y + 3) / LINE);
+        if (mx < CX || mx >= CX + CW) return -1;
+        int index = (int) Math.floor((my - CHECK_Y) / CHECK_ROW);
         int count = checklist(data).size();
-        return my >= CHECK_Y - 3 && index >= 0 && index < count ? index : -1;
+        return my >= CHECK_Y && index >= 0 && index < count && my < CHECK_Y + index * CHECK_ROW + ROW_H ? index : -1;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        PartyDashboardData data = handler.getData();
+        PartyDashboardData data = data();
         if (data != null && button == 0 && page() == Page.STATE && data.phase() == Phase.SETUP) {
             int index = checkAt(mouseX, mouseY, data);
             if (index >= 0) {
@@ -1232,7 +1238,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     protected void onMouseClick(@Nullable Slot slot, int slotId, int button, SlotActionType actionType) {
         if (slot != null && isGhostSlot(slot.id)) {
             // Checked here too, to say why at once (the server checks again)
-            PartyDashboardData data = handler.getData();
+            PartyDashboardData data = data();
             if (actionType != SlotActionType.PICKUP) return;
             if (data == null || !data.canEdit()) {
                 flash(Text.translatable(KEY + "read_only"));
@@ -1281,12 +1287,8 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             scrollTimeline(-(int) Math.signum(verticalAmount));
             return true;
         }
-        if (verticalAmount != 0 && page() == Page.PLAYERS) {
+        if (verticalAmount != 0 && page() == Page.PLAYERS && mouseY < y + PANEL_HEIGHT) {
             playersScroll -= (int) Math.signum(verticalAmount);
-            return true;
-        }
-        if (verticalAmount != 0 && page() == Page.PROGRAM && mouseY < y + PROGRAM_Y - 2) {
-            pagesScroll -= (int) Math.signum(verticalAmount);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
