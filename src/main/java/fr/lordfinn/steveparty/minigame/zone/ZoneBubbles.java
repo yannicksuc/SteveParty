@@ -231,12 +231,16 @@ public final class ZoneBubbles {
      * tied (it breaks, places, uses, picks up and drops nothing) until it is back in.
      */
     public static void allowTeleports(Runnable teleports) {
+        // who stepped out of its zone on its own (the border puts it back at the end of the tick) is not excused by a
+        // teleport of the mod meanwhile, made for someone else
+        Set<UUID> strays = new HashSet<>();
+        for (ZoneBubble bubble : live) if (bubble.isActive()) bubble.findStrays(strays);
         ZoneBorder.allow++;
         try {
             teleports.run();
         } finally {
             ZoneBorder.allow--;
-            for (ZoneBubble bubble : live) if (bubble.isActive()) bubble.markAway(bubble.world.getServer());
+            for (ZoneBubble bubble : live) if (bubble.isActive()) bubble.markAway(bubble.world.getServer(), strays);
         }
     }
 
