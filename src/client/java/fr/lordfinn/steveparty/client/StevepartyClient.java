@@ -377,7 +377,6 @@ public class StevepartyClient implements ClientModInitializer {
 
     /** Client caches are per server connection: drop them on disconnect. */
     private static void resetClientState() {
-        PartyService.tokens.clear();
         PartyHud.clear();
         fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.clear();
         FloatingTextRenderer.clear();

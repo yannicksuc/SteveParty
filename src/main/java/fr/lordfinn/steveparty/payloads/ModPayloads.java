@@ -21,7 +21,6 @@ import net.minecraft.util.math.BlockPos;
 
 public class ModPayloads {
     public static final Identifier ARROW_PARTICLES_PAYLOAD = Steveparty.id("arrow-particles");
-    public static final Identifier TOKENS_PAYLOAD = Steveparty.id("tokens-payload");
     public static final Identifier ENCHANTED_CIRCULAR_PAYLOAD = Steveparty.id("enchanted-circular-particles-payload");
     public static final Identifier UPDATE_COLORED_TILE_PAYLOAD = Steveparty.id("update-colored-tile-payload");
     public static final Identifier PARTY_DATA_PAYLOAD = Steveparty.id("party-data");
@@ -37,7 +36,6 @@ public class ModPayloads {
 
     public static void initialize() {
         PayloadTypeRegistry.playS2C().register(ArrowParticlesPayload.ID, ArrowParticlesPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(TokenPayload.ID, TokenPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(EnchantedCircularParticlePayload.ID, EnchantedCircularParticlePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(UpdateColoredTilePayload.ID, UpdateColoredTilePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PartyDataPayload.ID, PartyDataPayload.CODEC);
