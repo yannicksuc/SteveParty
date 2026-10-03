@@ -158,12 +158,8 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     private void ghost(DrawContext context, int index, net.minecraft.item.Item item) {
         Slot slot = handler.getSlot(index);
         if (slot.hasStack()) return;
-        context.drawItem(new ItemStack(item), x + slot.x, y + slot.y);
-        // Over the item (drawn above the GUI's depth), like the ghost cards of the Party Controller
-        context.getMatrices().push();
-        context.getMatrices().translate(0, 0, 250);
-        context.fill(x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0x998B8B8B);
-        context.getMatrices().pop();
+        // Like the ghost cards of the Party Controller
+        PartyGui.ghostItem(context, new ItemStack(item), x + slot.x, y + slot.y, null);
     }
 
     @Override

@@ -412,11 +412,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     private void ghostItem(DrawContext context, Slot slot, net.minecraft.item.Item item) {
         if (!slot.isEnabled() || slot.hasStack()) return;
-        context.drawItem(new ItemStack(item), x + slot.x, y + slot.y);
-        context.getMatrices().push();
-        context.getMatrices().translate(0, 0, 250);
-        context.fill(x + slot.x, y + slot.y, x + slot.x + 16, y + slot.y + 16, 0x998B8B8B);
-        context.getMatrices().pop();
+        PartyGui.ghostItem(context, new ItemStack(item), x + slot.x, y + slot.y, null);
     }
 
     private static void slotBox(DrawContext context, int sx, int sy) {
@@ -900,13 +896,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         List<ItemStack> ghosts = ghosts(data);
         for (int i = 0; i < ghosts.size(); i++) {
             int gx = PROGRAM_X + (i % 9) * 18, gy = PROGRAM_Y + (i / 9) * 18;
-            context.drawItem(ghosts.get(i), gx, gy);
-            context.drawStackOverlay(textRenderer, ghosts.get(i), gx, gy);
-            // See-through: the slot's grey over the card
-            context.getMatrices().push();
-            context.getMatrices().translate(0, 0, 250);
-            context.fill(gx, gy, gx + 16, gy + 16, 0x998B8B8B);
-            context.getMatrices().pop();
+            PartyGui.ghostItem(context, ghosts.get(i), gx, gy, textRenderer);
         }
         // Under the cards: what the program will play, its loops unrolled
         programScroll = drawTimeline(context, data, data.program(), PAD, PROGRAM_TIMELINE_Y, WIDTH - 2 * PAD, PROGRAM_CHIP, programScroll, mx, my);

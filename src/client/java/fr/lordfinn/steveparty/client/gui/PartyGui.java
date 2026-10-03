@@ -2,7 +2,9 @@ package fr.lordfinn.steveparty.client.gui;
 
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Drawing helpers in the look of the mod's GUI textures (hop switch, router, trading stall...): flat pixel art,
@@ -33,6 +35,8 @@ public final class PartyGui {
     public static final int TEXT_SOFT = 0xFF6B6B6B;
     public static final int TEXT_ERROR = 0xFFB3202A;
     public static final int TEXT_OK = 0xFF2E7D1F;
+    /** The slot's grey, see-through, over a faded item (see {@link #ghostItem}). */
+    public static final int GHOST_VEIL = 0x998B8B8B;
     /** Inset (fields, boxes): dark top-left edge like the slots of the mod's textures. */
     private static final int INSET_EDGE = 0xFF354A55;
     private static final int INSET_EDGE_ERROR = 0xFFB3202A;
@@ -128,6 +132,19 @@ public final class PartyGui {
                 pixel(context, x + col, y + row, color);
             }
         }
+    }
+
+    /**
+     * A faded item: what an empty slot takes, or a ghost card. The item (and its count when {@code overlay} is
+     * given) under the slot's grey, drawn above the GUI's items so that it veils them.
+     */
+    public static void ghostItem(DrawContext context, ItemStack stack, int x, int y, @Nullable TextRenderer overlay) {
+        context.drawItem(stack, x, y);
+        if (overlay != null) context.drawStackOverlay(overlay, stack, x, y);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 250);
+        context.fill(x, y, x + 16, y + 16, GHOST_VEIL);
+        context.getMatrices().pop();
     }
 
     public static void pixel(DrawContext context, int x, int y, int color) {
