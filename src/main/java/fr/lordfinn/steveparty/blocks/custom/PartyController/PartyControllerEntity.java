@@ -125,6 +125,25 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             ACTIVE_PARTY_CONTROLLERS.remove(GlobalPos.create(this.world.getRegistryKey(), this.pos), this);
     }
 
+    /**
+     * A token was renamed (a name tag, /data, any change of its custom name): the parties it plays remember the new
+     * name (for while it is unloaded) and send it to their players right away (the standings, the turn bar, the
+     * notice, the dashboard), not at the next step.
+     */
+    public static void onTokenRenamed(ServerWorld world, UUID token, @Nullable Text name) {
+        for (PartyControllerEntity controller : ACTIVE_PARTY_CONTROLLERS.values()) {
+            if (controller.isRemoved() || controller.getWorld() != world) continue;
+            PartyData data = controller.getPartyData();
+            if (!data.isStarted() || !data.getTokens().contains(token)) continue;
+            for (PartyStep step : data.getSteps()) {
+                if (step instanceof TokenTurnPartyStep turn && token.equals(turn.getTokenUUID()))
+                    turn.setTokenName(name == null ? null : name.getString());
+            }
+            controller.markDirty();
+            controller.syncLiveData(world);
+        }
+    }
+
     /** Snapshot of the loaded server-side controllers (safe to iterate while steps change). */
     public static List<PartyControllerEntity> getActivePartyControllers() { return List.copyOf(ACTIVE_PARTY_CONTROLLERS.values()); }
     public static PartyControllerEntity getPartyControllerEntity(World world, BlockPos pos) {

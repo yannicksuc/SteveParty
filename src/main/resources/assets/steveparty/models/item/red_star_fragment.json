@@ -1,5 +1,5 @@
 {
-	"parent": "item/handheld",
+	"parent": "steveparty:item/star_fragment",
 	"textures": {
 		"layer0": "steveparty:item/red_star_fragment"
 	}

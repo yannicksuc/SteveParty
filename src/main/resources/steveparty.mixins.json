@@ -18,6 +18,7 @@
     "BubbleColumnBlockMixin",
     "EntityBoxCostumeCollisionMixin",
     "EntityBubbleColumnMixin",
+    "EntityTokenRenameMixin",
     "StatusEffectMixin",
     "TokenEntityMixin",
     "TokenBaseDimensionsMixin",

@@ -35,10 +35,11 @@ import static fr.lordfinn.steveparty.hud.HudShapes.PAD;
  * when the model or the room changes, never per frame.
  */
 final class TurnBarHud {
-    /** The bar's picture starts this many rows over the strip's layout (the marker's row is its top). */
-    private static final int TOP = 9;
-    /** Its height: the marker, the strip, the bubbles under it. */
-    static final int HEIGHT = TurnStripLayout.AXIS + 12 + 3 + 3 - PAD + TurnStripLayout.BUBBLE_H + 2 * PAD + TurnStripLayout.POINTER - TOP;
+    /**
+     * Its height before any layout (the strip, the marker over it, a row of bubbles under it): the attached notice's
+     * place while the bar is not shown.
+     */
+    static final int HEIGHT = 64;
     private static final float CHANGE_TICKS = 8;
     private static final float GLIDE_TICKS = 6;
 
@@ -51,15 +52,18 @@ final class TurnBarHud {
     private boolean stepChange;
     private String leaving, coming;
     private int lastStepIndex = Integer.MIN_VALUE;
-    private int width = 120;
+    /** What the bar draws ({@link TurnStripLayout.Result#drawn}): its frame hugs it; eased when it changes. */
+    private int[] drawn = {0, 0, 120, HEIGHT - 1};
+    private float shownLeft = -1, shownTop, shownRight, shownBottom;
+    private double lastFrame;
     private final List<String> keys = new ArrayList<>();
 
     int width() {
-        return width;
+        return shownLeft < 0 ? drawn[2] - drawn[0] + 1 : Math.round(shownRight - shownLeft) + 1;
     }
 
     int height() {
-        return HEIGHT;
+        return shownLeft < 0 ? drawn[3] - drawn[1] + 1 : Math.round(shownBottom - shownTop) + 1;
     }
 
     /** Takes a new model or new room (the unscaled width the bar may use): lays out again only then. */
@@ -68,7 +72,9 @@ final class TurnBarHud {
         boolean newModel = model != this.model;
         this.model = model;
         this.roomWidth = room;
-        TurnStripLayout.Result result = TurnStripLayout.layout(new TurnStripLayout.Input(steps(model), model.rounds, model.me,
+        java.util.Set<Integer> mine = new java.util.HashSet<>();
+        for (int i = 0; i < model.players.size(); i++) if (model.players.get(i).mine) mine.add(i);
+        TurnStripLayout.Result result = TurnStripLayout.layout(new TurnStripLayout.Input(steps(model), model.rounds, mine,
                 names(model), Math.max(80, room - 12)), ClientHudTexts.INSTANCE);
         boolean first = after.elements().isEmpty();
         // A layout arriving during a change: the change is over (its end is where this one starts)
@@ -83,7 +89,13 @@ final class TurnBarHud {
             if (leaving.equals(coming)) leaving = null;
         }
         changedAt = first ? -1000 : now;
-        width = Math.max(40, result.width() + 2);
+        drawn = result.drawn();
+        if (first || shownLeft < 0) {
+            shownLeft = drawn[0];
+            shownTop = drawn[1];
+            shownRight = drawn[2];
+            shownBottom = drawn[3];
+        }
         keys.clear();
         LinkedHashSet<String> all = new LinkedHashSet<>();
         for (El el : before.elements()) all.add(el.key);
@@ -131,9 +143,16 @@ final class TurnBarHud {
     void draw(DrawContext context, float alpha, double now) {
         if (model == null || alpha <= 0.02f) return;
         float t = (float) MathHelper.clamp((now - changedAt) / (stepChange ? CHANGE_TICKS : GLIDE_TICKS), 0, 1);
+        // The frame follows what is drawn (the marker coming and going, the bubbles...), gliding
+        float delta = (float) MathHelper.clamp(now - lastFrame, 0, 5);
+        lastFrame = now;
+        shownLeft = HudDraw.approach(shownLeft, drawn[0], 0.45f, delta);
+        shownTop = HudDraw.approach(shownTop, drawn[1], 0.45f, delta);
+        shownRight = HudDraw.approach(shownRight, drawn[2], 0.45f, delta);
+        shownBottom = HudDraw.approach(shownBottom, drawn[3], 0.45f, delta);
         MatrixStack matrices = context.getMatrices();
         matrices.push();
-        matrices.translate(0, -TOP, 0);
+        matrices.translate(-Math.round(shownLeft), -Math.round(shownTop), 0);
         boolean landed = t >= 0.6f;
         float slide = smooth(MathHelper.clamp((t - 0.1f) / 0.5f, 0, 1));
         // The big chip last: over the others while it grows

@@ -978,7 +978,7 @@
   "hud.steveparty.party.rolled": "%s a fait",
   "hud.steveparty.party.rolled.you": "Tu as fait",
   "hud.steveparty.party.roll": "À %s de lancer le dé",
-  "hud.steveparty.party.roll.you": "À toi de lancer le dé !",
+  "hud.steveparty.party.roll.you": "Lance le dé !",
   "hud.steveparty.party.roll.anyone": "Lancez le dé pour %s",
   "hud.steveparty.party.replay": "Rejoue !",
   "hud.steveparty.party.steps": "%s pas",

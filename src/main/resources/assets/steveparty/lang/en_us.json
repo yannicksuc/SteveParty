@@ -696,7 +696,7 @@
   "hud.steveparty.party.rolled": "%s rolled",
   "hud.steveparty.party.rolled.you": "You rolled",
   "hud.steveparty.party.roll": "%s's turn to roll",
-  "hud.steveparty.party.roll.you": "Your turn: roll the die!",
+  "hud.steveparty.party.roll.you": "Roll the die!",
   "hud.steveparty.party.roll.anyone": "Roll the die for %s",
   "hud.steveparty.party.replay": "Roll Again!",
   "hud.steveparty.party.steps": "%s steps",
