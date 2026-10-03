@@ -43,6 +43,7 @@ public class CashRegisterBlockEntity extends BlockEntity  implements ExtendedScr
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         super.readNbt(nbt, registryLookup);
+        items.clear();
         Inventories.readNbt(nbt, items, registryLookup);
     }
 
@@ -65,13 +66,6 @@ public class CashRegisterBlockEntity extends BlockEntity  implements ExtendedScr
 
     public Inventory getInventory() {
         return ImplementedInventory.of(items);
-    }
-
-    @Override
-    public void markDirty() {
-        super.markDirty();
-        if (world != null && !world.isClient) {
-        }
     }
 
     @Nullable
