@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.minigame.zone;
 
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.Steveparty;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -72,11 +73,11 @@ public final class ZoneBubbles {
     }
 
     public static void initialize() {
-        ZoneBubbleConfig.load();
+        ServerConfig.load();
         ZonePlayerRules.initialize();
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             // the settings as the file says now, and what they forbid among what this server has
-            ZoneBubbleConfig.load();
+            ServerConfig.load();
             ZoneForbidden.resolve();
             recover(server);
         });
@@ -149,7 +150,7 @@ public final class ZoneBubbles {
 
     /** Whether the zone itself can take a session: the feature, its dimension, its size, the zones in session. Costs nothing. */
     public static ZoneBubble.Refusal checkPlace(MinecraftServer server, MiniGameZone zone) {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         if (!config.miniGameBubble) return ZoneBubble.Refusal.DISABLED;
         if (server.getWorld(zone.dimension()) == null) return ZoneBubble.Refusal.NO_WORLD;
         int max = config.miniGameBubbleMaxSize;
@@ -192,7 +193,7 @@ public final class ZoneBubbles {
     public static @Nullable Text refusalText(ZoneBubble.Refusal refusal) {
         return switch (refusal) {
             case NONE, DISABLED -> null;
-            case TOO_BIG -> Text.translatable("message.steveparty.zone_bubble.too_big", ZoneBubbleConfig.get().miniGameBubbleMaxSize);
+            case TOO_BIG -> Text.translatable("message.steveparty.zone_bubble.too_big", ServerConfig.get().miniGameBubbleMaxSize);
             case OVERLAP -> Text.translatable("message.steveparty.zone_bubble.overlap");
             case TOO_MANY_BLOCK_ENTITIES, TOO_MANY_ENTITIES -> Text.translatable("message.steveparty.zone_bubble.too_full");
             case NO_WORLD -> Text.translatable("message.steveparty.zone_bubble.unavailable");

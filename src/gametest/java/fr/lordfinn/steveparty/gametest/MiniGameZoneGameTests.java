@@ -31,7 +31,7 @@ import fr.lordfinn.steveparty.minigame.MiniGameResults;
 import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubbleConfig;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerScreenHandler;
@@ -395,7 +395,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
     public void aZoneThatCantTakeARoundOutOfAParty(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int maxSize = config.miniGameBubbleMaxSize, maxBlockEntities = config.miniGameBubbleMaxBlockEntities;
         ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5);
         UUID id = arena(context, true);
@@ -539,7 +539,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
     /** In a party, a zone that can't take a round never holds the party up: the round is played without its protection. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_party_refused")
     public void aPartyIsNeverHeldUpByAZone(TestContext context) {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int maxSize = config.miniGameBubbleMaxSize;
         ServerPlayerEntity p1 = player(context, "a", 7.5, 1, 1.5), p2 = player(context, "b", 7.5, 1, 2.5);
         UUID id = arena(context, true);

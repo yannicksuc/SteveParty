@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.minigame.zone;
 
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -68,7 +69,7 @@ public final class ZoneForbidden {
 
     /** The server starts: the lists of the settings are looked up in the registries. */
     public static void resolve() {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         blocks = resolve(config.miniGameBubbleForbiddenBlocks, Registries.BLOCK, RegistryKeys.BLOCK, "miniGameBubbleForbiddenBlocks");
         items = resolve(config.miniGameBubbleForbiddenItems, Registries.ITEM, RegistryKeys.ITEM, "miniGameBubbleForbiddenItems");
         entities = resolve(config.miniGameBubbleForbiddenEntities, Registries.ENTITY_TYPE, RegistryKeys.ENTITY_TYPE, "miniGameBubbleForbiddenEntities");

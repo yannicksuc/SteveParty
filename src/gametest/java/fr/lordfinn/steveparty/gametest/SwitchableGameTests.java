@@ -214,4 +214,40 @@ public class SwitchableGameTests implements FabricGameTest {
         context.assertTrue(count == 1, "the cartridge dropped once, got " + count);
         context.complete();
     }
+
+    /**
+     * The switchable blocks of the former config/steveparty/server.json go into config/steveparty.json once: the
+     * merged file is written, the old one renamed .migrated, and a second start finds them there.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theOldSwitchableFileIsMigratedOnce(TestContext context) {
+        java.nio.file.Path dir = null;
+        try {
+            dir = java.nio.file.Files.createTempDirectory("steveparty-config");
+            java.nio.file.Path old = dir.resolve("steveparty").resolve("server.json");
+            java.nio.file.Files.createDirectories(old.getParent());
+            java.nio.file.Files.writeString(old, "{\"_comment\": \"old\", \"switchable_blocks\": [\"minecraft:stone\", \"#minecraft:wool\"]}");
+
+            var config = fr.lordfinn.steveparty.config.ServerConfig.loadFrom(dir);
+            context.assertTrue(config.switchableBlocks.equals(List.of("minecraft:stone", "#minecraft:wool")), "the old list is taken");
+            String merged = java.nio.file.Files.readString(dir.resolve("steveparty.json"));
+            context.assertTrue(merged.contains("\"switchableBlocks\"") && merged.contains("#minecraft:wool") && merged.contains("\"miniGameBubble\""),
+                    "one file holds every setting");
+            context.assertTrue(!java.nio.file.Files.exists(old) && java.nio.file.Files.exists(old.resolveSibling("server.json.migrated")),
+                    "the old file is renamed");
+
+            var again = fr.lordfinn.steveparty.config.ServerConfig.loadFrom(dir);
+            context.assertTrue(again.switchableBlocks.equals(config.switchableBlocks) && again.mulaMaxSites == 10, "read back the same next time");
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (dir != null) {
+                try (var files = java.nio.file.Files.walk(dir)) {
+                    files.sorted(java.util.Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+                } catch (java.io.IOException ignored) {
+                }
+            }
+        }
+        context.complete();
+    }
 }

@@ -5,7 +5,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubbleConfig;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.minigame.zone.ZoneForbidden;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -73,7 +73,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
 
     /** What the settings forbid from now on. */
     private static void forbid(List<String> blocks, List<String> items, List<String> entities) {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         config.miniGameBubbleForbiddenBlocks = new ArrayList<>(blocks);
         config.miniGameBubbleForbiddenItems = new ArrayList<>(items);
         config.miniGameBubbleForbiddenEntities = new ArrayList<>(entities);

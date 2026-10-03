@@ -3,7 +3,7 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.entities.custom.MulaSpawnSites;
-import fr.lordfinn.steveparty.minigame.zone.ZoneBubbleConfig;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.payloads.custom.TelescopePayloads;
 import fr.lordfinn.steveparty.telescope.TelescopeService;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
@@ -62,10 +62,10 @@ public class MulaSiteCapGameTests implements FabricGameTest {
     /** 10 sites by default; the 11th retires the oldest (by its time, not by when it was recorded), ids never reused. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theEleventhSiteRetiresTheOldest(TestContext context) {
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int before = config.mulaMaxSites;
         try {
-            context.assertTrue(new ZoneBubbleConfig().mulaMaxSites == 10, "10 sites by default");
+            context.assertTrue(new ServerConfig().mulaMaxSites == 10, "10 sites by default");
             config.mulaMaxSites = 10;
             MulaSpawnSites sites = new MulaSpawnSites();
             UUID ann = UUID.randomUUID(), bob = UUID.randomUUID();
@@ -119,7 +119,7 @@ public class MulaSiteCapGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void anOldSaveIsTrimmedOnLoad(TestContext context) {
         ServerWorld world = context.getWorld();
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int before = config.mulaMaxSites;
         try {
             config.mulaMaxSites = 20;
@@ -162,7 +162,7 @@ public class MulaSiteCapGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
     public void aRetiredSiteTakesItsWildMulasOnly(TestContext context) {
         ServerWorld world = context.getWorld();
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int before = config.mulaMaxSites;
         BlockPos here = context.getAbsolutePos(new BlockPos(2, 2, 2));
         MulaSpawnSites sites = MulaSpawnSites.get(world);
@@ -291,7 +291,7 @@ public class MulaSiteCapGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theTelescopeForgetsARetiredSite(TestContext context) {
         ServerWorld world = context.getWorld();
-        ZoneBubbleConfig config = ZoneBubbleConfig.get();
+        ServerConfig config = ServerConfig.get();
         int before = config.mulaMaxSites;
         BlockPos telescope = context.getAbsolutePos(new BlockPos(1, 1, 1));
         ServerPlayerEntity ann = context.createMockCreativeServerPlayerInWorld();
