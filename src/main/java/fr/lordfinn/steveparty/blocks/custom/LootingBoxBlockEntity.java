@@ -232,8 +232,8 @@ public class LootingBoxBlockEntity extends CartridgeContainerBlockEntity impleme
         ItemStack stack = getStack(0);
         if (stack instanceof ItemStack itemStack &&
                 itemStack.getOrDefault(INVENTORY_COMPONENT, null) instanceof InventoryComponent cartridgeInventory &&
-                itemStack.get(INVENTORY_POS) instanceof BlockPos connectedInventoryPos &&
-                world.getBlockEntity(connectedInventoryPos) instanceof Inventory connectedInventory) {
+                CartridgeTransfers.getLinkedInventory(world, itemStack) instanceof Inventory connectedInventory) {
+            // Its containers end to end, in their order: what drops comes from the first that has it
 
             int selectionState = InventoryCartridgeItem.getSelectionState(itemStack);
             return switch (selectionState) {

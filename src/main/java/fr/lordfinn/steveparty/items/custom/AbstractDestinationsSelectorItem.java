@@ -37,6 +37,11 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         if (context.getHand() == Hand.OFF_HAND) return ActionResult.PASS;
+        return toggleDestination(context);
+    }
+
+    /** Adds the clicked block to the destinations, or removes it if it is one (whatever the hand). */
+    protected ActionResult toggleDestination(ItemUsageContext context) {
         World world = context.getWorld();
         if (isClientWorld(world)) return ActionResult.PASS;
 

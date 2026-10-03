@@ -19,18 +19,18 @@ import org.joml.Matrix4f;
  * Drawing helpers for the Wrench overlays, in world coordinates (the camera offset is applied here): board paths made
  * of the mod's arrow particle sprite, and labels on plates cut like the mod's screens (see the art sources).
  */
-final class WorldDraw {
+public final class WorldDraw {
     /** The chevron of the mod's arrow particle (textures/particle/arrow.png): the dots of the board paths. */
     static final Identifier CHEVRON = Steveparty.id("textures/particle/arrow.png");
     private static final int PLATE_SIZE = 16, PLATE_BORDER = 4;
     /** The plate lies a little behind its text (label space: -z goes away from the camera). */
     private static final float BEHIND = -0.5f;
     /** Text on the plates: the dark grey of the mod's screen titles. */
-    static final int PLATE_TEXT = 0xFF3F3F3F;
+    public static final int PLATE_TEXT = 0xFF3F3F3F;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
     /** Plate colours (the frame): teal like the Tile screen, gold like the Advanced Tile's... */
-    enum Plate {
+    public enum Plate {
         TEAL, GOLD, GREEN, RED, ORANGE, PURPLE;
 
         final Identifier texture = Steveparty.id("textures/gui/sprites/board/plate_" + name().toLowerCase() + ".png");
@@ -224,7 +224,7 @@ final class WorldDraw {
      *
      * @param scale block per text pixel
      */
-    static void plateLabel(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d pos, Text text,
+    public static void plateLabel(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d pos, Text text,
                            Plate plate, int textColor, float scale) {
         TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
         Vec3d cam = camera.getPos();

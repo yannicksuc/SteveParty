@@ -165,7 +165,7 @@ public final class BoardLinks {
         World world = container.getWorld();
         ItemStack cartridge = container.getStack(slot);
         if (world == null || !(cartridge.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem)
-                || cartridge.contains(ModComponents.INVENTORY_POS)) return;
+                || !fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) return;
         BlockPos center = container.getPos();
         BlockPos nearest = null;
         double best = Double.MAX_VALUE;
@@ -177,10 +177,11 @@ public final class BoardLinks {
             }
         }
         if (nearest == null) return;
-        cartridge.set(ModComponents.INVENTORY_POS, nearest);
+        java.util.List<net.minecraft.util.math.GlobalPos> linked = java.util.List.of(net.minecraft.util.math.GlobalPos.create(world.getRegistryKey(), nearest));
+        fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.set(cartridge, linked);
         sync(container);
         if (player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
-            LinkHistory.record(serverPlayer, new LinkHistory.ChestChange(center.toImmutable(), slot, null, nearest));
+            LinkHistory.record(serverPlayer, new LinkHistory.ChestChange(center.toImmutable(), slot, java.util.List.of(), linked));
         }
         player.sendMessage(Text.translatable("message.steveparty.wrench.chest.nearest", BoardText.pos(nearest)), false);
     }

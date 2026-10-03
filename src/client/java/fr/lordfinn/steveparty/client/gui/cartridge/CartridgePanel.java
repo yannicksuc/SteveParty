@@ -7,6 +7,8 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ChoiceModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ColorModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.menu.ContainersModule;
+import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.GhostSlotsModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.NumberModule;
@@ -249,6 +251,7 @@ public final class CartridgePanel {
                     yield choice.swatches() ? ChoiceModule.SWATCH_H : ChoiceModule.BUTTON_H;
                 }
                 case NumberModule number -> NumberModule.ROW_H;
+                case ContainersModule containers -> containerRows(rows(current).size()) * ContainersModule.ROW_H;
                 case ColorModule color -> {
                     int rows = (ColorModule.DEFAULT + colorsPerRow()) / colorsPerRow();
                     yield rows * ColorModule.SWATCH + (rows - 1) * ColorModule.GAP;
@@ -609,6 +612,7 @@ public final class CartridgePanel {
             case ColorModule color -> drawColors(context, current, i, color, mx, top, mouseX, mouseY, editable);
             case GhostSlotsModule ghosts -> drawGhostSlots(context, ghosts, mx, my);
             case InfoModule info -> drawInfo(context, current, i, info, mx, top);
+            case ContainersModule containers -> drawContainers(context, current, mx, top, mouseX, mouseY, editable);
             default -> {
             }
         }
@@ -760,6 +764,96 @@ public final class CartridgePanel {
         }
     }
 
+    // ------------------------------------------------------------------ the containers of an Inventory Cartridge
+
+    private static final int ROW_BUTTON = 9;
+
+    /** A container of the list as shown: its text and whether it is there. */
+    private record ContainerRow(String name, String coords, int color, @Nullable String state) {
+    }
+
+    /** The cartridge's containers as rows, in order: « 1 Coffre 12 64 -3 », and « absent » / « non chargé ». */
+    private List<ContainerRow> rows(ItemStack current) {
+        List<ContainerRow> rows = new ArrayList<>();
+        if (client.world == null) return rows;
+        for (var target : CartridgeContainers.of(current, client.world.getRegistryKey())) {
+            BlockPos at = target.pos();
+            String coords = at.getX() + " " + at.getY() + " " + at.getZ();
+            String state = null;
+            String name;
+            if (!target.dimension().equals(client.world.getRegistryKey())) {
+                name = target.dimension().getValue().getPath();
+                state = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.elsewhere");
+            } else if (!client.world.isChunkLoaded(at.getX() >> 4, at.getZ() >> 4)) {
+                name = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.container");
+                state = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.unloaded");
+            } else if (!(client.world.getBlockEntity(at) instanceof net.minecraft.inventory.Inventory)) {
+                name = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.container");
+                state = I18n.translate(CartridgeItem.MENU_KEY + "inventory.chests.absent");
+            } else {
+                name = client.world.getBlockState(at).getBlock().getName().getString();
+            }
+            rows.add(new ContainerRow(name, coords, state == null ? TONE_NORMAL : TONE_BAD, state));
+        }
+        return rows;
+    }
+
+    /** The rows the module takes: two containers per row (a row for « none » when empty), then the hint. */
+    private static int containerRows(int count) {
+        return Math.max(1, (count + ContainersModule.PER_ROW - 1) / ContainersModule.PER_ROW) + 1;
+    }
+
+    private int cellW() {
+        return (columnW - 2) / ContainersModule.PER_ROW;
+    }
+
+    private int cellX(int mx, int index) {
+        return mx + (index % ContainersModule.PER_ROW) * (cellW() + 2);
+    }
+
+    private static int cellY(int top, int index) {
+        return top + (index / ContainersModule.PER_ROW) * ContainersModule.ROW_H;
+    }
+
+    /** The x of a cell's button: « earlier in the order », then remove at the cell's right end. */
+    private int rowButtonX(int mx, int index, int op) {
+        int right = cellX(mx, index) + cellW() - ROW_BUTTON;
+        return op == ContainersModule.REMOVE ? right : right - ROW_BUTTON - 1;
+    }
+
+    private void drawContainers(DrawContext context, ItemStack current, int mx, int top, int mouseX, int mouseY, boolean editable) {
+        List<ContainerRow> rows = rows(current);
+        if (rows.isEmpty()) {
+            drawFitted(context, I18n.translate(CartridgeItem.MENU_KEY + "inventory.chest.none"), mx, top + 1, columnW, TONE_BAD, false,
+                    inside(mouseX, mouseY, mx, top, columnW, ContainersModule.ROW_H));
+        }
+        int buttons = editable ? 2 * (ROW_BUTTON + 1) : 0;
+        for (int r = 0; r < rows.size(); r++) {
+            ContainerRow row = rows.get(r);
+            int cx = cellX(mx, r), cy = cellY(top, r);
+            String number = Integer.toString(r + 1);
+            int numberWidth = textRenderer.getWidth(number);
+            context.fill(cx, cy, cx + numberWidth + 3, cy + 9, CHIP);
+            context.drawText(textRenderer, number, cx + 2, cy + 1, CHIP_TEXT, false);
+            int tx = cx + numberWidth + 5, room = cellW() - (tx - cx) - buttons;
+            drawFitted(context, row.coords(), tx, cy + 1, room, row.color(), false, inside(mouseX, mouseY, tx, cy, room, ContainersModule.ROW_H));
+            if (!editable) continue;
+            rowButton(context, rowButtonX(mx, r, ContainersModule.UP), cy, "◀", r > 0, mouseX, mouseY);
+            rowButton(context, rowButtonX(mx, r, ContainersModule.REMOVE), cy, "×", true, mouseX, mouseY);
+        }
+        // What a click does, under the list
+        int hintY = top + (containerRows(rows.size()) - 1) * ContainersModule.ROW_H;
+        drawFitted(context, I18n.translate(CartridgeItem.MENU_KEY + "inventory.click"), mx, hintY + 1, columnW, TONE_SOFT, false,
+                inside(mouseX, mouseY, mx, hintY, columnW, ContainersModule.ROW_H));
+    }
+
+    private void rowButton(DrawContext context, int bx, int ry, String sign, boolean active, int mouseX, int mouseY) {
+        boolean hovered = active && inside(mouseX, mouseY, bx, ry, ROW_BUTTON, ROW_BUTTON);
+        PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
+        PartyGui.button(context, bx, ry, ROW_BUTTON, ROW_BUTTON, theme, false);
+        context.drawText(textRenderer, sign, bx + (ROW_BUTTON - textRenderer.getWidth(sign)) / 2 + 1, ry + 1, active ? PartyGui.TEXT_DARK : 0xFF7A7A7A, false);
+    }
+
     /** The give / take marks of the ghost slots (a green or red frame), over their items. */
     public static void drawGhostMarks(DrawContext context, List<Slot> slots, int originX, int originY) {
         for (Slot slot : slots) {
@@ -802,6 +896,28 @@ public final class CartridgePanel {
                     if (!choice.enabled(current)) lines.add(Text.translatable(CartridgeItem.MENU_KEY + "unpowered").formatted(Formatting.DARK_GRAY));
                     context.drawTooltip(textRenderer, wrap(lines), mouseX, mouseY);
                     return true;
+                }
+            } else if (module instanceof ContainersModule) {
+                List<ContainerRow> rows = rows(current);
+                for (int r = 0; r < rows.size(); r++) {
+                    int cy = cellY(top, r);
+                    if (canEdit.getAsBoolean()) {
+                        for (int op : new int[]{ContainersModule.UP, ContainersModule.REMOVE}) {
+                            if (!inside(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) continue;
+                            context.drawTooltip(textRenderer, Text.translatable(CartridgeItem.MENU_KEY + "inventory.chests." + (op == ContainersModule.REMOVE ? "remove" : "up")), mouseX, mouseY);
+                            return true;
+                        }
+                    }
+                    // The container: its block, where, and whether it is there
+                    if (inside(mouseX, mouseY, cellX(mx, r), cy, cellW(), ContainersModule.ROW_H)) {
+                        ContainerRow row = rows.get(r);
+                        List<Text> lines = new ArrayList<>();
+                        lines.add(Text.literal((r + 1) + ". " + row.name()));
+                        lines.add(Text.literal(row.coords()).formatted(Formatting.GRAY));
+                        if (row.state() != null) lines.add(Text.literal(row.state()).formatted(Formatting.RED));
+                        context.drawTooltip(textRenderer, lines, mouseX, mouseY);
+                        return true;
+                    }
                 }
             } else if (module instanceof ColorModule) {
                 for (int v = 0; v <= ColorModule.DEFAULT; v++) {
@@ -879,6 +995,18 @@ public final class CartridgePanel {
                 case ColorModule color -> {
                     for (int v = 0; v <= ColorModule.DEFAULT; v++) {
                         if (inside(mouseX, mouseY, colorX(mx, v), colorY(top, v), ColorModule.SWATCH, ColorModule.SWATCH)) return change(i, v, value);
+                    }
+                }
+                case ContainersModule containers -> {
+                    int count = rows(current).size();
+                    for (int r = 0; r < count; r++) {
+                        int cy = cellY(top, r);
+                        for (int op : new int[]{ContainersModule.UP, ContainersModule.REMOVE}) {
+                            if (inside(mouseX, mouseY, rowButtonX(mx, r, op), cy, ROW_BUTTON, ROW_BUTTON)) {
+                                // An action, not a value: sent as is (the list shown follows the server's)
+                                return change(i, ContainersModule.action(r, op), Integer.MIN_VALUE);
+                            }
+                        }
                     }
                 }
                 default -> {

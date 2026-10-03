@@ -38,17 +38,12 @@ public class DestinationsRenderer {
                 return;
             }
 
-            boolean cleared = false;
-
-            for (Hand hand : HANDS) {
-                ItemStack heldStack = MinecraftClient.getInstance().player.getStackInHand(hand);
-                if (isHeldStackChanged(heldStack, hand)) {
-                    if (!cleared) {
-                        clearDestinations();
-                        cleared = true;
-                    }
-                    handleHeldStackChange(heldStack, hand);
-                }
+            // A hand changed: the destinations of both hands again (one hand changing kept the other's otherwise lost)
+            boolean changed = false;
+            for (Hand hand : HANDS) changed |= isHeldStackChanged(MinecraftClient.getInstance().player.getStackInHand(hand), hand);
+            if (changed) {
+                clearDestinations();
+                for (Hand hand : HANDS) handleHeldStackChange(MinecraftClient.getInstance().player.getStackInHand(hand), hand);
             }
 
             if (!getDestinations().isEmpty()) renderDestinations(context);
@@ -118,7 +113,9 @@ public class DestinationsRenderer {
 
     private static void handleHeldStackChange(ItemStack heldStack, Hand hand) {
         setLastHeldItemStack(heldStack, hand);
-        if (hand == Hand.MAIN_HAND && heldStack.getItem() instanceof AbstractDestinationsSelectorItem) {
+        // The Inventory Cartridge selects its destinations in either hand: shown in either hand
+        if ((hand == Hand.MAIN_HAND || heldStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem)
+                && heldStack.getItem() instanceof AbstractDestinationsSelectorItem) {
             DestinationsComponent component = heldStack.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DEFAULT);
             List<BlockPos> destinations = component.destinations();
 
