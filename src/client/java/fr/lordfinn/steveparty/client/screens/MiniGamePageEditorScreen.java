@@ -343,7 +343,7 @@ public class MiniGamePageEditorScreen extends Screen {
             int left = getX(), top = getY();
             boolean on = active && lit.getAsBoolean();
             ConsolePaint.box(context, left, top, TOOL, TOOL, Ramp.of(0x7e9192, 0xffffff, on ? 0xfff2a0 : 0xd6ebec, 0xc7dbdc), 1, 1);
-            if (active && (isHovered() || isFocused())) context.drawBorder(left, top, TOOL, TOOL, TEAL2);
+            if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, left, top, TOOL, TOOL, 1, TEAL2, 0);
             int ink = active ? INK : INK3;
             switch (name) {
                 case "bold" -> {
@@ -918,13 +918,18 @@ public class MiniGamePageEditorScreen extends Screen {
         }
     }
 
-    /** The teal « + » chip: adds a format (its gallery). */
+    /**
+     * The teal « + » chip: adds a format (its gallery). A disc of an even size ({@value #FORMAT_CHIP_H}): its « + » is
+     * two pixels thick and eight long, so that it is exactly centred (pixels 4 to 11 of 0 to 15, both ways). Hovered,
+     * the disc lights up round: its outline white, its body lighter.
+     */
     private void drawPlusChip(DrawContext context, int px, int py, boolean off, boolean hovered) {
         ConsolePaint.pill(context, px, py, FORMAT_CHIP_H, FORMAT_CHIP_H, off ? KEYCAP_OFF : PLUS, false);
-        if (hovered && !off) context.drawBorder(px, py, FORMAT_CHIP_H, FORMAT_CHIP_H, WHITE);
-        int c = px + FORMAT_CHIP_H / 2, m = py + FORMAT_CHIP_H / 2;
-        context.fill(c - 3, m, c + 4, m + 1, off ? INK3 : WHITE);
-        context.fill(c, m - 3, c + 1, m + 4, off ? INK3 : WHITE);
+        if (hovered && !off) ConsolePaint.highlight(context, px, py, FORMAT_CHIP_H, FORMAT_CHIP_H, -1, WHITE, 0x40FFFFFF);
+        int arm = 4, half = FORMAT_CHIP_H / 2;
+        int colour = off ? INK3 : WHITE;
+        context.fill(px + half - arm, py + half - 1, px + half + arm, py + half + 1, colour);
+        context.fill(px + half - 1, py + half - arm, px + half + 1, py + half + arm, colour);
     }
 
     private void drawFormatsOverlay(DrawContext context, int mouseX, int mouseY) {
@@ -1053,7 +1058,7 @@ public class MiniGamePageEditorScreen extends Screen {
                     @Nullable Supplier<Text> tooltip) {
             boolean over = active && mouseX >= bx && mouseX < bx + w && mouseY >= by && mouseY < by + h;
             ConsolePaint.box(context, bx, by, w, h, !active ? KEYCAP_OFF : green ? FRAME : KEYCAP, 1, 1);
-            if (over) context.drawBorder(bx, by, w, h, TEAL2);
+            if (over) ConsolePaint.highlight(context, bx, by, w, h, 1, TEAL2, 0);
             int tw = textRenderer.getWidth(label) - 1;
             if (green && active) context.drawText(textRenderer, label, bx + (w - tw) / 2, by + (h - 8) / 2, WHITE, true);
             else context.drawText(textRenderer, label, bx + (w - tw) / 2, by + (h - 7) / 2 + (h - 7) % 2, active ? INK : INK3, false);
@@ -1085,7 +1090,7 @@ public class MiniGamePageEditorScreen extends Screen {
                 int tx = px + 4 + (i % 2) * (TILE_W + 2), ty = py + 14 + (i / 2) * (TILE_H + 2);
                 boolean over = mouseX >= tx && mouseX < tx + TILE_W && mouseY >= ty && mouseY < ty + TILE_H;
                 ConsolePaint.box(context, tx, ty, TILE_W, TILE_H, Ramp.of(0x7e9192, 0xffffff, over ? 0xffffff : 0xe6f3f4, 0xc7dbdc), 1, 1);
-                if (over) context.drawBorder(tx, ty, TILE_W, TILE_H, TEAL2);
+                if (over) ConsolePaint.highlight(context, tx, ty, TILE_W, TILE_H, 1, TEAL2, 0);
                 MiniGameFormat format = i < MiniGameFormat.GALLERY.size() ? MiniGameFormat.GALLERY.get(i) : null;
                 if (format == null) {
                     Text blank = Text.translatable(KEY + "formats.blank");
@@ -1150,7 +1155,7 @@ public class MiniGamePageEditorScreen extends Screen {
                 int w = textRenderer.getWidth(label) - 1 + 10;
                 boolean on = draft.kind() == kind, over = mouseX >= sx && mouseX < sx + w && mouseY >= ky && mouseY < ky + 13;
                 ConsolePaint.box(context, sx, ky, w, 13, on ? SEGMENT_ON : KEYCAP, 1, 1);
-                if (over && !on) context.drawBorder(sx, ky, w, 13, TEAL2);
+                if (over && !on) ConsolePaint.highlight(context, sx, ky, w, 13, 1, TEAL2, 0);
                 if (on) context.drawText(textRenderer, label, sx + 5, ky + 3, WHITE, true);
                 else context.drawText(textRenderer, label, sx + 5, ky + 3, INK2, false);
                 hits.add(new Hit(sx, ky, w, 13, () -> draft = draft.withKind(kind), null));
@@ -1407,7 +1412,7 @@ public class MiniGamePageEditorScreen extends Screen {
 
     private void drawCard(DrawContext context, MiniGamePipeLink link, int left, int top, boolean hovered) {
         ConsolePaint.box(context, left, top, COLUMN_WIDTH, CARD_H, CARD, 1, 1);
-        if (hovered) context.drawBorder(left, top, COLUMN_WIDTH, CARD_H, TEAL2);
+        if (hovered) ConsolePaint.highlight(context, left, top, COLUMN_WIDTH, CARD_H, 1, TEAL2, 0);
         // The mark of its pipe: plain for plastic, a window in a windowed pipe, half see-through for glass
         int color = 0xFF000000 | pipeColor(link);
         int markLeft = left + 2, markTop = top + 2, markRight = left + 5, markBottom = top + 12;
@@ -1583,7 +1588,7 @@ public class MiniGamePageEditorScreen extends Screen {
             MiniGamePodiumLink link = links.get(index);
             int top = podiumCardY(index);
             ConsolePaint.box(context, lx, top, FULL, RESULT_H, CARD, 1, 1);
-            if (link == hovered) context.drawBorder(lx, top, FULL, RESULT_H, TEAL2);
+            if (link == hovered) ConsolePaint.highlight(context, lx, top, FULL, RESULT_H, 1, TEAL2, 0);
             Text role = podiumRole(link, links);
             int place = link.kind() == MiniGamePodiumLink.Kind.PODIUM ? placeOf(link, links) : 0;
             int colour = place == 1 ? 0xFFFFD83D : place == 2 ? 0xFFC9D3DA : place == 3 ? 0xFFD98A4A

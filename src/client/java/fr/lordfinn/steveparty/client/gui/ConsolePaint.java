@@ -139,6 +139,32 @@ public final class ConsolePaint {
         draw(context, known, x, y);
     }
 
+    /**
+     * The highlight of a {@link #box} ({@code cut} its corners' cut) or of a {@link #pill} ({@code cut} -1) of the same
+     * size, drawn over it: its outline in {@code ring}, its body in {@code fill} (0 for none). It follows the shape:
+     * a round button lights up round, its cut corners stay cut.
+     */
+    public static void highlight(DrawContext context, int x, int y, int w, int h, int cut, int ring, int fill) {
+        Tex known = TEXTURES.get("h" + w + "x" + h + "/" + cut + "/" + ring + "/" + fill);
+        if (known == null) {
+            boolean[][] m = cut < 0 ? margin(HudShapes.mask(HudShapes.Form.PILL, w - 2, h - 2), w, h) : margin(cut(w - 2, h - 2, cut), w, h);
+            int[][] out = new int[h][w];
+            for (int yy = 0; yy < h; yy++) {
+                for (int xx = 0; xx < w; xx++) {
+                    if (m[yy][xx]) {
+                        out[yy][xx] = fill;
+                        continue;
+                    }
+                    boolean edge = false;
+                    for (int dy = -1; dy <= 1 && !edge; dy++) for (int dx = -1; dx <= 1 && !edge; dx++) edge = in(m, xx + dx, yy + dy);
+                    if (edge) out[yy][xx] = ring;
+                }
+            }
+            known = register("h" + w + "x" + h + "/" + cut + "/" + ring + "/" + fill, out);
+        }
+        draw(context, known, x, y);
+    }
+
     /** A disc {@code d} pixels across, its outline included. */
     public static void disc(DrawContext context, int x, int y, int d, Ramp ramp) {
         pill(context, x, y, d, d, ramp, false);

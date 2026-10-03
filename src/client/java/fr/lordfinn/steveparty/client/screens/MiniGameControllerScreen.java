@@ -356,7 +356,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
             int sx = getX() + width - SWITCH_W, sy = getY() + 3;
             ConsolePaint.pill(context, sx, sy, SWITCH_W, 12, on ? SWITCH_ON : SWITCH_OFF, true);
             ConsolePaint.disc(context, sx + (on ? 13 : 1), sy + 1, 10, KNOB);
-            if (active && (isHovered() || isFocused())) context.drawBorder(sx - 1, sy - 1, SWITCH_W + 2, 14, 0xFFFFFFFF);
+            if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, sx - 1, sy - 1, SWITCH_W + 2, 14, -1, 0xFFFFFFFF, 0);
             TextRenderer font = MinecraftClient.getInstance().textRenderer;
             OrderedText label = getMessage().asOrderedText();
             int colour = active ? INK : INK_GHOST;

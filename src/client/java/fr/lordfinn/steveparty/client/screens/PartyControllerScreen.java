@@ -1072,7 +1072,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             int sx = getX() + width - 24, sy = getY() + 3;
             ConsolePaint.pill(context, sx, sy, 24, 12, on ? SWITCH_ON : SWITCH_OFF, true);
             ConsolePaint.disc(context, sx + (on ? 13 : 1), sy + 1, 10, KNOB);
-            if (active && (isHovered() || isFocused())) context.drawBorder(sx - 1, sy - 1, 26, 14, WHITE);
+            if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, sx - 1, sy - 1, 26, 14, -1, WHITE, 0);
             TextRenderer font = MinecraftClient.getInstance().textRenderer;
             context.drawText(font, getMessage(), getX(), getY() + 5, !active ? INK_DIM : on ? INK_GREEN : INK_SOFT, true);
         }
