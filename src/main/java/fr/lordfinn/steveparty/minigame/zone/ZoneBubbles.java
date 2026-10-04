@@ -230,7 +230,8 @@ public final class ZoneBubbles {
 
     /** @return the bubble (in session or being restored) whose zone holds this block, null if none does */
     public static @Nullable ZoneBubble of(World world, BlockPos pos) {
-        return ZoneBorder.ACTIVE ? at(world, pos.getX(), pos.getY(), pos.getZ()) : null;
+        // a client's world is in no zone (and its thread does not read the server's lists)
+        return ZoneBorder.ACTIVE && !world.isClient ? at(world, pos.getX(), pos.getY(), pos.getZ()) : null;
     }
 
     /** @return the bubble this player is in the session of (participant or spectator), null if none */
@@ -416,12 +417,12 @@ public final class ZoneBubbles {
      * what is taken from a zone would come back with it, and what is put in one would go
      */
     public static boolean separated(World world, BlockPos a, BlockPos b) {
-        return ZoneBorder.ACTIVE && at(world, a.getX(), a.getY(), a.getZ()) != at(world, b.getX(), b.getY(), b.getZ());
+        return ZoneBorder.ACTIVE && !world.isClient && at(world, a.getX(), a.getY(), a.getZ()) != at(world, b.getX(), b.getY(), b.getZ());
     }
 
     /** @return true if the place is in a zone in session or being restored: what lies there will be put back as it was */
     public static boolean isInZone(World world, BlockPos pos) {
-        return ZoneBorder.ACTIVE && at(world, pos.getX(), pos.getY(), pos.getZ()) != null;
+        return ZoneBorder.ACTIVE && !world.isClient && at(world, pos.getX(), pos.getY(), pos.getZ()) != null;
     }
 
     /** @return true if the player may not teleport to {@code to} (null: out of every zone) */
