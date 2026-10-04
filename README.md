@@ -82,6 +82,14 @@ Demo board, test world and the dev server scripts are described on the
 
 Stack: Fabric 1.21.3 (Yarn mappings), Architectury, GeckoLib 4.7.1, Java 21. Package `fr.lordfinn.steveparty`.
 
+### Releasing
+
+Push a tag `vX.Y.Z` (or `vX.Y.Z-beta.N` / `vX.Y.Z-alpha.N`) to build and publish that version on Modrinth and
+CurseForge; the tag sets the version. The one-time setup (repo variables and tokens) is described at the top of
+[`.github/workflows/release.yml`](.github/workflows/release.yml). The store description lives in
+`docs/store-listing.md` and is pushed to Modrinth when it changes on `master` (CurseForge: paste it by hand).
+`scripts/delete-release-version.ps1` removes a published Modrinth version.
+
 ## License
 
 Copyright (c) 2024-2026 LordFinn. All rights reserved.

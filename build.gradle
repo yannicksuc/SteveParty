@@ -1,6 +1,9 @@
 plugins {
     id 'fabric-loom' version '1.9-SNAPSHOT'
     id 'maven-publish'
+    // Release publishing only: applied below when the token env vars are set (.github/workflows/release.yml)
+    id 'com.modrinth.minotaur' version '2.9.0' apply false
+    id 'net.darkhax.curseforgegradle' version '1.1.28' apply false
 }
 
 version = project.mod_version
@@ -166,5 +169,52 @@ publishing {
 fabricApi {
     configureDataGeneration() {
         client = true
+    }
+}
+
+// --- Modrinth / CurseForge publishing ---
+// Inert unless MODRINTH_TOKEN / CURSEFORGE_TOKEN are set, which only release.yml does on a v* tag.
+// mod_version comes from the tag there (-Pmod_version=...), so the jar and both listings match it.
+def releaseChangelog = System.getenv('RELEASE_CHANGELOG') ?: 'See the GitHub release notes for this version.'
+// release | beta | alpha: same names on both sites, derived from the tag suffix by release.yml
+def releaseType = System.getenv('RELEASE_TYPE') ?: 'release'
+
+if (System.getenv('MODRINTH_TOKEN') != null) {
+    apply plugin: 'com.modrinth.minotaur'
+    modrinth {
+        token = System.getenv('MODRINTH_TOKEN')
+        projectId = findProperty('modrinth_project_id') ?: 'REPLACE_WITH_MODRINTH_PROJECT_ID'
+        versionNumber = project.mod_version
+        versionName = "${project.mod_version} - Fabric ${project.minecraft_version}".toString()
+        versionType = releaseType
+        uploadFile = remapJar
+        gameVersions = [project.minecraft_version]
+        loaders = ['fabric']
+        changelog = releaseChangelog
+        dependencies {
+            required.project 'fabric-api'
+            required.project 'geckolib'
+        }
+    }
+}
+
+if (System.getenv('CURSEFORGE_TOKEN') != null) {
+    apply plugin: 'net.darkhax.curseforgegradle'
+    tasks.register('publishCurseForge', net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+        dependsOn remapJar
+        apiToken = System.getenv('CURSEFORGE_TOKEN')
+        def mainFile = upload(findProperty('curseforge_project_id') ?: 'REPLACE_WITH_CURSEFORGE_PROJECT_ID', remapJar)
+        mainFile.displayName = "${project.mod_version} - Fabric ${project.minecraft_version}".toString()
+        mainFile.changelog = releaseChangelog
+        mainFile.changelogType = 'markdown'
+        mainFile.releaseType = releaseType
+        mainFile.addGameVersion(project.minecraft_version)
+        mainFile.addModLoader('Fabric')
+        // CurseForge rejects a file without a Java version and an environment (error 1021)
+        mainFile.addJavaVersion("Java ${targetJavaVersion}".toString())
+        mainFile.addEnvironment('Client')
+        mainFile.addEnvironment('Server')
+        mainFile.addRequirement('fabric-api')
+        mainFile.addRequirement('geckolib')
     }
 }

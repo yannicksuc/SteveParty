@@ -1,0 +1,79 @@
+name: Release
+
+# Publishes to Modrinth and CurseForge when a tag v* is pushed (e.g. v0.2.0, v0.2.0-beta.1).
+# The tag drives the version: it is passed as -Pmod_version, so the jar and both listings match it.
+#
+# One-time setup (until then every run fails fast with a clear error):
+#   1. Create the project on https://modrinth.com and https://www.curseforge.com.
+#   2. Repo variables (Settings -> Secrets and variables -> Actions -> Variables):
+#        modrinth_project_id   - Modrinth project slug or id
+#        curseforge_project_id - CurseForge numeric project id
+#   3. Repo secrets (same page, Secrets tab):
+#        MODRINTH_TOKEN   - Modrinth personal access token, scopes "Create versions" + "Write project data"
+#                           (the latter for update-store-listing.yml)
+#        CURSEFORGE_TOKEN - CurseForge API token (curseforge.com -> My Profile -> API Tokens)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The executable bit can be lost by commits made on Windows
+      - run: chmod +x gradlew
+
+      - name: Check the one-time setup
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.modrinth_project_id }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.curseforge_project_id }}
+        run: |
+          missing=""
+          if [ -z "$MODRINTH_TOKEN" ]; then missing="$missing MODRINTH_TOKEN(secret)"; fi
+          if [ -z "$CURSEFORGE_TOKEN" ]; then missing="$missing CURSEFORGE_TOKEN(secret)"; fi
+          if [ -z "$MODRINTH_PROJECT_ID" ]; then missing="$missing modrinth_project_id(variable)"; fi
+          if [ -z "$CURSEFORGE_PROJECT_ID" ]; then missing="$missing curseforge_project_id(variable)"; fi
+          if [ -n "$missing" ]; then
+            echo "::error::Not set:$missing - see the header comment of .github/workflows/release.yml."
+            exit 1
+          fi
+
+      - name: Derive version and release type from the tag
+        id: tag
+        run: |
+          tag="${{ github.ref_name }}"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          if [[ "$tag" == *-beta* ]]; then
+            echo "type=beta" >> "$GITHUB_OUTPUT"
+          elif [[ "$tag" == *-alpha* ]]; then
+            echo "type=alpha" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=release" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and publish ${{ steps.tag.outputs.version }}
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          RELEASE_CHANGELOG: ${{ github.event.head_commit.message }}
+          RELEASE_TYPE: ${{ steps.tag.outputs.type }}
+        # assemble, not build: a release packages and publishes, the gametests (runGametest) are not run here.
+        # --no-configuration-cache: Minotaur and Loom's remapJar break under it, and a fresh CI runner gains nothing.
+        run: |
+          ./gradlew assemble modrinth publishCurseForge -x test \
+            "-Pmod_version=${{ steps.tag.outputs.version }}" \
+            "-Pmodrinth_project_id=${{ vars.modrinth_project_id }}" \
+            "-Pcurseforge_project_id=${{ vars.curseforge_project_id }}" \
+            --no-configuration-cache --console=plain

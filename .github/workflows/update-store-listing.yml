@@ -1,0 +1,40 @@
+name: Update store listing
+
+# Pushes docs/store-listing.md to the Modrinth project description when it changes on master.
+# CurseForge has no API to edit a project description: paste the file into its project editor by hand.
+#
+# Reuses release.yml's MODRINTH_TOKEN and modrinth_project_id; the token needs the "Write project data"
+# scope (a "Create versions"-only token gets a 401 on this PATCH).
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/store-listing.md'
+
+jobs:
+  update-modrinth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push docs/store-listing.md to the Modrinth project body
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.modrinth_project_id }}
+        run: |
+          if [ -z "$MODRINTH_TOKEN" ] || [ -z "$MODRINTH_PROJECT_ID" ]; then
+            echo "::error::MODRINTH_TOKEN secret or modrinth_project_id variable is not set - see the header of release.yml."
+            exit 1
+          fi
+          body=$(jq -n --rawfile body docs/store-listing.md '{body: $body}')
+          http_code=$(curl -s -o response.json -w '%{http_code}' -X PATCH \
+            "https://api.modrinth.com/v2/project/${MODRINTH_PROJECT_ID}" \
+            -H "Authorization: ${MODRINTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$body")
+          cat response.json
+          if [ "$http_code" -ge 300 ]; then
+            echo "::error::Modrinth PATCH failed with HTTP $http_code. A 401/403 usually means MODRINTH_TOKEN lacks the \"Write project data\" scope."
+            exit 1
+          fi
+          echo "Modrinth project description updated (HTTP $http_code)."
