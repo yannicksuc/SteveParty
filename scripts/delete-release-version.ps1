@@ -28,7 +28,7 @@ param(
     [ValidateSet('modrinth', 'curseforge', 'both')]
     [string]$Platform = 'modrinth',
 
-    [string]$ModrinthProjectId = 'steveparty'
+    [string]$ModrinthProjectId = 'I2SHOQvG'
 )
 
 $ErrorActionPreference = 'Stop'
