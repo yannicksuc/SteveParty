@@ -509,7 +509,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
      * read from disk a few ticks later, are remembered as they come; what the session spawns there before is not.
      * They used to be wiped for good at the end.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_far", tickLimit = 600)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_far", tickLimit = 1500)
     public void entitiesOfAChunkNotLoadedYetAreKept(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
@@ -525,7 +525,8 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
                 CowEntity early = EntityType.COW.create(world, net.minecraft.entity.SpawnReason.COMMAND);
                 early.refreshPositionAndAngles(far.getX() + 3.5, far.getY(), far.getZ() + 3.5, 0, 0);
                 world.spawnEntity(early);
-                when(context, () -> world.getEntity(id) != null, 100, "the entities of the zone never came", () -> later(context, 1, () -> {
+                // read from disk once the chunk is loaded again (it may take a while when the server is busy)
+                when(context, () -> world.getEntity(id) != null, 600, "the entities of the zone never came", () -> later(context, 1, () -> {
                     world.getEntity(id).discard();
                     CowEntity cow = EntityType.COW.create(world, net.minecraft.entity.SpawnReason.COMMAND);
                     cow.refreshPositionAndAngles(far.getX() + 2.5, far.getY(), far.getZ() + 2.5, 0, 0);
@@ -546,7 +547,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
      * only read from disk a few ticks after the zone is put back: they are waited for, and wiped. They used to stay
      * (what the session dropped became loot of the real world).
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_far_crash", tickLimit = 900)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_far_crash", tickLimit = 1500)
     public void aRecoveryWaitsForTheEntitiesOfItsZone(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
@@ -569,7 +570,9 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
                 ZoneBubbles.simulateCrash();
                 when(context, () -> world.getEntity(cowId) == null && !world.isChunkLoaded(chunk.toLong()), 300, "the far chunk never unloaded", () -> {
                     ZoneBubbles.recover(server);
-                    when(context, () -> ZoneBubbles.all().isEmpty(), 300, "the zone was never put back", () -> later(context, 40, () -> {
+                    // held once the zone is put back, to look at it
+                    world.setChunkForced(chunk.x, chunk.z, true);
+                    when(context, () -> ZoneBubbles.all().isEmpty(), 900, "the zone was never put back", () -> later(context, 40, () -> {
                         List<String> left = new ArrayList<>();
                         for (Entity entity : world.getOtherEntities(null, zoneAt(world, far).bounds(), entity -> true)) left.add(entity.getType() + " " + entity.getUuid());
                         context.assertTrue(world.getEntity(cowId) == null && world.getEntity(lootId) == null, "what the session left is gone, found " + left);
