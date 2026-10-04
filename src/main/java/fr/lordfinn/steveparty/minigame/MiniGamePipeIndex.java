@@ -56,10 +56,15 @@ public final class MiniGamePipeIndex extends PersistentState {
      * distance), else none; null when there is none.
      */
     public static @Nullable GlobalPos nearest(MinecraftServer server, UUID page, GlobalPos from) {
+        return nearest(server, page, from, pos -> true);
+    }
+
+    /** Like {@link #nearest(MinecraftServer, UUID, GlobalPos)}, among the pipes {@code allowed} says yes to. */
+    public static @Nullable GlobalPos nearest(MinecraftServer server, UUID page, GlobalPos from, java.util.function.Predicate<GlobalPos> allowed) {
         GlobalPos best = null;
         double bestDistance = Double.MAX_VALUE;
         for (GlobalPos pos : of(server, page)) {
-            if (!pos.dimension().equals(from.dimension())) continue;
+            if (!pos.dimension().equals(from.dimension()) || !allowed.test(pos)) continue;
             double distance = pos.pos().getSquaredDistance(from.pos());
             if (distance < bestDistance) {
                 bestDistance = distance;

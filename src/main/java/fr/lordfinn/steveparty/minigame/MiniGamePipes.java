@@ -374,15 +374,25 @@ public final class MiniGamePipes {
 
     private static boolean wayOut(MinecraftServer server, ServerPlayerEntity player, UUID page, @Nullable Seat seat) {
         UUID id = player.getUuid();
+        // The zone he leaves: no way out leads into it (the last visitor gone, it is put back at once, as built,
+        // with no session to guard it: he would stand in it with what he owns)
+        fr.lordfinn.steveparty.minigame.zone.ZoneBubble left = fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player);
+        fr.lordfinn.steveparty.minigame.zone.MiniGameZone zone = left != null ? left.zone() : MiniGameArena.zoneOf(server, page);
+        Predicate<GlobalPos> out = pos -> zone == null || !zone.dimension().equals(pos.dimension()) || !zone.contains(pos.pos());
         MiniGameReturns.Return back = seat == null ? null : seat.leave().apply(player);
         leaveParty(id);
         Visit visit = VISITS.remove(id);
         // Out of the bubble of the visits first: the way out is out of the zone
         MiniGameArena.endVisit(player);
-        if (visit != null && emerge(server, new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY), player)) return true;
-        GlobalPos nearest = MiniGamePipeIndex.nearest(server, page, GlobalPos.create(player.getWorld().getRegistryKey(), player.getBlockPos()));
+        if (visit != null && out.test(visit.mouth())
+                && emerge(server, new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY), player)) return true;
+        GlobalPos nearest = MiniGamePipeIndex.nearest(server, page, GlobalPos.create(player.getWorld().getRegistryKey(), player.getBlockPos()), out);
         if (nearest != null && emerge(server, new MiniGamePipeLink(nearest, Direction.UP, MiniGamePipeRole.ENTRY), player)) return true;
-        return back != null && MiniGameReturns.bringBack(server, id, back);
+        if (back != null && MiniGameReturns.bringBack(server, id, back)) return true;
+        // Nowhere to go (his ways gone, broken by a friend...): a visitor stays one, rather than being left in the
+        // zone with what he owns (he comes back out of the mouth he went in)
+        if (seat == null && left != null && MiniGameArena.visit(server, page, player) && visit != null) VISITS.put(id, visit);
+        return false;
     }
 
     /** {@code player} is no longer visiting a mini-game (he was sent out of its zone): no way out to remember. */
