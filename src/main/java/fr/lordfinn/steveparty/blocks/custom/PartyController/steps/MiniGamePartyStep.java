@@ -819,6 +819,9 @@ public class MiniGamePartyStep extends PartyStep {
         for (Map.Entry<UUID, Integer> entry : order) {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
             if (player == null) continue;
+            // Holding a session inventory (he left the round and plays elsewhere, a visit...): what he would be paid
+            // would go with it. Like one who is away, he is not paid: the bank keeps it
+            if (fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) != null) continue;
             PartyControllerEntity.Paid received = controller.payGains(player, entry.getValue(), bank);
             paid.put(entry.getKey(), new int[]{received.coins(), received.stars()});
             full &= received.full();
