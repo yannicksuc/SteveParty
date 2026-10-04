@@ -533,9 +533,10 @@ public final class ZoneBubble {
 
     // ------------------------------------------------------------------ every tick
 
-    void tick() {
+    /** @param restoreShare the blocks it may put back this tick, if it is being restored: its share of the budget */
+    void tick(int restoreShare) {
         if (state == State.ACTIVE) journal.flush();
-        else if (state == State.RESTORING) restore(ServerConfig.get().miniGameBubbleRestorePerTick);
+        else if (state == State.RESTORING) restore(restoreShare);
     }
 
     /** What the session journaled so far goes to its file (the world is about to be saved). */

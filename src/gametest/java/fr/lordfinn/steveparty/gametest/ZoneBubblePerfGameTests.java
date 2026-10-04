@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
@@ -237,6 +238,66 @@ public class ZoneBubblePerfGameTests implements FabricGameTest {
                     String.format("%.1f", beginMs), String.format("%.1f", endMs));
             context.assertTrue(restoreMs < 10_000, "restoring took " + restoreMs + " ms");
             context.assertTrue(beginMs < 2_000, "beginning took " + beginMs + " ms");
+            context.complete();
+        });
+    }
+
+    private static int stoneIn(ServerWorld world, MiniGameZone zone) {
+        int stone = 0;
+        for (BlockPos pos : BlockPos.iterate(zone.box().getMinX(), zone.box().getMinY(), zone.box().getMinZ(),
+                zone.box().getMaxX(), zone.box().getMaxY(), zone.box().getMaxZ())) {
+            if (world.getBlockState(pos).isOf(Blocks.STONE)) stone++;
+        }
+        return stone;
+    }
+
+    /**
+     * Zones put back at the same time share the budget of a tick ({@code miniGameBubbleRestorePerTick}): ten
+     * restorations cost the server what one does, each going at the same pace.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_restore_share", tickLimit = 100)
+    public void restorationsShareTheBudget(TestContext context) {
+        ServerWorld world = context.getWorld();
+        ServerConfig config = ServerConfig.get();
+        int perTick = config.miniGameBubbleRestorePerTick;
+        config.miniGameBubbleRestorePerTick = 32;
+        List<MiniGameZone> zones = List.of(
+                MiniGameZone.of(world.getRegistryKey(), context.getAbsolutePos(at(1, 1, 1)), context.getAbsolutePos(at(4, 8, 4))),
+                MiniGameZone.of(world.getRegistryKey(), context.getAbsolutePos(at(6, 1, 1)), context.getAbsolutePos(at(9, 8, 4))));
+        List<ZoneBubble> bubbles = new ArrayList<>();
+        Runnable abort = () -> {
+            config.miniGameBubbleRestorePerTick = perTick;
+            for (ZoneBubble bubble : bubbles) bubble.endNow();
+        };
+        try {
+            for (MiniGameZone zone : zones) {
+                ZoneBubble bubble = begin(world.getServer(), zone);
+                context.assertTrue(bubble.isActive(), "the session begins");
+                bubbles.add(bubble);
+                for (BlockPos pos : BlockPos.iterate(zone.box().getMinX(), zone.box().getMinY(), zone.box().getMinZ(),
+                        zone.box().getMaxX(), zone.box().getMaxY(), zone.box().getMaxZ())) {
+                    world.setBlockState(pos, Blocks.STONE.getDefaultState());
+                }
+            }
+            // each one's first slice is put back at once (32 of 128 blocks)
+            for (ZoneBubble bubble : bubbles) bubble.end();
+            for (MiniGameZone zone : zones) context.assertTrue(stoneIn(world, zone) == 96, "the first slice is put back at once");
+        } catch (RuntimeException e) {
+            abort.run();
+            throw e;
+        }
+        context.waitAndRun(2, () -> {
+            int first = stoneIn(world, zones.get(0)), second = stoneIn(world, zones.get(1));
+            // 16 a tick each (32 shared by two), not 32 each: after two or three ticks, 64 or 48 left
+            if (first < 48 || first != second) {
+                abort.run();
+                context.assertTrue(false, "the budget is shared evenly: " + first + " and " + second + " blocks left");
+            }
+        });
+        context.waitAndRun(40, () -> {
+            config.miniGameBubbleRestorePerTick = perTick;
+            for (ZoneBubble bubble : bubbles) context.assertTrue(bubble.state() == ZoneBubble.State.ENDED, "both are put back in the end");
+            for (MiniGameZone zone : zones) context.assertTrue(stoneIn(world, zone) == 0, "both zones are whole again");
             context.complete();
         });
     }

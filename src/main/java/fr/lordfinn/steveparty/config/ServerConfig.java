@@ -46,7 +46,7 @@ public final class ServerConfig {
     public int miniGameBubbleMaxBlockEntities = 1024;
     /** The most entities (players aside) a zone may hold when a session starts. */
     public int miniGameBubbleMaxEntities = 1024;
-    /** The blocks put back per tick at the end of a session: a bigger journal is restored over several ticks. */
+    /** The blocks put back per tick at the end of the sessions, all zones being restored sharing it: a bigger journal is restored over several ticks. */
     public int miniGameBubbleRestorePerTick = 2048;
     /**
      * Blocks a mini-game zone may not hold, besides those of the block tag {@code steveparty:zone_forbidden}: an id

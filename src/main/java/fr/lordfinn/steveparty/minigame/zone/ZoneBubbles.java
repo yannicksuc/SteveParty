@@ -53,6 +53,8 @@ import java.util.function.Predicate;
  */
 public final class ZoneBubbles {
     private static final int WARN_INTERVAL_TICKS = 40;
+    /** The fewest blocks a restoration puts back a tick, however many share the budget. */
+    private static final int MIN_RESTORE_SHARE = 16;
     /** How far out of a zone a player sent out of it lands. */
     private static final double EVICT_MARGIN = 0.7;
 
@@ -521,7 +523,11 @@ public final class ZoneBubbles {
     // ------------------------------------------------------------------ every tick
 
     private static void tick(MinecraftServer server) {
-        for (ZoneBubble bubble : live) bubble.tick();
+        // the restorations share one budget a tick: ten zones put back at once cost the server what one does
+        int restoring = 0;
+        for (ZoneBubble bubble : live) if (bubble.isRestoring()) restoring++;
+        int share = restoring == 0 ? 0 : Math.max(MIN_RESTORE_SHARE, ServerConfig.get().miniGameBubbleRestorePerTick / restoring);
+        for (ZoneBubble bubble : live) bubble.tick(share);
         if (live.length == 0) return;
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             if (player.isDead()) continue;
