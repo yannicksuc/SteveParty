@@ -480,6 +480,8 @@ public final class MiniGameTest implements MiniGameSession {
 
     private void comeOut(MiniGamePipeLink link, UUID uuid) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+        // Its turn at the pipe came after the results: it would come out in an arena put back as built, with what it owns
+        if (phase != Phase.PLAYING) return;
         if (player != null && !MiniGamePipes.emergeInRound(server, link, player, pageId)) {
             // No pipe to come out of any more: it stays where it is, with what it owns
             arena.leave(player);
