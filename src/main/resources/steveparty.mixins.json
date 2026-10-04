@@ -30,6 +30,7 @@
     "ExplosionImplMixin",
     "PipeDismountMixin",
     "PlayerShoulderInvoker",
+    "ZoneBubbleBlockEntityTickMixin",
     "ZoneBubbleCrafterMixin",
     "ZoneBubbleDispenserMixin",
     "ZoneBubbleDragonEggMixin",

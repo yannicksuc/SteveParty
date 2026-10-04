@@ -29,7 +29,8 @@
  *   <li>What a session costs follows what it changes, not the size of its zone; the restorations of all zones share
  *   one budget a tick ({@code miniGameBubbleRestorePerTick}).</li>
  * </ul>
- * <b>Mixins</b>: injections only ({@code @Inject}, {@code @ModifyExpressionValue}), no {@code @Redirect} or
+ * <b>Mixins</b>: injections only ({@code @Inject}, {@code @ModifyExpressionValue}, {@code @WrapOperation} where an origin must be
+ * left whatever happens), no {@code @Redirect} or
  * {@code @Overwrite}, all required (a hook that fails to apply would open the border: the game does not start).
  * Those that enter an origin and those that filter a result at {@code RETURN} have priority 2000: applied after
  * other mods, they also see their early returns.
