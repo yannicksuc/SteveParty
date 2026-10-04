@@ -35,8 +35,11 @@ final class ZoneJournal {
 
     private final Long2ObjectOpenHashMap<BlockState> originals = new Long2ObjectOpenHashMap<>();
     private final Reference2IntOpenHashMap<BlockState> stateNumbers = new Reference2IntOpenHashMap<>();
-    private final ByteArrayOutputStream buffer = new ByteArrayOutputStream(1024);
-    private final DataOutputStream out = new DataOutputStream(buffer);
+    /** Past this, a buffer flushed is dropped rather than kept for the next tick: a burst does not hold its memory. */
+    private static final int KEPT_BUFFER = 64 * 1024;
+
+    private ByteArrayOutputStream buffer = new ByteArrayOutputStream(1024);
+    private DataOutputStream out = new DataOutputStream(buffer);
     private final @Nullable Path file;
     private final int cap;
     private boolean full;
@@ -109,7 +112,10 @@ final class ZoneJournal {
     void flush() {
         if (file == null || buffer.size() == 0) return;
         ZoneStorage.append(file, buffer.toByteArray());
-        buffer.reset();
+        if (buffer.size() > KEPT_BUFFER) {
+            buffer = new ByteArrayOutputStream(1024);
+            out = new DataOutputStream(buffer);
+        } else buffer.reset();
     }
 
     /** Reads a journal file back; a last entry cut short by a crash is left out. */
