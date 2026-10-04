@@ -47,7 +47,8 @@ import java.util.function.Predicate;
  * border, in {@link #unguarded}). Everything else goes on its own.
  * <p>
  * What it costs: nothing while no session runs (every hook reads {@link ZoneBorder#ACTIVE} and leaves). During a
- * session, a box test per event (a block changing, an entity stepping into another block, a player acting), a hash
+ * session, a box test per event (a block changing, an entity stepping into another block, a player acting: the box
+ * of all zones first, so that an event far from them costs the same whatever the number of sessions), a hash
  * map insert for the first change of a position, and one pass over the online players per tick. The zone is never
  * walked: not at the start, not during the session, not at the end.
  */
