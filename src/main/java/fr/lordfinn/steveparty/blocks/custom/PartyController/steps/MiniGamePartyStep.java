@@ -641,7 +641,9 @@ public class MiniGamePartyStep extends PartyStep {
 
     private void comeOut(MinecraftServer server, MiniGamePipeLink link, UUID uuid, @Nullable UUID pageId) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-        if (player == null) return;
+        // Its turn at the pipe came after the round's end (its results read): it would come out in an arena put back
+        // as built, with what it owns
+        if (player == null || !isOnArena() || practiceOver) return;
         if (!MiniGamePipes.emergeInRound(server, link, player, pageId)) {
             // No pipe to come out of any more: it stays where it is, with what it owns
             arena.leave(player);
