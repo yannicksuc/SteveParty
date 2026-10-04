@@ -73,6 +73,7 @@ the **Telescope** during shooting-star nights.
 
 ![Mulas dancing around the Dice Forge at night, two Telescopes](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/mula.png)
 ![Mulas dancing around the Dice Forge in daylight](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/mula-day.png)
+![Mulas dancing their dances around the Dice Forge: Rose Window, Infinity, Planets and Moons, Moonlight Waltz](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/mula-dances.gif)
 
 ### 🧱 Decoration
 
