@@ -571,6 +571,12 @@ public final class ZoneBubbles {
 
     /** Someone who is not of the session is put just out of the zone, through its nearest side. */
     private static void sendOut(ServerPlayerEntity player, ZoneBubble bubble) {
+        putOut(player, bubble);
+        warn(player, bubble.isRestoring() ? "restoring" : "cannot_enter");
+    }
+
+    /** The player is put just out of the zone, through its nearest side, without a word. */
+    static void putOut(ServerPlayerEntity player, ZoneBubble bubble) {
         ServerWorld world = bubble.world;
         Box zone = bubble.zone().bounds();
         double x = player.getX(), z = player.getZ();
@@ -589,7 +595,6 @@ public final class ZoneBubbles {
         else y = world.getTopY(Heightmap.Type.MOTION_BLOCKING, (int) Math.floor(x), (int) Math.floor(z));
         if (player.hasVehicle()) player.stopRiding();
         teleport(player, world, new Vec3d(x, y, z), player.getYaw(), player.getPitch());
-        warn(player, bubble.isRestoring() ? "restoring" : "cannot_enter");
     }
 
     private static void teleport(ServerPlayerEntity player, ServerWorld world, Vec3d to, float yaw, float pitch) {

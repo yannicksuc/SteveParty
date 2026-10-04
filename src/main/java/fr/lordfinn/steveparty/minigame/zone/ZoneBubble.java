@@ -558,7 +558,11 @@ public final class ZoneBubble {
             for (UUID id : new ArrayList<>(members.keySet())) {
                 ZoneBubbles.forget(id, this);
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
-                if (player != null) ZoneBubbles.giveBack(player);
+                if (player == null) continue;
+                ZoneBubbles.giveBack(player);
+                // Nobody of the session stays in the zone with what it owns: a zone put back at once would be theirs,
+                // as built (its chests, an arena the mod's pipes alone lead into), until they are brought back
+                if (!player.isDead() && contains(player)) ZoneBubbles.putOut(player, this);
             }
             members.clear();
             wipeEntities();
