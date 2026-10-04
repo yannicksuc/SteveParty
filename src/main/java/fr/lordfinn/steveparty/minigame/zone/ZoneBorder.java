@@ -159,8 +159,18 @@ public final class ZoneBorder {
     /** @return true if what is going on started on the other side of a border from {@code x y z}, or by hands that are tied */
     private static boolean fromOtherSide(World world, int x, int y, int z) {
         if (depth == 0 || bypass > 0 || world != originWorld) return false;
+        return fromOtherSide(ZoneBubbles.at(world, x, y, z));
+    }
+
+    /** Like {@link #fromOtherSide(World, int, int, int)}, the side of the place already looked up ({@code here}). */
+    private static boolean fromOtherSide(World world, @Nullable ZoneBubble here) {
+        if (depth == 0 || bypass > 0 || world != originWorld) return false;
+        return fromOtherSide(here);
+    }
+
+    private static boolean fromOtherSide(@Nullable ZoneBubble here) {
         if (originPlayer != null && originAction && ZoneBubbles.handsTied(originPlayer)) return true;
-        return ZoneBubbles.at(world, x, y, z) != originSide();
+        return here != originSide();
     }
 
     // ------------------------------------------------------------------ blocks
@@ -174,7 +184,7 @@ public final class ZoneBorder {
         World world = chunk.getWorld();
         if (world.isClient || Thread.currentThread() != thread) return false;
         ZoneBubble bubble = ZoneBubbles.at(world, pos.getX(), pos.getY(), pos.getZ());
-        if (fromOtherSide(world, pos.getX(), pos.getY(), pos.getZ())) return true;
+        if (fromOtherSide(world, bubble)) return true;
         if (bubble == null) return false;
         BlockState old = chunk.getBlockState(pos);
         if (old == state) return false;
@@ -260,9 +270,9 @@ public final class ZoneBorder {
     public static boolean blocksSpawn(ServerWorld world, Entity entity) {
         if (bypass > 0 || Thread.currentThread() != thread) return false;
         BlockPos pos = entity.getBlockPos();
-        if (depth > 0 && fromOtherSide(world, pos.getX(), pos.getY(), pos.getZ())) return true;
-        // What the server forbids in a zone does not spawn in one in session, whatever makes it (egg, dispenser, spawner, mod)
         ZoneBubble bubble = ZoneBubbles.at(world, pos.getX(), pos.getY(), pos.getZ());
+        if (fromOtherSide(world, bubble)) return true;
+        // What the server forbids in a zone does not spawn in one in session, whatever makes it (egg, dispenser, spawner, mod)
         return bubble != null && bubble.isActive() && ZoneForbidden.isForbidden(entity.getType());
     }
 

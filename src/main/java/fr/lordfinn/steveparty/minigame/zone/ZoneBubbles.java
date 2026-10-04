@@ -17,6 +17,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -55,8 +56,17 @@ public final class ZoneBubbles {
     /** How far out of a zone a player sent out of it lands. */
     private static final double EVICT_MARGIN = 0.7;
 
-    /** The bubbles in session or being restored: the zones the border guards. */
+    /**
+     * The bubbles in session or being restored: the zones the border guards. Never changed in place: a new array is
+     * built whole, then published ({@link #setLive}), so that a reader never meets it half made.
+     */
     private static ZoneBubble[] live = new ZoneBubble[0];
+    /**
+     * The box holding every live zone, all worlds together: almost every event happens far from every zone and
+     * stops at it, after six comparisons, however many sessions run ({@link #at}). Empty (min above max) without one.
+     */
+    private static int spanMinX = Integer.MAX_VALUE, spanMinY = Integer.MAX_VALUE, spanMinZ = Integer.MAX_VALUE;
+    private static int spanMaxX = Integer.MIN_VALUE, spanMaxY = Integer.MIN_VALUE, spanMaxZ = Integer.MIN_VALUE;
     /** The bubble each player of a session is in. */
     private static final Map<UUID, ZoneBubble> BY_PLAYER = new HashMap<>();
     /** What the players holding a session inventory own (also on disk), by player. */
@@ -143,8 +153,7 @@ public final class ZoneBubbles {
                 : ZoneBubble.start(server, sessionId, zone, server.getWorld(zone.dimension()), participants, spectators, options);
         if (!bubble.isActive()) return bubble;
         ZoneBorder.thread = server.getThread();
-        live = Arrays.copyOf(live, live.length + 1);
-        live[live.length - 1] = bubble;
+        add(bubble);
         ZoneBorder.ACTIVE = true;
         ZoneBorder.resetOrigin();
         bubble.splitStraddlingChests();
@@ -334,7 +343,40 @@ public final class ZoneBubbles {
 
     // ------------------------------------------------------------------ lookups of the border
 
+    private static void add(ZoneBubble bubble) {
+        ZoneBubble[] more = Arrays.copyOf(live, live.length + 1);
+        more[live.length] = bubble;
+        setLive(more);
+    }
+
+    private static void setLive(ZoneBubble[] bubbles) {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        for (ZoneBubble bubble : bubbles) {
+            BlockBox box = bubble.zone().box();
+            minX = Math.min(minX, box.getMinX());
+            minY = Math.min(minY, box.getMinY());
+            minZ = Math.min(minZ, box.getMinZ());
+            maxX = Math.max(maxX, box.getMaxX());
+            maxY = Math.max(maxY, box.getMaxY());
+            maxZ = Math.max(maxZ, box.getMaxZ());
+        }
+        spanMinX = minX;
+        spanMinY = minY;
+        spanMinZ = minZ;
+        spanMaxX = maxX;
+        spanMaxY = maxY;
+        spanMaxZ = maxZ;
+        live = bubbles;
+    }
+
+    /**
+     * The hottest lookup of the mod while a session runs (every block change, every entity stepping into another
+     * block): out of the box of all zones, it is over at once; within it, the few zones are tried in turn (ten
+     * pages played at once: ten box tests, cheaper than any index).
+     */
     static @Nullable ZoneBubble at(World world, int x, int y, int z) {
+        if (x < spanMinX || x > spanMaxX || z < spanMinZ || z > spanMaxZ || y < spanMinY || y > spanMaxY) return null;
         for (ZoneBubble bubble : live) {
             if (bubble.world == world && bubble.contains(x, y, z)) return bubble;
         }
@@ -564,7 +606,7 @@ public final class ZoneBubbles {
     static void ended(ZoneBubble bubble, @Nullable Path directory) {
         List<ZoneBubble> left = new ArrayList<>(List.of(live));
         left.remove(bubble);
-        live = left.toArray(new ZoneBubble[0]);
+        setLive(left.toArray(new ZoneBubble[0]));
         if (directory != null) RETIRED.add(directory);
         ZoneBorder.resetOrigin();
         if (live.length == 0) {
@@ -598,8 +640,7 @@ public final class ZoneBubbles {
                 continue;
             }
             Steveparty.LOGGER.info("Putting back the mini-game zone of the unfinished session {}", bubble.sessionId());
-            live = Arrays.copyOf(live, live.length + 1);
-            live[live.length - 1] = bubble;
+            add(bubble);
             ZoneBorder.ACTIVE = true;
             bubble.restoreRecovered();
         }
@@ -619,7 +660,7 @@ public final class ZoneBubbles {
     }
 
     private static void reset() {
-        live = new ZoneBubble[0];
+        setLive(new ZoneBubble[0]);
         BY_PLAYER.clear();
         STASHES.clear();
         RETIRED.clear();
