@@ -170,12 +170,14 @@ public class MiniGamePageEditorScreen extends Screen {
     /** Ticks a located pipe blinks in the world. */
     private static final int LOCATE_TICKS = 100;
     /** The description: its label and toolbar right under the picture's buttons, its ruled lines down to the bottom row. */
-    private static final int TOOL = 14, TOOL_GAP = 2, TOOLBAR_Y = M + 104, AREA_Y = TOOLBAR_Y + 17;
+    private static final int TOOL = 14, TOOL_GAP = 2, TOOLBAR_Y = M + 117, AREA_Y = TOOLBAR_Y + 17;
     private static final int AREA_LINES = (BOTTOM_Y - 4 - AREA_Y) / 10, AREA_H = AREA_LINES * 10 + 1;
     /** The page tab's formats: their label and the chips under it, in the right column. */
     private static final int FORMATS_Y = M + 34, CHIPS_Y = FORMATS_Y + 12;
     /** The page's zone: its size on a line, then « Tracer la zone » and its ×, level with the picture's buttons. */
     private static final int ZONE_ROW_Y = M + 84, ZONE_TEXT_Y = ZONE_ROW_Y - 11;
+    /** Under the zone: its options, « Remettre l'arène en état » and « Mode aventure » (checkboxes). */
+    private static final int OPTIONS_Y = ZONE_ROW_Y + 19, CHECK = 10;
     /** The palette's colours (0: the text's own), in two rows; its swatches. */
     private static final char[] PALETTE = {0, 'f', '7', 'c', '6', 'e', 'a', 'b', '9', 'd'};
     private static final int SWATCH = 12, SWATCH_GAP = 2, PALETTE_COLUMNS = 5;
@@ -286,6 +288,17 @@ public class MiniGamePageEditorScreen extends Screen {
                     }
                 });
         clearZoneButton.setTooltip(Tooltip.of(Text.translatable(KEY + "zone.clear")));
+        // Its options: the restore only with a zone (greyed, with why, without one); the adventure mode always
+        Text restoreLabel = Text.translatable(KEY + "option.restore"), adventureLabel = Text.translatable(KEY + "option.adventure");
+        int adventureWidth = CHECK + 4 + textRenderer.getWidth(adventureLabel);
+        addDrawableChild(new OptionCheck(rx, y + OPTIONS_Y, CW - adventureWidth - 4, restoreLabel, () -> current().restores(),
+                () -> current().zone() != null, () -> send(new MiniGamePagePayloads.Action(hand, page, MiniGamePagePayloads.Action.Kind.RESTORE)),
+                () -> current().zone() == null ? Text.empty().append(Text.translatable(KEY + "option.restore.tooltip")).append("\n")
+                        .append(Text.translatable(KEY + "option.restore.no_zone").formatted(Formatting.RED))
+                        : Text.translatable(KEY + "option.restore.tooltip")));
+        addDrawableChild(new OptionCheck(rx + CW - adventureWidth, y + OPTIONS_Y, adventureWidth, adventureLabel, () -> current().adventure(),
+                () -> true, () -> send(new MiniGamePagePayloads.Action(hand, page, MiniGamePagePayloads.Action.Kind.ADVENTURE)),
+                () -> Text.translatable(KEY + "option.adventure.tooltip")));
 
         // ---- The bottom row, on the left: the copies
         ConsoleButton copy = addDrawableChild(new ConsoleButton(lx, y + BOTTOM_Y, 70, BOTTOM_H, Text.translatable(KEY + "copy"), ConsoleButton.Kind.PAPER, null, () -> {
@@ -331,6 +344,56 @@ public class MiniGamePageEditorScreen extends Screen {
         if (!opened && client != null && client.player != null) {
             opened = true;
             client.player.playSound(SoundEvents.ITEM_BOOK_PAGE_TURN, 0.8F, 1.0F);
+        }
+    }
+
+    /** An option of the page: a checkbox and its label; greyed when it can't be changed (its tooltip says why). */
+    private final class OptionCheck extends net.minecraft.client.gui.widget.PressableWidget {
+        private final BooleanSupplier on, enabled;
+        private final Runnable action;
+        private final Supplier<Text> tooltip;
+        private @Nullable Text shownTooltip;
+
+        OptionCheck(int left, int top, int width, Text label, BooleanSupplier on, BooleanSupplier enabled, Runnable action, Supplier<Text> tooltip) {
+            super(left, top, width, CHECK + 1, label);
+            this.on = on;
+            this.enabled = enabled;
+            this.action = action;
+            this.tooltip = tooltip;
+        }
+
+        @Override
+        public void onPress() {
+            if (active) action.run();
+        }
+
+        @Override
+        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            active = canEdit && enabled.getAsBoolean();
+            Text wanted = tooltip.get();
+            if (!wanted.equals(shownTooltip)) {
+                shownTooltip = wanted;
+                setTooltip(Tooltip.of(wanted));
+            }
+            int left = getX(), top = getY();
+            ConsolePaint.box(context, left, top, CHECK, CHECK, active ? KEYCAP : KEYCAP_OFF, 1, 1);
+            if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, left, top, CHECK, CHECK, 1, TEAL2, 0);
+            if (on.getAsBoolean()) {
+                int ink = active ? GREEN2 : INK3;
+                // A check mark: two strokes, 2 px thick
+                for (int d = 0; d < 2; d++) {
+                    context.fill(left + 2 + d, top + 4 + d, left + 3 + d, top + 6 + d, ink);
+                }
+                for (int d = 0; d < 4; d++) {
+                    context.fill(left + 4 + d, top + 5 - d, left + 5 + d, top + 7 - d, ink);
+                }
+            }
+            context.drawText(textRenderer, fit(getMessage(), width - CHECK - 4), left + CHECK + 3, top + 2, active ? INK : INK3, false);
+        }
+
+        @Override
+        protected void appendClickableNarrations(net.minecraft.client.gui.screen.narration.NarrationMessageBuilder builder) {
+            appendDefaultNarrations(builder);
         }
     }
 

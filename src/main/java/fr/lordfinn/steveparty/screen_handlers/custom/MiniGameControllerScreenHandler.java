@@ -34,13 +34,13 @@ import java.util.UUID;
  * The Mini-game Controller's screen: its slot (the Mini-game Page; the zone is the page's), the player's inventory,
  * and what the mini-game of the page is doing, worked out by the server a few times a second and synced as
  * properties ({@link State}, who would play, the votes of a practice round). Its buttons: « Play » / « Stop » out of
- * a party, « Ready » during a party's practice round, and the « adventure mode » option of its zone. Changing the
- * slots or the option takes the right to build, and is not done during a round (by one of its players, or to a
+ * a party, « Ready » during a party's practice round (the page's options, restore and adventure mode, are set in its
+ * editor). Changing the slot takes the right to build, and is not done during a round (by one of its players, or to a
  * controller standing in the zone it is played in); playing and voting ask for neither.
  */
 public class MiniGameControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_PAGE = 0, PLAYER_SLOTS = 1;
-    public static final int BUTTON_PLAY = 0, BUTTON_READY = 1, BUTTON_ADVENTURE = 2;
+    public static final int BUTTON_PLAY = 0, BUTTON_READY = 1;
     /** Ticks between two looks at the mini-game. */
     public static final int SYNC_INTERVAL = 5;
 
@@ -89,7 +89,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
             P_FORBIDDEN_BLOCK = 9, P_FORBIDDEN_X = 11, P_FORBIDDEN_Y = 13, P_FORBIDDEN_Z = 15,
             // the closest format and what it misses, when nobody fits (format, role, count, min, max)
             P_SHORTFALL = 17, PROPERTIES = 22;
-    private static final int FLAG_VOTER = 1, FLAG_READY = 2, FLAG_ADVENTURE = 4, FLAG_LOCKED = 8;
+    private static final int FLAG_VOTER = 1, FLAG_READY = 2, FLAG_LOCKED = 8;
 
     private final @Nullable MiniGameControllerBlockEntity controller;
     private final BlockPos pos;
@@ -199,7 +199,6 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
             properties.set(P_SHORTFALL + 3, shortfall == null ? 0 : shortfall.min());
             properties.set(P_SHORTFALL + 4, shortfall == null ? 0 : Math.min(255, shortfall.max()));
         }
-        if (controller.isAdventure()) flags |= FLAG_ADVENTURE;
         if (controller.isLockedFor(player)) flags |= FLAG_LOCKED;
         properties.set(P_STATE, state.ordinal());
         properties.set(P_PLAYERS, players);
@@ -263,11 +262,6 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         return (properties.get(P_FLAGS) & FLAG_READY) != 0;
     }
 
-    /** The « adventure mode » option of the controller: the players of its mini-game play in adventure mode in its zone. */
-    public boolean isAdventure() {
-        return (properties.get(P_FLAGS) & FLAG_ADVENTURE) != 0;
-    }
-
     /** @return true while nothing of the controller can be changed by this player: a round is going on. */
     public boolean isLocked() {
         return (properties.get(P_FLAGS) & FLAG_LOCKED) != 0;
@@ -302,12 +296,6 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
     @Override
     public boolean onButtonClick(PlayerEntity player, int id) {
         if (controller == null || !(player instanceof ServerPlayerEntity serverPlayer)) return false;
-        if (id == BUTTON_ADVENTURE) {
-            if (!mayChange(player)) return false;
-            controller.setAdventure(!controller.isAdventure());
-            look();
-            return true;
-        }
         UUID page = controller.getPageId();
         if (page == null || player.isSpectator()) return false;
         look();

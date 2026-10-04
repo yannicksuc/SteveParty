@@ -54,8 +54,8 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     private ItemStack page = ItemStack.EMPTY;
     /** The zone of the Zone Cartridge an earlier version saved in it: given to its page on its first tick. */
     private @Nullable PageZone oldZone;
-    /** Its « adventure mode » option: the players of its mini-game play in adventure mode in its zone. */
-    private boolean adventure;
+    /** The « adventure mode » option an earlier version saved in it: given to its page on its first tick. */
+    private boolean oldAdventure;
     /** It said which page it holds since it was loaded. Not saved. */
     private boolean claimedOnce;
     /** Client side: the controllers the client has loaded (whose zones it may show). */
@@ -92,22 +92,11 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
         return GlobalPos.create(world.getRegistryKey(), pos);
     }
 
-    public boolean isAdventure() {
-        return adventure;
-    }
-
-    public void setAdventure(boolean adventure) {
-        if (this.adventure == adventure) return;
-        this.adventure = adventure;
-        claim();
-        markDirty();
-    }
-
     /** Says again which page it holds, with its option. @return false if another controller is its home */
     private boolean claim() {
         UUID id = getPageId();
         if (id == null || !(world instanceof ServerWorld serverWorld)) return true;
-        return MiniGameControllers.claim(serverWorld.getServer(), id, globalPos(), adventure);
+        return MiniGameControllers.claim(serverWorld.getServer(), id, globalPos());
     }
 
     /**
@@ -141,7 +130,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
             UUID before = getPageId();
             if (before != null) MiniGameControllers.release(serverWorld.getServer(), before, globalPos());
             if (!stack.isEmpty()) {
-                MiniGameControllers.claim(serverWorld.getServer(), MiniGamePages.ensureId(stack), globalPos(), adventure);
+                MiniGameControllers.claim(serverWorld.getServer(), MiniGamePages.ensureId(stack), globalPos());
                 MiniGamePages.refresh(serverWorld.getServer(), stack);
             }
         }
@@ -193,10 +182,12 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
         // On its first tick too: a controller a mini-game zone just put back is the home of its page at once
         if (claimedOnce && serverWorld.getTime() % CLAIM_INTERVAL_TICKS != 0) return;
         claimedOnce = true;
-        if (oldZone != null) {
+        if (oldZone != null || oldAdventure) {
             UUID id = getPageId();
-            if (id != null) MiniGameControllers.adoptZone(serverWorld.getServer(), id, oldZone);
+            if (id != null && oldZone != null) MiniGameControllers.adoptZone(serverWorld.getServer(), id, oldZone);
+            if (id != null && oldAdventure) MiniGameControllers.adoptAdventure(serverWorld.getServer(), id);
             oldZone = null;
+            oldAdventure = false;
             markDirty();
         }
         if (claim()) return;
@@ -240,7 +231,6 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
         if (!page.isEmpty()) nbt.put("Page", page.toNbt(wrapper));
-        if (adventure) nbt.putBoolean("Adventure", true);
     }
 
     @Override
@@ -249,7 +239,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
         page = nbt.contains("Page") ? ItemStack.fromNbt(wrapper, nbt.get("Page")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY;
         // The Zone Cartridge an earlier version kept here: an item that no longer exists, only its zone is read
         if (nbt.contains("ZoneCartridge", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) oldZone = oldZone(nbt.getCompound("ZoneCartridge"));
-        adventure = nbt.getBoolean("Adventure");
+        oldAdventure = nbt.getBoolean("Adventure");
     }
 
     /** The zone drawn on a saved Zone Cartridge (its {@code steveparty:zone-selection} component), null for none. */
