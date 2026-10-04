@@ -98,7 +98,11 @@ public final class ZoneBubbles {
         });
         // before the players are sent away and the world saved: every zone whole, every inventory back
         ServerLifecycleEvents.SERVER_STOPPING.register(ZoneBubbles::endAll);
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> reset());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            // the files the last save made useless are deleted before the process may end (the IO thread is a daemon)
+            ZoneStorage.flush();
+            reset();
+        });
         ServerLifecycleEvents.BEFORE_SAVE.register((server, flush, force) -> {
             for (ZoneBubble bubble : live) bubble.flush();
             ZoneStorage.flush();
@@ -336,6 +340,14 @@ public final class ZoneBubbles {
         }
         BlockPos from = traveller.getBlockPos();
         return traveller.getWorld() == world && at(world, from.getX(), from.getY(), from.getZ()) == there;
+    }
+
+    /**
+     * The zones being put back over {@code zone} are whole now: a round about to begin there does not find them in
+     * its way (the visits of its page, ended a moment ago, or ended between a wait and its end).
+     */
+    public static void finishRestoring(MiniGameZone zone) {
+        for (ZoneBubble bubble : live) if (bubble.isRestoring() && bubble.zone().intersects(zone)) bubble.endNow();
     }
 
     /** Every session ends now and every zone is whole again (the server stops). */
@@ -645,6 +657,11 @@ public final class ZoneBubbles {
             if (bubble == null) {
                 // nothing of it was written whole: nothing of it was saved either
                 ZoneStorage.delete(directory);
+                continue;
+            }
+            if (bubble.refusal() == ZoneBubble.Refusal.NO_WORLD) {
+                Steveparty.LOGGER.warn("The mini-game zone of the unfinished session {} is in {}, missing: it is put back when that dimension is there again",
+                        bubble.sessionId(), bubble.zone().dimension().getValue());
                 continue;
             }
             Steveparty.LOGGER.info("Putting back the mini-game zone of the unfinished session {}", bubble.sessionId());

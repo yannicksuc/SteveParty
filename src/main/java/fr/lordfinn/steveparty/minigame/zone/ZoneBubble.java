@@ -3,11 +3,13 @@ package fr.lordfinn.steveparty.minigame.zone;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.Steveparty;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -17,6 +19,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,6 +27,7 @@ import net.minecraft.server.world.ChunkTicketType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -31,12 +35,14 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.tick.ChunkTickScheduler;
+import net.minecraft.world.tick.OrderedTick;
+import net.minecraft.world.tick.TickPriority;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -105,8 +111,11 @@ public final class ZoneBubble {
         }
     }
 
-    /** A zone's chunks stay loaded and ticking for its session, like forced chunks, without being ones. */
-    private static final ChunkTicketType<ChunkPos> TICKET = ChunkTicketType.create("steveparty_zone_bubble", Comparator.comparingLong(ChunkPos::toLong));
+    /**
+     * A zone's chunks stay loaded and ticking for its session, like forced chunks, without being ones. One ticket per
+     * session: two zones side by side share chunks, and the end of one must not let go of the other's.
+     */
+    private static final ChunkTicketType<UUID> TICKET = ChunkTicketType.create("steveparty_zone_bubble", UUID::compareTo);
     private static final int TICKET_RADIUS = 2;
     /** Blocks are set as they were: clients told, no neighbour update, no shape update, no drops. */
     private static final int RESTORE_FLAGS = Block.NOTIFY_LISTENERS | Block.FORCE_STATE | Block.SKIP_DROPS;
@@ -121,6 +130,8 @@ public final class ZoneBubble {
     private static final int JOURNAL_FULL_WARN_INTERVAL_TICKS = 200;
     /** How close to the far faces of the zone an entity is stopped: the block it stands in is still of the zone. */
     private static final double EDGE = 1.0E-4;
+    /** How long a zone put back after a crash waits for the entities of its chunks to be read from disk. */
+    private static final int MAX_ENTITY_WAIT_TICKS = 1200;
 
     private final UUID sessionId;
     private final MiniGameZone zone;
@@ -134,7 +145,19 @@ public final class ZoneBubble {
     private State state;
     private ZoneJournal journal = new ZoneJournal(null, 0);
     private Long2ObjectOpenHashMap<NbtCompound> blockEntities = new Long2ObjectOpenHashMap<>();
-    private List<NbtCompound> entities = List.of();
+    private List<NbtCompound> entities = new ArrayList<>();
+    /**
+     * The chunks of the zone whose entities were not read from disk yet when the session began: what they hold is
+     * remembered once they are; until then the session touched none of it, so it is never wiped (not even after a crash).
+     */
+    private final LongOpenHashSet unseen = new LongOpenHashSet();
+    /** The entities the session spawned in the chunks of {@link #unseen}: not remembered with what is read from disk there. */
+    private final Set<UUID> spawned = new HashSet<>();
+    /** The block and fluid ticks the zone was waiting for when the session began: they wait again once it is put back. */
+    private NbtList ticks = new NbtList();
+    /** Read back from its files after a crash: what the zone holds now is the session's, not what it was. */
+    private boolean recoveredFromFiles;
+    private int entityWait;
     private @Nullable Path directory;
     private long lastFullWarning = -1;
 
@@ -277,6 +300,7 @@ public final class ZoneBubble {
         ServerConfig config = ServerConfig.get();
         ZoneBubble bubble = new ZoneBubble(sessionId, zone, options, world, Refusal.NONE);
         bubble.holdChunks();
+        bubble.findUnseenChunks();
         List<BlockEntity> found = bubble.findBlockEntities();
         List<Entity> inZone = bubble.findEntities();
         Refusal refusal = found.size() > config.miniGameBubbleMaxBlockEntities ? Refusal.TOO_MANY_BLOCK_ENTITIES
@@ -313,6 +337,7 @@ public final class ZoneBubble {
                 if (!entity.isRemoved()) bubble.blockEntities.put(entity.getPos().asLong(), entity.createNbtWithIdentifyingData(world.getRegistryManager()));
             }
             bubble.entities = bubble.snapshotEntities();
+            bubble.rememberScheduledTicks();
         } finally {
             ZoneBorder.bypass--;
         }
@@ -329,10 +354,15 @@ public final class ZoneBubble {
         NbtCompound nbt = ZoneStorage.read(directory.resolve(ZoneStorage.SESSION_FILE));
         if (nbt == null) return null;
         MiniGameZone zone = MiniGameZone.fromNbt(nbt.getCompound("Zone"));
-        ServerWorld world = zone == null ? null : server.getWorld(zone.dimension());
-        if (world == null) return null;
+        if (zone == null || !nbt.containsUuid("Session")) return null;
+        ServerWorld world = server.getWorld(zone.dimension());
+        // its dimension is not there now (a datapack, a mod missing): the zone waits for it, its files stay
+        if (world == null) return refused(nbt.getUuid("Session"), zone, Refusal.NO_WORLD);
         ZoneBubble bubble = new ZoneBubble(nbt.getUuid("Session"), zone, Options.DEFAULT, world, Refusal.NONE);
         bubble.directory = directory;
+        bubble.recoveredFromFiles = true;
+        for (long chunk : nbt.getLongArray("UnseenChunks")) bubble.unseen.add(chunk);
+        bubble.ticks = nbt.getList("Ticks", NbtElement.COMPOUND_TYPE);
         for (NbtElement element : nbt.getList("BlockEntities", NbtElement.COMPOUND_TYPE)) {
             NbtCompound entity = (NbtCompound) element;
             bubble.blockEntities.put(BlockEntity.posFromNbt(entity).asLong(), entity);
@@ -356,6 +386,8 @@ public final class ZoneBubble {
         NbtList list = new NbtList();
         list.addAll(entities);
         nbt.put("Entities", list);
+        nbt.putLongArray("UnseenChunks", unseen.toLongArray());
+        nbt.put("Ticks", ticks);
         return nbt;
     }
 
@@ -363,7 +395,7 @@ public final class ZoneBubble {
         for (int x = zone.minChunkX(); x <= zone.maxChunkX(); x++) {
             for (int z = zone.minChunkZ(); z <= zone.maxChunkZ(); z++) {
                 ChunkPos chunk = new ChunkPos(x, z);
-                world.getChunkManager().addTicket(TICKET, chunk, TICKET_RADIUS, chunk);
+                world.getChunkManager().addTicket(TICKET, chunk, TICKET_RADIUS, sessionId);
                 // loaded now: the zone is read and journaled from this tick on
                 world.getChunk(x, z);
             }
@@ -374,9 +406,127 @@ public final class ZoneBubble {
         for (int x = zone.minChunkX(); x <= zone.maxChunkX(); x++) {
             for (int z = zone.minChunkZ(); z <= zone.maxChunkZ(); z++) {
                 ChunkPos chunk = new ChunkPos(x, z);
-                world.getChunkManager().removeTicket(TICKET, chunk, TICKET_RADIUS, chunk);
+                world.getChunkManager().removeTicket(TICKET, chunk, TICKET_RADIUS, sessionId);
             }
         }
+    }
+
+    /** The chunks of the zone whose entities are not read from disk yet (they are, a few ticks after the chunk). */
+    private void findUnseenChunks() {
+        for (int x = zone.minChunkX(); x <= zone.maxChunkX(); x++) {
+            for (int z = zone.minChunkZ(); z <= zone.maxChunkZ(); z++) {
+                long chunk = ChunkPos.toLong(x, z);
+                if (!world.isChunkLoaded(chunk)) unseen.add(chunk);
+            }
+        }
+    }
+
+    /** @return true once the entities of every chunk of the zone are read from disk */
+    private boolean entitiesLoaded() {
+        for (int x = zone.minChunkX(); x <= zone.maxChunkX(); x++) {
+            for (int z = zone.minChunkZ(); z <= zone.maxChunkZ(); z++) {
+                if (!world.isChunkLoaded(ChunkPos.toLong(x, z))) return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean inUnseenChunk(Entity entity) {
+        return !unseen.isEmpty() && unseen.contains(ChunkPos.toLong(entity.getBlockX() >> 4, entity.getBlockZ() >> 4));
+    }
+
+    /**
+     * The entities of the chunks read from disk since the session began are remembered as they come in (at the end
+     * of the tick they come in, before anyone can touch them): else they would be wiped with the session's at the end.
+     * Those the session spawned there meanwhile are not of them ({@link #spawned}).
+     */
+    private void seeLateChunks() {
+        if (unseen.isEmpty() || recoveredFromFiles) return;
+        Set<UUID> known = null;
+        boolean changed = false;
+        for (Entity entity : findEntities()) {
+            if (!inUnseenChunk(entity)) continue;
+            Entity root = entity.getRootVehicle();
+            if (root instanceof PlayerEntity || spawned.contains(root.getUuid())) continue;
+            if (known == null) {
+                known = new HashSet<>();
+                for (NbtCompound saved : entities) if (saved.containsUuid("UUID")) known.add(saved.getUuid("UUID"));
+            }
+            if (!known.add(root.getUuid())) continue;
+            NbtCompound nbt = new NbtCompound();
+            if (root.saveNbt(nbt)) {
+                entities.add(nbt);
+                changed = true;
+            }
+        }
+        // read whole: nothing more comes from disk there
+        for (LongIterator it = unseen.iterator(); it.hasNext(); ) {
+            if (world.isChunkLoaded(it.nextLong())) {
+                it.remove();
+                changed = true;
+            }
+        }
+        if (unseen.isEmpty()) spawned.clear();
+        if (changed && directory != null) ZoneStorage.write(directory.resolve(ZoneStorage.SESSION_FILE), toNbt());
+    }
+
+    /** An entity is spawned in the zone (not read from disk): if its chunk is not read yet, it is the session's. */
+    void onSpawn(Entity entity) {
+        if (!unseen.isEmpty() && state == State.ACTIVE && inUnseenChunk(entity)) spawned.add(entity.getUuid());
+    }
+
+    /** The block and fluid ticks the zone is waiting for (a button to pop out, a clock to tick): asked again once it is put back. */
+    @SuppressWarnings("unchecked")
+    private void rememberScheduledTicks() {
+        long now = world.getTime();
+        for (int x = zone.minChunkX(); x <= zone.maxChunkX(); x++) {
+            for (int z = zone.minChunkZ(); z <= zone.maxChunkZ(); z++) {
+                WorldChunk chunk = world.getChunk(x, z);
+                // read through the only way in that leaves them be: nothing is removed
+                if (chunk.getBlockTickScheduler() instanceof ChunkTickScheduler<?> blocks) {
+                    ((ChunkTickScheduler<Object>) blocks).removeTicksIf(tick -> {
+                        rememberTick(tick, false, now);
+                        return false;
+                    });
+                }
+                if (chunk.getFluidTickScheduler() instanceof ChunkTickScheduler<?> fluids) {
+                    ((ChunkTickScheduler<Object>) fluids).removeTicksIf(tick -> {
+                        rememberTick(tick, true, now);
+                        return false;
+                    });
+                }
+            }
+        }
+    }
+
+    private void rememberTick(OrderedTick<Object> tick, boolean fluid, long now) {
+        if (!zone.contains(tick.pos())) return;
+        Identifier id = fluid ? Registries.FLUID.getId((Fluid) tick.type()) : Registries.BLOCK.getId((Block) tick.type());
+        NbtCompound nbt = new NbtCompound();
+        nbt.putBoolean("Fluid", fluid);
+        nbt.putString("Id", id.toString());
+        nbt.putLong("Pos", tick.pos().asLong());
+        nbt.putInt("Delay", (int) MathHelper.clamp(tick.triggerTick() - now, 0, Integer.MAX_VALUE));
+        nbt.putInt("Priority", tick.priority().getIndex());
+        ticks.add(nbt);
+    }
+
+    /** The zone is whole again: the ticks it waited for when the session began are asked again, as far off as they were. */
+    private void scheduleRememberedTicks() {
+        for (NbtElement element : ticks) {
+            NbtCompound nbt = (NbtCompound) element;
+            Identifier id = Identifier.tryParse(nbt.getString("Id"));
+            if (id == null) continue;
+            BlockPos pos = BlockPos.fromLong(nbt.getLong("Pos"));
+            int delay = nbt.getInt("Delay");
+            TickPriority priority = TickPriority.byIndex(nbt.getInt("Priority"));
+            if (nbt.getBoolean("Fluid")) {
+                Registries.FLUID.getOptionalValue(id).ifPresent(fluid -> world.scheduleFluidTick(pos, fluid, delay, priority));
+            } else {
+                Registries.BLOCK.getOptionalValue(id).ifPresent(block -> world.scheduleBlockTick(pos, block, delay, priority));
+            }
+        }
+        ticks = new NbtList();
     }
 
     /** The block entities of the zone, found in the tables of its chunks (never by walking its blocks). */
@@ -523,7 +673,8 @@ public final class ZoneBubble {
      */
     boolean journal(long pos, BlockState old, boolean own) {
         boolean session = state == State.ACTIVE;
-        if (journal.record(pos, old, own || !session, session)) return true;
+        // written while the zone is put back too: a crash then still finds every position to put back
+        if (journal.record(pos, old, own || !session, state != State.ENDED)) return true;
         long now = world.getTime();
         if (lastFullWarning < 0 || now - lastFullWarning >= JOURNAL_FULL_WARN_INTERVAL_TICKS) {
             lastFullWarning = now;
@@ -536,8 +687,9 @@ public final class ZoneBubble {
 
     /** @param restoreShare the blocks it may put back this tick, if it is being restored: its share of the budget */
     void tick(int restoreShare) {
-        if (state == State.ACTIVE) journal.flush();
-        else if (state == State.RESTORING) restore(restoreShare);
+        if (state == State.ACTIVE || state == State.RESTORING) seeLateChunks();
+        if (state == State.RESTORING) restore(restoreShare);
+        if (state != State.ENDED) journal.flush();
     }
 
     /** What the session journaled so far goes to its file (the world is about to be saved). */
@@ -634,6 +786,10 @@ public final class ZoneBubble {
                     }
                 }
             }
+            seeLateChunks();
+            // after a crash, what the session left in the zone is only there once read from disk: waited for
+            if (recoveredFromFiles && !entitiesLoaded() && entityWait++ < MAX_ENTITY_WAIT_TICKS) return;
+            scheduleRememberedTicks();
             // bounded by what the zone held when the session began: done in one go
             wipeEntities();
             restoreEntities();
@@ -713,6 +869,8 @@ public final class ZoneBubble {
         // twice: what removing an entity leaves behind is removed too
         for (int round = 0; round < 2; round++) {
             for (Entity entity : findEntities()) {
+                // the session never saw it: what it is now is what it was
+                if (inUnseenChunk(entity)) continue;
                 entity.removeAllPassengers();
                 if (entity instanceof Inventory inventory) inventory.clear();
                 entity.discard();
