@@ -179,17 +179,12 @@ public final class ZoneBubbles {
 
     /** Whether the zone itself can take a session: the feature, its dimension, its size, the zones in session. Costs nothing. */
     public static ZoneBubble.Refusal checkPlace(MinecraftServer server, MiniGameZone zone) {
-        return checkPlace(server, zone, null);
-    }
-
-    /** Like {@link #checkPlace(MinecraftServer, MiniGameZone)}, the zone of {@code ignored} not counted as in session. */
-    public static ZoneBubble.Refusal checkPlace(MinecraftServer server, MiniGameZone zone, @Nullable ZoneBubble ignored) {
         ServerConfig config = ServerConfig.get();
         if (!config.miniGameBubble) return ZoneBubble.Refusal.DISABLED;
         if (server.getWorld(zone.dimension()) == null) return ZoneBubble.Refusal.NO_WORLD;
         int max = config.miniGameBubbleMaxSize;
         if (zone.sizeX() > max || zone.sizeY() > max || zone.sizeZ() > max) return ZoneBubble.Refusal.TOO_BIG;
-        for (ZoneBubble other : live) if (other != ignored && other.zone().intersects(zone)) return ZoneBubble.Refusal.OVERLAP;
+        for (ZoneBubble other : live) if (other.zone().intersects(zone)) return ZoneBubble.Refusal.OVERLAP;
         return ZoneBubble.Refusal.NONE;
     }
 
@@ -344,7 +339,7 @@ public final class ZoneBubbles {
 
     /**
      * The zones being put back over {@code zone} are whole now: a round about to begin there does not find them in
-     * its way (the visits of its page, ended a moment ago, or ended between a wait and its end).
+     * its way (the round before, ended a moment ago, or ended between a wait and its end).
      */
     public static void finishRestoring(MiniGameZone zone) {
         for (ZoneBubble bubble : live) if (bubble.isRestoring() && bubble.zone().intersects(zone)) bubble.endNow();

@@ -2000,7 +2000,6 @@
   "message.steveparty.page_zone.no_face": "Look at a face of the zone",
   "message.steveparty.page_zone.max": "A side is %s blocks at most",
   "message.steveparty.page_zone.min": "A side is at least one block",
-  "message.steveparty.zone_bubble.visit_refused": "Can't enter the mini-game: %s",
   "hud.steveparty.page_zone.mode": "Drawing the zone",
   "hud.steveparty.page_zone.none": "No zone",
   "hud.steveparty.page_zone.zone": "Zone: %s",

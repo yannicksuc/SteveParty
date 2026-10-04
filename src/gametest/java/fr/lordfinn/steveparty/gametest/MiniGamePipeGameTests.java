@@ -820,15 +820,15 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         context.complete();
     }
 
-    // ------------------------------------------------------------------ a visit in the page's zone
+    // ------------------------------------------------------------------ no bubble out of a round
 
     /**
-     * A mini-game entered by its mini-game pipe, out of any round, is played in its page's zone too: the visitor
-     * leaves what it owns at the door and plays in the bubble of the visits; a way out takes it out of the bubble
-     * (what it owns given back, the zone put back once the last visitor is gone); a round of the page ends the visits.
+     * Whoever comes into an arena by its mini-game pipe out of any round plays in it as in the world: no bubble (its
+     * own inventory, nothing put back), even with the page's « Remettre l'arène en état » on. A round of the page,
+     * once started, has its bubble.
      */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_pipe_visit_zone", tickLimit = 300)
-    public void aMiniGameEnteredByItsPipeIsPlayedInItsZone(TestContext context) {
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_pipe_no_visit_bubble", tickLimit = 300)
+    public void aMiniGameEnteredByItsPipeHasNoBubble(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
         BlockPos black = mouth(context, BLACK, 5, 5);
@@ -840,34 +840,26 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
         player.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 3));
+        fr.lordfinn.steveparty.minigame.MiniGameArena arena = new fr.lordfinn.steveparty.minigame.MiniGameArena();
         Runnable cleanup = () -> {
-            fr.lordfinn.steveparty.minigame.MiniGameArena.endVisits(id);
+            arena.end();
             for (fr.lordfinn.steveparty.minigame.zone.ZoneBubble left : fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all()) left.endNow();
             remove(context, player);
         };
         context.assertTrue(PipeTravel.enter(world, context.getAbsolutePos(pipePos), Direction.UP, player, 0), "into the mini-game pipe");
         when(context, () -> near(context, player, black), 40, "never came out of the entry pipe", () -> guarded(context, cleanup, () -> {
-            fr.lordfinn.steveparty.minigame.zone.ZoneBubble bubble = fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player);
-            context.assertTrue(bubble != null && bubble.isActive() && bubble.isParticipant(player.getUuid()), "the visitor plays in the bubble of the zone");
-            context.assertTrue(player.getInventory().count(Items.DIAMOND) == 0, "it left what it owns at the door");
-            context.setBlockState(new BlockPos(4, 2, 4), Blocks.GOLD_BLOCK);
-
-            // A way out (a linked pipe): out of the bubble, what it owns back, the zone put back
-            context.assertTrue(MiniGamePipes.wayOut(server, player, id), "a way out");
-            context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null && player.getInventory().count(Items.DIAMOND) == 3, "out of the bubble, its diamonds back");
-            context.assertTrue(!bubble.isActive(), "the last visitor gone: the visits are over");
-            context.waitAndRun(PipeTravel.COOLDOWN + 20, () -> guarded(context, cleanup, () -> {
-                context.expectBlock(Blocks.AIR, new BlockPos(4, 2, 4));
-                // Visiting again (asked directly), then a round of the page begins: the visits end
-                context.assertTrue(fr.lordfinn.steveparty.minigame.MiniGameArena.visit(server, id, player), "visiting again");
-                context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) != null && player.getInventory().count(Items.DIAMOND) == 0, "in the bubble again");
-                new fr.lordfinn.steveparty.minigame.MiniGameArena().whenZoneFree(server, id, () -> true, List::of, () -> {
-                });
-                context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null && player.getInventory().count(Items.DIAMOND) == 3,
-                        "a round of the page: the visits end, the visitor has what it owns");
-                cleanup.run();
-                context.complete();
-            }));
+            context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) == null
+                    && fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.all().isEmpty(), "in the arena out of a round: no bubble");
+            context.assertTrue(player.getInventory().count(Items.DIAMOND) == 3, "it keeps what it owns");
+            // A round of the page, started: its bubble
+            context.assertEquals(arena.begin(server, id, List.of(player), List.of(), () -> true),
+                    fr.lordfinn.steveparty.minigame.zone.ZoneBubble.Refusal.NONE, "a round begins");
+            context.assertTrue(fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player) != null && player.getInventory().count(Items.DIAMOND) == 0,
+                    "a started round: in its bubble, with a session inventory");
+            arena.end();
+            context.assertTrue(player.getInventory().count(Items.DIAMOND) == 3, "the round over: its diamonds back");
+            cleanup.run();
+            context.complete();
         }));
     }
 }

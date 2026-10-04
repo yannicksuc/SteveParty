@@ -2000,7 +2000,6 @@
   "message.steveparty.page_zone.no_face": "Regarde une face de la zone",
   "message.steveparty.page_zone.max": "Un côté fait %s blocs au plus",
   "message.steveparty.page_zone.min": "Un côté fait au moins un bloc",
-  "message.steveparty.zone_bubble.visit_refused": "Impossible d'entrer dans le mini-jeu : %s",
   "hud.steveparty.page_zone.mode": "Tracé de la zone",
   "hud.steveparty.page_zone.none": "Pas de zone",
   "hud.steveparty.page_zone.zone": "Zone : %s",
