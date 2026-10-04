@@ -19,6 +19,8 @@ Everything is crafted in survival, and redstone can drive almost all of it.
 - A **wrench** to trace the path and a **redstone router** to wire spaces to your own contraptions.
 
 ![Board spaces, cartridges, waypoint, junction, wrench and redstone router](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/board.png)
+![The Wrench in hand traces the path between the board spaces](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/board-wrench.png)
+![A board space's interface: its Teleport cartridge and its settings](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/tile-cartridge-ui.png)
 
 ### ♟️ Any mob can be a pawn
 
@@ -47,6 +49,7 @@ Point the **Tokenizer Wand** at a mob and it becomes a pawn. Store it in a token
   change made inside it is undone afterwards. No duplication, no griefing, no cleanup.
 
 ![A mini-game arena, copper, iron and golden mini-game pipes, the Mini-game Controller and pages](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/minigames.png)
+![The Mini-game Page editor: picture, title, formats, zone and description](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/minigame-page.png)
 
 ### 🎲 Dice Forge
 
@@ -61,6 +64,7 @@ A stall, a cash register and a shopkeeper key to run a shop, and the **Boxed Tra
 cardboard box, to sell your shop's offers.
 
 ![Trading Stall, Cash Register, Shopkeeper Key and five Boxed Traders](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/shops.png)
+![Trading with a Boxed Trader: the offers of his stall](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/boxed-trader-ui.png)
 
 ### ⭐ The Mula
 
@@ -68,6 +72,7 @@ A small flying star creature. Feed it, watch it grow and dance around the Dice F
 the **Telescope** during shooting-star nights.
 
 ![Mulas dancing around the Dice Forge at night, two Telescopes](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/mula.png)
+![Mulas dancing around the Dice Forge in daylight](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/mula-day.png)
 
 ### 🧱 Decoration
 
@@ -75,6 +80,8 @@ Toy-like plastic blocks in 16 colours, plastic and glass pipes you can travel th
 patterns, and polished, bevelled and checkered building blocks.
 
 ![Plastic blocks in 16 colours, pipes, road and easel signs, polished and checkered blocks](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/decoration.png)
+![Easel signs, wooden panels, rock signs, plastic road signs and stencil paint](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/signs.png)
+![Plastic, windowed, stained glass, glass and mini-game pipes, and a small pipe network](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/pipes.png)
 
 ---
 
