@@ -271,6 +271,11 @@ public class ZoneBubblePerfGameTests implements FabricGameTest {
         };
         try {
             for (MiniGameZone zone : zones) {
+                // air before the session: every block of it is one the first pass puts back
+                for (BlockPos pos : BlockPos.iterate(zone.box().getMinX(), zone.box().getMinY(), zone.box().getMinZ(),
+                        zone.box().getMaxX(), zone.box().getMaxY(), zone.box().getMaxZ())) {
+                    world.setBlockState(pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
+                }
                 ZoneBubble bubble = begin(world.getServer(), zone);
                 context.assertTrue(bubble.isActive(), "the session begins");
                 bubbles.add(bubble);
@@ -281,7 +286,10 @@ public class ZoneBubblePerfGameTests implements FabricGameTest {
             }
             // each one's first slice is put back at once (32 of 128 blocks)
             for (ZoneBubble bubble : bubbles) bubble.end();
-            for (MiniGameZone zone : zones) context.assertTrue(stoneIn(world, zone) == 96, "the first slice is put back at once");
+            for (MiniGameZone zone : zones) {
+                int left = stoneIn(world, zone);
+                context.assertTrue(left == 96, "the first slice is put back at once: " + left + " of 128 left");
+            }
         } catch (RuntimeException e) {
             abort.run();
             throw e;
