@@ -31,18 +31,24 @@ import java.util.UUID;
  * @param randomRoles the roles whose players are sent to a pipe picked at random (the others: each pipe in turn)
  * @param intro       the shots of the introduction shown before the players leave, empty for none
  * @param podiumLinks the podiums (the places of the mini-game) and the goal pole bases (its counters) linked to the page
- * @param zone        the zone its rounds are played in, in a bubble ({@code MiniGameArena}); null for none. Drawn with
- *                    the page in hand ({@link PageZoneTool}); a zone too big is not kept
+ * @param zone        the zone of its arena; null for none. Drawn with the page in hand ({@link PageZoneTool}); a zone
+ *                    too big is not kept
+ * @param restore     « Remettre l'arène en état »: its rounds are played in a bubble over its zone ({@code MiniGameArena}:
+ *                    session inventories, border, the arena put back after each round); off by default, and always off
+ *                    without zone. The server's {@code miniGameBubble} switch turns it off everywhere
+ * @param adventure   « Mode aventure »: the players of a round play it in adventure mode (no block broken nor placed),
+ *                    their own mode given back after; with or without the restore. Off by default
  */
 public record MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
                                List<MiniGameFormat> formats, List<MiniGamePipeLink> pipeLinks,
                                Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro, List<MiniGamePodiumLink> podiumLinks,
-                               @Nullable PageZone zone) {
+                               @Nullable PageZone zone, boolean restore, boolean adventure) {
     /**
      * The version of the saved form: 2 added the random roles, the introduction and the text markup; 3 the podiums; 4
-     * the formats (in place of the ways to play and the players range, see {@link MiniGameFormat#migrate}); 5 the zone.
+     * the formats (in place of the ways to play and the players range, see {@link MiniGameFormat#migrate}); 5 the zone; 6
+     * the restore and adventure options (a zone saved before them keeps being restored, as it always was).
      */
-    public static final int FORMAT = 5;
+    public static final int FORMAT = 6;
     public static final int MAX_FORMATS = 8;
     public static final int MAX_PODIUM_LINKS = 32;
     public static final int MAX_INTRO_SHOTS = 32;
@@ -77,6 +83,14 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         podiumLinks = podiumLinks == null ? List.of()
                 : List.copyOf(podiumLinks.size() > MAX_PODIUM_LINKS ? podiumLinks.subList(0, MAX_PODIUM_LINKS) : podiumLinks);
         if (zone != null && zone.tooBig()) zone = null;
+        if (zone == null) restore = false;
+    }
+
+    public MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
+                            List<MiniGameFormat> formats, List<MiniGamePipeLink> pipeLinks,
+                            Set<MiniGamePipeRole> randomRoles, List<MiniGameIntroShot> intro, List<MiniGamePodiumLink> podiumLinks,
+                            @Nullable PageZone zone) {
+        this(id, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone, false, false);
     }
 
     public MiniGamePageData(UUID id, String title, String description, @Nullable MiniGamePageImage image,
@@ -171,28 +185,45 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
     }
 
     public MiniGamePageData withId(UUID newId) {
-        return new MiniGamePageData(newId, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone);
+        return new MiniGamePageData(newId, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone, restore, adventure);
+    }
+
+    /** « Remettre l'arène en état »: only with a zone. */
+    public MiniGamePageData withRestore(boolean newRestore) {
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone, newRestore, adventure);
+    }
+
+    /** « Mode aventure ». */
+    public MiniGamePageData withAdventure(boolean newAdventure) {
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone, restore, newAdventure);
+    }
+
+    /** @return true if its rounds are played in a bubble over its zone (the server may still have bubbles off). */
+    public boolean restores() {
+        return zone != null && restore;
     }
 
     /** A zone too big gives a page without zone. */
     public MiniGamePageData withZone(@Nullable PageZone newZone) {
-        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, newZone);
+        // A new zone is not restored until asked; no zone, nothing to restore
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, podiumLinks, newZone,
+                newZone != null && zone != null && restore, adventure);
     }
 
     public MiniGamePageData withTexts(String newTitle, String newDescription) {
-        return new MiniGamePageData(id, newTitle, newDescription, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone);
+        return new MiniGamePageData(id, newTitle, newDescription, image, formats, pipeLinks, randomRoles, intro, podiumLinks, zone, restore, adventure);
     }
 
     public MiniGamePageData withImage(@Nullable MiniGamePageImage newImage) {
-        return new MiniGamePageData(id, title, description, newImage, formats, pipeLinks, randomRoles, intro, podiumLinks, zone);
+        return new MiniGamePageData(id, title, description, newImage, formats, pipeLinks, randomRoles, intro, podiumLinks, zone, restore, adventure);
     }
 
     public MiniGamePageData withFormats(List<MiniGameFormat> newFormats) {
-        return new MiniGamePageData(id, title, description, image, newFormats, pipeLinks, randomRoles, intro, podiumLinks, zone);
+        return new MiniGamePageData(id, title, description, image, newFormats, pipeLinks, randomRoles, intro, podiumLinks, zone, restore, adventure);
     }
 
     public MiniGamePageData withPipeLinks(List<MiniGamePipeLink> links) {
-        return new MiniGamePageData(id, title, description, image, formats, links, randomRoles, intro, podiumLinks, zone);
+        return new MiniGamePageData(id, title, description, image, formats, links, randomRoles, intro, podiumLinks, zone, restore, adventure);
     }
 
     /** The players of {@code role} are sent to a pipe picked at random ({@code random}), or to each pipe in turn. */
@@ -201,15 +232,15 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         roles.addAll(randomRoles);
         if (random) roles.add(role);
         else roles.remove(role);
-        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, roles, intro, podiumLinks, zone);
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, roles, intro, podiumLinks, zone, restore, adventure);
     }
 
     public MiniGamePageData withIntro(List<MiniGameIntroShot> shots) {
-        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, shots, podiumLinks, zone);
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, shots, podiumLinks, zone, restore, adventure);
     }
 
     public MiniGamePageData withPodiumLinks(List<MiniGamePodiumLink> links) {
-        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, links, zone);
+        return new MiniGamePageData(id, title, description, image, formats, pipeLinks, randomRoles, intro, links, zone, restore, adventure);
     }
 
     /** The index of the link to the block at {@code pos}, -1 if it is not linked. */
@@ -296,6 +327,8 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
             nbt.put("Podiums", podiums);
         }
         if (zone != null) PageZone.CODEC.encodeStart(NbtOps.INSTANCE, zone).result().ifPresent(encoded -> nbt.put("Zone", encoded));
+        if (restore) nbt.putBoolean("Restore", true);
+        if (adventure) nbt.putBoolean("Adventure", true);
         return nbt;
     }
 
@@ -331,7 +364,9 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         return new MiniGamePageData(nbt.getUuid("Id"), nbt.getString("Title"), nbt.getString("Description"),
                 nbt.contains("Image", NbtElement.COMPOUND_TYPE) ? MiniGamePageImage.fromNbt(nbt.getCompound("Image")) : null,
                 formats, links, rolesFromMask(nbt.getInt("RandomRoles")), shots, podiums,
-                nbt.contains("Zone") ? PageZone.CODEC.parse(NbtOps.INSTANCE, nbt.get("Zone")).result().orElse(null) : null);
+                nbt.contains("Zone") ? PageZone.CODEC.parse(NbtOps.INSTANCE, nbt.get("Zone")).result().orElse(null) : null,
+                // A zone saved before the option: restored, as it always was
+                nbt.getInt("Format") < 6 ? nbt.contains("Zone") : nbt.getBoolean("Restore"), nbt.getBoolean("Adventure"));
     }
 
     private static Set<MiniGamePipeRole> rolesFromMask(int mask) {
@@ -358,6 +393,8 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         podiumLinks.forEach(link -> link.write(buf));
         buf.writeBoolean(zone != null);
         if (zone != null) zone.write(buf);
+        buf.writeBoolean(restore);
+        buf.writeBoolean(adventure);
     }
 
     private static MiniGamePageData read(PacketByteBuf buf) {
@@ -377,6 +414,7 @@ public record MiniGamePageData(UUID id, String title, String description, @Nulla
         List<MiniGamePodiumLink> podiums = new ArrayList<>(podiumCount);
         for (int i = 0; i < podiumCount; i++) podiums.add(MiniGamePodiumLink.read(buf));
         PageZone zone = buf.readBoolean() ? PageZone.read(buf) : null;
-        return new MiniGamePageData(id, title, description, image, formats, links, random, shots, podiums, zone);
+        boolean restore = buf.readBoolean(), adventure = buf.readBoolean();
+        return new MiniGamePageData(id, title, description, image, formats, links, random, shots, podiums, zone, restore, adventure);
     }
 }

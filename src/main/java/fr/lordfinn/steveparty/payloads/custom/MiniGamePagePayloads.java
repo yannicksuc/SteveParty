@@ -342,7 +342,8 @@ public final class MiniGamePagePayloads {
 
     /** A button of the editor, for the page {@code page} held in {@code hand}. */
     public record Action(Hand hand, UUID page, Kind kind) implements CustomPayload {
-        public enum Kind { COPY, UNLINK, CLEAR_IMAGE, DRAW_ZONE, CLEAR_ZONE }
+        /** RESTORE, ADVENTURE: the option is switched (« Remettre l'arène en état » only with a zone). */
+        public enum Kind { COPY, UNLINK, CLEAR_IMAGE, DRAW_ZONE, CLEAR_ZONE, RESTORE, ADVENTURE }
 
         public static final Id<Action> ID = id("action");
         public static final PacketCodec<PacketByteBuf, Action> CODEC = PacketCodec.of((payload, buf) -> {

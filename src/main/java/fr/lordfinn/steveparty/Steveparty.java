@@ -78,6 +78,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.minigame.MiniGameReturns.initialize();
         fr.lordfinn.steveparty.minigame.MiniGameArena.initialize();
         fr.lordfinn.steveparty.minigame.MiniGameControllers.initialize();
+        fr.lordfinn.steveparty.minigame.MiniGameAdventure.initialize();
         fr.lordfinn.steveparty.minigame.PageZoneTool.initialize();
         // The names the iron and golden mini-game pipes (and their block entity) had
         fr.lordfinn.steveparty.registry.RegistryAliases.add(id("super_golden_minigame_pipe"), id("iron_minigame_pipe"));

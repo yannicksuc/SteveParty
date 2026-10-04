@@ -835,7 +835,8 @@ public class MiniGamePipeGameTests implements FabricGameTest {
         ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
         UUID id = page(context, stack, black);
         MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(new fr.lordfinn.steveparty.minigame.PageZone(world.getRegistryKey(),
-                net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(3, 1, 3)), context.getAbsolutePos(new BlockPos(7, 5, 7))))));
+                net.minecraft.util.math.BlockBox.create(context.getAbsolutePos(new BlockPos(3, 1, 3)), context.getAbsolutePos(new BlockPos(7, 5, 7)))))
+                .withRestore(true));
         BlockPos pipePos = miniGamePipe(context, ModBlocks.COPPER_MINIGAME_PIPE, 1, 1, stack);
         ServerPlayerEntity player = player(context, GameMode.SURVIVAL, 1.5, 3, 1.5);
         player.getInventory().setStack(0, new ItemStack(Items.DIAMOND, 3));

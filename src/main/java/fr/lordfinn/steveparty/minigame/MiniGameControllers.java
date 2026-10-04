@@ -40,23 +40,35 @@ public final class MiniGameControllers extends PersistentState {
     private final Map<UUID, GlobalPos> homes = new LinkedHashMap<>();
     /** The zones saved with the homes before the pages had theirs: given to the pages when the server starts. */
     private final Map<UUID, PageZone> oldZones = new LinkedHashMap<>();
-    /** The pages whose controller has its « adventure mode » option on. */
-    private final Set<UUID> adventure = new LinkedHashSet<>();
+    /** The pages whose controller had its « adventure mode » option on, saved before the pages had it: given to them when the server starts. */
+    private final Set<UUID> oldAdventure = new LinkedHashSet<>();
 
     public static void initialize() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(server -> get(server).adoptOldZones(server));
     }
 
-    /** The zones saved here by an earlier version go to their pages (those without a zone of their own), and are forgotten. */
+    /**
+     * The zones and « adventure mode » options saved here by an earlier version go to their pages (a zone only to a page
+     * without one), and are forgotten.
+     */
     public void adoptOldZones(MinecraftServer server) {
-        if (oldZones.isEmpty()) return;
+        if (oldZones.isEmpty() && oldAdventure.isEmpty()) return;
         oldZones.forEach((page, zone) -> adoptZone(server, page, zone));
+        oldAdventure.forEach(page -> adoptAdventure(server, page));
         oldZones.clear();
+        oldAdventure.clear();
         markDirty();
     }
 
+    /** The « adventure mode » a controller had before the pages had it goes to its page. */
+    public static void adoptAdventure(MinecraftServer server, UUID page) {
+        MiniGamePageData data = MiniGamePages.get(server, page);
+        if (!data.adventure()) MiniGamePages.update(server, data.withAdventure(true));
+    }
+
     /**
-     * Gives the page a zone found where zones were kept before (a controller's Zone Cartridge), if it has none.
+     * Gives the page a zone found where zones were kept before (a controller's Zone Cartridge), if it has none. Such a
+     * zone was always played in a bubble: the page's « Remettre l'arène en état » is on.
      *
      * @return true if the page took it
      */
@@ -64,7 +76,7 @@ public final class MiniGameControllers extends PersistentState {
         if (zone == null || zone.tooBig()) return false;
         MiniGamePageData data = MiniGamePages.get(server, page);
         if (data.zone() != null) return false;
-        MiniGamePages.update(server, data.withZone(zone));
+        MiniGamePages.update(server, data.withZone(zone).withRestore(true));
         return true;
     }
 
@@ -91,18 +103,6 @@ public final class MiniGameControllers extends PersistentState {
         return MiniGamePages.find(server, page).map(MiniGamePageData::zone);
     }
 
-    /**
-     * @return true if the players of the page's mini-game play in adventure mode in its zone: the option of its
-     * Mini-game Controller (off without controller)
-     */
-    public static boolean isAdventure(MinecraftServer server, UUID page) {
-        return get(server).adventure(page);
-    }
-
-    public boolean adventure(UUID page) {
-        return adventure.contains(page);
-    }
-
     /** @return true if the controller at {@code pos} may hold the page: no other controller is its home. */
     public static boolean isFreeFor(MinecraftServer server, UUID page, GlobalPos pos) {
         GlobalPos home = get(server).homes.get(page);
@@ -112,10 +112,9 @@ public final class MiniGameControllers extends PersistentState {
     /**
      * The controller at {@code pos} holds (or is about to hold) the page: it becomes its home unless another one is.
      *
-     * @param adventure its « adventure mode » option
      * @return false if another controller is the home of the page
      */
-    public static boolean claim(MinecraftServer server, UUID page, GlobalPos pos, boolean adventure) {
+    public static boolean claim(MinecraftServer server, UUID page, GlobalPos pos) {
         MiniGameControllers controllers = get(server);
         GlobalPos home = controllers.homes.get(page);
         if (!pos.equals(home)) {
@@ -123,7 +122,6 @@ public final class MiniGameControllers extends PersistentState {
             controllers.homes.put(page, pos);
             controllers.markDirty();
         }
-        if (adventure ? controllers.adventure.add(page) : controllers.adventure.remove(page)) controllers.markDirty();
         return true;
     }
 
@@ -131,7 +129,6 @@ public final class MiniGameControllers extends PersistentState {
     public static void release(MinecraftServer server, UUID page, GlobalPos pos) {
         MiniGameControllers controllers = get(server);
         if (!controllers.homes.remove(page, pos)) return;
-        controllers.adventure.remove(page);
         controllers.markDirty();
     }
 
@@ -152,7 +149,6 @@ public final class MiniGameControllers extends PersistentState {
             home.putUuid("Page", page);
             home.putString("Dimension", pos.dimension().getValue().toString());
             home.putLong("Pos", pos.pos().asLong());
-            if (adventure.contains(page)) home.putBoolean("Adventure", true);
             list.add(home);
         });
         nbt.put("Homes", list);
@@ -169,7 +165,7 @@ public final class MiniGameControllers extends PersistentState {
             controllers.homes.put(home.getUuid("Page"), GlobalPos.create(world, BlockPos.fromLong(home.getLong("Pos"))));
             if (home.contains("Zone")) PageZone.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, home.get("Zone")).result()
                     .ifPresent(zone -> controllers.oldZones.put(home.getUuid("Page"), zone));
-            if (home.getBoolean("Adventure")) controllers.adventure.add(home.getUuid("Page"));
+            if (home.getBoolean("Adventure")) controllers.oldAdventure.add(home.getUuid("Page"));
         }
         return controllers;
     }

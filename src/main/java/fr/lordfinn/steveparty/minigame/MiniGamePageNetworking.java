@@ -246,6 +246,15 @@ public final class MiniGamePageNetworking {
             case DRAW_ZONE -> {
                 return PageZoneTool.start(player, payload.hand());
             }
+            case RESTORE -> {
+                MiniGamePageData data = MiniGamePages.get(server, payload.page());
+                if (data.zone() == null) return false;
+                MiniGamePages.update(server, data.withRestore(!data.restore()));
+            }
+            case ADVENTURE -> {
+                MiniGamePageData data = MiniGamePages.get(server, payload.page());
+                MiniGamePages.update(server, data.withAdventure(!data.adventure()));
+            }
             case CLEAR_ZONE -> {
                 MiniGamePageData data = MiniGamePages.get(server, payload.page());
                 if (data.zone() == null) return false;

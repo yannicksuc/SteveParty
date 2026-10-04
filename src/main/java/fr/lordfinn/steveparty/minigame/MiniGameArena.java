@@ -70,6 +70,9 @@ public final class MiniGameArena {
     private static final java.util.Set<UUID> AWAY = new java.util.HashSet<>();
 
     private @Nullable ZoneBubble bubble;
+    /** The participants of a round played without bubble put in adventure mode by the page's option. */
+    private final java.util.Set<UUID> adventurers = new java.util.HashSet<>();
+    private @Nullable MinecraftServer server;
     private BooleanSupplier stillOn = () -> true;
     private @Nullable UUID waitTask;
     private @Nullable Text refused;
@@ -97,9 +100,13 @@ public final class MiniGameArena {
         });
     }
 
-    /** The zone of a page's mini-game as the bubble takes it, null when the page has none. */
+    /**
+     * The zone of a page's mini-game as the bubble takes it, null when the page has none or its « Remettre l'arène en
+     * état » is off (it is then played without bubble, like a page without zone).
+     */
     public static @Nullable MiniGameZone zoneOf(MinecraftServer server, UUID pageId) {
-        return MiniGameControllers.zoneOf(server, pageId).map(zone -> new MiniGameZone(zone.dimension(), zone.box())).orElse(null);
+        MiniGamePageData page = MiniGamePages.find(server, pageId).orElse(null);
+        return page == null || !page.restores() ? null : new MiniGameZone(page.zone().dimension(), page.zone().box());
     }
 
     /**
@@ -174,13 +181,14 @@ public final class MiniGameArena {
         for (ServerPlayerEntity player : participants) endVisit(player);
         for (ServerPlayerEntity player : spectators) endVisit(player);
         MiniGameZone zone = zoneOf(server, pageId);
-        if (zone == null) return ZoneBubble.Refusal.NONE;
+        boolean adventure = MiniGamePages.get(server, pageId).adventure();
+        if (zone == null) return adventureWithoutBubble(adventure, participants, stillOn);
         endVisitsOver(zone);
-        ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, participants, spectators,
-                new ZoneBubble.Options(MiniGameControllers.isAdventure(server, pageId)));
+        ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, participants, spectators, new ZoneBubble.Options(adventure));
         if (!begun.isActive()) {
             refused = begun.refusalText();
-            return playable(begun.refusal());
+            ZoneBubble.Refusal refusal = playable(begun.refusal());
+            return refusal == ZoneBubble.Refusal.NONE ? adventureWithoutBubble(adventure, participants, stillOn) : refusal;
         }
         bubble = begun;
         this.stillOn = stillOn;
@@ -236,7 +244,7 @@ public final class MiniGameArena {
         }
         endVisit(player);
         ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, List.of(player), List.of(),
-                new ZoneBubble.Options(MiniGameControllers.isAdventure(server, pageId)));
+                new ZoneBubble.Options(MiniGamePages.get(server, pageId).adventure()));
         if (begun.isActive()) {
             VISITS.put(pageId, begun);
             return true;
@@ -317,9 +325,23 @@ public final class MiniGameArena {
         AWAY.addAll(away);
     }
 
+    /**
+     * A round played without bubble: its participants play in adventure mode when the page says so (their own mode
+     * given back by {@link #leave} and {@link #end}, see {@link MiniGameAdventure}).
+     */
+    private ZoneBubble.Refusal adventureWithoutBubble(boolean adventure, Collection<ServerPlayerEntity> participants, BooleanSupplier stillOn) {
+        if (!adventure || participants.isEmpty()) return ZoneBubble.Refusal.NONE;
+        for (ServerPlayerEntity player : participants) if (MiniGameAdventure.apply(player)) adventurers.add(player.getUuid());
+        this.stillOn = stillOn;
+        server = participants.iterator().next().getServer();
+        PLAYED.add(this);
+        return ZoneBubble.Refusal.NONE;
+    }
+
     /** A player leaves the round before its end: it gets back what it owns, and may then be taken out of the zone. */
     public void leave(ServerPlayerEntity player) {
         if (bubble != null) bubble.removePlayer(player);
+        if (adventurers.remove(player.getUuid())) MiniGameAdventure.restore(player);
     }
 
     /**
@@ -329,6 +351,10 @@ public final class MiniGameArena {
     public void end() {
         cancelWait();
         PLAYED.remove(this);
+        if (!adventurers.isEmpty() && server != null) {
+            for (UUID id : adventurers) MiniGameAdventure.restore(server.getPlayerManager().getPlayer(id));
+        }
+        adventurers.clear();
         if (bubble == null) return;
         bubble.end();
         bubble = null;
