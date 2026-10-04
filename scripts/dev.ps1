@@ -147,6 +147,17 @@ function Start-Client {
     if ((Start-Kind 'client') -and -not $Foreground) { Send-ClientToBack $previous }
 }
 
+# A server started without this mod (two launches racing over the build outputs, a broken build) would load the
+# world and, at its first save, wipe every block and entity of the mod. As soon as the mod list is printed, the
+# server is checked and, if steveparty is missing, killed on the spot: no save, the world stays as it was.
+function Test-ModLoaded {
+    param([string]$Content)
+    if ($Content -notmatch 'Loading \d+ mods:') { return $null }          # list not printed yet
+    if ($Content -match '(?m)^\s+- steveparty ') { return $true }
+    if ($Content -match 'Mixin Subsystem|Starting minecraft server') { return $false } # list printed, mod absent
+    return $null
+}
+
 function Wait-ServerReady {
     param([int]$TimeoutSeconds = 600)
     $log = Get-LogFile 'server'
@@ -155,6 +166,14 @@ function Wait-ServerReady {
     while ((Get-Date) -lt $deadline) {
         if (Test-Path $log) {
             $content = Get-Content $log -Raw -ErrorAction SilentlyContinue
+            if ((Test-ModLoaded $content) -eq $false) {
+                Get-CimInstance Win32_Process -Filter "Name='java.exe'" |
+                    Where-Object { $_.CommandLine -and $_.CommandLine -match 'fabric\.dli\.env=server' -and $_.CommandLine -match [regex]::Escape((Join-Path $RepoRoot 'build')) -and $_.CommandLine -notmatch 'fabric-api\.gametest' } |
+                    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+                Write-Host ""
+                Write-Warning "The server started WITHOUT the steveparty mod (see $log): killed before it could save the world. Launch again once nothing else is building."
+                return $false
+            }
             if ($content -match 'Done \([\d.,]+s\)! For help') { Write-Host " ready."; return $true }
             if ($content -match 'BUILD FAILED|Failed to start the minecraft server|Crash report') {
                 Write-Host ""
@@ -285,6 +304,16 @@ function Show-Status {
 }
 
 if ($Command -in 'stop', 'tail' -and $Kind -notin 'server', 'client', 'all') { throw "Kind must be server, client or all." }
+
+# One launch at a time for this checkout: two runServer builds racing over build/ once started a server without the
+# mod, which wiped its blocks from the world. Held until this script's process ends (re-entrant for relance.ps1).
+if ($Command -in 'up', 'server') {
+    $lockName = 'Local\SteveParty-DevLaunch-' + ([BitConverter]::ToString([Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($RepoRoot.ToLowerInvariant())))).Replace('-', '').Substring(0, 12)
+    $script:LaunchLock = [Threading.Mutex]::new($false, $lockName)
+    $owned = $false
+    try { $owned = $script:LaunchLock.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned = $true }
+    if (-not $owned) { Write-Warning 'Another launch of this checkout is already in progress: wait for it to finish.'; return }
+}
 
 switch ($Command) {
     'up' {

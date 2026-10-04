@@ -33,6 +33,13 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 $dev = Join-Path $PSScriptRoot 'dev.ps1'
 
+# One relaunch at a time (same lock as dev.ps1 up/server, which this process then re-enters)
+$lockName = 'Local\SteveParty-DevLaunch-' + ([BitConverter]::ToString([Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($RepoRoot.ToLowerInvariant())))).Replace('-', '').Substring(0, 12)
+$launchLock = [Threading.Mutex]::new($false, $lockName)
+$owned = $false
+try { $owned = $launchLock.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned = $true }
+if (-not $owned) { Write-Warning "Un lancement est deja en cours : attends qu'il se termine."; exit 1 }
+
 function Get-Clients {
     Get-CimInstance Win32_Process -Filter "Name='java.exe' or Name='javaw.exe'" |
         Where-Object {
