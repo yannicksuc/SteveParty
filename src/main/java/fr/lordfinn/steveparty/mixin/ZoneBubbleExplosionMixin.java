@@ -19,8 +19,11 @@ import java.util.List;
  * An explosion only destroys blocks on its side of a mini-game zone's border: one started in the zone leaves the
  * world around untouched, one started outside leaves the zone untouched (and drops nothing of either). It hurts
  * nobody on the other side either ({@link ZoneBorder#blocksDamage}).
+ * <p>
+ * Applied after the other mods' mixins (priority): the filter sees the list they return, early returns included,
+ * and the explosion's place is cleared on every way out of {@code damageEntities}.
  */
-@Mixin(ExplosionImpl.class)
+@Mixin(value = ExplosionImpl.class, priority = 2000)
 public abstract class ZoneBubbleExplosionMixin {
     @Shadow
     @Final

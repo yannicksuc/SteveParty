@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Items lying on either side of a mini-game zone's border stay apart: two stacks don't merge across it, and a mob
- * takes none from the other side.
+ * takes none from the other side. Applied after the other mods' mixins (priority): the pickup check sees their answer.
  */
-@Mixin(ItemEntity.class)
+@Mixin(value = ItemEntity.class, priority = 2000)
 public abstract class ZoneBubbleItemEntityMixin {
 
     @Inject(method = "tryMerge(Lnet/minecraft/entity/ItemEntity;)V", at = @At("HEAD"), cancellable = true)
