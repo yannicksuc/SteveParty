@@ -1,4 +1,4 @@
-<p align="center"><img src="art/logo/steve_party_maker_banner.png" alt="Steve Party Maker" width="100%"></p>
+<p align="center"><img src="art/logo/steve_party_maker_banner.gif" alt="Steve Party Maker" width="100%"></p>
 
 <p align="center">
   <b>A party board game built inside Minecraft.</b><br>
