@@ -135,10 +135,11 @@ public final class MiniGameNameColors {
         if (before == null) return;
         Scoreboard scoreboard = owner.getScoreboard();
         Team current = scoreboard.getScoreHolderTeam(before.name());
-        if (current != null && current.getName().startsWith(PREFIX)) {
-            scoreboard.removeScoreHolderFromTeam(before.name(), current);
-            if (current.getPlayerList().isEmpty()) scoreboard.removeTeam(current);
-        }
+        // Put in another team meanwhile (or out of every team: an operator, a map), he stays as he was put: the round
+        // gives back only the team it took him from, never takes him out of one it did not put him in
+        if (current == null || !current.getName().startsWith(PREFIX)) return;
+        scoreboard.removeScoreHolderFromTeam(before.name(), current);
+        if (current.getPlayerList().isEmpty()) scoreboard.removeTeam(current);
         Team previous = before.team().isEmpty() ? null : scoreboard.getTeam(before.team());
         if (previous != null) scoreboard.addScoreHolderToTeam(before.name(), previous);
     }

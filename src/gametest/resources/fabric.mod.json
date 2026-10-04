@@ -79,6 +79,7 @@
       "fr.lordfinn.steveparty.gametest.ZoneForbiddenGameTests",
       "fr.lordfinn.steveparty.gametest.ZoneBubbleExploitGameTests",
       "fr.lordfinn.steveparty.gametest.ZoneBubbleLifecycleGameTests",
+      "fr.lordfinn.steveparty.gametest.ZoneBubblePassExploitGameTests",
       "fr.lordfinn.steveparty.gametest.InventoryCartridgeGameTests",
       "fr.lordfinn.steveparty.gametest.PolishedTilesGameTests",
       "fr.lordfinn.steveparty.gametest.BoardExplosionGameTests"
