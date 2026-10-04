@@ -893,12 +893,22 @@ public class MiniGameControllerGameTests implements FabricGameTest {
             context.assertTrue(p1.getPos().distanceTo(start1) < 0.01, "p1, there, is back at once");
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "p2, gone, is waited for");
             back = Reconnect.join(context, away);
-            context.assertTrue(back.getPos().distanceTo(start2) < 0.01, "p2 comes back where it stood before the mini-game");
-            context.assertTrue(!MiniGameReturns.isPending(server, away.getId()), "once");
-        } finally {
+        } catch (RuntimeException e) {
             if (back != null) cleanUp(context, id, back);
             cleanUp(context, id, p1, p2);
+            throw e;
         }
-        context.complete();
+        ServerPlayerEntity joined = back;
+        // Brought back the tick after it comes (the join itself puts it where it was saved)
+        context.waitAndRun(2, () -> {
+            try {
+                context.assertTrue(joined.getPos().distanceTo(start2) < 0.01, "p2 comes back where it stood before the mini-game");
+                context.assertTrue(!MiniGameReturns.isPending(server, away.getId()), "once");
+            } finally {
+                cleanUp(context, id, joined);
+                cleanUp(context, id, p1, p2);
+            }
+            context.complete();
+        });
     }
 }

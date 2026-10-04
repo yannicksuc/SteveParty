@@ -21,6 +21,10 @@ public final class MiniGameAdventure {
     public static void initialize() {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> restore(handler.getPlayer()));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> restore(handler.getPlayer()));
+        // A death during the round: the player he respawns as remembers his own mode too
+        net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents.COPY_FROM.register((oldPlayer, newPlayer, alive) -> {
+            for (String tag : oldPlayer.getCommandTags()) if (tag.startsWith(TAG)) newPlayer.addCommandTag(tag);
+        });
     }
 
     /** @return true if the player was put in adventure mode (it was not in it already) */

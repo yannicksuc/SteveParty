@@ -237,7 +237,7 @@ public class MiniGameFormatGameTests implements FabricGameTest {
 
     /**
      * A round's player takes the colour of the pipe he came out of (a team of the scoreboard): taken away when he leaves
-     * the round, the team he had before given back; and when he leaves the round's place.
+     * the round, the team he had before given back.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void namesTakeTheColourOfTheirPipe(TestContext context) {
@@ -258,74 +258,15 @@ public class MiniGameFormatGameTests implements FabricGameTest {
                     "out of a team A pipe: blue");
             MiniGameNameColors.apply(player, MiniGamePipeRole.TEAM_B, page);
             context.assertEquals(scoreboard.getScoreHolderTeam(name).getColor(), Formatting.RED, "then a team B pipe: red");
-            MiniGameNameColors.check(server);
-            context.assertTrue(MiniGameNameColors.isColoured(player.getUuid()), "near its round's pipes: kept");
             MiniGameNameColors.restore(server, player.getUuid());
             context.assertEquals(scoreboard.getScoreHolderTeam(name), before, "the round over: its team back");
             context.assertTrue(scoreboard.getTeam(MiniGameNameColors.PREFIX + "team_b") == null, "the side's team, empty, is gone");
 
-            // Far from every arrival pipe of the page: out of its round, the colour goes
-            MiniGameNameColors.apply(player, MiniGamePipeRole.PLAYERS, page);
-            Vec3d far = context.getAbsolute(new Vec3d(2.5, 3, 2.5 + MiniGameNameColors.REACH + 10));
-            player.refreshPositionAndAngles(far.x, far.y, far.z, 0, 0);
-            MiniGameNameColors.check(server);
-            context.assertEquals(scoreboard.getScoreHolderTeam(name), before, "away from the round: its team back");
         } finally {
             MiniGameNameColors.restore(server, player.getUuid());
             scoreboard.removeTeam(before);
             remove(context, player);
         }
         context.complete();
-    }
-
-    /**
-     * A pipe linked to the page is a way out of the round: out of the mini-game pipe the player came in by; else of the
-     * nearest mini-game pipe programmed with the page; else where the round found him. His colour goes, and the mouth
-     * he comes out of does not take him back at once.
-     */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 300)
-    public void linkedPipesAreWaysOut(TestContext context) {
-        MinecraftServer server = context.getWorld().getServer();
-        ItemStack stack = new ItemStack(ModItems.MINI_GAME_PAGE);
-        UUID page = MiniGamePages.ensureId(stack);
-        BlockPos arrival = mouth(context, ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][13], 2, 2);
-        MiniGamePages.update(server, MiniGamePages.get(server, page).withPipeLinks(List.of(new MiniGamePipeLink(global(context, arrival), Direction.UP,
-                MiniGamePipeRole.PLAYERS))));
-        BlockPos cameBy = mouth(context, ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][13], 6, 2);
-        ServerPlayerEntity player = player(context, 2.5, 3, 2.5);
-        Runnable cleanup = () -> remove(context, player);
-        // 1. Came by a mini-game pipe: out of the mouth he went in by
-        MiniGamePipes.visit(player.getUuid(), page, global(context, cameBy), Direction.UP);
-        context.assertTrue(MiniGamePipes.wayOut(server, player, page), "a visitor: out");
-        when(context, () -> near(context, player, cameBy), 60, "never came out of the mouth he came by", () -> {
-            context.assertTrue(PipeTravel.barred(player, context.getAbsolutePos(cameBy), Direction.UP), "that mouth does not take him back at once");
-            // 2. A round's player: the nearest mini-game pipe programmed with the page
-            BlockPos programmed = mouth(context, ModBlocks.COPPER_MINIGAME_PIPE, 2, 6);
-            ((MiniGamePipeBlockEntity) context.getBlockEntity(programmed)).setPage(stack.copy());
-            context.assertEquals(MiniGamePipeIndex.nearest(server, page, global(context, arrival)), global(context, programmed), "the index knows it");
-            Vec3d inArena = context.getAbsolute(new Vec3d(2.5, 3, 2.5));
-            player.refreshPositionAndAngles(inArena.x, inArena.y, inArena.z, 0, 0);
-            MiniGameReturns.Return back = MiniGameReturns.Return.of(player);
-            MiniGamePipes.enterParty(player.getUuid(), page, leaving -> back, () -> true);
-            MiniGameNameColors.apply(player, MiniGamePipeRole.PLAYERS, page);
-            context.assertTrue(MiniGamePipes.wayOut(server, player, page), "a round's player: out");
-            context.assertTrue(!MiniGamePipes.isInParty(player.getUuid()) && !MiniGameNameColors.isColoured(player.getUuid()),
-                    "out of the round, his colour gone");
-            when(context, () -> near(context, player, programmed), 60, "never came out of the programmed pipe", () -> {
-                // 3. No programmed pipe: where the round found him
-                context.setBlockState(programmed, Blocks.AIR);
-                context.assertTrue(MiniGamePipeIndex.nearest(server, page, global(context, arrival)) == null, "the index forgot the removed pipe");
-                Vec3d start = context.getAbsolute(new Vec3d(6.5, 2, 6.5));
-                player.refreshPositionAndAngles(start.x, start.y, start.z, 0, 0);
-                MiniGameReturns.Return found = MiniGameReturns.Return.of(player);
-                player.refreshPositionAndAngles(inArena.x, inArena.y, inArena.z, 0, 0);
-                MiniGamePipes.enterParty(player.getUuid(), page, leaving -> found, () -> true);
-                context.assertTrue(MiniGamePipes.wayOut(server, player, page), "out to where the round found him");
-                when(context, () -> player.getPos().squaredDistanceTo(start) < 1, 40, "never brought back where he stood", () -> {
-                    cleanup.run();
-                    context.complete();
-                });
-            });
-        });
     }
 }

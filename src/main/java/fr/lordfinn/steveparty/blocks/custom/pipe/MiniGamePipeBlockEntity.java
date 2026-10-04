@@ -50,7 +50,7 @@ public class MiniGamePipeBlockEntity extends PipeBlockEntity {
     private void index() {
         if (!(world instanceof net.minecraft.server.world.ServerWorld server) || !server.getServer().isOnThread()) return;
         fr.lordfinn.steveparty.minigame.MiniGamePipeIndex.set(server.getServer(), net.minecraft.util.math.GlobalPos.create(server.getRegistryKey(), pos),
-                MiniGamePages.idOf(getPage()));
+                MiniGamePages.idOf(getPage()), MiniGamePipeBlock.reachOf(getCachedState()));
     }
 
     @Override

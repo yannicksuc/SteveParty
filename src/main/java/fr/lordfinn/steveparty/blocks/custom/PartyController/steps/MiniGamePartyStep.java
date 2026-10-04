@@ -268,7 +268,7 @@ public class MiniGamePartyStep extends PartyStep {
             default -> {
                 // ROULETTE (chosen, but saved before the bells rang): ring them now. CHOSEN_WAIT / PLAYING: wait.
                 if (phase == Phase.ROULETTE) onMiniGameChosen(partyControllerEntity);
-                // Those away in the mini-game are known again as such (free pipes, the exit pipe)
+                // Those away in the mini-game are known again as such (free pipes, the linked pipes closed to them)
                 if (phase == Phase.PLAYING || phase == Phase.PRACTICE) {
                     returnPositions.keySet().forEach(uuid -> seat(partyControllerEntity, uuid));
                     // Its podiums may have filled up meanwhile
@@ -633,10 +633,10 @@ public class MiniGamePartyStep extends PartyStep {
         }
     }
 
-    /** {@code uuid} is away in this mini-game (free pipes, the exit pipe) for as long as it is this party's step. */
+    /** {@code uuid} is away in this mini-game (free pipes, the linked pipes closed) for as long as it is this party's step. */
     private void seat(PartyControllerEntity controller, UUID uuid) {
         UUID page = MiniGamePages.idOf(MiniGamesCatalogueItem.getCurrentMiniGame(controller.catalogue));
-        MiniGamePipes.enterParty(uuid, page == null ? MiniGamePageData.NO_ID : page, leaving -> leaveEarly(controller, leaving), () -> isStillActive(controller));
+        MiniGamePipes.enterParty(uuid, page == null ? MiniGamePageData.NO_ID : page, () -> isStillActive(controller));
     }
 
     private void comeOut(MinecraftServer server, MiniGamePipeLink link, UUID uuid, @Nullable UUID pageId) {
@@ -650,20 +650,6 @@ public class MiniGamePartyStep extends PartyStep {
             MessageUtils.sendToPlayer(player, Text.translatable("message.steveparty.minigame.no_pipe").formatted(Formatting.RED),
                     MessageUtils.MessageType.CHAT);
         }
-    }
-
-    /**
-     * A player leaves the mini-game before its end (a pipe linked to its page, see {@link MiniGamePipes}): out of the
-     * round, what it owns given back; the way out decides where it goes (the return position given back, null if it
-     * had none). The mini-game goes on for the others.
-     */
-    public MiniGameReturns.@Nullable Return leaveEarly(PartyControllerEntity controller, ServerPlayerEntity player) {
-        MiniGameReturns.Return back = returnPositions.remove(player.getUuid());
-        MiniGamePipes.leaveParty(player.getUuid());
-        // Out of the round: what it owns first
-        arena.leave(player);
-        if (back != null) controller.markDirty();
-        return back;
     }
 
     // ---------------------------------------------------------------- the card of the mini-game

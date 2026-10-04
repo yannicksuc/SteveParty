@@ -39,24 +39,28 @@ import java.util.function.Predicate;
  *     ({@link MiniGamePipeRole#ofPipe}); another click unlinks it ({@link #click}).</li>
  *     <li><b>Arrivals</b>: the players of a mini-game come out of the pipes of their role, one after the other in
  *     each pipe in turn ({@link #distribute}, {@link #emerge}).</li>
- *     <li><b>The mini-game pipe</b>, out of a party: programmed with the page, it is the way into the
+ *     <li><b>The mini-game pipe</b>, out of a round: programmed with the page, it is the way into the
  *     mini-game. A player whose trip through the pipes ends in it (a capped end) comes out of the mini-game's pipes of
  *     the role of the colour of the mouth it went in by: by a green mouth out of a players pipe, by a blue one out of
  *     a team A pipe... A player who goes in the mini-game pipe's own mouth, or by a colour the page has no pipe for,
  *     comes out of the default arrival: the first role with a pipe among {@link #DEFAULT_ARRIVALS} (the entry pipes
- *     first). Each role's pipes in turn, or at random if the page says so. However far, in any dimension.</li>
- *     <li><b>Ways out</b>: during a round (a party's, or one played out of a party) and for those who came by a
- *     mini-game pipe, every pipe linked to the page is a way out of the mini-game, the exit pipe as the others. The
- *     player leaves the mini-game (in a round: as by the exit pipe before, he is no longer one of its players; his
- *     places and his gains stay as the round gives them) and his name loses its side's colour; he comes out:
+ *     first). Each role's pipes in turn, or at random if the page says so. As far as its tier sends.</li>
+ *     <li><b>During a round</b> (a party's, its practice round, « Jouer » or « Tester »), the pipes linked to its page
+ *     are closed to its players and its spectators: going in one does nothing (« Pas de sortie pendant le
+ *     mini-jeu », once every few seconds at most). The round brings them back where they stood when it ends.</li>
+ *     <li><b>Out of a round</b>, a pipe linked to a page takes whoever goes in it out of the mini-game, by a mini-game
+ *     pipe programmed with that page ({@link #wayOut}):
  *     <ol>
- *         <li>of the mouth he went in by to come by a mini-game pipe, if he came that way;</li>
- *         <li>else of the mini-game pipe programmed with the page nearest to him (same dimension, straight distance,
- *         from {@link MiniGamePipeIndex}: its chunk does not need to be loaded);</li>
- *         <li>else where he stood before the round sent him (the round's return position).</li>
+ *         <li>the last mini-game pipe he came in by, if it is still programmed with this page and he is within its
+ *         range (copper: {@value PipeNetworks#WARP_RADIUS} blocks, iron: its dimension, golden: anywhere);</li>
+ *         <li>else the nearest mini-game pipe programmed with the page he is within the range of
+ *         ({@link MiniGamePipeIndex}: their chunks need not be loaded);</li>
+ *         <li>else none: the linked pipe is a pipe like any other (a warp to a pipe of its colour, or back out).</li>
  *     </ol>
- *     The mouth he comes out of stays closed to him until he moves away (no bounce back in). Out of any round, for the
- *     others, the linked pipes are pipes like any other.</li>
+ *     He comes out of a mouth of that mini-game pipe's pipes of the colour of the linked pipe he took (a green
+ *     linked pipe, out of its green mouth); without one, out of the mouth he went in by when it is that pipe, else
+ *     out of the mini-game pipe's own mouth, else the first mouth of its pipes. The mouth he comes out of stays closed
+ *     to him until he moves away (no bounce back in).</li>
  * </ul>
  * Only players are concerned: mobs and items travel through these pipes like through any other. Nothing is scanned:
  * the pages are asked when a player goes in a mouth ({@link PipeTravel.Gate}).
@@ -68,22 +72,26 @@ public final class MiniGamePipes {
      */
     public static final List<MiniGamePipeRole> DEFAULT_ARRIVALS = List.of(MiniGamePipeRole.ENTRY, MiniGamePipeRole.SPECTATORS,
             MiniGamePipeRole.PLAYERS, MiniGamePipeRole.TEAM_A, MiniGamePipeRole.TEAM_B, MiniGamePipeRole.TEAM_C, MiniGamePipeRole.TEAM_D);
+    /** Ticks between two « Pas de sortie pendant le mini-jeu » to the same player. */
+    private static final int CLOSED_WARNING_TICKS = 60;
 
-    /** A player in a mini-game out of a party: the page, and the mouth it went in by to come. */
-    private record Visit(UUID page, GlobalPos mouth, Direction opening) {
+    /**
+     * The last mini-game pipe a player came in by: its page, where it is, and the mouth he went in by (null: the
+     * mini-game pipe's own mouth was not it, or is unknown).
+     */
+    private record CameBy(UUID page, GlobalPos pipe, @Nullable GlobalPos mouth, @Nullable Direction opening) {
     }
 
-    private static final Map<UUID, Visit> VISITS = new HashMap<>();
-    /**
-     * A player in a round: its page, how it leaves the round (it returns where the round would have brought it back,
-     * null if nowhere; the player is not moved), and whether that round is still on.
-     */
-    private record Seat(UUID page, java.util.function.Function<ServerPlayerEntity, MiniGameReturns.@Nullable Return> leave, BooleanSupplier stillOn) {
+    private static final Map<UUID, CameBy> CAME_BY = new HashMap<>();
+    /** A player in a round: its page, and whether that round is still on. */
+    private record Seat(UUID page, BooleanSupplier stillOn) {
     }
 
     private static final Map<UUID, Seat> IN_PARTY = new HashMap<>();
     /** The next pipe of each role a mini-game pipe sends to, by page. */
     private static final Map<UUID, Map<MiniGamePipeRole, Integer>> NEXT_ARRIVAL = new HashMap<>();
+    /** When each player was last told a linked pipe is closed during his round (server ticks). */
+    private static final Map<UUID, Integer> WARNED = new HashMap<>();
 
     private MiniGamePipes() {
     }
@@ -93,9 +101,10 @@ public final class MiniGamePipes {
         // A page in a pipe's slot (a mini-game pipe): where its capped end sends
         PipeDestinationProvider.register(ModItems.MINI_GAME_PAGE, PageRoute::new);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            VISITS.clear();
+            CAME_BY.clear();
             IN_PARTY.clear();
             NEXT_ARRIVAL.clear();
+            WARNED.clear();
         });
     }
 
@@ -220,14 +229,12 @@ public final class MiniGamePipes {
     // ------------------------------------------------------------------ party
 
     /**
-     * {@code player} is in a round of the mini-game of {@code page}: it travels for free, and a pipe linked to the page
-     * makes it leave with {@code leave} (see the class) until {@link #leaveParty}, or until {@code stillOn} says the
-     * round is over (a party controller broken while it was played).
+     * {@code player} is in a round of the mini-game of {@code page} (a player or a spectator): it travels for free, and
+     * the pipes linked to the page are closed to it (see the class) until {@link #leaveParty}, or until {@code stillOn}
+     * says the round is over (a party controller broken while it was played).
      */
-    public static void enterParty(UUID player, UUID page, java.util.function.Function<ServerPlayerEntity, MiniGameReturns.@Nullable Return> leave,
-                                  BooleanSupplier stillOn) {
-        IN_PARTY.put(player, new Seat(page, leave, stillOn));
-        VISITS.remove(player);
+    public static void enterParty(UUID player, UUID page, BooleanSupplier stillOn) {
+        IN_PARTY.put(player, new Seat(page, stillOn));
     }
 
     public static void leaveParty(UUID player) {
@@ -245,7 +252,13 @@ public final class MiniGamePipes {
         return seat != null;
     }
 
-    // ------------------------------------------------------------------ the mini-game pipe and the exit
+    /** The page of the round {@code player} is in, null for none. */
+    public static @Nullable UUID roundOf(UUID player) {
+        Seat seat = isInParty(player) ? IN_PARTY.get(player) : null;
+        return seat == null ? null : seat.page();
+    }
+
+    // ------------------------------------------------------------------ the mini-game pipe
 
     /** The mouth a linked pipe opens on now (its chunk is loaded to look), null if it has none any more. */
     private static @Nullable Direction openingOf(ServerWorld world, MiniGamePipeLink link) {
@@ -315,79 +328,131 @@ public final class MiniGamePipes {
             ServerWorld there = link == null ? null : server.getWorld(link.mouth().dimension());
             Direction opening = there == null ? null : openingOf(there, link);
             if (opening == null) return null;
-            if (enteredBy != null) {
-                VISITS.put(player.getUuid(), new Visit(data.id(), GlobalPos.create(world.getRegistryKey(), enteredBy.pos()), enteredBy.dir()));
-            }
+            CAME_BY.put(player.getUuid(), new CameBy(data.id(), GlobalPos.create(world.getRegistryKey(), cappedEnd.toImmutable()),
+                    enteredBy == null ? null : GlobalPos.create(world.getRegistryKey(), enteredBy.pos()), enteredBy == null ? null : enteredBy.dir()));
             return new Exit(link.mouth().dimension(), link.mouth().pos(), opening);
         }
     }
 
     /**
      * What a mouth does with a player going in it: the own mouth of a programmed mini-game pipe sends to the default
-     * arrival of its mini-game; an exit pipe sends back (see the class).
+     * arrival of its mini-game; a pipe linked to a page is closed to the players of its round, and out of a round takes
+     * whoever goes in out by a mini-game pipe of the page (see the class).
      */
     private static PipeTravel.@Nullable Passage passage(ServerWorld world, BlockPos mouth, Direction opening, ServerPlayerEntity player) {
         MinecraftServer server = world.getServer();
         UUID id = player.getUuid();
         GlobalPos here = GlobalPos.create(world.getRegistryKey(), mouth);
+        boolean inRound = isInParty(id);
         MiniGamePageData programmed = MiniGamePages.of(server, MiniGamePipeBlock.pageAt(world, mouth));
-        if (programmed != null && !isInParty(id) && DEFAULT_ARRIVALS.stream().anyMatch(role -> !programmed.pipes(role).isEmpty())) {
+        if (programmed != null && !inRound && DEFAULT_ARRIVALS.stream().anyMatch(role -> !programmed.pipes(role).isEmpty())) {
             return new PipeTravel.Passage(traveller -> {
                 MiniGamePipeLink link = arrivalFrom(world, mouth, programmed, null, traveller);
                 if (link == null || !emerge(server, link, traveller)) return false;
-                VISITS.put(traveller.getUuid(), new Visit(programmed.id(), here, opening));
+                CAME_BY.put(traveller.getUuid(), new CameBy(programmed.id(), here, here, opening));
                 return true;
             });
         }
-        for (MiniGamePagesState.Linked linked : MiniGamePages.linksAt(server, here)) {
-            UUID page = linked.page().id();
-            Seat seat = isInParty(id) ? IN_PARTY.get(id) : null;
-            Visit visit = VISITS.get(id);
-            boolean inRound = seat != null && seat.page().equals(page), visiting = visit != null && visit.page().equals(page);
-            if (!inRound && !visiting) continue;
-            return new PipeTravel.Passage(traveller -> wayOut(server, traveller, page, inRound ? seat : null));
+        List<MiniGamePagesState.Linked> links = MiniGamePages.linksAt(server, here);
+        if (links.isEmpty()) return null;
+        if (inRound) {
+            UUID round = roundOf(id);
+            for (MiniGamePagesState.Linked linked : links) {
+                if (!linked.page().id().equals(round)) continue;
+                warnClosed(server, player);
+                return PipeTravel.Passage.CLOSED;
+            }
+            // The pipes of another page are pipes like any other for a round's player
+            return null;
         }
+        BlockState colour = world.getBlockState(mouth);
+        GlobalPos from = GlobalPos.create(world.getRegistryKey(), player.getBlockPos());
+        for (MiniGamePagesState.Linked linked : links) {
+            UUID page = linked.page().id();
+            GlobalPos pipe = wayOutPipe(server, id, page, from);
+            if (pipe != null) return new PipeTravel.Passage(traveller -> outThrough(server, pipe, colour, CAME_BY.get(traveller.getUuid()), traveller));
+        }
+        // No mini-game pipe of the page in range: a pipe like any other
         return null;
     }
 
+    /** « Pas de sortie pendant le mini-jeu », once every few seconds at most. */
+    private static void warnClosed(MinecraftServer server, ServerPlayerEntity player) {
+        Integer last = WARNED.get(player.getUuid());
+        int now = server.getTicks();
+        if (last != null && now - last >= 0 && now - last < CLOSED_WARNING_TICKS) return;
+        WARNED.put(player.getUuid(), now);
+        player.sendMessage(Text.translatable("message.steveparty.minigame_pipe.closed").formatted(Formatting.RED), true);
+    }
+
     /**
-     * {@code player} takes a way out of the mini-game of {@code page} (see the class): out of its round, then out of
-     * the mouth he came by, else of the nearest mini-game pipe programmed with the page, else where the round found him.
-     *
-     * @return false if he could be sent nowhere (he comes back out of the mouth he went in)
+     * The mini-game pipe a player at {@code from} going in a pipe linked to {@code page} out of a round leaves by: the
+     * last one he came in by if it is programmed with the page and he is within its range, else the nearest in range
+     * of him; null for none.
      */
-    public static boolean wayOut(MinecraftServer server, ServerPlayerEntity player, UUID page) {
-        Seat seat = isInParty(player.getUuid()) ? IN_PARTY.get(player.getUuid()) : null;
-        return wayOut(server, player, page, seat != null && seat.page().equals(page) ? seat : null);
+    public static @Nullable GlobalPos wayOutPipe(MinecraftServer server, UUID player, UUID page, GlobalPos from) {
+        CameBy last = CAME_BY.get(player);
+        if (last != null && last.page().equals(page)) {
+            MiniGamePipeIndex.Entry entry = MiniGamePipeIndex.at(server, last.pipe());
+            if (entry != null && entry.page().equals(page) && MiniGamePipeIndex.inRange(entry.reach(), last.pipe(), from)) return last.pipe();
+        }
+        return MiniGamePipeIndex.nearestInRange(server, page, from);
     }
 
-    /** {@code player} came to the mini-game of {@code page} by a mini-game pipe, in by {@code mouth}: its first way out. */
-    public static void visit(UUID player, UUID page, GlobalPos mouth, Direction opening) {
-        VISITS.put(player, new Visit(page, mouth, opening));
+    /**
+     * {@code player}, out of a round, went in a pipe linked to {@code page} (its block {@code colour}): he comes out
+     * by a mini-game pipe of the page (see the class).
+     *
+     * @return false if there is none in range, or it could not take him (he comes back out of the mouth he went in)
+     */
+    public static boolean wayOut(MinecraftServer server, ServerPlayerEntity player, UUID page, BlockState colour) {
+        GlobalPos pipe = wayOutPipe(server, player.getUuid(), page, GlobalPos.create(player.getWorld().getRegistryKey(), player.getBlockPos()));
+        return pipe != null && outThrough(server, pipe, colour, CAME_BY.get(player.getUuid()), player);
     }
 
-    private static boolean wayOut(MinecraftServer server, ServerPlayerEntity player, UUID page, @Nullable Seat seat) {
-        UUID id = player.getUuid();
-        // The zone he leaves: no way out leads into it (the round's bubble gone, he would stand in it with what he owns)
-        fr.lordfinn.steveparty.minigame.zone.ZoneBubble left = fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player);
-        fr.lordfinn.steveparty.minigame.zone.MiniGameZone zone = left != null ? left.zone() : MiniGameArena.zoneOf(server, page);
-        Predicate<GlobalPos> out = pos -> zone == null || !zone.dimension().equals(pos.dimension()) || !zone.contains(pos.pos());
-        MiniGameReturns.Return back = seat == null ? null : seat.leave().apply(player);
-        leaveParty(id);
-        Visit visit = VISITS.remove(id);
-        if (visit != null && out.test(visit.mouth())
-                && emerge(server, new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY), player)) return true;
-        GlobalPos nearest = MiniGamePipeIndex.nearest(server, page, GlobalPos.create(player.getWorld().getRegistryKey(), player.getBlockPos()), out);
-        if (nearest != null && emerge(server, new MiniGamePipeLink(nearest, Direction.UP, MiniGamePipeRole.ENTRY), player)) return true;
-        if (back != null && MiniGameReturns.bringBack(server, id, back)) return true;
-        // Nowhere to go (his ways gone, broken by a friend...): he comes back out of the mouth he went in, still knowing his way
-        if (seat == null && visit != null) VISITS.put(id, visit);
-        return false;
+    /** {@code player} came by the mini-game pipe at {@code pipe} programmed with {@code page}, in by {@code mouth} (null: unknown). */
+    public static void cameBy(UUID player, UUID page, GlobalPos pipe, @Nullable GlobalPos mouth, @Nullable Direction opening) {
+        CAME_BY.put(player, new CameBy(page, pipe, mouth, opening));
     }
 
-    /** The page of the round {@code player} is in, null for none. */
-    public static @Nullable UUID roundOf(UUID player) {
-        Seat seat = isInParty(player) ? IN_PARTY.get(player) : null;
-        return seat == null ? null : seat.page();
+    /**
+     * {@code player} comes out by the mini-game pipe at {@code pipe}: out of the mouth of its pipes of the colour of
+     * {@code colour}; else the mouth he went in by ({@code last}) when it is of these pipes; else the mini-game pipe's
+     * own mouth; else the first mouth of its pipes. The chunks around it are loaded to look.
+     */
+    private static boolean outThrough(MinecraftServer server, GlobalPos pipe, BlockState colour, @Nullable CameBy last, ServerPlayerEntity player) {
+        ServerWorld world = server.getWorld(pipe.dimension());
+        if (world == null) return false;
+        int cx = pipe.pos().getX() >> 4, cz = pipe.pos().getZ() >> 4;
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) world.getChunk(cx + dx, cz + dz);
+        if (!(world.getBlockState(pipe.pos()).getBlock() instanceof MiniGamePipeBlock)) return false;
+        PipeNetworks.Network network = PipeNetworks.of(world).network(pipe.pos());
+        if (network == null) return false;
+        List<PipeNetworks.End> mouths = network.ends().stream()
+                .filter(end -> !end.capped() && PipeShape.mouth(world.getBlockState(end.pos()), end.dir()) != null).toList();
+        if (mouths.isEmpty()) return false;
+        PipeNetworks.End chosen = null;
+        for (PipeNetworks.End end : mouths) {
+            if (sameColour(world.getBlockState(end.pos()), colour)) {
+                chosen = end;
+                break;
+            }
+        }
+        if (chosen == null && last != null && last.pipe().equals(pipe) && last.mouth() != null) {
+            for (PipeNetworks.End end : mouths) if (end.pos().equals(last.mouth().pos()) && end.dir() == last.opening()) chosen = end;
+        }
+        if (chosen == null) {
+            for (PipeNetworks.End end : mouths) if (end.pos().equals(pipe.pos())) chosen = end;
+        }
+        if (chosen == null) chosen = mouths.getFirst();
+        return PipeTravel.emerge(world, chosen, player, PipeTravel.BASE_SPEED);
+    }
+
+    /** @return true if two pipes are of the same colour: the same dye (plastic and stained glass alike), else the same kind. */
+    public static boolean sameColour(BlockState a, BlockState b) {
+        if (!(a.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock first)
+                || !(b.getBlock() instanceof fr.lordfinn.steveparty.blocks.custom.pipe.PipeBlock second)) return false;
+        if (first.kind().colored && second.kind().colored) return first.color() == second.color();
+        return first.kind() == second.kind();
     }
 }

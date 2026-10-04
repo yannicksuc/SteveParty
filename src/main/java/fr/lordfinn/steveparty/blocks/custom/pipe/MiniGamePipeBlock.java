@@ -167,7 +167,7 @@ public class MiniGamePipeBlock extends PipeBlock {
     protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         // No longer a mini-game pipe: out of the index of the programmed pipes
         if (!newState.isOf(this) && world instanceof net.minecraft.server.world.ServerWorld server) {
-            fr.lordfinn.steveparty.minigame.MiniGamePipeIndex.set(server.getServer(), net.minecraft.util.math.GlobalPos.create(server.getRegistryKey(), pos), null);
+            fr.lordfinn.steveparty.minigame.MiniGamePipeIndex.remove(server.getServer(), net.minecraft.util.math.GlobalPos.create(server.getRegistryKey(), pos));
         }
         super.onStateReplaced(state, world, pos, newState, moved);
     }

@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import java.util.Map;
+import java.util.HashMap;
+import fr.lordfinn.steveparty.minigame.MiniGameNameColors;
 import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
@@ -710,5 +713,119 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             cleanUp(context, id, p1, p2);
         }
         done(context);
+    }
+
+    // ------------------------------------------------------------------ deaths and disconnections during a round
+
+    /** As the connection does when its player asks to respawn (the connection then plays the new player). */
+    private static ServerPlayerEntity respawn(MinecraftServer server, ServerPlayerEntity dead) {
+        ServerPlayerEntity respawned = server.getPlayerManager().respawnPlayer(dead, false, net.minecraft.entity.Entity.RemovalReason.KILLED);
+        respawned.networkHandler.player = respawned;
+        return respawned;
+    }
+
+    /** Restore off, adventure off. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_life_plain", tickLimit = 80)
+    public void deathsAndDisconnectionsWithoutOptions(TestContext context) {
+        deathsAndDisconnections(context, false, false);
+    }
+
+    /** Restore off, adventure on. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_life_adventure", tickLimit = 80)
+    public void deathsAndDisconnectionsInAdventure(TestContext context) {
+        deathsAndDisconnections(context, false, true);
+    }
+
+    /** Restore on, adventure off. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_life_restore", tickLimit = 80)
+    public void deathsAndDisconnectionsInABubble(TestContext context) {
+        deathsAndDisconnections(context, true, false);
+    }
+
+    /** Restore on, adventure on. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_life_both", tickLimit = 80)
+    public void deathsAndDisconnectionsInABubbleInAdventure(TestContext context) {
+        deathsAndDisconnections(context, true, true);
+    }
+
+    /**
+     * A round out of a party, with or without « Restaurer » and « Aventure »: a player who dies and respawns during it
+     * (at his own spawn: the round has no respawn place of its own), one still on his death screen when it ends, one
+     * whose game leaves and comes back during it, and a spectator whose game leaves and comes back after it (the server
+     * restarted in between). Each ends the round with his own game mode, no side colour, no session, his own things
+     * exactly once (a bubble's session inventory never kept, nothing doubled), and where he stood before it.
+     */
+    private void deathsAndDisconnections(TestContext context, boolean restore, boolean adventure) {
+        MinecraftServer server = context.getWorld().getServer();
+        ServerPlayerEntity p1 = player(context, "d", 1.5, 1, 2.5), p2 = player(context, "s", 2.5, 1, 1.5), p3 = player(context, "r", 1.5, 1, 0.5),
+                watcher = player(context, "w", 6.5, 1, 2.5);
+        UUID id = arena(context, true);
+        context.setBlockState(new BlockPos(6, 2, 1), ModBlocks.PIPES[PipeKind.OPAQUE.ordinal()][0].getDefaultState().with(PipeBlock.SOLID, PipeSolid.DOWN));
+        MiniGamePages.toggleLink(server, id, global(context, new BlockPos(6, 2, 1)), Direction.UP, MiniGamePipeRole.SPECTATORS);
+        MiniGamePages.update(server, MiniGamePages.get(server, id).withRestore(restore).withAdventure(adventure));
+        ServerPlayerEntity[] all = {p1, p2, p3, watcher};
+        Map<UUID, Vec3d> starts = new HashMap<>();
+        for (ServerPlayerEntity player : all) {
+            starts.put(player.getUuid(), player.getPos());
+            player.getInventory().setStack(0, new ItemStack(Items.GOLDEN_SWORD));
+        }
+        GameProfile profile3 = p3.getGameProfile(), profileW = watcher.getGameProfile();
+        List<ServerPlayerEntity> made = new ArrayList<>(List.of(all));
+        try {
+            alone(context, all);
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played");
+            MiniGameTest played = MiniGameTest.of(id);
+            context.assertTrue(played.participants().containsAll(List.of(p1.getUuid(), p2.getUuid(), p3.getUuid()))
+                    && played.spectators().contains(watcher.getUuid()), "three players, a spectator");
+            context.assertTrue((ZoneBubbles.ofPlayer(p1) != null) == restore, "a bubble only with « Restaurer »");
+            context.assertTrue((p1.interactionManager.getGameMode() == GameMode.ADVENTURE) == adventure, "adventure mode only with « Aventure »");
+
+            // p1 dies and respawns during the round; p2 dies and stays on his death screen
+            p1.kill(context.getWorld());
+            ServerPlayerEntity p1b = respawn(server, p1);
+            made.add(p1b);
+            context.assertTrue((p1b.interactionManager.getGameMode() == GameMode.ADVENTURE) == adventure, "respawned: still in the round's game mode");
+            p2.kill(context.getWorld());
+            // p3's game leaves and comes back during the round; the spectator's leaves
+            Reconnect.leave(p3);
+            ServerPlayerEntity p3b = Reconnect.join(context, profile3);
+            made.add(p3b);
+            context.assertTrue(p3b.interactionManager.getGameMode() == GameMode.SURVIVAL && ZoneBubbles.ofPlayer(p3b) == null
+                    && !p3b.getCommandTags().contains(STASH_TAG), "back during the round: himself, no session");
+            Reconnect.leave(watcher);
+
+            MiniGameTest.stop(id);
+            context.assertTrue(MiniGameReturns.isPending(server, p2.getUuid()), "dead at the end: brought back once respawned");
+            context.assertTrue(MiniGameReturns.isPending(server, profileW.getId()), "away at the end: brought back when he comes");
+            MiniGameReturns.simulateRestart(server);
+            ServerPlayerEntity p2b = respawn(server, p2);
+            made.add(p2b);
+            ServerPlayerEntity watcherB = Reconnect.join(context, profileW);
+            made.add(watcherB);
+            context.waitAndRun(3, () -> {
+                try {
+                    for (ServerPlayerEntity player : List.of(p1b, p2b, p3b, watcherB)) {
+                        String who = player.getGameProfile().getName();
+                        context.assertTrue(player.getPos().distanceTo(starts.get(player.getUuid())) < 0.01,
+                                who + " is back where he stood: " + context.getRelative(player.getPos()));
+                        context.assertTrue(player.interactionManager.getGameMode() == GameMode.SURVIVAL, who + " has his own game mode");
+                        context.assertTrue(!MiniGameNameColors.isColoured(player.getUuid()) && !MiniGamePipes.isInParty(player.getUuid()), who + " is out of the round");
+                        context.assertTrue(ZoneBubbles.ofPlayer(player) == null && !player.getCommandTags().contains(STASH_TAG)
+                                && MiniGameAdventure.own(player) == null, who + " holds nothing of the round");
+                        int swords = player.getInventory().count(Items.GOLDEN_SWORD);
+                        boolean died = player == p1b || player == p2b;
+                        // Without bubble, a death is a vanilla death: what he carried fell where he died
+                        context.assertTrue(died && !restore ? swords <= 1 : swords == 1, who + " has his own sword once, not " + swords);
+                        context.assertTrue(!MiniGameReturns.isPending(server, player.getUuid()), who + " is waited for no more");
+                    }
+                } finally {
+                    for (ServerPlayerEntity player : made) cleanUp(context, id, player);
+                }
+                done(context);
+            });
+        } catch (RuntimeException e) {
+            for (ServerPlayerEntity player : made) cleanUp(context, id, player);
+            throw e;
+        }
     }
 }

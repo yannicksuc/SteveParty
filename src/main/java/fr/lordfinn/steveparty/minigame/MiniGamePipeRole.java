@@ -30,7 +30,7 @@ public enum MiniGamePipeRole {
     TEAM_D(0xE08A1E, "orange"),
     /** The default arrival of those who come by a mini-game pipe, out of a party. Black pipes. */
     ENTRY(0x4A4A4A, "black"),
-    /** The way out of the mini-game: who goes in goes back where it came from. Yellow pipes. */
+    /** The exit of the arena: out of a round, it takes whoever goes in out by a mini-game pipe of the page, like every linked pipe. Yellow pipes. */
     EXIT(0xF2C230, "yellow");
 
     private static final MiniGamePipeRole[] VALUES = values();

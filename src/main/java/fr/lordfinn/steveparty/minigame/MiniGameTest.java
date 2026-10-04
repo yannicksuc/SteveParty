@@ -427,8 +427,8 @@ public final class MiniGameTest implements MiniGameSession {
             if (player != null) player.sendMessage(Text.translatable("message.steveparty.minigame.test.ignored", role.text(), formatName())
                     .formatted(Formatting.GOLD), false);
         });
-        // Away in this mini-game from now on (nobody in two mini-games at once): free pipes, the exit pipe brings back
-        for (UUID uuid : returns.keySet()) MiniGamePipes.enterParty(uuid, pageId, this::leaveEarly, () -> !closed);
+        // Away in this mini-game from now on (nobody in two mini-games at once): free pipes, the linked pipes closed
+        for (UUID uuid : returns.keySet()) MiniGamePipes.enterParty(uuid, pageId, () -> !closed);
         send(new MiniGamePagePayloads.TestLabel(true, page().title()));
         MessageUtils.sendToPlayers(audience(), Text.translatable("message.steveparty.minigame.test.start", players.size(), formatName())
                 .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);
@@ -499,12 +499,6 @@ public final class MiniGameTest implements MiniGameSession {
         return online;
     }
 
-    /** A player takes a way out (a pipe linked to the page): out of the test, which goes on for the others. */
-    private MiniGameReturns.@Nullable Return leaveEarly(ServerPlayerEntity player) {
-        MiniGamePipes.leaveParty(player.getUuid());
-        arena.leave(player);
-        return returns.remove(player.getUuid());
-    }
 
     @Override
     public void onPodiumsChanged() {
