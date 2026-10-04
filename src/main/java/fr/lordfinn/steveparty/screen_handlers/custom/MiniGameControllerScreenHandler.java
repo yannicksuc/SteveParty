@@ -301,9 +301,7 @@ public class MiniGameControllerScreenHandler extends ScreenHandler {
         look();
         switch (id) {
             case BUTTON_PLAY -> {
-                if (state() == State.RUNNING) MiniGameTest.stop(page);
-                else if (state() != State.READY
-                        || MiniGameTest.start(serverPlayer.server, page, serverPlayer, MiniGameTest.COUNTDOWN_SECONDS) != MiniGameTest.Status.READY) return false;
+                if (!controller.playOrStop(serverPlayer)) return false;
             }
             case BUTTON_READY -> {
                 if (!MiniGamePartyStep.toggleReady(serverPlayer)) return false;

@@ -81,7 +81,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The Mini-game Controller: its page going in and out (one controller per page), « Play » out of a party, and in a
- * party the practice round, the ready vote and the real round (the only one that pays). And the page's zone: drawn in
+ * party the practice round, the ready vote and the real round (the only one that pays); its redstone input out of a
+ * party and its comparator output. And the page's zone: drawn in
  * zone mode by clicks and face moves the server decides, shared by the page's copies, read by every reader of the
  * zone, and the zone of an old Zone Cartridge moved into its page.
  */
@@ -89,6 +90,8 @@ public class MiniGameControllerGameTests implements FabricGameTest {
     private static final int GREEN = 13;
     private static final AtomicInteger SERIAL = new AtomicInteger();
     private static final BlockPos HOME = new BlockPos(6, 1, 6), PARTY = new BlockPos(0, 1, 7);
+    /** Next to the controller: where its power comes from, where a comparator reads it. */
+    private static final BlockPos POWER = new BlockPos(7, 1, 6), COMPARATOR = new BlockPos(6, 1, 5);
 
     // ------------------------------------------------------------------ helpers
 
@@ -170,6 +173,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
         MiniGameTest.stop(page);
         if (context.getBlockState(PARTY).isOf(ModBlocks.PARTY_CONTROLLER)) context.removeBlock(PARTY);
         if (context.getBlockState(HOME).isOf(ModBlocks.MINI_GAME_CONTROLLER)) context.removeBlock(HOME);
+        if (context.getBlockState(POWER).isOf(Blocks.REDSTONE_BLOCK)) context.removeBlock(POWER);
         for (ServerPlayerEntity player : players) {
             if (player.hasVehicle()) player.stopRiding();
             MiniGamePipes.leaveParty(player.getUuid());
@@ -866,6 +870,144 @@ public class MiniGameControllerGameTests implements FabricGameTest {
                 context.complete();
             });
         });
+    }
+
+    // ------------------------------------------------------------------ redstone
+
+    /** Powers the controller (a redstone block next to it), or takes the power away. */
+    private static void power(TestContext context, boolean on) {
+        context.setBlockState(POWER, on ? Blocks.REDSTONE_BLOCK : Blocks.AIR);
+    }
+
+    /** A comparator reading the controller, on its north side. */
+    private static void comparator(TestContext context) {
+        context.setBlockState(COMPARATOR.down(), Blocks.STONE);
+        context.setBlockState(COMPARATOR, Blocks.COMPARATOR.getDefaultState().with(net.minecraft.state.property.Properties.HORIZONTAL_FACING, Direction.SOUTH));
+    }
+
+    private static int comparatorSignal(TestContext context) {
+        return ((net.minecraft.block.entity.ComparatorBlockEntity) context.getBlockEntity(COMPARATOR)).getOutputSignal();
+    }
+
+    /**
+     * Out of a party, a rising edge of redstone is « Play », the next one « Stop »; holding the power or taking it
+     * away does nothing. Without page nothing happens, the edge is only remembered (and saved). A comparator reads 3
+     * while it is played, 4 while its results are shown, 0 once over.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_redstone", tickLimit = 100)
+    public void redstonePlaysAndStopsOutOfAParty(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5);
+        MinecraftServer server = context.getWorld().getServer();
+        UUID id = page(context, green);
+        MiniGameControllerBlockEntity controller;
+        try {
+            alone(context, p1);
+            comparator(context);
+            controller = home(context, HOME, null);
+            context.assertTrue(controller.comparatorOutput() == 0 && !controller.isPowered(), "no page, no power: 0");
+
+            // No page: the edge is remembered, nothing is played
+            power(context, true);
+            context.assertTrue(controller.isPowered() && MiniGameTest.of(id) == null, "no page: nothing to play");
+            NbtCompound saved = controller.createNbt(context.getWorld().getRegistryManager());
+            MiniGameControllerBlockEntity read = new MiniGameControllerBlockEntity(context.getAbsolutePos(HOME), context.getBlockState(HOME));
+            read.read(saved, context.getWorld().getRegistryManager());
+            context.assertTrue(read.isPowered(), "the power it had is saved");
+            power(context, false);
+            context.assertTrue(!controller.isPowered(), "unpowered");
+
+            // A rising edge: « Play »
+            controller.setPage(pageItem(id));
+            power(context, true);
+            MiniGameTest played = MiniGameTest.of(id);
+            context.assertTrue(played != null && played.phase() == MiniGameTest.Phase.COUNTDOWN, "a rising edge plays it, as « Play » (its countdown)");
+            context.assertEquals(controller.comparatorOutput(), 3, "played out of a party: 3, at once");
+            context.assertEquals(lamp(context), MiniGameControllerBlock.Signal.GREEN, "the lamp green, at once");
+
+            // Held: nothing more
+            context.setBlockState(new BlockPos(5, 1, 6), Blocks.STONE);
+            context.assertTrue(MiniGameTest.of(id) == played, "the power held (a neighbour changed): still played");
+        } catch (RuntimeException e) {
+            cleanUp(context, id, p1);
+            throw e;
+        }
+        MiniGameControllerBlockEntity home = controller;
+        // The comparator follows (its own delay)
+        context.waitAndRun(4, () -> {
+            try {
+                context.assertEquals(comparatorSignal(context), 3, "the comparator reads 3");
+                power(context, false);
+                context.assertTrue(MiniGameTest.of(id) != null, "the power taken away: still played");
+                power(context, true);
+                context.assertTrue(MiniGameTest.of(id) == null, "the next rising edge: « Stop »");
+                context.assertEquals(home.comparatorOutput(), 0, "stopped: 0");
+                power(context, false);
+
+                // Its results: 4, then a rising edge brings everyone back at once
+                BlockPos podium = podium(context, id, 4, 3, 1);
+                context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played again, without the countdown");
+                Podiums.toggle(p1, context.getWorld(), context.getAbsolutePos(podium));
+                context.assertTrue(MiniGameTest.of(id) != null && MiniGameTest.of(id).phase() == MiniGameTest.Phase.FINISHED, "everyone placed: its results");
+                home.refreshState();
+                context.assertTrue(home.comparatorOutput() == 4 && lamp(context) == MiniGameControllerBlock.Signal.RED, "its results: 4, the lamp red");
+                power(context, true);
+                context.assertTrue(MiniGameTest.of(id) == null && home.comparatorOutput() == 0, "a rising edge during the results: over, 0");
+            } catch (RuntimeException e) {
+                cleanUp(context, id, p1);
+                throw e;
+            }
+            context.waitAndRun(4, () -> {
+                try {
+                    context.assertEquals(comparatorSignal(context), 0, "the comparator reads 0");
+                } finally {
+                    cleanUp(context, id, p1);
+                }
+                context.complete();
+            });
+        });
+    }
+
+    /**
+     * While a party plays its mini-game the controller's power is ignored: the vote alone starts the real round. A
+     * comparator reads 1 during the practice round, 2 during the real round, 0 once over.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_controller_redstone_party", tickLimit = 100)
+    public void redstoneIsIgnoredInAParty(TestContext context) {
+        BlockPos green = pipe(context, GREEN, 1, 1);
+        ServerPlayerEntity p1 = player(context, "a", 6.5, 1, 1.5), p2 = player(context, "b", 6.5, 1, 2.5);
+        UUID id = page(context, green);
+        try {
+            alone(context, p1, p2);
+            BlockPos first = podium(context, id, 4, 3, 2), second = podium(context, id, 5, 3, 1);
+            MiniGameControllerBlockEntity home = home(context, HOME, id);
+            PartyControllerEntity controller = party(context, id, MiniGamePartyStep.Phase.COUNTDOWN, p1, p2);
+            MiniGamePartyStep step = step(controller);
+            step.leaveForMiniGame(controller);
+            home.refreshState();
+            context.assertTrue(step.isPractice() && home.comparatorOutput() == 1, "the practice round: 1");
+
+            power(context, true);
+            context.assertTrue(home.isPowered(), "the edge is remembered");
+            context.assertTrue(MiniGameTest.of(id) == null && step.isPractice() && step.getReady().isEmpty(), "in a party: ignored, nobody is ready");
+            power(context, false);
+
+            MiniGamePartyStep.toggleReady(p1);
+            MiniGamePartyStep.toggleReady(p2);
+            home.refreshState();
+            context.assertTrue(step.isPlaying() && home.comparatorOutput() == 2, "everyone ready (the vote): the real round, 2");
+            power(context, true);
+            context.assertTrue(MiniGameTest.of(id) == null && step.isPlaying(), "the real round: ignored");
+            power(context, false);
+
+            Podiums.toggle(p1, context.getWorld(), context.getAbsolutePos(first));
+            Podiums.toggle(p2, context.getWorld(), context.getAbsolutePos(second));
+            home.refreshState();
+            context.assertTrue(step.getPhase() == MiniGamePartyStep.Phase.FINISHED && home.comparatorOutput() == 0, "over: 0");
+        } finally {
+            cleanUp(context, id, p1, p2);
+        }
+        context.complete();
     }
 
     /**
