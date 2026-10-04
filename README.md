@@ -1,3 +1,5 @@
+<p align="center"><img src="art/logo/steve_party_maker_banner.png" alt="Steve Party Maker" width="100%"></p>
+
 # 🎉 SteveParty Mod
 
 Welcome to the **SteveParty Mod**! This mod enhances your Minecraft experience by introducing exciting party mechanics, custom entities, and unique gameplay features. Below you'll find detailed information about the various components of the mod.
