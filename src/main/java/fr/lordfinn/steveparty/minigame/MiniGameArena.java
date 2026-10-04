@@ -184,6 +184,8 @@ public final class MiniGameArena {
         boolean adventure = MiniGamePages.get(server, pageId).adventure();
         if (zone == null) return adventureWithoutBubble(adventure, participants, stillOn);
         endVisitsOver(zone);
+        // visits just ended (or ended after the wait for the zone): put back now, they don't stand in the round's way
+        ZoneBubbles.finishRestoring(zone);
         ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, participants, spectators, new ZoneBubble.Options(adventure));
         if (!begun.isActive()) {
             refused = begun.refusalText();

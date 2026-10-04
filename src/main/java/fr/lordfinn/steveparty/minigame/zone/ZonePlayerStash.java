@@ -1,21 +1,29 @@
 package fr.lordfinn.steveparty.minigame.zone;
 
 import fr.lordfinn.steveparty.mixin.PlayerShoulderInvoker;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 import java.util.UUID;
 
 /**
  * What a player owns and leaves at the door of a session: inventory (armour, off hand, what the cursor and the
- * crafting grid held), ender chest, experience, selected slot and game mode. Taken as NBT when the player comes in,
+ * crafting grid held), ender chest, experience, selected slot, game mode, status effects (paused meanwhile: a potion
+ * drunk before does not help in the round, one drunk in the round does not follow out of it) and spawn point (a bed
+ * slept in during the round does not move it). Health and hunger are not: the round is played in the player's body. Taken as NBT when the player comes in,
  * given back when it leaves; in between the player holds a session inventory, empty at first, destroyed at the end.
  */
 final class ZonePlayerStash {
@@ -50,6 +58,17 @@ final class ZonePlayerStash {
         nbt.putFloat("XpProgress", player.experienceProgress);
         nbt.putInt("XpTotal", player.totalExperience);
         nbt.putInt("GameMode", player.interactionManager.getGameMode().getId());
+        NbtList effects = new NbtList();
+        for (StatusEffectInstance effect : player.getStatusEffects()) effects.add(effect.writeNbt());
+        nbt.put("Effects", effects);
+        BlockPos spawn = player.getSpawnPointPosition();
+        nbt.putBoolean("HasSpawn", spawn != null);
+        if (spawn != null) {
+            nbt.putString("SpawnDimension", player.getSpawnPointDimension().getValue().toString());
+            nbt.putLong("SpawnPos", spawn.asLong());
+            nbt.putFloat("SpawnAngle", player.getSpawnAngle());
+            nbt.putBoolean("SpawnForced", player.isSpawnForced());
+        }
         return nbt;
     }
 
@@ -58,6 +77,7 @@ final class ZonePlayerStash {
         player.getInventory().clear();
         player.getEnderChestInventory().clear();
         setExperience(player, 0, 0, 0);
+        player.clearStatusEffects();
         player.addCommandTag(TAG);
         player.currentScreenHandler.syncState();
     }
@@ -82,6 +102,12 @@ final class ZonePlayerStash {
         inventory.selectedSlot = MathHelper.clamp(stash.getInt("SelectedSlot"), 0, PlayerInventory.getHotbarSize() - 1);
         if (player.networkHandler != null) player.networkHandler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
         setExperience(player, stash.getInt("XpLevel"), stash.getFloat("XpProgress"), stash.getInt("XpTotal"));
+        player.clearStatusEffects();
+        for (NbtElement element : stash.getList("Effects", NbtElement.COMPOUND_TYPE)) {
+            StatusEffectInstance effect = StatusEffectInstance.fromNbt((NbtCompound) element);
+            if (effect != null) player.addStatusEffect(effect);
+        }
+        if (stash.contains("HasSpawn")) restoreSpawn(player, stash);
         GameMode mode = GameMode.byId(stash.getInt("GameMode"));
         if (player.interactionManager.getGameMode() != mode) player.changeGameMode(mode);
         player.removeCommandTag(TAG);
@@ -96,7 +122,18 @@ final class ZonePlayerStash {
         player.removeCommandTag(DEAD_TAG);
         player.getInventory().clone(body.getInventory());
         setExperience(player, body.experienceLevel, body.experienceProgress, body.totalExperience);
+        for (StatusEffectInstance effect : body.getStatusEffects()) player.addStatusEffect(new StatusEffectInstance(effect));
         player.currentScreenHandler.syncState();
+    }
+
+    private static void restoreSpawn(ServerPlayerEntity player, NbtCompound stash) {
+        Identifier dimension = Identifier.tryParse(stash.getString("SpawnDimension"));
+        if (!stash.getBoolean("HasSpawn") || dimension == null) {
+            player.setSpawnPoint(World.OVERWORLD, null, 0, false, false);
+            return;
+        }
+        player.setSpawnPoint(RegistryKey.of(RegistryKeys.WORLD, dimension), BlockPos.fromLong(stash.getLong("SpawnPos")),
+                stash.getFloat("SpawnAngle"), stash.getBoolean("SpawnForced"), false);
     }
 
     /** The player dies where what it drops is destroyed: its session experience goes too, it drops no orb. */

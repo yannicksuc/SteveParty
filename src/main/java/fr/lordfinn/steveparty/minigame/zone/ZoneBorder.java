@@ -268,9 +268,11 @@ public final class ZoneBorder {
 
     /** @return true if an entity may not be added to the world: what makes it started on the other side, or it is forbidden in the zone it would be in */
     public static boolean blocksSpawn(ServerWorld world, Entity entity) {
-        if (bypass > 0 || Thread.currentThread() != thread) return false;
+        if (Thread.currentThread() != thread) return false;
         BlockPos pos = entity.getBlockPos();
         ZoneBubble bubble = ZoneBubbles.at(world, pos.getX(), pos.getY(), pos.getZ());
+        if (bubble != null) bubble.onSpawn(entity);
+        if (bypass > 0) return false;
         if (fromOtherSide(world, bubble)) return true;
         // What the server forbids in a zone does not spawn in one in session, whatever makes it (egg, dispenser, spawner, mod)
         return bubble != null && bubble.isActive() && ZoneForbidden.isForbidden(entity.getType());
