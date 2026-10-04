@@ -22,6 +22,9 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.MiniGamesCatalogueItem;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
 import fr.lordfinn.steveparty.minigame.MiniGamePageData;
+import fr.lordfinn.steveparty.minigame.MiniGameAdventure;
+import fr.lordfinn.steveparty.minigame.MiniGamePageNetworking;
+import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.minigame.MiniGamePipes;
@@ -148,7 +151,7 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         MiniGameControllerBlockEntity controller = context.getBlockEntity(HOME);
         controller.setPage(pageItem(id));
         if (zoned) MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(
-                new fr.lordfinn.steveparty.minigame.PageZone(context.getWorld().getRegistryKey(), zone(context).box())));
+                new fr.lordfinn.steveparty.minigame.PageZone(context.getWorld().getRegistryKey(), zone(context).box())).withRestore(true));
         return id;
     }
 
@@ -285,7 +288,6 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue(p1.interactionManager.getGameMode() == GameMode.SURVIVAL, "without the option, they keep their game mode");
             screen = new MiniGameControllerScreenHandler(2, p1.getInventory(), controller);
             context.assertTrue(screen.isLocked() && !screen.getSlot(MiniGameControllerScreenHandler.SLOT_PAGE).canTakeItems(p1), "the controller keeps its page during a round");
-            context.assertTrue(!screen.onButtonClick(p1, MiniGameControllerScreenHandler.BUTTON_ADVENTURE), "and its option");
 
             spoil(context, p1);
             lying.onPlayerCollision(p2);
@@ -352,33 +354,148 @@ public class MiniGameZoneGameTests implements FabricGameTest {
         done(context);
     }
 
-    /** The « adventure mode » option of the controller: the players of a round play in adventure mode, and get their mode back. */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_adventure")
-    public void theAdventureOptionOfTheController(TestContext context) {
+    /**
+     * « Remettre l'arène en état » is the page's: off, a page with a zone is played like one without (no bubble, every
+     * player keeps its own inventory); on, in a bubble. It can't be on without a zone, and a new zone starts it off.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_restore_option")
+    public void theArenaIsRestoredOnlyWhenThePageSaysSo(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();
         ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5);
         UUID id = arena(context, true);
         try {
             alone(context, p1, p2);
-            MiniGameControllerBlockEntity controller = context.getBlockEntity(HOME);
-            MiniGameControllerScreenHandler screen = new MiniGameControllerScreenHandler(1, p1.getInventory(), controller);
-            context.assertTrue(!screen.isAdventure() && !MiniGameControllers.isAdventure(server, id), "off by default");
-            context.assertTrue(screen.onButtonClick(p1, MiniGameControllerScreenHandler.BUTTON_ADVENTURE), "its button");
-            context.assertTrue(screen.isAdventure() && controller.isAdventure() && MiniGameControllers.isAdventure(server, id), "the option is on, and known of its page");
-            MiniGameControllers read = MiniGameControllers.fromNbt(MiniGameControllers.get(server).writeNbt(new NbtCompound(), world.getRegistryManager()), world.getRegistryManager());
-            context.assertTrue(read.adventure(id) && read.home(id).isPresent(), "saved with the controllers");
-            MiniGameControllerBlockEntity copy = new MiniGameControllerBlockEntity(controller.getPos(), controller.getCachedState());
-            copy.read(controller.createNbt(world.getRegistryManager()), world.getRegistryManager());
-            context.assertTrue(copy.isAdventure(), "and with the controller");
-
+            p1.getInventory().setStack(0, new ItemStack(Items.DIAMOND_SWORD));
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withRestore(false));
+            context.assertTrue(MiniGamePages.get(server, id).zone() != null && !MiniGamePages.get(server, id).restores(), "a zone, the option off");
             context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played");
+            context.assertTrue(ZoneBubbles.all().isEmpty() && ZoneBubbles.ofPlayer(p1) == null, "option off: no bubble");
+            context.assertTrue(p1.getInventory().getStack(0).isOf(Items.DIAMOND_SWORD), "everyone keeps its own inventory");
+            MiniGameTest.stop(id);
+
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withRestore(true));
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played again");
+            context.assertTrue(ZoneBubbles.ofPlayer(p1) != null && p1.getInventory().isEmpty(), "option on: in a bubble, with a session inventory");
+            MiniGameTest.stop(id);
+            context.assertTrue(ZoneBubbles.all().isEmpty() && p1.getInventory().getStack(0).isOf(Items.DIAMOND_SWORD), "stopped: the sword back");
+
+            MiniGamePageData page = MiniGamePages.get(server, id);
+            context.assertTrue(!page.withZone(null).restores() && !page.withZone(null).withRestore(true).restore(), "no zone, no restore");
+            context.assertTrue(!page.withZone(null).withZone(page.zone()).restore(), "a new zone starts without restore");
+            context.assertTrue(page.withZone(new fr.lordfinn.steveparty.minigame.PageZone(page.zone().dimension(), page.zone().box().expand(1))).restore(),
+                    "a zone moved keeps it");
+            ServerPlayerEntity editor = p2;
+            editor.changeGameMode(GameMode.CREATIVE);
+            ItemStack held = pageItem(id);
+            editor.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, held);
+            MiniGamePagePayloads.Action toggle = new MiniGamePagePayloads.Action(net.minecraft.util.Hand.MAIN_HAND, id, MiniGamePagePayloads.Action.Kind.RESTORE);
+            context.assertTrue(MiniGamePageNetworking.action(editor, toggle) && !MiniGamePages.get(server, id).restore(), "the editor's checkbox: off");
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withZone(null));
+            context.assertTrue(!MiniGamePageNetworking.action(editor, toggle) && !MiniGamePages.get(server, id).restore(), "no zone: the checkbox can't be ticked");
+            editor.changeGameMode(GameMode.SURVIVAL);
+        } finally {
+            cleanUp(context, id, p1, p2);
+        }
+        done(context);
+    }
+
+    /**
+     * « Mode aventure » is the page's too: its players play in adventure mode and get their own mode back, with the
+     * restore (in the bubble) as without it (no bubble); a mode taken by a round comes back when the player leaves or
+     * comes back to the server.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_adventure")
+    public void theAdventureModeOfThePage(TestContext context) {
+        ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
+        ServerPlayerEntity p1 = player(context, "a", 1.5, 1, 2.5), p2 = player(context, "b", 2.5, 1, 1.5);
+        UUID id = arena(context, true);
+        try {
+            alone(context, p1, p2);
+            context.assertTrue(!MiniGamePages.get(server, id).adventure(), "off by default");
+            ItemStack held = pageItem(id);
+            p2.changeGameMode(GameMode.CREATIVE);
+            p2.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, held);
+            context.assertTrue(MiniGamePageNetworking.action(p2, new MiniGamePagePayloads.Action(net.minecraft.util.Hand.MAIN_HAND, id,
+                    MiniGamePagePayloads.Action.Kind.ADVENTURE)) && MiniGamePages.get(server, id).adventure(), "the editor's checkbox: on");
+            p2.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, ItemStack.EMPTY);
+            p2.changeGameMode(GameMode.SURVIVAL);
+
+            // Without the restore: no bubble, adventure mode all the same
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withRestore(false));
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played without restore");
+            context.assertTrue(ZoneBubbles.all().isEmpty(), "no bubble");
             context.assertTrue(p1.interactionManager.getGameMode() == GameMode.ADVENTURE && p2.interactionManager.getGameMode() == GameMode.ADVENTURE, "its players are in adventure mode");
             MiniGameTest.stop(id);
             context.assertTrue(p1.interactionManager.getGameMode() == GameMode.SURVIVAL && p2.interactionManager.getGameMode() == GameMode.SURVIVAL, "and get their mode back");
-            context.assertTrue(screen.onButtonClick(p1, MiniGameControllerScreenHandler.BUTTON_ADVENTURE) && !MiniGameControllers.isAdventure(server, id), "off again");
+            context.assertTrue(MiniGameAdventure.own(p1) == null, "nothing left on them");
+
+            // With the restore: in the bubble, adventure mode
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withRestore(true));
+            context.assertEquals(MiniGameTest.start(server, id, p1, 0), MiniGameTest.Status.READY, "played with restore");
+            context.assertTrue(ZoneBubbles.ofPlayer(p1) != null && p1.interactionManager.getGameMode() == GameMode.ADVENTURE, "in the bubble, in adventure mode");
+            MiniGameTest.stop(id);
+            context.assertTrue(p1.interactionManager.getGameMode() == GameMode.SURVIVAL, "their mode back");
+
+            // A mode a round took comes back whatever happens (it is kept on the player)
+            context.assertTrue(MiniGameAdventure.apply(p1) && p1.interactionManager.getGameMode() == GameMode.ADVENTURE && MiniGameAdventure.own(p1) == GameMode.SURVIVAL,
+                    "taken, and remembered");
+            MiniGameAdventure.restore(p1);
+            context.assertTrue(p1.interactionManager.getGameMode() == GameMode.SURVIVAL && MiniGameAdventure.own(p1) == null, "given back");
         } finally {
             cleanUp(context, id, p1, p2);
+        }
+        done(context);
+    }
+
+    /**
+     * The options of the pages saved before them: a zone already there keeps being restored (it always was), a page
+     * without zone is not; the « adventure mode » of a controller (in it, and with the controllers' homes) goes to its page.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "minigame_zone_options_migration")
+    public void theOptionsOfOlderPages(TestContext context) {
+        ServerWorld world = context.getWorld();
+        MinecraftServer server = world.getServer();
+        net.minecraft.registry.RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
+        UUID id = arena(context, true);
+        try {
+            NbtCompound saved = MiniGamePages.get(server, id).withRestore(false).toNbt();
+            saved.putInt("Format", 5);
+            context.assertTrue(MiniGamePageData.fromNbt(saved).restores(), "a zone saved before the option: restored");
+            saved.remove("Zone");
+            context.assertTrue(!MiniGamePageData.fromNbt(saved).restore(), "no zone: not restored");
+            NbtCompound now = MiniGamePages.get(server, id).withRestore(false).toNbt();
+            context.assertTrue(!MiniGamePageData.fromNbt(now).restore() && MiniGamePageData.fromNbt(MiniGamePages.get(server, id).withAdventure(true).toNbt()).adventure(),
+                    "saved since: as it is");
+
+            // The controller's own option, as saved before
+            MiniGameControllerBlockEntity controller = context.getBlockEntity(HOME);
+            NbtCompound old = controller.createNbt(registries);
+            old.putBoolean("Adventure", true);
+            controller.read(old, registries);
+            controller.serverTick(world);
+            context.assertTrue(MiniGamePages.get(server, id).adventure(), "a controller's adventure mode goes to its page");
+            context.assertTrue(!controller.createNbt(registries).contains("Adventure"), "and is no longer the controller's");
+
+            // With the controllers' homes, as saved before
+            UUID other = UUID.randomUUID();
+            MiniGamePages.update(server, MiniGamePageData.empty(other).withTexts("Old " + SERIAL.incrementAndGet(), ""));
+            NbtCompound homes = new NbtCompound();
+            NbtList list = new NbtList();
+            NbtCompound home = new NbtCompound();
+            home.putUuid("Page", other);
+            home.putString("Dimension", world.getRegistryKey().getValue().toString());
+            home.putLong("Pos", context.getAbsolutePos(HOME).asLong());
+            home.putBoolean("Adventure", true);
+            list.add(home);
+            homes.put("Homes", list);
+            MiniGameControllers read = MiniGameControllers.fromNbt(homes, registries);
+            read.adoptOldZones(server);
+            context.assertTrue(MiniGamePages.get(server, other).adventure(), "saved with the homes: to the page");
+            context.assertTrue(!read.writeNbt(new NbtCompound(), registries).getList("Homes", 10).getCompound(0).contains("Adventure"), "no longer with the homes");
+        } finally {
+            cleanUp(context, id);
         }
         done(context);
     }

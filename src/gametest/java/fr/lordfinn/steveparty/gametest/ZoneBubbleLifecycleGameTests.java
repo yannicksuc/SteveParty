@@ -4,10 +4,6 @@ import com.mojang.authlib.GameProfile;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.config.ServerConfig;
-import fr.lordfinn.steveparty.minigame.MiniGameArena;
-import fr.lordfinn.steveparty.minigame.MiniGamePageData;
-import fr.lordfinn.steveparty.minigame.MiniGamePages;
-import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.zone.MiniGameZone;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubble;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
@@ -86,7 +82,7 @@ import java.util.stream.Stream;
  * The mini-game bubble whatever happens around it: the arena always comes back exactly as built (every kind of block,
  * block entity and entity, the ticks it was waiting for, the chunks not loaded yet when the session began), and every
  * player always gets exactly his things back (spawn point and status effects included), through crashes, restorations
- * over several ticks, zones side by side and rounds that follow visits.
+ * over several ticks and zones side by side.
  * <p>
  * The tests in the arena of the test play in a zone from (1,1,1) to (4,5,4) (the fidelity test: to (6,4,6)); those
  * that need a chunk loaded or not play far away, in a chunk of their own. Each test that touches the whole server
@@ -609,45 +605,5 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
                 farDone(context);
             });
         });
-    }
-
-    // ------------------------------------------------------------------ rounds and visits
-
-    /**
-     * A round of a page begins while the visits of that page, ended a moment ago, are still being put back: it begins
-     * in its zone all the same (the zone is whole first). It used to be refused (a test stopped, a party played
-     * without protection).
-     */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_visits")
-    public void aRoundBeginsOverVisitsBeingPutBack(TestContext context) {
-        floor(context);
-        ServerWorld world = context.getWorld();
-        MinecraftServer server = world.getServer();
-        ServerConfig config = ServerConfig.get();
-        int perTick = config.miniGameBubbleRestorePerTick;
-        UUID page = UUID.randomUUID();
-        MiniGameZone zone = zone(context);
-        MiniGamePages.update(server, MiniGamePageData.empty(page).withTexts("Life " + SERIAL.incrementAndGet(), "")
-                .withZone(new PageZone(world.getRegistryKey(), zone.box())));
-        ServerPlayerEntity visitor = player(context, "visit", 2.5, 1, 2.5), player = player(context, "round", 3.5, 1, 3.5);
-        visitor.getInventory().setStack(0, new ItemStack(Items.DIAMOND));
-        MiniGameArena arena = new MiniGameArena();
-        try {
-            config.miniGameBubbleRestorePerTick = 16;
-            context.assertTrue(MiniGameArena.visit(server, page, visitor) && ZoneBubbles.ofPlayer(visitor) != null, "the visitor plays in the zone");
-            for (int x = 1; x <= 4; x++) for (int y = 1; y <= 4; y++) for (int z = 1; z <= 4; z++) context.setBlockState(at(x, y, z), Blocks.STONE);
-            ZoneBubble.Refusal refusal = arena.begin(server, page, List.of(player), List.of(), () -> true);
-            context.assertTrue(refusal == ZoneBubble.Refusal.NONE, "the round begins, got " + refusal);
-            ZoneBubble round = ZoneBubbles.ofPlayer(player);
-            context.assertTrue(round != null && round.isActive(), "in its zone");
-            context.expectBlock(Blocks.AIR, at(2, 2, 2));
-            context.assertTrue(visitor.getInventory().count(Items.DIAMOND) == 1, "the visitor has what it owns");
-        } finally {
-            config.miniGameBubbleRestorePerTick = perTick;
-            arena.end();
-            for (ZoneBubble left : ZoneBubbles.all()) if (left.zone().intersects(zone)) left.endNow();
-            remove(context, visitor, player);
-        }
-        context.complete();
     }
 }

@@ -36,7 +36,11 @@ public final class ServerConfig {
     private static final String OLD_SWITCHABLE_KEY = "switchable_blocks";
     private static ServerConfig current = new ServerConfig();
 
-    /** The whole feature: off, a session starts no bubble (nothing is journaled, swapped or guarded). */
+    /**
+     * « Remise en état des arènes », the master switch: off, no round is played in a bubble anywhere, whatever its page
+     * says (nothing is journaled, swapped or guarded). On, the pages with a zone and their « Remettre l'arène en état »
+     * option on have one.
+     */
     public boolean miniGameBubble = true;
     /** The longest side a zone may have, in blocks: a bigger zone starts no session. */
     public int miniGameBubbleMaxSize = 128;

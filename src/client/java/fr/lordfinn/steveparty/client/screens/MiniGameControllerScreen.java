@@ -36,8 +36,10 @@ import static fr.lordfinn.steveparty.screen_handlers.custom.MiniGameControllerSc
 /**
  * The Mini-game Controller's screen, as its approved mock-up (the art sources, « direction
  * C, v2 »): the block's monitor (the page's picture, its title, its way to play and players, what the mini-game is doing
- * or why it can't be played) on a cloud console, the console's two rows (the page slot and the « Adventure » switch; the
- * page's zone and the button: ▶ Play, ■ Stop, ✔ Ready), the inventory in its own console panel below.
+ * or why it can't be played) on a cloud console, the console's two rows (the page slot and, read only, the page's
+ * « Mode aventure »; the page's zone, its pictogram filled when the arena is put back after each round, and the
+ * button: ▶ Play, ■ Stop, ✔ Ready), the inventory in its own console panel below. The page's options are set in its
+ * editor.
  */
 public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerScreenHandler> {
     private static final String KEY = "gui.steveparty.mini_game_controller.";
@@ -65,7 +67,6 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
 
     /** What the widgets were built for: rebuilt when it changes. */
     private @Nullable Object builtFor;
-    private @Nullable AdventureSwitch adventure;
 
     public MiniGameControllerScreen(MiniGameControllerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -75,7 +76,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
 
     private Object signature() {
         return List.of(state(), handler.isVoter(), handler.isReady(), handler.readyCount(), handler.voters(), handler.players(), handler.format(), java.util.Arrays.toString(handler.shortfall()),
-                handler.isAdventure(), handler.isLocked(), handler.forbiddenPos());
+                handler.isLocked(), handler.forbiddenPos());
     }
 
     private State state() {
@@ -92,13 +93,6 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         super.init();
         builtFor = signature();
         State state = state();
-        // Row 1: the zone's option, its players play in adventure mode (a switch, at the right)
-        Text adventureLabel = Text.translatable(KEY + "adventure");
-        int labelWidth = textRenderer.getWidth(adventureLabel) - 1;
-        int ax = x + CX + CW - SWITCH_W - 4 - labelWidth;
-        adventure = addDrawableChild(new AdventureSwitch(ax, y + ROW1_Y, SWITCH_W + 4 + labelWidth, BUTTON_H, adventureLabel));
-        adventure.active = !handler.isLocked() && client != null && client.player != null && MiniGamePages.canEdit(client.player);
-        adventure.setTooltip(Tooltip.of(Text.translatable(KEY + "adventure.tooltip")));
         // Row 2: the button, its colour and icon saying the state
         int bx = x + CX + CW - BUTTON_W, by = y + ROW2_Y;
         if (state == State.PARTY_PRACTICE) {
@@ -189,8 +183,13 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         } else {
             // The zone's line: whole, and where it is drawn
             if (mouseX >= x + CX && mouseX < x + CX + CW - BUTTON_W - 4 && mouseY >= y + ROW2_Y && mouseY < y + ROW2_Y + 18) {
+                MiniGamePageData data = page();
+                boolean restore = data != null && data.restores(), adventure = data != null && data.adventure();
                 context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(Text.empty().append(zoneText()).append("\n")
-                        .append(Text.translatable(KEY + "zone.tooltip").formatted(Formatting.GRAY)), 200), mouseX, mouseY);
+                        .append(Text.translatable(KEY + "zone.tooltip").formatted(Formatting.GRAY)).append("\n")
+                        .append(Text.translatable(KEY + (restore ? "restore.on" : "restore.off")).formatted(restore ? Formatting.GREEN : Formatting.GRAY)).append("\n")
+                        .append(Text.translatable(KEY + (adventure ? "adventure.on" : "adventure.off")).formatted(adventure ? Formatting.GREEN : Formatting.GRAY)),
+                        200), mouseX, mouseY);
             }
         }
     }
@@ -220,12 +219,13 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         // Its two own slots show, faded, the item they take while they are empty
         ghost(context, SLOT_PAGE, ModItems.MINI_GAME_PAGE);
         // Row 2: the zone's pictogram where row 1 has its slot, so that both labels line up
-        zonePictogram(context, x + PAGE_X - 1, y + ROW2_Y, handler.zoneSize()[0] > 0);
+        MiniGamePageData shown = page();
+        zonePictogram(context, x + PAGE_X - 1, y + ROW2_Y, handler.zoneSize()[0] > 0, shown != null && shown.restores());
         drawMonitor(context);
     }
 
     /** A box drawn by its corners (17 x 17, like a slot): ink when the page has a zone, faded when it has none. */
-    private static void zonePictogram(DrawContext context, int left, int top, boolean hasZone) {
+    private static void zonePictogram(DrawContext context, int left, int top, boolean hasZone, boolean restored) {
         int ink = hasZone ? INK : INK_GHOST, size = 17, arm = 5;
         for (int[] corner : new int[][]{{0, 0, 1, 1}, {size - 1, 0, -1, 1}, {0, size - 1, 1, -1}, {size - 1, size - 1, -1, -1}}) {
             int cx = left + corner[0], cy = top + corner[1];
@@ -233,7 +233,7 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
             context.fill(x0, cy, x0 + arm, cy + 1, ink);
             context.fill(cx, y0, cx + 1, y0 + arm, ink);
         }
-        if (hasZone) context.fill(left + 4, top + 4, left + size - 4, top + size - 4, 0x5546AE2E);
+        if (hasZone && restored) context.fill(left + 4, top + 4, left + size - 4, top + size - 4, 0x5546AE2E);
     }
 
     private void ghost(DrawContext context, int index, Item item) {
@@ -314,6 +314,12 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
         // Row 1: the page slot's label
         boolean hasPage = handler.getSlot(SLOT_PAGE).hasStack();
         dark(context, Text.translatable(KEY + "label.page"), LABEL_X, ROW1_Y + 5, hasPage ? INK : INK_GHOST);
+        // The page's « Mode aventure », read only (set in its editor)
+        MiniGamePageData data = page();
+        if (data != null && data.adventure()) {
+            Text adventure = Text.translatable(KEY + "adventure");
+            dark(context, adventure, CX + CW - textRenderer.getWidth(adventure) + 1, ROW1_Y + 5, INK);
+        }
         // Row 2: the zone, cut before the button
         int room = CX + CW - BUTTON_W - 4 - LABEL_X;
         dark(context, fitOrdered(zoneText(), room), LABEL_X, ROW2_Y + 5, handler.zoneSize()[0] <= 0 ? INK_GHOST : INK);
@@ -337,38 +343,5 @@ public class MiniGameControllerScreen extends HandledScreen<MiniGameControllerSc
     /** {@code text} on one line {@code width} pixels wide (its last pixel column), cut with « … » when longer. */
     private OrderedText fitOrdered(Text text, int width) {
         return MiniGamePageTooltipComponent.wrap(textRenderer, text, width + 1, 1).stream().findFirst().orElse(OrderedText.EMPTY);
-    }
-
-    // ------------------------------------------------------------------ the « Adventure » switch
-
-    /** The « Adventure » option: its label, then a switch (green and to the right when on). */
-    private final class AdventureSwitch extends PressableWidget {
-        AdventureSwitch(int x, int y, int width, int height, Text message) {
-            super(x, y, width, height, message);
-        }
-
-        @Override
-        public void onPress() {
-            click(BUTTON_ADVENTURE);
-        }
-
-        @Override
-        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-            boolean on = handler.isAdventure();
-            int sx = getX() + width - SWITCH_W, sy = getY() + 3;
-            ConsolePaint.pill(context, sx, sy, SWITCH_W, 12, on ? SWITCH_ON : SWITCH_OFF, true);
-            ConsolePaint.disc(context, sx + (on ? 13 : 1), sy + 1, 10, KNOB);
-            if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, sx - 1, sy - 1, SWITCH_W + 2, 14, -1, 0xFFFFFFFF, 0);
-            TextRenderer font = MinecraftClient.getInstance().textRenderer;
-            OrderedText label = getMessage().asOrderedText();
-            int colour = active ? INK : INK_GHOST;
-            context.drawText(font, label, getX() + 1, getY() + 6, 0xFFFFFFFF, false);
-            context.drawText(font, label, getX(), getY() + 5, colour, false);
-        }
-
-        @Override
-        protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-            appendDefaultNarrations(builder);
-        }
     }
 }

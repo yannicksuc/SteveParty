@@ -677,7 +677,9 @@ public class MiniGameControllerGameTests implements FabricGameTest {
 
             // Its readers: no controller needed
             context.assertEquals(MiniGameControllers.zoneOf(server, id), Optional.of(zone), "the zone of the page's mini-game, without controller");
-            context.assertTrue(MiniGameArena.zoneOf(server, id) != null && MiniGameArena.zoneOf(server, id).box().equals(box), "the bubble's zone");
+            context.assertTrue(MiniGameArena.zoneOf(server, id) == null, "a new zone is not restored: no bubble's zone");
+            MiniGamePages.update(server, MiniGamePages.get(server, id).withRestore(true));
+            context.assertTrue(MiniGameArena.zoneOf(server, id) != null && MiniGameArena.zoneOf(server, id).box().equals(box), "restored: the bubble's zone");
             // Saved and sent with the page
             context.assertEquals(MiniGamePageData.fromNbt(MiniGamePages.get(server, id).toNbt()).zone(), zone, "saved with the page");
             net.minecraft.network.PacketByteBuf buf = new net.minecraft.network.PacketByteBuf(io.netty.buffer.Unpooled.buffer());
