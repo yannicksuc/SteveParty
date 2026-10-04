@@ -111,8 +111,9 @@ public final class MiniGameArena {
     public static ZoneBubble.Refusal check(MinecraftServer server, UUID pageId) {
         MiniGameZone zone = zoneOf(server, pageId);
         if (zone == null) return ZoneBubble.Refusal.NONE;
-        // Its own visits are no hindrance: a round ends them
+        // Its own visits are no hindrance: a round ends them, and those of any other page over its zone
         ZoneBubble.Refusal place = ZoneBubbles.checkPlace(server, zone, VISITS.get(pageId));
+        if (place == ZoneBubble.Refusal.OVERLAP && onlyVisitsOver(zone)) place = ZoneBubble.Refusal.NONE;
         if (place != ZoneBubble.Refusal.NONE) return playable(place);
         return forbiddenBlock(server, pageId) != null ? ZoneBubble.Refusal.FORBIDDEN_BLOCK : ZoneBubble.Refusal.NONE;
     }
@@ -130,6 +131,7 @@ public final class MiniGameArena {
         cancelWait();
         if (pageId != null) endVisits(pageId);
         MiniGameZone zone = pageId == null ? null : zoneOf(server, pageId);
+        if (zone != null) endVisitsOver(zone);
         if (zone == null || !ZoneBubbles.isBeingRestored(zone)) {
             go.run();
             return;
@@ -173,6 +175,7 @@ public final class MiniGameArena {
         for (ServerPlayerEntity player : spectators) endVisit(player);
         MiniGameZone zone = zoneOf(server, pageId);
         if (zone == null) return ZoneBubble.Refusal.NONE;
+        endVisitsOver(zone);
         ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, participants, spectators,
                 new ZoneBubble.Options(MiniGameControllers.isAdventure(server, pageId)));
         if (!begun.isActive()) {
@@ -266,6 +269,24 @@ public final class MiniGameArena {
         AWAY.removeAll(bubble.members());
         MiniGamePipes.forgetVisits(pageId);
         bubble.end();
+    }
+
+    /**
+     * The visits of every page whose zone {@code zone} overlaps end: a round takes the place before them, whatever page
+     * they visit (another page over the same place, an unlinked copy of the round's page), else they would hold it up.
+     */
+    private static void endVisitsOver(MiniGameZone zone) {
+        for (Map.Entry<UUID, ZoneBubble> entry : new ArrayList<>(VISITS.entrySet())) {
+            if (entry.getValue().zone().intersects(zone)) endVisits(entry.getKey());
+        }
+    }
+
+    /** @return true if what is in session over {@code zone} is only visits (which a round ends) */
+    private static boolean onlyVisitsOver(MiniGameZone zone) {
+        for (ZoneBubble other : ZoneBubbles.all()) {
+            if (other.zone().intersects(zone) && !VISITS.containsValue(other)) return false;
+        }
+        return true;
     }
 
     /**
