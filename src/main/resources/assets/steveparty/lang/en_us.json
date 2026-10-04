@@ -1778,6 +1778,7 @@
   "block.steveparty.mini_game_controller": "Mini-game Controller",
   "tooltip.steveparty.mini_game_controller.page": "Holds a Mini-game Page.",
   "tooltip.steveparty.mini_game_controller.play": "Runs its mini-game: practice first, then for real in a party.",
+  "tooltip.steveparty.mini_game_controller.redstone": "Out of a party, a redstone pulse plays or stops it. A comparator reads what it is doing.",
   "message.steveparty.mini_game_controller.no_build": "You are not allowed to build here.",
   "message.steveparty.mini_game_controller.other_home": "This page already has its Mini-game Controller: a page has only one.",
   "gui.steveparty.mini_game_controller.card.empty": "No page: click the controller with a Mini-game Page, or put it in the slot below.",

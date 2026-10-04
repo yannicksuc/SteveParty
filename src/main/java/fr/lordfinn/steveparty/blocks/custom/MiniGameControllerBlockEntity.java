@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.minigame.MiniGameControllers;
 import fr.lordfinn.steveparty.minigame.PageZone;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
+import fr.lordfinn.steveparty.minigame.MiniGameTest;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import fr.lordfinn.steveparty.payloads.custom.BlockPosPayload;
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
@@ -44,6 +45,10 @@ import java.util.WeakHashMap;
  *     <li>In a party, a mini-game whose page has a controller starts with a practice round (see
  *     {@code MiniGamePartyStep}); the players vote for the real round with a key, or on this screen.</li>
  * </ul>
+ * Redstone, out of a party only: a rising edge of its power is the « Play » / « Stop » of its screen
+ * ({@link #playOrStop}); holding the power does nothing more, and while a party plays its mini-game it is ignored (the
+ * vote starts the real round). A comparator reads what its mini-game is doing ({@link Activity}).
+ * <p>
  * The page is synced to the clients (what the block shows of its mini-game).
  */
 public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
@@ -58,6 +63,10 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     private boolean oldAdventure;
     /** It said which page it holds since it was loaded. Not saved. */
     private boolean claimedOnce;
+    /** The redstone power it had at its last neighbour update (saved): only a rising edge acts. */
+    private boolean powered;
+    /** What its mini-game was doing at its last look (what comparators read). Not saved: looked at again within a few ticks. */
+    private Activity activity = Activity.IDLE;
     /** Client side: the controllers the client has loaded (whose zones it may show). */
     private static final Set<MiniGameControllerBlockEntity> CLIENT_LOADED = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
@@ -144,28 +153,107 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     /** How often the lamp looks at the mini-game of the page (the sessions have no event to listen to). */
     private static final int SIGNAL_INTERVAL_TICKS = 5;
 
-    /** What the mini-game of the page is doing: a party's practice round, being played (a party's real round, or out of a party), or nothing. */
-    public MiniGameControllerBlock.Signal signal() {
+    /** What the mini-game of the page is doing: its lamp, and the strength a comparator reads. */
+    public enum Activity {
+        /** Nobody plays it, or no page: lamp red, 0. */
+        IDLE(MiniGameControllerBlock.Signal.RED, 0),
+        /** A party plays its practice round: lamp orange, 1. */
+        PRACTICE(MiniGameControllerBlock.Signal.ORANGE, 1),
+        /** A party plays its real round: lamp green, 2. */
+        PARTY_ROUND(MiniGameControllerBlock.Signal.GREEN, 2),
+        /** It is played out of a party (its countdown, then its round): lamp green, 3. */
+        PLAYED(MiniGameControllerBlock.Signal.GREEN, 3),
+        /** Out of a party, its results are shown and everyone is about to be brought back: lamp red, 4. */
+        RESULTS(MiniGameControllerBlock.Signal.RED, 4);
+
+        public final MiniGameControllerBlock.Signal signal;
+        public final int strength;
+
+        Activity(MiniGameControllerBlock.Signal signal, int strength) {
+            this.signal = signal;
+            this.strength = strength;
+        }
+    }
+
+    /** What the mini-game of the page is doing now. */
+    public Activity activity() {
         UUID id = getPageId();
-        if (id == null) return MiniGameControllerBlock.Signal.RED;
+        if (id == null) return Activity.IDLE;
         java.util.Optional<fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity> party =
                 fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.getPartyPlayingPage(List.of(id));
         if (party.isPresent() && party.get().getPartyData().getCurrentStep()
                 instanceof fr.lordfinn.steveparty.blocks.custom.PartyController.steps.MiniGamePartyStep step) {
-            return step.isPractice() ? MiniGameControllerBlock.Signal.ORANGE : MiniGameControllerBlock.Signal.GREEN;
+            return step.isPractice() ? Activity.PRACTICE : Activity.PARTY_ROUND;
         }
-        fr.lordfinn.steveparty.minigame.MiniGameTest played = fr.lordfinn.steveparty.minigame.MiniGameTest.of(id);
-        return played != null && played.phase() != fr.lordfinn.steveparty.minigame.MiniGameTest.Phase.FINISHED
-                ? MiniGameControllerBlock.Signal.GREEN : MiniGameControllerBlock.Signal.RED;
+        MiniGameTest played = MiniGameTest.of(id);
+        if (played == null) return Activity.IDLE;
+        return played.phase() == MiniGameTest.Phase.FINISHED ? Activity.RESULTS : Activity.PLAYED;
     }
 
-    /** The block shows the page it holds and the lamp of its mini-game: changed only when they are not what it shows. */
+    /** The lamp: what the mini-game of the page is doing. */
+    public MiniGameControllerBlock.Signal signal() {
+        return activity().signal;
+    }
+
+    /** What a comparator reads: the strength of its {@link Activity} at its last look. */
+    public int comparatorOutput() {
+        return activity.strength;
+    }
+
+    /**
+     * The block shows the page it holds and the lamp of its mini-game: changed only when they are not what it shows;
+     * the comparators are told when what its mini-game is doing changed.
+     */
     public void refreshState() {
         if (!(world instanceof ServerWorld) || isRemoved()) return;
         BlockState state = world.getBlockState(pos);
         if (!(state.getBlock() instanceof MiniGameControllerBlock)) return;
-        BlockState wanted = state.with(MiniGameControllerBlock.PAGE, !page.isEmpty()).with(MiniGameControllerBlock.SIGNAL, signal());
+        Activity now = activity();
+        BlockState wanted = state.with(MiniGameControllerBlock.PAGE, !page.isEmpty()).with(MiniGameControllerBlock.SIGNAL, now.signal);
         if (wanted != state) world.setBlockState(pos, wanted, net.minecraft.block.Block.NOTIFY_LISTENERS);
+        if (now != activity) {
+            activity = now;
+            world.updateComparators(pos, wanted.getBlock());
+        }
+    }
+
+    // ------------------------------------------------------------------ played out of a party
+
+    /**
+     * « Play » / « Stop » out of a party (its screen's button, a rising edge of redstone): stops the mini-game of the
+     * page if it is played out of a party, else plays it with those near its pipes. Nothing while a party plays it,
+     * without page, or when it can't be played now.
+     *
+     * @param starter who asked (if not near a pipe, an observer), null for redstone
+     * @return true if it was started or stopped
+     */
+    public boolean playOrStop(@Nullable ServerPlayerEntity starter) {
+        UUID id = getPageId();
+        if (id == null || !(world instanceof ServerWorld serverWorld)
+                || fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity.getPartyPlayingPage(List.of(id)).isPresent()) return false;
+        boolean done = MiniGameTest.of(id) != null ? MiniGameTest.stop(id)
+                : MiniGameTest.start(serverWorld.getServer(), id, starter, MiniGameTest.COUNTDOWN_SECONDS) == MiniGameTest.Status.READY;
+        if (done) refreshState();
+        return done;
+    }
+
+    /** Server side: the redstone power it receives now. A rising edge plays or stops its mini-game out of a party. */
+    public void onPower(boolean power) {
+        if (power == powered) return;
+        // Kept before acting: what acting changes (the comparators) may come back here
+        powered = power;
+        markDirty();
+        if (power) playOrStop(null);
+    }
+
+    /** It is placed: the power it receives then is not an edge. */
+    public void initPower(boolean power) {
+        powered = power;
+        markDirty();
+    }
+
+    public boolean isPowered() {
+        return powered;
     }
 
     /** The controller is broken: its page has no home any more, what it held falls. */
@@ -231,6 +319,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
         if (!page.isEmpty()) nbt.put("Page", page.toNbt(wrapper));
+        if (powered) nbt.putBoolean("Powered", true);
     }
 
     @Override
@@ -240,6 +329,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
         // The Zone Cartridge an earlier version kept here: an item that no longer exists, only its zone is read
         if (nbt.contains("ZoneCartridge", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) oldZone = oldZone(nbt.getCompound("ZoneCartridge"));
         oldAdventure = nbt.getBoolean("Adventure");
+        powered = nbt.getBoolean("Powered");
     }
 
     /** The zone drawn on a saved Zone Cartridge (its {@code steveparty:zone-selection} component), null for none. */

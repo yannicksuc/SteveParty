@@ -1778,6 +1778,7 @@
   "block.steveparty.mini_game_controller": "Contrôleur de mini-jeu",
   "tooltip.steveparty.mini_game_controller.page": "Reçoit une Page de mini-jeu.",
   "tooltip.steveparty.mini_game_controller.play": "Lance son mini-jeu : essai d'abord, puis vraie manche en partie.",
+  "tooltip.steveparty.mini_game_controller.redstone": "Hors partie, une impulsion redstone le lance ou l'arrête. Un comparateur lit ce qu'il fait.",
   "message.steveparty.mini_game_controller.no_build": "Tu n'as pas le droit de construire ici.",
   "message.steveparty.mini_game_controller.other_home": "Cette page a déjà son Contrôleur de mini-jeu : une page n'en a qu'un.",
   "gui.steveparty.mini_game_controller.card.empty": "Aucune page : clique sur le contrôleur avec une Page de mini-jeu, ou place-la ci-dessous.",

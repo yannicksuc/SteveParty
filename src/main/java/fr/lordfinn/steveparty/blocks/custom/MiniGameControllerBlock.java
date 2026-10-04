@@ -34,12 +34,19 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * The Mini-game Controller block (see {@link MiniGameControllerBlockEntity}). A click with a Mini-game Page puts it
  * in when its slot is free; a sneaking click with empty hands takes the page back; any other click opens its screen. Putting in and taking out take the right to
- * build. No redstone, no comparator, no light.
+ * build. No light.
+ * <p>
+ * Redstone: out of a party, a rising edge of its power plays or stops its mini-game, like the « Play » / « Stop » of its
+ * screen; holding the power does nothing more, and while a party plays its mini-game the power is ignored. A
+ * comparator reads what its mini-game is doing ({@link MiniGameControllerBlockEntity.Activity}): 0 nobody plays it (or
+ * no page), 1 a party's practice round, 2 a party's real round, 3 played out of a party (countdown and round), 4 out
+ * of a party, its results shown before everyone is brought back.
  * <p>
  * Its look: a referee on a cloud, facing whoever placed it ({@link #FACING}), holding the page it was given
  * ({@link #PAGE}) next to a lamp that tells what the mini-game of that page is doing ({@link #SIGNAL}). The block
@@ -187,9 +194,38 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, java.util.List<Text> tooltip,
                               net.minecraft.item.tooltip.TooltipType options) {
         super.appendTooltip(stack, context, tooltip, options);
-        for (String line : java.util.List.of("page", "play")) {
+        for (String line : java.util.List.of("page", "play", "redstone")) {
             tooltip.add(Text.translatable("tooltip.steveparty.mini_game_controller." + line).formatted(Formatting.GRAY));
         }
+    }
+
+    /** It is placed: the power it receives then is not an edge (it acts on the next one). */
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, ItemStack stack) {
+        super.onPlaced(world, pos, state, placer, stack);
+        if (!world.isClient && world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller) {
+            controller.initPower(world.isReceivingRedstonePower(pos));
+        }
+    }
+
+    /** Redstone: only a change of its power is looked at (no polling); a rising edge acts out of a party. */
+    @Override
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+        if (!world.isClient && world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller) {
+            controller.onPower(world.isReceivingRedstonePower(pos));
+        }
+    }
+
+    @Override
+    protected boolean hasComparatorOutput(BlockState state) {
+        return true;
+    }
+
+    /** What its mini-game is doing ({@link MiniGameControllerBlockEntity.Activity}). */
+    @Override
+    protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+        return world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller ? controller.comparatorOutput() : 0;
     }
 
     @Override
