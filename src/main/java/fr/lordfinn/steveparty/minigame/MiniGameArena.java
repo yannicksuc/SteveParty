@@ -33,10 +33,8 @@ import java.util.function.Supplier;
  * real round ({@code MiniGamePartyStep}). A page without zone is played as ever, and so is every page when the bubble
  * is turned off on the server.
  * <p>
- * <b>Visits</b>: those who come by a mini-game pipe, out of any round ({@code MiniGamePipes}), play in a bubble too:
- * one per page, begun with its first visitor ({@link #visit}), each next one joining it; a visitor leaves it by a way
- * out ({@link #endVisit}), and the zone is put back once the last one is gone. A round of the page ends the visits
- * first (the visitors get back what they own and are sent out of the zone): the round waits for the zone as usual.
+ * Only a started round has a bubble: whoever comes into an arena out of a round, on foot or by a mini-game pipe, plays
+ * in it as in the world (his own inventory, no border, nothing put back).
  * <p>
  * One arena per session, used round after round, always in this order:
  * <ol>
@@ -64,11 +62,6 @@ public final class MiniGameArena {
 
     private static final Map<UUID, Seen> SEEN = new HashMap<>();
 
-    /** The bubble of the visits of each page with visitors. */
-    private static final Map<UUID, ZoneBubble> VISITS = new HashMap<>();
-    /** The visitors found out of the zone at the last look: gone at the next one if they still are (see {@link #watchVisits}). */
-    private static final java.util.Set<UUID> AWAY = new java.util.HashSet<>();
-
     private @Nullable ZoneBubble bubble;
     /** The participants of a round played without bubble put in adventure mode by the page's option. */
     private final java.util.Set<UUID> adventurers = new java.util.HashSet<>();
@@ -86,17 +79,14 @@ public final class MiniGameArena {
         ZoneBubbles.keepLive(ModBlockEntities.PARTY_CONTROLLER_ENTITY);
         ZoneBubbles.keepLive(entity -> TokenBase.isToken(entity) && PartyControllerEntity.isTokenInRunningParty(entity.getUuid()));
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if ((PLAYED.isEmpty() && VISITS.isEmpty()) || server.getTicks() % WATCH_INTERVAL_TICKS != 0) return;
+            if (PLAYED.isEmpty() || server.getTicks() % WATCH_INTERVAL_TICKS != 0) return;
             for (MiniGameArena arena : new ArrayList<>(PLAYED)) {
                 if (!arena.stillOn.getAsBoolean()) arena.end();
             }
-            watchVisits(server);
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             PLAYED.clear();
             SEEN.clear();
-            VISITS.clear();
-            AWAY.clear();
         });
     }
 
@@ -118,9 +108,7 @@ public final class MiniGameArena {
     public static ZoneBubble.Refusal check(MinecraftServer server, UUID pageId) {
         MiniGameZone zone = zoneOf(server, pageId);
         if (zone == null) return ZoneBubble.Refusal.NONE;
-        // Its own visits are no hindrance: a round ends them, and those of any other page over its zone
-        ZoneBubble.Refusal place = ZoneBubbles.checkPlace(server, zone, VISITS.get(pageId));
-        if (place == ZoneBubble.Refusal.OVERLAP && onlyVisitsOver(zone)) place = ZoneBubble.Refusal.NONE;
+        ZoneBubble.Refusal place = ZoneBubbles.checkPlace(server, zone);
         if (place != ZoneBubble.Refusal.NONE) return playable(place);
         return forbiddenBlock(server, pageId) != null ? ZoneBubble.Refusal.FORBIDDEN_BLOCK : ZoneBubble.Refusal.NONE;
     }
@@ -136,9 +124,7 @@ public final class MiniGameArena {
     public void whenZoneFree(MinecraftServer server, @Nullable UUID pageId, BooleanSupplier stillWanted,
                              Supplier<Collection<ServerPlayerEntity>> audience, Runnable go) {
         cancelWait();
-        if (pageId != null) endVisits(pageId);
         MiniGameZone zone = pageId == null ? null : zoneOf(server, pageId);
-        if (zone != null) endVisitsOver(zone);
         if (zone == null || !ZoneBubbles.isBeingRestored(zone)) {
             go.run();
             return;
@@ -177,13 +163,9 @@ public final class MiniGameArena {
                                     Collection<ServerPlayerEntity> spectators, BooleanSupplier stillOn) {
         end();
         refused = null;
-        endVisits(pageId);
-        for (ServerPlayerEntity player : participants) endVisit(player);
-        for (ServerPlayerEntity player : spectators) endVisit(player);
         MiniGameZone zone = zoneOf(server, pageId);
         boolean adventure = MiniGamePages.get(server, pageId).adventure();
         if (zone == null) return adventureWithoutBubble(adventure, participants, stillOn);
-        endVisitsOver(zone);
         ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, participants, spectators, new ZoneBubble.Options(adventure));
         if (!begun.isActive()) {
             refused = begun.refusalText();
@@ -215,114 +197,6 @@ public final class MiniGameArena {
         ZoneForbidden.FoundBlock block = ZoneBubbles.forbiddenBlock(server, zone);
         SEEN.put(pageId, new Seen(zone, now, block));
         return block;
-    }
-
-    // ------------------------------------------------------------------ visits
-
-    /**
-     * {@code player} is about to come to the mini-game of {@code pageId} by a mini-game pipe, out of any round: when
-     * the page has a zone, he joins the bubble of its visits (begun now if it has none).
-     *
-     * @return false if the zone can't take him (a round is played in it, it is being put back, it holds a forbidden
-     * block...): he is told why and should not go
-     */
-    public static boolean visit(MinecraftServer server, UUID pageId, ServerPlayerEntity player) {
-        MiniGameZone zone = zoneOf(server, pageId);
-        ZoneBubble bubble = VISITS.get(pageId);
-        if (bubble != null && (!bubble.isActive() || !bubble.zone().equals(zone))) {
-            endVisits(pageId);
-            bubble = null;
-        }
-        if (zone == null) return true;
-        AWAY.remove(player.getUuid());
-        if (bubble != null) {
-            if (!bubble.isMember(player.getUuid())) {
-                endVisit(player);
-                bubble.addParticipant(player);
-            }
-            return true;
-        }
-        endVisit(player);
-        ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, List.of(player), List.of(),
-                new ZoneBubble.Options(MiniGamePages.get(server, pageId).adventure()));
-        if (begun.isActive()) {
-            VISITS.put(pageId, begun);
-            return true;
-        }
-        if (begun.refusal() == ZoneBubble.Refusal.DISABLED) return true;
-        Text why = begun.refusalText();
-        player.sendMessage(Text.translatable("message.steveparty.zone_bubble.visit_refused", why == null ? Text.empty() : why)
-                .formatted(Formatting.RED), true);
-        return false;
-    }
-
-    /** {@code player} leaves the visits he is in (a way out): he gets back what he owns; the last one out puts the zone back. */
-    public static void endVisit(ServerPlayerEntity player) {
-        AWAY.remove(player.getUuid());
-        for (Map.Entry<UUID, ZoneBubble> entry : new ArrayList<>(VISITS.entrySet())) {
-            ZoneBubble bubble = entry.getValue();
-            if (!bubble.isMember(player.getUuid())) continue;
-            bubble.removePlayer(player);
-            if (bubble.members().isEmpty()) {
-                VISITS.remove(entry.getKey());
-                bubble.end();
-            }
-        }
-    }
-
-    /** The visits of the page end (a round of it begins): the visitors get back what they own, the zone is put back. */
-    public static void endVisits(UUID pageId) {
-        ZoneBubble bubble = VISITS.remove(pageId);
-        if (bubble == null) return;
-        AWAY.removeAll(bubble.members());
-        MiniGamePipes.forgetVisits(pageId);
-        bubble.end();
-    }
-
-    /**
-     * The visits of every page whose zone {@code zone} overlaps end: a round takes the place before them, whatever page
-     * they visit (another page over the same place, an unlinked copy of the round's page), else they would hold it up.
-     */
-    private static void endVisitsOver(MiniGameZone zone) {
-        for (Map.Entry<UUID, ZoneBubble> entry : new ArrayList<>(VISITS.entrySet())) {
-            if (entry.getValue().zone().intersects(zone)) endVisits(entry.getKey());
-        }
-    }
-
-    /** @return true if what is in session over {@code zone} is only visits (which a round ends) */
-    private static boolean onlyVisitsOver(MiniGameZone zone) {
-        for (ZoneBubble other : ZoneBubbles.all()) {
-            if (other.zone().intersects(zone) && !VISITS.containsValue(other)) return false;
-        }
-        return true;
-    }
-
-    /**
-     * Once a second: a visitor out of the zone (not travelling through pipes) at two looks in a row never came in, or was
-     * sent away: he leaves the visits. A bubble left empty (its last visitor gone) ends.
-     */
-    private static void watchVisits(MinecraftServer server) {
-        java.util.Set<UUID> away = new java.util.HashSet<>();
-        for (Map.Entry<UUID, ZoneBubble> entry : new ArrayList<>(VISITS.entrySet())) {
-            ZoneBubble bubble = entry.getValue();
-            for (UUID member : List.copyOf(bubble.members())) {
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(member);
-                if (player == null || fr.lordfinn.steveparty.blocks.custom.pipe.PipeTravel.isTravelling(player)
-                        || (bubble.zone().isIn(player.getWorld()) && bubble.zone().contains(player.getBlockPos()))) continue;
-                if (!AWAY.contains(member)) {
-                    away.add(member);
-                    continue;
-                }
-                bubble.removePlayer(player);
-                MiniGamePipes.forgetVisit(member);
-            }
-            if (bubble.members().isEmpty() || !bubble.isActive()) {
-                VISITS.remove(entry.getKey());
-                bubble.end();
-            }
-        }
-        AWAY.clear();
-        AWAY.addAll(away);
     }
 
     /**

@@ -315,8 +315,6 @@ public final class MiniGamePipes {
             ServerWorld there = link == null ? null : server.getWorld(link.mouth().dimension());
             Direction opening = there == null ? null : openingOf(there, link);
             if (opening == null) return null;
-            // The zone of the mini-game, if it has one: its bubble of visits
-            if (!MiniGameArena.visit(server, data.id(), player)) return null;
             if (enteredBy != null) {
                 VISITS.put(player.getUuid(), new Visit(data.id(), GlobalPos.create(world.getRegistryKey(), enteredBy.pos()), enteredBy.dir()));
             }
@@ -336,11 +334,7 @@ public final class MiniGamePipes {
         if (programmed != null && !isInParty(id) && DEFAULT_ARRIVALS.stream().anyMatch(role -> !programmed.pipes(role).isEmpty())) {
             return new PipeTravel.Passage(traveller -> {
                 MiniGamePipeLink link = arrivalFrom(world, mouth, programmed, null, traveller);
-                if (link == null || !MiniGameArena.visit(server, programmed.id(), traveller)) return false;
-                if (!emerge(server, link, traveller)) {
-                    MiniGameArena.endVisit(traveller);
-                    return false;
-                }
+                if (link == null || !emerge(server, link, traveller)) return false;
                 VISITS.put(traveller.getUuid(), new Visit(programmed.id(), here, opening));
                 return true;
             });
@@ -374,35 +368,21 @@ public final class MiniGamePipes {
 
     private static boolean wayOut(MinecraftServer server, ServerPlayerEntity player, UUID page, @Nullable Seat seat) {
         UUID id = player.getUuid();
-        // The zone he leaves: no way out leads into it (the last visitor gone, it is put back at once, as built,
-        // with no session to guard it: he would stand in it with what he owns)
+        // The zone he leaves: no way out leads into it (the round's bubble gone, he would stand in it with what he owns)
         fr.lordfinn.steveparty.minigame.zone.ZoneBubble left = fr.lordfinn.steveparty.minigame.zone.ZoneBubbles.ofPlayer(player);
         fr.lordfinn.steveparty.minigame.zone.MiniGameZone zone = left != null ? left.zone() : MiniGameArena.zoneOf(server, page);
         Predicate<GlobalPos> out = pos -> zone == null || !zone.dimension().equals(pos.dimension()) || !zone.contains(pos.pos());
         MiniGameReturns.Return back = seat == null ? null : seat.leave().apply(player);
         leaveParty(id);
         Visit visit = VISITS.remove(id);
-        // Out of the bubble of the visits first: the way out is out of the zone
-        MiniGameArena.endVisit(player);
         if (visit != null && out.test(visit.mouth())
                 && emerge(server, new MiniGamePipeLink(visit.mouth(), visit.opening(), MiniGamePipeRole.ENTRY), player)) return true;
         GlobalPos nearest = MiniGamePipeIndex.nearest(server, page, GlobalPos.create(player.getWorld().getRegistryKey(), player.getBlockPos()), out);
         if (nearest != null && emerge(server, new MiniGamePipeLink(nearest, Direction.UP, MiniGamePipeRole.ENTRY), player)) return true;
         if (back != null && MiniGameReturns.bringBack(server, id, back)) return true;
-        // Nowhere to go (his ways gone, broken by a friend...): a visitor stays one, rather than being left in the
-        // zone with what he owns (he comes back out of the mouth he went in)
-        if (seat == null && left != null && MiniGameArena.visit(server, page, player) && visit != null) VISITS.put(id, visit);
+        // Nowhere to go (his ways gone, broken by a friend...): he comes back out of the mouth he went in, still knowing his way
+        if (seat == null && visit != null) VISITS.put(id, visit);
         return false;
-    }
-
-    /** {@code player} is no longer visiting a mini-game (he was sent out of its zone): no way out to remember. */
-    public static void forgetVisit(UUID player) {
-        VISITS.remove(player);
-    }
-
-    /** The visits of the mini-game of {@code page} are over (a round of it begins). */
-    public static void forgetVisits(UUID page) {
-        VISITS.values().removeIf(visit -> visit.page().equals(page));
     }
 
     /** The page of the round {@code player} is in, null for none. */
