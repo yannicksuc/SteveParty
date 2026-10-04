@@ -42,12 +42,13 @@ import java.util.Map;
  */
 public class PiggyBankBlock extends CartridgeContainer {
     public static final MapCodec<PiggyBankBlock> CODEC = Block.createCodec(PiggyBankBlock::new);
-    /** The pig for each facing: its body down to the hooves, and its head with the snout and the ears. */
+    /** The pig for each facing: the metal plate it stands on, its body down to the hooves, and its head with the snout and the ears. */
     private static final Map<Direction, VoxelShape> SHAPES = new EnumMap<>(Direction.class);
 
     static {
         for (Direction facing : Direction.Type.HORIZONTAL)
-            SHAPES.put(facing, VoxelShapes.union(turned(facing, 3, 0, 5, 13, 10, 15), turned(facing, 4, 3, 0, 12, 13, 5)));
+            SHAPES.put(facing, VoxelShapes.union(Block.createCuboidShape(0, 0, 0, 16, 2, 16), turned(facing, 3, 2, 5, 13, 12, 15),
+                    turned(facing, 4, 5, 0, 12, 15, 5)));
     }
 
     /** A box of the model (which faces north), turned around the middle of the block to face {@code facing}. */
