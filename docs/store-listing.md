@@ -18,9 +18,13 @@ Everything is crafted in survival, and redstone can drive almost all of it.
 - **Cartridges** give each space its behaviour: move forward or back, teleport, open a shop, replay a turn…
 - A **wrench** to trace the path and a **redstone router** to wire spaces to your own contraptions.
 
+![Board spaces, cartridges, waypoint, junction, wrench and redstone router](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/board.png)
+
 ### ♟️ Any mob can be a pawn
 
 Point the **Tokenizer Wand** at a mob and it becomes a pawn. Store it in a token and set it down again later.
+
+![Ten mobs turned into pawns on board spaces, the Tokenizer Wand and tokens](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/pawns.png)
 
 ### 🎮 Run a full party
 
@@ -28,6 +32,11 @@ Point the **Tokenizer Wand** at a mob and it becomes a pawn. Store it in a token
 - Players roll **single, double or triple dice**, move their pawns, and earn **coins** and **stars**.
 - A clean in-game HUD: the turn strip, the score table and the announcements, each placeable on screen.
 - The **finish pole** and the **podiums** close the game: jump to the top of the flag pole, then rank everyone.
+
+![A party running: the turn strip, the announcement and the score table](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/hud.png)
+![The Party Controller's dashboard during a party](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/party-controller.png)
+![Party Controller, Step Controller, Party Bell, Piggy Bank, dice, coins, stars and party cards](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/party.png)
+![Goal poles with flags, gold, silver and bronze podiums](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/finish-pole.png)
 
 ### 🏆 Mini-games, safe in survival
 
@@ -37,24 +46,35 @@ Point the **Tokenizer Wand** at a mob and it becomes a pawn. Store it in a token
 - During a round each player gets an inventory that exists only for the round, the zone is sealed, and every
   change made inside it is undone afterwards. No duplication, no griefing, no cleanup.
 
+![A mini-game arena, copper, iron and golden mini-game pipes, the Mini-game Controller and pages](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/minigames.png)
+
 ### 🎲 Dice Forge
 
 Carve your own dice faces and forge custom dice.
+
+![The Dice Forge's screen: faces in a ring, star fragments, modules](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/dice-forge-screen.png)
+![The Dice Forge, dice, forged dice, dice faces and modules](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/dice-forge.png)
 
 ### 🛒 Shops
 
 A stall, a cash register and a shopkeeper key to run a shop, and the **Boxed Trader**, a villager hiding in a
 cardboard box, to sell your shop's offers.
 
+![Trading Stall, Cash Register, Shopkeeper Key and five Boxed Traders](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/shops.png)
+
 ### ⭐ The Mula
 
 A small flying star creature. Feed it, watch it grow and dance around the Dice Forge, and look for new ones with
 the **Telescope** during shooting-star nights.
 
+![Mulas dancing around the Dice Forge at night, two Telescopes](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/mula.png)
+
 ### 🧱 Decoration
 
 Toy-like plastic blocks in 16 colours, plastic and glass pipes you can travel through, stencils to paint or engrave
 patterns, and polished, bevelled and checkered building blocks.
+
+![Plastic blocks in 16 colours, pipes, road and easel signs, polished and checkered blocks](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/decoration.png)
 
 ---
 
