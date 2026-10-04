@@ -17,9 +17,9 @@ import java.util.List;
 /**
  * A piston moves nothing across the border of a mini-game zone in session: if its head, a block it would push,
  * pull (slime and honey included) or break, or the place one of them would go to is on the other side, it does
- * not move at all.
+ * not move at all. Applied after the other mods' mixins (priority): the check also sees a push they allowed.
  */
-@Mixin(PistonHandler.class)
+@Mixin(value = PistonHandler.class, priority = 2000)
 public abstract class ZoneBubblePistonHandlerMixin {
     @Shadow
     @Final

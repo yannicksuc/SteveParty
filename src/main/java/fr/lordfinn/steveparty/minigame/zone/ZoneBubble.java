@@ -117,7 +117,8 @@ public final class ZoneBubble {
     private static final int MAX_PASSES = 6;
     /** Players this close to a zone have what they opened closed when its session begins. */
     private static final double SCREEN_REACH = 10;
-    private static final int WARN_INTERVAL_TICKS = 40;
+    /** How often the members are told again that the journal is full. */
+    private static final int JOURNAL_FULL_WARN_INTERVAL_TICKS = 200;
     /** How close to the far faces of the zone an entity is stopped: the block it stands in is still of the zone. */
     private static final double EDGE = 1.0E-4;
 
@@ -524,7 +525,7 @@ public final class ZoneBubble {
         boolean session = state == State.ACTIVE;
         if (journal.record(pos, old, own || !session, session)) return true;
         long now = world.getTime();
-        if (lastFullWarning < 0 || now - lastFullWarning >= WARN_INTERVAL_TICKS * 5L) {
+        if (lastFullWarning < 0 || now - lastFullWarning >= JOURNAL_FULL_WARN_INTERVAL_TICKS) {
             lastFullWarning = now;
             tell("journal_full");
         }
@@ -533,9 +534,10 @@ public final class ZoneBubble {
 
     // ------------------------------------------------------------------ every tick
 
-    void tick() {
+    /** @param restoreShare the blocks it may put back this tick, if it is being restored: its share of the budget */
+    void tick(int restoreShare) {
         if (state == State.ACTIVE) journal.flush();
-        else if (state == State.RESTORING) restore(ServerConfig.get().miniGameBubbleRestorePerTick);
+        else if (state == State.RESTORING) restore(restoreShare);
     }
 
     /** What the session journaled so far goes to its file (the world is about to be saved). */
