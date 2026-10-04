@@ -380,12 +380,13 @@ public class MiniGamePageEditorScreen extends Screen {
             if (active && (isHovered() || isFocused())) ConsolePaint.highlight(context, left, top, CHECK, CHECK, 1, TEAL2, 0);
             if (on.getAsBoolean()) {
                 int ink = active ? GREEN2 : INK3;
-                // A check mark: two strokes, 2 px thick
+                // A check mark: two strokes, 2 px thick, on rows 3..7 so it sits in the middle of the key (its bottom
+                // edge is darker, the mark looked high on rows 2..6)
                 for (int d = 0; d < 2; d++) {
-                    context.fill(left + 2 + d, top + 4 + d, left + 3 + d, top + 6 + d, ink);
+                    context.fill(left + 2 + d, top + 5 + d, left + 3 + d, top + 7 + d, ink);
                 }
                 for (int d = 0; d < 4; d++) {
-                    context.fill(left + 4 + d, top + 5 - d, left + 5 + d, top + 7 - d, ink);
+                    context.fill(left + 4 + d, top + 6 - d, left + 5 + d, top + 8 - d, ink);
                 }
             }
             context.drawText(textRenderer, fit(getMessage(), width - CHECK - 4), left + CHECK + 3, top + 2, active ? INK : INK3, false);
