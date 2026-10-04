@@ -45,7 +45,7 @@ import java.util.function.Supplier;
  *     it sends them through their pipes;</li>
  *     <li>{@link #end}, as soon as the round is over and its results are read on the podiums: everyone gets back
  *     what it owns (what the round pays goes to a real inventory) and the zone is put back; only then are the
- *     players brought back where they stood. {@link #leave} for one who goes before the end (the exit pipe).</li>
+ *     players brought back where they stood. {@link #leave} for one who goes before the end.</li>
  * </ol>
  * Nothing here runs every tick: a session left without its owner (a party controller broken during a round) is
  * found by a look every second, only while a round is played in a zone.

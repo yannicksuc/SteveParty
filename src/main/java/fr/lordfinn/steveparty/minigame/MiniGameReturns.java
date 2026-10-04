@@ -92,7 +92,8 @@ public final class MiniGameReturns extends PersistentState {
      */
     public static boolean bringBack(MinecraftServer server, UUID player, Return back) {
         ServerPlayerEntity online = server.getPlayerManager().getPlayer(player);
-        if (online != null) return teleport(online, back);
+        // On his death screen: brought back once respawned (AFTER_RESPAWN), the respawn would undo a teleport now
+        if (online != null && !online.isDead()) return teleport(online, back);
         MiniGameReturns state = get(server);
         state.pending.put(player, back);
         state.markDirty();
@@ -130,7 +131,18 @@ public final class MiniGameReturns extends PersistentState {
             if (inventory) player.sendMessage(Text.translatable("message.steveparty.zone_bubble.inventory_back"), false);
             return;
         }
-        bringBack(player, inventory);
+        if (!get(player.server).pending.containsKey(player.getUuid())) {
+            bringBack(player, inventory);
+            return;
+        }
+        // The tick after its join: the join itself puts it back where it was saved (in the arena) once the join hooks
+        // have run, which would undo a teleport now
+        MinecraftServer server = player.server;
+        UUID id = player.getUuid();
+        fr.lordfinn.steveparty.Steveparty.SCHEDULER.schedule(UUID.randomUUID(), 1, () -> {
+            ServerPlayerEntity joined = server.getPlayerManager().getPlayer(id);
+            if (joined != null && !joined.isDead()) bringBack(joined, inventory);
+        });
     }
 
     /** Puts the player where its round would have brought it back, if one ended while it was away, and says so. */

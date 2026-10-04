@@ -398,8 +398,8 @@ public class MiniGamePipeGameTests implements FabricGameTest {
 
     /**
      * The departure of a party's mini-game: each player comes out of a pipe of its team (two in the same pipe one
-     * after the other), the audience out of the spectators pipe; the exit pipe brings one back early, the end of the
-     * mini-game everyone else.
+     * after the other), the audience out of the spectators pipe; the pipes linked to the page are closed to them during
+     * the round (the exit pipe too); the end of the mini-game brings everyone back.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = PARTY_BATCH, tickLimit = 200)
     public void partySendsPlayersOutOfTheirPipesAndBack(TestContext context) {
@@ -450,14 +450,16 @@ public class MiniGamePipeGameTests implements FabricGameTest {
 
             when(context, () -> near(context, good, blue) && near(context, bad1, red1) && near(context, bad2, red2) && near(context, bad3, red1)
                     && near(context, watcher, white), 60, "they never all came out of their pipes", () -> {
-                // The exit pipe: back where it stood, before the others
+                // The exit pipe and the others linked to the page: closed during the round, to a player and to a spectator
                 context.waitAndRun(PipeTravel.COOLDOWN + 1, () -> {
-                    context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(yellow), Direction.UP, bad2, 0), "into the exit pipe");
-                    when(context, () -> !step.isAway(bad2.getUuid()) && !bad2.hasVehicle(), 20, "the exit pipe never brought the player back", () -> {
+                    Vec3d before = bad2.getPos(), watcherBefore = watcher.getPos();
+                    context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(yellow), Direction.UP, bad2, 0), "the player tries the exit pipe");
+                    context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(blue), Direction.UP, watcher, 0), "the spectator tries a linked pipe");
+                    context.waitAndRun(10, () -> {
                         try {
-                            context.assertTrue(bad2.getPos().distanceTo(starts.get(2)) < 0.01, "back where it stood: " + bad2.getPos());
-                            context.assertTrue(!MiniGamePipes.isInParty(bad2.getUuid()), "no longer in the mini-game");
-                            context.assertTrue(step.isAway(bad1.getUuid()) && near(context, bad1, red1), "the others play on");
+                            context.assertTrue(!PipeTravel.isTravelling(bad2) && bad2.getPos().distanceTo(before) < 0.01, "the exit pipe does nothing: " + bad2.getPos());
+                            context.assertTrue(!PipeTravel.isTravelling(watcher) && watcher.getPos().distanceTo(watcherBefore) < 0.01, "nor a linked pipe to a spectator");
+                            context.assertTrue(MiniGamePipes.isInParty(bad2.getUuid()) && step.isAway(bad2.getUuid()), "still in the mini-game");
                             context.assertTrue(step.isPlaying(), "the mini-game goes on");
 
                             // The end of the mini-game: everyone back

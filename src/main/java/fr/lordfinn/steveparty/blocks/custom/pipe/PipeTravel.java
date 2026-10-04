@@ -107,6 +107,8 @@ public final class PipeTravel {
      * @param go sends the player on; false if it could not: the player comes back out of the mouth
      */
     public record Passage(Predicate<ServerPlayerEntity> go) {
+        /** The mouth is closed to the player: he does not go in at all (he stays where he is). */
+        public static final Passage CLOSED = new Passage(player -> false);
     }
 
     private static final List<Gate> GATES = new ArrayList<>();
@@ -369,6 +371,7 @@ public final class PipeTravel {
             for (Gate gate : GATES) {
                 Passage passage = gate.passage(world, mouth, opening, player);
                 if (passage == null) continue;
+                if (passage == Passage.CLOSED) return;
                 PipeCarrierEntity carrier = PipeCarrierEntity.create(world, List.of(face(mouth, opening, 0.5), Vec3d.ofCenter(mouth)),
                         MathHelper.clamp(speed, BASE_SPEED, MAX_SPEED), origin, origin);
                 world.spawnEntity(carrier);

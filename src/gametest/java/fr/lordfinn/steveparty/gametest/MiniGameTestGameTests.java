@@ -189,7 +189,7 @@ public class MiniGameTestGameTests implements FabricGameTest {
             expected.put(w.getUuid(), MiniGamePipeRole.SPECTATORS);
             context.assertEquals(recruits, expected, "each near a pipe takes the role of the nearest; the exit pipe and 5 blocks away: nobody");
             // Someone already in a mini-game is not recruited
-            MiniGamePipes.enterParty(g.getUuid(), id, player -> null, () -> true);
+            MiniGamePipes.enterParty(g.getUuid(), id, () -> true);
             context.assertTrue(!MiniGameTest.recruit(server, MiniGamePages.get(server, id)).containsKey(g.getUuid()), "nobody in two mini-games at once");
         } finally {
             remove(context, g, b, w, exit, far);
@@ -530,12 +530,22 @@ public class MiniGameTestGameTests implements FabricGameTest {
             MiniGameReturns.simulateRestart(server);
             context.assertTrue(MiniGameReturns.isPending(server, away.getId()), "and still is after a restart");
             back = Reconnect.join(context, away);
-            context.assertTrue(at(back, start2), "it comes back where it stood before the test");
-            context.assertTrue(!MiniGameReturns.isPending(server, away.getId()), "once");
-        } finally {
+        } catch (RuntimeException e) {
             if (back != null) remove(context, back);
             cleanUp(context, id, p1, p2);
+            throw e;
         }
-        context.complete();
+        ServerPlayerEntity joined = back;
+        // Brought back the tick after it comes (the join itself puts it where it was saved)
+        context.waitAndRun(2, () -> {
+            try {
+                context.assertTrue(at(joined, start2), "it comes back where it stood before the test");
+                context.assertTrue(!MiniGameReturns.isPending(server, away.getId()), "once");
+            } finally {
+                remove(context, joined);
+                cleanUp(context, id, p1, p2);
+            }
+            context.complete();
+        });
     }
 }
