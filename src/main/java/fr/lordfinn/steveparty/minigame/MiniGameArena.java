@@ -173,6 +173,8 @@ public final class MiniGameArena {
         for (ServerPlayerEntity player : spectators) endVisit(player);
         MiniGameZone zone = zoneOf(server, pageId);
         if (zone == null) return ZoneBubble.Refusal.NONE;
+        // visits just ended (or ended after the wait for the zone): put back now, they don't stand in the round's way
+        ZoneBubbles.finishRestoring(zone);
         ZoneBubble begun = ZoneBubbles.begin(server, UUID.randomUUID(), zone, participants, spectators,
                 new ZoneBubble.Options(MiniGameControllers.isAdventure(server, pageId)));
         if (!begun.isActive()) {
