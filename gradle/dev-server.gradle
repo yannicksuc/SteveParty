@@ -33,6 +33,8 @@ loom {
             programArgs "--username", devServer.player, "--quickPlayMultiplayer", "localhost:${devServer.port}"
             // Started in the background: don't grab the mouse until the window really has the focus (MouseBackgroundDevMixin)
             vmArg "-Dsteveparty.dev.backgroundClient=true"
+            // The server can set it up for photos (ShowcaseCamera, the art sources)
+            vmArg "-Dsteveparty.dev.showcaseCamera=true"
         }
         clientJoin2 {
             client()
