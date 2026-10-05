@@ -88,7 +88,7 @@ public final class MaterialSprites {
         String wood = path.endsWith("_planks") ? path.substring(0, path.length() - "_planks".length()) : path;
         for (String candidate : new String[]{"stripped_" + wood + "_log", "stripped_" + wood + "_stem", "stripped_" + wood + "_block",
                 wood + "_log", wood + "_stem", wood + "_block"}) {
-            Block block = Registries.BLOCK.getOptionalValue(Identifier.of(planksId.getNamespace(), candidate)).orElse(null);
+            Block block = Registries.BLOCK.getOrEmpty(Identifier.of(planksId.getNamespace(), candidate)).orElse(null);
             if (block != null) return block;
         }
         return null;

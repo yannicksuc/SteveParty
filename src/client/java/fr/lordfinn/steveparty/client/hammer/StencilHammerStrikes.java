@@ -183,7 +183,7 @@ public final class StencilHammerStrikes {
                 double a = i * Math.PI * 2 / 24 + random.nextDouble() * 0.3;
                 double speed = 2.0 + random.nextDouble() * 1.5; // dust particles keep a tenth of it
                 Vec3d vel = u.multiply(Math.cos(a) * speed).add(v.multiply(Math.sin(a) * speed)).add(normal.multiply(0.3));
-                world.addParticle(new DustParticleEffect(rgb, 1.8F + random.nextFloat() * 1.0F), origin.x, origin.y, origin.z, vel.x, vel.y, vel.z);
+                world.addParticle(new DustParticleEffect(Vec3d.unpackRgb(rgb).toVector3f(), 1.8F + random.nextFloat() * 1.0F), origin.x, origin.y, origin.z, vel.x, vel.y, vel.z);
             }
         }
         if (client.player != null && client.player.getId() == payload.entityId()) shakeStart = world.getTime();

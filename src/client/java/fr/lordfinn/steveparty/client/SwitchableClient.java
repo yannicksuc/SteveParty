@@ -21,7 +21,7 @@ public final class SwitchableClient {
     public static void initialize() {
         ClientPlayNetworking.registerGlobalReceiver(SwitchableBlocksPayload.ID, (payload, context) -> context.client().execute(() ->
                 Switchables.setConfigBlocks(payload.blocks().stream()
-                        .map(id -> Registries.BLOCK.getOptionalValue(id).orElse(null))
+                        .map(id -> Registries.BLOCK.getOrEmpty(id).orElse(null))
                         .filter(Objects::nonNull)
                         .collect(Collectors.<Block>toSet()))));
 

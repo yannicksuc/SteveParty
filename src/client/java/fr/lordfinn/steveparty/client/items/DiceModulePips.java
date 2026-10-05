@@ -6,7 +6,7 @@ import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceModulesComponent;
 import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 
@@ -37,11 +37,13 @@ public final class DiceModulePips {
         if (modules.isEmpty()) return;
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 200); // over the item, like the stack count
+        RenderSystem.enableBlend();
         for (int i = 0; i < Math.min(modules.size(), MAX); i++) {
             Identifier texture = i == MAX - 1 && modules.size() > MAX ? MORE
                     : TEXTURES.computeIfAbsent(modules.get(i).id(), id -> Steveparty.id("textures/gui/dice_module/" + id + ".png"));
-            context.drawTexture(RenderLayer::getGuiTextured, texture, x + POSITIONS[i][0], y + POSITIONS[i][1], 0, 0, SIZE, SIZE, SIZE, SIZE);
+            context.drawTexture(texture, x + POSITIONS[i][0], y + POSITIONS[i][1], 0, 0, SIZE, SIZE, SIZE, SIZE);
         }
+        RenderSystem.disableBlend();
         context.getMatrices().pop();
     }
 }

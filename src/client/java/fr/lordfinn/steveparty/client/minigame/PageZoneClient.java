@@ -23,7 +23,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexRendering;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.ItemStack;
@@ -201,7 +201,7 @@ public final class PageZoneClient {
                 }
             }
         }
-        VertexRendering.drawBox(matrices, consumers.getBuffer(RenderLayer.getLines()), box.minX - camera.x, box.minY - camera.y, box.minZ - camera.z,
+        WorldRenderer.drawBox(matrices, consumers.getBuffer(RenderLayer.getLines()), box.minX - camera.x, box.minY - camera.y, box.minZ - camera.z,
                 box.maxX - camera.x, box.maxY - camera.y, box.maxZ - camera.z, red, green, blue, 1f);
     }
 

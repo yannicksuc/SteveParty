@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.minigame.MiniGamePipeRole;
 import fr.lordfinn.steveparty.podium.PodiumOccupant;
 import fr.lordfinn.steveparty.podium.Podiums;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.entity.model.EntityModelLayers;
@@ -215,14 +216,14 @@ public class PodiumRenderer implements BlockEntityRenderer<PodiumBlockEntity> {
     /** A 16x16 texture of the front face, transparent but for the pattern shrunk into the banner's middle. */
     private static Identifier register(byte[] shape, int rgb, boolean slab) {
         NativeImage image = new NativeImage(16, 16, true);
-        for (int x = 0; x < 16; x++) for (int y = 0; y < 16; y++) image.setColorArgb(x, y, 0);
+        for (int x = 0; x < 16; x++) for (int y = 0; y < 16; y++) image.setColor(x, y, 0);
         // full: cols 4..11 x rows 4..11 (hanging banner); slab: cols 6..9 x rows 4..6 (inside the label's border)
         int x0 = slab ? 6 : 4, y0 = 4, w = slab ? 4 : 8, h = slab ? 3 : 8;
         for (int cx = 0; cx < w; cx++) {
             for (int cy = 0; cy < h; cy++) {
                 if (anyIn(shape, cx * StencilShape.SIDE / w, (cx + 1) * StencilShape.SIDE / w,
                         cy * StencilShape.SIDE / h, (cy + 1) * StencilShape.SIDE / h))
-                    image.setColorArgb(x0 + cx, y0 + cy, 0xFF000000 | rgb);
+                    image.setColor(x0 + cx, y0 + cy, ColorHelper.Abgr.toAbgr(0xFF000000 | rgb));
             }
         }
         return MinecraftClient.getInstance().getTextureManager().registerDynamicTexture("podium_banner", new NativeImageBackedTexture(image));

@@ -16,9 +16,9 @@ public class BrickShadeModelPlugin implements ModelLoadingPlugin {
     private static final int VARIANTS = 4;
 
     @Override
-    public void initialize(Context context) {
+    public void onInitializeModelLoader(Context context) {
         context.modifyModelAfterBake().register((originalModel, ctx) -> {
-            Identifier id = ctx.resourceId();
+            Identifier id = BakedModelIds.of(ctx);
             if (id == null || !isBrickModel(id)) return originalModel;
             // The block's own texture, then its variants: textures/block/polished_bricks/<texture>_<n>.png
             Sprite own = originalModel.getParticleSprite();

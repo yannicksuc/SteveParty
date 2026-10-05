@@ -17,7 +17,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.RenderLayer;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.RenderTickCounter;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import net.minecraft.client.util.InputUtil;
@@ -176,7 +176,7 @@ public final class WrenchClient {
         if (!cartridge.isEmpty()) {
             ToolHud.box(context, x, y, false);
             context.drawItem(cartridge, x + INSET, y + INSET);
-            if (left >= 0) context.drawStackOverlay(client.textRenderer, cartridge, x + INSET, y + INSET, Integer.toString(left));
+            if (left >= 0) context.drawItemInSlot(client.textRenderer, cartridge, x + INSET, y + INSET, Integer.toString(left));
             return;
         }
         ToolHud.plate(context, x, y, ToolHud.BOX, ToolHud.BOX, ToolHud.Plate.RED);
@@ -187,7 +187,13 @@ public final class WrenchClient {
     /** Trace: the board view's chevron; Edit: the Wrench; Cut: shears. */
     private static void modeIcon(DrawContext context, WrenchMode mode, int x, int y) {
         switch (mode) {
-            case TRACE -> context.drawTexture(RenderLayer::getGuiTextured, TRACE_ICON, x, y, 0, 0, 16, 16, 16, 16, 0xFF3FB83F);
+            case TRACE -> {
+                RenderSystem.enableBlend();
+                RenderSystem.setShaderColor(0x3F / 255f, 0xB8 / 255f, 0x3F / 255f, 1f); // 0xFF3FB83F
+                context.drawTexture(TRACE_ICON, x, y, 0, 0, 16, 16, 16, 16);
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+                RenderSystem.disableBlend();
+            }
             case EDIT -> context.drawItem(EDIT_ICON, x, y);
             case CUT -> context.drawItem(CUT_ICON, x, y);
         }

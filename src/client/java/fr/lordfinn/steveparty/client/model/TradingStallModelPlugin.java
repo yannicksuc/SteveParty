@@ -17,7 +17,7 @@ public class TradingStallModelPlugin implements ModelLoadingPlugin {
     private static final Identifier MODEL_ID = Steveparty.id("block/trading_stall");
 
     @Override
-    public void initialize(Context context) {
+    public void onInitializeModelLoader(Context context) {
         context.addModels(List.of(
                 MODEL_ID,
                 Steveparty.id("block/trading_stall_ab"),

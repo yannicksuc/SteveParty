@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.TradingStallBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
@@ -54,6 +55,7 @@ public class TradingStallBakedModel implements BakedModel {
     @Override public boolean isBuiltin() { return false; }
     @Override public Sprite getParticleSprite() { return particleSprite; }
     @Override public ModelTransformation getTransformation() { return ModelTransformation.NONE; }
+    @Override public ModelOverrideList getOverrides() { return ModelOverrideList.EMPTY; }
 
 
     boolean isColorA(int color) {
