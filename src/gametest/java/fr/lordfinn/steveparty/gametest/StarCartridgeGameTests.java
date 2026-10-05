@@ -56,9 +56,14 @@ public class StarCartridgeGameTests implements FabricGameTest {
     private static final BlockPos START = new BlockPos(1, 1, 1), STAR = new BlockPos(3, 1, 1), END = new BlockPos(5, 1, 1);
     private static final BlockPos OTHER = new BlockPos(1, 1, 5), ANOTHER = new BlockPos(5, 1, 5);
     private static final BlockPos CONTROLLER = new BlockPos(8, 1, 8);
+    /** The party's bank: a chest holding the stars the star spaces sell, receiving the coins paid. */
+    private static final BlockPos BANK = new BlockPos(8, 1, 3);
+    /** The stars in the bank at the start. */
+    private static final int BANK_STARS = 2;
     private static final int PRICE = StarSettingsComponent.DEFAULT_PRICE;
 
-    private record Board(CowEntity token, PartyControllerEntity party, List<BlockPos> starSpaces) {
+    private record Board(CowEntity token, PartyControllerEntity party, List<BlockPos> starSpaces,
+                         net.minecraft.block.entity.ChestBlockEntity bank) {
         TokenizedEntityInterface tokenized() {
             return (TokenizedEntityInterface) token;
         }
@@ -117,7 +122,8 @@ public class StarCartridgeGameTests implements FabricGameTest {
         owner.setPosition(context.getAbsolute(new Vec3d(4, 1, -10)));
         PartyControllerEntity controller = party(context, cow, owner);
         controller.setStarSpace(context.getAbsolutePos(STAR));
-        return new Board(cow, controller, List.of(STAR, OTHER, ANOTHER));
+        net.minecraft.block.entity.ChestBlockEntity bank = BankFixtures.stock(context, controller, BANK, 0, BANK_STARS);
+        return new Board(cow, controller, List.of(STAR, OTHER, ANOTHER), bank);
     }
 
     private static int count(ServerPlayerEntity player, ItemStack template) {
@@ -160,6 +166,7 @@ public class StarCartridgeGameTests implements FabricGameTest {
     private static void finish(TestContext context, List<BlockPos> starSpaces, ServerPlayerEntity player) {
         for (BlockPos pos : starSpaces) context.setBlockState(pos, Blocks.AIR);
         context.setBlockState(CONTROLLER, Blocks.AIR);
+        context.setBlockState(BANK, Blocks.AIR);
         if (player != null) disconnect(context, player);
         context.complete();
     }
@@ -288,6 +295,8 @@ public class StarCartridgeGameTests implements FabricGameTest {
                     context.assertTrue(PartyStars.decide(owner, true), "bought");
                     context.assertEquals(count(owner, coin), 5, "the price paid");
                     context.assertEquals(count(owner, starItem), 1, "a star given");
+                    context.assertEquals(BankFixtures.count(board.bank(), starItem), BANK_STARS - 1, "the star taken from the bank");
+                    context.assertEquals(BankFixtures.count(board.bank(), coin), PRICE, "the coins paid into the bank");
                     BlockPos moved = board.party().getStarSpace();
                     context.assertTrue(context.getAbsolutePos(OTHER).equals(moved) || context.getAbsolutePos(ANOTHER).equals(moved),
                             "the star went to another star space, got " + moved);
@@ -297,6 +306,32 @@ public class StarCartridgeGameTests implements FabricGameTest {
                         board.tokenized().steveparty$setTokenized(false);
                         finish(context, board.starSpaces(), owner);
                     });
+                });
+            });
+        });
+    }
+
+    /** No star left in the bank: nothing to sell, the token goes on, nothing paid. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "star_cartridge_emptyBankSellsNothing")
+    public void emptyBankSellsNothing(TestContext context) {
+        withPlayer(context, owner -> {
+            Board board = board(context, owner, ModBlocks.TILE);
+            board.bank().clear();
+            ItemStack coin = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.COIN);
+            ItemStack starItem = board.party().getCurrency(fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency.STAR);
+            InventoryUtils.giveOrDrop(owner, coin, PRICE + 5);
+            later(context, 2, () -> {
+                context.assertFalse(PartyStars.buy(board.party(), context.getWorld(), owner, context.getAbsolutePos(STAR), PRICE),
+                        "no star to buy");
+                TokenMovementService.moveEntityOnBoard(board.token(), 2);
+                later(context, 50, () -> {
+                    context.assertFalse(PartyStars.isDeciding(board.token().getUuid()), "no choice");
+                    context.assertEquals(spaceOf(board.token()), context.getAbsolutePos(END), "the token went on");
+                    context.assertEquals(count(owner, coin), PRICE + 5, "nothing paid");
+                    context.assertEquals(count(owner, starItem), 0, "no star created");
+                    context.assertEquals(context.getAbsolutePos(STAR), board.party().getStarSpace(), "the star stays");
+                    board.tokenized().steveparty$setTokenized(false);
+                    finish(context, board.starSpaces(), owner);
                 });
             });
         });

@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -9,6 +10,7 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.InventoryInteractorTileBehavior;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.components.StarSettingsComponent;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -22,7 +24,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
@@ -56,8 +60,9 @@ import static net.minecraft.server.command.CommandManager.literal;
  *     <li>a token reaching it (passing over it, or only stopping on it, as its cartridge says; on a check point,
  *     always passing) pauses there if its owner has the coins: the owner chooses in the chat to buy it or not
  *     ({@value #DECISION_SECONDS} s, then it is bought); the Skeleton Key never walks past it;</li>
- *     <li>bought: the coins are paid (the party's coin, from the buyer's inventory), the buyer gets one of the party's
- *     stars, everyone is told, and the star goes to another active star space at random (the same one only if it is
+ *     <li>bought: the coins are paid (the party's coin, from the buyer's inventory, into the party's bank: what does
+ *     not fit falls by the controller), the buyer gets one of the party's stars taken from that bank (none left: no sale,
+ *     the token goes on), everyone is told, and the star goes to another active star space at random (the same one only if it is
  *     the board's only one);</li>
  *     <li>its space switched off (redstone, its cartridge taken out, broken): the star goes to another active star
  *     space, unless its Star Cartridge (still in the space) says to wait there; no active star space: it waits, hidden,
@@ -276,6 +281,12 @@ public final class PartyStars {
                     owner.getDisplayName(), price, coins).formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
             return false;
         }
+        // The star given comes from the party's bank: none left there, nothing to sell (the token goes on)
+        if (bankStars(party, world) <= 0) {
+            MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable("message.steveparty.star.bank_empty")
+                    .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
+            return false;
+        }
         Offer offer = new Offer(mob.getUuid(), ownerUuid, world, space.getPos().toImmutable(), party, price, passing,
                 world.getTime() + 20L * DECISION_SECONDS, tokenName);
         OFFERS.put(mob.getUuid(), offer);
@@ -367,9 +378,10 @@ public final class PartyStars {
 
     /**
      * {@code buyer} buys the star of {@code party} standing on {@code space} for {@code price} coins: the coins leave
-     * their inventory, one of the party's stars comes in, everyone is told, and the star goes to another star space.
+     * their inventory for the party's bank ({@link #deposit}), one of the party's stars comes from that bank into their
+     * inventory (nothing is created), everyone is told, and the star goes to another star space.
      *
-     * @return false if the star is not there or the buyer is short of coins (nothing changes)
+     * @return false if the star is not there, the buyer is short of coins or the bank has no star left (nothing changes)
      */
     public static boolean buy(PartyControllerEntity party, ServerWorld world, ServerPlayerEntity buyer, BlockPos space, int price) {
         if (!space.equals(party.getStarSpace())) return false;
@@ -380,8 +392,17 @@ public final class PartyStars {
                     .formatted(Formatting.GRAY), MessageUtils.MessageType.CHAT);
             return false;
         }
+        Inventory bank = bank(party, world);
+        ItemStack star = party.getCurrency(PartyCurrency.STAR);
+        if (bank == null || InventoryUtils.take(bank, star, 1) < 1) {
+            MessageUtils.sendToPlayers(audienceWith(party, buyer), Text.translatable("message.steveparty.star.bank_empty")
+                    .formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
+            return false;
+        }
+        bank.markDirty();
         InventoryUtils.take(buyer.getInventory(), coin, price);
-        InventoryUtils.giveOrDrop(buyer, party.getCurrency(PartyCurrency.STAR), 1);
+        deposit(party, world, coin.copyWithCount(price));
+        InventoryUtils.giveOrDrop(buyer, star, 1);
         List<ServerPlayerEntity> audience = party.getPartyAudience();
         if (!audience.contains(buyer)) audience.add(buyer);
         MessageUtils.sendToPlayers(audience, Text.translatable("message.steveparty.star.bought", buyer.getDisplayName(), price)
@@ -394,6 +415,40 @@ public final class PartyStars {
         world.spawnParticles(ParticleTypes.WAX_OFF, at.x, at.y + 1.0, at.z, 30, 0.6, 0.6, 0.6, 0.5);
         place(party, world, space);
         return true;
+    }
+
+    /**
+     * The coins paid for the star go back to the party: into its bank (the chests of the Gains page's Inventory
+     * Cartridge, in their order), like the mini-game gains come from it. With no bank, or for what does not fit, they
+     * fall by the Party Controller: nothing is lost, and the purchase is never refused for it.
+     */
+    static void deposit(PartyControllerEntity party, ServerWorld world, ItemStack coins) {
+        ItemStack rest = coins.copy();
+        Inventory bank = bank(party, world);
+        if (bank != null) {
+            InventoryInteractorTileBehavior.insertLinked(rest, bank);
+            bank.markDirty();
+        }
+        if (rest.isEmpty()) return;
+        BlockPos pos = party.getPos();
+        ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, rest);
+    }
+
+    /** The party's bank (the chests of its Gains page's Inventory Cartridge), null for none (or none loaded). */
+    private static @Nullable Inventory bank(PartyControllerEntity party, ServerWorld world) {
+        return world.getServer() == null ? null : PartyBank.inventory(world.getServer(), party.getBank());
+    }
+
+    /** The party's stars left in its bank: what the star spaces can still sell. */
+    public static int bankStars(PartyControllerEntity party, ServerWorld world) {
+        Inventory bank = bank(party, world);
+        return bank == null ? 0 : InventoryUtils.count(bank, party.getCurrency(PartyCurrency.STAR));
+    }
+
+    private static List<ServerPlayerEntity> audienceWith(PartyControllerEntity party, ServerPlayerEntity player) {
+        List<ServerPlayerEntity> audience = new ArrayList<>(party.getPartyAudience());
+        if (!audience.contains(player)) audience.add(player);
+        return audience;
     }
 
     /** A token that was passing walks its remaining steps; a landing during a party ends the turn. */

@@ -426,6 +426,13 @@ category("cartridges", "steveparty:board_space_behavior", ("Cartridges", "Cartou
           "Aucune case étoile active : l'étoile se cache jusqu'à ce qu'une se réactive. Le Passe-partout ne la "
           "saute jamais.",
           "Settings", "Réglages"),
+        T("Fill the **Party Controller's chests** (its bank, on the Gains page) with **stars**: each star sold is "
+          "taken from them, and the coins paid go back into them (what does not fit falls by the controller).\n\n"
+          "No star left in the bank: nothing is sold, the pawn goes on.",
+          "Remplis les **coffres du Party Controller** (sa banque, page Gains) avec des **étoiles** : chaque étoile "
+          "vendue y est prise, et les pièces payées y retournent (ce qui ne rentre pas tombe près du contrôleur).\n\n"
+          "Plus d'étoile dans la banque : rien n'est vendu, le pion continue.",
+          "The Bank", "La banque"),
         C("steveparty:star_cartridge", None, "Cartridge + Power Star.", "Cartouche + Super étoile."),
     ], parents=["cartridge"], gate="lay_the_board"),
     E("inventory", "steveparty:inventory_cartridge", ("Inventory Cartridge", "Cartouche d'inventaire"), ("Bonus and malus spaces", "Cases bonus et malus"), [
