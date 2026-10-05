@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_blank_dice_module": {
+    "has_blank_dice_face": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:blank_dice_module"
+            "items": "steveparty:blank_dice_face"
           }
         ]
       },
@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "steveparty:dice_module_infinity"
+        "recipe": "steveparty:blank_dice_module"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -21,12 +21,12 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_blank_dice_module"
+      "has_blank_dice_face"
     ]
   ],
   "rewards": {
     "recipes": [
-      "steveparty:dice_module_infinity"
+      "steveparty:blank_dice_module"
     ]
   }
 }

@@ -1665,6 +1665,7 @@
   "item.steveparty.dice_module_infinity": "Module de dé : Infini",
   "dice_module.steveparty.infinity": "Infini",
   "dice_module.steveparty.infinity.desc": "te revient après le lancer",
+  "item.steveparty.blank_dice_module": "Module de dé vierge",
   "item.steveparty.dice_module_lucky": "Module de dé : Chanceux",
   "dice_module.steveparty.lucky": "Chanceux",
   "dice_module.steveparty.lucky.desc": "lancé %s fois, garde le résultat que tu préfères",

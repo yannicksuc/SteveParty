@@ -93,17 +93,43 @@ public class DiceRecipeGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** What a 3 x 3 crafting grid gives, its slots row by row (empty if no recipe matches). */
+    private static ItemStack craft3x3(TestContext context, ItemStack... grid) {
+        CraftingRecipeInput input = CraftingRecipeInput.create(3, 3, List.of(grid));
+        return context.getWorld().getServer().getRecipeManager().getFirstMatch(RecipeType.CRAFTING, input, context.getWorld())
+                .map(entry -> entry.value().craft(input, context.getWorld().getRegistryManager())).orElse(ItemStack.EMPTY);
+    }
+
+    /** A blank module is a blank face set in 4 gold nuggets. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void moduleItemsAreCraftedFromABlankFace(TestContext context) {
-        Map<DiceModule, Item> ingredients = Map.of(
-                DiceModules.SLOW, Items.CLOCK, DiceModules.CHOICE, Items.COMPASS, DiceModules.INFINITY, Items.ECHO_SHARD,
-                DiceModules.LUCKY, Items.RABBIT_FOOT, DiceModules.REROLL, Items.WIND_CHARGE,
-                DiceModules.REVERSED, Items.FERMENTED_SPIDER_EYE, DiceModules.SKELETON_KEY, Items.TRIPWIRE_HOOK,
-                DiceModules.HOMING, Items.ENDER_EYE);
-        context.assertEquals(ingredients.size(), DiceModules.all().size(), "every module has its recipe");
-        ingredients.forEach((module, ingredient) -> {
-            ItemStack result = craft(context, blank(), new ItemStack(ingredient));
-            context.assertTrue(result.isOf(module.item()) && result.getCount() == 1, module + " from a blank face and " + ingredient + ", got " + result);
+    public void aBlankModuleIsABlankFaceInGold(TestContext context) {
+        ItemStack none = ItemStack.EMPTY, gold = new ItemStack(Items.GOLD_NUGGET);
+        ItemStack result = craft3x3(context, none, gold, none, gold, blank(), gold, none, gold, none);
+        context.assertTrue(result.isOf(ModItems.BLANK_DICE_MODULE) && result.getCount() == 1, "a blank module, got " + result);
+        context.complete();
+    }
+
+    /** A module: its ingredient on top of a blank module, ringed with seven star fragments of its colour. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void moduleItemsAreCraftedFromABlankModuleAndFragments(TestContext context) {
+        Map<DiceModule, Item[]> recipes = Map.of(
+                DiceModules.SLOW, new Item[]{ModItems.LIGHT_BLUE_STAR_FRAGMENT, Items.CLOCK},
+                DiceModules.CHOICE, new Item[]{ModItems.BLUE_STAR_FRAGMENT, Items.COMPASS},
+                DiceModules.INFINITY, new Item[]{ModItems.PURPLE_STAR_FRAGMENT, Items.ECHO_SHARD},
+                DiceModules.LUCKY, new Item[]{ModItems.GREEN_STAR_FRAGMENT, Items.RABBIT_FOOT},
+                DiceModules.REROLL, new Item[]{ModItems.ORANGE_STAR_FRAGMENT, Items.WIND_CHARGE},
+                DiceModules.REVERSED, new Item[]{ModItems.RED_STAR_FRAGMENT, Items.FERMENTED_SPIDER_EYE},
+                DiceModules.SKELETON_KEY, new Item[]{ModItems.YELLOW_STAR_FRAGMENT, Items.TRIPWIRE_HOOK},
+                DiceModules.HOMING, new Item[]{ModItems.MAGENTA_STAR_FRAGMENT, Items.ENDER_EYE});
+        context.assertEquals(recipes.size(), DiceModules.all().size(), "every module has its recipe");
+        recipes.forEach((module, parts) -> {
+            ItemStack f = new ItemStack(parts[0]), i = new ItemStack(parts[1]), m = new ItemStack(ModItems.BLANK_DICE_MODULE);
+            ItemStack result = craft3x3(context, f, i, f, f, m, f, f, f, f);
+            context.assertTrue(result.isOf(module.item()) && result.getCount() == 1,
+                    module + " from " + parts[0] + " and " + parts[1] + ", got " + result);
+            // Another colour does not make it
+            ItemStack w = new ItemStack(ModItems.WHITE_STAR_FRAGMENT);
+            context.assertTrue(craft3x3(context, w, i, w, w, m, w, w, w, w).isEmpty(), module + " needs its own colour");
         });
         context.complete();
     }

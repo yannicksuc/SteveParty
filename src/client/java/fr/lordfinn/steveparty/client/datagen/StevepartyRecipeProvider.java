@@ -121,14 +121,18 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
     }
 
     /**
-     * A dice module: its item (a blank face and its ingredient, anywhere in the grid), and the craft that puts
-     * it on a die (see DiceModuleRecipe), unlocked by the module item.
+     * A dice module: its item (a blank module ringed with seven star fragments of the module's colour, its
+     * ingredient on top), and the craft that puts it on a die (see DiceModuleRecipe), unlocked by the module item.
      */
-    private void offerModule(DiceModule module, Item blank, Item ingredient) {
-        ShapelessRecipeJsonBuilder.create(RecipeCategory.MISC, module.item(), 1)
-                .input(blank)
-                .input(ingredient)
-                .criterion(hasItem(blank), conditionsFromItem(blank))
+    private void offerModule(DiceModule module, Item fragment, Item ingredient) {
+        ShapedRecipeJsonBuilder.create(RecipeCategory.MISC, module.item(), 1)
+                .pattern("FIF")
+                .pattern("FMF")
+                .pattern("FFF")
+                .input('F', fragment)
+                .input('I', ingredient)
+                .input('M', ModItems.BLANK_DICE_MODULE)
+                .criterion(hasItem(ModItems.BLANK_DICE_MODULE), conditionsFromItem(ModItems.BLANK_DICE_MODULE))
                 .offerTo(exporter); // named after the item: steveparty:dice_module_<id>
         Identifier onDie = Steveparty.id("dice_with_module_" + module.id());
         exporter.accept(onDie, new DiceModuleRecipe(module), exporter.getAdvancementBuilder()
@@ -158,15 +162,24 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerFaceValues("coin_dice_face_");
         offerFaceValues("debt_dice_face_");
 
-        // Dice modules: a blank face and what the module is about
-        offerModule(DiceModules.SLOW, blank, Items.CLOCK);
-        offerModule(DiceModules.CHOICE, blank, Items.COMPASS);
-        offerModule(DiceModules.INFINITY, blank, Items.ECHO_SHARD);
-        offerModule(DiceModules.LUCKY, blank, Items.RABBIT_FOOT);
-        offerModule(DiceModules.REROLL, blank, Items.WIND_CHARGE);
-        offerModule(DiceModules.REVERSED, blank, Items.FERMENTED_SPIDER_EYE);
-        offerModule(DiceModules.SKELETON_KEY, blank, Items.TRIPWIRE_HOOK);
-        offerModule(DiceModules.HOMING, blank, Items.ENDER_EYE);
+        // Dice modules: a blank module (a blank face set in gold), then seven star fragments of the module's
+        // colour (its icon's ring) around it and what the module is about
+        ShapedRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.BLANK_DICE_MODULE, 1)
+                .pattern(" G ")
+                .pattern("GBG")
+                .pattern(" G ")
+                .input('G', Items.GOLD_NUGGET)
+                .input('B', blank)
+                .criterion(hasItem(blank), conditionsFromItem(blank))
+                .offerTo(exporter);
+        offerModule(DiceModules.SLOW, ModItems.LIGHT_BLUE_STAR_FRAGMENT, Items.CLOCK);
+        offerModule(DiceModules.CHOICE, ModItems.BLUE_STAR_FRAGMENT, Items.COMPASS);
+        offerModule(DiceModules.INFINITY, ModItems.PURPLE_STAR_FRAGMENT, Items.ECHO_SHARD);
+        offerModule(DiceModules.LUCKY, ModItems.GREEN_STAR_FRAGMENT, Items.RABBIT_FOOT);
+        offerModule(DiceModules.REROLL, ModItems.ORANGE_STAR_FRAGMENT, Items.WIND_CHARGE);
+        offerModule(DiceModules.REVERSED, ModItems.RED_STAR_FRAGMENT, Items.FERMENTED_SPIDER_EYE);
+        offerModule(DiceModules.SKELETON_KEY, ModItems.YELLOW_STAR_FRAGMENT, Items.TRIPWIRE_HOOK);
+        offerModule(DiceModules.HOMING, ModItems.MAGENTA_STAR_FRAGMENT, Items.ENDER_EYE);
 
         ShapedRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.DICE_FACES.get(0), 4) // output 4 blank dice faces
                 .pattern("IQ")
