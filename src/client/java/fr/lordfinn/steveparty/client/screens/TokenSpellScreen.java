@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.tokenspell.MobTextureColors;
 import fr.lordfinn.steveparty.client.tokenspell.SpellShape;
@@ -14,7 +15,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.mob.MobEntity;
@@ -951,8 +951,11 @@ public class TokenSpellScreen extends Screen {
     }
 
     private void drawSprite(DrawContext context, int sprite, float x, float y, int rgb, int alpha) {
-        context.drawTexture(RenderLayer::getGuiTextured, SPRITES[sprite], Math.round(x) - 4, Math.round(y) - 4, 0, 0,
-                8, 8, 8, 8, (MathHelper.clamp(alpha, 0, 255) << 24) | rgb);
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, MathHelper.clamp(alpha, 0, 255) / 255f);
+        context.drawTexture(SPRITES[sprite], Math.round(x) - 4, Math.round(y) - 4, 0, 0, 8, 8, 8, 8);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.disableBlend();
     }
 
     /**

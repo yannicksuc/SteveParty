@@ -4,7 +4,6 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStepType;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
@@ -129,7 +128,7 @@ final class NoticeHud {
         if (line.text == null || alpha <= 0.02f) return;
         HudPaint.draw(context, HudPaint.shape(Form.CUT1, line.plateWidth, H, line.gold ? HudPaint.PLATE_GOLD : HudPaint.PLATE,
                 HudPaint.SHADOW | HudPaint.OUTLINE), x, y, alpha);
-        context.drawGuiTexture(RenderLayer::getGuiTextured, line.icon, x + PAD + 4, y + PAD + 3, HudDraw.ICON, HudDraw.ICON, HudDraw.white(alpha));
+        HudDraw.icon(context, line.icon, x + PAD + 4, y + PAD + 3, alpha);
         HudDraw.text(context, line.text, x + PAD + 17, y + PAD + 4, HudPaint.TEXT_DARK, alpha);
         int cx = x + line.plateWidth + GAP + 1;
         if (line.badge != null) {

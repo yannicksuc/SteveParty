@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBank;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -27,7 +28,6 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.PressableWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -410,7 +410,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     /** A faded item (an empty slot's, a ghost card): under the slot's colour, its count with it. */
     private void ghost(DrawContext context, ItemStack stack, int gx, int gy, boolean count) {
         context.drawItem(stack, gx, gy);
-        if (count) context.drawStackOverlay(textRenderer, stack, gx, gy);
+        if (count) context.drawItemInSlot(textRenderer, stack, gx, gy);
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 250);
         context.fill(gx, gy, gx + 16, gy + 16, 0xA6000000 | (SLOT_BODY & 0xFFFFFF));
@@ -815,8 +815,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     private static void head(DrawContext context, PartyLiveData.Standing player, int hx, int hy) {
         if (player.owner().isPresent()) {
             Identifier skin = fr.lordfinn.steveparty.client.utils.SkinUtils.getPlayerSkin(player.owner().get());
-            context.drawTexture(RenderLayer::getGuiTextured, skin, hx, hy, 8, 8, 8, 8, 8, 8, 64, 64);
-            context.drawTexture(RenderLayer::getGuiTextured, skin, hx, hy, 40, 8, 8, 8, 8, 8, 64, 64);
+            RenderSystem.enableBlend();
+            context.drawTexture(skin, hx, hy, 8, 8, 8, 8, 8, 8, 64, 64);
+            context.drawTexture(skin, hx, hy, 8, 8, 40, 8, 8, 8, 64, 64);
+            RenderSystem.disableBlend();
         } else {
             context.fill(hx, hy, hx + 8, hy + 8, player.color() < 0 ? 0xFF8B8B8B : 0xFF000000 | player.color());
         }
@@ -975,7 +977,11 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 ConsolePaint.gamepad(context, cx + (chip - 10) / 2, chipY + (chip - 8) / 2);
             } else {
                 Identifier icon = icon(step.kind());
-                if (icon != null) context.drawGuiTexture(RenderLayer::getGuiTextured, icon, cx + (chip - 9) / 2, chipY + (chip - 9) / 2, 9, 9);
+                if (icon != null) {
+                    RenderSystem.enableBlend();
+                    context.drawGuiTexture(icon, cx + (chip - 9) / 2, chipY + (chip - 9) / 2, 9, 9);
+                    RenderSystem.disableBlend();
+                }
             }
             if (past) context.fill(cx, chipY, cx + chip, chipY + chip, 0x8C000000 | (SCREEN & 0xFFFFFF));
             if (hovered && !past) context.fill(cx + 1, chipY + 1, cx + chip - 1, chipY + chip - 1, 0x30FFFFFF);

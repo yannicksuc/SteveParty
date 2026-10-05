@@ -140,7 +140,7 @@ public final class PartyGui {
      */
     public static void ghostItem(DrawContext context, ItemStack stack, int x, int y, @Nullable TextRenderer overlay) {
         context.drawItem(stack, x, y);
-        if (overlay != null) context.drawStackOverlay(overlay, stack, x, y);
+        if (overlay != null) context.drawItemInSlot(overlay, stack, x, y);
         context.getMatrices().push();
         context.getMatrices().translate(0, 0, 250);
         context.fill(x, y, x + 16, y + 16, GHOST_VEIL);

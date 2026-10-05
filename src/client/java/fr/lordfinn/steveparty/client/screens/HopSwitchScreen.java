@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.screen_handlers.custom.HopSwitchScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.sound.SoundEvents;
@@ -54,11 +54,14 @@ public class HopSwitchScreen extends CartridgeContainerScreen<HopSwitchScreenHan
         int textureY = BASE_Y + (modeIndex * buttonSize);
 
         // Draw base mode icon
-        context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE, screenX, screenY, BASE_X, textureY, buttonSize, buttonSize,256, 256);
+        RenderSystem.enableBlend();
+        context.drawTexture(TEXTURE, screenX, screenY, BASE_X, textureY, buttonSize, buttonSize,256, 256);
 
         // Draw hover overlay if mouse is inside
-        if (isPointWithinBounds(buttonX, buttonY, buttonSize, buttonSize, mouseX, mouseY)) {
-            context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURE, screenX, screenY, HOVER_OVERLAY_X, HOVER_OVERLAY_Y, buttonSize, buttonSize,256, 256);
+        boolean hovered = isPointWithinBounds(buttonX, buttonY, buttonSize, buttonSize, mouseX, mouseY);
+        if (hovered) context.drawTexture(TEXTURE, screenX, screenY, HOVER_OVERLAY_X, HOVER_OVERLAY_Y, buttonSize, buttonSize,256, 256);
+        RenderSystem.disableBlend();
+        if (hovered) {
 
             // Tooltip
             context.drawTooltip(

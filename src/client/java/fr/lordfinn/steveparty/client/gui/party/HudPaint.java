@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.hud.HudShapes;
 import fr.lordfinn.steveparty.hud.HudShapes.Form;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
@@ -69,7 +68,7 @@ public final class HudPaint {
     }
 
     static int mix(int a, int b, float t) {
-        return ColorHelper.lerp(t, a, b) | 0xFF000000;
+        return ColorHelper.Argb.lerp(t, a, b) | 0xFF000000;
     }
 
     /** The ramp of a token: its colour's nearest among the players' (the palette by turn order without one). */
@@ -78,8 +77,8 @@ public final class HudPaint {
         Ramp best = PLAYERS[0];
         long bestDistance = Long.MAX_VALUE;
         for (Ramp ramp : PLAYERS) {
-            int dr = ColorHelper.getRed(ramp.body) - ((color >> 16) & 0xFF), dg = ColorHelper.getGreen(ramp.body) - ((color >> 8) & 0xFF),
-                    db = ColorHelper.getBlue(ramp.body) - (color & 0xFF);
+            int dr = ColorHelper.Argb.getRed(ramp.body) - ((color >> 16) & 0xFF), dg = ColorHelper.Argb.getGreen(ramp.body) - ((color >> 8) & 0xFF),
+                    db = ColorHelper.Argb.getBlue(ramp.body) - (color & 0xFF);
             long distance = 2L * dr * dr + 4L * dg * dg + 3L * db * db;
             if (distance < bestDistance) {
                 bestDistance = distance;
@@ -109,7 +108,7 @@ public final class HudPaint {
         int[][] pixels = new int[height][width];
         paint.accept(pixels);
         NativeImage image = new NativeImage(width, height, true);
-        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) image.setColorArgb(x, y, pixels[y][x]);
+        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) image.setColor(x, y, ColorHelper.Abgr.toAbgr(pixels[y][x]));
         Identifier id = Steveparty.id("party_hud/painted_" + serial++);
         MinecraftClient.getInstance().getTextureManager().registerTexture(id, new NativeImageBackedTexture(image));
         Tex tex = new Tex(id, width, height);
@@ -126,8 +125,7 @@ public final class HudPaint {
 
     static void draw(DrawContext context, Tex tex, int x, int y, float alpha) {
         if (alpha <= 0.02f) return;
-        context.drawTexture(RenderLayer::getGuiTextured, tex.id(), x, y, 0, 0, tex.width(), tex.height(), tex.width(), tex.height(),
-                HudDraw.white(alpha));
+        HudDraw.faded(alpha, () -> context.drawTexture(tex.id(), x, y, 0, 0, tex.width(), tex.height(), tex.width(), tex.height()));
     }
 
     // ------------------------------------------------------------------ shapes
