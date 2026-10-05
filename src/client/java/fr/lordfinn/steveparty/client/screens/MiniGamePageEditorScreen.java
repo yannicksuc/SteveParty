@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint.Ramp;
@@ -24,7 +25,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.PressableWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
@@ -871,7 +871,11 @@ public class MiniGamePageEditorScreen extends Screen {
         int px = lx + 3, py = top + 3, pw = CW - 6, ph = 75;
         if (image == null) {
             context.fill(px, py, px + pw, py + ph, 0xFFE6FFF4);
-            context.drawGuiTexture(RenderLayer::getGuiTextured, EMPTY_PAGE, lx + (CW - 16) / 2, top + 22, 16, 16, 0xCCFFFFFF);
+            RenderSystem.enableBlend();
+            RenderSystem.setShaderColor(1f, 1f, 1f, 0xCC / 255f);
+            context.drawGuiTexture(EMPTY_PAGE, lx + (CW - 16) / 2, top + 22, 16, 16);
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            RenderSystem.disableBlend();
             centered(context, Text.translatable(KEY + "image.none"), lx + CW / 2, top + 44, GREEN2);
             if (canEdit) centered(context, Text.translatable(KEY + "image.drop_hint"), lx + CW / 2, top + 56, INK3);
         } else {
@@ -1378,11 +1382,11 @@ public class MiniGamePageEditorScreen extends Screen {
     }
 
     private static int lighter(int colour) {
-        return net.minecraft.util.math.ColorHelper.lerp(0.5f, colour, 0xFFFFFFFF) | 0xFF000000;
+        return net.minecraft.util.math.ColorHelper.Argb.lerp(0.5f, colour, 0xFFFFFFFF) | 0xFF000000;
     }
 
     private static int darker(int colour) {
-        return net.minecraft.util.math.ColorHelper.lerp(0.25f, colour, 0xFF000000) | 0xFF000000;
+        return net.minecraft.util.math.ColorHelper.Argb.lerp(0.25f, colour, 0xFF000000) | 0xFF000000;
     }
 
     // ------------------------------------------------------------------ the « Pipes » tab
