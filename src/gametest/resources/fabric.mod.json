@@ -19,6 +19,7 @@
       "fr.lordfinn.steveparty.gametest.PartyBankGameTests",
       "fr.lordfinn.steveparty.gametest.PartyControllerDashboardGameTests",
       "fr.lordfinn.steveparty.gametest.TileTeleportGameTests",
+      "fr.lordfinn.steveparty.gametest.GoldenPipeGameTests",
       "fr.lordfinn.steveparty.gametest.CartridgeMenuGameTests",
       "fr.lordfinn.steveparty.gametest.BoardLinkingGameTests",
       "fr.lordfinn.steveparty.gametest.TileSupportGameTests",
