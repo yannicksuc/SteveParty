@@ -1,0 +1,107 @@
+package fr.lordfinn.steveparty.client.renderer;
+
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.payloads.custom.StarSpacesPayload;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.List;
+
+/**
+ * The party stars (see fr.lordfinn.steveparty.service.PartyStars): a big Power Star floating and turning over each
+ * star space holding one, drawn at any distance (no entity, nothing ticks on the server), with a few gold sparks rising
+ * from it so that it is seen from afar. The spaces come from {@link StarSpacesPayload}.
+ */
+@Environment(EnvType.CLIENT)
+public final class StarSpaceRenderer {
+    /** Over the space's surface, in blocks; its size; degrees per tick it turns. */
+    private static final double HEIGHT = 1.6;
+    private static final float SCALE = 1.4F, SPIN = 3.0F;
+    /** Farther than this, the star is not drawn (beyond any board), in blocks. */
+    private static final double MAX_DISTANCE = 256;
+    /** Every how many ticks a spark rises from a star. */
+    private static final int SPARK_INTERVAL = 3;
+
+    /** The server tells every few seconds; nothing heard for this long (its party ended, its controller broken): no star. */
+    private static final long FORGET_AFTER_TICKS = 300;
+
+    private static List<BlockPos> stars = List.of();
+    private static long heardAt;
+    private static ItemStack star = ItemStack.EMPTY;
+
+    private StarSpaceRenderer() {
+    }
+
+    public static void initialize() {
+        ClientPlayNetworking.registerGlobalReceiver(StarSpacesPayload.ID,
+                (payload, context) -> context.client().execute(() -> {
+                    stars = List.copyOf(payload.spaces());
+                    heardAt = context.client().world == null ? 0 : context.client().world.getTime();
+                }));
+        ClientTickEvents.END_CLIENT_TICK.register(StarSpaceRenderer::tick);
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+            if (stars.isEmpty() || context.matrixStack() == null) return;
+            MinecraftClient client = MinecraftClient.getInstance();
+            ClientWorld world = client.world;
+            if (world == null) return;
+            if (star.isEmpty()) star = new ItemStack(ModItems.POWER_STAR);
+            MatrixStack matrices = context.matrixStack();
+            Vec3d camera = context.camera().getPos();
+            float tickDelta = context.tickCounter().getTickDelta(true);
+            float time = world.getTime() + tickDelta;
+            VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
+            for (BlockPos space : stars) {
+                Vec3d at = BoardSpaces.standPos(world, space);
+                if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
+                matrices.push();
+                matrices.translate(at.x - camera.x, at.y + HEIGHT + 0.12 * MathHelper.sin(time * 0.08F) - camera.y, at.z - camera.z);
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * SPIN));
+                matrices.scale(SCALE, SCALE, SCALE);
+                client.getItemRenderer().renderItem(star, ModelTransformationMode.FIXED, 0xF000F0, OverlayTexture.DEFAULT_UV,
+                        matrices, consumers, world, 0);
+                matrices.pop();
+            }
+            consumers.draw();
+        });
+    }
+
+    /** A gold spark rising from each star now and then (always spawned, so that it is seen from afar). */
+    private static void tick(MinecraftClient client) {
+        ClientWorld world = client.world;
+        if (stars.isEmpty() || world == null || client.isPaused()) return;
+        if (Math.abs(world.getTime() - heardAt) > FORGET_AFTER_TICKS) {
+            stars = List.of();
+            return;
+        }
+        if (world.getTime() % SPARK_INTERVAL != 0) return;
+        for (BlockPos space : stars) {
+            if (!world.isChunkLoaded(space)) continue;
+            Vec3d at = BoardSpaces.standPos(world, space);
+            double dx = (world.random.nextDouble() - 0.5) * 0.6, dz = (world.random.nextDouble() - 0.5) * 0.6;
+            world.addImportantParticle(ParticleTypes.END_ROD, true, at.x + dx, at.y + HEIGHT, at.z + dz, 0, 0.12, 0);
+            if (world.random.nextInt(3) == 0)
+                world.addImportantParticle(ParticleTypes.WAX_OFF, true, at.x + dx, at.y + HEIGHT + 0.3, at.z + dz, 0, 0.6, 0);
+        }
+    }
+
+    /** A new connection: no star known. */
+    public static void clear() {
+        stars = List.of();
+    }
+}
