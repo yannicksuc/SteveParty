@@ -1,21 +1,21 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
-      "id": "minecraft:enchanted_golden_apple",
+      "id": "minecraft:sculk_sensor",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.golden_treat.title"
+      "translate": "advancements.steveparty.wild_cards.library_rules.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.golden_treat.description"
+      "translate": "advancements.steveparty.wild_cards.library_rules.description"
     },
-    "frame": "task",
+    "frame": "goal",
     "hidden": true
   },
   "criteria": {
-    "fed": {
+    "silenced": {
       "trigger": "minecraft:player_interacted_with_entity",
       "conditions": {
         "entity": [
@@ -23,23 +23,26 @@
             "condition": "minecraft:entity_properties",
             "entity": "this",
             "predicate": {
-              "type": "steveparty:mula",
-              "nbt": "{Variant:3}"
+              "type": "minecraft:warden",
+              "nbt": "{Silent:1b}"
             }
           }
         ],
         "item": {
-          "items": "minecraft:enchanted_golden_apple"
+          "items": "steveparty:plunger"
         }
       }
     }
   },
   "requirements": [
     [
-      "fed"
+      "silenced"
     ]
   ],
   "rewards": {
-    "experience": 10
+    "experience": 50,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
   }
 }

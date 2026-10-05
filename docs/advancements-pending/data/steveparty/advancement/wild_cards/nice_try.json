@@ -1,15 +1,15 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
       "id": "minecraft:dragon_head",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.nice_try.title"
+      "translate": "advancements.steveparty.wild_cards.nice_try.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.nice_try.description"
+      "translate": "advancements.steveparty.wild_cards.nice_try.description"
     },
     "frame": "task",
     "hidden": true

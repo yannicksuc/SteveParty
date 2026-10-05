@@ -1,15 +1,15 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
       "id": "minecraft:iron_sword",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.closing_down.title"
+      "translate": "advancements.steveparty.wild_cards.closing_down.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.closing_down.description"
+      "translate": "advancements.steveparty.wild_cards.closing_down.description"
     },
     "frame": "task",
     "hidden": true
