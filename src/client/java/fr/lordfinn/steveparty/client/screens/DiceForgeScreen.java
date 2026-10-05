@@ -14,11 +14,13 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -35,9 +37,9 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
 
 /**
  * Dice forge screen: a launch star, the galaxy in its heart. The galaxy holds the 12 die faces (their count is their
- * weight), the 5 star fragments around the core and, in its center, the core, which is the FORGE button (a golden
- * ring around it shows the progress). The five gems on the points of the star hold the dice modules put on every die
- * forged; the capsule under the galaxy takes the blank faces in on its left and gives the forged die on its right.
+ * weight), the 5 star fragments around the core and, in its center, the gravity core. The five gems on the points of the star hold the dice modules put on every die
+ * forged; the capsule under the galaxy takes the blank faces in on its left and gives the forged die on its right,
+ * and its arrow is the FORGE button (it fills with the progress).
  * <p>
  * The galaxy turns slowly; the faces turn with it, the fragments the other way and faster. Only the client moves
  * those slots ({@link #turnSlots}): the server never reads slot positions.
@@ -62,72 +64,44 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static final float FRAGMENT_SPIN = -1.5f;
     private static final float GHOST_ALPHA = 0.35f;
     private static final String KEY = "gui.steveparty.dice_forge.";
+    /** Tooltips wrap at this width (GUI px), so that long hints stay readable. */
+    private static final int TOOLTIP_WIDTH = 170;
 
-    // The core button, drawn pixel by pixel over the vortex center (CORE_X/Y: its center, between 4 pixels)
+    /** The core: the center of the galaxy (CORE_X/Y: its center, between 4 pixels), shown once inserted. */
     private static final int CORE_X = DiceForgeScreenHandler.CENTER_X + 8, CORE_Y = DiceForgeScreenHandler.CENTER_Y + 8;
-    private static final int BUTTON_SIZE = 24;
     /**
-     * Pixel-art parts of the round button, from its edge inwards: outline, progress gauge (2 px), inner line, bevel,
-     * face (-1: outside). The outer disc and the inner one are each a clean pixel circle; the gauge fills between.
+     * The FORGE button is the arrow of the capsule, between the blank faces and the die: its pixels (x, y in GUI
+     * coordinates, as drawn by the art sources) and the box that takes the clicks.
      */
-    private static final int[][] BUTTON_PARTS = buttonParts();
-    private static final int PART_OUTLINE = 0, PART_GAUGE = 1, PART_LINE = 2, PART_BEVEL = 3, PART_FACE = 4;
-    /** A light halo on the galaxy: a thin gold circle (white when hovered, faded when it cannot be pressed). */
-    private static final int OUTLINE_GOLD = 0xC8FFF0A8, OUTLINE_HOVERED = 0xFFFFFFFF, OUTLINE_OFF = 0x60FFFFFF;
-    /** The veil inside it, its inner line and bevel (lit top-left, in shadow bottom-right; reversed while pressed). */
-    private static final int VEIL = 0x28FFFFFF, VEIL_HOVERED = 0x50FFFFFF, VEIL_OFF = 0x14FFFFFF;
-    private static final int LINE = 0x40FFFFFF, BEVEL_LIGHT = 0x50FFFFFF, BEVEL_DARK = 0x40000000;
-    /** The gauge fills clockwise through a smooth gradient of these colours, violet to gold; orange when blocked. */
+    private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 3,
+            ARROW_Y = DiceForgeScreenHandler.BLANK_Y + 8;
+    private static final int[][] ARROW_PIXELS = arrowPixels();
+    private static final int BUTTON_X0 = DiceForgeScreenHandler.BLANK_X + 17, BUTTON_X1 = DiceForgeScreenHandler.OUTPUT_X - 1,
+            BUTTON_Y0 = DiceForgeScreenHandler.BLANK_Y, BUTTON_Y1 = DiceForgeScreenHandler.BLANK_Y + 16;
+    /**
+     * The arrow: pale gold at rest, white when hovered, lilac while forging (the part still to fill), muted violet
+     * when it cannot be pressed.
+     */
+    private static final int ARROW_IDLE = 0xFFFFF0A8, ARROW_HOVERED = 0xFFFFFFFF, ARROW_RUNNING = 0xFFD9C2FF,
+            ARROW_OFF = 0xFF9B7FC8;
+    /** While forging it fills from the left through a smooth gradient of these colours, violet to gold; orange when blocked. */
     private static final int[] GAUGE_COLORS = {0xFF8A3FFC, 0xFFD23CF0, 0xFFFF4FA3, 0xFFFF8A3D, 0xFFFFD35A};
-    private static final int GAUGE_TRACK = VEIL, GAUGE_BLOCKED = 0xFFE0703A;
+    private static final int GAUGE_BLOCKED = 0xFFE0703A;
 
     private final ItemStack gravityCore = new ItemStack(ModBlocks.GRAVITY_CORE);
     private final ItemStack blankFace = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("blank_dice_face")));
 
-    private static int[][] buttonParts() {
-        int[][] outer = peelDisc(BUTTON_SIZE, 11.8f), inner = peelDisc(BUTTON_SIZE, 8.9f);
-        int[][] parts = new int[BUTTON_SIZE][BUTTON_SIZE];
-        for (int y = 0; y < BUTTON_SIZE; y++) {
-            for (int x = 0; x < BUTTON_SIZE; x++) {
-                if (inner[y][x] >= 0) parts[y][x] = Math.min(PART_LINE + inner[y][x], PART_FACE);
-                else if (outer[y][x] == 0) parts[y][x] = PART_OUTLINE;
-                else parts[y][x] = outer[y][x] > 0 ? PART_GAUGE : -1;
-            }
+    /** The arrow's pixels: a 2 px shaft, then a head 6 px tall narrowing over 3 columns. */
+    private static int[][] arrowPixels() {
+        List<int[]> pixels = new ArrayList<>();
+        for (int x = ARROW_X0; x <= ARROW_X1; x++) {
+            pixels.add(new int[]{x, ARROW_Y - 1});
+            pixels.add(new int[]{x, ARROW_Y});
         }
-        return parts;
-    }
-
-    /** @return for each pixel of a {@code size}-wide disc, its layer counted from the edge (-1 outside it). */
-    private static int[][] peelDisc(int size, float radius) {
-        int[][] layers = new int[size][size];
-        float center = (size - 1) / 2f;
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                float dx = x - center, dy = y - center;
-                layers[y][x] = dx * dx + dy * dy <= radius * radius ? Integer.MAX_VALUE : -1;
-            }
+        for (int k = 0; k < 3; k++) {
+            for (int y = ARROW_Y - 1 - (2 - k); y <= ARROW_Y + (2 - k); y++) pixels.add(new int[]{ARROW_X1 + k, y});
         }
-        // Peel it: the pixels of what is left that touch its outside (4 neighbors) make the next layer
-        for (int layer = 0; ; layer++) {
-            boolean peeled = false;
-            int[][] snapshot = new int[size][];
-            for (int y = 0; y < size; y++) snapshot[y] = layers[y].clone();
-            for (int y = 0; y < size; y++) {
-                for (int x = 0; x < size; x++) {
-                    if (snapshot[y][x] != Integer.MAX_VALUE) continue;
-                    if (isOutside(snapshot, x + 1, y) || isOutside(snapshot, x - 1, y)
-                            || isOutside(snapshot, x, y + 1) || isOutside(snapshot, x, y - 1)) {
-                        layers[y][x] = layer;
-                        peeled = true;
-                    }
-                }
-            }
-            if (!peeled) return layers;
-        }
-    }
-
-    private static boolean isOutside(int[][] layers, int x, int y) {
-        return y < 0 || y >= layers.length || x < 0 || x >= layers[y].length || layers[y][x] != Integer.MAX_VALUE;
+        return pixels.toArray(new int[0][]);
     }
 
     public DiceForgeScreen(DiceForgeScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -166,7 +140,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         context.drawTexture(TEXTURE, x, y, OVERLAY_U, 0, this.backgroundWidth, this.backgroundHeight, ATLAS_SIZE, ATLAS_SIZE);
         RenderSystem.disableBlend();
 
-        drawCoreButton(context, x + CORE_X, y + CORE_Y, mouseX, mouseY, delta);
+        drawCore(context, x + CORE_X, y + CORE_Y);
+        drawArrowButton(context, x, y, mouseX, mouseY, delta);
     }
 
     private void drawLightSlot(DrawContext context, int x, int y, Slot slot, int u) {
@@ -182,12 +157,12 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         if (slot.id < subPixelX.length) context.getMatrices().translate(subPixelX[slot.id], subPixelY[slot.id], 0);
     }
 
-    /** The contour of a light square slot (no corners), in one colour. */
+    /** The contour of a light square slot in one colour, its sides meeting diagonally (rounded corners). */
     private static void drawSlotContour(DrawContext context, int slotX, int slotY, int color) {
-        context.fill(slotX + 1, slotY - 1, slotX + 15, slotY, color);
-        context.fill(slotX + 1, slotY + 16, slotX + 15, slotY + 17, color);
-        context.fill(slotX - 1, slotY + 1, slotX, slotY + 15, color);
-        context.fill(slotX + 16, slotY + 1, slotX + 17, slotY + 15, color);
+        context.fill(slotX, slotY - 1, slotX + 16, slotY, color);
+        context.fill(slotX, slotY + 16, slotX + 16, slotY + 17, color);
+        context.fill(slotX - 1, slotY, slotX, slotY + 16, color);
+        context.fill(slotX + 16, slotY, slotX + 17, slotY + 16, color);
     }
 
     // ------------------------------------------------------------------ turning slots
@@ -246,7 +221,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         return max;
     }
 
-    // ------------------------------------------------------------------ core button
+    // ------------------------------------------------------------------ core and FORGE button
 
     private boolean isButtonEnabled() {
         return handler.isActivated() && (handler.isRunning() || handler.getStatus().allowsRunning());
@@ -264,7 +239,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         matrices.pop();
     }
 
-    /** @return the gauge colour at {@code t} (0 at the top, 1 back to it), blended smoothly between GAUGE_COLORS. */
+    /** @return the gauge colour at {@code t} (0 at the arrow's tail, 1 at its tip), blended smoothly between GAUGE_COLORS. */
     private static int gaugeColor(float t) {
         float scaled = MathHelper.clamp(t, 0f, 1f) * (GAUGE_COLORS.length - 1);
         int from = Math.min(GAUGE_COLORS.length - 2, (int) scaled);
@@ -278,9 +253,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     private boolean isOverButton(double mouseX, double mouseY) {
         if (!handler.isActivated()) return false;
-        int px = (int) Math.floor(mouseX) - (this.x + CORE_X) + BUTTON_SIZE / 2;
-        int py = (int) Math.floor(mouseY) - (this.y + CORE_Y) + BUTTON_SIZE / 2;
-        return px >= 0 && py >= 0 && px < BUTTON_SIZE && py < BUTTON_SIZE && BUTTON_PARTS[py][px] >= 0;
+        double px = mouseX - this.x, py = mouseY - this.y;
+        return px >= BUTTON_X0 && px < BUTTON_X1 && py >= BUTTON_Y0 && py < BUTTON_Y1;
     }
 
     private float getSmoothProgress(float delta) {
@@ -290,76 +264,86 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         return MathHelper.clamp(progress, 0f, 1f);
     }
 
-    /**
-     * The core: a light halo on the galaxy, ringed with a thin gold circle. Once the forge is activated it is the
-     * FORGE button: brighter when hovered, its bevel (light top-left, dark bottom-right) reversed while the forge
-     * runs, faded when it cannot be pressed; inside the gold circle, the progress gauge. Before that, it is the
-     * gravity core slot (the slot draws the core's ghost).
-     */
-    private void drawCoreButton(DrawContext context, int cx, int cy, int mouseX, int mouseY, float delta) {
-        boolean activated = handler.isActivated();
-        boolean enabled = isButtonEnabled();
-        boolean hovered = enabled && isOverButton(mouseX, mouseY);
-        boolean pressed = handler.isRunning();
-        float progress = getSmoothProgress(delta);
-        int veil = !activated ? VEIL : !enabled ? VEIL_OFF : hovered ? VEIL_HOVERED : VEIL;
-        int outline = hovered ? OUTLINE_HOVERED : activated && !enabled ? OUTLINE_OFF : OUTLINE_GOLD;
-        int half = BUTTON_SIZE / 2;
+    /** The center of the galaxy shows the gravity core once inserted; before that, its slot draws the core's ghost. */
+    private void drawCore(DrawContext context, int cx, int cy) {
+        if (handler.isActivated()) context.drawItem(gravityCore, cx - 8, cy - 8);
+    }
 
-        for (int y = 0; y < BUTTON_SIZE; y++) {
-            for (int x = 0; x < BUTTON_SIZE; x++) {
-                int part = BUTTON_PARTS[y][x];
-                if (part < 0) continue;
-                float px = x - (BUTTON_SIZE - 1) / 2f, py = y - (BUTTON_SIZE - 1) / 2f;
-                // Which side of the light the pixel is on: top-left (< -1), bottom-right (> 1), or in between
-                float side = px + py;
-                int color;
-                if (part == PART_OUTLINE) {
-                    color = outline;
-                } else if (part == PART_GAUGE) {
-                    // Clockwise from the top
-                    float angle = (float) Math.toDegrees(Math.atan2(px, -py));
-                    if (angle < 0) angle += 360f;
-                    color = angle >= progress * 360f ? GAUGE_TRACK
-                            : handler.isBlocked() ? GAUGE_BLOCKED
-                            : gaugeColor(angle / 360f);
-                } else if (!activated) {
-                    color = veil; // the core slot: a plain halo
-                } else if (part == PART_LINE) {
-                    color = LINE;
-                } else if (part == PART_BEVEL && Math.abs(side) > 1) {
-                    color = (side < 0) != pressed ? BEVEL_LIGHT : BEVEL_DARK;
-                } else {
-                    color = veil;
-                }
-                context.fill(cx - half + x, cy - half + y, cx - half + x + 1, cy - half + y + 1, color);
-            }
-        }
-        if (!activated) return;
-        if (enabled) {
-            context.drawItem(gravityCore, cx - 8, cy - 8);
-        } else {
-            drawTranslucentItem(context, gravityCore, cx - 8, cy - 8, 0.45f);
+    /**
+     * The FORGE button, the arrow from the blank faces to the die: white when hovered, muted when it cannot be
+     * pressed; while forging it fills from the left as the die is built (orange when the forge is blocked). Only the
+     * gap between the two slots is the button: hovering a slot is hovering the slot.
+     */
+    private void drawArrowButton(DrawContext context, int x, int y, int mouseX, int mouseY, float delta) {
+        boolean enabled = isButtonEnabled();
+        int base = !enabled ? ARROW_OFF : isOverButton(mouseX, mouseY) ? ARROW_HOVERED
+                : handler.isRunning() ? ARROW_RUNNING : ARROW_IDLE;
+        float progress = getSmoothProgress(delta);
+        float length = ARROW_X1 + 2 - ARROW_X0;
+        for (int[] pixel : ARROW_PIXELS) {
+            float t = (pixel[0] - ARROW_X0) / length;
+            int color = t >= progress ? base : handler.isBlocked() ? GAUGE_BLOCKED : gaugeColor(t);
+            context.fill(x + pixel[0], y + pixel[1], x + pixel[0] + 1, y + pixel[1] + 1, color);
         }
     }
 
+    /** The FORGE arrow: what a click does now, the progress, and what is missing. */
     private List<Text> getButtonTooltip() {
         List<Text> lines = new ArrayList<>();
         Status status = handler.getStatus();
         if (handler.isRunning()) {
-            lines.add(Text.translatableWithFallback(KEY + "stop_hint", "Click to stop production"));
-            lines.add(Text.translatableWithFallback(KEY + "progress", "Progress: %s%%",
-                    Math.round(handler.getProgress() * 100)).formatted(Formatting.GRAY));
-        } else if (status.allowsRunning()) {
-            lines.add(Text.translatableWithFallback(KEY + "core_hint", "Click the core to forge"));
-            lines.add(Text.translatableWithFallback(KEY + "start_hint",
-                    "Start forging: loops until stopped or a slot runs out").formatted(Formatting.GRAY));
+            lines.add(Text.translatableWithFallback(KEY + "forging", "Forging...").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
+            lines.add(point(Formatting.LIGHT_PURPLE, Text.translatableWithFallback(KEY + "progress", "Progress: %s%%",
+                    Math.round(handler.getProgress() * 100))));
+            lines.add(point(Formatting.LIGHT_PURPLE, Text.translatableWithFallback(KEY + "stop_hint", "Click to stop production")));
+        } else {
+            lines.add(Text.translatableWithFallback(KEY + "forge", "Forge").formatted(Formatting.GOLD, Formatting.BOLD));
+            if (status.allowsRunning()) {
+                lines.add(point(Formatting.GOLD, Text.translatableWithFallback(KEY + "core_hint", "Click the arrow to forge")));
+                lines.add(point(Formatting.GOLD, Text.translatableWithFallback(KEY + "start_hint",
+                        "Start forging: loops until stopped or a slot runs out")));
+            }
         }
-        if (status != Status.OK) lines.add(getStatusText(status).formatted(Formatting.RED));
+        if (status != Status.OK) lines.add(point(Formatting.RED, getStatusText(status).formatted(Formatting.RED)));
         if (handler.isPowered()) {
-            lines.add(Text.translatableWithFallback(KEY + "redstone_powered",
-                    "Redstone: powered (production enabled)").formatted(Formatting.DARK_RED));
+            lines.add(point(Formatting.DARK_RED, Text.translatableWithFallback(KEY + "redstone_powered",
+                    "Redstone: powered (production enabled)").formatted(Formatting.DARK_RED)));
         }
+        return lines;
+    }
+
+    /** "• text", the bullet in {@code colour}, the text grey unless it already has a colour. */
+    private static Text point(Formatting colour, MutableText text) {
+        if (text.getStyle().getColor() == null) text.formatted(Formatting.GRAY);
+        return Text.literal("• ").formatted(colour).append(text);
+    }
+
+    /**
+     * The output slot: the die being made (or the dice made, when there are some): its faces and modules, what each
+     * die costs, what is missing, then the die's own tooltip.
+     */
+    private List<Text> getOutputTooltip(ItemStack shown, boolean made) {
+        Inventory inventory = handler.getInventory();
+        int modules = 0;
+        for (int i = FIRST_MODULE_SLOT; i < FIRST_MODULE_SLOT + MODULE_SLOTS; i++) modules += inventory.getStack(i).getCount();
+        List<Text> lines = new ArrayList<>();
+        lines.add(Text.translatableWithFallback(KEY + "output", "Forged die").formatted(Formatting.GOLD, Formatting.BOLD));
+        if (made) {
+            lines.add(point(Formatting.GREEN, Text.translatableWithFallback(KEY + "output.ready", "%s ready: take them",
+                    shown.getCount()).formatted(Formatting.GREEN)));
+        } else {
+            lines.add(point(Formatting.GOLD, Text.translatableWithFallback(KEY + "output.preview", "Preview of the next die")));
+        }
+        lines.add(point(Formatting.GOLD, Text.translatableWithFallback(KEY + "output.faces", "%s faces, %s modules",
+                countFaces(inventory), modules)));
+        lines.add(point(Formatting.GOLD, Text.translatableWithFallback(KEY + "output.cost",
+                "Each die uses %s blank faces and one fragment of each colour", Math.max(1, countFaces(inventory)))));
+        Status status = handler.getStatus();
+        if (status != Status.OK && status != Status.OUTPUT_BLOCKED) {
+            lines.add(point(Formatting.RED, getStatusText(status).formatted(Formatting.RED)));
+        }
+        List<Text> item = getTooltipFromItem(shown);
+        if (item.size() > 1) lines.addAll(item.subList(1, item.size()));
         return lines;
     }
 
@@ -438,7 +422,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         super.render(context, mouseX, mouseY, delta);
 
         if (isOverButton(mouseX, mouseY)) {
-            context.drawTooltip(textRenderer, getButtonTooltip(), mouseX, mouseY);
+            drawWrappedTooltip(context, getButtonTooltip(), mouseX, mouseY);
         } else if (focusedSlot != null && focusedSlot.id < DiceForgeBlockEntity.SIZE && handler.getCursorStack().isEmpty()) {
             if (focusedSlot.hasStack()) {
                 drawForgeItemTooltip(context, focusedSlot, mouseX, mouseY);
@@ -453,6 +437,10 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** Item tooltip, plus the weight and chance of a face, or what the blank faces are for. */
     private void drawForgeItemTooltip(DrawContext context, Slot slot, int mouseX, int mouseY) {
         ItemStack stack = slot.getStack();
+        if (slot.id == OUTPUT_SLOT) {
+            drawWrappedTooltip(context, getOutputTooltip(stack, true), mouseX, mouseY);
+            return;
+        }
         List<Text> lines = new ArrayList<>(getTooltipFromItem(stack));
         if (slot.id < FACE_SLOTS && DiceFace.isFace(stack)) {
             int total = Math.max(1, getTotalWeight());
@@ -465,8 +453,39 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             lines.add(Text.translatableWithFallback(KEY + "module_hint",
                     "Not consumed: every die forged carries it").formatted(Formatting.AQUA));
         }
-        context.drawTooltip(textRenderer, lines, mouseX, mouseY);
+        drawWrappedTooltip(context, lines, mouseX, mouseY);
     }
+
+    private void drawWrappedTooltip(DrawContext context, List<Text> lines, int mouseX, int mouseY) {
+        List<OrderedText> wrapped = new ArrayList<>();
+        for (Text line : lines) wrapped.addAll(textRenderer.wrapLines(line, TOOLTIP_WIDTH));
+        context.drawOrderedTooltip(textRenderer, wrapped, mouseX, mouseY);
+    }
+
+    /** A slot's guide: its name in bold and colour, then short points in grey. */
+    private static List<Text> slotGuide(String name, String nameFallback, Formatting colour, String[][] points) {
+        List<Text> lines = new ArrayList<>();
+        lines.add(Text.translatableWithFallback(KEY + name, nameFallback).formatted(colour, Formatting.BOLD));
+        for (String[] point : points) {
+            lines.add(Text.literal("• ").formatted(colour)
+                    .append(Text.translatableWithFallback(KEY + point[0], point[1]).formatted(Formatting.GRAY)));
+        }
+        return lines;
+    }
+
+    private static final String[][] FACE_POINTS = {
+            {"face_slot.weight", "Stack size = the face's weight"},
+            {"face_slot.chance", "The heavier, the more often it comes up"}};
+    private static final String[][] FRAGMENT_POINTS = {
+            {"fragment_slot.all", "Fill all 5 slots"},
+            {"fragment_slot.colours", "One colour per slot"},
+            {"fragment_slot.black", "Black can repeat and is never used up"},
+            {"fragment_slot.use", "One fragment of each colour per die"}};
+    private static final String[][] MODULE_POINTS = {
+            {"module_slot.optional", "Optional"},
+            {"module_slot.every", "Put on every die forged"},
+            {"module_slot.kept", "Never used up"},
+            {"module_slot.count", "Stack size = how many the die gets"}};
 
     private MutableText getBlankFacesHint() {
         return Text.translatableWithFallback(KEY + "blank_hint",
@@ -474,12 +493,21 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     private void drawGhostTooltip(DrawContext context, int index, int mouseX, int mouseY) {
+        List<Text> guide = null;
         if (isModuleSlot(index)) {
-            context.drawTooltip(textRenderer, List.of(
-                    Text.translatableWithFallback(KEY + "module_slot", "Dice module slot"),
-                    Text.translatableWithFallback(KEY + "module_slot_hint",
-                            "Optional. A module placed here is put on every die forged, and is not consumed; its count is the count the die gets").formatted(Formatting.GRAY)),
-                    mouseX, mouseY);
+            guide = slotGuide("module_slot", "Dice module slot", Formatting.AQUA, MODULE_POINTS);
+        } else if (index >= FIRST_FRAGMENT_SLOT && index < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS) {
+            guide = slotGuide("fragment_slot", "Star fragment slot", Formatting.LIGHT_PURPLE, FRAGMENT_POINTS);
+        } else if (index < FACE_SLOTS) {
+            guide = slotGuide("face_slot", "Dice face slot", Formatting.GOLD, FACE_POINTS);
+        }
+        if (guide != null) {
+            Item remembered = handler.getGhost(index);
+            if (remembered != null) {
+                guide.add(1, Text.translatableWithFallback(KEY + "missing", "Missing: %s",
+                        new ItemStack(remembered).getName()).formatted(Formatting.RED));
+            }
+            drawWrappedTooltip(context, guide, mouseX, mouseY);
             return;
         }
         ItemStack ghost = getGhostStack(index);
@@ -489,14 +517,13 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             lines.add(Text.translatableWithFallback(KEY + "insert_core", "Gravity core slot"));
             lines.add(getStatusText(Status.NOT_ACTIVATED).formatted(Formatting.GRAY));
         } else if (index == OUTPUT_SLOT) {
-            lines.addAll(getTooltipFromItem(ghost));
-            lines.add(Text.translatableWithFallback(KEY + "preview", "Preview of the forged die").formatted(Formatting.DARK_GRAY));
+            lines.addAll(getOutputTooltip(ghost, false));
         } else if (index == BLANK_SLOT && handler.getGhost(index) == null) {
             lines.add(Text.translatableWithFallback(KEY + "blank_slot", "Blank dice faces"));
             lines.add(getBlankFacesHint().formatted(Formatting.GRAY));
         } else {
             lines.add(Text.translatableWithFallback(KEY + "missing", "Missing: %s", ghost.getName()).formatted(Formatting.RED));
         }
-        context.drawTooltip(textRenderer, lines, mouseX, mouseY);
+        drawWrappedTooltip(context, lines, mouseX, mouseY);
     }
 }

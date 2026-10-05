@@ -367,7 +367,7 @@
   "book.steveparty.guide.stars_mula.ephemeride.page0.title": "Éphéméride",
   "book.steveparty.guide.stars_mula.forging.description": "Un dé toutes les cinq secondes",
   "book.steveparty.guide.stars_mula.forging.name": "Forger des dés",
-  "book.steveparty.guide.stars_mula.forging.page0.text": "Clique le noyau (**FORGER**) : un dé toutes les 5 s, en boucle, tant qu'il y a de quoi. Chaque dé consomme ses faces vierges et un fragment par emplacement non noir.\n\nLes entonnoirs la remplissent (dessus, côtés) et sortent les dés par dessous. Alimentée = production activée. Un comparateur lit la sortie.",
+  "book.steveparty.guide.stars_mula.forging.page0.text": "Clique la flèche entre les faces vierges et le dé (**FORGER**) : un dé toutes les 5 s, en boucle, tant qu'il y a de quoi. Chaque dé consomme ses faces vierges et un fragment par emplacement non noir.\n\nLes entonnoirs la remplissent (dessus, côtés) et sortent les dés par dessous. Alimentée = production activée. Un comparateur lit la sortie.",
   "book.steveparty.guide.stars_mula.forging.page0.title": "Forger des dés",
   "book.steveparty.guide.stars_mula.forging.page1.text": "Un **dé forgé** tire une de ses faces, selon son poids : une face gravée 10 fois sort 10 fois plus souvent. Une seule face = un dé truqué.\n\nDes dés forgés aux mêmes faces s'empilent et peuvent faire un dé double ou triple.",
   "book.steveparty.guide.stars_mula.forging.page1.title": "Dé forgé",

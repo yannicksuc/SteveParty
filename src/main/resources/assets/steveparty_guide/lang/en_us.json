@@ -367,7 +367,7 @@
   "book.steveparty.guide.stars_mula.ephemeride.page0.title": "Ephemeride",
   "book.steveparty.guide.stars_mula.forging.description": "A die every five seconds",
   "book.steveparty.guide.stars_mula.forging.name": "Forging Dice",
-  "book.steveparty.guide.stars_mula.forging.page0.text": "Click the core (**FORGE**): one die every 5 s, in a loop, while ingredients last. Each die uses its blank faces and one fragment per non-black slot.\n\nHoppers fill it (top and sides) and take dice out from below. Powered = production on. A comparator reads the output.",
+  "book.steveparty.guide.stars_mula.forging.page0.text": "Click the arrow between the blank faces and the die (**FORGE**): one die every 5 s, in a loop, while ingredients last. Each die uses its blank faces and one fragment per non-black slot.\n\nHoppers fill it (top and sides) and take dice out from below. Powered = production on. A comparator reads the output.",
   "book.steveparty.guide.stars_mula.forging.page0.title": "Forging Dice",
   "book.steveparty.guide.stars_mula.forging.page1.text": "A **Forged Dice** rolls one of its own faces, weighted: a face carved 10 times comes up 10 times as often. A single face makes a loaded die.\n\nForged dice with the same faces stack and can make a Double or Triple Dice.",
   "book.steveparty.guide.stars_mula.forging.page1.title": "Forged Dice",

@@ -940,11 +940,11 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "Super étoile, obsidienne, un haut fourneau et un lingot de netherite."),
     ], parents=["gravity_core"], gate="stardust"),
     E("forging", "steveparty:default_dice", ("Forging Dice", "Forger des dés"), ("A die every five seconds", "Un dé toutes les cinq secondes"), [
-        T("Click the core (**FORGE**): one die every 5 s, in a loop, while ingredients last. Each die uses its "
+        T("Click the arrow between the blank faces and the die (**FORGE**): one die every 5 s, in a loop, while ingredients last. Each die uses its "
           "blank faces and one fragment per non-black slot.\n\n"
           "Hoppers fill it (top and sides) and take dice out from below. Powered = production on. A comparator "
           "reads the output.",
-          "Clique le noyau (**FORGER**) : un dé toutes les 5 s, en boucle, tant qu'il y a de quoi. Chaque dé "
+          "Clique la flèche entre les faces vierges et le dé (**FORGER**) : un dé toutes les 5 s, en boucle, tant qu'il y a de quoi. Chaque dé "
           "consomme ses faces vierges et un fragment par emplacement non noir.\n\n"
           "Les entonnoirs la remplissent (dessus, côtés) et sortent les dés par dessous. Alimentée = production "
           "activée. Un comparateur lit la sortie."),
