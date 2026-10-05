@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.client.entity.costume;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.squish.SquishAnimations;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.BoxCostumeItem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -9,10 +11,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
@@ -176,15 +176,18 @@ public final class BoxCostumeClient {
      * offset, undone here so the box stays on the ground). Worn, it follows the body's yaw; hidden, it is a block on
      * the ground, on the quarter turn nearest to the body's yaw when it closed, like the merchant's.
      */
-    public static void renderWorn(PlayerEntityRenderState state, BoxCostumeAnimatable box, @Nullable Vec3d modelOffset, MatrixStack matrices,
-                                  VertexConsumerProvider vertexConsumers, int light) {
+    public static void renderWorn(AbstractClientPlayerEntity player, BoxCostumeAnimatable box, @Nullable Vec3d modelOffset, float tickDelta,
+                                  MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
         matrices.push();
         if (modelOffset != null) matrices.translate(-modelOffset.x, -modelOffset.y, -modelOffset.z);
-        matrices.scale(state.baseScale, state.baseScale, state.baseScale);
+        // the scale the body is drawn at (with the token spell's transformation, see SquishAnimations)
+        float baseScale = player.getScale() * SquishAnimations.scaleMultiplier(player, tickDelta);
+        matrices.scale(baseScale, baseScale, baseScale);
+        float bodyYaw = MathHelper.lerpAngleDegrees(tickDelta, player.prevBodyYaw, player.bodyYaw);
         // On the ground the box is a block: it keeps the quarter turn it was closed on, however the wearer turns inside
         // (turning it with him made its top and bottom faces jump by quarter turns). It turns to / from the body's
         // yaw as it drops / rises.
-        float yaw = box.lift >= 1.0F ? state.bodyYaw : MathHelper.lerpAngleDegrees(Math.max(box.lift, 0.0F), box.hiddenYaw, state.bodyYaw);
+        float yaw = box.lift >= 1.0F ? bodyYaw : MathHelper.lerpAngleDegrees(Math.max(box.lift, 0.0F), box.hiddenYaw, bodyYaw);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - yaw));
         renderBox(matrices, box, vertexConsumers, light, MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(false), 1.0F);
         matrices.pop();
@@ -199,9 +202,13 @@ public final class BoxCostumeClient {
         float fade = MathHelper.clamp((box.hiddenTicks - DUCK_TICKS + tickCounter.getTickDelta(false)) / VIEW_FADE_TICKS, 0.0F, 1.0F);
         // Lit by the box's block colour, a dim inside
         int mapColor = box.block.getMapColor(client.world, client.player.getBlockPos()).color;
-        int tint = ColorHelper.lerp(0.5F, 0xFFFFFF, mapColor);
-        int color = ColorHelper.withAlpha(MathHelper.floor(fade * 255.0F), tint);
+        int tint = ColorHelper.Argb.lerp(0.5F, 0xFFFFFF, mapColor);
         int width = context.getScaledWindowWidth(), height = context.getScaledWindowHeight();
-        context.drawTexture(RenderLayer::getGuiTexturedOverlay, VIEW_TEXTURE, 0, 0, 0.0F, 0.0F, width, height, width, height, color);
+        RenderSystem.enableBlend();
+        context.setShaderColor(ColorHelper.Argb.getRed(tint) / 255.0F, ColorHelper.Argb.getGreen(tint) / 255.0F,
+                ColorHelper.Argb.getBlue(tint) / 255.0F, fade);
+        context.drawTexture(VIEW_TEXTURE, 0, 0, 0.0F, 0.0F, width, height, width, height);
+        context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
     }
 }

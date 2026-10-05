@@ -1,8 +1,9 @@
 package fr.lordfinn.steveparty.client.mixin;
 
 import fr.lordfinn.steveparty.client.access.TelescopeRenderState;
+import fr.lordfinn.steveparty.client.entity.FirstPersonArm;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -24,9 +25,13 @@ public class PlayerEntityModelTelescopeMixin {
     @Unique
     private static final float STEVEPARTY$HOLD_PITCH = -1.75F, STEVEPARTY$HOLD_WITH_TUBE = 0.75F, STEVEPARTY$HOLD_YAW = -0.3F;
 
-    @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("TAIL"))
-    private void steveparty$atTheEyepiece(PlayerEntityRenderState state, CallbackInfo ci) {
-        if (!(state instanceof TelescopeRenderState telescope)) return;
+    /** After the biped pose, before the sleeves, trousers and jacket copy it. */
+    @Inject(method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/render/entity/model/BipedEntityModel;setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",
+            shift = At.Shift.AFTER))
+    private void steveparty$atTheEyepiece(LivingEntity entity, float limbAngle, float limbDistance, float animationProgress,
+                                          float headYaw, float headPitch, CallbackInfo ci) {
+        if (FirstPersonArm.posing || !(entity instanceof TelescopeRenderState telescope)) return;
         float ease = telescope.steveparty$telescopeEase();
         if (ease <= 0f) return;
         PlayerEntityModel model = (PlayerEntityModel) (Object) this;
@@ -36,6 +41,7 @@ public class PlayerEntityModelTelescopeMixin {
         model.rightLeg.pivotZ += STEVEPARTY$LEG_BACK * bend;
         model.leftLeg.pivotZ += STEVEPARTY$LEG_BACK * bend;
         model.head.pivotY += STEVEPARTY$HEAD_DOWN * bend;
+        model.hat.copyTransform(model.head);
         model.body.pivotY += STEVEPARTY$BODY_DOWN * bend;
         model.leftArm.pivotY += STEVEPARTY$BODY_DOWN * bend;
         model.rightArm.pivotY += STEVEPARTY$BODY_DOWN * bend;

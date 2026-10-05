@@ -1,12 +1,12 @@
 package fr.lordfinn.steveparty.client.mixin;
 
 import fr.lordfinn.steveparty.client.token.TokenBaseRenderState;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-/** Token base data of the living entity render states (filled by TokenBaseLivingEntityRendererMixin). */
-@Mixin(LivingEntityRenderState.class)
+/** Token base data of a living entity, for its renderer (filled each frame by TokenBaseLivingEntityRendererMixin). */
+@Mixin(LivingEntity.class)
 public class TokenBaseRenderStateMixin implements TokenBaseRenderState {
     @Unique
     private boolean steveparty$token;

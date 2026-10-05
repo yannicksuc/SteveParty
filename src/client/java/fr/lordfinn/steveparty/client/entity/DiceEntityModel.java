@@ -4,22 +4,20 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.constant.DataTickets;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.model.data.EntityModelData;
-import software.bernie.geckolib.renderer.GeoRenderer;
 
 public class DiceEntityModel extends GeoModel<DiceEntity> {
     @Override
-    public Identifier getModelResource(DiceEntity diceEntity, @Nullable GeoRenderer<DiceEntity> geoRenderer) {
+    public Identifier getModelResource(DiceEntity diceEntity) {
         return Steveparty.id("geo/entity/dice.geo.json");
     }
 
     @Override
-    public Identifier getTextureResource(DiceEntity diceEntity, @Nullable GeoRenderer<DiceEntity> geoRenderer) {
+    public Identifier getTextureResource(DiceEntity diceEntity) {
         return DiceEntityRenderer.textureOf(diceEntity);
     }
 

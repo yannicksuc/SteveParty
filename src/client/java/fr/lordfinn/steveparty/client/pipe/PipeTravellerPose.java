@@ -7,9 +7,6 @@ import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
-import net.minecraft.client.render.entity.state.BipedEntityRenderState;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -42,7 +39,8 @@ import java.util.WeakHashMap;
  * </ul>
  * Applied around the middle of the body before its renderer draws it ({@code EntityRenderDispatcherPipePoseMixin}), so
  * it works for every renderer: vanilla mobs, players (seen by the others, and in third person), items (spinning along
- * the way), GeckoLib mobs and tokens.
+ * the way), GeckoLib mobs and tokens. The lying pose of a living entity is set in its renderer's render
+ * ({@code LivingEntityRendererPipePoseMixin}), its name tag hidden by {@code EntityRendererNameTagMixin}.
  * <p>
  * The traveller's own view ({@code CameraPipeViewMixin}): the camera glides along the same line, in the middle of the
  * tube, and turns with the pipe (eased like the body, never rolled, never straight up or down); the player's own look
@@ -66,9 +64,12 @@ public final class PipeTravellerPose {
     /** Travellers lately seen inside: when last seen inside, then when seen out (-1: not yet), in ticks of their age. */
     private static final Map<Entity, float[]> SEEN = new WeakHashMap<>();
 
-    /** While a tall living traveller is drawn: its biped models swim (arms ahead), with this age for the kicks. */
+    /** While a tall living traveller is drawn: its biped models swim (arms ahead). */
     private static boolean swimming;
-    private static float swimAge;
+    /** The traveller drawn in a pipe now (null: none), and the one drawn lying by its living entity renderer. */
+    private static @Nullable Entity drawn, lying;
+    /** Head pitch of the lying one. */
+    private static float lyingPitch;
 
     /** The path the player's view follows (null: none), its look when that path began, and the turn added to it. */
     private static @Nullable List<Vec3d> viewPath;
@@ -100,16 +101,34 @@ public final class PipeTravellerPose {
         part.roll = ANGLES.z;
     }
 
+    /** Is {@code entity} drawn lying in a pipe by its living entity renderer now (facing the pipe's frame)? */
+    public static boolean lying(Entity entity) {
+        return entity == lying;
+    }
+
+    /** The head pitch of the one {@link #lying}: looking ahead. */
+    public static float lyingPitch() {
+        return lyingPitch;
+    }
+
+    /** No name tag inside a pipe. */
+    public static boolean hidesNameTag(Entity entity) {
+        return entity == drawn;
+    }
+
     /**
      * A swimmer's pose: arms stretched ahead of the head, legs behind with a little flutter kick, looking ahead; round
      * a bend, the head and arms are turned from the neck and the shoulders the way the pipe goes ahead, the legs from
      * the hips the way it came.
+     *
+     * @param age the model's animation progress (age and tick delta), for the kicks
      */
-    public static void swimPose(BipedEntityModel<?> model) {
-        float kick = MathHelper.sin(swimAge * 0.9f) * 0.25f;
+    public static void swimPose(BipedEntityModel<?> model, float age) {
+        float kick = MathHelper.sin(age * 0.9f) * 0.25f;
         model.body.pitch = 0;
         model.body.yaw = 0;
         turn(model.head, HEAD, -0.8f, 0, 0);
+        model.hat.copyTransform(model.head);
         turn(model.rightArm, HEAD, -2.95f, 0, 0.12f);
         turn(model.leftArm, HEAD, -2.95f, 0, -0.12f);
         turn(model.rightLeg, LEGS, kick, 0, 0.04f);
@@ -119,6 +138,7 @@ public final class PipeTravellerPose {
     /** After the entity is drawn. */
     public static void end() {
         swimming = false;
+        drawn = lying = null;
     }
 
     /** The turn of a part of the body, from the body's frame to its model's (turned half round, upside down). */
@@ -133,8 +153,9 @@ public final class PipeTravellerPose {
      *
      * @return whether a pose was pushed (to pop after drawing)
      */
-    public static boolean push(EntityRenderer<?, ?> renderer, Entity entity, EntityRenderState state, float tickDelta, MatrixStack matrices) {
+    public static boolean push(EntityRenderer<?> renderer, Entity entity, float tickDelta, MatrixStack matrices) {
         swimming = false;
+        drawn = lying = null;
         PipeCarrierEntity carrier = carrier(entity);
         if (carrier == null) return !SEEN.isEmpty() && wobble(entity, tickDelta, matrices);
         float now = entity.age + tickDelta;
@@ -169,17 +190,13 @@ public final class PipeTravellerPose {
         matrices.multiply(ROTATION);
         if (lengthwise) matrices.scale(across, across, along);
         else matrices.scale(across, along, across);
-        if (renderer instanceof LivingEntityRenderer<?, ?, ?> && state instanceof LivingEntityRenderState living) {
+        if (renderer instanceof LivingEntityRenderer<?, ?> && entity instanceof LivingEntity) {
             // Facing the pipe's frame (yaw 0), looking ahead, lying (not sitting, not crouching)
-            living.bodyYaw = 0;
-            living.yawDegrees = 0;
-            living.pitch = lengthwise ? 0 : HEAD_PITCH;
-            living.sneaking = false;
-            if (living instanceof BipedEntityRenderState biped) biped.isInSneakingPose = false;
+            lying = entity;
+            lyingPitch = lengthwise ? 0 : HEAD_PITCH;
             if (!lengthwise) {
                 // Bipeds swim, folded round the bends
                 swimming = true;
-                swimAge = living.age;
                 float length = height * along;
                 toModel(PipePose.bend(points, lengths, at, HEAD_AT * length, FACING, HEAD));
                 toModel(PipePose.bend(points, lengths, at, LEGS_AT * length, FACING, LEGS));
@@ -189,7 +206,7 @@ public final class PipeTravellerPose {
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(bodyYaw));
         }
         matrices.translate(0, -pivot, 0);
-        state.displayName = null;
+        drawn = entity;
         return true;
     }
 
