@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.FlagItem;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
@@ -108,7 +109,7 @@ public final class FlagPalettes {
             Map<Integer, Integer> counts = new HashMap<>();
             for (int y = 0; y < image.getHeight(); y++) {
                 for (int x = 0; x < image.getWidth(); x++) {
-                    int argb = image.getColorArgb(x, y);
+                    int argb = ColorHelper.Abgr.toAbgr(image.getColor(x, y));
                     if ((argb >>> 24) < 128) continue;
                     counts.merge(argb & 0xFFFFFF, 1, Integer::sum);
                 }

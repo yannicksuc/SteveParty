@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.model.sign;
 
+import fr.lordfinn.steveparty.client.model.BakedModelIds;
 import fr.lordfinn.steveparty.Steveparty;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.client.render.model.BakedModel;
@@ -40,14 +41,14 @@ public class StencilSignModelPlugin implements ModelLoadingPlugin {
     }
 
     @Override
-    public void initialize(Context context) {
+    public void onInitializeModelLoader(Context context) {
         List<Identifier> extra = new ArrayList<>();
         for (int i = 0; i < BACK_PEBBLES; i++) extra.add(pebbles("back", i));
         for (int i = 0; i < FRONT_PEBBLES; i++) extra.add(pebbles("front", i));
         context.addModels(extra);
 
         context.modifyModelAfterBake().register((original, ctx) -> {
-            Identifier id = ctx.resourceId();
+            Identifier id = BakedModelIds.of(ctx);
             if (id == null || !id.getNamespace().equals(Steveparty.MOD_ID)) return original;
             String path = id.getPath();
             Baker baker = ctx.baker();

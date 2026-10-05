@@ -41,7 +41,7 @@ public class DiceForgeCoreLayer extends GeoRenderLayer<DiceForgeBlockEntity> {
     @Override
     public void renderForBone(MatrixStack poseStack, DiceForgeBlockEntity animatable, GeoBone bone, RenderLayer renderType,
                               VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick,
-                              int packedLight, int packedOverlay, int renderColor) {
+                              int packedLight, int packedOverlay) {
         if (!animatable.isCoreInPlace()) return;
         boolean hasCoreBone = getGeoModel().getBone(CORE_BONE).isPresent();
         if (!bone.getName().equals(hasCoreBone ? CORE_BONE : ROOT_BONE)) return;

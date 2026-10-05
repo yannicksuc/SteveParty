@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -139,9 +140,9 @@ public class StencilResourceManager {
         for (int x = 0; x < StencilShape.SIDE; x++) {
             for (int y = 0; y < StencilShape.SIDE; y++) {
                 boolean set = shape[StencilShape.index(x, y)] != 0;
-                int color = image.getColorArgb(x, y);
+                int color = ColorHelper.Abgr.toAbgr(image.getColor(x, y));
                 int alpha = set != kind.cutOut ? 0xFF : 0;
-                image.setColorArgb(x, y, (alpha << 24) | (color & 0x00FFFFFF));
+                image.setColor(x, y, ColorHelper.Abgr.toAbgr((alpha << 24) | (color & 0x00FFFFFF)));
             }
         }
         String name = "stencil_" + kind.name().toLowerCase() + "_" + Integer.toHexString(java.util.Arrays.hashCode(shape));

@@ -40,9 +40,9 @@ public class PolishedTilesItemModel extends ForwardingBakedModel {
 
     public static class Plugin implements ModelLoadingPlugin {
         @Override
-        public void initialize(Context context) {
+        public void onInitializeModelLoader(Context context) {
             context.modifyModelAfterBake().register((model, ctx) -> {
-                Identifier id = ctx.resourceId();
+                Identifier id = BakedModelIds.of(ctx);
                 if (id == null || model == null || !id.getNamespace().equals(Steveparty.MOD_ID)) return model;
                 for (PolishedTilesBlock tiles : ModBlocks.POLISHED_TILES) {
                     if (id.getPath().equals("item/" + Registries.BLOCK.getId(tiles).getPath())) return new PolishedTilesItemModel(model, tiles);

@@ -134,7 +134,7 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         int argb = color == null ? ENGRAVED_COLOR : 0xFF000000 | color.getSignColor();
         float alpha = FADE_ALPHA[Math.clamp(fade, 0, FADE_ALPHA.length - 1)]
                 * (state.getBlock() instanceof StencilPaintBlock ? SPRAY_ALPHA : 1.0F);
-        argb = ColorHelper.withAlpha(Math.round((argb >>> 24) * alpha), argb);
+        argb = ColorHelper.Argb.withAlpha(Math.round((argb >>> 24) * alpha), argb);
         int symbolLight = glowing && color != null ? FULL_BRIGHT : light;
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(cache.texture));
 
@@ -164,7 +164,7 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
                 if (cache.sign) cache.transform.transformPosition(center);
                 float inside = MathHelper.clamp((radius - center.distance(from)) / REVEAL_EDGE, 0, 1);
                 if (inside <= 0) continue;
-                int cellArgb = ColorHelper.withAlpha(Math.round((argb >>> 24) * inside), argb);
+                int cellArgb = ColorHelper.Argb.withAlpha(Math.round((argb >>> 24) * inside), argb);
                 Matrix4f matrix = entry.getPositionMatrix();
                 Vector3f n = quad.normal();
                 vertex(consumer, matrix, entry, lerp(quad, u0, v0, new Vector3f()), u0, v0, cellArgb, light, n);
