@@ -9,11 +9,11 @@ import fr.lordfinn.steveparty.client.utils.ShaderPacks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.item.ModelTransformationMode;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.particle.ParticlesMode;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
@@ -193,7 +193,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         public void render(MatrixStack matrices, MulaEntity entity, BakedGeoModel bakedModel,
                            @Nullable RenderLayer renderType, VertexConsumerProvider bufferSource,
                            @Nullable net.minecraft.client.render.VertexConsumer buffer, float partialTick,
-                           int packedLight, int packedOverlay, int renderColor) {
+                           int packedLight, int packedOverlay) {
             var bodyBone = bakedModel.getBone("head");
             if (bodyBone.isPresent()) {
                 var client = MinecraftClient.getInstance();

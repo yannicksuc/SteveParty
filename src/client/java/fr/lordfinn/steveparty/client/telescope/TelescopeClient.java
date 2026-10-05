@@ -21,7 +21,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BuiltBuffer;
-import net.minecraft.client.render.Fog;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
@@ -379,15 +378,16 @@ public final class TelescopeClient {
         Matrix4fStack modelView = RenderSystem.getModelViewStack();
         modelView.pushMatrix();
         modelView.mul(context.positionMatrix());
-        Fog fog = RenderSystem.getShaderFog();
-        RenderSystem.setShaderFog(Fog.DUMMY);
+        // no fog on them (as BackgroundRenderer#clearFog)
+        float fogStart = RenderSystem.getShaderFogStart();
+        RenderSystem.setShaderFogStart(Float.MAX_VALUE);
         try {
             BuiltBuffer built = glowBuffer.endNullable();
             if (built != null) glowLayer.draw(built);
             built = heartBuffer.endNullable();
             if (built != null) heartLayer.draw(built);
         } finally {
-            RenderSystem.setShaderFog(fog);
+            RenderSystem.setShaderFogStart(fogStart);
             modelView.popMatrix();
             glowBuffer = heartBuffer = null;
         }
@@ -478,7 +478,9 @@ public final class TelescopeClient {
         float side = Math.min(width, height);
         int size = MathHelper.floor(side * Math.min(width / side, height / side) * scale);
         int left = (width - size) / 2, top = (height - size) / 2, right = left + size, bottom = top + size;
-        context.drawTexture(RenderLayer::getGuiTextured, SCOPE, left, top, 0f, 0f, size, size, size, size);
+        RenderSystem.enableBlend();
+        context.drawTexture(SCOPE, left, top, 0f, 0f, size, size, size, size);
+        RenderSystem.disableBlend();
         context.fill(0, bottom, width, height, 0xFF000000);
         context.fill(0, 0, width, top, 0xFF000000);
         context.fill(0, top, left, bottom, 0xFF000000);
@@ -538,8 +540,13 @@ public final class TelescopeClient {
                 float d = (18 + 9 * (i % 4)) * (0.3f + 2.2f * t);
                 int s = 6 + (i % 3) * 3;
                 int x = cx + Math.round((float) Math.cos(a) * d) - s / 2, y = cy + Math.round((float) Math.sin(a) * d) - s / 2;
-                context.drawTexture(RenderLayer::getGuiTextured, HEART, x, y, 0f, 0f, s, s, s, s,
-                        ColorHelper.withAlpha(alpha, (i & 1) == 0 ? GUIDE_COLOR : 0xFFFFFF));
+                int color = (i & 1) == 0 ? GUIDE_COLOR : 0xFFFFFF;
+                RenderSystem.enableBlend();
+                context.setShaderColor(ColorHelper.Argb.getRed(color) / 255f, ColorHelper.Argb.getGreen(color) / 255f,
+                        ColorHelper.Argb.getBlue(color) / 255f, alpha / 255f);
+                context.drawTexture(HEART, x, y, 0f, 0f, s, s, s, s);
+                context.setShaderColor(1f, 1f, 1f, 1f);
+                RenderSystem.disableBlend();
             }
         }
     }
