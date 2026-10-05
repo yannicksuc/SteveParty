@@ -103,14 +103,14 @@ public class MulaRebirths extends PersistentState {
 
     private static void rebirth(ServerWorld world, Entry entry) {
         if (world.getEntity(entry.id()) != null) return; // already there
-        Entity entity = EntityType.getEntityFromNbt(entry.mula(), world, SpawnReason.TRIGGERED).orElse(null);
+        Entity entity = EntityType.getEntityFromNbt(entry.mula(), world).orElse(null);
         if (!(entity instanceof MulaEntity mula)) return;
         double y = entry.y();
         if (!world.getDimension().hasCeiling()) {
             int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, entry.x(), entry.z());
             if (top > world.getBottomY()) y = top + ABOVE_GROUND;
         }
-        y = Math.min(y, world.getTopYInclusive() - 2);
+        y = Math.min(y, world.getTopY() - 3);
         mula.refreshPositionAndAngles(entry.x() + 0.5, y, entry.z() + 0.5, mula.getYaw(), 0);
         // only in free space (leaves, a cave ceiling...): up to 16 blocks higher
         for (int i = 0; i < 32 && !world.isSpaceEmpty(mula); i++) {

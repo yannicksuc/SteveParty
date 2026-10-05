@@ -40,6 +40,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -766,10 +767,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	public static DefaultAttributeContainer.Builder setAttributes() {
 		return LivingEntity.createLivingAttributes()
-				.add(EntityAttributes.MAX_HEALTH, 30.0D)
-				.add(EntityAttributes.MOVEMENT_SPEED, 0.25D)
-				.add(EntityAttributes.FOLLOW_RANGE, 20.0D)
-				.add(EntityAttributes.FLYING_SPEED, 0.3D);
+				.add(EntityAttributes.GENERIC_MAX_HEALTH, 30.0D)
+				.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25D)
+				.add(EntityAttributes.GENERIC_FOLLOW_RANGE, 20.0D)
+				.add(EntityAttributes.GENERIC_FLYING_SPEED, 0.3D);
 	}
 
 	@Override protected EntityNavigation createNavigation(World world) {
@@ -786,12 +787,12 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	/** Hurt by nothing of its own flying life: falls, crashes, walls, water, fire, cramming, nor by another Mula. */
 	@Override
-	public boolean isInvulnerableTo(ServerWorld world, DamageSource source) {
+	public boolean isInvulnerableTo(DamageSource source) {
 		if (source.getAttacker() instanceof MulaEntity || source.getSource() instanceof MulaEntity) return true;
 		for (net.minecraft.registry.RegistryKey<net.minecraft.entity.damage.DamageType> type : IMMUNE_TO) {
 			if (source.isOf(type)) return true;
 		}
-		return super.isInvulnerableTo(world, source);
+		return super.isInvulnerableTo(source);
 	}
 
 	private static final List<net.minecraft.registry.RegistryKey<net.minecraft.entity.damage.DamageType>> IMMUNE_TO = List.of(
@@ -1215,7 +1216,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		if (this.getWorld().isClient) return;
 		Item fragmentItem = this.getVariant().getFragmentItem();
 		for (int i = 0; i < count; i++) {
-			this.dropItem((ServerWorld) this.getWorld(), fragmentItem);
+			this.dropItem(fragmentItem);
 		}
 	}
 
@@ -1465,7 +1466,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			this.id = id;
 			this.color = color;
 			this.fragmentItem = fragmentItem;
-			this.starDust = new DustParticleEffect(lighten(color, id == 5 ? 0.3f : 0.45f), 0.7f);
+			this.starDust = new DustParticleEffect(Vec3d.unpackRgb(lighten(color, id == 5 ? 0.3f : 0.45f)).toVector3f(), 0.7f);
 			// the black one glows white: a black light would not show
 			this.glowColor = id == 5 ? 0xFFFFFF : lighten(color, 0.5f);
 			this.twinkle = new MulaSparkleEffect(glowColor, 1f, MulaSparkleEffect.TWINKLE);
@@ -1503,8 +1504,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 
 	/** Like wolves, a sitting Mula stands up when it gets hurt; a random animation stops at once. */
 	@Override
-	public boolean damage(ServerWorld world, DamageSource source, float amount) {
-		boolean damaged = super.damage(world, source, amount);
+	public boolean damage(DamageSource source, float amount) {
+		boolean damaged = super.damage(source, amount);
 		if (damaged) {
 			// shy: it flees a short way and hides (behind its owner, in leaves...), peeks out and comes back
 			if (this.isAlive()) brain.onHurt(source.getAttacker());

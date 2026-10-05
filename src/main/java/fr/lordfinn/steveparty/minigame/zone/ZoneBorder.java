@@ -297,9 +297,7 @@ public final class ZoneBorder {
     /** @return true if a teleport of a player must not happen: out of the zone it plays in, or into one it doesn't */
     public static boolean blocksTeleport(ServerPlayerEntity player, TeleportTarget target) {
         if (bypass > 0 || allow > 0 || Thread.currentThread() != thread) return false;
-        // a relative move is judged where it ends (the player is sent back if need be)
-        if (!target.relatives().isEmpty()) return false;
-        Vec3d pos = target.position();
+        Vec3d pos = target.pos();
         ZoneBubble to = ZoneBubbles.at(target.world(), MathHelper.floor(pos.x), MathHelper.floor(pos.y), MathHelper.floor(pos.z));
         if (ZoneBubbles.blocksTeleport(player, to)) {
             ZoneBubbles.warn(player, to == null || to.isMember(player.getUuid()) ? "cannot_leave" : "cannot_enter");

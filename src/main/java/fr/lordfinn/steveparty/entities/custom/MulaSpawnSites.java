@@ -309,7 +309,7 @@ public class MulaSpawnSites extends PersistentState {
         int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, site.pos.getX(), site.pos.getZ());
         double y = (top > world.getBottomY() ? top : site.pos.getY()) + 3;
         for (int i = 0; i < site.colours.length; i++) {
-            MulaEntity mula = ModEntities.MULA_ENTITY.create(world, SpawnReason.EVENT);
+            MulaEntity mula = ModEntities.MULA_ENTITY.create(world);
             if (mula == null) continue;
             double a = i * 2.39996;
             mula.refreshPositionAndAngles(site.pos.getX() + 0.5 + Math.cos(a) * 1.5, y + (i % 3) * 0.6,

@@ -16,8 +16,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Collection;
-
 import static fr.lordfinn.steveparty.items.ModItems.TRIPLE_JUMP_SHOES;
 
 //
@@ -28,12 +26,11 @@ public abstract class LivingEntityMixin extends Entity {
         super(type, world);
     }
 
-    @Inject(method = "onStatusEffectsRemoved", at = @At("HEAD"))
-    protected void callOnStatusEffectsRemovedForEntity(Collection<StatusEffectInstance> effects, CallbackInfo ci) {
+    // 1.21.1: one call per removed effect (expired, removed or cleared)
+    @Inject(method = "onStatusEffectRemoved", at = @At("HEAD"))
+    protected void callOnStatusEffectsRemovedForEntity(StatusEffectInstance statusEffectInstance, CallbackInfo ci) {
         if (!this.getWorld().isClient) {
-            for (StatusEffectInstance statusEffectInstance : effects) {
-                ((StatusEffectExtension) statusEffectInstance.getEffectType().value()).steveparty$onRemoved((LivingEntity) (Object) this);
-            }
+            ((StatusEffectExtension) statusEffectInstance.getEffectType().value()).steveparty$onRemoved((LivingEntity) (Object) this);
         }
     }
 

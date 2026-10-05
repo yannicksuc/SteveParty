@@ -228,7 +228,7 @@ public class PipeCarrierEntity extends Entity {
     }
 
     @Override
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+    public boolean damage(DamageSource source, float amount) {
         return false;
     }
 
