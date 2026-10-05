@@ -516,6 +516,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
+        // A hidden trap (Trap power-up) springs on the tokens that stop here, before the space's own role
+        fr.lordfinn.steveparty.powerups.effects.TrapEffect.onTokenStopped(partyController, this, token);
         // A board space without cartridge acts as a default one: the game must go on
         ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
         // Pushed here after a teleport: an ordinary space if the Teleport Cartridge says so, or if it is a teleport tile

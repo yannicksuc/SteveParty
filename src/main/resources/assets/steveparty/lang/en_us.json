@@ -2345,5 +2345,12 @@
   "message.steveparty.thief_bell.stolen": "%1$s rings the %2$s and steals %3$s × %4$s from %5$s!",
   "message.steveparty.thief_bell.nothing": "%1$s rings the %2$s, but %3$s has no %4$s to steal",
   "message.steveparty.thief_bell.protected": "%1$s rings the %2$s, but %3$s is protected: nothing stolen",
-  "message.steveparty.thief_bell.nobody": "%1$s rings the %2$s, but there is nobody to steal from"
+  "message.steveparty.thief_bell.nobody": "%1$s rings the %2$s, but there is nobody to steal from",
+  "item.steveparty.powerup_trap": "Trap",
+  "tooltip.steveparty.powerup.trap": "Use it at the start of your turn, before you roll the die: sets a hidden trap on the space your token stands on. The next token of another player to stop there gives you 10 coins (at most what they hold). One trap per space: a new one replaces the old one.",
+  "message.steveparty.powerup.trap.set": "Trap set on this space. Only you can see it.",
+  "message.steveparty.powerup.trap.no_space": "Your token is not on a board space: no trap set.",
+  "message.steveparty.powerup.trap.sprung": "%1$s stops on %2$s's trap and gives them %3$s × %4$s!",
+  "message.steveparty.powerup.trap.sprung_empty": "%1$s stops on %2$s's trap, but has no %3$s to give!",
+  "message.steveparty.powerup.trap.disarmed": "%1$s's Padlock disarms %2$s's trap!"
 }

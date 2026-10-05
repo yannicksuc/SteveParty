@@ -2345,5 +2345,12 @@
   "message.steveparty.thief_bell.stolen": "%1$s sonne la %2$s et vole %3$s × %4$s à %5$s !",
   "message.steveparty.thief_bell.nothing": "%1$s sonne la %2$s, mais %3$s n'a pas de %4$s à voler",
   "message.steveparty.thief_bell.protected": "%1$s sonne la %2$s, mais %3$s est protégé : rien n'est volé",
-  "message.steveparty.thief_bell.nobody": "%1$s sonne la %2$s, mais il n'y a personne à voler"
+  "message.steveparty.thief_bell.nobody": "%1$s sonne la %2$s, mais il n'y a personne à voler",
+  "item.steveparty.powerup_trap": "Piège",
+  "tooltip.steveparty.powerup.trap": "À utiliser au début de son tour, avant de lancer le dé : pose un piège caché sur la case où se trouve son pion. Le prochain pion d'un autre joueur qui s'y arrête lui donne 10 pièces (au plus ce qu'il a). Un piège par case : un nouveau remplace l'ancien.",
+  "message.steveparty.powerup.trap.set": "Piège posé sur cette case. Vous seul le voyez.",
+  "message.steveparty.powerup.trap.no_space": "Votre pion n'est pas sur une case du plateau : aucun piège posé.",
+  "message.steveparty.powerup.trap.sprung": "%1$s s'arrête sur le piège de %2$s et lui donne %3$s × %4$s !",
+  "message.steveparty.powerup.trap.sprung_empty": "%1$s s'arrête sur le piège de %2$s, mais n'a pas de %3$s à donner !",
+  "message.steveparty.powerup.trap.disarmed": "Le Cadenas de %1$s désamorce le piège de %2$s !"
 }
