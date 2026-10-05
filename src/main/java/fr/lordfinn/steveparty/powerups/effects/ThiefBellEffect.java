@@ -3,12 +3,10 @@ package fr.lordfinn.steveparty.powerups.effects;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.dice.DicePrompts;
+import fr.lordfinn.steveparty.powerups.PowerUp;
 import fr.lordfinn.steveparty.utils.InventoryUtils;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -44,7 +42,8 @@ import java.util.function.Consumer;
  *     {@link #defaultTarget});</li>
  *     <li>{@link #steal}: the theft itself, once the target is known.</li>
  * </ul>
- * Nothing here consumes the power-up item: the caller does.
+ * Nothing here consumes the power-up item: the caller does ({@code ThiefBellPowerUp}: only when something was stolen
+ * or a Padlock parried the theft).
  */
 public final class ThiefBellEffect {
     /** Fewest coins a Thief Bell steals (if the target has them). */
@@ -105,12 +104,22 @@ public final class ThiefBellEffect {
     }
 
     /**
-     * PADLOCK: the hook of the Padlock power-up. Asked once per theft, before anything is taken.
+     * The hook of the Padlock power-up. Asked once per theft, before anything is taken, and only when something would
+     * be taken (the target holds some of it).
      */
     @FunctionalInterface
     public interface Protection {
         /** No protection: every theft goes through. */
         Protection NONE = (thief, target, variant) -> false;
+
+        /**
+         * The Padlock: the target's token protected ({@link PowerUpProtection}) parries the theft and its protection
+         * is used up (announced by the Padlock: « Y's Padlock blocked the Thief Bell! »).
+         */
+        static Protection padlock(PartyControllerEntity party) {
+            return (thief, target, variant) -> PowerUpProtection.consume(party,
+                    PowerUpProtection.tokenOf(party, target.getUuid()), PowerUpProtection.Attack.THIEF_BELL);
+        }
 
         /**
          * PADLOCK: whether {@code target} is protected against this theft. An implementation that answers true also
@@ -151,9 +160,14 @@ public final class ThiefBellEffect {
      * there is no other player.
      */
     public static @Nullable ServerPlayerEntity defaultTarget(PartyControllerEntity party, ServerPlayerEntity thief, Variant variant) {
+        return defaultTarget(party, candidates(party, thief), variant);
+    }
+
+    /** {@link #defaultTarget(PartyControllerEntity, ServerPlayerEntity, Variant)} among {@code candidates}. */
+    public static @Nullable ServerPlayerEntity defaultTarget(PartyControllerEntity party, List<ServerPlayerEntity> candidates, Variant variant) {
         PartyCurrency first = variant.currency();
         // max() keeps the first of equal elements: the first in play order
-        return candidates(party, thief).stream()
+        return candidates.stream()
                 .max(Comparator.<ServerPlayerEntity>comparingInt(player -> holdings(party, player, first))
                         .thenComparingInt(player -> holdings(party, player, first.other())))
                 .orElse(null);
@@ -177,16 +191,27 @@ public final class ThiefBellEffect {
             then.accept(steal(party, thief, null, variant, random, protection));
             return;
         }
-        ServerPlayerEntity fallback = defaultTarget(party, thief, variant);
+        ask(party, thief, variant, candidates, timeoutTicks,
+                target -> then.accept(steal(party, thief, target, variant, random, protection)));
+    }
+
+    /**
+     * Asks {@code thief} which of {@code candidates} (not empty) to steal from: a list showing what each holds. The
+     * answer, or the {@link #defaultTarget} once {@code timeoutTicks} are over (or if the thief gets another prompt),
+     * goes to {@code pick}, exactly once.
+     */
+    public static void ask(PartyControllerEntity party, ServerPlayerEntity thief, Variant variant,
+                           List<ServerPlayerEntity> candidates, int timeoutTicks, Consumer<ServerPlayerEntity> pick) {
+        ServerPlayerEntity fallback = defaultTarget(party, candidates, variant);
         List<DicePrompts.Option> options = new ArrayList<>();
         for (ServerPlayerEntity candidate : candidates) {
-            options.add(new DicePrompts.Option(headOf(candidate), Text.translatable("gui.steveparty.thief_bell.option",
+            options.add(new DicePrompts.Option(PowerUp.headOf(candidate), Text.translatable("gui.steveparty.thief_bell.option",
                     candidate.getDisplayName(), holdings(party, candidate, variant.currency()),
                     party.getCurrency(variant.currency()).getName()).formatted(Formatting.WHITE)));
         }
         Text title = Text.translatable("gui.steveparty.thief_bell.prompt." + variant.name().toLowerCase(java.util.Locale.ROOT));
-        DicePrompts.ask(thief, title, DicePrompts.Layout.LIST, options, timeoutTicks, candidates.indexOf(fallback),
-                index -> then.accept(steal(party, thief, candidates.get(index), variant, random, protection)));
+        DicePrompts.ask(thief, title, DicePrompts.Layout.LIST, options, timeoutTicks, Math.max(0, candidates.indexOf(fallback)),
+                index -> pick.accept(candidates.get(index)));
     }
 
     // ---------------------------------------------------------------- theft
@@ -194,7 +219,8 @@ public final class ThiefBellEffect {
     /**
      * Steals from {@code target} for {@code thief}, and announces it. The Thief Bell takes
      * {@code random.nextBetween(MIN_COINS, MAX_COINS)} coins, at most what the target holds; the Golden one takes one
-     * star if the target has one. Nothing is taken from a target that is the thief, null, disconnected or protected.
+     * star if the target has one. Nothing is taken from a target that is the thief, null, disconnected or protected;
+     * the protection is only asked when the target holds something to take (an empty-handed target keeps its Padlock).
      *
      * @param target     the robbed player, null to report that there was nobody to rob
      * @param protection the Padlock hook ({@link Protection#NONE} for none)
@@ -207,8 +233,10 @@ public final class ThiefBellEffect {
             return result;
         }
 
-        // PADLOCK: the target's Padlock is checked (and consumed) here, before anything is taken: theft cancelled.
-        if (protection.blocks(thief, target, variant)) {
+        int held = holdings(party, target, variant.currency());
+        // PADLOCK: the target's Padlock is checked (and consumed) here, once a theft would really happen, before
+        // anything is taken: theft cancelled.
+        if (held > 0 && protection.blocks(thief, target, variant)) {
             Result result = new Result(Outcome.PROTECTED, variant, thief.getUuid(), target.getUuid(), 0);
             announce(party, thief, target, result);
             return result;
@@ -216,7 +244,7 @@ public final class ThiefBellEffect {
 
         ItemStack template = party.getCurrency(variant.currency());
         int wanted = variant == Variant.GOLDEN ? 1 : random.nextBetween(MIN_COINS, MAX_COINS);
-        int taken = InventoryUtils.take(target.getInventory(), template, Math.min(wanted, holdings(party, target, variant.currency())));
+        int taken = held <= 0 ? 0 : InventoryUtils.take(target.getInventory(), template, Math.min(wanted, held));
         if (taken > 0) InventoryUtils.giveOrDrop(thief, template, taken);
         Result result = new Result(taken > 0 ? Outcome.STOLEN : Outcome.NOTHING, variant, thief.getUuid(), target.getUuid(), taken);
         announce(party, thief, target, result);
@@ -235,15 +263,15 @@ public final class ThiefBellEffect {
                     .formatted(Formatting.YELLOW);
             case NOTHING -> Text.translatable("message.steveparty.thief_bell.nothing", thiefName, bell, targetName, currency)
                     .formatted(Formatting.GRAY);
-            case PROTECTED -> Text.translatable("message.steveparty.thief_bell.protected", thiefName, bell, targetName)
-                    .formatted(Formatting.AQUA);
+            // The Padlock announces it (« Y's Padlock blocked the Thief Bell! »)
+            case PROTECTED -> null;
             case NO_TARGET -> Text.translatable("message.steveparty.thief_bell.nobody", thiefName, bell)
                     .formatted(Formatting.GRAY);
         };
         List<ServerPlayerEntity> audience = new ArrayList<>(party.getPartyAudience());
         if (!audience.contains(thief)) audience.add(thief);
         if (target != null && !audience.contains(target)) audience.add(target);
-        MessageUtils.sendToPlayers(audience, message, MessageUtils.MessageType.CHAT);
+        if (message != null) MessageUtils.sendToPlayers(audience, message, MessageUtils.MessageType.CHAT);
 
         ServerWorld world = thief.getServerWorld();
         world.playSound(null, thief.getX(), thief.getY(), thief.getZ(), SoundEvents.BLOCK_BELL_USE, SoundCategory.PLAYERS, 1f,
@@ -254,11 +282,5 @@ public final class ThiefBellEffect {
                 target.getServerWorld().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ENTITY_VILLAGER_NO,
                         SoundCategory.PLAYERS, 0.6f, 1f);
         }
-    }
-
-    private static ItemStack headOf(ServerPlayerEntity player) {
-        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
-        head.set(DataComponentTypes.PROFILE, new ProfileComponent(player.getGameProfile()));
-        return head;
     }
 }

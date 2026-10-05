@@ -11,6 +11,11 @@ import org.jetbrains.annotations.Nullable;
 public final class PowerUpTurn {
     private @Nullable PowerUp used;
     private NbtCompound data = new NbtCompound();
+    /**
+     * World time until which the turn is held by a power-up still at work (a player being picked, a warp): no roll and
+     * no other power-up meanwhile. 0: not held. Not saved: a restart ends what held it.
+     */
+    private long heldUntil;
 
     /** The power-up used this turn, null if none yet. */
     public @Nullable PowerUp used() {
@@ -35,9 +40,30 @@ public final class PowerUpTurn {
         return data;
     }
 
+    /** Forgets the power-up just remembered: it was refused after all. */
+    void forget() {
+        used = null;
+        data = new NbtCompound();
+    }
+
+    /** Holds the turn until {@code until} (world time) at the latest, or until {@link #release}. */
+    void hold(long until) {
+        heldUntil = until;
+    }
+
+    void release() {
+        heldUntil = 0;
+    }
+
+    /** True while a power-up still at work holds the turn: no roll, no other power-up. */
+    public boolean isHeld(long now) {
+        return heldUntil > now;
+    }
+
     public void reset() {
         used = null;
         data = new NbtCompound();
+        heldUntil = 0;
     }
 
     public NbtCompound toNbt() {

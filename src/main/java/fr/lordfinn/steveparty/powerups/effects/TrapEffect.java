@@ -148,14 +148,12 @@ public final class TrapEffect {
 
         Vec3d at = BoardSpaces.standPos(world, pos);
         if (isProtected(controller, token, victim)) {
-            // PADLOCK: the victim is protected → the trap is disarmed and their Padlock is consumed. Consume it in
-            // isProtected (or here), then this branch removes the trap and tells everyone around.
+            // PADLOCK: the victim was protected, their Padlock is used up (and announced: « X's Padlock blocked a
+            // Trap! »): the trap is disarmed, no coins move
             traps.remove(pos);
             controller.markDirty();
             world.playSound(null, at.x, at.y, at.z, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.PLAYERS, 1F, 1.4F);
             world.spawnParticles(ParticleTypes.CLOUD, at.x, at.y + 0.2, at.z, 8, 0.3, 0.1, 0.3, 0.01);
-            announce(world, at, Text.translatable("message.steveparty.powerup.trap.disarmed",
-                    victim.getDisplayName(), owner.getDisplayName()).formatted(Formatting.AQUA));
             return new Result(Outcome.DISARMED, 0);
         }
 
@@ -177,13 +175,12 @@ public final class TrapEffect {
     }
 
     /**
-     * Whether the victim is protected from traps.
-     * <p>
-     * PADLOCK: return true here if {@code victim} (or {@code token}) holds an active Padlock, and consume it; the caller
-     * then disarms the trap ({@link Outcome#DISARMED}).
+     * Whether the victim is protected from this trap: PADLOCK, the victim's token holds a Padlock
+     * ({@link PowerUpProtection}), which is used up. Only asked for another player's trap (a player's own trap is no
+     * attack: {@link Outcome#OWN} comes first). The caller then disarms the trap ({@link Outcome#DISARMED}).
      */
     private static boolean isProtected(PartyControllerEntity controller, MobEntity token, ServerPlayerEntity victim) {
-        return false;
+        return PowerUpProtection.consume(controller, token.getUuid(), PowerUpProtection.Attack.TRAP);
     }
 
     private static void announce(ServerWorld world, Vec3d at, Text message) {

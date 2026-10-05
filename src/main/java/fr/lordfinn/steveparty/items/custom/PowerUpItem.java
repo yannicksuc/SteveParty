@@ -48,6 +48,11 @@ public class PowerUpItem extends Item {
         return TypedActionResult.success(stack, true);
     }
 
+    @Override
+    public boolean hasGlint(ItemStack stack) {
+        return powerUp.hasGlint() || super.hasGlint(stack);
+    }
+
     /** On a board space: the space is its target (a power-up aiming at nothing is used as in the air). */
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {

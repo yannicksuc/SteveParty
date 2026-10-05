@@ -7,4 +7,6 @@ Effect: `fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect` (items `poweru
 3. To skip the picker (bots, tests, a target already chosen), call `ThiefBellEffect.steal(party, thief, target, variant, random, protection)` directly.
 4. Padlock: pass a `ThiefBellEffect.Protection` that returns true when the target holds a Padlock and consumes it (see the `// PADLOCK:` comments); `Protection.NONE` until the Padlock exists.
 5. The `Result` (outcome, amount, thief, target) can feed the party HUD or statistics; the announcement and sounds are already done.
-6. Lang keys ready: `item.steveparty.powerup_(golden_)thief_bell` (names) and `tooltip.steveparty.powerup_(golden_)thief_bell` (descriptions).
+6. Lang keys: `item.steveparty.powerup_(golden_)thief_bell` (names) and `powerup.steveparty.(golden_)thief_bell.desc` (tooltips).
+
+**Wired** (`ThiefBellPowerUp`): the base's player pick is the bell's list (`ThiefBellEffect.ask`); a target with nothing to steal is refused (bell kept); `Protection.padlock(party)` consumes the target's Padlock only when something would be taken (the Padlock then announces it, the bell stays silent). STOLEN and PROTECTED consume the bell.

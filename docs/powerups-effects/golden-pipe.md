@@ -71,6 +71,6 @@ if (result.consumed()) stack.decrement(1);
 
 ### Text keys (en / fr)
 
-- `item.steveparty.powerup_golden_pipe`, `item.steveparty.powerup_golden_pipe.description` (name and tooltip line,
-  for the item when it is registered)
+- `item.steveparty.powerup_golden_pipe`, `powerup.steveparty.golden_pipe.desc` (+ `.before_star`) and
+  `powerup.steveparty.star.desc.no_star` (name and tooltip, see `GoldenPipePowerUp`)
 - `message.steveparty.powerup.golden_pipe.used`, `.no_star`, `.already_there`

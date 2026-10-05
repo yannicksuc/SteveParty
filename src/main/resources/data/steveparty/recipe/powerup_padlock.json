@@ -3,11 +3,11 @@
   "category": "misc",
   "ingredients": [
     { "item": "steveparty:coin" },
-    { "item": "minecraft:glowstone_dust" },
-    { "item": "minecraft:paper" }
+    { "item": "minecraft:iron_ingot" },
+    { "item": "minecraft:tripwire_hook" }
   ],
   "result": {
-    "id": "steveparty:powerup_double_coins",
+    "id": "steveparty:powerup_padlock",
     "count": 1
   }
 }

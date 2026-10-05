@@ -41,6 +41,9 @@ public class DefaultDiceItem extends Item {
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
+        // A power-up of the turn still at work (a player being picked, a warp): the roll waits
+        if (isServerWorld(world) && fr.lordfinn.steveparty.powerups.PowerUpService.refusesRoll(player))
+            return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             Vec3d spawnPosition = calculateSpawnPosition(player);
             DiceEntity diceEntity = spawnDiceEntity(world, spawnPosition);

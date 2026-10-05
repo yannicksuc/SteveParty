@@ -59,7 +59,11 @@ TrapEffect.Result r = TrapEffect.onTokenStopped(controller, space, token);
 | `Steveparty#onInitialize` | `TrapEffect.initialize()`, the owner's marker (a server tick) |
 | `lang/en_us.json`, `lang/fr_fr.json` | `item.steveparty.powerup_trap`, `tooltip.steveparty.powerup.trap`, `message.steveparty.powerup.trap.*` |
 
-## To wire when merging with `feat/powerups`
+## Wired with `feat/powerups` (`TrapPowerUp`)
+
+Done: used through the base (no target, the pawn's space; refused and kept off the board; no announcement, it is secret); the Padlock hook consumes the victim's Padlock (`PowerUpProtection.consume(..., Attack.TRAP)`, announced by the Padlock), never for the owner's own trap. The steps below are kept for reference.
+
+### Former steps
 
 1. In the Trap item's use (the base's "use a power-up" moment), call `TrapEffect.use(controller, token)`. Spend the item only on `SET` / `REPLACED`.
 2. Tooltip: `tooltip.steveparty.powerup.trap` (adapt it to the base's tooltip convention if it has one).
@@ -69,8 +73,8 @@ TrapEffect.Result r = TrapEffect.onTokenStopped(controller, space, token);
 
 In `TrapEffect`, look for `// PADLOCK:`.
 
-- `isProtected(controller, token, victim)` returns `false` for now. Make it return `true` when the victim holds an active Padlock, and consume the Padlock there.
+- `isProtected(controller, token, victim)` consumes the victim token's Padlock.
 - The `DISARMED` branch of `onTokenStopped` is already written:
   - it removes the trap, and no coins move;
   - it plays an iron-trapdoor sound and a cloud of particles;
-  - it announces `message.steveparty.powerup.trap.disarmed` ("%1$s's Padlock disarms %2$s's trap!").
+  - the Padlock announces it (« X's Padlock blocked a Trap! »).

@@ -46,7 +46,7 @@ if (result.consumed()) stack.decrement(1);
 
 ## 3. Lang and texture
 
-- Keys already added (en/fr): `item.steveparty.powerup_star_whistle`, `item.steveparty.powerup_star_whistle.description`,
+- Keys (en/fr): `item.steveparty.powerup_star_whistle`, `powerup.steveparty.star_whistle.desc` (+ `.other_space`),
   `message.steveparty.powerup.star_whistle.used`, `.no_star`, `.no_other_space`.
 - Icon: `textures/item/powerup_star_whistle.png` (made separately). The item model and registration come with the item.
 
