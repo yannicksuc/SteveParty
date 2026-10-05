@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:workshop/shops/shopkeeper_key",
+  "display": {
+    "icon": {
+      "id": "steveparty:cash_register",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.first_sale.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.first_sale.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "sold": {
+      "trigger": "steveparty:shop_sale"
+    }
+  },
+  "requirements": [
+    [
+      "sold"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

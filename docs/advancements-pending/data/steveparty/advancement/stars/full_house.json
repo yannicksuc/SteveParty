@@ -1,0 +1,37 @@
+{
+  "parent": "steveparty:stars/dance",
+  "display": {
+    "icon": {
+      "id": "minecraft:jukebox",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.full_house.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.full_house.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "dance": {
+      "trigger": "steveparty:mula_dance",
+      "conditions": {
+        "dancers": {
+          "min": 12
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "dance"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/star_fragments"
+    ]
+  }
+}

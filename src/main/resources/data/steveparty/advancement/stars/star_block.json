@@ -1,0 +1,55 @@
+{
+  "parent": "steveparty:stars/fragment_stack",
+  "display": {
+    "icon": {
+      "id": "steveparty:cyan_star_fragments_block",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.star_block.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.star_block.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": [
+                  "steveparty:white_star_fragments_block",
+                  "steveparty:orange_star_fragments_block",
+                  "steveparty:magenta_star_fragments_block",
+                  "steveparty:light_blue_star_fragments_block",
+                  "steveparty:yellow_star_fragments_block",
+                  "steveparty:lime_star_fragments_block",
+                  "steveparty:pink_star_fragments_block",
+                  "steveparty:gray_star_fragments_block",
+                  "steveparty:light_gray_star_fragments_block",
+                  "steveparty:cyan_star_fragments_block",
+                  "steveparty:purple_star_fragments_block",
+                  "steveparty:blue_star_fragments_block",
+                  "steveparty:brown_star_fragments_block",
+                  "steveparty:green_star_fragments_block",
+                  "steveparty:red_star_fragments_block",
+                  "steveparty:black_star_fragments_block"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

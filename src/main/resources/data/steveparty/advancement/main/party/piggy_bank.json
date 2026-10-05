@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/party/party_controller",
+  "display": {
+    "icon": {
+      "id": "steveparty:piggy_bank",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.piggy_bank.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.piggy_bank.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:piggy_bank"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:enchanted_golden_apple",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.golden_treat.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.golden_treat.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "fed": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:3}"
+            }
+          }
+        ],
+        "item": {
+          "items": "minecraft:enchanted_golden_apple"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "fed"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

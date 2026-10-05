@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/dice/default_dice",
+  "display": {
+    "icon": {
+      "id": "steveparty:double_dice",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.double_dice.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.double_dice.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_dice": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:double_dice"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_dice"
+    ]
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:workshop/signs/stencil",
+  "display": {
+    "icon": {
+      "id": "steveparty:stencil_maker",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.signs.stencil_maker.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.signs.stencil_maker.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:stencil_maker"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

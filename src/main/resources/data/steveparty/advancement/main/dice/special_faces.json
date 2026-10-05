@@ -1,0 +1,104 @@
+{
+  "parent": "steveparty:main/dice/blank_face",
+  "display": {
+    "icon": {
+      "id": "steveparty:swap_dice_face",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.special_faces.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.special_faces.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "coin": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:coin_dice_face_1",
+              "steveparty:coin_dice_face_2",
+              "steveparty:coin_dice_face_3",
+              "steveparty:coin_dice_face_4",
+              "steveparty:coin_dice_face_5",
+              "steveparty:coin_dice_face_6",
+              "steveparty:coin_dice_face_7",
+              "steveparty:coin_dice_face_8",
+              "steveparty:coin_dice_face_9",
+              "steveparty:coin_dice_face_10"
+            ]
+          }
+        ]
+      }
+    },
+    "debt": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:debt_dice_face_1",
+              "steveparty:debt_dice_face_2",
+              "steveparty:debt_dice_face_3",
+              "steveparty:debt_dice_face_4",
+              "steveparty:debt_dice_face_5",
+              "steveparty:debt_dice_face_6",
+              "steveparty:debt_dice_face_7",
+              "steveparty:debt_dice_face_8",
+              "steveparty:debt_dice_face_9",
+              "steveparty:debt_dice_face_10"
+            ]
+          }
+        ]
+      }
+    },
+    "swap": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:swap_dice_face"
+          }
+        ]
+      }
+    },
+    "cursed": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:cursed_dice_face_1",
+              "steveparty:cursed_dice_face_2",
+              "steveparty:cursed_dice_face_3"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "coin"
+    ],
+    [
+      "debt"
+    ],
+    [
+      "swap"
+    ],
+    [
+      "cursed"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

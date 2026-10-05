@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:workshop/shops/bandana",
+  "display": {
+    "icon": {
+      "id": "steveparty:box_costume",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.box_costume.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.box_costume.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:box_costume"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

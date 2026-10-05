@@ -1,0 +1,175 @@
+{
+  "parent": "steveparty:stars/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:cookie",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.feed.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.feed.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "blue": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:0}"
+            }
+          }
+        ],
+        "item": {
+          "items": [
+            "minecraft:cod",
+            "minecraft:cooked_cod",
+            "minecraft:tropical_fish"
+          ]
+        }
+      }
+    },
+    "red": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:1}"
+            }
+          }
+        ],
+        "item": {
+          "items": [
+            "minecraft:apple",
+            "minecraft:sweet_berries",
+            "minecraft:salmon",
+            "minecraft:cooked_salmon",
+            "minecraft:beef",
+            "minecraft:mutton",
+            "minecraft:beetroot_seeds",
+            "minecraft:pitcher_pod"
+          ]
+        }
+      }
+    },
+    "green": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:2}"
+            }
+          }
+        ],
+        "item": {
+          "items": [
+            "minecraft:melon_slice",
+            "minecraft:poisonous_potato",
+            "minecraft:wheat_seeds",
+            "minecraft:torchflower_seeds"
+          ]
+        }
+      }
+    },
+    "yellow": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:3}"
+            }
+          }
+        ],
+        "item": {
+          "items": [
+            "minecraft:golden_apple",
+            "minecraft:enchanted_golden_apple",
+            "minecraft:golden_carrot",
+            "minecraft:honey_bottle",
+            "minecraft:baked_potato",
+            "minecraft:bread",
+            "minecraft:glow_berries",
+            "minecraft:pumpkin_seeds"
+          ]
+        }
+      }
+    },
+    "purple": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:4}"
+            }
+          }
+        ],
+        "item": {
+          "items": [
+            "minecraft:chorus_fruit",
+            "minecraft:beetroot",
+            "minecraft:beetroot_soup"
+          ]
+        }
+      }
+    },
+    "black": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:5}"
+            }
+          }
+        ],
+        "item": {
+          "items": [
+            "minecraft:dried_kelp",
+            "minecraft:cookie",
+            "minecraft:mushroom_stew",
+            "minecraft:rabbit_stew",
+            "minecraft:cooked_beef",
+            "minecraft:cooked_mutton",
+            "minecraft:melon_seeds"
+          ]
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "blue",
+      "red",
+      "green",
+      "yellow",
+      "purple",
+      "black"
+    ]
+  ]
+}

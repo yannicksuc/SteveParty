@@ -1,0 +1,40 @@
+{
+  "parent": "steveparty:main/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:plunger",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.plunger.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.plunger.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "silenced": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "nbt": "{Silent:1b}"
+            }
+          }
+        ],
+        "item": {
+          "items": "steveparty:plunger"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "silenced"
+    ]
+  ]
+}

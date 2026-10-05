@@ -1,0 +1,26 @@
+{
+  "parent": "steveparty:stars/ignition",
+  "display": {
+    "icon": {
+      "id": "minecraft:note_block",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.dance.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.dance.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "dance": {
+      "trigger": "steveparty:mula_dance"
+    }
+  },
+  "requirements": [
+    [
+      "dance"
+    ]
+  ]
+}

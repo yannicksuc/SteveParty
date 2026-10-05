@@ -1,0 +1,34 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:podium",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.taking_part.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.taking_part.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "participant": {
+      "trigger": "steveparty:minigame_ended",
+      "conditions": {
+        "place": 0,
+        "practice": false
+      }
+    }
+  },
+  "requirements": [
+    [
+      "participant"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

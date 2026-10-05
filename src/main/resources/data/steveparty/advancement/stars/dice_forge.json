@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:stars/power_star",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_forge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.dice_forge.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.dice_forge.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:dice_forge"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

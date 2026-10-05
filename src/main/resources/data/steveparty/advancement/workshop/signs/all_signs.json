@@ -1,0 +1,128 @@
+{
+  "parent": "steveparty:workshop/signs/stencil",
+  "display": {
+    "icon": {
+      "id": "steveparty:oak_easel_sign",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.signs.all_signs.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.signs.all_signs.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "easel": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": [
+                  "steveparty:oak_easel_sign",
+                  "steveparty:spruce_easel_sign",
+                  "steveparty:birch_easel_sign",
+                  "steveparty:jungle_easel_sign",
+                  "steveparty:acacia_easel_sign",
+                  "steveparty:dark_oak_easel_sign",
+                  "steveparty:mangrove_easel_sign",
+                  "steveparty:cherry_easel_sign",
+                  "steveparty:crimson_easel_sign",
+                  "steveparty:warped_easel_sign",
+                  "steveparty:easel_sign"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "wooden_panel": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:wooden_panel"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "cutout_panel": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:wooden_cutout_panel"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "rock_sign": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:rock_sign"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "road_sign": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:plastic_road_sign"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "easel"
+    ],
+    [
+      "wooden_panel"
+    ],
+    [
+      "cutout_panel"
+    ],
+    [
+      "rock_sign"
+    ],
+    [
+      "road_sign"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

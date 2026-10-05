@@ -1,0 +1,44 @@
+{
+  "parent": "steveparty:stars/tame",
+  "display": {
+    "icon": {
+      "id": "steveparty:black_star_fragment",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.tame_black.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.tame_black.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:5}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/star_fragments"
+    ]
+  }
+}

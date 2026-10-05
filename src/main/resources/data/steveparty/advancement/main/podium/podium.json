@@ -1,0 +1,43 @@
+{
+  "parent": "steveparty:main/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:podium",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.podium.podium.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.podium.podium.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": [
+                  "steveparty:podium",
+                  "steveparty:gold_podium",
+                  "steveparty:silver_podium",
+                  "steveparty:bronze_podium"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

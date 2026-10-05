@@ -1,0 +1,130 @@
+{
+  "parent": "steveparty:main/dice/module",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_module_skeleton_key",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.every_module.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.every_module.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "slow": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_slow"
+          }
+        ]
+      }
+    },
+    "choice": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_choice"
+          }
+        ]
+      }
+    },
+    "infinity": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_infinity"
+          }
+        ]
+      }
+    },
+    "lucky": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_lucky"
+          }
+        ]
+      }
+    },
+    "reroll": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_reroll"
+          }
+        ]
+      }
+    },
+    "reversed": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_reversed"
+          }
+        ]
+      }
+    },
+    "skeleton_key": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_skeleton_key"
+          }
+        ]
+      }
+    },
+    "homing": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_homing"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "slow"
+    ],
+    [
+      "choice"
+    ],
+    [
+      "infinity"
+    ],
+    [
+      "lucky"
+    ],
+    [
+      "reroll"
+    ],
+    [
+      "reversed"
+    ],
+    [
+      "skeleton_key"
+    ],
+    [
+      "homing"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

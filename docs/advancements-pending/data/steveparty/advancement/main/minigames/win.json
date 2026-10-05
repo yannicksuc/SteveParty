@@ -1,0 +1,37 @@
+{
+  "parent": "steveparty:main/minigames/play",
+  "display": {
+    "icon": {
+      "id": "steveparty:gold_podium",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.win.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.win.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "won": {
+      "trigger": "steveparty:minigame_ended",
+      "conditions": {
+        "place": 1,
+        "practice": false,
+        "in_party": true
+      }
+    }
+  },
+  "requirements": [
+    [
+      "won"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

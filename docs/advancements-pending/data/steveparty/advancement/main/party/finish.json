@@ -1,0 +1,31 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:flag",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.finish.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.finish.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "ended": {
+      "trigger": "steveparty:party_ended"
+    }
+  },
+  "requirements": [
+    [
+      "ended"
+    ]
+  ],
+  "rewards": {
+    "loot": [
+      "steveparty:advancement_reward/coins_3"
+    ]
+  }
+}

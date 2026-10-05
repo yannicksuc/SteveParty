@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:main/dice/double_dice",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_face_1",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.snake_eyes.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.snake_eyes.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "two": {
+      "trigger": "steveparty:dice_rolled",
+      "conditions": {
+        "dice_count": 2,
+        "forged": false,
+        "total": 2
+      }
+    }
+  },
+  "requirements": [
+    [
+      "two"
+    ]
+  ]
+}

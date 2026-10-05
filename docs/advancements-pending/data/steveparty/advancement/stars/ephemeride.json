@@ -1,0 +1,26 @@
+{
+  "parent": "steveparty:stars/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:firework_rocket",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.ephemeride.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.ephemeride.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "seen": {
+      "trigger": "steveparty:ephemeride_seen"
+    }
+  },
+  "requirements": [
+    [
+      "seen"
+    ]
+  ]
+}

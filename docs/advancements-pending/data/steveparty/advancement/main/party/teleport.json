@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:teleport_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.teleport.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.teleport.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "teleport": {
+      "trigger": "steveparty:pawn_landed",
+      "conditions": {
+        "space": "teleport"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "teleport"
+    ]
+  ]
+}

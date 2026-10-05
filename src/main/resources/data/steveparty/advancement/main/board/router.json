@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/board/wrench",
+  "display": {
+    "icon": {
+      "id": "steveparty:board_space_redstone_router",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.router.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.router.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:board_space_redstone_router"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

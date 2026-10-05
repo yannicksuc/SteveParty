@@ -1,0 +1,39 @@
+{
+  "parent": "steveparty:workshop/pipes/pipe",
+  "display": {
+    "icon": {
+      "id": "steveparty:green_windowed_pipe",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.pipes.travel.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.pipes.travel.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "riding": {
+      "trigger": "minecraft:started_riding",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "vehicle": {
+                "type": "steveparty:pipe_carrier"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "riding"
+    ]
+  ]
+}

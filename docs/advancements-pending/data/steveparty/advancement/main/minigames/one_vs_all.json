@@ -1,0 +1,41 @@
+{
+  "parent": "steveparty:main/minigames/win",
+  "display": {
+    "icon": {
+      "id": "steveparty:red_plastic_block",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.one_vs_all.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.one_vs_all.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "won": {
+      "trigger": "steveparty:minigame_ended",
+      "conditions": {
+        "place": 1,
+        "practice": false,
+        "format": "teams",
+        "team_size": 1,
+        "opponents": {
+          "min": 3
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "won"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/coins_25"
+    ]
+  }
+}

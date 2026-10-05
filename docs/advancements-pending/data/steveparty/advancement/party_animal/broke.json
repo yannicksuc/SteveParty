@@ -1,0 +1,36 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:debt_dice_face_10",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.broke.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.broke.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "broke": {
+      "trigger": "steveparty:dice_coins",
+      "conditions": {
+        "coins": {
+          "max": -1
+        },
+        "balance": 0
+      }
+    }
+  },
+  "requirements": [
+    [
+      "broke"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

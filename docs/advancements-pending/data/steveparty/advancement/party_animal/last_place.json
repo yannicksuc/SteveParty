@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:bronze_podium",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.last_place.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.last_place.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "last": {
+      "trigger": "steveparty:party_ended",
+      "conditions": {
+        "last": true,
+        "pawns": {
+          "min": 2
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "last"
+    ]
+  ],
+  "rewards": {
+    "loot": [
+      "steveparty:advancement_reward/coins_3"
+    ]
+  }
+}

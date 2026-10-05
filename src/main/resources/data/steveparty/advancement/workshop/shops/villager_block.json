@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:workshop/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:villager_block",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.villager_block.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.villager_block.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:villager_block"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

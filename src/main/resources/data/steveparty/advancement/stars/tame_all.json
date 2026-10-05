@@ -1,0 +1,134 @@
+{
+  "parent": "steveparty:stars/tame",
+  "display": {
+    "icon": {
+      "id": "steveparty:purple_star_fragment",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.tame_all.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.tame_all.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "blue": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:0}"
+            }
+          }
+        ]
+      }
+    },
+    "red": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:1}"
+            }
+          }
+        ]
+      }
+    },
+    "green": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:2}"
+            }
+          }
+        ]
+      }
+    },
+    "yellow": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:3}"
+            }
+          }
+        ]
+      }
+    },
+    "purple": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:4}"
+            }
+          }
+        ]
+      }
+    },
+    "black": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:5}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "blue"
+    ],
+    [
+      "red"
+    ],
+    [
+      "green"
+    ],
+    [
+      "yellow"
+    ],
+    [
+      "purple"
+    ],
+    [
+      "black"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/star_fragments"
+    ]
+  }
+}

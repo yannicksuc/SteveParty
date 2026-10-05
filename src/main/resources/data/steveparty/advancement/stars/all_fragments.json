@@ -1,0 +1,234 @@
+{
+  "parent": "steveparty:stars/white_fragment",
+  "display": {
+    "icon": {
+      "id": "steveparty:magenta_star_fragment",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.all_fragments.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.all_fragments.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "white": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:white_star_fragment"
+          }
+        ]
+      }
+    },
+    "orange": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:orange_star_fragment"
+          }
+        ]
+      }
+    },
+    "magenta": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:magenta_star_fragment"
+          }
+        ]
+      }
+    },
+    "light_blue": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:light_blue_star_fragment"
+          }
+        ]
+      }
+    },
+    "yellow": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:yellow_star_fragment"
+          }
+        ]
+      }
+    },
+    "lime": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:lime_star_fragment"
+          }
+        ]
+      }
+    },
+    "pink": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:pink_star_fragment"
+          }
+        ]
+      }
+    },
+    "gray": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:gray_star_fragment"
+          }
+        ]
+      }
+    },
+    "light_gray": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:light_gray_star_fragment"
+          }
+        ]
+      }
+    },
+    "cyan": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:cyan_star_fragment"
+          }
+        ]
+      }
+    },
+    "purple": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:purple_star_fragment"
+          }
+        ]
+      }
+    },
+    "blue": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:blue_star_fragment"
+          }
+        ]
+      }
+    },
+    "brown": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:brown_star_fragment"
+          }
+        ]
+      }
+    },
+    "green": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:green_star_fragment"
+          }
+        ]
+      }
+    },
+    "red": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:red_star_fragment"
+          }
+        ]
+      }
+    },
+    "black": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:black_star_fragment"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "white"
+    ],
+    [
+      "orange"
+    ],
+    [
+      "magenta"
+    ],
+    [
+      "light_blue"
+    ],
+    [
+      "yellow"
+    ],
+    [
+      "lime"
+    ],
+    [
+      "pink"
+    ],
+    [
+      "gray"
+    ],
+    [
+      "light_gray"
+    ],
+    [
+      "cyan"
+    ],
+    [
+      "purple"
+    ],
+    [
+      "blue"
+    ],
+    [
+      "brown"
+    ],
+    [
+      "green"
+    ],
+    [
+      "red"
+    ],
+    [
+      "black"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/star_fragment"
+    ]
+  }
+}

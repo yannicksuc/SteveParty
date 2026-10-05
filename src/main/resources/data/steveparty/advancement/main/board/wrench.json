@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/board/first_tile",
+  "display": {
+    "icon": {
+      "id": "steveparty:wrench",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.wrench.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.wrench.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_wrench": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:wrench"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_wrench"
+    ]
+  ]
+}
