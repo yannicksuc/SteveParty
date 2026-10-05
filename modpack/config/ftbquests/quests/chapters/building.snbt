@@ -1,0 +1,586 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "building"
+	group: "64160321E5CDD4E4"
+	icon: {
+		id: "steveparty:polished_orange_terracotta_bricks"
+	}
+	id: "7F034F1578D84F43"
+	images: [ ]
+	order_index: 3
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			id: "07635CE1A88BD949"
+			rewards: [
+				{
+					id: "09A37E36C57124DB"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "325873F625D3F12F"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					count: 4L
+					id: "3D17283380CB2442"
+					item: {
+						count: 1
+						id: "steveparty:polished_orange_terracotta"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"07635CE1A88BD949"
+			]
+			id: "05A3BC086CC7390E"
+			rewards: [
+				{
+					id: "6D56CDACB5965A66"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "26C5736C47E49733"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "78ECC1DAAB3547BC"
+					item: {
+						count: 1
+						id: "steveparty:polished_orange_terracotta_bricks"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"07635CE1A88BD949"
+			]
+			id: "5C6EDA264FC2653D"
+			rewards: [
+				{
+					id: "32E45A2D08ED4CBC"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "67E6E6711C2D6C64"
+					item: {
+						count: 1
+						id: "steveparty:orange_polished_terracotta_stairs"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -0.75d
+		}
+		{
+			dependencies: [
+				"05A3BC086CC7390E"
+			]
+			id: "174373BB4245951D"
+			rewards: [
+				{
+					id: "196DE4D06BF031D5"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "1F11E7529BC8A428"
+					item: {
+						count: 1
+						id: "steveparty:orange_polished_terracotta_bricks_stairs"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 0.75d
+		}
+		{
+			dependencies: [
+				"07635CE1A88BD949"
+			]
+			id: "476FD02CC564638E"
+			rewards: [
+				{
+					id: "7E65A4FB05DBA2DD"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "7BC9E787D8E59877"
+					item: {
+						count: 1
+						id: "steveparty:orange_polished_terracotta_slab"
+					}
+					type: "item"
+				}
+			]
+			x: 5.5d
+			y: -0.75d
+		}
+		{
+			dependencies: [
+				"05A3BC086CC7390E"
+			]
+			id: "308B809C31445486"
+			rewards: [
+				{
+					id: "3AAD68D3B613B8E0"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "73D484803BE5778C"
+					item: {
+						count: 1
+						id: "steveparty:orange_polished_terracotta_bricks_slab"
+					}
+					type: "item"
+				}
+			]
+			x: 5.5d
+			y: 0.75d
+		}
+		{
+			dependencies: [
+				"07635CE1A88BD949"
+			]
+			id: "35120B4602A51333"
+			rewards: [
+				{
+					id: "1FDCE262F10C9D5F"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "4A5981A542814526"
+					item: {
+						count: 1
+						id: "steveparty:orange_polished_terracotta_wall"
+					}
+					type: "item"
+				}
+			]
+			x: 7.0d
+			y: -0.75d
+		}
+		{
+			dependencies: [
+				"05A3BC086CC7390E"
+			]
+			id: "209EEA42C80532A7"
+			rewards: [
+				{
+					id: "2DA79E514C2BD4C2"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "7C0B335ECFDC28C1"
+					item: {
+						count: 1
+						id: "steveparty:orange_polished_terracotta_bricks_wall"
+					}
+					type: "item"
+				}
+			]
+			x: 7.0d
+			y: 0.75d
+		}
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			id: "5E38267B9B2C3CF9"
+			rewards: [
+				{
+					id: "3A5E31F5213DB276"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "23668A12A0988234"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					count: 4L
+					id: "26C9D9E88F3A7485"
+					item: {
+						count: 1
+						id: "steveparty:polished_light_blue_concrete"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 3.5d
+		}
+		{
+			dependencies: [
+				"5E38267B9B2C3CF9"
+			]
+			id: "1E702253EDB71ED3"
+			rewards: [
+				{
+					id: "1820CBFC0DC03003"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "7B1728FB2E365598"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "1C96FC8E3C12854B"
+					item: {
+						count: 1
+						id: "steveparty:polished_light_blue_concrete_bricks"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 3.5d
+		}
+		{
+			dependencies: [
+				"5E38267B9B2C3CF9"
+			]
+			id: "10373F304237AA4E"
+			rewards: [
+				{
+					id: "4E0B8FEB159780EF"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "14ABF0113A72446E"
+					item: {
+						count: 1
+						id: "steveparty:light_blue_polished_concrete_stairs"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 2.75d
+		}
+		{
+			dependencies: [
+				"1E702253EDB71ED3"
+			]
+			id: "5F62DDBD464BC0DA"
+			rewards: [
+				{
+					id: "428E8A800D509B26"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "14F46CC9051861B9"
+					item: {
+						count: 1
+						id: "steveparty:light_blue_polished_concrete_bricks_stairs"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 4.25d
+		}
+		{
+			dependencies: [
+				"5E38267B9B2C3CF9"
+			]
+			id: "10458D4F11AF735B"
+			rewards: [
+				{
+					id: "77F80E7B5A8483BF"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "70807C9AFD9B57AE"
+					item: {
+						count: 1
+						id: "steveparty:light_blue_polished_concrete_slab"
+					}
+					type: "item"
+				}
+			]
+			x: 5.5d
+			y: 2.75d
+		}
+		{
+			dependencies: [
+				"1E702253EDB71ED3"
+			]
+			id: "74A69E19FF0BCA86"
+			rewards: [
+				{
+					id: "18D9D836D022EDE1"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "1BDB54C84C5E19CA"
+					item: {
+						count: 1
+						id: "steveparty:light_blue_polished_concrete_bricks_slab"
+					}
+					type: "item"
+				}
+			]
+			x: 5.5d
+			y: 4.25d
+		}
+		{
+			dependencies: [
+				"5E38267B9B2C3CF9"
+			]
+			id: "778C3F69BBD69981"
+			rewards: [
+				{
+					id: "2F26D9CD3C5534D1"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "2F9A8AEA4E453010"
+					item: {
+						count: 1
+						id: "steveparty:light_blue_polished_concrete_wall"
+					}
+					type: "item"
+				}
+			]
+			x: 7.0d
+			y: 2.75d
+		}
+		{
+			dependencies: [
+				"1E702253EDB71ED3"
+			]
+			id: "6C63BD50698F0417"
+			rewards: [
+				{
+					id: "79F94E04A51636E0"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "1DEA8F425B40DA3D"
+					item: {
+						count: 1
+						id: "steveparty:light_blue_polished_concrete_bricks_wall"
+					}
+					type: "item"
+				}
+			]
+			x: 7.0d
+			y: 4.25d
+		}
+		{
+			dependencies: [
+				"07635CE1A88BD949"
+			]
+			id: "0582B9C6A4DD1764"
+			rewards: [
+				{
+					id: "0A0E2B8199A179F5"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "4EE7CB414783DB9F"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "77B8D0E74A0FD7DE"
+					item: {
+						count: 1
+						id: "steveparty:polished_terracotta_tiles"
+					}
+					type: "item"
+				}
+			]
+			x: 9.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"5E38267B9B2C3CF9"
+			]
+			id: "5B628A39A4C798B1"
+			rewards: [
+				{
+					id: "34BBE949ED3A9299"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "13B43ACA2B365803"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "04D273B6DBFB6DD9"
+					item: {
+						count: 1
+						id: "steveparty:polished_concrete_tiles"
+					}
+					type: "item"
+				}
+			]
+			x: 9.0d
+			y: 3.5d
+		}
+		{
+			dependencies: [
+				"174373BB4245951D"
+				"308B809C31445486"
+				"209EEA42C80532A7"
+				"5C6EDA264FC2653D"
+				"476FD02CC564638E"
+				"35120B4602A51333"
+				"5F62DDBD464BC0DA"
+				"74A69E19FF0BCA86"
+				"6C63BD50698F0417"
+				"10373F304237AA4E"
+				"10458D4F11AF735B"
+				"778C3F69BBD69981"
+				"0582B9C6A4DD1764"
+				"5B628A39A4C798B1"
+			]
+			icon: {
+				id: "steveparty:polished_concrete_tiles"
+			}
+			id: "598F31A259B60ADB"
+			rewards: [
+				{
+					id: "26C8C1C8D40D3968"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "3689000A371F33E2"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "186A2C81D96C29F7"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "1574414DAA618444"
+					type: "checkmark"
+				}
+			]
+			x: 11.5d
+			y: 1.75d
+		}
+	]
+}
