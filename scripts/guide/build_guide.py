@@ -312,9 +312,9 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Un comparateur sur le routeur capte les événements : impulsion de 10 ticks au niveau du rôle quand un "
           "pion s'arrête sur une case reliée, niveau 1 quand il passe."),
         T("- 15: plain space\n- 14: bonus\n- 13: malus\n- 12: empty item space\n- 11: start\n- 10: Stop\n"
-          "- 9: Roll Again\n- 8: Teleport\n- 7: forward\n- 6: back\n- 5: shop stop\n- 1: a pawn passes",
+          "- 9: Roll Again\n- 8: Teleport\n- 7: forward\n- 6: back\n- 5: shop stop\n- 4: star space\n- 1: a pawn passes",
           "- 15 : case simple\n- 14 : bonus\n- 13 : malus\n- 12 : case objet vide\n- 11 : départ\n- 10 : Stop\n"
-          "- 9 : Rejouer\n- 8 : Téléportation\n- 7 : Avancer\n- 6 : Reculer\n- 5 : arrêt boutique\n"
+          "- 9 : Rejouer\n- 8 : Téléportation\n- 7 : Avancer\n- 6 : Reculer\n- 5 : arrêt boutique\n- 4 : case étoile\n"
           "- 1 : un pion passe",
           "Comparator Levels", "Niveaux du comparateur"),
         C("steveparty:board_space_redstone_router"),
@@ -406,6 +406,27 @@ category("cartridges", "steveparty:board_space_behavior", ("Cartridges", "Cartou
           "hasard ou à tour de rôle. Réseaux : violet (défaut), vert, orange ou bleu ; une teinture sur la case "
           "le change.\n\nDans son menu : rester à l'arrivée ou avancer d'une case, et si cette case s'active."),
         C("steveparty:teleport_cartridge", None, "Cartridge + ender pearl.", "Cartouche + perle de l'Ender."),
+    ], parents=["cartridge"], gate="lay_the_board"),
+    E("star", "steveparty:star_cartridge", ("Star Cartridge", "Cartouche Étoile"), ("Buy the star", "Acheter l'étoile"), [
+        T("Makes a **yellow star space** (tile or Checkpoint). When a party starts, the **star** lands on one active "
+          "star space at random: a big Power Star floats over it.\n\n"
+          "A pawn passing over it stops; with enough coins, its player chooses in the chat to **buy** it (20 coins "
+          "by default; bought by itself after 15 s). The star then moves to **another** star space.",
+          "Crée une **case étoile jaune** (tuile ou point de déclenchement). Au début d'une partie, l'**étoile** se "
+          "pose sur une case étoile active au hasard : une grande Super étoile flotte au-dessus.\n\n"
+          "Un pion qui passe dessus s'arrête ; s'il a assez de pièces, son joueur choisit dans le chat de "
+          "l'**acheter** (20 pièces par défaut ; achetée d'office après 15 s). L'étoile part alors sur **une autre** "
+          "case étoile."),
+        T("In its menu: the **price**, sold **in passing** or only **on stopping** (a Checkpoint always sells in "
+          "passing), and whether the star **leaves** a space switched off by redstone.\n\n"
+          "No active star space: the star hides until one is switched on. The Skeleton Key never skips it.",
+          "Dans son menu : le **prix**, vendue **au passage** ou seulement **en s'arrêtant** (un point de "
+          "déclenchement la vend toujours au passage), et si l'étoile **quitte** une case désactivée par la "
+          "redstone.\n\n"
+          "Aucune case étoile active : l'étoile se cache jusqu'à ce qu'une se réactive. Le Passe-partout ne la "
+          "saute jamais.",
+          "Settings", "Réglages"),
+        C("steveparty:star_cartridge", None, "Cartridge + Power Star.", "Cartouche + Super étoile."),
     ], parents=["cartridge"], gate="lay_the_board"),
     E("inventory", "steveparty:inventory_cartridge", ("Inventory Cartridge", "Cartouche d'inventaire"), ("Bonus and malus spaces", "Cases bonus et malus"), [
         T("Gives or takes items. Right-click up to **8 chests** with it to link them; right-click in the air for "
@@ -529,11 +550,11 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "- **Chanceux** (vert, patte de lapin, jusqu'à 5) : lancers en plus, garder le meilleur ;\n"
           "- **Relance** (orange, charge de vent, jusqu'à 5) : garder ou relancer."),
         T("- **Reversed** (red, fermented spider eye): the pawn goes backwards;\n"
-          "- **Skeleton Key** (yellow, tripwire hook): ignores Stop and shop spaces;\n"
+          "- **Skeleton Key** (yellow, tripwire hook): ignores Stop and shop spaces (not the star);\n"
           "- **Homing** (magenta, eye of ender): picks forks at random.\n\n"
           "Base: a blank module (blank face + 4 gold nuggets). Add modules to a die at the crafting table (the modules stay in the grid) or in the Dice Forge.",
           "- **Inversé** (rouge, œil d'araignée fermenté) : le pion recule ;\n"
-          "- **Passe-partout** (jaune, crochet) : ignore les cases Stop et boutique ;\n"
+          "- **Passe-partout** (jaune, crochet) : ignore les cases Stop et boutique (pas l'étoile) ;\n"
           "- **Tête chercheuse** (magenta, œil de l'Ender) : choisit les bifurcations au hasard.\n\n"
           "Base : un module vierge (face vierge + 4 pépites d'or). Ajoute des modules à un dé à l'établi (ils restent dans la grille) ou dans la forge à dés.",
           "More Modules", "Autres modules"),
@@ -590,11 +611,11 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
         T("A player's stars and coins are those items in their inventory; ranking goes by stars, then coins. "
           "Defaults: the **Coin** and the **Power Star** (change them in the Rewards tab).\n\n"
           "Rewards are paid from chests: put an Inventory Cartridge linked to chests in the bank slot. The "
-          "controller never creates coins or stars.",
+          "controller never creates coins or stars: only the star sold on a **star space** is made.",
           "Les étoiles et pièces d'un joueur sont ces objets dans son inventaire ; classement aux étoiles, puis "
           "aux pièces. Par défaut : la **pièce** et la **Super étoile** (à changer dans l'onglet Gains).\n\n"
           "Les gains sont pris dans des coffres : mets une cartouche d'inventaire liée à des coffres dans la case "
-          "banque. Le contrôleur ne crée jamais ni pièce ni étoile."),
+          "banque. Le contrôleur ne crée jamais ni pièce ni étoile : seule l'étoile vendue sur une **case étoile** est créée."),
         C("steveparty:coin", None, "One gold nugget makes a Coin.", "Une pépite d'or donne une pièce."),
     ], parents=["controller"], gate="party_time"),
     E("step_controller", "steveparty:step_controller", ("Step controller", "Contrôleur de pas"), ("Next, restart or back", "Suivant, recommencer, retour"), [

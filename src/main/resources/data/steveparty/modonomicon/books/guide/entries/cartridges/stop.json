@@ -6,7 +6,7 @@
     "item": "steveparty:board_space_behavior_stop"
   },
   "x": 2,
-  "y": -4,
+  "y": -5,
   "sort_number": 2,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
