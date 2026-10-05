@@ -90,7 +90,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.setBlockState(BASE, base());
         BlockPos abs = context.getAbsolutePos(BASE.up());
         world.setBlockState(abs, pole(false, false), Block.NOTIFY_LISTENERS);
-        world.updateNeighbor(abs, Blocks.AIR, null);
+        world.updateNeighbor(abs, Blocks.AIR, abs.down());
         BlockState state = world.getBlockState(abs);
         context.assertTrue(state.get(GoalPoleBlock.ON_BASE), "on base");
         context.assertTrue(state.get(GoalPoleBlock.TOP), "top");
