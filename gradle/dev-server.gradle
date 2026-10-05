@@ -42,6 +42,8 @@ loom {
             runDir "run2"
             programArgs "--username", devServer.player2, "--quickPlayMultiplayer", "localhost:${devServer.port}"
             vmArg "-Dsteveparty.dev.backgroundClient=true"
+            // The showcase clips film the first player from this one (the art sources)
+            vmArg "-Dsteveparty.dev.showcaseCamera=true"
         }
     }
 }
