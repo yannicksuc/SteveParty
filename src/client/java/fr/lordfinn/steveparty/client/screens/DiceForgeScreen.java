@@ -5,14 +5,12 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.Status;
-import fr.lordfinn.steveparty.client.mixin.SlotAccessor;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
@@ -24,10 +22,8 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,9 +36,6 @@ import static fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity.*;
  * weight), the 5 star fragments around the core and, in its center, the gravity core. The five gems on the points of the star hold the dice modules put on every die
  * forged; the capsule under the galaxy takes the blank faces in on its left and gives the forged die on its right,
  * and its arrow is the FORGE button (it fills with the progress).
- * <p>
- * The galaxy turns slowly; the faces turn with it, the fragments the other way and faster. Only the client moves
- * those slots ({@link #turnSlots}): the server never reads slot positions.
  */
 public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /**
@@ -51,17 +44,11 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
      */
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/dice_forge.png");
     private static final int ATLAS_SIZE = 512, OVERLAY_U = 256;
-    /** Part of each turning slot's position below one pixel (GUI px), by slot id; 0 for the slots that stay still. */
-    private final float[] subPixelX = new float[DiceForgeBlockEntity.SIZE], subPixelY = new float[DiceForgeBlockEntity.SIZE];
     private static final int LIGHT_SLOT_V = 336, LIGHT_SQUARE_U = 0, LIGHT_ROUND_U = 18, LIGHT_SLOT_SIZE = 18;
-    /** The galaxy, drawn on the background's navy disc, under the overlay, and slowly turning. */
+    /** The galaxy, drawn on the background's navy disc, under the overlay. */
     private static final Identifier GALAXY = Steveparty.id("textures/gui/dice_forge_galaxy.png");
     private static final int GALAXY_SIZE = 142;
     private static final int GALAXY_CENTER_X = DiceForgeScreenHandler.GALAXY_X, GALAXY_CENTER_Y = DiceForgeScreenHandler.GALAXY_Y;
-    /** One turn of the galaxy (ms): slow enough for the slots turning with it to be easy to aim at. */
-    private static final long GALAXY_TURN_MS = 150_000;
-    /** The fragments turn the other way, this much faster than the galaxy. */
-    private static final float FRAGMENT_SPIN = -1.5f;
     private static final float GHOST_ALPHA = 0.35f;
     private static final String KEY = "gui.steveparty.dice_forge.";
     /** Tooltips wrap at this width (GUI px), so that long hints stay readable. */
@@ -131,9 +118,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             Slot slot = handler.getSlot(i);
             if (!DiceFace.isFace(slot.getStack()) || totalWeight <= 0) continue;
             int alpha = 0x50 + Math.round(0xAF * slot.getStack().getCount() / (float) getMaxWeight());
-            pushSubPixel(context, slot);
             drawSlotContour(context, x + slot.x, y + slot.y, (alpha << 24) | 0xFFE08C);
-            context.getMatrices().pop();
         }
 
         // Over the galaxy: its ring, the module gems and the capsule
@@ -144,17 +129,9 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         drawArrowButton(context, x, y, mouseX, mouseY, delta);
     }
 
-    private void drawLightSlot(DrawContext context, int x, int y, Slot slot, int u) {
-        pushSubPixel(context, slot);
+    private static void drawLightSlot(DrawContext context, int x, int y, Slot slot, int u) {
         context.drawTexture(TEXTURE, x + slot.x - 1, y + slot.y - 1, u, LIGHT_SLOT_V,
                 LIGHT_SLOT_SIZE, LIGHT_SLOT_SIZE, ATLAS_SIZE, ATLAS_SIZE);
-        context.getMatrices().pop();
-    }
-
-    /** Shifts the drawing by the part of a turning slot's position below one pixel, for a smooth rotation. */
-    private void pushSubPixel(DrawContext context, Slot slot) {
-        context.getMatrices().push();
-        if (slot.id < subPixelX.length) context.getMatrices().translate(subPixelX[slot.id], subPixelY[slot.id], 0);
     }
 
     /** The contour of a light square slot in one colour, its sides meeting diagonally (rounded corners). */
@@ -163,42 +140,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         context.fill(slotX, slotY + 16, slotX + 16, slotY + 17, color);
         context.fill(slotX - 1, slotY, slotX, slotY + 16, color);
         context.fill(slotX + 16, slotY, slotX + 17, slotY + 16, color);
-    }
-
-    // ------------------------------------------------------------------ turning slots
-
-    /** @return the galaxy's angle now (degrees, clockwise on screen). */
-    private static float getGalaxyAngle() {
-        return (Util.getMeasuringTimeMs() % GALAXY_TURN_MS) / (float) GALAXY_TURN_MS * 360f;
-    }
-
-    /**
-     * Moves the face slots with the galaxy (same angle, as if it carried them) and the fragment slots the other way,
-     * faster; the items stay upright. The slot keeps the whole pixel (clicks), the rest below one pixel shifts its
-     * drawing, so that the slots glide instead of stepping from pixel to pixel. Done before each frame.
-     */
-    private void turnSlots() {
-        float angle = getGalaxyAngle();
-        for (int i = 0; i < FACE_SLOTS; i++) {
-            int[] rest = DiceForgeScreenHandler.FACE_POSITIONS[i];
-            turnSlot(handler.getSlot(i), rest[0], rest[1], angle);
-        }
-        for (int i = 0; i < FRAGMENT_SLOTS; i++) {
-            int[] rest = DiceForgeScreenHandler.FRAGMENT_POSITIONS[i];
-            turnSlot(handler.getSlot(FIRST_FRAGMENT_SLOT + i), rest[0], rest[1], angle * FRAGMENT_SPIN);
-        }
-    }
-
-    private void turnSlot(Slot slot, int restX, int restY, float degrees) {
-        double a = Math.toRadians(degrees), cos = Math.cos(a), sin = Math.sin(a);
-        double dx = restX + 8 - GALAXY_CENTER_X, dy = restY + 8 - GALAXY_CENTER_Y;
-        double sx = GALAXY_CENTER_X + dx * cos - dy * sin - 8, sy = GALAXY_CENTER_Y + dx * sin + dy * cos - 8;
-        int px = (int) Math.floor(sx), py = (int) Math.floor(sy);
-        SlotAccessor accessor = (SlotAccessor) slot;
-        accessor.steveparty$setX(px);
-        accessor.steveparty$setY(py);
-        subPixelX[slot.id] = (float) (sx - px);
-        subPixelY[slot.id] = (float) (sy - py);
     }
 
     // ------------------------------------------------------------------ weights
@@ -227,16 +168,11 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         return handler.isActivated() && (handler.isRunning() || handler.getStatus().allowsRunning());
     }
 
-    /** The galaxy turns slowly around its center, on the background's navy disc and under its ring. */
+    /** The galaxy, still, on the background's navy disc and under its ring. */
     private static void drawGalaxy(DrawContext context, int centerX, int centerY) {
-        MatrixStack matrices = context.getMatrices();
-        matrices.push();
-        matrices.translate(centerX, centerY, 0);
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(getGalaxyAngle()));
         int half = GALAXY_SIZE / 2;
-        context.drawTexture(GALAXY, -half, -half, 0, 0,
+        context.drawTexture(GALAXY, centerX - half, centerY - half, 0, 0,
                 GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE);
-        matrices.pop();
     }
 
     /** @return the gauge colour at {@code t} (0 at the arrow's tail, 1 at its tip), blended smoothly between GAUGE_COLORS. */
@@ -388,15 +324,9 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         int index = slot.id;
         if (index < DiceForgeBlockEntity.SIZE && !slot.hasStack()) {
             ItemStack ghost = getGhostStack(index);
-            if (!ghost.isEmpty()) {
-                pushSubPixel(context, slot);
-                drawTranslucentItem(context, ghost, slot.x, slot.y, GHOST_ALPHA);
-                context.getMatrices().pop();
-            }
+            if (!ghost.isEmpty()) drawTranslucentItem(context, ghost, slot.x, slot.y, GHOST_ALPHA);
         }
-        pushSubPixel(context, slot);
         super.drawSlot(context, slot);
-        context.getMatrices().pop();
     }
 
     /** @return what to show at low opacity in an empty forge slot (remembered item, hint or preview). */
@@ -418,7 +348,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        turnSlots();
         super.render(context, mouseX, mouseY, delta);
 
         if (isOverButton(mouseX, mouseY)) {
