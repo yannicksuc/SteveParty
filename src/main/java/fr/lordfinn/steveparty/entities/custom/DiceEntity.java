@@ -34,6 +34,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.text.MutableText;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
@@ -280,10 +282,12 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             DiceRollEvent.EVENT.invoker().onRoll(this, owner, announced.steps());
             if (this.getWorld() instanceof ServerWorld world) {
                 String playerName = getPlayerNameByUuid(world.getServer(), owner);
+                // In the action bar: who rolled in aqua, the result in bold gold (coins and moves back keep their colour)
+                MutableText who = playerName == null ? Text.translatable("message.steveparty.unknown_player") : Text.literal(playerName);
                 MessageUtils.sendToNearby(world, this.getPos(), 20,
-                        Text.translatable("message.steveparty.owned_dice_rolled", announced.describe(),
-                                playerName == null ? Text.translatable("message.steveparty.unknown_player") : playerName),
-                        MessageUtils.MessageType.CHAT);
+                        Text.translatable("message.steveparty.die_rolled", who.formatted(Formatting.AQUA),
+                                announced.describe().copy().formatted(Formatting.GOLD, Formatting.BOLD)).formatted(Formatting.GRAY),
+                        MessageUtils.MessageType.ACTION_BAR);
             }
         });
         modules.forEach((module, count) -> module.afterRoll(this, announced, count));

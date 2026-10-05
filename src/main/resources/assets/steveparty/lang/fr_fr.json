@@ -79,7 +79,7 @@
   "message.steveparty.tile_landed.replay": "🎲 %s rejoue !",
   "message.steveparty.tile_landed.replay_spent": "%s a déjà rejoué : pas de tour en plus",
   "message.steveparty.tile_landed.teleport": "🌀 %s est téléporté !",
-  "message.steveparty.owned_dice_rolled": "%s a été obtenu sur le dé de %s",
+  "message.steveparty.die_rolled": "%s fait %s",
   "message.steveparty.unknown_player": "Joueur inconnu",
   "message.steveparty.game_started": "Le jeu a commencé !\n",
   "message.steveparty.join_game": "%s, joué par %s, a rejoint la partie !",
