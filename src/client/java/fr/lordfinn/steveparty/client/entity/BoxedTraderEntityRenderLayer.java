@@ -21,7 +21,7 @@ public class BoxedTraderEntityRenderLayer extends GeoRenderLayer<BoxedTraderEnti
     }
 
     @Override
-    public void renderForBone(MatrixStack poseStack, BoxedTraderEntity animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay, int renderColor) {
+    public void renderForBone(MatrixStack poseStack, BoxedTraderEntity animatable, GeoBone bone, RenderLayer renderType, VertexConsumerProvider bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay) {
         if (!BlockTexturedBones.isBoxBone(bone)) return;
         // GeckoLib calls this with the pose stack already transformed for this bone (position, pivot, rotation,
         // scale), children bones get their own call: applying the bone transform again here would double the

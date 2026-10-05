@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.SpawnEggItem;
@@ -15,6 +14,7 @@ import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
@@ -79,9 +79,8 @@ public final class MobTextureColors {
                 return geoRenderer.getTextureLocation(animatable);
             }
             if (renderer instanceof LivingEntityRenderer livingRenderer) {
-                // 1.21.3 render state API: the texture may depend on the state (variant, age, saddle...)
-                LivingEntityRenderState state = (LivingEntityRenderState) livingRenderer.getAndUpdateRenderState(entity, 1.0F);
-                return livingRenderer.getTexture(state);
+                // the texture may depend on the entity (variant, age, saddle...)
+                return livingRenderer.getTexture(entity);
             }
             return null;
         } catch (RuntimeException e) {
@@ -98,7 +97,8 @@ public final class MobTextureColors {
             int[] pixels = new int[width * height];
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    pixels[y * width + x] = image.getColorArgb(x, y);
+                    // NativeImage colours are ABGR: swapping red and blue gives ARGB
+                    pixels[y * width + x] = ColorHelper.Abgr.toAbgr(image.getColor(x, y));
                 }
             }
             return DominantColorPicker.candidates(pixels);

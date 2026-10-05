@@ -1,12 +1,13 @@
 package fr.lordfinn.steveparty.client.mixin;
 
 import fr.lordfinn.steveparty.client.access.BoxCostumeRenderState;
+import fr.lordfinn.steveparty.client.entity.FirstPersonArm;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeAnimatable;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeClient;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeRenderer;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -55,9 +56,13 @@ public class PlayerEntityModelBoxCostumeMixin {
     @Unique
     private static final float STEVEPARTY$LEG_SCALE = 0.86F, STEVEPARTY$LEG_LENGTH = 12.0F, STEVEPARTY$FEET_Y = 24.0F;
 
-    @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("TAIL"))
-    private void steveparty$limbsAroundTheBox(PlayerEntityRenderState state, CallbackInfo ci) {
-        if (!(state instanceof BoxCostumeRenderState costume)) return;
+    /** After the biped pose, before the sleeves and trousers copy it. */
+    @Inject(method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/render/entity/model/BipedEntityModel;setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V",
+            shift = At.Shift.AFTER))
+    private void steveparty$limbsAroundTheBox(LivingEntity entity, float limbAngle, float limbDistance, float animationProgress,
+                                              float headYaw, float headPitch, CallbackInfo ci) {
+        if (FirstPersonArm.posing || !(entity instanceof BoxCostumeRenderState costume)) return;
         BoxCostumeAnimatable box = costume.steveparty$getBoxCostume();
         if (box == null) return;
         PlayerEntityModel model = (PlayerEntityModel) (Object) this;
@@ -69,8 +74,8 @@ public class PlayerEntityModelBoxCostumeMixin {
                 * STEVEPARTY$MODEL_PX / squash;
         float wallX = STEVEPARTY$WALL * (1.0F + BoxCostumeRenderer.WAIST_WIDENING * lift) * STEVEPARTY$MODEL_PX;
         // The two arms sway out of step, like his
-        float out = STEVEPARTY$ARM_OUT + MathHelper.sin(state.age * STEVEPARTY$ARM_SWAY_SPEED) * STEVEPARTY$ARM_SWAY;
-        float otherOut = STEVEPARTY$ARM_OUT + MathHelper.sin(state.age * STEVEPARTY$ARM_SWAY_SPEED + 0.6F) * STEVEPARTY$ARM_SWAY;
+        float out = STEVEPARTY$ARM_OUT + MathHelper.sin(animationProgress * STEVEPARTY$ARM_SWAY_SPEED) * STEVEPARTY$ARM_SWAY;
+        float otherOut = STEVEPARTY$ARM_OUT + MathHelper.sin(animationProgress * STEVEPARTY$ARM_SWAY_SPEED + 0.6F) * STEVEPARTY$ARM_SWAY;
         steveparty$armThroughHole(model.rightArm, -(wallX - STEVEPARTY$ARM_INSIDE), holeY, out, box.getArmHole());
         steveparty$armThroughHole(model.leftArm, wallX - STEVEPARTY$ARM_INSIDE, holeY, -otherOut, box.getArmHole());
         steveparty$shortLeg(model.rightLeg);

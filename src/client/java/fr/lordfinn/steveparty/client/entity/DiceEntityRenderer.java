@@ -58,7 +58,7 @@ public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
     }
 
     @Override
-    public boolean hasLabel(DiceEntity animatable, double distToCameraSq) {
+    public boolean hasLabel(DiceEntity animatable) {
         return false;
     }
 }
