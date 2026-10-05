@@ -124,6 +124,10 @@ public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedS
                 firstBuyItem = secondBuyItem;
                 secondBuyItem = ItemStack.EMPTY;
             }
+            // A power-up without a price sells at its default price, in the mod's coins
+            if (firstBuyItem.isEmpty() && sellItem.getItem() instanceof fr.lordfinn.steveparty.items.custom.PowerUpItem powerUp) {
+                firstBuyItem = new ItemStack(fr.lordfinn.steveparty.items.ModItems.COIN, powerUp.powerUp().defaultPrice());
+            }
 
             if (!firstBuyItem.isEmpty() && !sellItem.isEmpty() &&
                     !(firstBuyItem.getItem() instanceof AirBlockItem) &&
