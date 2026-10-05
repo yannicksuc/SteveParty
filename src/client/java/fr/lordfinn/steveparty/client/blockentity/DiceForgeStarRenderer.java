@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -41,6 +42,7 @@ public class DiceForgeStarRenderer {
         matrices.translate(0.5, HEIGHT + BOB * MathHelper.sin(time * MathHelper.TAU / BOB_TICKS), 0.5);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * 360f / TURN_TICKS));
         VertexConsumer consumer = buffers.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
+        light = LightmapTextureManager.MAX_LIGHT_COORDINATE;   // full bright: it glows at night
         MatrixStack.Entry entry = matrices.peek();
         float top = THICKNESS / 2, bottom = -THICKNESS / 2, ridge = top + RIDGE_RISE;
         int n = outline.length;
