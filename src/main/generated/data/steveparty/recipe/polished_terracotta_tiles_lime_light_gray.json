@@ -3,8 +3,12 @@
   "category": "building",
   "group": "polished_terracotta_tiles_lime",
   "key": {
-    "A": "steveparty:polished_lime_terracotta",
-    "B": "steveparty:polished_light_gray_terracotta"
+    "A": {
+      "item": "steveparty:polished_lime_terracotta"
+    },
+    "B": {
+      "item": "steveparty:polished_light_gray_terracotta"
+    }
   },
   "pattern": [
     "AB",

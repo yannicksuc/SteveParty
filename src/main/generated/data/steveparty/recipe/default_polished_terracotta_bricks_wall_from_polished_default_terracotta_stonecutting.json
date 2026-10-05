@@ -1,6 +1,8 @@
 {
   "type": "minecraft:stonecutting",
-  "ingredient": "steveparty:polished_default_terracotta",
+  "ingredient": {
+    "item": "steveparty:polished_default_terracotta"
+  },
   "result": {
     "count": 1,
     "id": "steveparty:default_polished_terracotta_bricks_wall"

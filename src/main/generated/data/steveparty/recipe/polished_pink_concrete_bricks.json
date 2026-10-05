@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "S": "steveparty:polished_pink_concrete"
+    "S": {
+      "item": "steveparty:polished_pink_concrete"
+    }
   },
   "pattern": [
     "SS",

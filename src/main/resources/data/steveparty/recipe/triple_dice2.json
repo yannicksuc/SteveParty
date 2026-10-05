@@ -4,7 +4,7 @@
   "ingredients": [
     {
       "fabric:type": "fabric:components",
-      "base": "steveparty:double_dice",
+      "base": { "item": "steveparty:double_dice" },
       "components": {
         "!steveparty:dice-faces": {},
         "!steveparty:dice-modules": {}
@@ -12,7 +12,7 @@
     },
     {
       "fabric:type": "fabric:components",
-      "base": "steveparty:default_dice",
+      "base": { "item": "steveparty:default_dice" },
       "components": {
         "!steveparty:dice-faces": {},
         "!steveparty:dice-modules": {}

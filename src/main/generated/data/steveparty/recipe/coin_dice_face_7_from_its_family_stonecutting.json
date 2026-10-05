@@ -1,15 +1,33 @@
 {
   "type": "minecraft:stonecutting",
   "ingredient": [
-    "steveparty:coin_dice_face_1",
-    "steveparty:coin_dice_face_2",
-    "steveparty:coin_dice_face_3",
-    "steveparty:coin_dice_face_4",
-    "steveparty:coin_dice_face_5",
-    "steveparty:coin_dice_face_6",
-    "steveparty:coin_dice_face_8",
-    "steveparty:coin_dice_face_9",
-    "steveparty:coin_dice_face_10"
+    {
+      "item": "steveparty:coin_dice_face_1"
+    },
+    {
+      "item": "steveparty:coin_dice_face_2"
+    },
+    {
+      "item": "steveparty:coin_dice_face_3"
+    },
+    {
+      "item": "steveparty:coin_dice_face_4"
+    },
+    {
+      "item": "steveparty:coin_dice_face_5"
+    },
+    {
+      "item": "steveparty:coin_dice_face_6"
+    },
+    {
+      "item": "steveparty:coin_dice_face_8"
+    },
+    {
+      "item": "steveparty:coin_dice_face_9"
+    },
+    {
+      "item": "steveparty:coin_dice_face_10"
+    }
   ],
   "result": {
     "count": 1,

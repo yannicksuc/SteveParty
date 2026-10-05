@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "#": "steveparty:polished_purple_terracotta"
+    "#": {
+      "item": "steveparty:polished_purple_terracotta"
+    }
   },
   "pattern": [
     "###",

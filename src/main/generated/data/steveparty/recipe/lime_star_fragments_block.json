@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "#": "steveparty:lime_star_fragment"
+    "#": {
+      "item": "steveparty:lime_star_fragment"
+    }
   },
   "pattern": [
     "###",

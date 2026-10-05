@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "#": "steveparty:polished_orange_concrete_bricks"
+    "#": {
+      "item": "steveparty:polished_orange_concrete_bricks"
+    }
   },
   "pattern": [
     "###",

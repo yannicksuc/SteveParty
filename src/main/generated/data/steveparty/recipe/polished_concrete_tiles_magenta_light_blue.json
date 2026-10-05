@@ -3,8 +3,12 @@
   "category": "building",
   "group": "polished_concrete_tiles_magenta",
   "key": {
-    "A": "steveparty:polished_magenta_concrete",
-    "B": "steveparty:polished_light_blue_concrete"
+    "A": {
+      "item": "steveparty:polished_magenta_concrete"
+    },
+    "B": {
+      "item": "steveparty:polished_light_blue_concrete"
+    }
   },
   "pattern": [
     "AB",

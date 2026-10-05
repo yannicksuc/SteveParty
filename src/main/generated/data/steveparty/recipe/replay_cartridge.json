@@ -3,8 +3,12 @@
   "category": "misc",
   "group": "cartridge",
   "ingredients": [
-    "steveparty:board_space_behavior",
-    "minecraft:repeater"
+    {
+      "item": "steveparty:board_space_behavior"
+    },
+    {
+      "item": "minecraft:repeater"
+    }
   ],
   "result": {
     "count": 1,

@@ -3,7 +3,9 @@
   "category": "misc",
   "group": "plastic_stud",
   "ingredients": [
-    "steveparty:blue_plastic_block"
+    {
+      "item": "steveparty:blue_plastic_block"
+    }
   ],
   "result": {
     "count": 4,

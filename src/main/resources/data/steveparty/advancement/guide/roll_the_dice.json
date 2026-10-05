@@ -24,8 +24,7 @@
             "items": [
               "steveparty:default_dice",
               "steveparty:double_dice",
-              "steveparty:triple_dice",
-              "steveparty:forged_dice"
+              "steveparty:triple_dice"
             ]
           }
         ]

@@ -4,7 +4,7 @@
   "ingredients": [
     {
       "fabric:type": "fabric:components",
-      "base": "steveparty:triple_dice",
+      "base": { "item": "steveparty:triple_dice" },
       "components": {
         "!steveparty:dice-faces": {},
         "!steveparty:dice-modules": {}

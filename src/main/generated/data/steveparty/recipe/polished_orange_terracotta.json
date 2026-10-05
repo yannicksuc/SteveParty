@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "S": "minecraft:orange_terracotta"
+    "S": {
+      "item": "minecraft:orange_terracotta"
+    }
   },
   "pattern": [
     "SS",

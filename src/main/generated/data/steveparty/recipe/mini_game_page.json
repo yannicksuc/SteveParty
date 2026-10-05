@@ -2,8 +2,12 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": "steveparty:board_space_behavior",
-    "P": "minecraft:paper"
+    "C": {
+      "item": "steveparty:board_space_behavior"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    }
   },
   "pattern": [
     " P ",

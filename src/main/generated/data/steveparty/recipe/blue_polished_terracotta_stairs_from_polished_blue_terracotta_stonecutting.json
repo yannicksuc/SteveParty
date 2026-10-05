@@ -1,6 +1,8 @@
 {
   "type": "minecraft:stonecutting",
-  "ingredient": "steveparty:polished_blue_terracotta",
+  "ingredient": {
+    "item": "steveparty:polished_blue_terracotta"
+  },
   "result": {
     "count": 1,
     "id": "steveparty:blue_polished_terracotta_stairs"
