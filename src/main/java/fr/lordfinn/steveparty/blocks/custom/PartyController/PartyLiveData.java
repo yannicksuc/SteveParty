@@ -114,12 +114,16 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
 
     /**
      * The bonuses a token carries, shown in the « bonus » column of the standings (one item per bonus, its icon drawn
-     * half size in a slot; the column hides itself while nobody has any). The mod has no bonuses yet: none. To feed
-     * the column, return here the items standing for the token's bonuses (at most {@value #MAX_BONUSES} are sent);
-     * they are captured with the standings and sent when they change, like the stars and coins.
+     * half size in a slot; the column hides itself while nobody has any): the Padlock while the token is protected
+     * (see {@link fr.lordfinn.steveparty.powerups.effects.PowerUpProtection}). To feed the column with more, add here
+     * the items standing for the token's bonuses (at most {@value #MAX_BONUSES} are sent); they are captured with
+     * the standings and sent when they change, like the stars and coins.
      */
     public static List<ItemStack> bonusesOf(PartyControllerEntity controller, ServerWorld world, UUID token) {
-        return List.of();
+        List<ItemStack> bonuses = new ArrayList<>(1);
+        if (fr.lordfinn.steveparty.powerups.effects.PowerUpProtection.isProtected(controller, token))
+            bonuses.add(fr.lordfinn.steveparty.powerups.effects.PowerUpProtection.icon());
+        return bonuses;
     }
 
     /** The roll of the current turn in words: "7", "0", "\u22123" (backward), "+5 coins", "Swap", "3, +2 coins"... */
