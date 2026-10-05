@@ -3,7 +3,7 @@
   "name": "book.steveparty.guide.stars_mula.forging.name",
   "description": "book.steveparty.guide.stars_mula.forging.description",
   "icon": {
-    "item": "steveparty:forged_dice"
+    "item": "steveparty:default_dice"
   },
   "x": 8,
   "y": -4,
