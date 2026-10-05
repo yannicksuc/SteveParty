@@ -1,0 +1,36 @@
+{
+  "category": "pawns_dice",
+  "name": "book.steveparty.guide.pawns_dice.dice.name",
+  "description": "book.steveparty.guide.pawns_dice.dice.description",
+  "icon": {
+    "item": "steveparty:default_dice"
+  },
+  "x": -3,
+  "y": 2,
+  "sort_number": 4,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.dice.page0.text",
+      "title": "book.steveparty.guide.pawns_dice.dice.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.dice.page1.text",
+      "title": "book.steveparty.guide.pawns_dice.dice.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:default_dice",
+      "recipe_id_2": "steveparty:double_dice",
+      "text": "book.steveparty.guide.pawns_dice.dice.page2.text"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:triple_dice",
+      "recipe_id_2": "steveparty:triple_dice2"
+    }
+  ]
+}

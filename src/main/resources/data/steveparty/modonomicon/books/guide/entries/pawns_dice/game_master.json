@@ -1,0 +1,32 @@
+{
+  "category": "pawns_dice",
+  "name": "book.steveparty.guide.pawns_dice.game_master.name",
+  "description": "book.steveparty.guide.pawns_dice.game_master.description",
+  "icon": {
+    "item": "minecraft:enchanted_book"
+  },
+  "x": 3,
+  "y": -2,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "pawns_dice/pawns",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/make_a_pawn",
+    "tooltip": "book.steveparty.guide.lock.make_a_pawn"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.game_master.page0.text",
+      "title": "book.steveparty.guide.pawns_dice.game_master.page0.title"
+    }
+  ]
+}

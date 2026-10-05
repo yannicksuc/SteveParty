@@ -1,0 +1,48 @@
+{
+  "category": "pawns_dice",
+  "name": "book.steveparty.guide.pawns_dice.faces.name",
+  "description": "book.steveparty.guide.pawns_dice.faces.description",
+  "icon": {
+    "item": "steveparty:blank_dice_face"
+  },
+  "x": 0,
+  "y": 2,
+  "sort_number": 5,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "pawns_dice/dice",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/roll_the_dice",
+    "tooltip": "book.steveparty.guide.lock.roll_the_dice"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.faces.page0.text",
+      "title": "book.steveparty.guide.pawns_dice.faces.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:blank_dice_face_from_crafting"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.faces.page2.text",
+      "title": "book.steveparty.guide.pawns_dice.faces.page2.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:swap_dice_face_from_crafting",
+      "recipe_id_2": "steveparty:coin_dice_face_1_from_crafting",
+      "text": "book.steveparty.guide.pawns_dice.faces.page3.text"
+    }
+  ]
+}

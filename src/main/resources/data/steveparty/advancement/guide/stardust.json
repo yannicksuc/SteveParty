@@ -1,0 +1,35 @@
+{
+  "parent": "steveparty:guide/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:blue_star_fragment"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.stardust.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.stardust.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_star_fragment": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "#steveparty:star_fragments"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_star_fragment"
+    ]
+  ]
+}

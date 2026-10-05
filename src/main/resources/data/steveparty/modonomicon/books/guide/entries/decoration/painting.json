@@ -1,0 +1,27 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.painting.name",
+  "description": "book.steveparty.guide.decoration.painting.description",
+  "icon": {
+    "item": "minecraft:glow_ink_sac"
+  },
+  "x": 2,
+  "y": 2,
+  "sort_number": 7,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "decoration/stencils",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.painting.page0.text",
+      "title": "book.steveparty.guide.decoration.painting.page0.title"
+    }
+  ]
+}

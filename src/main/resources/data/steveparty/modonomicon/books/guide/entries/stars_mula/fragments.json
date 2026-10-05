@@ -1,0 +1,32 @@
+{
+  "category": "stars_mula",
+  "name": "book.steveparty.guide.stars_mula.fragments.name",
+  "description": "book.steveparty.guide.stars_mula.fragments.description",
+  "icon": {
+    "item": "steveparty:blue_star_fragment"
+  },
+  "x": -4,
+  "y": -2,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "stars_mula/mula",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.fragments.page0.text",
+      "title": "book.steveparty.guide.stars_mula.fragments.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:blue_star_fragments_block",
+      "text": "book.steveparty.guide.stars_mula.fragments.page1.text"
+    }
+  ]
+}

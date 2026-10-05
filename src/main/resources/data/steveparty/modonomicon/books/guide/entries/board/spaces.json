@@ -1,0 +1,31 @@
+{
+  "category": "board",
+  "name": "book.steveparty.guide.board.spaces.name",
+  "description": "book.steveparty.guide.board.spaces.description",
+  "icon": {
+    "item": "steveparty:tile"
+  },
+  "x": -4,
+  "y": 0,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.spaces.page0.text",
+      "title": "book.steveparty.guide.board.spaces.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:tile",
+      "recipe_id_2": "steveparty:advanced_tile",
+      "text": "book.steveparty.guide.board.spaces.page1.text"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:checkpoint",
+      "text": "book.steveparty.guide.board.spaces.page2.text"
+    }
+  ]
+}

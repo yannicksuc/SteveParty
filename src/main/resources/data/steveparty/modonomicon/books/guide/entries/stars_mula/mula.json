@@ -1,0 +1,25 @@
+{
+  "category": "stars_mula",
+  "name": "book.steveparty.guide.stars_mula.mula.name",
+  "description": "book.steveparty.guide.stars_mula.mula.description",
+  "icon": {
+    "item": "steveparty:mula_spawn_egg"
+  },
+  "x": -7,
+  "y": 1,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.mula.page0.text",
+      "title": "book.steveparty.guide.stars_mula.mula.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.mula.page1.text",
+      "title": "book.steveparty.guide.stars_mula.mula.page1.title"
+    }
+  ]
+}

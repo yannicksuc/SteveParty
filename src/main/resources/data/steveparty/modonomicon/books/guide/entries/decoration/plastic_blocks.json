@@ -1,0 +1,25 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.plastic_blocks.name",
+  "description": "book.steveparty.guide.decoration.plastic_blocks.description",
+  "icon": {
+    "item": "steveparty:white_plastic_block"
+  },
+  "x": -1,
+  "y": -6,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.plastic_blocks.page0.text",
+      "title": "book.steveparty.guide.decoration.plastic_blocks.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:white_plastic_block",
+      "recipe_id_2": "steveparty:white_plastic_block_from_dyeing"
+    }
+  ]
+}

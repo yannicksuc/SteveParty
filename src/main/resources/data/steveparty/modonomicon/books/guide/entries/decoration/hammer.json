@@ -1,0 +1,31 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.hammer.name",
+  "description": "book.steveparty.guide.decoration.hammer.description",
+  "icon": {
+    "item": "steveparty:stencil_gun"
+  },
+  "x": 2,
+  "y": 4,
+  "sort_number": 8,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "decoration/stencils",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.hammer.page0.text",
+      "title": "book.steveparty.guide.decoration.hammer.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:stencil_gun"
+    }
+  ]
+}

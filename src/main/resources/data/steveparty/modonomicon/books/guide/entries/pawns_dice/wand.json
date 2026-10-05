@@ -1,0 +1,26 @@
+{
+  "category": "pawns_dice",
+  "name": "book.steveparty.guide.pawns_dice.wand.name",
+  "description": "book.steveparty.guide.pawns_dice.wand.description",
+  "icon": {
+    "item": "steveparty:tokenizer_wand"
+  },
+  "x": -3,
+  "y": -2,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.wand.page0.text",
+      "title": "book.steveparty.guide.pawns_dice.wand.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:tokenizer_wand",
+      "recipe_id_2": "steveparty:garnet_crystal_ball",
+      "text": "book.steveparty.guide.pawns_dice.wand.page1.text"
+    }
+  ]
+}

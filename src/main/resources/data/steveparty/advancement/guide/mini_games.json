@@ -1,0 +1,50 @@
+{
+  "parent": "steveparty:guide/party_time",
+  "display": {
+    "icon": {
+      "id": "steveparty:mini_game_page"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.mini_games.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.mini_games.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_page": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:mini_game_page",
+              "steveparty:mini_games_catalogue"
+            ]
+          }
+        ]
+      }
+    },
+    "placed_mini_game_controller": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "steveparty:mini_game_controller"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_page",
+      "placed_mini_game_controller"
+    ]
+  ]
+}

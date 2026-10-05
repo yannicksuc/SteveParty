@@ -1,0 +1,33 @@
+{
+  "category": "board",
+  "name": "book.steveparty.guide.board.moving.name",
+  "description": "book.steveparty.guide.board.moving.description",
+  "icon": {
+    "item": "steveparty:check_point"
+  },
+  "x": -1,
+  "y": 4,
+  "sort_number": 9,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "board/spaces",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.moving.page0.text",
+      "title": "book.steveparty.guide.board.moving.page0.title"
+    }
+  ]
+}

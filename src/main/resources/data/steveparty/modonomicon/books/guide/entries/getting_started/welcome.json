@@ -1,0 +1,25 @@
+{
+  "category": "getting_started",
+  "name": "book.steveparty.guide.getting_started.welcome.name",
+  "description": "book.steveparty.guide.getting_started.welcome.description",
+  "icon": {
+    "item": "steveparty:power_star"
+  },
+  "x": -1,
+  "y": 0,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.getting_started.welcome.page0.text",
+      "title": "book.steveparty.guide.getting_started.welcome.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.getting_started.welcome.page1.text",
+      "title": "book.steveparty.guide.getting_started.welcome.page1.title"
+    }
+  ]
+}

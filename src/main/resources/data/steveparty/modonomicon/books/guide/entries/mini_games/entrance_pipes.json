@@ -1,0 +1,41 @@
+{
+  "category": "mini_games",
+  "name": "book.steveparty.guide.mini_games.entrance_pipes.name",
+  "description": "book.steveparty.guide.mini_games.entrance_pipes.description",
+  "icon": {
+    "item": "steveparty:copper_minigame_pipe"
+  },
+  "x": 5,
+  "y": -2,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "mini_games/pipe_roles",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/mini_games",
+    "tooltip": "book.steveparty.guide.lock.mini_games"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.mini_games.entrance_pipes.page0.text",
+      "title": "book.steveparty.guide.mini_games.entrance_pipes.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:copper_minigame_pipe",
+      "recipe_id_2": "steveparty:iron_minigame_pipe"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:golden_minigame_pipe"
+    }
+  ]
+}

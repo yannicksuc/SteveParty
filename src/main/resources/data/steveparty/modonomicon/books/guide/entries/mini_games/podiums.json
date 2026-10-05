@@ -1,0 +1,44 @@
+{
+  "category": "mini_games",
+  "name": "book.steveparty.guide.mini_games.podiums.name",
+  "description": "book.steveparty.guide.mini_games.podiums.description",
+  "icon": {
+    "item": "steveparty:podium"
+  },
+  "x": -1,
+  "y": 0,
+  "sort_number": 4,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "mini_games/pages",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/mini_games",
+    "tooltip": "book.steveparty.guide.lock.mini_games"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.mini_games.podiums.page0.text",
+      "title": "book.steveparty.guide.mini_games.podiums.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.mini_games.podiums.page1.text",
+      "title": "book.steveparty.guide.mini_games.podiums.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:podium",
+      "recipe_id_2": "steveparty:gold_podium",
+      "text": "book.steveparty.guide.mini_games.podiums.page2.text"
+    }
+  ]
+}

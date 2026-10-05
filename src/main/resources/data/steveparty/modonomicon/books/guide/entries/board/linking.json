@@ -1,0 +1,38 @@
+{
+  "category": "board",
+  "name": "book.steveparty.guide.board.linking.name",
+  "description": "book.steveparty.guide.board.linking.description",
+  "icon": {
+    "item": "steveparty:wrench"
+  },
+  "x": 2,
+  "y": -4,
+  "sort_number": 5,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "board/wrench",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.linking.page0.text",
+      "title": "book.steveparty.guide.board.linking.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.linking.page1.text",
+      "title": "book.steveparty.guide.board.linking.page1.title"
+    }
+  ]
+}

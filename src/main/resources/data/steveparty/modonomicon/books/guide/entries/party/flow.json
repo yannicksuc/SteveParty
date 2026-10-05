@@ -1,0 +1,38 @@
+{
+  "category": "party",
+  "name": "book.steveparty.guide.party.flow.name",
+  "description": "book.steveparty.guide.party.flow.description",
+  "icon": {
+    "item": "minecraft:clock"
+  },
+  "x": 0,
+  "y": -5,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "party/controller",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/party_time",
+    "tooltip": "book.steveparty.guide.lock.party_time"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.flow.page0.text",
+      "title": "book.steveparty.guide.party.flow.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.flow.page1.text",
+      "title": "book.steveparty.guide.party.flow.page1.title"
+    }
+  ]
+}

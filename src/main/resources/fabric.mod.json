@@ -41,6 +41,7 @@
     "geckolib": ">=${geckolib_version}"
   },
   "suggests": {
-    "roughlyenoughitems": "*"
+    "roughlyenoughitems": "*",
+    "modonomicon": "*"
   }
 }

@@ -1,0 +1,60 @@
+{
+  "parent": "steveparty:guide/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:advanced_tile"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.lay_the_board.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.lay_the_board.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "placed_tile": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "steveparty:tile"
+          }
+        ]
+      }
+    },
+    "placed_advanced_tile": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "steveparty:advanced_tile"
+          }
+        ]
+      }
+    },
+    "placed_check_point": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "steveparty:check_point"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed_tile",
+      "placed_advanced_tile",
+      "placed_check_point"
+    ]
+  ]
+}

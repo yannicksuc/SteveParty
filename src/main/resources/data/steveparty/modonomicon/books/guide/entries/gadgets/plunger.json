@@ -1,0 +1,24 @@
+{
+  "category": "gadgets",
+  "name": "book.steveparty.guide.gadgets.plunger.name",
+  "description": "book.steveparty.guide.gadgets.plunger.description",
+  "icon": {
+    "item": "steveparty:plunger"
+  },
+  "x": 0,
+  "y": 2,
+  "sort_number": 2,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.plunger.page0.text",
+      "title": "book.steveparty.guide.gadgets.plunger.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:plunger"
+    }
+  ]
+}

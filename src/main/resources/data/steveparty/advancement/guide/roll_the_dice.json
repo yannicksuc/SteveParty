@@ -1,0 +1,40 @@
+{
+  "parent": "steveparty:guide/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:default_dice"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.roll_the_dice.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.roll_the_dice.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_dice": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:default_dice",
+              "steveparty:double_dice",
+              "steveparty:triple_dice",
+              "steveparty:forged_dice"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_dice"
+    ]
+  ]
+}

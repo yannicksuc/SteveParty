@@ -1,0 +1,50 @@
+{
+  "category": "party",
+  "name": "book.steveparty.guide.party.goal_pole.name",
+  "description": "book.steveparty.guide.party.goal_pole.description",
+  "icon": {
+    "item": "steveparty:goal_pole"
+  },
+  "x": 0,
+  "y": 5,
+  "sort_number": 7,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "party/controller",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/party_time",
+    "tooltip": "book.steveparty.guide.lock.party_time"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.goal_pole.page0.text",
+      "title": "book.steveparty.guide.party.goal_pole.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.goal_pole.page1.text",
+      "title": "book.steveparty.guide.party.goal_pole.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:goal_pole_base",
+      "recipe_id_2": "steveparty:goal_pole"
+    },
+    {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:flag"
+      },
+      "text": "book.steveparty.guide.party.goal_pole.page3.text"
+    }
+  ]
+}
