@@ -13,7 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 /**
- * The Shop Cartridge's role (yellow): a shop stop. On a tile, the token ending its move there opens the shop for its
+ * The Shop Cartridge's role (lime green): a shop stop. On a tile, the token ending its move there opens the shop for its
  * owner, and the turn waits for the stop; a check point stops the tokens passing through instead (see
  * {@link ShopStops} and {@link fr.lordfinn.steveparty.service.TokenMovementService}).
  */
