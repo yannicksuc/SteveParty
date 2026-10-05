@@ -1,15 +1,33 @@
 {
   "type": "minecraft:stonecutting",
   "ingredient": [
-    "steveparty:debt_dice_face_1",
-    "steveparty:debt_dice_face_2",
-    "steveparty:debt_dice_face_3",
-    "steveparty:debt_dice_face_4",
-    "steveparty:debt_dice_face_5",
-    "steveparty:debt_dice_face_6",
-    "steveparty:debt_dice_face_7",
-    "steveparty:debt_dice_face_8",
-    "steveparty:debt_dice_face_10"
+    {
+      "item": "steveparty:debt_dice_face_1"
+    },
+    {
+      "item": "steveparty:debt_dice_face_2"
+    },
+    {
+      "item": "steveparty:debt_dice_face_3"
+    },
+    {
+      "item": "steveparty:debt_dice_face_4"
+    },
+    {
+      "item": "steveparty:debt_dice_face_5"
+    },
+    {
+      "item": "steveparty:debt_dice_face_6"
+    },
+    {
+      "item": "steveparty:debt_dice_face_7"
+    },
+    {
+      "item": "steveparty:debt_dice_face_8"
+    },
+    {
+      "item": "steveparty:debt_dice_face_10"
+    }
   ],
   "result": {
     "count": 1,

@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "F": "#steveparty:star_fragments",
-    "G": "minecraft:gold_ingot",
-    "N": "minecraft:gold_nugget"
+    "F": {
+      "tag": "steveparty:star_fragments"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "N": {
+      "item": "minecraft:gold_nugget"
+    }
   },
   "pattern": [
     "F",

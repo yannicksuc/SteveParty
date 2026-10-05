@@ -55,8 +55,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
      * Full recipe id for a named recipe. A bare name would be parsed in the minecraft namespace: Fabric fixes
      * the file path, but not the unlock advancement, which would then reward a recipe that doesn't exist.
      */
-    private static String id(String name) {
-        return Steveparty.id(name).toString();
+    private static Identifier id(String name) {
+        return Steveparty.id(name);
     }
 
     // The vanilla helpers below name their recipes with a bare name: same recipes, namespaced ids
@@ -77,14 +77,14 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         ShapelessRecipeJsonBuilder.create(reverseCategory, baseItem, 9)
                 .input(compactItem)
                 .criterion(hasItem(compactItem), conditionsFromItem(compactItem))
-                .offerTo(exporter, Identifier.of(id(getItemPath(baseItem))));
+                .offerTo(exporter, id(getItemPath(baseItem)));
         ShapedRecipeJsonBuilder.create(compactingCategory, compactItem)
                 .input('#', baseItem)
                 .pattern("###")
                 .pattern("###")
                 .pattern("###")
                 .criterion(hasItem(baseItem), conditionsFromItem(baseItem))
-                .offerTo(exporter, Identifier.of(id(getItemPath(compactItem))));
+                .offerTo(exporter, id(getItemPath(compactItem)));
     }
 
     private void offerSmelting(List<ItemConvertible> inputs, RecipeCategory category, ItemConvertible output,

@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": "minecraft:crying_obsidian",
-    "F": "steveparty:black_star_fragment",
-    "H": "minecraft:heavy_core"
+    "C": {
+      "item": "minecraft:crying_obsidian"
+    },
+    "F": {
+      "item": "steveparty:black_star_fragment"
+    },
+    "H": {
+      "item": "minecraft:heavy_core"
+    }
   },
   "pattern": [
     "CFC",

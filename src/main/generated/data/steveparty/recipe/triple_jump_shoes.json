@@ -2,10 +2,18 @@
   "type": "minecraft:crafting_shapeless",
   "category": "equipment",
   "ingredients": [
-    "minecraft:leather_boots",
-    "minecraft:rabbit_foot",
-    "minecraft:slime_ball",
-    "minecraft:slime_ball"
+    {
+      "item": "minecraft:leather_boots"
+    },
+    {
+      "item": "minecraft:rabbit_foot"
+    },
+    {
+      "item": "minecraft:slime_ball"
+    },
+    {
+      "item": "minecraft:slime_ball"
+    }
   ],
   "result": {
     "count": 1,

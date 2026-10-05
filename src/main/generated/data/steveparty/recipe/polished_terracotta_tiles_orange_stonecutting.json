@@ -1,7 +1,9 @@
 {
   "type": "minecraft:stonecutting",
   "group": "polished_terracotta_tiles",
-  "ingredient": "steveparty:polished_orange_terracotta",
+  "ingredient": {
+    "item": "steveparty:polished_orange_terracotta"
+  },
   "result": {
     "components": {
       "minecraft:block_state": {

@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "#": "steveparty:purple_plastic_block"
+    "#": {
+      "item": "steveparty:purple_plastic_block"
+    }
   },
   "pattern": [
     "###",

@@ -3,7 +3,9 @@
   "category": "building",
   "group": "plastic_block",
   "key": {
-    "#": "steveparty:gray_plastic_stud"
+    "#": {
+      "item": "steveparty:gray_plastic_stud"
+    }
   },
   "pattern": [
     "##",

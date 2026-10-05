@@ -3,8 +3,12 @@
   "category": "misc",
   "group": "pink_star_fragment",
   "ingredients": [
-    "steveparty:red_star_fragment",
-    "steveparty:white_star_fragment"
+    {
+      "item": "steveparty:red_star_fragment"
+    },
+    {
+      "item": "steveparty:white_star_fragment"
+    }
   ],
   "result": {
     "count": 2,

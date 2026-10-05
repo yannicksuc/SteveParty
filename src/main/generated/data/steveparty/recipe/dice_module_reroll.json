@@ -2,8 +2,12 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    "steveparty:blank_dice_face",
-    "minecraft:wind_charge"
+    {
+      "item": "steveparty:blank_dice_face"
+    },
+    {
+      "item": "minecraft:wind_charge"
+    }
   ],
   "result": {
     "count": 1,

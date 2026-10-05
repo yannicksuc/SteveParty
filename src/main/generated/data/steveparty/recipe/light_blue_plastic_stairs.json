@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "#": "steveparty:light_blue_plastic_block"
+    "#": {
+      "item": "steveparty:light_blue_plastic_block"
+    }
   },
   "pattern": [
     "#  ",

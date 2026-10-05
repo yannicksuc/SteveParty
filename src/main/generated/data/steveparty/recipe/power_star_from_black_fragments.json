@@ -2,11 +2,21 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    "steveparty:black_star_fragment",
-    "steveparty:black_star_fragment",
-    "steveparty:black_star_fragment",
-    "steveparty:black_star_fragment",
-    "steveparty:black_star_fragment"
+    {
+      "item": "steveparty:black_star_fragment"
+    },
+    {
+      "item": "steveparty:black_star_fragment"
+    },
+    {
+      "item": "steveparty:black_star_fragment"
+    },
+    {
+      "item": "steveparty:black_star_fragment"
+    },
+    {
+      "item": "steveparty:black_star_fragment"
+    }
   ],
   "result": {
     "count": 1,

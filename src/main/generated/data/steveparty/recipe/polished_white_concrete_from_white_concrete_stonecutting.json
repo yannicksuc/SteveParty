@@ -1,6 +1,8 @@
 {
   "type": "minecraft:stonecutting",
-  "ingredient": "minecraft:white_concrete",
+  "ingredient": {
+    "item": "minecraft:white_concrete"
+  },
   "result": {
     "count": 1,
     "id": "steveparty:polished_white_concrete"

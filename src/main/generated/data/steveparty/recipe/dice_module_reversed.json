@@ -2,8 +2,12 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    "steveparty:blank_dice_face",
-    "minecraft:fermented_spider_eye"
+    {
+      "item": "steveparty:blank_dice_face"
+    },
+    {
+      "item": "minecraft:fermented_spider_eye"
+    }
   ],
   "result": {
     "count": 1,
