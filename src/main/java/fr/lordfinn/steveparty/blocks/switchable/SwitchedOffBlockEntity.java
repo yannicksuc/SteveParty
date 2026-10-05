@@ -40,6 +40,6 @@ public class SwitchedOffBlockEntity extends SyncedBlockEntity {
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
-        storedState = NbtHelper.toBlockState(registries.getOrThrow(RegistryKeys.BLOCK), nbt.getCompound(STORED_STATE_KEY));
+        storedState = NbtHelper.toBlockState(registries.getWrapperOrThrow(RegistryKeys.BLOCK), nbt.getCompound(STORED_STATE_KEY));
     }
 }

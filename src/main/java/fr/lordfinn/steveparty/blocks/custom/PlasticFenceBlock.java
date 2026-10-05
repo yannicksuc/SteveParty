@@ -7,9 +7,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
-import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,11 +29,11 @@ public class PlasticFenceBlock extends FenceBlock {
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
-                                                   Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState,
+                                                   WorldAccess world, BlockPos pos, BlockPos neighborPos) {
         // Water arriving, a bubble column forming, or a chain holding it being broken: try again
-        PlasticBlock.scheduleStep(tickView, world, pos, this);
-        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
+        PlasticBlock.scheduleStep(world, world, pos, this);
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
     }
 
     @Override

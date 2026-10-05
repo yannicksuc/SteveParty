@@ -15,11 +15,11 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.random.Random;
 import java.util.List;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
@@ -29,8 +29,8 @@ public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
     }
 
     @Override
-    protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        return ActionResult.PASS;
+    protected ItemActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -44,8 +44,8 @@ public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
     }
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
         if (world.isClient) return;
         if (world.getBlockEntity(pos) instanceof BoardSpaceRedstoneRouterBlockEntity entity) {
             entity.pushPowerToBoardSpaces();

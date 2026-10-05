@@ -27,7 +27,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEntityProvider {
@@ -120,7 +119,7 @@ public class GoalPoleBaseBlock extends HorizontalFacingBlock implements BlockEnt
             World world,
             BlockPos pos,
             Block sourceBlock,
-            @Nullable WireOrientation wireOrientation,
+            BlockPos sourcePos,
             boolean notify
     ) {
         if (world.isClient) return;

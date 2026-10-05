@@ -262,7 +262,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         if (!pendingDrops.isEmpty()) {
             NbtList drops = new NbtList();
             for (ItemStack stack : pendingDrops) {
-                if (!stack.isEmpty()) drops.add(stack.toNbt(registries));
+                if (!stack.isEmpty()) drops.add(stack.encode(registries));
             }
             nbt.put("PendingDrops", drops);
         }

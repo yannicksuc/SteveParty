@@ -369,7 +369,7 @@ public final class TileFeedback {
 
     /** A thin ring of dust just around the tile's edge: the tile "pulses". */
     private static void ring(ServerWorld world, Vec3d at, int color, double radius) {
-        DustParticleEffect dust = new DustParticleEffect(color, 1.1F);
+        DustParticleEffect dust = new DustParticleEffect(Vec3d.unpackRgb(color).toVector3f(), 1.1F);
         int points = radius > 0.8 ? 28 : 18;
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2 * i / points;
@@ -387,7 +387,7 @@ public final class TileFeedback {
                 world.spawnParticles(ParticleTypes.WAX_OFF, at.x, y + 0.3, at.z, 5, 0.3, 0.3, 0.3, 0.3);
             }
             case BAD -> {
-                world.spawnParticles(new DustParticleEffect(lighten(landing.accent(), 0.25F), 1.8F), at.x, y + 0.2, at.z, 14, 0.35, 0.2, 0.35, 0.0);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(lighten(landing.accent(), 0.25F)).toVector3f(), 1.8F), at.x, y + 0.2, at.z, 14, 0.35, 0.2, 0.35, 0.0);
                 world.spawnParticles(ParticleTypes.SMOKE, at.x, y, at.z, 5, 0.3, 0.05, 0.3, 0.01);
                 world.spawnParticles(ParticleTypes.ANGRY_VILLAGER, at.x, y + 0.6, at.z, 1, 0.1, 0.1, 0.1, 0.0);
             }
@@ -396,21 +396,21 @@ public final class TileFeedback {
                 world.spawnParticles(new MulaSparkleEffect(light, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y, at.z, 8, 0.35, 0.2, 0.35, 0.0);
             }
             case STOP -> {
-                world.spawnParticles(new DustParticleEffect(light, 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.3F), at.x, y, at.z, 10, 0.3, 0.1, 0.3, 0.0);
                 world.spawnParticles(ParticleTypes.CRIT, at.x, y + 0.2, at.z, 6, 0.25, 0.2, 0.25, 0.1);
             }
             case ADVANCE -> {
-                world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
                 world.spawnParticles(new MulaSparkleEffect(0xB8FFC4, 1.2F, MulaSparkleEffect.STAR_BIT), at.x, y + 0.2, at.z, 8, 0.3, 0.25, 0.3, 0.0);
                 world.spawnParticles(ParticleTypes.SMALL_GUST, at.x, y + 0.1, at.z, 3, 0.3, 0.05, 0.3, 0.0);
             }
             case BACK -> {
-                world.spawnParticles(new DustParticleEffect(light, 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
+                world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.4F), at.x, y, at.z, 12, 0.35, 0.1, 0.35, 0.0);
                 world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE), at.x, y + 0.2, at.z, 10, 0.3, 0.3, 0.3, 0.0);
             }
             case REPLAY -> {
                 // A cyan swirl climbing around the token (the pictogram's circular arrow), and happy sparks
-                DustParticleEffect swirl = new DustParticleEffect(light, 1.2F);
+                DustParticleEffect swirl = new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.2F);
                 for (int i = 0; i < 24; i++) {
                     double angle = Math.PI * 3 * i / 24;
                     world.spawnParticles(swirl, at.x + Math.cos(angle) * 0.5, y + i * 0.05, at.z + Math.sin(angle) * 0.5, 1, 0, 0, 0, 0);
@@ -418,7 +418,7 @@ public final class TileFeedback {
                 world.spawnParticles(ParticleTypes.GLOW, at.x, y + 0.4, at.z, 8, 0.35, 0.3, 0.35, 0.0);
                 world.spawnParticles(new MulaSparkleEffect(0xB8F4FF, 1.3F, MulaSparkleEffect.STAR_BIT), at.x, y + 1.2, at.z, 6, 0.2, 0.1, 0.2, 0.0);
             }
-            case REPLAY_SPENT -> world.spawnParticles(new DustParticleEffect(light, 1.0F), at.x, y, at.z, 8, 0.3, 0.1, 0.3, 0.0);
+            case REPLAY_SPENT -> world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(light).toVector3f(), 1.0F), at.x, y, at.z, 8, 0.3, 0.1, 0.3, 0.0);
             case TELEPORT -> {
                 world.spawnParticles(ParticleTypes.REVERSE_PORTAL, at.x, y, at.z, 16, 0.3, 0.1, 0.3, 0.02);
                 world.spawnParticles(new MulaSparkleEffect(light, 1.2F, MulaSparkleEffect.TWINKLE), at.x, y + 0.2, at.z, 8, 0.35, 0.25, 0.35, 0.0);

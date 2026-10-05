@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.hit.BlockHitResult;
@@ -20,10 +21,10 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
-import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -126,13 +127,13 @@ public class TilePartBlock extends Block {
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
-                                                   Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState,
+                                                   WorldAccess world, BlockPos pos, BlockPos neighborPos) {
         if (tileOf(world, state, pos) == null) return Blocks.AIR.getDefaultState();
         // Its own support changed: the tile checks whether it still lies on one level surface
         if (direction == Direction.DOWN) {
             BlockPos master = master(state, pos);
-            tickView.scheduleBlockTick(master, world.getBlockState(master).getBlock(), 1);
+            world.scheduleBlockTick(master, world.getBlockState(master).getBlock(), 1);
         }
         return state;
     }
@@ -140,9 +141,9 @@ public class TilePartBlock extends Block {
     // ---------------------------------------------------------------- everything goes to the tile
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         BlockState tile = tileOf(world, state, pos);
-        if (tile == null) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        if (tile == null) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         return tile.onUseWithItem(stack, world, player, hand, hit.withBlockPos(master(state, pos)));
     }
 
