@@ -312,9 +312,9 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Un comparateur sur le routeur capte les événements : impulsion de 10 ticks au niveau du rôle quand un "
           "pion s'arrête sur une case reliée, niveau 1 quand il passe."),
         T("- 15: plain space\n- 14: bonus\n- 13: malus\n- 12: empty item space\n- 11: start\n- 10: Stop\n"
-          "- 9: Roll Again\n- 8: Teleport\n- 7: forward\n- 6: back\n- 5: shop stop\n- 1: a pawn passes",
+          "- 9: Roll Again\n- 8: Teleport\n- 7: forward\n- 6: back\n- 5: shop stop\n- 4: star space\n- 1: a pawn passes",
           "- 15 : case simple\n- 14 : bonus\n- 13 : malus\n- 12 : case objet vide\n- 11 : départ\n- 10 : Stop\n"
-          "- 9 : Rejouer\n- 8 : Téléportation\n- 7 : Avancer\n- 6 : Reculer\n- 5 : arrêt boutique\n"
+          "- 9 : Rejouer\n- 8 : Téléportation\n- 7 : Avancer\n- 6 : Reculer\n- 5 : arrêt boutique\n- 4 : case étoile\n"
           "- 1 : un pion passe",
           "Comparator Levels", "Niveaux du comparateur"),
         C("steveparty:board_space_redstone_router"),
@@ -406,6 +406,34 @@ category("cartridges", "steveparty:board_space_behavior", ("Cartridges", "Cartou
           "hasard ou à tour de rôle. Réseaux : violet (défaut), vert, orange ou bleu ; une teinture sur la case "
           "le change.\n\nDans son menu : rester à l'arrivée ou avancer d'une case, et si cette case s'active."),
         C("steveparty:teleport_cartridge", None, "Cartridge + ender pearl.", "Cartouche + perle de l'Ender."),
+    ], parents=["cartridge"], gate="lay_the_board"),
+    E("star", "steveparty:star_cartridge", ("Star Cartridge", "Cartouche Étoile"), ("Buy the star", "Acheter l'étoile"), [
+        T("Makes a **yellow star space** (tile or Checkpoint). When a party starts, the **star** lands on one active "
+          "star space at random: a big Power Star floats over it.\n\n"
+          "A pawn passing over it stops; with enough coins, its player chooses in the chat to **buy** it (20 coins "
+          "by default; bought by itself after 15 s). The star then moves to **another** star space.",
+          "Crée une **case étoile jaune** (tuile ou point de déclenchement). Au début d'une partie, l'**étoile** se "
+          "pose sur une case étoile active au hasard : une grande Super étoile flotte au-dessus.\n\n"
+          "Un pion qui passe dessus s'arrête ; s'il a assez de pièces, son joueur choisit dans le chat de "
+          "l'**acheter** (20 pièces par défaut ; achetée d'office après 15 s). L'étoile part alors sur **une autre** "
+          "case étoile."),
+        T("In its menu: the **price**, sold **in passing** or only **on stopping** (a Checkpoint always sells in "
+          "passing), and whether the star **leaves** a space switched off by redstone.\n\n"
+          "No active star space: the star hides until one is switched on. The Skeleton Key never skips it.",
+          "Dans son menu : le **prix**, vendue **au passage** ou seulement **en s'arrêtant** (un point de "
+          "déclenchement la vend toujours au passage), et si l'étoile **quitte** une case désactivée par la "
+          "redstone.\n\n"
+          "Aucune case étoile active : l'étoile se cache jusqu'à ce qu'une se réactive. Le Passe-partout ne la "
+          "saute jamais.",
+          "Settings", "Réglages"),
+        T("Fill the **Party Controller's chests** (its bank, on the Gains page) with **stars**: each star sold is "
+          "taken from them, and the coins paid go back into them (what does not fit falls by the controller).\n\n"
+          "No star left in the bank: nothing is sold, the pawn goes on.",
+          "Remplis les **coffres du Party Controller** (sa banque, page Gains) avec des **étoiles** : chaque étoile "
+          "vendue y est prise, et les pièces payées y retournent (ce qui ne rentre pas tombe près du contrôleur).\n\n"
+          "Plus d'étoile dans la banque : rien n'est vendu, le pion continue.",
+          "The Bank", "La banque"),
+        C("steveparty:star_cartridge", None, "Cartridge + Power Star.", "Cartouche + Super étoile."),
     ], parents=["cartridge"], gate="lay_the_board"),
     E("inventory", "steveparty:inventory_cartridge", ("Inventory Cartridge", "Cartouche d'inventaire"), ("Bonus and malus spaces", "Cases bonus et malus"), [
         T("Gives or takes items. Right-click up to **8 chests** with it to link them; right-click in the air for "
@@ -529,11 +557,11 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "- **Chanceux** (vert, patte de lapin, jusqu'à 5) : lancers en plus, garder le meilleur ;\n"
           "- **Relance** (orange, charge de vent, jusqu'à 5) : garder ou relancer."),
         T("- **Reversed** (red, fermented spider eye): the pawn goes backwards;\n"
-          "- **Skeleton Key** (yellow, tripwire hook): ignores Stop and shop spaces;\n"
+          "- **Skeleton Key** (yellow, tripwire hook): ignores Stop and shop spaces (not the star);\n"
           "- **Homing** (magenta, eye of ender): picks forks at random.\n\n"
           "Base: a blank module (blank face + 4 gold nuggets). Add modules to a die at the crafting table (the modules stay in the grid) or in the Dice Forge.",
           "- **Inversé** (rouge, œil d'araignée fermenté) : le pion recule ;\n"
-          "- **Passe-partout** (jaune, crochet) : ignore les cases Stop et boutique ;\n"
+          "- **Passe-partout** (jaune, crochet) : ignore les cases Stop et boutique (pas l'étoile) ;\n"
           "- **Tête chercheuse** (magenta, œil de l'Ender) : choisit les bifurcations au hasard.\n\n"
           "Base : un module vierge (face vierge + 4 pépites d'or). Ajoute des modules à un dé à l'établi (ils restent dans la grille) ou dans la forge à dés.",
           "More Modules", "Autres modules"),
@@ -590,13 +618,83 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
         T("A player's stars and coins are those items in their inventory; ranking goes by stars, then coins. "
           "Defaults: the **Coin** and the **Power Star** (change them in the Rewards tab).\n\n"
           "Rewards are paid from chests: put an Inventory Cartridge linked to chests in the bank slot. The "
-          "controller never creates coins or stars.",
+          "controller never creates coins or stars: only the star sold on a **star space** is made.",
           "Les étoiles et pièces d'un joueur sont ces objets dans son inventaire ; classement aux étoiles, puis "
           "aux pièces. Par défaut : la **pièce** et la **Super étoile** (à changer dans l'onglet Gains).\n\n"
           "Les gains sont pris dans des coffres : mets une cartouche d'inventaire liée à des coffres dans la case "
-          "banque. Le contrôleur ne crée jamais ni pièce ni étoile."),
+          "banque. Le contrôleur ne crée jamais ni pièce ni étoile : seule l'étoile vendue sur une **case étoile** est créée."),
         C("steveparty:coin", None, "One gold nugget makes a Coin.", "Une pépite d'or donne une pièce."),
     ], parents=["controller"], gate="party_time"),
+    E("powerups", "steveparty:powerup_mushroom", ("Power-ups", "Bonus"), ("A boost for your turn", "Un coup de pouce pour ton tour"), [
+        T("A **power-up** is used at the **start of your turn**, **before your roll**, and adds to it (a die "
+          "replaces the roll). Right-click it during your own turn: it is **consumed** only if it worked.\n\n"
+          "- **One** power-up per turn.\n"
+          "- Too late once your roll counts (a blank roll can still be rolled again).",
+          "Un **bonus** s'utilise au **début de ton tour**, **avant ton lancer**, et s'y ajoute (un dé, lui, "
+          "remplace le lancer). Clic droit pendant ton propre tour : il n'est **consommé** que s'il a fait effet.\n\n"
+          "- **Un seul** bonus par tour.\n"
+          "- Trop tard une fois ton lancer compté (un lancer blanc peut encore être relancé)."),
+        T("- **Mushroom**: **+3** to your next roll this turn, with any die.\n"
+          "- **Double Coins**: the coins you **gain** this turn are **doubled**. Losses are not.\n"
+          "- **Padlock**: blocks **one** Thief Bell or Trap aimed at you, until your next turn. Kept if you are "
+          "already protected.",
+          "- **Champignon** : **+3** à ton prochain lancer de ce tour, avec n'importe quel dé.\n"
+          "- **Double pièces** : les pièces que tu **gagnes** ce tour sont **doublées**. Pas les pertes.\n"
+          "- **Cadenas** : bloque **une** Cloche voleuse ou un Piège contre toi, jusqu'à ton prochain tour. Gardé "
+          "si tu es déjà protégé.",
+          "For You", "Pour toi"),
+        T("- **Thief Bell**: pick a player (15 s, else the richest) and steal **5 to 15** of their coins.\n"
+          "- **Golden Thief Bell**: the same, for **one star**.\n"
+          "- **Trap**: hidden on your pawn's space. The next other player to stop there gives you **10** coins.\n\n"
+          "A Padlock parries them. A bell is kept if its target has nothing to steal.",
+          "- **Cloche voleuse** : choisis un joueur (15 s, sinon le plus riche) et vole-lui **5 à 15** pièces.\n"
+          "- **Cloche voleuse dorée** : pareil, pour **une étoile**.\n"
+          "- **Piège** : caché sur la case de ton pion. Le prochain autre joueur qui s'y arrête te donne **10** "
+          "pièces.\n\n"
+          "Un Cadenas les pare. Une cloche est gardée si sa cible n'a rien à voler.",
+          "Against the Others", "Contre les autres"),
+        T("- **Star Whistle**: the Star flies off to another Star space.\n"
+          "- **Golden Pipe**: your pawn warps just **before the Star**, then you roll your die.\n\n"
+          "The star is the Star Cartridge's. Both are kept when the board has none.",
+          "- **Sifflet d'étoile** : l'étoile s'envole vers une autre case étoile.\n"
+          "- **Tuyau doré** : ton pion se téléporte juste **avant l'étoile**, puis tu lances ton dé.\n\n"
+          "L'étoile est celle de la cartouche Étoile. Les deux sont gardés si le plateau n'en a pas.",
+          "The Star", "L'étoile"),
+        T("Power-ups are **easy to craft**: at most one Coin and one or two common items.\n\n"
+          "The **board's maker** chooses how players get them: a **Trading Stall**, the Boxed Trader, a Shop "
+          "space, or an **Inventory space** handing out a chest's content.\n\n"
+          "Unpriced on a stall, in Coins: Mushroom **5**, Double Coins and Padlock **8**, Trap **10**, "
+          "Thief Bell **12**, Whistle **15**, Pipe **25**, Golden Bell **40**.",
+          "Les bonus se **fabriquent facilement** : une pièce au plus et un ou deux objets courants.\n\n"
+          "Le **créateur du plateau** choisit comment les proposer : **étal du marchand**, Boxed Trader, case "
+          "Boutique, ou **case Inventaire** (le contenu d'un coffre).\n\n"
+          "Sans prix sur un étal, en pièces : Champignon **5**, Double pièces et Cadenas **8**, Piège **10**, "
+          "Cloche **12**, Sifflet **15**, Tuyau **25**, Cloche dorée **40**.",
+          "Getting Them", "Les obtenir"),
+        T("During a party, a player carries at most **3** power-ups: **Max power-ups** on the Party Controller's "
+          "Settings page (∞: no limit). **Dice without Infinity** count too, being spent; a die with Infinity is "
+          "your own and does not.\n\n"
+          "At the limit, shops refuse to sell, Inventory spaces keep the extra in their chest, and power-ups on "
+          "the ground stay there.",
+          "Pendant une partie, un joueur porte au plus **3** bonus : **Bonus maximum** dans les réglages du Party "
+          "Controller (∞ : illimité). Les **dés sans Infini** comptent aussi, car ils sont dépensés ; un dé Infini "
+          "est le tien et ne compte pas.\n\n"
+          "À la limite, les boutiques refusent de vendre, les cases Inventaire gardent le surplus dans leur coffre, "
+          "et les bonus au sol y restent.",
+          "The Limit", "La limite"),
+        C("steveparty:powerup_mushroom", "steveparty:powerup_double_coins",
+          "Mushroom: red mushroom + sugar + Coin. Double Coins: Coin + glowstone dust + paper.",
+          "Champignon : champignon rouge + sucre + pièce. Double pièces : pièce + poudre de glowstone + papier."),
+        C("steveparty:powerup_padlock", "steveparty:powerup_trap",
+          "Padlock: Coin + iron ingot + tripwire hook. Trap: Coin + stone pressure plate + string.",
+          "Cadenas : pièce + lingot de fer + crochet. Piège : pièce + plaque de pression en pierre + ficelle."),
+        C("steveparty:powerup_thief_bell", "steveparty:powerup_golden_thief_bell",
+          "Thief Bell: Coin + gold ingot + string. Golden Thief Bell: Thief Bell + 2 gold ingots.",
+          "Cloche voleuse : pièce + lingot d'or + ficelle. Cloche voleuse dorée : Cloche voleuse + 2 lingots d'or."),
+        C("steveparty:powerup_star_whistle", "steveparty:powerup_golden_pipe",
+          "Star Whistle: Coin + bamboo + glowstone dust. Golden Pipe: Coin + 2 gold ingots + ender pearl.",
+          "Sifflet d'étoile : pièce + bambou + poudre de glowstone. Tuyau doré : pièce + 2 lingots d'or + perle de l'Ender."),
+    ], parents=["rewards"], gate="party_time"),
     E("step_controller", "steveparty:step_controller", ("Step controller", "Contrôleur de pas"), ("Next, restart or back", "Suivant, recommencer, retour"), [
         T("Right-click to switch mode: **up** = next step, **side** = restart the step, **down** = previous step. "
           "A rising redstone edge applies it to the nearest Party Controller (64 blocks).\n\n"

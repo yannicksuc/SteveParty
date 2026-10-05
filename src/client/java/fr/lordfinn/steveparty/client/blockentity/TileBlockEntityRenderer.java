@@ -158,6 +158,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_REPLAY) face = TileStampTextures.replayFace(color, small);
         // A Teleport tile: a portal (its rings drifting) in the colour of its network (violet by default)
         else if (tileType == BoardSpaceType.TILE_TELEPORT) face = TileStampTextures.teleportFace(color, small);
+        // A star space: a star in the cartridge's yellow
+        else if (tileType == BoardSpaceType.TILE_STAR) face = TileStampTextures.starFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         return face;

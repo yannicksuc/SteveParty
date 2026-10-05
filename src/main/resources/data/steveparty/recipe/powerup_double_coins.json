@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "steveparty:coin" },
+    { "item": "minecraft:glowstone_dust" },
+    { "item": "minecraft:paper" }
+  ],
+  "result": {
+    "id": "steveparty:powerup_double_coins",
+    "count": 1
+  }
+}

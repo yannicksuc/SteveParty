@@ -6,7 +6,7 @@
     "item": "steveparty:shop_cartridge"
   },
   "x": 2,
-  "y": -2,
+  "y": -3,
   "sort_number": 3,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,

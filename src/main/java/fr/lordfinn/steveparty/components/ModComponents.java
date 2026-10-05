@@ -117,6 +117,9 @@ public class ModComponents {
     /** How many items a player may buy during a stop at a Shop Cartridge's space (1 by default). */
     public static final ComponentType<Integer> SHOP_PURCHASES =
             registerComponent("shop-purchases", Codec.intRange(1, fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.MAX_PURCHASES));
+    /** Price and options of a Star Cartridge (see StarSettingsComponent). */
+    public static final ComponentType<StarSettingsComponent> STAR_SETTINGS =
+            registerComponent("star-settings", StarSettingsComponent.CODEC);
     /** The shop chosen for a Shop Cartridge with the Wrench (none: the nearest merchant). */
     public static final ComponentType<ShopLinkComponent> SHOP_LINK =
             registerComponent("shop-link", ShopLinkComponent.CODEC);

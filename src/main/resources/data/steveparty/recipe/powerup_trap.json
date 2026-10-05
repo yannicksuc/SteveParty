@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "steveparty:coin" },
+    { "item": "minecraft:stone_pressure_plate" },
+    { "item": "minecraft:string" }
+  ],
+  "result": {
+    "id": "steveparty:powerup_trap",
+    "count": 1
+  }
+}

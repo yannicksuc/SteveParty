@@ -55,6 +55,8 @@ public class ModItems {
     public static final List<Item> DICE_FACES = new ArrayList<>();
     /** The dice module items, one per module of DiceModules. */
     public static final List<Item> DICE_MODULES = new ArrayList<>();
+    /** The power-up items, one per power-up of PowerUps. */
+    public static final List<Item> POWER_UPS = new ArrayList<>();
     /** The base every dice module is crafted from, with seven star fragments of the module's colour. */
     public static final Item BLANK_DICE_MODULE = register(Item.class, "blank_dice_module");
 
@@ -73,6 +75,10 @@ public class ModItems {
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ReplayBoardSpaceBehavior.COLOR));
     public static final Item TELEPORT_CARTRIDGE = register(TeleportCartridgeItem.class, "teleport_cartridge");
+    /** Star Cartridge: a star space, where the party's star may stand and be bought (yellow, like the star). */
+    public static final Item STAR_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.class, "star_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR));
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
     public static final Item FLAG = register(FlagItem.class, "flag");
@@ -198,6 +204,12 @@ public class ModItems {
             DICE_MODULES.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(module.itemPath())), item));
         }
 
+        // One item per power-up (see PowerUps)
+        for (fr.lordfinn.steveparty.powerups.PowerUp powerUp : fr.lordfinn.steveparty.powerups.PowerUps.all()) {
+            Item item = new PowerUpItem(powerUp, new Item.Settings());
+            POWER_UPS.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(powerUp.itemPath())), item));
+        }
+
         // Register items to the custom item group.
         ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
             for (int color = 0; color < BandanaItem.COLOR_NAMES.length; color++) {
@@ -226,6 +238,7 @@ public class ModItems {
                 if (network == fr.lordfinn.steveparty.components.TeleportNetwork.VIOLET) continue;
                 itemGroup.add(fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
             }
+            itemGroup.add(STAR_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);
@@ -361,6 +374,9 @@ public class ModItems {
             itemGroup.add(DEFAULT_DICE);
             itemGroup.add(DOUBLE_DICE);
             itemGroup.add(TRIPLE_DICE);
+            for (Item item : POWER_UPS) {
+                itemGroup.add(item);
+            }
         });
     }
 }

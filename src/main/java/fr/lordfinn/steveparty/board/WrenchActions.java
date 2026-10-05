@@ -608,7 +608,7 @@ public final class WrenchActions {
         world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.PLAYERS, 0.6f, 1.2f);
     }
 
-    /** Colour of a shop link (particles, board view): the Shop Cartridge's yellow. */
+    /** Colour of a shop link (particles, board view): the Shop Cartridge's lime green. */
     public static final int SHOP_COLOR = fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem.COLOR;
 
     // ---------------------------------------------------------------- controls sent by the client

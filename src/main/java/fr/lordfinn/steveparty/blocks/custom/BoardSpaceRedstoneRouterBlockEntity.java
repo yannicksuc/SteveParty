@@ -112,7 +112,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     /*
      * Comparator levels of a token stopping on a board space, by role, from 15 down (the wiki has the table). A role
      * gives its level through ABoardSpaceBehavior#comparatorLevel; by default the one of its landing kind. 1 is a token
-     * passing; 2 to 4 are still free for new roles.
+     * passing; 2 and 3 are still free for new roles.
      */
     public static final int LEVEL_DEFAULT = 15, LEVEL_BONUS = 14, LEVEL_MALUS = 13, LEVEL_ITEM = 12, LEVEL_START = 11,
             LEVEL_STOP = 10;
@@ -120,6 +120,8 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     public static final int LEVEL_REPLAY = 9, LEVEL_TELEPORT = 8, LEVEL_FORWARD = 7, LEVEL_BACKWARD = 6;
     /** A shop stop: a token ending its move on a shop tile, or held by a shop check point while its owner shops. */
     public static final int LEVEL_SHOP = 5;
+    /** A star space: a token stopping on it (the star may be there or not). */
+    public static final int LEVEL_STAR = 4;
 
     /** The level of a landing kind (roles without a level of their own); an unknown kind: the default level. */
     public static int landingSignal(TileFeedback.Landing landing) {
@@ -134,6 +136,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
             case ADVANCE -> LEVEL_FORWARD;
             case BACK -> LEVEL_BACKWARD;
             case TELEPORT -> LEVEL_TELEPORT;
+            case STAR -> LEVEL_STAR;
             default -> LEVEL_DEFAULT;
         };
     }

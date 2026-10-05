@@ -983,8 +983,8 @@ public final class CartridgePanel {
                     }
                 }
                 case NumberModule number -> {
-                    if (inside(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.max(number.min(), value - 1), value);
-                    if (inside(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.min(number.max(), value + 1), value);
+                    if (inside(mouseX, mouseY, mx + MINUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.max(number.min(), value - step(number)), value);
+                    if (inside(mouseX, mouseY, mx + PLUS_X, top, STEP_W, NumberModule.ROW_H)) return change(i, Math.min(number.max(), value + step(number)), value);
                     if (showsLamps(number)) {
                         int lw = lampWidth(number);
                         for (int v = number.min(); v <= number.max(); v++) {
@@ -1016,7 +1016,12 @@ public final class CartridgePanel {
         return false;
     }
 
-    /** The wheel over a number: one more / one less; elsewhere on a shell too low for its modules: scrolls them. */
+    /** How much a click on − / + or a wheel notch changes a number: one, or ten with Shift on a wide range (a price). */
+    private static int step(NumberModule number) {
+        return net.minecraft.client.gui.screen.Screen.hasShiftDown() && number.max() - number.min() >= 20 ? 10 : 1;
+    }
+
+    /** The wheel over a number: one more / one less (ten with Shift on a wide range); elsewhere on a shell too low for its modules: scrolls them. */
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (amount == 0 || !inside(mouseX, mouseY, x, y, width(), shellHeight)) return false;
         ItemStack current = stack.get();
@@ -1025,7 +1030,7 @@ public final class CartridgePanel {
                 if (!(modules.get(i) instanceof NumberModule number) || !number.enabled(current)) continue;
                 if (!inside(mouseX, mouseY, x + layout.x(i), moduleY(i), columnW, heights[i])) continue;
                 int value = value(current, i);
-                return change(i, Math.clamp(value + (amount > 0 ? 1 : -1), number.min(), number.max()), value);
+                return change(i, Math.clamp(value + (amount > 0 ? step(number) : -step(number)), number.min(), number.max()), value);
             }
         }
         if (scrollMax > 0) {

@@ -104,6 +104,18 @@ public class InventoryInteractorTileBehavior extends ABoardSpaceBehavior {
             // What does not fit in the connected inventory stays in the player's inventory
             extractMatching(stack, player.getInventory(), toMove -> insertLinked(toMove, connectedInventory));
         } else {
+            // The party's coins gained during a turn may be doubled (Double Coins power-up): taken from the same inventory
+            ItemStack given = stack.copy();
+            given.remove(IS_NEGATIVE);
+            int gained = fr.lordfinn.steveparty.powerups.PowerUpService.itemsGained(player, given, stack.getCount());
+            if (gained != stack.getCount()) stack = stack.copyWithCount(gained);
+            // Power-ups past what the player may carry in the party stay in the chest
+            int allowed = fr.lordfinn.steveparty.powerups.PowerUpLimit.allowed(player, given.copyWithCount(stack.getCount()));
+            if (allowed < stack.getCount()) {
+                fr.lordfinn.steveparty.powerups.PowerUpLimit.tellFull(player);
+                if (allowed <= 0) return;
+                stack = stack.copyWithCount(allowed);
+            }
             // What does not fit in the player's inventory is dropped at the player's feet
             extractMatching(stack, connectedInventory, toMove -> {
                 int count = toMove.getCount();
