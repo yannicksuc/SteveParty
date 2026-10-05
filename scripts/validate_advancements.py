@@ -100,7 +100,8 @@ def check_id(where, rid, kinds, vanilla, mod):
         ns, path = rid[1:].split(":")
         if ns == "steveparty":
             tag_dir = {"item": "item", "block": "block", "entity_type": "entity_type"}[kinds[0]]
-            if not os.path.isfile(os.path.join(DATA, "tags", tag_dir, path + ".json")):
+            generated = os.path.join(DATA, "..", "..", "..", "generated", "data", "steveparty", "tags", tag_dir, path + ".json")  # datagen tags
+            if not os.path.isfile(os.path.join(DATA, "tags", tag_dir, path + ".json")) and not os.path.isfile(generated):
                 err(f"{where}: unknown tag {rid}")
         elif kinds[0] == "entity_type" and path not in VANILLA_ENTITY_TAGS:
             err(f"{where}: unverified vanilla entity tag {rid}")
@@ -143,6 +144,9 @@ def main():
     langs = {}
     for l in ("en_us", "fr_fr"):
         langs[l] = json.load(open(os.path.join(ASSETS, "lang", l + ".json"), encoding="utf-8"))
+        guide = os.path.join(ASSETS, "..", "steveparty_guide", "lang", l + ".json")  # the guide book's own texts
+        if os.path.exists(guide):
+            langs[l].update(json.load(open(guide, encoding="utf-8")))
 
     stats = {"live": 0, "pending": 0}
     for group, files in (("live", live), ("pending", pending)):
