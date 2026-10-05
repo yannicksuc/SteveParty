@@ -98,6 +98,10 @@ public class DefaultDiceItem extends Item {
     /** The faces of a forged die, then one line per module. */
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        // Spent when rolled (no Infinity): it counts as a power-up for the party's limit
+        if (fr.lordfinn.steveparty.powerups.PowerUpLimit.counts(stack))
+            tooltip.add(Text.literal("[").append(Text.translatable("tooltip.steveparty.powerup.tag.power_up")).append("]")
+                    .formatted(net.minecraft.util.Formatting.LIGHT_PURPLE));
         DiceFacesComponent faces = stack.get(DiceFacesComponent.TYPE);
         if (faces != null && !faces.faces().isEmpty()) tooltip.add(faces.describe());
         tooltip.addAll(DiceModules.tooltip(stack));

@@ -101,6 +101,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
     private boolean practiceRound = true;
     /**
+     * The power-ups a player may carry during a party, dice without Infinity included (Settings page; 0: no limit).
+     * See {@link fr.lordfinn.steveparty.powerups.PowerUpLimit}.
+     */
+    private int maxPowerUps = fr.lordfinn.steveparty.powerups.PowerUpLimit.DEFAULT;
+    /**
      * The star space holding the party's star (see {@link fr.lordfinn.steveparty.service.PartyStars}); null while the
      * party has no star yet, or while it waits, hidden, for a star space to be switched on. Saved with the party.
      */
@@ -233,6 +238,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         nbt.put("MiniGameGains", gains.toNbt());
         if (!bank.isEmpty()) nbt.put("BankCartridge", bank.encode(wrapper));
         nbt.putBoolean("PracticeRound", practiceRound);
+        nbt.putInt("MaxPowerUps", maxPowerUps);
         if (starSpace != null) nbt.putLong("StarSpace", starSpace.asLong());
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
@@ -276,6 +282,9 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         NbtElement bankElement = nbt.get("BankCartridge");
         bank = bankElement == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, bankElement).orElse(ItemStack.EMPTY);
         practiceRound = !nbt.contains("PracticeRound") || nbt.getBoolean("PracticeRound");
+        maxPowerUps = nbt.contains("MaxPowerUps")
+                ? Math.clamp(nbt.getInt("MaxPowerUps"), 0, fr.lordfinn.steveparty.powerups.PowerUpLimit.MAX)
+                : fr.lordfinn.steveparty.powerups.PowerUpLimit.DEFAULT;
         starSpace = nbt.contains("StarSpace") ? BlockPos.fromLong(nbt.getLong("StarSpace")) : null;
         tokensToRelease.clear();
         nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
@@ -412,6 +421,18 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public void setPracticeRound(boolean practiceRound) {
         if (this.practiceRound == practiceRound) return;
         this.practiceRound = practiceRound;
+        markDirty();
+    }
+
+    /** The power-ups a player may carry during this party (dice without Infinity included), 0 for no limit. */
+    public int getMaxPowerUps() {
+        return maxPowerUps;
+    }
+
+    public void setMaxPowerUps(int maxPowerUps) {
+        int clamped = Math.clamp(maxPowerUps, 0, fr.lordfinn.steveparty.powerups.PowerUpLimit.MAX);
+        if (this.maxPowerUps == clamped) return;
+        this.maxPowerUps = clamped;
         markDirty();
     }
 

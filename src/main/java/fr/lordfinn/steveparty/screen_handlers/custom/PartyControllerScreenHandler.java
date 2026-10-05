@@ -46,7 +46,7 @@ import java.util.EnumSet;
 public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
-            BUTTON_PRACTICE = 5;
+            BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -409,6 +409,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
                 if (!controller.canEdit(player)) return false;
                 int rounds = controller.getPartyData().getNbTurn() + (id == BUTTON_ROUNDS_UP ? 1 : -1);
                 if (!controller.setRounds(rounds)) return false;
+            }
+            case BUTTON_MAX_POWER_UPS_DOWN, BUTTON_MAX_POWER_UPS_UP -> {
+                if (!controller.canEdit(player)) return false;
+                controller.setMaxPowerUps(controller.getMaxPowerUps() + (id == BUTTON_MAX_POWER_UPS_UP ? 1 : -1));
             }
             case BUTTON_PRACTICE -> {
                 if (!controller.canEdit(player)) return false;
