@@ -401,7 +401,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         context.drawOrderedTooltip(textRenderer, wrapped, mouseX, mouseY);
     }
 
-    /** A slot's guide: its name in bold and colour, its tags ([Optional], [Never used up]...), then short points in grey. */
+    /** A slot's guide: its name in bold and colour, its tags ([Optional], [Not consumed]...), then short points in grey. */
     private static List<Text> slotGuide(String name, String nameFallback, Formatting colour, Tag[] tags, String[][] points) {
         List<Text> lines = new ArrayList<>();
         lines.add(Text.translatableWithFallback(KEY + name, nameFallback).formatted(colour, Formatting.BOLD));
@@ -426,9 +426,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     private static final Tag NOT_CONSUMED = new Tag("tag.not_consumed", "Not consumed", Formatting.GREEN);
-    private static final Tag NEVER_USED_UP = new Tag("tag.never_used_up", "Never used up", Formatting.GREEN);
     private static final Tag OPTIONAL = new Tag("tag.optional", "Optional", Formatting.AQUA);
-    private static final Tag[] FACE_TAGS = {NOT_CONSUMED}, FRAGMENT_TAGS = {}, MODULE_TAGS = {OPTIONAL, NEVER_USED_UP};
+    private static final Tag[] FACE_TAGS = {NOT_CONSUMED}, FRAGMENT_TAGS = {}, MODULE_TAGS = {OPTIONAL, NOT_CONSUMED};
 
     private static final String[][] FACE_POINTS = {
             {"face_slot.weight", "Stack size = the face's weight"},
@@ -436,7 +435,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static final String[][] FRAGMENT_POINTS = {
             {"fragment_slot.all", "Fill all 5 slots"},
             {"fragment_slot.colours", "One colour per slot"},
-            {"fragment_slot.black", "Black can repeat and is never used up"},
+            {"fragment_slot.black", "Black can repeat and is not consumed"},
             {"fragment_slot.use", "One fragment of each colour per die"}};
     private static final String[][] MODULE_POINTS = {
             {"module_slot.every", "Put on every die forged"},
