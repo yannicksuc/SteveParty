@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "#": "steveparty:pink_star_fragment"
+    "#": {
+      "item": "steveparty:pink_star_fragment"
+    }
   },
   "pattern": [
     "###",

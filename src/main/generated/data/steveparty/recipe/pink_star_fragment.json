@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    "steveparty:pink_star_fragments_block"
+    {
+      "item": "steveparty:pink_star_fragments_block"
+    }
   ],
   "result": {
     "count": 9,

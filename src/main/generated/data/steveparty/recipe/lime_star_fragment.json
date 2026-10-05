@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    "steveparty:lime_star_fragments_block"
+    {
+      "item": "steveparty:lime_star_fragments_block"
+    }
   ],
   "result": {
     "count": 9,

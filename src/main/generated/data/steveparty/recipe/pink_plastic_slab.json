@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "#": "steveparty:pink_plastic_block"
+    "#": {
+      "item": "steveparty:pink_plastic_block"
+    }
   },
   "pattern": [
     "###"

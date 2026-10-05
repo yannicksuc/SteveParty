@@ -1,7 +1,9 @@
 {
   "type": "minecraft:stonecutting",
   "group": "polished_terracotta_tiles",
-  "ingredient": "steveparty:polished_default_terracotta",
+  "ingredient": {
+    "item": "steveparty:polished_default_terracotta"
+  },
   "result": {
     "count": 1,
     "id": "steveparty:polished_terracotta_tiles"

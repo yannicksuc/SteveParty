@@ -1,6 +1,8 @@
 {
   "type": "minecraft:stonecutting",
-  "ingredient": "steveparty:polished_lime_terracotta",
+  "ingredient": {
+    "item": "steveparty:polished_lime_terracotta"
+  },
   "result": {
     "count": 1,
     "id": "steveparty:lime_polished_terracotta_bricks_stairs"

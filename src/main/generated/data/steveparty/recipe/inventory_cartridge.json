@@ -3,8 +3,12 @@
   "category": "misc",
   "group": "cartridge",
   "ingredients": [
-    "steveparty:board_space_behavior",
-    "minecraft:chest"
+    {
+      "item": "steveparty:board_space_behavior"
+    },
+    {
+      "item": "minecraft:chest"
+    }
   ],
   "result": {
     "count": 1,

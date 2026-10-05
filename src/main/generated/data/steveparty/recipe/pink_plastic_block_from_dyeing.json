@@ -4,24 +4,58 @@
   "group": "dyed_plastic_block",
   "key": {
     "#": [
-      "steveparty:white_plastic_block",
-      "steveparty:orange_plastic_block",
-      "steveparty:magenta_plastic_block",
-      "steveparty:light_blue_plastic_block",
-      "steveparty:yellow_plastic_block",
-      "steveparty:lime_plastic_block",
-      "steveparty:pink_plastic_block",
-      "steveparty:gray_plastic_block",
-      "steveparty:light_gray_plastic_block",
-      "steveparty:cyan_plastic_block",
-      "steveparty:purple_plastic_block",
-      "steveparty:blue_plastic_block",
-      "steveparty:brown_plastic_block",
-      "steveparty:green_plastic_block",
-      "steveparty:red_plastic_block",
-      "steveparty:black_plastic_block"
+      {
+        "item": "steveparty:white_plastic_block"
+      },
+      {
+        "item": "steveparty:orange_plastic_block"
+      },
+      {
+        "item": "steveparty:magenta_plastic_block"
+      },
+      {
+        "item": "steveparty:light_blue_plastic_block"
+      },
+      {
+        "item": "steveparty:yellow_plastic_block"
+      },
+      {
+        "item": "steveparty:lime_plastic_block"
+      },
+      {
+        "item": "steveparty:pink_plastic_block"
+      },
+      {
+        "item": "steveparty:gray_plastic_block"
+      },
+      {
+        "item": "steveparty:light_gray_plastic_block"
+      },
+      {
+        "item": "steveparty:cyan_plastic_block"
+      },
+      {
+        "item": "steveparty:purple_plastic_block"
+      },
+      {
+        "item": "steveparty:blue_plastic_block"
+      },
+      {
+        "item": "steveparty:brown_plastic_block"
+      },
+      {
+        "item": "steveparty:green_plastic_block"
+      },
+      {
+        "item": "steveparty:red_plastic_block"
+      },
+      {
+        "item": "steveparty:black_plastic_block"
+      }
     ],
-    "X": "minecraft:pink_dye"
+    "X": {
+      "item": "minecraft:pink_dye"
+    }
   },
   "pattern": [
     "###",

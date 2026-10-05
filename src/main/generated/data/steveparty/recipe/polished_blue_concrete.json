@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "S": "minecraft:blue_concrete"
+    "S": {
+      "item": "minecraft:blue_concrete"
+    }
   },
   "pattern": [
     "SS",

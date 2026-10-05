@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "#": "steveparty:gray_star_fragment"
+    "#": {
+      "item": "steveparty:gray_star_fragment"
+    }
   },
   "pattern": [
     "###",

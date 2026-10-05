@@ -2,10 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
-    "C": "minecraft:chest",
-    "G": "minecraft:gold_ingot",
-    "R": "minecraft:comparator",
-    "T": "steveparty:tile"
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "R": {
+      "item": "minecraft:comparator"
+    },
+    "T": {
+      "item": "steveparty:tile"
+    }
   },
   "pattern": [
     " R ",

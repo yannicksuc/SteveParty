@@ -3,8 +3,12 @@
   "category": "building",
   "group": "polished_terracotta_tiles_orange",
   "key": {
-    "A": "steveparty:polished_orange_terracotta",
-    "B": "steveparty:polished_red_terracotta"
+    "A": {
+      "item": "steveparty:polished_orange_terracotta"
+    },
+    "B": {
+      "item": "steveparty:polished_red_terracotta"
+    }
   },
   "pattern": [
     "AB",
