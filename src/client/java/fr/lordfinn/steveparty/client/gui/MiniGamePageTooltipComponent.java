@@ -71,7 +71,8 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
     }
 
     @Override
-    public int getHeight(TextRenderer textRenderer) {
+    public int getHeight() {
+        TextRenderer textRenderer = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
         MiniGamePageData data = MiniGamePageClient.page(page);
         if (data == null || data.isBlank()) return 0;
         int height = data.image() != null ? PICTURE_HEIGHT + 3 : 0;
@@ -89,7 +90,7 @@ public class MiniGamePageTooltipComponent implements TooltipComponent {
     }
 
     @Override
-    public void drawItems(TextRenderer textRenderer, int x, int y, int width, int height, DrawContext context) {
+    public void drawItems(TextRenderer textRenderer, int x, int y, DrawContext context) {
         MiniGamePageData data = MiniGamePageClient.page(page);
         if (data == null || data.isBlank()) return;
         int top = y;

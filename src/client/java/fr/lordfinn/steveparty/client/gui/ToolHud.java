@@ -1,9 +1,9 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -38,7 +38,9 @@ public final class ToolHud {
 
     /** A plate (nine-slice) over (x, y, width, height). */
     public static void plate(DrawContext context, int x, int y, int width, int height, Plate plate) {
-        context.drawGuiTexture(RenderLayer::getGuiTextured, plate.sprite, x, y, width, height);
+        RenderSystem.enableBlend();
+        context.drawGuiTexture(plate.sprite, x, y, width, height);
+        RenderSystem.disableBlend();
     }
 
     /** A box: a gold plate when it is the active one, teal otherwise. */

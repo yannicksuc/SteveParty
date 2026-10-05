@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
@@ -371,8 +372,9 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
             int iconX = x + RIGHT_X + 1, iconY = rowY + 1;
             context.fill(iconX - 1, iconY - 1, iconX + 13, iconY + 11, 0xFF3A3A3A);
             if (LEGEND_ITEMS[i].isEmpty()) {
-                context.drawTexture(net.minecraft.client.render.RenderLayer::getGuiTextured, PLUG_ICON,
-                        iconX + 2, iconY + 2, 4, 6, 8, 6, 4, 3, 16, 16);
+                RenderSystem.enableBlend();
+                context.drawTexture(PLUG_ICON, iconX + 2, iconY + 2, 8, 6, 4, 6, 4, 3, 16, 16);
+                RenderSystem.disableBlend();
             } else {
                 var matrices = context.getMatrices();
                 matrices.push();
