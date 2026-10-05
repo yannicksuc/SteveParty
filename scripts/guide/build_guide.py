@@ -57,7 +57,7 @@ MILESTONES = {
     "roll_the_dice": dict(
         parent="root", icon="steveparty:default_dice", frame="task", toast=False,
         criteria=[("has_dice", "has", ["steveparty:default_dice", "steveparty:double_dice",
-                                       "steveparty:triple_dice", "steveparty:forged_dice"])],
+                                       "steveparty:triple_dice"])],
         en=("Roll the Dice", "Get a die"),
         fr=("Lancer les dés", "Obtenir un dé"),
         lock=("Get a die to unlock this entry.", "Obtiens un dé pour débloquer cette entrée.")),
@@ -124,8 +124,9 @@ def SP(item, en, fr):
     return dict(kind="spotlight", item=item, en=en, fr=fr)
 
 
-def E(eid, icon, name, desc, pages, parents=(), gate=None):
-    return dict(id=eid, icon=icon, name=name, desc=desc, pages=pages, parents=list(parents), gate=gate)
+def E(eid, icon, name, desc, pages, parents=(), gate=None, at=None):
+    """at=(dx, dy): a side step placed next to its parent instead of in the tree (an optional branch)."""
+    return dict(id=eid, icon=icon, name=name, desc=desc, pages=pages, parents=list(parents), gate=gate, at=at)
 
 
 CATEGORIES = []
@@ -898,7 +899,7 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "elle décroît, jamais à la nouvelle lune. Garantie à la pleine lune près d'une forge à dés au niveau "
           "maximal.\n\n6 vagues d'étoiles traversent le ciel au-dessus de chaque joueur. Après la première, un "
           "groupe de **3 à 5 Mulas** tombe à **150-600 blocs**, dans la direction des étoiles."),
-    ], parents=["mula"], gate="stardust"),
+    ], parents=["mula"], gate="stardust", at=(0, -3)),
     E("telescope", "steveparty:telescope", ("Telescope", "Télescope"), ("Find where the Mulas landed", "Retrouver les Mulas"), [
         T("Replays past Ephemeride nights. At night, under a clear sky, right-click it: scroll to pick a night, "
           "then keep a shooting star in the crosshair until the gauge fills. A **guide star** then lights up "
@@ -907,7 +908,7 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "une nuit, puis garde une étoile filante dans le viseur jusqu'à remplir la jauge. Une **étoile guide** "
           "s'allume alors au-dessus de l'endroit où les Mulas sont descendues."),
         C("steveparty:telescope"),
-    ], parents=["ephemeride"], gate="stardust"),
+    ], parents=["mula"], gate="stardust", at=(0, 3)),
     E("power_star", "steveparty:power_star", ("Power Star", "Super étoile"), ("Five colours, one star", "Cinq couleurs, une étoile"), [
         T("A rare, always shining item: one fragment each of **blue, green, yellow, red and purple**, or "
           "**5 black** fragments.\n\nIt crowns the Dice Forge recipe and is the default **Star** of a party.",
@@ -938,7 +939,7 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
         C("steveparty:dice_forge", None, "Power Star, obsidian, a blast furnace and a netherite ingot.",
           "Super étoile, obsidienne, un haut fourneau et un lingot de netherite."),
     ], parents=["gravity_core"], gate="stardust"),
-    E("forging", "steveparty:forged_dice", ("Forging Dice", "Forger des dés"), ("A die every five seconds", "Un dé toutes les cinq secondes"), [
+    E("forging", "steveparty:default_dice", ("Forging Dice", "Forger des dés"), ("A die every five seconds", "Un dé toutes les cinq secondes"), [
         T("Click the core (**FORGE**): one die every 5 s, in a loop, while ingredients last. Each die uses its "
           "blank faces and one fragment per non-black slot.\n\n"
           "Hoppers fill it (top and sides) and take dice out from below. Powered = production on. A comparator "
@@ -1181,7 +1182,7 @@ def layout(entries):
     by_id = {e["id"]: e for e in entries}
     children = {e["id"]: [] for e in entries}
     for e in entries:
-        if e["parents"]:
+        if e["parents"] and not e["at"]:
             children[e["parents"][0]].append(e["id"])
     pos, counter = {}, [0]
 
@@ -1198,8 +1199,12 @@ def layout(entries):
     for r in roots:
         place(r, 0)
         counter[0] += 0.5  # a little gap between separate trees
+    for e in entries:
+        if e["at"]:
+            px, py = pos[e["parents"][0]]
+            pos[e["id"]] = (px + e["at"][0], py + e["at"][1])
     ys = [p[1] for p in pos.values()]
-    mid = (min(ys) + max(ys)) / 2
+    mid = (min(ys) + max(ys)) // 2  # a whole shift, so side steps keep their exact offset
     xs = [p[0] for p in pos.values()]
     xmid = (min(xs) + max(xs)) // 2
     return {k: (int(round(v[0] - xmid)), int(round(v[1] - mid))) for k, v in pos.items()}, by_id
