@@ -74,7 +74,7 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         EntityDimensions dimensions = entity.getDimensions(EntityPose.STANDING);
         double unscaledSize = currentScale > 0 ? Math.max(dimensions.width(), dimensions.height()) / currentScale : 0;
         if (unscaledSize <= 0) {
-            EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
+            EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
             return scaleAttribute == null ? 1 : scaleAttribute.getBaseValue();
         }
         return sizeInBlocks / unscaledSize;
@@ -98,7 +98,7 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     /** Applies the final scale at once and lets the clients play the animation. Server side only. */
     private static void startSquish(LivingEntity entity, int amplifier, int duration) {
         if (!(entity.getWorld() instanceof ServerWorld)) return;
-        EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
+        EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scaleAttribute == null) return;
 
         double startScale = scaleAttribute.getBaseValue();
@@ -138,8 +138,8 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     }
 
     @Override
-    public boolean applyUpdateEffect(ServerWorld world, LivingEntity entity, int amplifier) {
-        EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.SCALE);
+    public boolean applyUpdateEffect(LivingEntity entity, int amplifier) {
+        EntityAttributeInstance scaleAttribute = entity.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scaleAttribute != null) {
             // Normally the scale is already final (set in onApplied): only fix it if it drifted, e.g. an entity
             // saved mid-squish by an older version of the mod

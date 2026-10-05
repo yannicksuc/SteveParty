@@ -6,19 +6,25 @@ import fr.lordfinn.steveparty.items.ModItems;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.block.DispenserBlock;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ArmorItem;
+import net.minecraft.item.Equipment;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -26,11 +32,11 @@ import java.util.List;
 /**
  * The look of the Boxed Trader's box, taken with shears from a merchant who already lost his bandana (he keeps a box
  * with the missing texture, until a costume is given back to him). It keeps the block look his box had
- * ({@link ModComponents#BOX_BLOCK}) and is worn in the chest slot (vanilla equippable, right click to put it
- * on): around the waist while walking, and the wearer hides inside it, closed like a block on the ground, while
+ * ({@link ModComponents#BOX_BLOCK}) and is worn in the chest slot (vanilla {@link Equipment}, right click or a
+ * dispenser to put it on): around the waist while walking, and the wearer hides inside it, closed like a block on the ground, while
  * sneaking (see {@link #isHiddenInBox}). Monsters hardly notice a player hidden in it.
  */
-public class BoxCostumeItem extends Item {
+public class BoxCostumeItem extends Item implements Equipment {
     /** Monsters notice a player hidden in the box from this fraction of their usual range (2 blocks at least). */
     public static final double HIDDEN_DETECTION_FACTOR = 0.1;
 
@@ -38,10 +44,23 @@ public class BoxCostumeItem extends Item {
     public static final BlockState DEFAULT_BLOCK = Blocks.BEEHIVE.getDefaultState();
 
     public BoxCostumeItem(Settings settings) {
-        super(settings.component(ModComponents.BOX_BLOCK, DEFAULT_BLOCK)
-                .component(DataComponentTypes.EQUIPPABLE, EquippableComponent.builder(EquipmentSlot.CHEST)
-                        .equipSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER)
-                        .build()));
+        super(settings.component(ModComponents.BOX_BLOCK, DEFAULT_BLOCK));
+        DispenserBlock.registerBehavior(this, ArmorItem.DISPENSER_BEHAVIOR);
+    }
+
+    @Override
+    public EquipmentSlot getSlotType() {
+        return EquipmentSlot.CHEST;
+    }
+
+    @Override
+    public RegistryEntry<SoundEvent> getEquipSound() {
+        return SoundEvents.ITEM_ARMOR_EQUIP_LEATHER;
+    }
+
+    @Override
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+        return equipAndSwap(this, world, user, hand);
     }
 
     public static ItemStack create(BlockState block) {
@@ -73,7 +92,7 @@ public class BoxCostumeItem extends Item {
      */
     public static boolean isHiddenInBox(@Nullable PlayerEntity player) {
         return player != null && !getWorn(player).isEmpty() && player.isSneaking() && !player.isSpectator()
-                && !player.getAbilities().flying && !player.isGliding() && !player.isSwimming() && !player.hasVehicle();
+                && !player.getAbilities().flying && !player.isFallFlying() && !player.isSwimming() && !player.hasVehicle();
     }
 
     /** Monsters chasing a player farther than this lose him when he hides in the box. */

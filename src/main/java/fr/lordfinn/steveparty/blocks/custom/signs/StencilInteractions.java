@@ -17,6 +17,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -53,30 +54,30 @@ public final class StencilInteractions {
     public enum BrushResult { NOTHING, FADED, GONE }
 
     /** Called from {@code Block#onUseWithItem}, once per hand. */
-    public static ActionResult onUseWithItem(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
+    public static ItemActionResult onUseWithItem(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
                                              @Nullable BlockHitResult hit) {
-        if (!(world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas)) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        if (!(world.getBlockEntity(pos) instanceof StencilCanvasBlockEntity canvas)) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         ItemStack main = player.getMainHandStack();
         ItemStack off = player.getOffHandStack();
         boolean silhouette = state.getBlock() instanceof StencilCanvasBlock block && block.usesSilhouette();
         // One interaction per click: handled on the pass of the hand holding the leading item
         Hand acting = isTool(main, silhouette) ? Hand.MAIN_HAND : isTool(off, silhouette) ? Hand.OFF_HAND : null;
-        if (acting != hand) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        if (acting != hand) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
         ItemStack leading = acting == Hand.MAIN_HAND ? main : off;
         if (leading.isOf(Items.BRUSH)) {
-            if (silhouette || !canvas.hasShape()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+            if (silhouette || !canvas.hasShape()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
             if (!world.isClient) brush(canvas, player, acting);
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
 
         boolean hammer = !silhouette && leading.getItem() instanceof StencilGunItem;
         // A strike at a time: the hammer is still swinging
-        if (hammer && StencilHammerStrike.isCoolingDown(player, acting)) return ActionResult.CONSUME;
+        if (hammer && StencilHammerStrike.isCoolingDown(player, acting)) return ItemActionResult.CONSUME;
         // What the hammer stamps (read before the dye is used up)
         DyeColor hammerColor = hammer ? StencilGunItem.selectedLoad(leading).color() : null;
         Runnable action = resolve(canvas, main, off, player, silhouette);
-        if (action == null) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        if (action == null) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (!world.isClient) {
             action.run();
             world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(player, state));
@@ -86,9 +87,9 @@ public final class StencilInteractions {
             Direction side = hit != null ? hit.getSide() : Direction.UP;
             StencilHammerStrike.strike(world, player, acting, pos, hitPos, side, hammerColor);
             // No vanilla arm swing: the strike plays its own swing
-            return ActionResult.CONSUME;
+            return ItemActionResult.CONSUME;
         }
-        return ActionResult.SUCCESS;
+        return ItemActionResult.SUCCESS;
     }
 
     public static boolean isTool(ItemStack stack, boolean silhouette) {

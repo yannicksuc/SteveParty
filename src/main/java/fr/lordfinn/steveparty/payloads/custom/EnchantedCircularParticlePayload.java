@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.payloads.custom;
 
 
+import fr.lordfinn.steveparty.payloads.ModPacketCodecs;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
@@ -13,7 +14,7 @@ public record EnchantedCircularParticlePayload(Vec3d position, Integer distance,
     public static final CustomPayload.Id<EnchantedCircularParticlePayload> ID = new CustomPayload.Id<>(ENCHANTED_CIRCULAR_PAYLOAD);
     public static final PacketCodec<RegistryByteBuf, EnchantedCircularParticlePayload> CODEC =
             PacketCodec.tuple(
-                    Vec3d.PACKET_CODEC, EnchantedCircularParticlePayload::position,
+                    ModPacketCodecs.VEC3D, EnchantedCircularParticlePayload::position,
                     PacketCodecs.INTEGER, EnchantedCircularParticlePayload::distance,
                     PacketCodecs.INTEGER, EnchantedCircularParticlePayload::count,
                     EnchantedCircularParticlePayload::new);

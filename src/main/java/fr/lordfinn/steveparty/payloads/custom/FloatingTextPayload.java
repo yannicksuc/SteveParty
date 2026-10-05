@@ -21,17 +21,25 @@ public record FloatingTextPayload(
 
     public static final CustomPayload.Id<FloatingTextPayload> ID = new CustomPayload.Id<>(FLOATING_TEXT_PAYLOAD);
 
+    // 7 fields: PacketCodec.tuple stops at 6 in 1.21.1, so written field by field (same order)
     public static final PacketCodec<RegistryByteBuf, FloatingTextPayload> CODEC =
-            PacketCodec.tuple(
-                    PacketCodecs.VECTOR_3F,FloatingTextPayload::pos,
-                    PacketCodecs.VECTOR_3F,FloatingTextPayload::velocity,
-                    PacketCodecs.FLOAT, FloatingTextPayload::duration,
-                    PacketCodecs.FLOAT, FloatingTextPayload::scale,
-                    PacketCodecs.INTEGER, FloatingTextPayload::color,
-                    PacketCodecs.FLOAT, FloatingTextPayload::fadeStart,
-                    PacketCodecs.STRING, FloatingTextPayload::text,
-                    FloatingTextPayload::new
-            );
+            PacketCodec.of(FloatingTextPayload::write, FloatingTextPayload::read);
+
+    private void write(RegistryByteBuf buf) {
+        PacketCodecs.VECTOR3F.encode(buf, pos);
+        PacketCodecs.VECTOR3F.encode(buf, velocity);
+        PacketCodecs.FLOAT.encode(buf, duration);
+        PacketCodecs.FLOAT.encode(buf, scale);
+        PacketCodecs.INTEGER.encode(buf, color);
+        PacketCodecs.FLOAT.encode(buf, fadeStart);
+        PacketCodecs.STRING.encode(buf, text);
+    }
+
+    private static FloatingTextPayload read(RegistryByteBuf buf) {
+        return new FloatingTextPayload(PacketCodecs.VECTOR3F.decode(buf), PacketCodecs.VECTOR3F.decode(buf),
+                PacketCodecs.FLOAT.decode(buf), PacketCodecs.FLOAT.decode(buf), PacketCodecs.INTEGER.decode(buf),
+                PacketCodecs.FLOAT.decode(buf), PacketCodecs.STRING.decode(buf));
+    }
 
     @Override
     public CustomPayload.Id<? extends CustomPayload> getId() {

@@ -584,7 +584,7 @@ public final class PipeTravel {
         double feet = center.y - traveller.getHeight() / 2;
         if (traveller.getWorld() != world) {
             if (!(traveller instanceof ServerPlayerEntity player)) return false;
-            player.teleport(world, center.x, feet, center.z, Set.of(), player.getYaw(), player.getPitch(), false);
+            player.teleport(world, center.x, feet, center.z, Set.of(), player.getYaw(), player.getPitch());
             if (player.getWorld() != world) return false;
         } else {
             traveller.requestTeleport(center.x, feet, center.z);
@@ -711,7 +711,7 @@ public final class PipeTravel {
     public static void shrink(Entity passenger) {
         if (passenger instanceof ItemEntity item) item.setPickupDelayInfinite();
         if (!(passenger instanceof LivingEntity living)) return;
-        EntityAttributeInstance scale = living.getAttributeInstance(EntityAttributes.SCALE);
+        EntityAttributeInstance scale = living.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scale == null || scale.getModifier(SHRINK) != null) return;
         double size = Math.max(living.getWidth(), living.getHeight());
         if (size <= ROOM) return;
@@ -722,7 +722,7 @@ public final class PipeTravel {
     public static void unshrink(Entity passenger) {
         if (passenger instanceof ItemEntity item) item.setPickupDelay(10);
         if (!(passenger instanceof LivingEntity living)) return;
-        EntityAttributeInstance scale = living.getAttributeInstance(EntityAttributes.SCALE);
+        EntityAttributeInstance scale = living.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scale != null && scale.removeModifier(SHRINK)) living.calculateDimensions();
     }
 }
