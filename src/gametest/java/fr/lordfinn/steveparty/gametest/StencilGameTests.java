@@ -298,14 +298,14 @@ public class StencilGameTests implements FabricGameTest {
         PlayerEntity player = survivalPlayer(context);
         StencilCanvasBlockEntity panel = at(context, SIGN);
         // A dye does not cut
-        player.setStackInHand(Hand.MAIN_HAND, stencil("power_star"));
+        player.setStackInHand(Hand.MAIN_HAND, stencil("star"));
         player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.RED_DYE));
         context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
         context.assertTrue(!panel.hasShape(), "not cut with a dye");
         // Stencil + axe cuts, using the axe
         player.setStackInHand(Hand.OFF_HAND, new ItemStack(Items.IRON_AXE));
         context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
-        context.assertTrue(Arrays.equals(panel.getShape(), pattern("power_star")), "cut as a star");
+        context.assertTrue(Arrays.equals(panel.getShape(), pattern("star")), "cut as a star");
         context.assertEquals(player.getOffHandStack().getDamage(), 1, "axe used");
         // A wet sponge gives the whole board back
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WET_SPONGE));
@@ -631,10 +631,10 @@ public class StencilGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilLibraryLearnsSavesAndFavourites(TestContext context) {
-        StencilLibrary library = StencilLibrary.EMPTY.with(pattern("coin")).with(pattern("coin")).with(pattern("boo"));
+        StencilLibrary library = StencilLibrary.EMPTY.with(pattern("coin")).with(pattern("coin")).with(pattern("ghost"));
         context.assertEquals(library.entries().size(), 2, "no duplicates");
-        library = library.toggleFavorite(pattern("boo"));
-        context.assertTrue(library.isFavorite(pattern("boo")) && !library.isFavorite(pattern("coin")), "boo is a favourite");
+        library = library.toggleFavorite(pattern("ghost"));
+        context.assertTrue(library.isFavorite(pattern("ghost")) && !library.isFavorite(pattern("coin")), "ghost is a favourite");
         library = library.toggleFavorite(pattern("key"));
         context.assertTrue(library.contains(pattern("key")) && library.isFavorite(pattern("key")), "favouriting adds it");
         library = library.without(pattern("coin"));
@@ -709,8 +709,8 @@ public class StencilGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilsAreCopiedLikeMaps(TestContext context) {
         ItemStack blank = new ItemStack(ModItems.STENCIL);
-        ItemStack copies = result(context, 2, 2, stencil("boo"), blank, blank, ItemStack.EMPTY);
-        context.assertTrue(copies.getCount() == 3 && Arrays.equals(StencilItem.getShape(copies), pattern("boo")), "3 boo stencils");
+        ItemStack copies = result(context, 2, 2, stencil("ghost"), blank, blank, ItemStack.EMPTY);
+        context.assertTrue(copies.getCount() == 3 && Arrays.equals(StencilItem.getShape(copies), pattern("ghost")), "3 ghost stencils");
         ItemStack blanks = new ItemStack(Items.IRON_NUGGET);
         ItemStack made = result(context, 3, 3, ItemStack.EMPTY, blanks, ItemStack.EMPTY, blanks, new ItemStack(Items.PAPER), blanks,
                 ItemStack.EMPTY, blanks, ItemStack.EMPTY);
@@ -773,7 +773,7 @@ public class StencilGameTests implements FabricGameTest {
         List<ItemStack> contents = new ArrayList<>();
         for (int i = 0; i < StencilGunItem.SIZE; i++) contents.add(ItemStack.EMPTY);
         contents.set(0, stencil("coin"));
-        contents.set(2, stencil("power_star"));
+        contents.set(2, stencil("star"));
         contents.set(StencilGunItem.STENCIL_SLOTS, new ItemStack(Items.RED_DYE, 2));
         contents.set(StencilGunItem.STENCIL_SLOTS + 3, new ItemStack(Items.BLUE_DYE, 1));
         StencilGunItem.setContents(gun, contents);
@@ -862,8 +862,8 @@ public class StencilGameTests implements FabricGameTest {
             player.setStackInHand(Hand.MAIN_HAND, gunA);
             player.setStackInHand(Hand.OFF_HAND, gunB);
             StencilGunScreenHandler handler = new StencilGunScreenHandler(1, player.getInventory(), 0);
-            handler.slots.get(1).setStack(stencil("boo"));
-            context.assertTrue(Arrays.equals(StencilItem.getShape(StencilGunItem.contents(gunA).get(1)), pattern("boo")), "loading fills the gun");
+            handler.slots.get(1).setStack(stencil("ghost"));
+            context.assertTrue(Arrays.equals(StencilItem.getShape(StencilGunItem.contents(gunA).get(1)), pattern("ghost")), "loading fills the gun");
 
             // The guns swap hands while the loader is open (off-hand swap key, a modified client)
             player.setStackInHand(Hand.MAIN_HAND, gunB);

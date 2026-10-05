@@ -88,10 +88,10 @@ public class TileStampGameTests implements FabricGameTest {
         tile.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
         // With a cartridge: the cartridge's plain face shows, and a new stamp goes onto the cartridge
         context.assertTrue(TileStamping.displayedStamp(tile, tile.getActiveCartridgeItemStack()) == null, "the cartridge prevails");
-        use(context, stencilAndDye(context, "power_star", Items.BLUE_DYE, 1), TILE);
+        use(context, stencilAndDye(context, "star", Items.BLUE_DYE, 1), TILE);
         ItemStack cartridge = tile.getActiveCartridgeItemStack();
         TileStampComponent onCartridge = cartridge.get(ModComponents.TILE_STAMP);
-        context.assertTrue(onCartridge != null && onCartridge.sameAs(pattern("power_star"), DyeColor.BLUE), "a blue star on the cartridge");
+        context.assertTrue(onCartridge != null && onCartridge.sameAs(pattern("star"), DyeColor.BLUE), "a blue star on the cartridge");
         context.assertTrue(tile.getStamp().sameAs(pattern("coin"), DyeColor.RED), "the tile keeps its own look");
         context.assertTrue(TileStamping.displayedStamp(tile, cartridge) == onCartridge, "the tile shows its cartridge's look");
         // The cartridge shows its look in its tooltip
