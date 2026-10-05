@@ -6,8 +6,8 @@
     "item": "steveparty:inventory_cartridge"
   },
   "x": 2,
-  "y": 6,
-  "sort_number": 7,
+  "y": 7,
+  "sort_number": 8,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "parents": [
