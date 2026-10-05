@@ -19,6 +19,7 @@ public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBloc
     private final DiceForgeOrbitRenderer orbitRenderer = new DiceForgeOrbitRenderer();
     private final DiceForgeConvergenceRenderer convergenceRenderer = new DiceForgeConvergenceRenderer();
     private final DiceForgeForgedRenderer forgedRenderer = new DiceForgeForgedRenderer();
+    private final DiceForgeStarRenderer starRenderer = new DiceForgeStarRenderer();
     // Last world tick at which trail particles were spawned, per forge (render thread only)
     private final Map<DiceForgeBlockEntity, Long> lastParticleTick = new WeakHashMap<>();
 
@@ -33,6 +34,7 @@ public class DiceForgeBlockEntityRenderer extends GeoBlockRenderer<DiceForgeBloc
                        MatrixStack poseStack, VertexConsumerProvider bufferSource,
                        int packedLight, int packedOverlay) {
         super.render(blockEntity, partialTick, poseStack, bufferSource, packedLight, packedOverlay);
+        starRenderer.render(blockEntity, partialTick, poseStack, bufferSource, packedLight);
 
         if (!blockEntity.isCoreInPlace()) return;
 
