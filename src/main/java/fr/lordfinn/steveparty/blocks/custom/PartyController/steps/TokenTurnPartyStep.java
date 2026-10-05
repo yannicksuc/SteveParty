@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.dice.DiceModules;
+import fr.lordfinn.steveparty.powerups.effects.PowerUpProtection;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
@@ -89,6 +90,8 @@ public class TokenTurnPartyStep extends PartyStep {
                 cancelTurn(partyControllerEntity.getPartyData().getOwners(serverWorld), partyControllerEntity);
                 return;
             }
+            // A Padlock lasts until its player's next turn (a Replay tile's extra turn is still the same turn)
+            if (!replay) PowerUpProtection.expire(partyControllerEntity, tokenUUID);
             if (isTokenAvailable(serverWorld)) {
                 grantMove(serverWorld);
             } else {
