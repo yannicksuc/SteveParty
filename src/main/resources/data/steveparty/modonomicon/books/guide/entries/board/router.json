@@ -1,0 +1,41 @@
+{
+  "category": "board",
+  "name": "book.steveparty.guide.board.router.name",
+  "description": "book.steveparty.guide.board.router.description",
+  "icon": {
+    "item": "steveparty:board_space_redstone_router"
+  },
+  "x": 2,
+  "y": 2,
+  "sort_number": 8,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "board/active_slot",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.router.page0.text",
+      "title": "book.steveparty.guide.board.router.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.router.page1.text",
+      "title": "book.steveparty.guide.board.router.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:board_space_redstone_router"
+    }
+  ]
+}

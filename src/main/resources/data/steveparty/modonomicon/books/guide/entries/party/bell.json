@@ -1,0 +1,36 @@
+{
+  "category": "party",
+  "name": "book.steveparty.guide.party.bell.name",
+  "description": "book.steveparty.guide.party.bell.description",
+  "icon": {
+    "item": "steveparty:party_bell"
+  },
+  "x": 3,
+  "y": 1,
+  "sort_number": 5,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "party/cards",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/party_time",
+    "tooltip": "book.steveparty.guide.lock.party_time"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.bell.page0.text",
+      "title": "book.steveparty.guide.party.bell.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:party_bell"
+    }
+  ]
+}

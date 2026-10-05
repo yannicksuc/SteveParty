@@ -1,0 +1,38 @@
+{
+  "category": "stars_mula",
+  "name": "book.steveparty.guide.stars_mula.power_star.name",
+  "description": "book.steveparty.guide.stars_mula.power_star.description",
+  "icon": {
+    "item": "steveparty:power_star"
+  },
+  "x": -1,
+  "y": -2,
+  "sort_number": 5,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "stars_mula/fragments",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/stardust",
+    "tooltip": "book.steveparty.guide.lock.stardust"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.power_star.page0.text",
+      "title": "book.steveparty.guide.stars_mula.power_star.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:power_star_from_fragments",
+      "recipe_id_2": "steveparty:power_star_from_black_fragments"
+    }
+  ]
+}

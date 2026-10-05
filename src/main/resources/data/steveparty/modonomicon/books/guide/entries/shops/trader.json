@@ -1,0 +1,27 @@
+{
+  "category": "shops",
+  "name": "book.steveparty.guide.shops.trader.name",
+  "description": "book.steveparty.guide.shops.trader.description",
+  "icon": {
+    "item": "steveparty:boxed_trader_spawn_egg"
+  },
+  "x": 2,
+  "y": -2,
+  "sort_number": 2,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "shops/villager_block",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.shops.trader.page0.text",
+      "title": "book.steveparty.guide.shops.trader.page0.title"
+    }
+  ]
+}

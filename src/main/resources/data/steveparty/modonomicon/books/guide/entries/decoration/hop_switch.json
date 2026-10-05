@@ -1,0 +1,31 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.hop_switch.name",
+  "description": "book.steveparty.guide.decoration.hop_switch.description",
+  "icon": {
+    "item": "steveparty:hop_switch"
+  },
+  "x": 2,
+  "y": -5,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "decoration/plastic_blocks",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.hop_switch.page0.text",
+      "title": "book.steveparty.guide.decoration.hop_switch.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:hop_switch"
+    }
+  ]
+}

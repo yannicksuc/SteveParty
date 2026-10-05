@@ -1,0 +1,37 @@
+{
+  "category": "stars_mula",
+  "name": "book.steveparty.guide.stars_mula.dice_forge.name",
+  "description": "book.steveparty.guide.stars_mula.dice_forge.description",
+  "icon": {
+    "item": "steveparty:dice_forge"
+  },
+  "x": 5,
+  "y": -2,
+  "sort_number": 7,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "stars_mula/gravity_core",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/stardust",
+    "tooltip": "book.steveparty.guide.lock.stardust"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.dice_forge.page0.text",
+      "title": "book.steveparty.guide.stars_mula.dice_forge.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:dice_forge",
+      "text": "book.steveparty.guide.stars_mula.dice_forge.page1.text"
+    }
+  ]
+}

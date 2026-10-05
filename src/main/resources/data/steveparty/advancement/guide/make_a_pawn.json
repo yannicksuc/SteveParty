@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:guide/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:tokenizer_wand"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.make_a_pawn.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.make_a_pawn.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_wand_or_token": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:tokenizer_wand",
+              "steveparty:token"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_wand_or_token"
+    ]
+  ]
+}

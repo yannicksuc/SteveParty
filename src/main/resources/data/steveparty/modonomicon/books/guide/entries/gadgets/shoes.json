@@ -1,0 +1,25 @@
+{
+  "category": "gadgets",
+  "name": "book.steveparty.guide.gadgets.shoes.name",
+  "description": "book.steveparty.guide.gadgets.shoes.description",
+  "icon": {
+    "item": "steveparty:triple_jump_shoes"
+  },
+  "x": 0,
+  "y": -2,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.shoes.page0.text",
+      "title": "book.steveparty.guide.gadgets.shoes.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:triple_jump_shoes",
+      "text": "book.steveparty.guide.gadgets.shoes.page1.text"
+    }
+  ]
+}

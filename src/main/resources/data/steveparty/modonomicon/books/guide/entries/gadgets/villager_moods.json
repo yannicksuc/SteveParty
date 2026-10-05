@@ -1,0 +1,20 @@
+{
+  "category": "gadgets",
+  "name": "book.steveparty.guide.gadgets.villager_moods.name",
+  "description": "book.steveparty.guide.gadgets.villager_moods.description",
+  "icon": {
+    "item": "steveparty:villager_block"
+  },
+  "x": 0,
+  "y": 4,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.villager_moods.page0.text",
+      "title": "book.steveparty.guide.gadgets.villager_moods.page0.title"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "category": "cartridges",
+  "name": "book.steveparty.guide.cartridges.cartridge.name",
+  "description": "book.steveparty.guide.cartridges.cartridge.description",
+  "icon": {
+    "item": "steveparty:board_space_behavior"
+  },
+  "x": -1,
+  "y": 0,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.cartridge.page0.text",
+      "title": "book.steveparty.guide.cartridges.cartridge.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:cartridge",
+      "text": "book.steveparty.guide.cartridges.cartridge.page1.text"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.cartridge.page2.text",
+      "title": "book.steveparty.guide.cartridges.cartridge.page2.title"
+    }
+  ]
+}

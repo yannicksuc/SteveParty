@@ -1,0 +1,30 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.building.name",
+  "description": "book.steveparty.guide.decoration.building.description",
+  "icon": {
+    "item": "steveparty:polished_white_terracotta"
+  },
+  "x": -1,
+  "y": 9,
+  "sort_number": 10,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.building.page0.text",
+      "title": "book.steveparty.guide.decoration.building.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:polished_white_terracotta",
+      "recipe_id_2": "steveparty:polished_white_concrete"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.building.page2.text",
+      "title": "book.steveparty.guide.decoration.building.page2.title"
+    }
+  ]
+}

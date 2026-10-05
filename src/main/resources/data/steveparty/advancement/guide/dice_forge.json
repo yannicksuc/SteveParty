@@ -1,0 +1,36 @@
+{
+  "parent": "steveparty:guide/stardust",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_forge"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.dice_forge.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.dice_forge.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "placed_dice_forge": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "steveparty:dice_forge"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed_dice_forge"
+    ]
+  ]
+}

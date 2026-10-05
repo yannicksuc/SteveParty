@@ -1,0 +1,41 @@
+{
+  "display": {
+    "icon": {
+      "id": "steveparty:tile"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.root.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "minecraft:textures/block/light_blue_concrete.png"
+  },
+  "criteria": {
+    "has_board_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:plastic_pellets",
+              "steveparty:tile",
+              "steveparty:advanced_tile",
+              "steveparty:check_point",
+              "steveparty:board_space_behavior"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_board_item"
+    ]
+  ]
+}

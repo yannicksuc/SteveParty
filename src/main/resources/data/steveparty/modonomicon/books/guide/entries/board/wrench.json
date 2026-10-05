@@ -1,0 +1,31 @@
+{
+  "category": "board",
+  "name": "book.steveparty.guide.board.wrench.name",
+  "description": "book.steveparty.guide.board.wrench.description",
+  "icon": {
+    "item": "steveparty:wrench"
+  },
+  "x": -1,
+  "y": -4,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "board/spaces",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.wrench.page0.text",
+      "title": "book.steveparty.guide.board.wrench.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:wrench"
+    }
+  ]
+}

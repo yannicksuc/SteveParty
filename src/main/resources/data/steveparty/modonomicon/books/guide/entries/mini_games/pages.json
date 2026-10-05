@@ -1,0 +1,25 @@
+{
+  "category": "mini_games",
+  "name": "book.steveparty.guide.mini_games.pages.name",
+  "description": "book.steveparty.guide.mini_games.pages.description",
+  "icon": {
+    "item": "steveparty:mini_game_page"
+  },
+  "x": -4,
+  "y": 0,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.mini_games.pages.page0.text",
+      "title": "book.steveparty.guide.mini_games.pages.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:mini_game_page",
+      "recipe_id_2": "steveparty:mini_games_catalogue"
+    }
+  ]
+}

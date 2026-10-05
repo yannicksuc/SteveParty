@@ -1,0 +1,33 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.pipes.name",
+  "description": "book.steveparty.guide.decoration.pipes.description",
+  "icon": {
+    "item": "steveparty:white_pipe"
+  },
+  "x": 2,
+  "y": -3,
+  "sort_number": 4,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "decoration/plastic_blocks",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.pipes.page0.text",
+      "title": "book.steveparty.guide.decoration.pipes.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:white_pipe",
+      "recipe_id_2": "steveparty:white_windowed_pipe",
+      "text": "book.steveparty.guide.decoration.pipes.page1.text"
+    }
+  ]
+}
