@@ -456,7 +456,7 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         markDirty();
         if (delta > 0 && world instanceof ServerWorld serverWorld) {
             if (outputMode == OutputMode.PULSE) pulseRedstone();
-            spawnFloatingText(serverWorld, "+" + delta, pos.toCenterPos().add(0.5).add(Math.random() - 1, Math.random() / 2, Math.random() - 1).toVector3f(),
+            spawnFloatingText(serverWorld, "+" + delta, pos.toCenterPos().add(0.5, 0.5, 0.5).add(Math.random() - 1, Math.random() / 2, Math.random() - 1).toVector3f(),
                     TextColor.fromRgb(0xC90E0E), 50);
         }
         pushTotal();

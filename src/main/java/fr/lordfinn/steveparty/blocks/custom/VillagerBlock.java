@@ -14,7 +14,7 @@ import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.context.LootWorldContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.particle.ParticleTypes;
@@ -39,11 +39,11 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -131,7 +131,7 @@ public class VillagerBlock extends FallingBlock implements BlockEntityProvider {
 
     /** The dropped villager block keeps the villager inside (placed again, it is the same villager). */
     @Override
-    protected List<ItemStack> getDroppedStacks(BlockState state, LootWorldContext.Builder builder) {
+    protected List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
         List<ItemStack> drops = super.getDroppedStacks(state, builder);
         if (builder.getOptional(LootContextParameters.BLOCK_ENTITY) instanceof VillagerBlockEntity villager
                 && villager.getSoul() != null) {
@@ -205,8 +205,8 @@ public class VillagerBlock extends FallingBlock implements BlockEntityProvider {
     }
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
         if (world.isClient) return;
         if (world.getBlockState(pos.north()).isOf(Blocks.GRASS_BLOCK) &&
                 world.getBlockState(pos.south()).isOf(Blocks.GRASS_BLOCK) &&
@@ -260,16 +260,16 @@ public class VillagerBlock extends FallingBlock implements BlockEntityProvider {
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (stack.isEmpty()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (stack.isEmpty()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         VillagerReaction reaction = VillagerBlockUse.reactionTo(stack);
         // a block to place: placed as usual (building around it has its own reactions)
-        if (reaction == null) return ActionResult.PASS;
+        if (reaction == null) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         if (!world.isClient && world.getBlockEntity(pos) instanceof VillagerBlockEntity villager) {
             villager.onRightClick(player, reaction);
         }
         // items it doesn't want keep their own use: it only shakes its head
-        return VillagerBlockUse.takesUse(stack) ? ActionResult.SUCCESS : ActionResult.PASS;
+        return VillagerBlockUse.takesUse(stack) ? ItemActionResult.SUCCESS : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override

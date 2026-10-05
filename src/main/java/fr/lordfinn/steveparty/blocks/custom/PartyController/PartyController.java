@@ -20,6 +20,7 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -30,9 +31,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib.object.Color;
+import software.bernie.geckolib.util.Color;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -104,7 +104,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
                 sendCatalogueLocked(player);
                 return ActionResult.PASS;
             }
-            ActionResult.Success success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
+            ActionResult success = toggleCatalogue(world, pos, ItemStack.EMPTY, state);
             if (success != null) return success;
         } else if (world.getBlockEntity(pos) instanceof PartyControllerEntity entity) {
             // The dashboard: the party, its players, its mini-games, its settings (and following it)
@@ -115,19 +115,19 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (world.isClient || hand.equals(Hand.OFF_HAND)) return ActionResult.PASS;
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (world.isClient || hand.equals(Hand.OFF_HAND)) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // The Wrench checks the board (see WrenchActions)
-        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.WrenchItem) return ActionResult.PASS;
+        if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.WrenchItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // Swapping the catalogue takes the same as taking it out: the right to edit, and no redstone lock
         if (stack.getItem() instanceof MiniGamesCatalogueItem
                 && world.getBlockEntity(pos) instanceof PartyControllerEntity controller && controller.canEdit(player)) {
             if (controller.isCatalogueLocked() && !controller.catalogue.isEmpty()) {
                 sendCatalogueLocked(player);
-                return ActionResult.SUCCESS;
+                return ItemActionResult.SUCCESS;
             }
-            ActionResult.Success success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state, player);
-            if (success != null) return success;
+            ActionResult success = toggleCatalogue(world, pos, stack.copyAndEmpty(), state, player);
+            if (success != null) return ItemActionResult.SUCCESS;
         }
         return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
     }
@@ -136,11 +136,11 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
         MessageUtils.sendToPlayer((ServerPlayerEntity) player, Text.translatable("message.steveparty.party_controller.catalogue_locked").withColor(Color.RED.getColor()), MessageUtils.MessageType.CHAT);
     }
 
-    private static ActionResult.@Nullable Success toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state) {
+    private static @Nullable ActionResult toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state) {
         return toggleCatalogue(world, pos, empty, state, null);
     }
 
-    private static ActionResult.@Nullable Success toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state, @Nullable PlayerEntity player) {
+    private static @Nullable ActionResult toggleCatalogue(World world, BlockPos pos, ItemStack empty, BlockState state, @Nullable PlayerEntity player) {
         PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
         if (entity != null) {
             boolean isCatalogued = entity.setCatalogue(empty, player);
@@ -151,7 +151,7 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     }
 
     @Override
-    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
         if (!world.isClient) {
             if (world.isReceivingRedstonePower(pos) && !state.get(POWERED)) {
                 PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);

@@ -56,7 +56,7 @@ public final class SwitchableConfig {
                     for (RegistryEntry<Block> block : Registries.BLOCK.iterateEntries(tag)) add(blocks, block.value(), entry);
                 } else {
                     Identifier id = Identifier.of(entry);
-                    Registries.BLOCK.getOptionalValue(id).ifPresentOrElse(
+                    Registries.BLOCK.getOrEmpty(id).ifPresentOrElse(
                             block -> add(blocks, block, entry),
                             () -> LOGGER.warn("Unknown block '{}' in {}", entry, FILE));
                 }

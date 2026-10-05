@@ -239,7 +239,7 @@ public final class TileTeleport {
             int color = arm == 0 ? tileColor : ACCENT;
             world.spawnParticles(new MulaSparkleEffect(TileFeedback.lighten(color, 0.25F), 0.9F, MulaSparkleEffect.TWINKLE),
                     at.x + Math.cos(angle) * radius, y, at.z + Math.sin(angle) * radius, 1, 0, 0, 0, 0);
-            world.spawnParticles(new DustParticleEffect(color, 0.9F),
+            world.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(color).toVector3f(), 0.9F),
                     at.x + Math.cos(angle + 0.5) * radius * 1.2, y - 0.1, at.z + Math.sin(angle + 0.5) * radius * 1.2, 1, 0, 0, 0, 0);
         }
         if (t % 3 == 0) world.spawnParticles(ParticleTypes.PORTAL, at.x, at.y + 0.6, at.z, 6, 0.25, 0.3, 0.25, 0.4);
@@ -284,7 +284,7 @@ public final class TileTeleport {
 
     /** The token at {@code factor} times its own size (a transient modifier: never saved with the token). */
     private static void setScale(MobEntity token, double factor) {
-        EntityAttributeInstance scale = token.getAttributeInstance(EntityAttributes.SCALE);
+        EntityAttributeInstance scale = token.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
         if (scale == null) return;
         scale.removeModifier(SHRINK_MODIFIER);
         if (Math.abs(factor - 1) > 1.0E-4) {

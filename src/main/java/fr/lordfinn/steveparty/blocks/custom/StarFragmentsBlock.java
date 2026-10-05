@@ -57,7 +57,7 @@ public class StarFragmentsBlock extends TransparentBlock {
         int count = 0;
         for (Direction dir : Direction.values()) {
             BlockState next = world.getBlockState(pos.offset(dir));
-            if (!(next.getBlock() instanceof StarFragmentsBlock) && !next.isOpaqueFullCube()) exposed[count++] = dir;
+            if (!(next.getBlock() instanceof StarFragmentsBlock) && !next.isOpaqueFullCube(world, pos.offset(dir))) exposed[count++] = dir;
         }
         if (count == 0) return;
         int crowd = 0;
