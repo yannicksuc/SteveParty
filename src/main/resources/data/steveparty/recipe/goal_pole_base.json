@@ -7,10 +7,18 @@
     "IRI"
   ],
   "key": {
-    "I": "minecraft:iron_ingot",
-    "R": "minecraft:redstone",
-    "S": "minecraft:sculk_sensor",
-    "B": "minecraft:brick"
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "S": {
+      "item": "minecraft:sculk_sensor"
+    },
+    "B": {
+      "item": "minecraft:brick"
+    }
   },
   "result": {
     "id": "steveparty:goal_pole_base"

@@ -7,8 +7,12 @@
     "P#P"
   ],
   "key": {
-    "P": "steveparty:brown_plastic_block",
-    "#": "steveparty:plastic_stick"
+    "P": {
+      "item": "steveparty:brown_plastic_block"
+    },
+    "#": {
+      "item": "steveparty:plastic_stick"
+    }
   },
   "result": {
     "id": "steveparty:brown_plastic_fence",

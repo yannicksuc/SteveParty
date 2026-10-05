@@ -7,8 +7,12 @@
     "I  "
   ],
   "key": {
-    "G": "minecraft:gold_ingot",
-    "I": "minecraft:iron_bars"
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "I": {
+      "item": "minecraft:iron_bars"
+    }
   },
   "result": {
     "id": "steveparty:goal_pole"

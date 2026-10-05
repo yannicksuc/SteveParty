@@ -67,7 +67,7 @@ public class MaterialShapedRecipe extends ShapedRecipe {
     private @Nullable Block material(CraftingRecipeInput input) {
         ItemStack template = resultTemplate();
         Block found = null;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             Block block = materialOf(template, stack);
             if (block == null) continue;

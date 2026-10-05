@@ -6,7 +6,9 @@
     "   "
   ],
   "key": {
-    "W": "#minecraft:wool"
+    "W": {
+      "tag": "minecraft:wool"
+    }
   },
   "result": {
     "id": "steveparty:flag"

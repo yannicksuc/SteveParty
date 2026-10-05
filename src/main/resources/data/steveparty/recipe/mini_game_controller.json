@@ -7,11 +7,21 @@
     "IRI"
   ],
   "key": {
-    "I": "minecraft:iron_ingot",
-    "G": "minecraft:glass",
-    "S": "minecraft:mushroom_stem",
-    "P": "minecraft:paper",
-    "R": "minecraft:redstone"
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "S": {
+      "item": "minecraft:mushroom_stem"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
   },
   "result": {
     "id": "steveparty:mini_game_controller",

@@ -1,7 +1,17 @@
 {
   "type": "minecraft:crafting_shapeless",
   "category": "redstone",
-  "ingredients": ["steveparty:board_space_behavior", "minecraft:emerald", "minecraft:gold_nugget"],
+  "ingredients": [
+    {
+      "item": "steveparty:board_space_behavior"
+    },
+    {
+      "item": "minecraft:emerald"
+    },
+    {
+      "item": "minecraft:gold_nugget"
+    }
+  ],
   "result": {
     "id": "steveparty:shop_cartridge",
     "count": 1

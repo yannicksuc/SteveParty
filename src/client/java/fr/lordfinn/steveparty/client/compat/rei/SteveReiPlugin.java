@@ -68,7 +68,7 @@ public class SteveReiPlugin implements REIClientPlugin {
         for (DiceModule module : DiceModules.all()) {
             List<ItemStack> results = new ArrayList<>();
             for (ItemStack die : dice) results.add(DiceModules.set(die.copy(), Map.of(module, 1)));
-            registry.add(new DefaultCustomShapelessDisplay(
+            registry.add(DefaultCustomShapelessDisplay.simple(
                     List.of(EntryIngredients.ofItemStacks(dice), EntryIngredients.of(module.item())),
                     List.of(EntryIngredients.ofItemStacks(results)),
                     Optional.of(Steveparty.id("dice_module/" + module.id()))));
@@ -76,11 +76,11 @@ public class SteveReiPlugin implements REIClientPlugin {
         ItemStack lucky = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.LUCKY, 2));
         ItemStack infinite = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.INFINITY, 1));
         Map<DiceModule, Integer> both = DiceModules.union(DiceModules.of(lucky), DiceModules.of(infinite));
-        registry.add(new DefaultCustomShapelessDisplay(
+        registry.add(DefaultCustomShapelessDisplay.simple(
                 List.of(EntryIngredients.of(lucky), EntryIngredients.of(infinite)),
                 List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.DOUBLE_DICE), both))),
                 Optional.of(Steveparty.id("multi_dice/double"))));
-        registry.add(new DefaultCustomShapelessDisplay(
+        registry.add(DefaultCustomShapelessDisplay.simple(
                 List.of(EntryIngredients.of(lucky), EntryIngredients.of(infinite), EntryIngredients.of(ModItems.DEFAULT_DICE)),
                 List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.TRIPLE_DICE), both))),
                 Optional.of(Steveparty.id("multi_dice/triple"))));

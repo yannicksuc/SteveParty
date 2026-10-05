@@ -28,7 +28,7 @@ public class TradingStallRecipe extends ShapedRecipe {
         DyeColor color2 = null;
         int found = 0;
 
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (!stack.isEmpty() && WoolColorsUtils.isCarpet(stack)) {
                 DyeColor color = WoolColorsUtils.getCarpetColor(stack);

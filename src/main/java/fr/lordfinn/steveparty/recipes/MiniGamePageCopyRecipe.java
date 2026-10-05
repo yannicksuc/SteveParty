@@ -19,6 +19,12 @@ public class MiniGamePageCopyRecipe extends SpecialCraftingRecipe {
         super(category);
     }
 
+    /** A page and at least one sheet of paper. */
+    @Override
+    public boolean fits(int width, int height) {
+        return width * height >= 2;
+    }
+
     @Override
     public boolean matches(CraftingRecipeInput input, World world) {
         return page(input) != null;
@@ -28,7 +34,7 @@ public class MiniGamePageCopyRecipe extends SpecialCraftingRecipe {
     private static ItemStack page(CraftingRecipeInput input) {
         ItemStack page = null;
         int sheets = 0;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (stack.isEmpty()) continue;
             if (stack.isOf(Items.PAPER)) {
@@ -48,7 +54,7 @@ public class MiniGamePageCopyRecipe extends SpecialCraftingRecipe {
         ItemStack page = page(input);
         if (page == null) return ItemStack.EMPTY;
         int sheets = 0;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             if (input.getStackInSlot(i).isOf(Items.PAPER)) sheets++;
         }
         // On a copy: the stack in the grid is not ours to change

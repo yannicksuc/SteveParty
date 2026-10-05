@@ -19,6 +19,12 @@ public class FlagDyeRecipe extends SpecialCraftingRecipe {
         super(category);
     }
 
+    /** A flag and at least one dye. */
+    @Override
+    public boolean fits(int width, int height) {
+        return width * height >= 2;
+    }
+
     @Override
     public boolean matches(CraftingRecipeInput input, World world) {
         return !craft(input, null).isEmpty();
@@ -28,7 +34,7 @@ public class FlagDyeRecipe extends SpecialCraftingRecipe {
     public ItemStack craft(CraftingRecipeInput input, RegistryWrapper.WrapperLookup registries) {
         ItemStack flag = ItemStack.EMPTY;
         List<DyeItem> dyes = new ArrayList<>();
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (stack.isEmpty()) continue;
             if (stack.getItem() instanceof FlagItem) {

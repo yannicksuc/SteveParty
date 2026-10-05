@@ -8,18 +8,13 @@ import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.IngredientPlacement;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.book.CraftingRecipeCategory;
-import net.minecraft.recipe.display.RecipeDisplay;
-import net.minecraft.recipe.display.ShapelessCraftingRecipeDisplay;
-import net.minecraft.recipe.display.SlotDisplay;
 import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.collection.DefaultedList;
@@ -45,7 +40,6 @@ import java.util.Map;
  */
 public class DiceModuleRecipe implements CraftingRecipe {
     private final DiceModule module;
-    private @Nullable IngredientPlacement placement;
 
     public DiceModuleRecipe(DiceModule module) {
         this.module = module;
@@ -60,6 +54,12 @@ public class DiceModuleRecipe implements CraftingRecipe {
         return firstModule(input) == module && result(input) != null;
     }
 
+    /** A die and at least one module item. */
+    @Override
+    public boolean fits(int width, int height) {
+        return width * height >= 2;
+    }
+
     @Override
     public ItemStack craft(CraftingRecipeInput input, RegistryWrapper.WrapperLookup registries) {
         ItemStack result = result(input);
@@ -71,7 +71,7 @@ public class DiceModuleRecipe implements CraftingRecipe {
         DiceModule first = null;
         int firstIndex = Integer.MAX_VALUE;
         List<DiceModule> order = List.copyOf(DiceModules.all());
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             DiceModule module = DiceModules.fromItem(input.getStackInSlot(i));
             if (module != null && order.indexOf(module) < firstIndex) {
                 first = module;
@@ -85,7 +85,7 @@ public class DiceModuleRecipe implements CraftingRecipe {
     public static @Nullable ItemStack result(CraftingRecipeInput input) {
         ItemStack die = ItemStack.EMPTY;
         Map<DiceModule, Integer> added = new LinkedHashMap<>();
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (stack.isEmpty()) continue;
             DiceModule module = DiceModules.fromItem(stack);
@@ -109,8 +109,8 @@ public class DiceModuleRecipe implements CraftingRecipe {
 
     /** The module items stay in the grid. */
     @Override
-    public DefaultedList<ItemStack> getRecipeRemainders(CraftingRecipeInput input) {
-        DefaultedList<ItemStack> remainders = DefaultedList.ofSize(input.size(), ItemStack.EMPTY);
+    public DefaultedList<ItemStack> getRemainder(CraftingRecipeInput input) {
+        DefaultedList<ItemStack> remainders = DefaultedList.ofSize(input.getSize(), ItemStack.EMPTY);
         for (int i = 0; i < remainders.size(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (DiceModules.isModuleItem(stack)) remainders.set(i, stack.copyWithCount(1));
@@ -124,20 +124,16 @@ public class DiceModuleRecipe implements CraftingRecipe {
         return Ingredient.ofItems(ModItems.DEFAULT_DICE, ModItems.DOUBLE_DICE, ModItems.TRIPLE_DICE);
     }
 
+    /** A die and the module item. */
     @Override
-    public IngredientPlacement getIngredientPlacement() {
-        if (placement == null) placement = IngredientPlacement.forShapeless(List.of(anyDie(), Ingredient.ofItem(module.item())));
-        return placement;
+    public DefaultedList<Ingredient> getIngredients() {
+        return DefaultedList.copyOf(Ingredient.EMPTY, anyDie(), Ingredient.ofItems(module.item()));
     }
 
-    /** A die and the module item: the plain die carrying the module. */
+    /** The plain die carrying the module. */
     @Override
-    public List<RecipeDisplay> getDisplays() {
-        ItemStack result = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(module, 1));
-        return List.of(new ShapelessCraftingRecipeDisplay(
-                List.of(anyDie().toDisplay(), new SlotDisplay.ItemSlotDisplay(module.item())),
-                new SlotDisplay.StackSlotDisplay(result),
-                new SlotDisplay.ItemSlotDisplay(Items.CRAFTING_TABLE)));
+    public ItemStack getResult(RegistryWrapper.WrapperLookup registries) {
+        return DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(module, 1));
     }
 
     @Override

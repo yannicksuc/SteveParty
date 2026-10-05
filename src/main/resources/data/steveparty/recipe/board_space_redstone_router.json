@@ -8,10 +8,18 @@
     "CSC"
   ],
   "key": {
-    "C":"minecraft:gold_ingot",
-    "R":"minecraft:redstone_torch",
-    "T": "minecraft:chest",
-    "S": "minecraft:amethyst_shard"
+    "C": {
+      "item": "minecraft:gold_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone_torch"
+    },
+    "T": {
+      "item": "minecraft:chest"
+    },
+    "S": {
+      "item": "minecraft:amethyst_shard"
+    }
   },
   "result": {
     "id": "steveparty:board_space_redstone_router"

@@ -2,11 +2,8 @@ package fr.lordfinn.steveparty.client.compat.rei;
 
 import fr.lordfinn.steveparty.compat.CartridgeApplications;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
-import me.shedaniel.rei.api.common.display.Display;
-import me.shedaniel.rei.api.common.display.DisplaySerializer;
 import me.shedaniel.rei.api.common.display.basic.BasicDisplay;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,12 +35,6 @@ public class CartridgeApplicationDisplay extends BasicDisplay {
 
     public EntryIngredient results() {
         return getOutputEntries().get(0);
-    }
-
-    /** Built on the client only, never synced from a server. */
-    @Override
-    public @Nullable DisplaySerializer<? extends Display> getSerializer() {
-        return null;
     }
 
     @Override

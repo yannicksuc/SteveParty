@@ -7,10 +7,18 @@
     "IPI"
   ],
   "key": {
-    "G": "minecraft:gold_ingot",
-    "R": "minecraft:redstone",
-    "I": "minecraft:iron_ingot",
-    "P": "minecraft:stone_pressure_plate"
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "P": {
+      "item": "minecraft:stone_pressure_plate"
+    }
   },
   "result": {
     "id": "steveparty:party_bell"

@@ -7,7 +7,9 @@
     " P "
   ],
   "key": {
-    "P": "#minecraft:planks"
+    "P": {
+      "tag": "minecraft:planks"
+    }
   },
   "result": {
     "id": "steveparty:wooden_cutout_panel",
