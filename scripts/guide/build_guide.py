@@ -648,10 +648,10 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
           "Against the Others", "Contre les autres"),
         T("- **Star Whistle**: the Star flies off to another Star space.\n"
           "- **Golden Pipe**: your pawn warps just **before the Star**, then you roll your die.\n\n"
-          "Both are kept when there is no Star.",
+          "The star is the Star Cartridge's. Both are kept when the board has none.",
           "- **Sifflet d'étoile** : l'étoile s'envole vers une autre case étoile.\n"
           "- **Tuyau doré** : ton pion se téléporte juste **avant l'étoile**, puis tu lances ton dé.\n\n"
-          "Les deux sont gardés s'il n'y a pas d'étoile.",
+          "L'étoile est celle de la cartouche Étoile. Les deux sont gardés si le plateau n'en a pas.",
           "The Star", "L'étoile"),
         T("Power-ups are **easy to craft**: at most one Coin and one or two common items.\n\n"
           "The **board's maker** chooses how players get them: a **Trading Stall**, the Boxed Trader, a Shop "

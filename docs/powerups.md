@@ -19,9 +19,10 @@ the roll, a power-up adds to the turn). Code: `src/main/java/fr/lordfinn/stevepa
 A bell parried by a Padlock is consumed (and so is the Padlock). The Padlock is used up by the Thief Bell only when
 a theft would really happen, and by another player's Trap only (`TrapEffect.isProtected`, never its owner's).
 
-**The Star:** the Golden Pipe and the Star Whistle read and move it through `PowerUpStar.relocator()`. Plug the
-Star cartridge's `StarRelocator` in with `PowerUpStar.install(...)` at start-up (`Steveparty#onInitialize`); until
-then the default `StarRelocator.NONE` answers "no Star" and both are refused, not consumed.
+**The Star:** the Golden Pipe and the Star Whistle read and move it through `PowerUpStar.relocator()`, by default
+`PartyStarRelocator`: the party's star of the Star Cartridge (`PartyStars`; the whistle moves it like a purchase does,
+`PartyStars.place`, announced). To plug another one (a test), `PowerUpStar.install(...)`. A board without an active
+star space has no star: both are then refused, not consumed.
 
 ## Plugging in a new power-up
 
