@@ -22,7 +22,7 @@ public class ConnectedPlasticModelPlugin implements ModelLoadingPlugin {
             "wall_post", "wall_side", "wall_side_tall"};
 
     @Override
-    public void initialize(Context context) {
+    public void onInitializeModelLoader(Context context) {
         Map<Identifier, String> colorByModel = new HashMap<>();
         Map<Identifier, String> colorByShape = new HashMap<>();
         Map<Identifier, String> colorByFencePart = new HashMap<>();

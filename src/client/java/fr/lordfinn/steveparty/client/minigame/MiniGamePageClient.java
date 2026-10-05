@@ -9,9 +9,10 @@ import fr.lordfinn.steveparty.minigame.MiniGamePageImage;
 import fr.lordfinn.steveparty.minigame.MiniGamePageImages;
 import fr.lordfinn.steveparty.payloads.custom.MiniGamePagePayloads;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
@@ -40,8 +41,13 @@ public final class MiniGamePageClient {
     public record Picture(Identifier texture, int width, int height) {
         /** Draws it centred in the box it was fitted in. */
         public void draw(DrawContext context, int boxX, int boxY, int boxWidth, int boxHeight, int color) {
-            context.drawTexture(RenderLayer::getGuiTextured, texture, boxX + (boxWidth - width) / 2, boxY + (boxHeight - height) / 2,
-                    0, 0, width, height, width, height, color);
+            RenderSystem.enableBlend();
+            RenderSystem.setShaderColor(ColorHelper.Argb.getRed(color) / 255f, ColorHelper.Argb.getGreen(color) / 255f,
+                    ColorHelper.Argb.getBlue(color) / 255f, ColorHelper.Argb.getAlpha(color) / 255f);
+            context.drawTexture(texture, boxX + (boxWidth - width) / 2, boxY + (boxHeight - height) / 2,
+                    0, 0, width, height, width, height);
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            RenderSystem.disableBlend();
         }
     }
 
@@ -182,7 +188,7 @@ public final class MiniGamePageClient {
         BufferedImage sized = MiniGamePageImages.resize(source, key.width(), key.height());
         NativeImage pixels = new NativeImage(key.width(), key.height(), false);
         for (int y = 0; y < key.height(); y++) {
-            for (int x = 0; x < key.width(); x++) pixels.setColorArgb(x, y, sized.getRGB(x, y));
+            for (int x = 0; x < key.width(); x++) pixels.setColor(x, y, ColorHelper.Abgr.toAbgr(sized.getRGB(x, y)));
         }
         Identifier id = Steveparty.id("minigame_page/" + key.hash() + "_" + key.width() + "x" + key.height() + "_" + textureSerial++);
         MinecraftClient.getInstance().getTextureManager().registerTexture(id, new NativeImageBackedTexture(pixels));

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.pipe;
 
+import fr.lordfinn.steveparty.client.model.BakedModelIds;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.pipe.PipeGeometry;
@@ -20,7 +21,7 @@ public class PipeModelPlugin implements ModelLoadingPlugin {
     private static final String[] PARTS = {"outer", "inner", "rim"};
 
     @Override
-    public void initialize(Context context) {
+    public void onInitializeModelLoader(Context context) {
         Map<Identifier, Pipe> pipes = new HashMap<>();
         for (PipeKind kind : PipeKind.values()) {
             for (int color = 0; color < kind.count(); color++) {
@@ -30,7 +31,7 @@ public class PipeModelPlugin implements ModelLoadingPlugin {
             }
         }
         context.modifyModelAfterBake().register((original, ctx) -> {
-            Identifier id = ctx.resourceId();
+            Identifier id = BakedModelIds.of(ctx);
             Pipe pipe = id == null ? null : pipes.get(id);
             if (pipe == null) return original;
             Sprite[] sprites = new Sprite[PARTS.length];

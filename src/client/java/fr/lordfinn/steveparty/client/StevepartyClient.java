@@ -66,12 +66,10 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
-import net.minecraft.client.render.entity.state.BipedEntityRenderState;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.equipment.EquipmentModel;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import org.jetbrains.annotations.Nullable;
@@ -245,12 +243,11 @@ public class StevepartyClient implements ClientModInitializer {
             private TripleJumpShoesRenderer renderer;
 
             @Override
-            public <E extends LivingEntity, S extends BipedEntityRenderState>
+            public <E extends LivingEntity>
             BipedEntityModel<?> getGeoArmorRenderer(@Nullable E entity,
                                                     ItemStack stack,
                                                     EquipmentSlot slot,
-                                                    EquipmentModel.LayerType type,
-                                                    BipedEntityModel<S> original) {
+                                                    BipedEntityModel<E> original) {
                 if (this.renderer == null) {
                     this.renderer = new TripleJumpShoesRenderer();
                 }

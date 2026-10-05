@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -537,14 +538,14 @@ public final class TileStampTextures {
      */
     private static Template readTemplate(NativeImage image) {
         Map<Integer, Integer> counts = new HashMap<>();
-        for (int x = 9; x < 23; x++) for (int y = 9; y < 23; y++) counts.merge(image.getColorArgb(x, y), 1, Integer::sum);
+        for (int x = 9; x < 23; x++) for (int y = 9; y < 23; y++) counts.merge(ColorHelper.Abgr.toAbgr(image.getColor(x, y)), 1, Integer::sum);
         int base = counts.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(0xFFFFFFFF);
         float baseLum = luminance(base);
         // Levels of the darker colours (close luminances are one level)
         List<Float> levels = new ArrayList<>();
         for (int x = 0; x < SIDE; x++) {
             for (int y = 0; y < SIDE; y++) {
-                int argb = image.getColorArgb(x, y);
+                int argb = ColorHelper.Abgr.toAbgr(image.getColor(x, y));
                 if (((argb >>> 24) & 0xFF) < 128) continue;
                 float lum = luminance(argb);
                 if (lum >= baseLum - 3) continue;
@@ -555,7 +556,7 @@ public final class TileStampTextures {
         float[] big = new float[SIDE * SIDE];
         for (int x = 0; x < SIDE; x++) {
             for (int y = 0; y < SIDE; y++) {
-                int argb = image.getColorArgb(x, y);
+                int argb = ColorHelper.Abgr.toAbgr(image.getColor(x, y));
                 float value;
                 if (((argb >>> 24) & 0xFF) < 128) value = TRANSPARENT;
                 else {
@@ -606,11 +607,11 @@ public final class TileStampTextures {
             for (int y = 0; y < side; y++) {
                 float value = values[y * side + x];
                 if (Float.isNaN(value)) {
-                    image.setColorArgb(x, y, 0);
+                    image.setColor(x, y, 0);
                     continue;
                 }
                 int color = shades.computeIfAbsent(value, v -> TileColors.shade(rgb, v));
-                image.setColorArgb(x, y, 0xFF000000 | color);
+                image.setColor(x, y, ColorHelper.Abgr.toAbgr(0xFF000000 | color));
             }
         }
         return MinecraftClient.getInstance().getTextureManager().registerDynamicTexture("tile_face", new NativeImageBackedTexture(image));
@@ -619,7 +620,7 @@ public final class TileStampTextures {
     /** A face already in its colours (ARGB, row by row). */
     private static Identifier register(int[] argb, int side) {
         NativeImage image = new NativeImage(side, side, true);
-        for (int x = 0; x < side; x++) for (int y = 0; y < side; y++) image.setColorArgb(x, y, argb[y * side + x]);
+        for (int x = 0; x < side; x++) for (int y = 0; y < side; y++) image.setColor(x, y, ColorHelper.Abgr.toAbgr(argb[y * side + x]));
         return MinecraftClient.getInstance().getTextureManager().registerDynamicTexture("tile_face", new NativeImageBackedTexture(image));
     }
 }
