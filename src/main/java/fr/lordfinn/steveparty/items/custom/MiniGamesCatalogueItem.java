@@ -13,6 +13,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -26,14 +27,14 @@ public class MiniGamesCatalogueItem extends Item {
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         if (world.isClient) {
-            return ActionResult.PASS;
+            return TypedActionResult.pass(player.getStackInHand(hand));
         }
 
         // Prevent opening the screen if the player is targeting a block
         if (isTargetingBlock(player)) {
-            return ActionResult.PASS;
+            return TypedActionResult.pass(player.getStackInHand(hand));
         }
 
         // Open the mini-game screen
@@ -41,7 +42,7 @@ public class MiniGamesCatalogueItem extends Item {
             openInventoryScreen(serverPlayer, hand);
         }
 
-        return ActionResult.SUCCESS;
+        return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
     }
 
     public static void openInventoryScreen(ServerPlayerEntity player) {

@@ -36,9 +36,6 @@ import static fr.lordfinn.steveparty.Steveparty.MOD_ID;
 import static fr.lordfinn.steveparty.blocks.ModBlocks.*;
 
 public class ModItems {
-    /** Enchanting table enchantability of the tokenizer wand (it can only receive steveparty:game_master). */
-    private static final int TOKENIZER_WAND_ENCHANTABILITY = 10;
-
     public static final Item DOUBLE_DICE = register(DoubleDiceItem.class, "double_dice");
 
     public static final Item STENCIL = register(StencilItem.class, "stencil");
@@ -50,7 +47,7 @@ public class ModItems {
     public static final Item BOARD_SPACE_BEHAVIOR_STOP = register(StopCartridgeItem.class, "board_space_behavior_stop",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.StopBoardSpaceBehavior.COLOR));
-    public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand", new Item.Settings().maxCount(1).enchantable(TOKENIZER_WAND_ENCHANTABILITY));
+    public static final Item TOKENIZER_WAND = register(TokenizerWandItem.class, "tokenizer_wand", new Item.Settings().maxCount(1));
     public static final Item PLUNGER = register(PlungerItem.class, "plunger");
     public static final Item DEFAULT_DICE = register(DefaultDiceItem.class,"default_dice");
     public static final Item TRIPLE_DICE = register(TripleDiceItem.class, "triple_dice");
@@ -152,7 +149,7 @@ public class ModItems {
 
     public static <T extends Item> T register(Class<T> itemClass, String id, Item.Settings settings) {
         try {
-            T item = itemClass.getConstructor(Item.Settings.class).newInstance(getSettings(settings, id));
+            T item = itemClass.getConstructor(Item.Settings.class).newInstance(settings);
             Identifier itemID = Steveparty.id(id);
             RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
             Registry.register(Registries.ITEM, key, item);
@@ -164,21 +161,14 @@ public class ModItems {
 
     private static Item registerCard(PartyCardItem.CardType type) {
         String id = "party_card_" + type.getName();
-        Item item = new PartyCardItem(type, getSettings(new Item.Settings(), id));
+        Item item = new PartyCardItem(type, new Item.Settings());
         return Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(id)), item);
-    }
-
-    public static Item.Settings getSettings(Item.Settings itemSettings, String id) {
-        Identifier itemID = Steveparty.id(id);
-        RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, itemID);
-        return itemSettings.registryKey(key);
-
     }
 
     /** Blocks of a sign material kind, from the tags of the running game (modded blocks included). */
     private static List<Block> blocksOf(RegistryWrapper.WrapperLookup lookup, SignMaterial kind) {
         List<Block> blocks = new ArrayList<>();
-        lookup.getOrThrow(RegistryKeys.BLOCK).getOptional(kind.tag())
+        lookup.getWrapperOrThrow(RegistryKeys.BLOCK).getOptional(kind.tag())
                 .ifPresent(list -> list.forEach(entry -> blocks.add(entry.value())));
         if (blocks.isEmpty()) blocks.add(kind.defaultBlock());
         return blocks;
@@ -202,7 +192,7 @@ public class ModItems {
 
         // One item per dice module (see DiceModules)
         for (fr.lordfinn.steveparty.dice.DiceModule module : fr.lordfinn.steveparty.dice.DiceModules.all()) {
-            Item item = new fr.lordfinn.steveparty.items.custom.DiceModuleItem(module, getSettings(new Item.Settings(), module.itemPath()));
+            Item item = new fr.lordfinn.steveparty.items.custom.DiceModuleItem(module, new Item.Settings());
             DICE_MODULES.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(module.itemPath())), item));
         }
 

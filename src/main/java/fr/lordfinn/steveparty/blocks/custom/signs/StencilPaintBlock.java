@@ -18,6 +18,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
@@ -29,9 +30,9 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.event.GameEvent;
-import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -104,10 +105,10 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
-                                                   Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world,
+                                                   BlockPos pos, BlockPos neighborPos) {
         if (direction == getFacing(state).getOpposite() && !canPlaceAt(state, world, pos)) return Blocks.AIR.getDefaultState();
-        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
     }
 
     @Override
@@ -123,7 +124,7 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
                                          Hand hand, BlockHitResult hit) {
         if (stack.isOf(Items.BRUSH)) {
             // Held on the paint, the brush fades it step by step, then scrubs it off the wall
@@ -139,7 +140,7 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
                 }
                 world.emitGameEvent(GameEvent.BLOCK_DESTROY, pos, GameEvent.Emitter.of(player, state));
             }
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         if (stack.isOf(Items.WET_SPONGE)) {
             // Washing the paint off leaves nothing behind
@@ -148,7 +149,7 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
                 world.playSound(null, pos, SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.BLOCKS, 1.0F, 1.4F);
                 world.emitGameEvent(GameEvent.BLOCK_DESTROY, pos, GameEvent.Emitter.of(player, state));
             }
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         return StencilInteractions.onUseWithItem(state, world, pos, player, hand, hit);
     }

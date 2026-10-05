@@ -73,8 +73,8 @@ public final class ModLootTableModifiers {
     }
 
     public static void initialize() {
-        RegistryKey<LootTable> evoker = EntityType.EVOKER.getLootTableKey().orElse(null);
-        RegistryKey<LootTable> illusioner = EntityType.ILLUSIONER.getLootTableKey().orElse(null);
+        RegistryKey<LootTable> evoker = EntityType.EVOKER.getLootTableId();
+        RegistryKey<LootTable> illusioner = EntityType.ILLUSIONER.getLootTableId();
 
         LootTableEvents.MODIFY.register((key, tableBuilder, source, registries) -> {
             if (!source.isBuiltin()) return; // leave datapack-replaced tables alone
@@ -100,7 +100,7 @@ public final class ModLootTableModifiers {
     }
 
     private static LootPool.Builder gameMasterBookPool(RegistryWrapper.WrapperLookup registries, float chance, boolean killedByPlayer) {
-        RegistryEntry<Enchantment> gameMaster = registries.getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(GAME_MASTER);
+        RegistryEntry<Enchantment> gameMaster = registries.getWrapperOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(GAME_MASTER);
         LootPool.Builder pool = LootPool.builder()
                 .rolls(ConstantLootNumberProvider.create(1))
                 .conditionally(RandomChanceLootCondition.builder(chance))

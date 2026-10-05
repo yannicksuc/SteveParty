@@ -61,7 +61,7 @@ public enum SignMaterial {
      */
     public Identifier resolve(@Nullable Identifier id) {
         if (id == null) return defaultId();
-        Block block = Registries.BLOCK.getOptionalValue(id).orElse(null);
+        Block block = Registries.BLOCK.getOrEmpty(id).orElse(null);
         return block != null && accepts(block) ? id : defaultId();
     }
 

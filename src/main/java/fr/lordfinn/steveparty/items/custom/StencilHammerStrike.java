@@ -38,7 +38,7 @@ public final class StencilHammerStrike {
     }
 
     public static boolean isCoolingDown(PlayerEntity player, Hand hand) {
-        return player.getItemCooldownManager().isCoolingDown(player.getStackInHand(hand));
+        return player.getItemCooldownManager().isCoolingDown(player.getStackInHand(hand).getItem());
     }
 
     /**
@@ -47,7 +47,7 @@ public final class StencilHammerStrike {
      */
     public static void strike(World world, PlayerEntity player, Hand hand, BlockPos canvasPos, Vec3d hit, Direction side,
                               @Nullable DyeColor color) {
-        player.getItemCooldownManager().set(player.getStackInHand(hand), COOLDOWN);
+        player.getItemCooldownManager().set(player.getStackInHand(hand).getItem(), COOLDOWN);
         StencilHammerStrikePayload payload = new StencilHammerStrikePayload(player.getId(), hand == Hand.MAIN_HAND, canvasPos,
                 hit.toVector3f(), side, color == null ? -1 : color.getId());
         if (world.isClient) {

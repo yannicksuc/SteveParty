@@ -29,7 +29,7 @@ public record StencilHammerStrikePayload(int entityId, boolean mainHand, BlockPo
             PacketCodecs.VAR_INT, StencilHammerStrikePayload::entityId,
             PacketCodecs.BOOL, StencilHammerStrikePayload::mainHand,
             BlockPos.PACKET_CODEC, StencilHammerStrikePayload::canvasPos,
-            PacketCodecs.VECTOR_3F, StencilHammerStrikePayload::hit,
+            PacketCodecs.VECTOR3F, StencilHammerStrikePayload::hit,
             Direction.PACKET_CODEC, StencilHammerStrikePayload::side,
             PacketCodecs.VAR_INT, StencilHammerStrikePayload::color,
             StencilHammerStrikePayload::new);
