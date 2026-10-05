@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "steveparty:coin" },
+    { "item": "minecraft:bamboo" },
+    { "item": "minecraft:glowstone_dust" }
+  ],
+  "result": {
+    "id": "steveparty:powerup_star_whistle",
+    "count": 1
+  }
+}

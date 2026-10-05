@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.powerups;
 
+import fr.lordfinn.steveparty.powerups.effects.ThiefBellEffect;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,6 +22,18 @@ public final class PowerUps {
     public static final PowerUp MUSHROOM = register(new MushroomPowerUp());
     /** The coins gained during the turn are doubled (not the losses). */
     public static final PowerUp DOUBLE_COINS = register(new DoubleCoinsPowerUp());
+    /** Protects its player against one Thief Bell or Trap of the others, until their next turn. */
+    public static final PowerUp PADLOCK = register(new PadlockPowerUp());
+    /** A hidden trap on its pawn's space: the next other player stopping there gives 10 coins. */
+    public static final PowerUp TRAP = register(new TrapPowerUp());
+    /** Steals 5 to 15 coins from a player picked in a list. */
+    public static final PowerUp THIEF_BELL = register(new ThiefBellPowerUp(ThiefBellEffect.Variant.THIEF, 12, Formatting.DARK_PURPLE));
+    /** Sends the Star to another active Star space. */
+    public static final PowerUp STAR_WHISTLE = register(new StarWhistlePowerUp());
+    /** Warps its pawn to the space just before the Star; the roll comes once it has arrived. */
+    public static final PowerUp GOLDEN_PIPE = register(new GoldenPipePowerUp());
+    /** Steals one star from a player picked in a list. */
+    public static final PowerUp GOLDEN_THIEF_BELL = register(new ThiefBellPowerUp(ThiefBellEffect.Variant.GOLDEN, 40, Formatting.GOLD));
 
     /**
      * Stands for a saved power-up that no longer exists: the turn counts it as used, it does nothing. Not registered

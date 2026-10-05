@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.powerups;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -32,6 +33,21 @@ public record PowerUpUse(ServerWorld world, ServerPlayerEntity player, PartyCont
     /** The token of the turn. */
     public UUID token() {
         return turn.getTokenUUID();
+    }
+
+    /** The token of the turn, if loaded in the party's world. */
+    public @Nullable Entity tokenEntity() {
+        return world.getEntity(turn.getTokenUUID());
+    }
+
+    /**
+     * Holds the turn while the effect goes on after {@link PowerUp#apply} returned (a warp...): no roll and no other
+     * power-up until the returned action runs, or {@code maxTicks} at the latest.
+     *
+     * @return what lets the turn go on (run it once the effect is over, or right away if it did not happen)
+     */
+    public Runnable holdTurn(int maxTicks) {
+        return PowerUpService.hold(world, turn, maxTicks);
     }
 
     /** The player aimed at, if online. */

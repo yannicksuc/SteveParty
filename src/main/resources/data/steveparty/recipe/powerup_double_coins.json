@@ -3,7 +3,6 @@
   "category": "misc",
   "ingredients": [
     { "item": "steveparty:coin" },
-    { "item": "steveparty:coin" },
     { "item": "minecraft:glowstone_dust" },
     { "item": "minecraft:paper" }
   ],

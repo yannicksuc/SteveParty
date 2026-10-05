@@ -2,14 +2,22 @@ package fr.lordfinn.steveparty.powerups;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
+import fr.lordfinn.steveparty.dice.DicePrompts;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * A power-up (bonus): an item bought in a shop that a player uses at the start of their turn, before their roll and
@@ -21,7 +29,8 @@ import java.util.List;
  * <ul>
  *     <li>{@link #target()}: what it needs to aim at (nothing, a player, a board space);</li>
  *     <li>{@link #refusal}: when it cannot be used, on top of the rules above (null: it can);</li>
- *     <li>{@link #apply}: what it does right away, when used;</li>
+ *     <li>{@link #apply}: what it does right away, when used, and whether it did it ({@link Result}: only a power-up
+ *     that had its effect is consumed);</li>
  *     <li>{@link #modifyRoll} and {@link #modifyCoinsGained}: what it changes until the end of the turn. The power-up
  *     used is remembered in the turn ({@link PowerUpTurn}, saved with the party), so these are asked for as long as
  *     the turn lasts; what they need to remember goes in {@link PowerUpTurn#data()}.</li>
@@ -40,6 +49,26 @@ public abstract class PowerUp {
         PLAYER,
         /** A board space: right-click it ({@link PowerUpUse#targetTile}). */
         TILE
+    }
+
+    /**
+     * What {@link #apply} did: {@link #APPLIED} (the item is consumed, the turn remembers it, the use is announced), or
+     * refused (nothing consumed, nothing remembered: the player keeps it and may use a power-up this turn).
+     *
+     * @param refusal shown to the player in red when refused; null when the effect already told them why
+     */
+    public record Result(boolean applied, @Nullable Text refusal) {
+        public static final Result APPLIED = new Result(true, null);
+
+        /** Refused, {@code why} shown to the player. */
+        public static Result refused(Text why) {
+            return new Result(false, why);
+        }
+
+        /** Refused, the effect having already told the player why. */
+        public static Result refusedSilently() {
+            return new Result(false, null);
+        }
     }
 
     private final String id;
@@ -100,12 +129,45 @@ public abstract class PowerUp {
         return null;
     }
 
-    /** It is used (the item is already consumed and the use announced): what it does right away. */
-    public void apply(PowerUpUse use) {
+    /**
+     * {@link Target#PLAYER}: asks {@code use.player()} which of {@code others} (at least one) to aim at, then calls
+     * {@code pick} exactly once, maybe later (up to {@link DicePrompts#TIMEOUT_TICKS}: the turn is held meanwhile, no
+     * roll and no other power-up). By default a list of their heads, the first one when unanswered.
+     *
+     * @param use the use, its target not known yet
+     */
+    public void pickPlayer(PowerUpUse use, List<ServerPlayerEntity> others, Consumer<ServerPlayerEntity> pick) {
+        List<DicePrompts.Option> options = new ArrayList<>();
+        for (ServerPlayerEntity other : others) options.add(new DicePrompts.Option(headOf(other), other.getDisplayName()));
+        DicePrompts.ask(use.player(), Text.translatable("gui.steveparty.powerup.pick_player", name()), DicePrompts.Layout.LIST,
+                options, DicePrompts.TIMEOUT_TICKS, 0, index -> pick.accept(others.get(index)));
     }
 
-    /** The announcement to the party: {@code powerup.steveparty.<id>.announce}, {@code %s} being the player. */
-    public MutableText announcement(PowerUpUse use) {
+    /** A player's head, for a prompt listing players. */
+    public static ItemStack headOf(ServerPlayerEntity player) {
+        ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+        head.set(DataComponentTypes.PROFILE, new ProfileComponent(player.getGameProfile()));
+        return head;
+    }
+
+    /**
+     * It is used (its own conditions passed, the target known, the item still held): what it does right away. The
+     * turn already remembers it ({@link PowerUpTurn#data()} may be filled here). An effect that goes on after this
+     * returns (a warp...) holds the turn until it is over: {@link PowerUpUse#holdTurn}.
+     *
+     * @return {@link Result#APPLIED} if it had its effect (the item is then consumed and the use announced), else a
+     * refusal: nothing is consumed and the turn forgets it
+     */
+    public Result apply(PowerUpUse use) {
+        return Result.APPLIED;
+    }
+
+    /**
+     * The announcement to the party once applied: {@code powerup.steveparty.<id>.announce}, {@code %s} being the
+     * player, with a sound and particles. Null: no announcement at all (the effect tells what it has to, or must stay
+     * secret, like a Trap).
+     */
+    public @Nullable MutableText announcement(PowerUpUse use) {
         return Text.translatable("powerup.steveparty." + id + ".announce", use.player().getDisplayName());
     }
 
@@ -132,6 +194,11 @@ public abstract class PowerUp {
     }
 
     // ------------------------------------------------------------------ tooltip
+
+    /** Its item shines (a rarer version of another power-up). */
+    public boolean hasGlint() {
+        return false;
+    }
 
     /**
      * What it does, for its tooltip: {@code powerup.steveparty.<id>.desc} by default, its arguments

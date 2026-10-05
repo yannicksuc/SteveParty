@@ -8,11 +8,8 @@ import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.items.custom.PowerUpItem;
 import fr.lordfinn.steveparty.utils.MessageUtils;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -63,14 +60,18 @@ public final class PowerUpService {
 
     // ---------------------------------------------------------------- using one
 
+    /** The longest a player is given to pick a target: the prompt's time, and a margin. */
+    private static final int PICK_HOLD_TICKS = DicePrompts.TIMEOUT_TICKS + 40;
+
     /**
      * {@code player} uses the power-up held in {@code hand} (a right-click), aiming at {@code tile} if they clicked a
      * board space. Refused, with a message and nothing consumed, outside their own turn, once their roll counts,
-     * after another power-up this turn, without the target it needs, or when the power-up itself says no. Else the item
-     * is consumed (not in creative), the use announced to the party, and the power-up applied; a power-up aiming at a
-     * player first asks which one.
+     * after another power-up this turn, while one is still at work, without the target it needs, or when the power-up
+     * itself says no (before or when applied). Else the power-up is applied, then the item consumed (not in creative)
+     * and the use announced to the party. A power-up aiming at a player first asks which one
+     * ({@link PowerUp#pickPlayer}, the turn held meanwhile).
      *
-     * @return false if it was refused
+     * @return false if it was refused (true while a player is being picked)
      */
     public static boolean use(ServerPlayerEntity player, Hand hand, PowerUp powerUp, @Nullable BlockPos tile) {
         Turn turn = turnOf(player.getUuid());
@@ -91,25 +92,24 @@ public final class PowerUpService {
             refuse(player, Text.translatable("message.steveparty.powerup.no_player"));
             return false;
         }
-        List<DicePrompts.Option> options = new ArrayList<>();
-        for (ServerPlayerEntity other : others) {
-            ItemStack head = new ItemStack(Items.PLAYER_HEAD);
-            head.set(DataComponentTypes.PROFILE, new ProfileComponent(other.getGameProfile()));
-            options.add(new DicePrompts.Option(head, other.getDisplayName()));
-        }
         TokenTurnPartyStep step = turn.step();
-        DicePrompts.ask(player, Text.translatable("gui.steveparty.powerup.pick_player", powerUp.name()), DicePrompts.Layout.LIST,
-                options, DicePrompts.TIMEOUT_TICKS, 0, index -> {
-                    // The turn may have moved on while the player was choosing
-                    Turn now = turnOf(player.getUuid());
-                    if (now == null || now.step() != step) return;
-                    Text late = commonRefusal(now);
-                    if (late != null) {
-                        refuse(player, late);
-                        return;
-                    }
-                    finish(new PowerUpUse(world, player, now.controller(), step, powerUp, others.get(index).getUuid(), null), hand);
-                });
+        // No roll and no other power-up while the player picks
+        Runnable release = hold(world, step, PICK_HOLD_TICKS);
+        boolean[] picked = {false};
+        powerUp.pickPlayer(new PowerUpUse(world, player, turn.controller(), step, powerUp, null, null), others, target -> {
+            if (picked[0]) return;
+            picked[0] = true;
+            release.run();
+            // The turn may have moved on while the player was choosing
+            Turn now = turnOf(player.getUuid());
+            if (now == null || now.step() != step || target == null) return;
+            Text late = commonRefusal(now);
+            if (late != null) {
+                refuse(player, late);
+                return;
+            }
+            finish(new PowerUpUse(world, player, now.controller(), step, powerUp, target.getUuid(), null), hand);
+        });
         return true;
     }
 
@@ -118,41 +118,99 @@ public final class PowerUpService {
         if (turn == null) return Text.translatable("message.steveparty.powerup.not_your_turn");
         if (turn.step().hasRolled()) return Text.translatable("message.steveparty.powerup.after_roll");
         if (turn.state().hasUsed()) return Text.translatable("message.steveparty.powerup.already_used");
+        if (isHeld(turn)) return Text.translatable("message.steveparty.powerup.wait");
         return null;
     }
 
-    /** The power-up's own conditions, then: consumed, remembered, announced, applied. */
+    /**
+     * The power-up's own conditions, then it is applied: if it had its effect, it is consumed, remembered and
+     * announced; else the turn forgets it and the player keeps it.
+     */
     private static boolean finish(PowerUpUse use, Hand hand) {
         Text refusal = use.powerUp().refusal(use);
+        if (refusal == null && !holds(use.player(), hand, use.powerUp()))
+            refusal = Text.translatable("message.steveparty.powerup.not_held");
         if (refusal != null) {
             refuse(use.player(), refusal);
             return false;
         }
-        if (!consume(use.player(), hand, use.powerUp())) return false;
         use.state().use(use.powerUp());
+        PowerUp.Result result = use.powerUp().apply(use);
+        if (!result.applied()) {
+            use.state().forget();
+            refuse(use.player(), result.refusal());
+            return false;
+        }
+        consume(use.player(), hand, use.powerUp());
         announce(use);
-        use.powerUp().apply(use);
         use.controller().markDirty();
         use.controller().sendPacketToInterestedPlayers();
         return true;
     }
 
+    /** Whether the player still has one of the power-up (always in creative): in the hand that used it, or anywhere. */
+    private static boolean holds(ServerPlayerEntity player, Hand hand, PowerUp powerUp) {
+        return player.isInCreativeMode() || find(player, hand, powerUp) != null;
+    }
+
     /** One of the power-up, from the hand that used it, else from anywhere in the inventory (moved meanwhile). */
-    private static boolean consume(ServerPlayerEntity player, Hand hand, PowerUp powerUp) {
-        if (player.isInCreativeMode()) return true;
+    private static void consume(ServerPlayerEntity player, Hand hand, PowerUp powerUp) {
+        if (player.isInCreativeMode()) return;
+        ItemStack stack = find(player, hand, powerUp);
+        if (stack != null) stack.decrement(1);
+    }
+
+    private static @Nullable ItemStack find(ServerPlayerEntity player, Hand hand, PowerUp powerUp) {
         ItemStack held = player.getStackInHand(hand);
-        if (held.getItem() instanceof PowerUpItem item && item.powerUp() == powerUp) {
-            held.decrement(1);
-            return true;
-        }
+        if (held.getItem() instanceof PowerUpItem item && item.powerUp() == powerUp) return held;
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             ItemStack stack = player.getInventory().getStack(slot);
-            if (stack.getItem() instanceof PowerUpItem item && item.powerUp() == powerUp) {
-                stack.decrement(1);
-                return true;
-            }
+            if (stack.getItem() instanceof PowerUpItem item && item.powerUp() == powerUp) return stack;
         }
-        return false;
+        return null;
+    }
+
+    // ---------------------------------------------------------------- holding the turn
+
+    /**
+     * Holds {@code step} (no roll, no other power-up) for {@code maxTicks} at the latest.
+     *
+     * @return what releases it (once; harmless if the turn moved on)
+     */
+    static Runnable hold(ServerWorld world, TokenTurnPartyStep step, int maxTicks) {
+        PowerUpTurn state = step.getPowerUps();
+        state.hold(world.getTime() + Math.max(1, maxTicks));
+        boolean[] released = {false};
+        return () -> {
+            if (released[0]) return;
+            released[0] = true;
+            state.release();
+        };
+    }
+
+    private static boolean isHeld(Turn turn) {
+        return turn.state().isHeld(turn.controller().getWorld().getTime());
+    }
+
+    /**
+     * Why {@code player} may not throw a die now, null if they may: a power-up of their turn is still at work (a
+     * player being picked, a warp). Asked by the dice items.
+     */
+    public static @Nullable Text rollRefusal(PlayerEntity player) {
+        Turn turn = turnOf(player.getUuid());
+        return turn != null && isHeld(turn) ? Text.translatable("message.steveparty.powerup.wait") : null;
+    }
+
+    /**
+     * The dice items' check: true (and the player told why, in the action bar) if {@code player} may not throw a die
+     * now (see {@link #rollRefusal}).
+     */
+    public static boolean refusesRoll(PlayerEntity player) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) return false;
+        Text why = rollRefusal(serverPlayer);
+        if (why == null) return false;
+        refuse(serverPlayer, why);
+        return true;
     }
 
     /** The other players of the party who are online: those a power-up may aim at. */
@@ -165,15 +223,18 @@ public final class PowerUpService {
         return others;
     }
 
-    private static void refuse(ServerPlayerEntity player, Text why) {
-        MessageUtils.sendToPlayer(player, why.copy().formatted(Formatting.RED), MessageUtils.MessageType.ACTION_BAR);
+    private static void refuse(ServerPlayerEntity player, @Nullable Text why) {
+        if (why != null)
+            MessageUtils.sendToPlayer(player, why.copy().formatted(Formatting.RED), MessageUtils.MessageType.ACTION_BAR);
         player.getServerWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 0.6f, 0.8f);
     }
 
     /** In the action bar and the chat of the party's audience (and of its player), like the landings: in its colour. */
     private static void announce(PowerUpUse use) {
-        MutableText notice = Text.literal("✦ ").append(use.powerUp().announcement(use)).formatted(use.powerUp().color());
+        MutableText announcement = use.powerUp().announcement(use);
+        if (announcement == null) return;
+        MutableText notice = Text.literal("✦ ").append(announcement).formatted(use.powerUp().color());
         List<ServerPlayerEntity> audience = new ArrayList<>(use.controller().getPartyAudience());
         if (!audience.contains(use.player())) audience.add(use.player());
         MessageUtils.sendToPlayers(audience, notice, MessageUtils.MessageType.ACTION_BAR);
