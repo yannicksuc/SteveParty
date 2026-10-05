@@ -62,7 +62,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private PartyData partyData = new PartyData();
     /** Server-side only registry of the loaded controllers, keyed by dimension + position. */
     private static final Map<GlobalPos, PartyControllerEntity> ACTIVE_PARTY_CONTROLLERS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new LinkedHashMap<>());
-    private static final int START_TILES_SEARCH_RADIUS = 100;
+    /** The board of a party: its start tiles and star spaces are looked for this far from the controller. */
+    public static final int START_TILES_SEARCH_RADIUS = 100;
     private final Set<UUID> interestedPlayers = new HashSet<>(); // New field
     /** Set once the step that was running when this controller was saved has been resumed. */
     private boolean resumeDone = false;
@@ -99,6 +100,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public static final int MIN_ROUNDS = 1, MAX_ROUNDS = 50;
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
     private boolean practiceRound = true;
+    /**
+     * The star space holding the party's star (see {@link fr.lordfinn.steveparty.service.PartyStars}); null while the
+     * party has no star yet, or while it waits, hidden, for a star space to be switched on. Saved with the party.
+     */
+    private @Nullable BlockPos starSpace;
 
     public PartyControllerEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PARTY_CONTROLLER_ENTITY, pos, state);
@@ -227,6 +233,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         nbt.put("MiniGameGains", gains.toNbt());
         if (!bank.isEmpty()) nbt.put("BankCartridge", bank.encode(wrapper));
         nbt.putBoolean("PracticeRound", practiceRound);
+        if (starSpace != null) nbt.putLong("StarSpace", starSpace.asLong());
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
             tokensToRelease.forEach(uuid -> releaseNbt.add(NbtString.of(uuid.toString())));
@@ -269,6 +276,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         NbtElement bankElement = nbt.get("BankCartridge");
         bank = bankElement == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, bankElement).orElse(ItemStack.EMPTY);
         practiceRound = !nbt.contains("PracticeRound") || nbt.getBoolean("PracticeRound");
+        starSpace = nbt.contains("StarSpace") ? BlockPos.fromLong(nbt.getLong("StarSpace")) : null;
         tokensToRelease.clear();
         nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
             try {
@@ -300,6 +308,19 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         NbtElement element = nbt.get(currency.nbtKey());
         ItemStack stack = element == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, element).orElse(ItemStack.EMPTY);
         return currency.template(stack);
+    }
+
+    // ------------------------------------------------------------------ the star
+
+    /** The star space holding the party's star, null for none (not placed yet, or hidden: no star space is on). */
+    public @Nullable BlockPos getStarSpace() {
+        return starSpace;
+    }
+
+    public void setStarSpace(@Nullable BlockPos starSpace) {
+        if (java.util.Objects.equals(this.starSpace, starSpace)) return;
+        this.starSpace = starSpace == null ? null : starSpace.toImmutable();
+        super.markDirty(); // saved; nothing to sync (the star has its own packet: see PartyStars)
     }
 
     // ------------------------------------------------------------------ settings (the dashboard's Settings page)
@@ -455,6 +476,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * a step could wrongly consider the tokens as missing.
      */
     public void serverTick(ServerWorld serverWorld) {
+        fr.lordfinn.steveparty.service.PartyStars.tick(this, serverWorld);
         if (!tokensToRelease.isEmpty() && serverWorld.getTime() % 20 == 0)
             releasePendingTokens(serverWorld);
         if (serverWorld.getTime() % 20 == 0) syncChunkHold();
@@ -528,6 +550,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         partyData.addStep(new BasicGameGeneratorStep());
 
         sendStartGameInfos();
+        // The star stands on one of the board's star spaces, at random
+        fr.lordfinn.steveparty.service.PartyStars.onPartyStarted(this, serverWorld);
         nextStep();
         markDirty();
         // Goal pole bases linked to this party start again from 0
@@ -600,7 +624,15 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * block entity, so only the block entities of the already loaded chunks are checked (no chunk is loaded).
      */
     private List<BlockPos> findStartTiles(ServerWorld world, BlockPos center) {
-        List<BlockPos> startTiles = new ArrayList<>();
+        return findBoardSpaces(world, center, BoardSpaceType.TILE_START);
+    }
+
+    /**
+     * The board spaces of the type {@code type} within {@link #START_TILES_SEARCH_RADIUS} blocks of {@code center}, in
+     * the loaded chunks (none is loaded for this), sorted by z, then y, then x.
+     */
+    public static List<BlockPos> findBoardSpaces(ServerWorld world, BlockPos center, BoardSpaceType type) {
+        List<BlockPos> spaces = new ArrayList<>();
         int minX = center.getX() - START_TILES_SEARCH_RADIUS, maxX = center.getX() + START_TILES_SEARCH_RADIUS;
         int minY = center.getY() - START_TILES_SEARCH_RADIUS, maxY = center.getY() + START_TILES_SEARCH_RADIUS;
         int minZ = center.getZ() - START_TILES_SEARCH_RADIUS, maxZ = center.getZ() + START_TILES_SEARCH_RADIUS;
@@ -615,15 +647,15 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
                     if (pos.getX() < minX || pos.getX() > maxX || pos.getY() < minY || pos.getY() > maxY
                             || pos.getZ() < minZ || pos.getZ() > maxZ) continue;
                     BlockState state = chunk.getBlockState(pos);
-                    if (state.getBlock() instanceof ABoardSpaceBlock && state.get(ABoardSpaceBlock.TILE_TYPE) == BoardSpaceType.TILE_START) {
-                        startTiles.add(pos.toImmutable());
+                    if (state.getBlock() instanceof ABoardSpaceBlock && state.get(ABoardSpaceBlock.TILE_TYPE) == type) {
+                        spaces.add(pos.toImmutable());
                     }
                 }
             }
         }
         // Same order as the former full scan (x first, then y, then z)
-        startTiles.sort(Comparator.comparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getY).thenComparingInt(BlockPos::getX));
-        return startTiles;
+        spaces.sort(Comparator.comparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getY).thenComparingInt(BlockPos::getX));
+        return spaces;
     }
 
 

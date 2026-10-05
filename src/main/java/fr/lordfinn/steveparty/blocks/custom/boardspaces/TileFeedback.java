@@ -90,8 +90,8 @@ public final class TileFeedback {
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.0F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 0.45F, 1.335F, 3),
                 new Layer(SoundEvents.ENTITY_ITEM_PICKUP, 0.25F, 1.4F, 3))),
-        /** A shop tile: a shop bell and a coin clink, gold sparkles. */
-        SHOP("shop", 0xFFD83D, List.of(
+        /** A shop tile: a shop bell and a coin clink, lime green sparkles. */
+        SHOP("shop", 0xA6E22E, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.5F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BELL, 0.45F, 2.0F, 3),
                 new Layer(SoundEvents.ENTITY_VILLAGER_TRADE, 0.45F, 1.1F, 2),
@@ -135,6 +135,11 @@ public final class TileFeedback {
         REPLAY_SPENT("replay_spent", 0x7FB8BF, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.498F, 0),
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_BIT, 0.35F, 1.0F, 3))),
+        /** A star space: a twinkling rising chime, gold sparkles (buying the star has its own fanfare: see PartyStars). */
+        STAR("star", 0xFFD83D, List.of(
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.45F, 1.498F, 0),
+                Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 0.45F, 2.0F, 3),
+                new Layer(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 0.6F, 1.8F, 3))),
         /** A teleport tile (warp pipe): a flute whirl going down while the token spins away (see TileTeleport). */
         TELEPORT("teleport", 0xA35CFF, List.of(
                 Layer.of(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, 0.45F, 1.498F, 0),

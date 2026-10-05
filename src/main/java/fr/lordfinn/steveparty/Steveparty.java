@@ -105,6 +105,7 @@ public class Steveparty implements ModInitializer {
         new TokenMovementService();
         fr.lordfinn.steveparty.service.ShopStops.initialize();
         fr.lordfinn.steveparty.powerups.effects.TrapEffect.initialize();
+        fr.lordfinn.steveparty.service.PartyStars.initialize();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             for (ServerPlayerEntity player : world.getPlayers()) {

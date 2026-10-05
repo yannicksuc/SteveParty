@@ -14,7 +14,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** Rejouer / Roll Again: the token's owner plays again right away (see ReplayBoardSpaceBehavior). */
     TILE_REPLAY("tile_replay"),
     /** « Téléportation »: a token landing here is sent to one of the tile's teleport targets (see TileTeleport). */
-    TILE_TELEPORT("tile_teleport");
+    TILE_TELEPORT("tile_teleport"),
+    /** « Étoile »: a star space, where the party's star may stand and be bought (see fr.lordfinn.steveparty.service.PartyStars). */
+    TILE_STAR("tile_star");
 
     private final String name;
 

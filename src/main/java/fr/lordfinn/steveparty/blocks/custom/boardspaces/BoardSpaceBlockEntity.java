@@ -248,6 +248,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             updateBoardSpaceColor();
             return false;
         }
+        BoardSpaceType previousType = appliedType;
         appliedCartridge = stack;
         appliedType = type;
 
@@ -260,6 +261,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         updateBoardSpaceColor();
         syncToClients();
         getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
+        // A star space switched on or off: the party stars follow
+        if (previousType != type && (previousType == BoardSpaceType.TILE_STAR || type == BoardSpaceType.TILE_STAR))
+            fr.lordfinn.steveparty.service.PartyStars.onRoleChanged(serverWorld, pos, previousType, type);
         return true;
     }
 

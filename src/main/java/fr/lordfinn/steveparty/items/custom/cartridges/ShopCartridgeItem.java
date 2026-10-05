@@ -19,7 +19,7 @@ import net.minecraft.util.Formatting;
 import java.util.List;
 
 /**
- * The Shop Cartridge (« Cartouche Boutique », yellow): a shop stop, Mario Party style (see
+ * The Shop Cartridge (« Cartouche Boutique », lime green: yellow is the Star Cartridge's): a shop stop, Mario Party style (see
  * {@link fr.lordfinn.steveparty.service.ShopStops}).
  * <ul>
  *     <li>in a check point: a token passing through pauses there while its owner shops;</li>
@@ -33,7 +33,7 @@ public class ShopCartridgeItem extends CartridgeItem {
     public static final int DEFAULT_PURCHASES = 1;
     public static final int MAX_PURCHASES = 9;
     /** The shop cartridge's colour: the tile, the check point and the landing burst. */
-    public static final int COLOR = 0xFFD83D;
+    public static final int COLOR = 0xA6E22E;
 
     private static final String K = MENU_KEY + "shop.";
     private static final List<CartridgeModule> MODULES = List.of(

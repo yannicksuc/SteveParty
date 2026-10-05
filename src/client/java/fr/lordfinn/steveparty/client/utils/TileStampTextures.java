@@ -405,10 +405,44 @@ public final class TileStampTextures {
     private static final Map<Character, Float> SHOP_SHADES = Map.of(
             '#', FEATURE, 'b', 0.2f, 's', -0.5f, 'o', NUMBER, 'n', 0.5f, '+', 0.3f, 't', -0.3f, '-', 0.08f, 'm', 0.12f);
 
-    /** The shop tile's face, in the ramp of {@code rgb} (the Shop Cartridge's yellow). */
+    /** The shop tile's face, in the ramp of {@code rgb} (the Shop Cartridge's lime green). */
     public static Identifier shopFace(int rgb, boolean small) {
         return TEXTURES.computeIfAbsent(new Key("shop", rgb, small),
                 key -> register(glyphValues(small ? SMALL_SHOP_BOX : SHOP_BOX, small, SHOP_SHADES), rgb, small));
+    }
+
+    // ---------------------------------------------------------------- the Star face
+
+    /** A five-pointed star, by hand for each size: '#' the ramp's darkest shade, 'o' a light glint on its top point. */
+    private static final String[] STAR = {
+            "......#o......",
+            "......##......",
+            ".....####.....",
+            ".....####.....",
+            "##############",
+            ".############.",
+            "..##########..",
+            "...########...",
+            "...########...",
+            "..####..####..",
+            "..###....###..",
+            ".###......###.",
+            ".##........##."};
+    private static final String[] SMALL_STAR = {
+            "....#o....",
+            "....##....",
+            "...####...",
+            "##########",
+            ".########.",
+            "..######..",
+            "..######..",
+            ".###..###.",
+            ".##....##."};
+
+    /** The star space's face: a star in the ramp's darkest shade on the blank tile face, in the ramp of {@code rgb} (yellow). */
+    public static Identifier starFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("star", rgb, small),
+                key -> register(glyphValues(small ? SMALL_STAR : STAR, small, FEATURE, -0.6f), rgb, small));
     }
 
     // ---------------------------------------------------------------- the Teleport face
