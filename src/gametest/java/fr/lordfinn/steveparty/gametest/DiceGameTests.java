@@ -37,12 +37,12 @@ public class DiceGameTests implements FabricGameTest {
         DiceEntity dice = spawnDice(context);
         ServerWorld world = context.getWorld();
         // What /kill does
-        dice.kill(world);
+        dice.kill();
         context.assertTrue(dice.isRemoved(), "/kill removes the dice");
 
         DiceEntity other = spawnDice(context);
         // /damage ... minecraft:generic_kill, or anything that bypasses invulnerability
-        other.damage(world, world.getDamageSources().genericKill(), Float.MAX_VALUE);
+        other.damage(world.getDamageSources().genericKill(), Float.MAX_VALUE);
         context.assertTrue(other.isRemoved(), "a generic kill removes the dice");
         context.complete();
     }
@@ -69,8 +69,8 @@ public class DiceGameTests implements FabricGameTest {
     public void genericDamageDoesNotRemoveDice(TestContext context) {
         DiceEntity dice = spawnDice(context);
         ServerWorld world = context.getWorld();
-        dice.damage(world, world.getDamageSources().generic(), 1000F);
-        dice.damage(world, world.getDamageSources().inFire(), 1000F);
+        dice.damage(world.getDamageSources().generic(), 1000F);
+        dice.damage(world.getDamageSources().inFire(), 1000F);
         context.assertFalse(dice.isRemoved(), "only kills that bypass invulnerability remove the dice");
         context.complete();
     }
@@ -82,19 +82,19 @@ public class DiceGameTests implements FabricGameTest {
         ServerPlayerEntity player = playerNextTo(context, false);
         try {
             context.assertTrue(dice.isRolling(), "a new dice rolls");
-            dice.damage(world, world.getDamageSources().playerAttack(player), 1F);
+            dice.damage(world.getDamageSources().playerAttack(player), 1F);
             context.assertFalse(dice.isRolling(), "a hit stops the dice");
             context.assertFalse(dice.isRemoved(), "a hit does not remove the dice");
             int value = dice.getRollValue();
             context.assertTrue(value >= DiceEntity.MIN && value <= DiceEntity.MAX, "rolled a value: " + value);
 
-            dice.damage(world, world.getDamageSources().playerAttack(player), 1F);
+            dice.damage(world.getDamageSources().playerAttack(player), 1F);
             context.assertTrue(dice.isRolling(), "a second hit restarts the dice");
             context.assertFalse(dice.isRemoved(), "still there");
 
             ServerPlayerEntity sneaking = playerNextTo(context, true);
             try {
-                dice.damage(world, world.getDamageSources().playerAttack(sneaking), 1F);
+                dice.damage(world.getDamageSources().playerAttack(sneaking), 1F);
                 context.assertTrue(dice.isRemoved(), "a sneaking hit explodes the dice");
             } finally {
                 disconnect(context, sneaking);
@@ -138,7 +138,7 @@ public class DiceGameTests implements FabricGameTest {
             context.assertTrue(!dice.isRemoved() && dice.isRolling() && !dice.isRollFinished(), "still rolling 6 seconds later, without a hit");
             context.assertEquals(dice.sequence().phase(), fr.lordfinn.steveparty.dice.DiceRollSequence.Phase.ROLLING, "its roll goes on");
             context.assertTrue(fr.lordfinn.steveparty.dice.DicePrompts.pending(player) == null, "nothing is asked for a plain die");
-            dice.damage(context.getWorld(), context.getWorld().getDamageSources().playerAttack(player), 1F);
+            dice.damage(context.getWorld().getDamageSources().playerAttack(player), 1F);
             context.assertTrue(!dice.isRolling() && dice.isRollFinished(), "a hit stops it");
             context.complete();
         });
@@ -174,10 +174,10 @@ public class DiceGameTests implements FabricGameTest {
         java.util.List<DiceEntity> thrown = diceOf(context, player);
         context.assertEquals(thrown.size(), 2, "the two dice of a Double Dice");
         ServerWorld world = context.getWorld();
-        for (DiceEntity dice : thrown) dice.damage(world, world.getDamageSources().playerAttack(player), 1F); // sneaking: would burst them
+        for (DiceEntity dice : thrown) dice.damage(world.getDamageSources().playerAttack(player), 1F); // sneaking: would burst them
         context.assertTrue(thrown.stream().noneMatch(DiceEntity::isRemoved), "a sneaking click right after the throw does not burst the dice");
         player.setSneaking(false);
-        for (DiceEntity dice : thrown) dice.damage(world, world.getDamageSources().playerAttack(player), 1F);
+        for (DiceEntity dice : thrown) dice.damage(world.getDamageSources().playerAttack(player), 1F);
         context.assertTrue(thrown.stream().allMatch(dice -> dice.isRolling() && !dice.isRollFinished()), "nor does a click stop them");
         context.assertTrue(thrown.getFirst().isInThrowGrace(player), "the thrower's hits don't count yet");
 
@@ -190,10 +190,10 @@ public class DiceGameTests implements FabricGameTest {
         }
         context.waitAndRun(DiceEntity.THROW_GRACE_TICKS + 2, () -> {
             context.assertTrue(thrown.stream().allMatch(DiceEntity::isRolling), "still rolling meanwhile");
-            thrown.getLast().damage(world, world.getDamageSources().playerAttack(player), 1F);
+            thrown.getLast().damage(world.getDamageSources().playerAttack(player), 1F);
             context.assertTrue(thrown.stream().noneMatch(DiceEntity::isRolling) && thrown.getFirst().isRollFinished(), "then the thrower's hit stops them");
             // The finished dice are unchanged: the next hit makes them go away at once
-            thrown.getFirst().damage(world, world.getDamageSources().playerAttack(player), 1F);
+            thrown.getFirst().damage(world.getDamageSources().playerAttack(player), 1F);
             context.assertTrue(thrown.stream().allMatch(DiceEntity::isRemoved), "a hit on the finished dice makes them go away");
             context.complete();
         });

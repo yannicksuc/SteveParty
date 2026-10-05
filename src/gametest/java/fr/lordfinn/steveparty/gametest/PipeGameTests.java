@@ -231,7 +231,7 @@ public class PipeGameTests implements FabricGameTest {
             when(context, () -> !player.hasVehicle(), 40, "never came out", () -> {
                 Vec3d at = relative(context, player);
                 context.assertTrue(at.x > 5 && at.x < 6 && Math.abs(at.z - 2.5) < 0.1, "out of the east mouth: " + at);
-                context.assertTrue(player.getAttributeValue(EntityAttributes.SCALE) == 1.0, "back to its size");
+                context.assertTrue(player.getAttributeValue(EntityAttributes.GENERIC_SCALE) == 1.0, "back to its size");
                 context.assertTrue(player.getVelocity().x > 0, "thrown out eastward");
                 context.complete();
             });
@@ -280,7 +280,7 @@ public class PipeGameTests implements FabricGameTest {
         context.getBlockState(new BlockPos(1, 2, 1)).onEntityCollision(context.getWorld(), west, flyer);
         context.assertTrue(PipeTravel.isTravelling(flyer), "the fast flyer went in");
         float flyerHealth = flyer.getHealth();
-        flyer.damage(context.getWorld(), context.getWorld().getDamageSources().flyIntoWall(), 6);
+        flyer.damage(context.getWorld().getDamageSources().flyIntoWall(), 6);
         context.assertTrue(flyer.getHealth() == flyerHealth, "no damage flying into the mouth");
         // Walking slowly into it does nothing (players sneak or click)
         ServerPlayerEntity walker = player(context, new Vec3d(1.1, 2.3, 1.5), -90);
@@ -429,7 +429,7 @@ public class PipeGameTests implements FabricGameTest {
         token.steveparty$setTokenOwner(owner);
         pig.setCustomName(net.minecraft.text.Text.literal("Pawn"));
         UUID id = pig.getUuid();
-        double scale = pig.getAttributeValue(EntityAttributes.SCALE);
+        double scale = pig.getAttributeValue(EntityAttributes.GENERIC_SCALE);
         context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 1)), Direction.UP, pig, 0), "in");
         when(context, () -> pig.getVehicle() instanceof PipeCarrierEntity, 5, "the token never went in", () ->
                 when(context, () -> !pig.hasVehicle() && relative(context, pig).z > 3, 60, "the token never came out", () -> {
@@ -438,7 +438,7 @@ public class PipeGameTests implements FabricGameTest {
                     context.assertTrue(token.steveparty$isTokenized(), "still a token");
                     context.assertTrue(owner.equals(token.steveparty$getTokenOwner()), "same owner");
                     context.assertTrue(pig.hasCustomName() && pig.getCustomName().getString().equals("Pawn"), "same name");
-                    context.assertTrue(pig.getAttributeValue(EntityAttributes.SCALE) == scale, "its size back");
+                    context.assertTrue(pig.getAttributeValue(EntityAttributes.GENERIC_SCALE) == scale, "its size back");
                     Vec3d at = relative(context, pig);
                     context.assertTrue(Math.abs(at.x - 3.5) < 0.6 && Math.abs(at.z - 4.5) < 0.6, "out of the other pipe: " + at);
                     context.complete();
@@ -718,7 +718,7 @@ public class PipeGameTests implements FabricGameTest {
         BlockPos exitAbs = context.getAbsolutePos(exit), in = context.getAbsolutePos(new BlockPos(1, 2, 1));
         PigEntity pig = context.spawnEntity(EntityType.PIG, new Vec3d(1.5, 3, 1.5));
         // It falls, but does not walk off
-        pig.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0);
+        pig.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0);
         Vec3d drop = context.getAbsolute(new Vec3d(1.5, 3.2, 1.5));
         ItemEntity item = new ItemEntity(context.getWorld(), drop.x, drop.y, drop.z, new ItemStack(Items.DIAMOND));
         item.setVelocity(Vec3d.ZERO);

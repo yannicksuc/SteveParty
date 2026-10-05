@@ -309,7 +309,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
         NbtCompound nbt = new NbtCompound();
         NbtList items = new NbtList();
-        NbtCompound star = (NbtCompound) new ItemStack(ModItems.POWER_STAR).toNbt(context.getWorld().getRegistryManager());
+        NbtCompound star = (NbtCompound) new ItemStack(ModItems.POWER_STAR).encode(context.getWorld().getRegistryManager());
         star.putByte("Slot", (byte) 12);
         items.add(star);
         nbt.put("Items", items);
@@ -373,7 +373,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         ItemStack forged = DiceFacesComponent.createDie(List.of(new ItemStack(face(3))));
         NbtCompound nbt = new NbtCompound();
         NbtList items = new NbtList();
-        NbtCompound die = (NbtCompound) forged.copyWithCount(2).toNbt(context.getWorld().getRegistryManager());
+        NbtCompound die = (NbtCompound) forged.copyWithCount(2).encode(context.getWorld().getRegistryManager());
         die.putByte("Slot", (byte) CENTER_SLOT);
         items.add(die);
         nbt.put("Items", items);

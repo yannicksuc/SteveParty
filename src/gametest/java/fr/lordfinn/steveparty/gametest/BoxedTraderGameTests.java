@@ -13,7 +13,7 @@ import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.item.Equipment;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.SpawnReason;
@@ -293,7 +293,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         java.util.Set<net.minecraft.block.Block> seen = new java.util.HashSet<>();
         for (int i = 0; i < 12; i++) {
             BoxedTraderEntity trader = ModEntities.BOXED_TRADER_ENTITY.spawnFromItemStack(context.getWorld(), new ItemStack(ModItems.BOXED_TRADER_SPAWN_EGG),
-                    null, context.getAbsolutePos(new BlockPos(3, 1, 3)), SpawnReason.SPAWN_ITEM_USE, false, false);
+                    null, context.getAbsolutePos(new BlockPos(3, 1, 3)), SpawnReason.SPAWN_EGG, false, false);
             context.assertTrue(trader != null, "spawned");
             BlockState box = trader.getBlockState();
             context.assertTrue(BoxedTraderBoxes.lines().stream().anyMatch(line -> line.contains(box)), "a box of the list: " + box);
@@ -314,7 +314,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         context.assertTrue(trader.getBlockState().isOf(Blocks.GOLD_BLOCK), "air and barrier refused: " + trader.getBlockState());
         NbtCompound saved = trader.writeNbt(new NbtCompound());
         saved.putString("blockState", "{\"Name\":\"minecraft:air\"}");
-        BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
+        BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld());
         loaded.readNbt(saved);
         context.assertTrue(loaded.getBlockState().isOf(Blocks.GOLD_BLOCK), "air from NBT refused");
         context.assertTrue(BoxCostumeItem.getBlock(BoxCostumeItem.create(Blocks.AIR.getDefaultState())).isOf(Blocks.BEEHIVE), "costume of air: its default beehive");
@@ -332,7 +332,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         NbtCompound saved = new NbtCompound();
         saved.putString("id", "steveparty:hiding_trader");
         saved.putBoolean(BoxedTraderEntity.BOX_GLITCHED_NBT, true);
-        net.minecraft.entity.Entity loaded = net.minecraft.entity.EntityType.loadEntityWithPassengers(saved, context.getWorld(), SpawnReason.LOAD, entity -> entity);
+        net.minecraft.entity.Entity loaded = net.minecraft.entity.EntityType.loadEntityWithPassengers(saved, context.getWorld(), entity -> entity);
         context.assertTrue(loaded instanceof BoxedTraderEntity trader && trader.isBoxGlitched(), "a saved Hiding Trader loads as a Boxed Trader: " + loaded);
         context.assertTrue(net.minecraft.registry.Registries.ENTITY_TYPE.getId(ModEntities.BOXED_TRADER_ENTITY).equals(Steveparty.id("boxed_trader")), "saved under the new id");
         context.complete();
@@ -344,7 +344,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         trader.setBlockState(Blocks.BRICKS.getDefaultState());
         trader.setBoxGlitched(true);
         NbtCompound saved = trader.writeNbt(new NbtCompound());
-        BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
+        BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld());
         loaded.readNbt(saved);
         context.assertTrue(loaded.isBoxGlitched(), "box still glitched");
         context.assertTrue(loaded.getBlockState().isOf(Blocks.BRICKS), "block kept");
@@ -354,8 +354,8 @@ public class BoxedTraderGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theBoxCostumeIsWornOnTheChest(TestContext context) {
         ItemStack costume = BoxCostumeItem.create(Blocks.OAK_PLANKS.getDefaultState());
-        EquippableComponent equippable = costume.get(DataComponentTypes.EQUIPPABLE);
-        context.assertTrue(equippable != null && equippable.slot() == EquipmentSlot.CHEST, "equippable in the chest slot");
+        context.assertTrue(costume.getItem() instanceof Equipment equipment && equipment.getSlotType() == EquipmentSlot.CHEST,
+                "equippable in the chest slot");
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         checks(context, player, () -> {
             context.assertEquals(player.getPreferredEquipmentSlot(costume), EquipmentSlot.CHEST, "goes to the chest");
@@ -501,7 +501,7 @@ public class BoxedTraderGameTests implements FabricGameTest {
         trader.setHasBandana(false);
         trader.startTheftHiding(0);
         NbtCompound saved = trader.writeNbt(new NbtCompound());
-        BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
+        BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(context.getWorld());
         loaded.readNbt(saved);
         context.assertFalse(loaded.hasBandana(), "still bald");
         context.assertEquals(loaded.getBandanaColor(), 2, "colour kept");
@@ -541,18 +541,18 @@ public class BoxedTraderGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theBandanaIsWornOnTheHead(TestContext context) {
         ItemStack bandana = BandanaItem.create(2);
-        EquippableComponent equippable = bandana.get(DataComponentTypes.EQUIPPABLE);
-        context.assertTrue(equippable != null && equippable.slot() == EquipmentSlot.HEAD, "equippable in the head slot");
-        context.assertTrue(equippable.model().isPresent() && equippable.model().get().equals(Steveparty.id("bandana_pink")), "pink equipment model");
+        context.assertTrue(bandana.getItem() instanceof Equipment equipment && equipment.getSlotType() == EquipmentSlot.HEAD,
+                "equippable in the head slot");
+        context.assertTrue(BandanaItem.textureLayer(BandanaItem.getColor(bandana)).equals(Steveparty.id("bandana_pink")), "pink armour layer");
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
         checks(context, player, () -> {
             context.assertEquals(player.getPreferredEquipmentSlot(bandana), EquipmentSlot.HEAD, "goes to the head");
-            context.assertTrue(player.canEquip(bandana, EquipmentSlot.HEAD), "the head slot accepts it");
+            context.assertTrue(player.canEquip(bandana), "the head slot accepts it");
             player.setStackInHand(Hand.MAIN_HAND, bandana.copy());
             player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
             context.assertTrue(player.getEquippedStack(EquipmentSlot.HEAD).isOf(ModItems.BANDANA), "right click equips it");
             ArmorStandEntity stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, new BlockPos(1, 1, 1));
-            context.assertTrue(stand.canEquip(bandana, EquipmentSlot.HEAD), "armour stands can wear it");
+            context.assertTrue(stand.canEquip(bandana), "armour stands can wear it");
         });
     }
 

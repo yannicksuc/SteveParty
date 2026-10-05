@@ -73,7 +73,7 @@ public class CoreGameTests implements FabricGameTest {
         pig.writeNbt(nbt);
         context.assertTrue(!nbt.contains("Tokenized"), "no token data written for a regular mob");
 
-        PigEntity reloaded = EntityType.PIG.create(context.getWorld(), SpawnReason.LOAD);
+        PigEntity reloaded = EntityType.PIG.create(context.getWorld());
         context.assertTrue(reloaded != null, "pig created");
         reloaded.readNbt(nbt);
         context.assertTrue(reloaded.isAiDisabled(), "NoAI kept");
@@ -193,7 +193,7 @@ public class CoreGameTests implements FabricGameTest {
         context.assertTrue(!PartyCommands.canExcludeToken(player, controller, othersToken), "plain wand is not enough");
 
         RegistryEntry<Enchantment> gameMaster = context.getWorld().getRegistryManager()
-                .getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(TokenizerWandItem.GAME_MASTER);
+                .getWrapperOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(TokenizerWandItem.GAME_MASTER);
         ItemStack enchantedStick = new ItemStack(Items.STICK);
         enchantedStick.addEnchantment(gameMaster, 1);
         player.setStackInHand(Hand.MAIN_HAND, enchantedStick);

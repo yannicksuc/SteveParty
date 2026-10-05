@@ -66,7 +66,7 @@ public class TokenSpellGameTests implements FabricGameTest {
 
     private static void resetCooldown(ServerPlayerEntity player) {
         ItemStack wand = TokenizerWandItem.heldWand(player);
-        player.getItemCooldownManager().remove(player.getItemCooldownManager().getGroup(wand));
+        player.getItemCooldownManager().remove((wand).getItem());
     }
 
     private static void disconnect(TestContext context, ServerPlayerEntity player) {
@@ -388,7 +388,7 @@ public class TokenSpellGameTests implements FabricGameTest {
             // Size and colour survive a save / reload
             NbtCompound nbt = new NbtCompound();
             pig.writeNbt(nbt);
-            PigEntity reloaded = EntityType.PIG.create(context.getWorld(), SpawnReason.LOAD);
+            PigEntity reloaded = EntityType.PIG.create(context.getWorld());
             context.assertTrue(reloaded != null, "reloaded pig");
             reloaded.readNbt(nbt);
             context.assertTrue(token(reloaded).steveparty$getTokenSize() == 1.5F, "size saved");

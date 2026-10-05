@@ -140,7 +140,7 @@ public class MulaHomeGameTests implements FabricGameTest {
         mula.setHomeForge(home);
         NbtCompound saved = new NbtCompound();
         mula.saveSelfNbt(saved);
-        MulaEntity reloaded = ModEntities.MULA_ENTITY.create(world, net.minecraft.entity.SpawnReason.LOAD);
+        MulaEntity reloaded = ModEntities.MULA_ENTITY.create(world);
         reloaded.readNbt(saved);
         context.assertTrue(home.equals(reloaded.homeForge()), "home read back: " + reloaded.homeForge());
         mula.checkHome();

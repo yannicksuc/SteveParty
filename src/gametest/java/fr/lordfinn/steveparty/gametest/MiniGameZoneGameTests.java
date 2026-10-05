@@ -781,11 +781,11 @@ public class MiniGameZoneGameTests implements FabricGameTest {
             context.assertTrue((p1.interactionManager.getGameMode() == GameMode.ADVENTURE) == adventure, "adventure mode only with « Aventure »");
 
             // p1 dies and respawns during the round; p2 dies and stays on his death screen
-            p1.kill(context.getWorld());
+            p1.kill();
             ServerPlayerEntity p1b = respawn(server, p1);
             made.add(p1b);
             context.assertTrue((p1b.interactionManager.getGameMode() == GameMode.ADVENTURE) == adventure, "respawned: still in the round's game mode");
-            p2.kill(context.getWorld());
+            p2.kill();
             // p3's game leaves and comes back during the round; the spectator's leaves
             Reconnect.leave(p3);
             ServerPlayerEntity p3b = Reconnect.join(context, profile3);
