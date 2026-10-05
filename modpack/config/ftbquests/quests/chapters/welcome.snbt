@@ -1,0 +1,272 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "welcome"
+	group: ""
+	icon: {
+		id: "steveparty:party_controller"
+	}
+	id: "5136274B67A19584"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "steveparty:party_controller"
+			}
+			id: "1F2DCDEC85464F26"
+			rewards: [
+				{
+					id: "658F01017A5B5327"
+					type: "xp"
+					xp: 20
+				}
+				{
+					count: 3
+					id: "0782DEBBBB3C978F"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "29414E3659DD532D"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"1F2DCDEC85464F26"
+			]
+			id: "7474041B576499AF"
+			rewards: [
+				{
+					id: "7010E7A6BCFB60C8"
+					type: "xp"
+					xp: 15
+				}
+				{
+					count: 8
+					id: "7C8964F808312032"
+					item: {
+						count: 1
+						id: "minecraft:sugar_cane"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "17C8C9AD006E64C6"
+					item: {
+						count: 1
+						id: "steveparty:plastic_pellets"
+					}
+					type: "item"
+				}
+			]
+			x: -3.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"1F2DCDEC85464F26"
+			]
+			id: "09204066F2CD4A79"
+			rewards: [
+				{
+					id: "3CB6B80C5586DCAF"
+					type: "xp"
+					xp: 15
+				}
+				{
+					count: 4
+					id: "0D6ACD7556CBA10B"
+					item: {
+						count: 1
+						id: "minecraft:gold_nugget"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "730BD6FE87146D46"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			x: 3.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"1F2DCDEC85464F26"
+			]
+			icon: {
+				id: "minecraft:knowledge_book"
+			}
+			id: "44A6CEA198F3D329"
+			optional: true
+			rewards: [
+				{
+					id: "3389BE145C875EF7"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					id: "0B879D563FC4B2B6"
+					type: "checkmark"
+				}
+			]
+			x: -1.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"1F2DCDEC85464F26"
+			]
+			icon: {
+				id: "minecraft:white_banner"
+			}
+			id: "5EC05D8B076F3374"
+			optional: true
+			rewards: [
+				{
+					id: "14E2CD157DDE367B"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					id: "32EB53CC8D5303CB"
+					type: "checkmark"
+				}
+			]
+			x: 1.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"7474041B576499AF"
+				"09204066F2CD4A79"
+			]
+			icon: {
+				id: "steveparty:tile"
+			}
+			id: "0ED330980267EDAF"
+			rewards: [
+				{
+					id: "329066705F056FED"
+					type: "xp"
+					xp: 50
+				}
+				{
+					count: 5
+					id: "517F4F0CADE4FC9E"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "522DA3F4B0F7FB49"
+					table_id: 2301134424961554321L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "1EDC84DA3136186B"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 5.0d
+		}
+		{
+			dependencies: [
+				"620A5C7BA9429AD1"
+				"42D5C0FDC568C5B3"
+				"2F86298582A1E025"
+				"2B3995C665E08E2E"
+				"042DD30AE9744165"
+				"3817AA11E5F4EFA0"
+				"4DC6FEBAF30A3370"
+				"4BE7B23596D212E5"
+				"405FC7652C003313"
+				"19A853BEFF159A68"
+				"12EC9CFFA8E18C18"
+				"27772ED003E3C5B6"
+				"598F31A259B60ADB"
+				"19A1A7E217DE13A3"
+			]
+			icon: {
+				id: "steveparty:power_star"
+			}
+			id: "2D64151C55086784"
+			rewards: [
+				{
+					id: "69FEDF3B1117C191"
+					type: "xp_levels"
+					xp_levels: 10
+				}
+				{
+					count: 3
+					id: "4EC04EE9B1EDFE56"
+					item: {
+						count: 1
+						id: "steveparty:power_star"
+					}
+					type: "item"
+				}
+				{
+					id: "30C2C2D315E3AD85"
+					item: {
+						count: 1
+						id: "steveparty:dice_module_lucky"
+					}
+					type: "item"
+				}
+				{
+					count: 50
+					id: "1119D7FEC3C1FD94"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			shape: "heart"
+			size: 2.5d
+			tasks: [
+				{
+					id: "147CC8F200ECC7A1"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 7.5d
+		}
+	]
+}

@@ -1,0 +1,308 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "pawns"
+	group: "7821141F991152DB"
+	icon: {
+		id: "steveparty:tokenizer_wand"
+	}
+	id: "03BC7E4965A934A5"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			id: "13E6F42BB1F3D4AC"
+			rewards: [
+				{
+					id: "6956293855AA8125"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "2A39D8FB325BC828"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "464417C30A64150A"
+					item: {
+						count: 1
+						id: "steveparty:garnet_crystal_ball"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"13E6F42BB1F3D4AC"
+			]
+			id: "2BD1848C751D2C08"
+			rewards: [
+				{
+					id: "50DC2B5E6AB39776"
+					type: "xp"
+					xp: 50
+				}
+				{
+					count: 3
+					id: "71C381CE928D908B"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					id: "47671F9D5BF6CF6A"
+					item: {
+						count: 1
+						id: "steveparty:tokenizer_wand"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"2BD1848C751D2C08"
+			]
+			icon: {
+				id: "steveparty:tokenizer_wand"
+			}
+			id: "2EF12416B1262A81"
+			rewards: [
+				{
+					id: "764E939B8C9DF345"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "654FA80672D4DA87"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "4681F9F719B73C2A"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"2EF12416B1262A81"
+			]
+			icon: {
+				id: "minecraft:blaze_rod"
+			}
+			id: "4C1ED42CA5A03E7A"
+			optional: true
+			rewards: [
+				{
+					id: "3D2055D1A18968ED"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					id: "38C16D0911772FF6"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: -1.75d
+		}
+		{
+			dependencies: [
+				"2EF12416B1262A81"
+			]
+			icon: {
+				id: "minecraft:light_blue_dye"
+			}
+			id: "44BBB28CA9222EC6"
+			optional: true
+			rewards: [
+				{
+					id: "111B977E9FD58C49"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					id: "088A3E80762D03F2"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 1.75d
+		}
+		{
+			dependencies: [
+				"2EF12416B1262A81"
+			]
+			id: "6B5FF43F4D5E73E2"
+			rewards: [
+				{
+					id: "4A0C7985A8B7B95D"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "48EEBAB151EF54DE"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "2A4ADE9422D1CD03"
+					item: {
+						count: 1
+						id: "steveparty:token"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"6B5FF43F4D5E73E2"
+				"385B95560FE8A09B"
+			]
+			icon: {
+				id: "steveparty:tile_behavior_start"
+			}
+			id: "1569C7FE3FB27DB1"
+			rewards: [
+				{
+					id: "6CC342E9608B6DF5"
+					type: "xp"
+					xp: 50
+				}
+				{
+					id: "5403051CF632AE5A"
+					table_id: 2301134424961554321L
+					type: "random"
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "76837F337BD5A60C"
+					type: "checkmark"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"2BD1848C751D2C08"
+			]
+			icon: {
+				id: "minecraft:enchanted_book"
+			}
+			id: "13F7D62B117D88BF"
+			optional: true
+			rewards: [
+				{
+					id: "644C802F21198502"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "1BE66D7C769CD441"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "0DF6EDFA28CF8CE5"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: 2.0d
+		}
+		{
+			dependencies: [
+				"1569C7FE3FB27DB1"
+				"6B5FF43F4D5E73E2"
+			]
+			icon: {
+				id: "steveparty:token"
+			}
+			id: "42D5C0FDC568C5B3"
+			rewards: [
+				{
+					id: "37ACEAC460E580E7"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "7D874F144DB1924E"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "245360185789A8EC"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "5E46A6BBEDDFF2E3"
+					type: "checkmark"
+				}
+			]
+			x: 10.0d
+			y: 0.0d
+		}
+	]
+}

@@ -1,0 +1,756 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "board"
+	group: "7821141F991152DB"
+	icon: {
+		id: "steveparty:tile"
+	}
+	id: "5BC7CD484E8C4C6D"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"7474041B576499AF"
+			]
+			id: "05F0B762268E85CD"
+			rewards: [
+				{
+					id: "3C1DF84644AB5328"
+					type: "xp"
+					xp: 15
+				}
+				{
+					count: 4
+					id: "3C60234DA3B2EA8F"
+					item: {
+						count: 1
+						id: "steveparty:plastic_pellets"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					count: 2L
+					id: "0AE00CD059BFE189"
+					item: {
+						count: 1
+						id: "steveparty:tile"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"05F0B762268E85CD"
+			]
+			id: "68FDB8B9B18F5221"
+			rewards: [
+				{
+					id: "5ECA47B81BD93821"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "5C0CB92FCD9344D7"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "29A54EE6AABFC80B"
+					item: {
+						count: 1
+						id: "steveparty:wrench"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"68FDB8B9B18F5221"
+				"71CC2E37EF714902"
+			]
+			icon: {
+				id: "steveparty:wrench"
+			}
+			id: "06ED662D95913D40"
+			rewards: [
+				{
+					id: "5B8411A8C21F21B8"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "4F7B9978F6C74AD4"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "2E25C0D68C7B451B"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"06ED662D95913D40"
+			]
+			icon: {
+				id: "minecraft:firework_rocket"
+			}
+			id: "75D850169554760C"
+			rewards: [
+				{
+					id: "391BD409E184EDDD"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "395FC659C4ED5872"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "41F0E59E89EAF56A"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"75D850169554760C"
+			]
+			icon: {
+				id: "minecraft:spyglass"
+			}
+			id: "51CDCA2A7EA71CA8"
+			rewards: [
+				{
+					id: "29B57FBA36C5596D"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "0D8D63B389675EB7"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "3C180641D05FA620"
+					type: "checkmark"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"05F0B762268E85CD"
+			]
+			id: "0DEA2F4B09B1E78E"
+			rewards: [
+				{
+					id: "07C0A9FA418C3579"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "6D9233498AF6C658"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "67290CD4FE66711E"
+					item: {
+						count: 1
+						id: "steveparty:check_point"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: -2.5d
+		}
+		{
+			dependencies: [
+				"05F0B762268E85CD"
+			]
+			id: "267711A12D93A0B2"
+			rewards: [
+				{
+					id: "5E1BB1DC395D9561"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "3AE349D9ED67B7D5"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "0D0A40FCEA639F11"
+					item: {
+						count: 1
+						id: "steveparty:advanced_tile"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -2.5d
+		}
+		{
+			dependencies: [
+				"267711A12D93A0B2"
+			]
+			icon: {
+				id: "minecraft:comparator"
+			}
+			id: "12DD5B229D31EBED"
+			rewards: [
+				{
+					id: "7FE8E06D11497608"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "3209841D650D15E1"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "0357F0989E902B7E"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: -2.5d
+		}
+		{
+			dependencies: [
+				"267711A12D93A0B2"
+			]
+			id: "43758D7B5C5F556E"
+			rewards: [
+				{
+					id: "2F5EF510A881A57F"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "62A7C660BA39C518"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "266732328BCBDB04"
+					item: {
+						count: 1
+						id: "steveparty:board_space_redstone_router"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: -2.5d
+		}
+		{
+			dependencies: [
+				"05F0B762268E85CD"
+			]
+			icon: {
+				id: "minecraft:stonecutter"
+			}
+			id: "18EC779BAD8C3C13"
+			rewards: [
+				{
+					id: "558069F0086BE9FE"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "1975DECA252D7EE9"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "7489A46627FBCB64"
+					type: "checkmark"
+				}
+			]
+			x: -2.0d
+			y: -1.25d
+		}
+		{
+			dependencies: [
+				"05F0B762268E85CD"
+			]
+			icon: {
+				id: "minecraft:enchanted_book"
+			}
+			id: "2F3A30222BF08C93"
+			optional: true
+			rewards: [
+				{
+					id: "6DE498F573E9E4B8"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					id: "6F86F3C81DBF986E"
+					type: "checkmark"
+				}
+			]
+			x: -2.0d
+			y: 1.25d
+		}
+		{
+			dependencies: [
+				"7474041B576499AF"
+			]
+			id: "71CC2E37EF714902"
+			rewards: [
+				{
+					id: "76507F1D3138CA2D"
+					type: "xp"
+					xp: 15
+				}
+				{
+					count: 4
+					id: "612D07EDC863A16B"
+					item: {
+						count: 1
+						id: "steveparty:board_space_behavior"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					count: 2L
+					id: "79BBEDB2A15C9F2F"
+					item: {
+						count: 1
+						id: "steveparty:board_space_behavior"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 3.5d
+		}
+		{
+			dependencies: [
+				"71CC2E37EF714902"
+			]
+			id: "385B95560FE8A09B"
+			rewards: [
+				{
+					id: "41CFE506DFC8276C"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "13CF58A9B8A6982D"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "23F23679361FD714"
+					item: {
+						count: 1
+						id: "steveparty:tile_behavior_start"
+					}
+					type: "item"
+				}
+			]
+			x: -4.5d
+			y: 6.0d
+		}
+		{
+			dependencies: [
+				"71CC2E37EF714902"
+			]
+			id: "78C9F801227DBCA8"
+			rewards: [
+				{
+					id: "434D42BDB277A1EC"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "7FA986F2FE912854"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "00F3398FEBE2DB88"
+					item: {
+						count: 1
+						id: "steveparty:board_space_behavior_stop"
+					}
+					type: "item"
+				}
+			]
+			x: -3.0d
+			y: 6.0d
+		}
+		{
+			dependencies: [
+				"71CC2E37EF714902"
+			]
+			id: "33F2B84D658F752B"
+			rewards: [
+				{
+					id: "24C4EB4B52F30805"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "6C3E7298BCC94C3E"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "4DB5F795FB4211C7"
+					item: {
+						count: 1
+						id: "steveparty:shop_cartridge"
+					}
+					type: "item"
+				}
+			]
+			x: -1.5d
+			y: 6.0d
+		}
+		{
+			dependencies: [
+				"71CC2E37EF714902"
+			]
+			id: "0E8F42A3F191C38B"
+			rewards: [
+				{
+					id: "7EE1220206B6E767"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "722E6590EABCA15B"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "621D6DA0A648989E"
+					item: {
+						count: 1
+						id: "steveparty:advance_back_cartridge"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 6.0d
+		}
+		{
+			dependencies: [
+				"71CC2E37EF714902"
+			]
+			id: "736773478A5996A7"
+			rewards: [
+				{
+					id: "540BB00EB259C302"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "4E2CB24A285742F5"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "63D6A9E3AA095D25"
+					item: {
+						count: 1
+						id: "steveparty:replay_cartridge"
+					}
+					type: "item"
+				}
+			]
+			x: 1.5d
+			y: 6.0d
+		}
+		{
+			dependencies: [
+				"71CC2E37EF714902"
+			]
+			id: "7F2770DE1C7C8D45"
+			rewards: [
+				{
+					id: "7B508E9737FCDFD8"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "20FFB0AFC5036998"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "0037286A463498E0"
+					item: {
+						count: 1
+						id: "steveparty:teleport_cartridge"
+					}
+					type: "item"
+				}
+			]
+			x: 3.0d
+			y: 6.0d
+		}
+		{
+			dependencies: [
+				"71CC2E37EF714902"
+			]
+			id: "2E754E69CDD7EF1A"
+			rewards: [
+				{
+					id: "6255F07F7365A6EE"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "153E3970304B183A"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "0E982476C5F9AB97"
+					item: {
+						count: 1
+						id: "steveparty:inventory_cartridge"
+					}
+					type: "item"
+				}
+			]
+			x: 4.5d
+			y: 6.0d
+		}
+		{
+			dependencies: [
+				"7F2770DE1C7C8D45"
+			]
+			icon: {
+				id: "minecraft:ender_pearl"
+			}
+			id: "639372715E2D9036"
+			rewards: [
+				{
+					id: "1B5D45D8F6B51701"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "6031E2624C8915F4"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "6D21C3200D909E08"
+					type: "checkmark"
+				}
+			]
+			x: 3.0d
+			y: 7.75d
+		}
+		{
+			dependencies: [
+				"2E754E69CDD7EF1A"
+			]
+			icon: {
+				id: "minecraft:chest"
+			}
+			id: "257DAAA6F776BD7D"
+			rewards: [
+				{
+					id: "558B88B8D17D2320"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "279EA480131F7313"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "6DE8C65B696073D8"
+					type: "checkmark"
+				}
+			]
+			x: 4.5d
+			y: 7.75d
+		}
+		{
+			dependencies: [
+				"75D850169554760C"
+				"0DEA2F4B09B1E78E"
+				"267711A12D93A0B2"
+				"43758D7B5C5F556E"
+				"385B95560FE8A09B"
+				"78C9F801227DBCA8"
+				"33F2B84D658F752B"
+				"0E8F42A3F191C38B"
+				"736773478A5996A7"
+				"7F2770DE1C7C8D45"
+				"2E754E69CDD7EF1A"
+			]
+			icon: {
+				id: "steveparty:advanced_tile"
+			}
+			id: "620A5C7BA9429AD1"
+			rewards: [
+				{
+					id: "6B2303FB2521D01E"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "1ED4E481BE2541C1"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "4F83DE65E7BF6B72"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "316EACCA46BD59C5"
+					type: "checkmark"
+				}
+			]
+			x: 10.0d
+			y: 2.5d
+		}
+	]
+}

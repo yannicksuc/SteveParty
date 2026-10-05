@@ -1,0 +1,395 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "plastic"
+	group: "64160321E5CDD4E4"
+	icon: {
+		id: "steveparty:red_plastic_block"
+	}
+	id: "69138B1BDF728BC8"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"7474041B576499AF"
+			]
+			id: "6AD835CCA129C2DD"
+			rewards: [
+				{
+					id: "6E192D92BD855D02"
+					type: "xp"
+					xp: 15
+				}
+				{
+					count: 4
+					id: "2B1F0176913945DA"
+					item: {
+						count: 1
+						id: "steveparty:plastic_pellets"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					count: 4L
+					id: "2C211292D83D7D80"
+					item: {
+						count: 1
+						id: "steveparty:red_plastic_block"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+			]
+			id: "57714CCCE52A3BB1"
+			rewards: [
+				{
+					id: "6223F0F2A8298C79"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "69708877D3A6DCFC"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "6A8EAA364B80EAEF"
+					item: {
+						count: 1
+						id: "steveparty:blue_plastic_stud"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -2.0d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+			]
+			id: "0D7BD49CCA0CD53D"
+			rewards: [
+				{
+					id: "227A4AF71D2C3BA3"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "7F13D3525B9CD78E"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "0FD64335FE9791A4"
+					item: {
+						count: 1
+						id: "steveparty:yellow_plastic_slab"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -0.5d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+			]
+			id: "6FE0D77A51E3FB74"
+			rewards: [
+				{
+					id: "26C47219E5569E7B"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "0EE04E060F3ECD68"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "720F25B404693395"
+					item: {
+						count: 1
+						id: "steveparty:green_plastic_stairs"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 1.0d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+			]
+			id: "7E305E47E151BDCF"
+			rewards: [
+				{
+					id: "743110337CA7C087"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "3849540FD4EB261B"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 6L
+					id: "5D3AD73453A58213"
+					item: {
+						count: 1
+						id: "steveparty:purple_plastic_wall"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+			]
+			id: "7B61B7E9D8BEF2E8"
+			rewards: [
+				{
+					id: "7072C84FC008D958"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "0C006F5F24858F2C"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "7FD4B789B1966E75"
+					item: {
+						count: 1
+						id: "steveparty:plastic_stick"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -2.0d
+		}
+		{
+			dependencies: [
+				"7B61B7E9D8BEF2E8"
+			]
+			id: "114B635016EE5B45"
+			rewards: [
+				{
+					id: "7371DBC4A0288E6A"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "1F902A7AA19BE79E"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					count: 3L
+					id: "338E18329CC8ACED"
+					item: {
+						count: 1
+						id: "steveparty:orange_plastic_fence"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: -2.0d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+			]
+			icon: {
+				id: "minecraft:soul_sand"
+			}
+			id: "7025AE0D120A1991"
+			rewards: [
+				{
+					id: "1AE22864D46F4650"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "509C0188D612EC80"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "2E0CB89ECD2916FB"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 0.25d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+				"68FDB8B9B18F5221"
+			]
+			icon: {
+				id: "steveparty:wrench"
+			}
+			id: "55428C54977D8D69"
+			optional: true
+			rewards: [
+				{
+					id: "0CBC7D58A748D72F"
+					type: "xp"
+					xp: 10
+				}
+			]
+			tasks: [
+				{
+					id: "15C250780C0943C4"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"6AD835CCA129C2DD"
+				"71CC2E37EF714902"
+			]
+			id: "540F65F4778F3FD7"
+			rewards: [
+				{
+					id: "4EF39660F809905A"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "7CBA1FE8BF53F8A8"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "633E9075E4BE0854"
+					item: {
+						count: 1
+						id: "steveparty:hop_switch"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 0.25d
+		}
+		{
+			dependencies: [
+				"57714CCCE52A3BB1"
+				"0D7BD49CCA0CD53D"
+				"6FE0D77A51E3FB74"
+				"7E305E47E151BDCF"
+				"114B635016EE5B45"
+				"7025AE0D120A1991"
+				"540F65F4778F3FD7"
+			]
+			icon: {
+				id: "steveparty:lime_plastic_block"
+			}
+			id: "19A853BEFF159A68"
+			rewards: [
+				{
+					id: "01D3D07C506673A8"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "68AD4F93DDCF4327"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "3D249C8D1BD6CBA9"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "6C9F98B3157183F9"
+					type: "checkmark"
+				}
+			]
+			x: 8.5d
+			y: 0.25d
+		}
+	]
+}

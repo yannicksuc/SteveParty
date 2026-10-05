@@ -1,0 +1,932 @@
+{
+	chapter.03BC7E4965A934A5.chapter_subtitle: [
+		"Any mob can become a pawn with the Tokenizer Wand."
+	]
+	chapter.03BC7E4965A934A5.title: "Pawns"
+	chapter.082A487049C9D78A.chapter_subtitle: [
+		"Little flying star creatures, and the 16 star fragments they leave behind."
+	]
+	chapter.082A487049C9D78A.title: "Mulas and Stars"
+	chapter.0EECA9B86DA7992A.chapter_subtitle: [
+		"Engrave custom dice, and give the Mulas a home."
+	]
+	chapter.0EECA9B86DA7992A.title: "Dice Forge"
+	chapter.27D1C0A527E638AD.chapter_subtitle: [
+		"The Party Controller runs turns, mini-games and prizes."
+	]
+	chapter.27D1C0A527E638AD.title: "Running a Party"
+	chapter.29E775242F126236.chapter_subtitle: [
+		"Roll, move, and engrave your own faces."
+	]
+	chapter.29E775242F126236.title: "Dice"
+	chapter.2B6392D48560B907.chapter_subtitle: [
+		"Mario-style pipes: go in one mouth, come out of another."
+	]
+	chapter.2B6392D48560B907.title: "Pipes"
+	chapter.3048A323DF8AC856.chapter_subtitle: [
+		"Cut a 16x16 pattern, then paint or engrave it everywhere."
+	]
+	chapter.3048A323DF8AC856.title: "Signs and Stencils"
+	chapter.3243C179234B96AF.chapter_subtitle: [
+		"A few more toys for your party world."
+	]
+	chapter.3243C179234B96AF.title: "Odds and Ends"
+	chapter.386B56372B494AA4.chapter_subtitle: [
+		"A villager hidden in a box sells the offers of your stalls."
+	]
+	chapter.386B56372B494AA4.title: "Shops"
+	chapter.4D82FDE861677663.chapter_subtitle: [
+		"Pages, pipes, podiums and arenas: design your own mini-games."
+	]
+	chapter.4D82FDE861677663.title: "Mini-games"
+	chapter.5136274B67A19584.chapter_subtitle: [
+		"Build a board game in Minecraft, and play it with your friends."
+	]
+	chapter.5136274B67A19584.title: "Welcome"
+	chapter.5BC7CD484E8C4C6D.chapter_subtitle: [
+		"Tiles, cartridges and the Wrench: build the path your pawns will walk."
+	]
+	chapter.5BC7CD484E8C4C6D.title: "The Board"
+	chapter.69138B1BDF728BC8.chapter_subtitle: [
+		"Toy-like blocks in 16 colours that float."
+	]
+	chapter.69138B1BDF728BC8.title: "Plastic"
+	chapter.6D6E3AE0E24B2C6E.chapter_subtitle: [
+		"Jump to the top, score, and watch the flag come down."
+	]
+	chapter.6D6E3AE0E24B2C6E.title: "Finish Pole"
+	chapter.7F034F1578D84F43.chapter_subtitle: [
+		"Polished terracotta and concrete, bevelled bricks and checkerboard tiles."
+	]
+	chapter.7F034F1578D84F43.title: "Building Blocks"
+	chapter_group.10335C0348F8FC8A.title: "Commerce"
+	chapter_group.60AFE736E3EC9353.title: "Stars"
+	chapter_group.64160321E5CDD4E4.title: "Decoration"
+	chapter_group.7821141F991152DB.title: "The Board Game"
+	file.0000000000000001.title: "Steve Party Maker"
+	quest.0043BA5760434BEE.quest_desc: [
+		"During a party, the turn strip, announcements and scoreboard appear on screen. Press M (or /partyhud) to move them, H to hide them."
+	]
+	quest.0043BA5760434BEE.title: "Arrange the HUD"
+	quest.01C543D5464F2458.quest_desc: [
+		"A purple plastic stud + paper + redstone: 4 cards. Plays the cards since the last Sequence Start again, as many times as cards in its stack."
+		"Cards go in the 24 slots of the Program tab and are read left to right."
+	]
+	quest.01C543D5464F2458.title: "Party Card: Repeat"
+	quest.02559E197888FCA2.quest_desc: [
+		"Mix star fragments like dyes: red + blue + yellow. You get back as many fragments as you put in."
+	]
+	quest.02559E197888FCA2.title: "White Star Fragment"
+	quest.030135F1CA2F65E1.quest_desc: [
+		"Right-click to choose a moment (party start, turn start, die rolled, mini-game end...): it sends a redstone pulse then, and a comparator reads a value (die result, pawn rank...). In wait mode (Wrench) the party freezes until the bell gets a signal."
+	]
+	quest.030135F1CA2F65E1.title: "Party Bell"
+	quest.042DD30AE9744165.quest_desc: [
+		"Your mini-games are written, linked and tested. Let the roulette spin!"
+	]
+	quest.042DD30AE9744165.title: "Game designer"
+	quest.04F1186B64C11C43.quest_desc: [
+		"Blank face + tripwire hook. During this move the pawn ignores Stop spaces and shop stops."
+	]
+	quest.04F1186B64C11C43.title: "Dice Module: Skeleton Key"
+	quest.0530BAFFB80A6149.quest_desc: [
+		"Place the Villager Block on the block to imitate, then fall on it from high enough (12 blocks on dirt or hay, 16 on stone, 30 on iron): a Boxed Trader appears, disguised as that block. Look at one to complete this quest."
+	]
+	quest.0530BAFFB80A6149.title: "The fall"
+	quest.0582B9C6A4DD1764.quest_desc: [
+		"Two polished terracotta blocks of different colours as a checkerboard in a 2x2 grid: 4 tiles, each face a 2x2 checkerboard. Swap the colours for the shifted checkerboard."
+	]
+	quest.0582B9C6A4DD1764.title: "Polished Terracotta Tiles"
+	quest.05A3BC086CC7390E.quest_desc: [
+		"4 polished blocks in a square: 4 bevelled bricks. Each brick has its own shade, and big walls never repeat."
+	]
+	quest.05A3BC086CC7390E.title: "Polished Orange Terracotta Bricks"
+	quest.05F0B762268E85CD.quest_desc: [
+		"Three carpets over plastic pellets and a light weighted pressure plate: 2 Tiles."
+		"A Tile is one board space and counts as one step. It holds a single cartridge, which gives it its role. Place it in 8 directions, on slabs, carpets, and even on stairs, where it follows the slope."
+	]
+	quest.05F0B762268E85CD.title: "Tile"
+	quest.06ACFD0AAF8EF257.quest_desc: [
+		"Page + paper at the crafting table (or the Copy button) makes a linked copy: editing one edits them all. Handy to link pipes and podiums far apart."
+	]
+	quest.06ACFD0AAF8EF257.title: "Linked copies"
+	quest.06ED662D95913D40.quest_desc: [
+		"Wrench in Trace mode: right-click tile after tile (or hold the click and sweep) to link them. Each new tile automatically gets a Cartridge from your inventory, and turns towards the next one."
+		"Left-click in the air undoes, sneak + left-click redoes."
+	]
+	quest.06ED662D95913D40.title: "Trace the path"
+	quest.07380C5346B9F4F8.quest_desc: [
+		"Stonecutter: a blank face becomes any number from 0 to 10. Any face goes back to blank the same way."
+	]
+	quest.07380C5346B9F4F8.title: "Dice Face 6"
+	quest.07635CE1A88BD949.quest_desc: [
+		"4 orange terracotta in a square: 4 polished blocks (17 colours for terracotta, 16 for concrete). The stonecutter makes every shape from the vanilla block directly."
+	]
+	quest.07635CE1A88BD949.title: "Polished Orange Terracotta"
+	quest.081AE2BEE25879DB.quest_desc: [
+		"Mix star fragments like dyes: red + yellow. You get back as many fragments as you put in."
+	]
+	quest.081AE2BEE25879DB.title: "Orange Star Fragment"
+	quest.08D5A8D740C540DC.quest_desc: [
+		"Mix star fragments like dyes: blue + white. You get back as many fragments as you put in."
+	]
+	quest.08D5A8D740C540DC.title: "Light Blue Star Fragment"
+	quest.09204066F2CD4A79.quest_desc: [
+		"One gold nugget makes one Coin (shapeless). Coins are the default currency of a party: mini-games pay them out, and shops can sell for them."
+	]
+	quest.09204066F2CD4A79.title: "Coin"
+	quest.09C8D40C342871A4.quest_desc: [
+		"Build your own party: for example Sequence Start, Turns, Repeat x3, Sequence Start, Mini-game, Repeat x2. Without cards, the party plays the number of rounds set in Settings."
+	]
+	quest.09C8D40C342871A4.title: "Write a program"
+	quest.0A07E78ECC5CEBD1.quest_desc: [
+		"A glow ink sac on a painted pattern makes it shine at night; a dry sponge turns it off."
+	]
+	quest.0A07E78ECC5CEBD1.title: "Glow in the dark"
+	quest.0B48C321AB91B3F5.quest_desc: [
+		"Any Mula within 16 blocks of a lit forge moves in and dances around the core: 10 dances of 26 s each, in rings of up to 12. A full Mula that bursts at home lands back 2 to 4 blocks from the forge."
+	]
+	quest.0B48C321AB91B3F5.title: "Mula dance hall"
+	quest.0B763A1CFE251521.quest_desc: [
+		"Two Default Dice, shapeless. Two linked dice: 2 to 20. Splits back into two."
+	]
+	quest.0B763A1CFE251521.title: "Double Dice"
+	quest.0CE8734A07EDA523.quest_desc: [
+		"Gold, a heavy pressure plate, redstone and quartz blocks. Podiums record who won: the highest column is first place. Sneak on one or right-click it to take it. Link podiums to the page by clicking them with it."
+	]
+	quest.0CE8734A07EDA523.title: "Podium"
+	quest.0D163B243691FC3F.quest_desc: [
+		"Blank face + echo shard. The die comes back to its roller after the roll."
+	]
+	quest.0D163B243691FC3F.title: "Dice Module: Infinity"
+	quest.0D2D7E4E7239F684.quest_desc: [
+		"\"Draw the zone\" in the editor, then click two corners (128 blocks per side at most). With the Restore option, each round plays apart in the zone with an empty round inventory, and the arena is put back as built at the end."
+	]
+	quest.0D2D7E4E7239F684.title: "Draw the zone"
+	quest.0D7BD49CCA0CD53D.quest_desc: [
+		"3 blocks in a row: 6 slabs (or the stonecutter). Slabs, stairs and walls do not float and cut bubble columns."
+	]
+	quest.0D7BD49CCA0CD53D.title: "Yellow Plastic Slab"
+	quest.0DEA2F4B09B1E78E.quest_desc: [
+		"Prismarine shards, light blue panes and a chest: 4 Checkpoints. A floating glass cube that a pawn crosses without spending a step: free turns, forks and detours. Its role never triggers on arrival, except Stop and Shop."
+	]
+	quest.0DEA2F4B09B1E78E.title: "Checkpoint"
+	quest.0E8F42A3F191C38B.quest_desc: [
+		"Cartridge + piston. The pawn that ends on it moves again, 1 to 6 spaces forward (green) or back (pink). Sneak + scroll with it in hand sets the count and direction."
+	]
+	quest.0E8F42A3F191C38B.title: "Move Forward / Back Cartridge"
+	quest.0ED330980267EDAF.quest_desc: [
+		"You have the basics. Next: build a board (The Board Game), then explore the other chapters in any order."
+	]
+	quest.0ED330980267EDAF.title: "Ready to party"
+	quest.0FC0569B81622F76.quest_desc: [
+		"Mix star fragments like dyes: green + white. You get back as many fragments as you put in."
+	]
+	quest.0FC0569B81622F76.title: "Lime Star Fragment"
+	quest.101F5B0C2C547670.quest_desc: [
+		"Right-click to pick its mode: next step, restart the step, previous step. A redstone pulse applies it to the nearest party (64 blocks), or to a mini-game when linked to its page."
+	]
+	quest.101F5B0C2C547670.title: "Step controller"
+	quest.10373F304237AA4E.quest_desc: [
+		"6 blocks in steps: 4 stairs."
+	]
+	quest.10373F304237AA4E.title: "Polished Light Blue Concrete Stairs"
+	quest.10428E9FDADB4DDF.quest_desc: [
+		"A pink plastic stud + paper + redstone: 4 cards. The next Repeat card starts again from here."
+		"Cards go in the 24 slots of the Program tab and are read left to right."
+	]
+	quest.10428E9FDADB4DDF.title: "Party Card: Sequence start"
+	quest.10458D4F11AF735B.quest_desc: [
+		"3 blocks in a row: 6 slabs."
+	]
+	quest.10458D4F11AF735B.title: "Polished Light Blue Concrete Slab"
+	quest.104F2426E5EBE598.quest_desc: [
+		"The controller creates no coins and no stars: it pays mini-game prizes from chests. Put an Inventory Cartridge linked to a chest in the bank slot of the Prizes tab, and fill the chest with the party's coins and stars (Power Stars by default)."
+	]
+	quest.104F2426E5EBE598.title: "The prize chest"
+	quest.114B635016EE5B45.quest_desc: [
+		"4 blocks of a colour and 2 plastic sticks: 3 fences. They connect to each other and carry road signs."
+	]
+	quest.114B635016EE5B45.title: "Orange Plastic Fence"
+	quest.123B0FCCF856E8AB.quest_desc: [
+		"Dropped by a blue Mula when it bursts."
+	]
+	quest.123B0FCCF856E8AB.title: "Blue Star Fragment"
+	quest.12DD5B229D31EBED.quest_desc: [
+		"Put two different cartridges in an Advanced Tile and power it: the tile changes role, colour and destinations with the signal. A comparator or a redstone counter makes tiles that change every turn."
+	]
+	quest.12DD5B229D31EBED.title: "A tile that changes"
+	quest.12EC9CFFA8E18C18.quest_desc: [
+		"Every kind of pipe, and a warp network of your own. For mini-game pipes, see the Mini-games chapter."
+	]
+	quest.12EC9CFFA8E18C18.title: "Plumber"
+	quest.137ABC52300C1CE9.quest_desc: [
+		"Fill the ring with 1 to 12 faces (the stack size is the weight), the 4 fragment slots with 4 different colours (black is never used up), and blank faces. Click the core: FORGE! One die every 5 s."
+	]
+	quest.137ABC52300C1CE9.title: "Your own die"
+	quest.13E6F42BB1F3D4AC.quest_desc: [
+		"A nether star surrounded by 4 blocks of redstone. Its only use: the head of the Tokenizer Wand."
+	]
+	quest.13E6F42BB1F3D4AC.title: "Garnet Crystal Ball"
+	quest.13F7D62B117D88BF.quest_desc: [
+		"A treasure enchantment for the wand only: found in woodland mansion chests, or dropped by evokers and illusioners killed by a player. With it you can resize anyone's pawn and exclude any pawn from a party, like a referee."
+	]
+	quest.13F7D62B117D88BF.title: "Game Master"
+	quest.1447F66898AC91E0.quest_desc: [
+		"Mix star fragments like dyes: red + green (or orange + black). You get back as many fragments as you put in."
+	]
+	quest.1447F66898AC91E0.title: "Brown Star Fragment"
+	quest.1569C7FE3FB27DB1.quest_desc: [
+		"Put your pawn on a Start space: it binds to it, floats and looks at the nearest player. Right-click the space empty-handed to own it. Only bound pawns join a party."
+	]
+	quest.1569C7FE3FB27DB1.title: "Take your place"
+	quest.1661B4C0B973F8ED.quest_desc: [
+		"Crying obsidian, 4 black star fragments and a heavy core. Placed, it pulls everything within 8 blocks into orbit (no fall damage inside; full netherite armour resists). It also powers the Dice Forge."
+	]
+	quest.1661B4C0B973F8ED.title: "Gravity Core"
+	quest.169B6F8AE6D4D572.quest_desc: [
+		"Leather boots + rabbit's foot + 2 slime balls, shapeless. Chain jumps within 1.5 s: the second is 1.5 times higher, the third twice as high. Made for poles."
+	]
+	quest.169B6F8AE6D4D572.title: "Triple Jump Shoes"
+	quest.174373BB4245951D.quest_desc: [
+		"6 bricks in steps: 4 stairs."
+	]
+	quest.174373BB4245951D.title: "Polished Orange Terracotta Brick Stairs"
+	quest.18EC779BAD8C3C13.quest_desc: [
+		"Stonecutter: 1 Tile gives 2 small tiles (1x1). Four standard tiles in a 2x2 square give one large tile (exactly 2x2 blocks). The tooltip and the icon show the size."
+	]
+	quest.18EC779BAD8C3C13.title: "Small and large tiles"
+	quest.19A1A7E217DE13A3.quest_desc: [
+		"The little extras of the mod, all found."
+	]
+	quest.19A1A7E217DE13A3.title: "Odds and ends"
+	quest.19A853BEFF159A68.quest_desc: [
+		"Every plastic shape, and blocks that float and vanish on cue."
+	]
+	quest.19A853BEFF159A68.title: "Toy box"
+	quest.19AA36BD5464D0A3.quest_desc: [
+		"Dropped by a red Mula when it bursts."
+	]
+	quest.19AA36BD5464D0A3.title: "Red Star Fragment"
+	quest.19DDB0C5335E0D86.quest_desc: [
+		"A Cartridge surrounded by 4 paper: 4 Mini-Game Pages. A page IS a mini-game: its title, rules, image, formats, pipes, results and zone."
+	]
+	quest.19DDB0C5335E0D86.title: "Mini-Game Page"
+	quest.1BEF46FC4ACE5F48.quest_desc: [
+		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Exit\"."
+	]
+	quest.1BEF46FC4ACE5F48.title: "Yellow Pipe: Exit"
+	quest.1E5F2B0FBCFDA39D.quest_desc: [
+		"Blank face + ender pearl. The roller's pawn swaps places with another player's pawn of their choice."
+	]
+	quest.1E5F2B0FBCFDA39D.title: "Swap Dice Face"
+	quest.1E702253EDB71ED3.quest_desc: [
+		"4 polished blocks in a square: 4 bevelled bricks. Each brick has its own shade, and big walls never repeat."
+	]
+	quest.1E702253EDB71ED3.title: "Polished Light Blue Concrete Bricks"
+	quest.1EE3A5D49F8077F1.quest_desc: [
+		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Team A\"."
+	]
+	quest.1EE3A5D49F8077F1.title: "Blue Pipe: Team A"
+	quest.1F2DCDEC85464F26.quest_desc: [
+		"Steve Party Maker turns Minecraft into a party board game: build a board of tiles, turn any mob into a pawn, roll dice, play mini-games and collect stars."
+		""
+		"This book follows the mod step by step, one quest per item. Every chapter ends with a big milestone."
+		"Tick this quest to start!"
+	]
+	quest.1F2DCDEC85464F26.quest_subtitle: "A party game, block by block"
+	quest.1F2DCDEC85464F26.title: "Welcome to Steve Party Maker!"
+	quest.1FAB526747142277.quest_desc: [
+		"A Podium + an iron ingot, shapeless. Only a look: the height of the column decides the place."
+	]
+	quest.1FAB526747142277.title: "Silver Podium"
+	quest.1FD5DF613F9840F0.quest_desc: [
+		"Put an Inventory Cartridge linked to a chest in it (Wrench), hang it with 2 or 3 blocks of air below, and hit it with your head while jumping: it drops items from the chest. 2 hits, then 3 s to recharge."
+	]
+	quest.1FD5DF613F9840F0.title: "Bonk!"
+	quest.203C683BC60BB2EA.quest_desc: [
+		"Gold ingots, polished terracotta, a chest and an amethyst shard."
+	]
+	quest.203C683BC60BB2EA.title: "Looting Box"
+	quest.2059FF1EE20FE13D.quest_desc: [
+		"Formats tab: team games (2 to 4 sides, \"1 vs all\", \"2 vs 2\"...), free-for-all or all together. In a party only a page whose format fits the teams on the board can be drawn. Team A is the players on positive spaces, team B those on negative ones."
+	]
+	quest.2059FF1EE20FE13D.title: "Formats"
+	quest.209EEA42C80532A7.quest_desc: [
+		"Two rows of 3: 6 walls."
+	]
+	quest.209EEA42C80532A7.title: "Polished Orange Terracotta Brick Wall"
+	quest.2107B23BC93CF590.quest_desc: [
+		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Team B\". Purple and orange pipes are teams C and D."
+	]
+	quest.2107B23BC93CF590.title: "Red Pipe: Team B"
+	quest.2275C38C50DEE4C0.quest_desc: [
+		"Mix star fragments like dyes: gray + white. You get back as many fragments as you put in."
+	]
+	quest.2275C38C50DEE4C0.title: "Light Gray Star Fragment"
+	quest.23960C8EFFCAEE1A.quest_desc: [
+		"The base can count a scoreboard criterion instead of landings: jumps, deaths, kills... For example 10 jumps, goal per player, and podiums next to the base."
+	]
+	quest.23960C8EFFCAEE1A.title: "Count anything"
+	quest.23B52C759DD360F3.quest_desc: [
+		"6 glass: 6 clear pipes. Linked to a mini-game page, a glass pipe is for spectators."
+	]
+	quest.23B52C759DD360F3.title: "Glass Pipe"
+	quest.24109299821DBF96.quest_desc: [
+		"Mix star fragments like dyes: red + white. You get back as many fragments as you put in."
+	]
+	quest.24109299821DBF96.title: "Pink Star Fragment"
+	quest.2512D1E030566DA6.quest_desc: [
+		"Dropped by a green Mula when it bursts."
+	]
+	quest.2512D1E030566DA6.title: "Green Star Fragment"
+	quest.257DAAA6F776BD7D.quest_desc: [
+		"Make one blue (bonus) and one red (malus) space. They matter: in a party, the colour of the space under each pawn makes the mini-game teams."
+	]
+	quest.257DAAA6F776BD7D.title: "Bonus and malus"
+	quest.25F6A5B53D501ECE.quest_desc: [
+		"A downward piston extending onto an adult villager's head squashes it into a block that keeps the villager inside, alive, with about 70 reactions. Break it by hand (it begs) to pick it up; a sticky piston lets it out."
+	]
+	quest.25F6A5B53D501ECE.title: "Villager Block"
+	quest.267711A12D93A0B2.quest_desc: [
+		"A Tile with a comparator, gold ingots and a chest. It holds 16 cartridges: the redstone power it receives picks the active one (power 0 = slot 1, power 1 = slot 2...)."
+	]
+	quest.267711A12D93A0B2.title: "Advanced Tile"
+	quest.26EF608BF2CC42FA.quest_desc: [
+		"Right-click: the die flies over the nearest mob (sneak: the nearest player) and spins. Hit it to stop it. The result is announced in the chat."
+	]
+	quest.26EF608BF2CC42FA.title: "Roll it!"
+	quest.272DDEDA8986AF7E.quest_desc: [
+		"In a party, a mini-game whose page is in a controller starts with a trial round, for nothing. Each player presses Y (or the Ready button) when ready; when everyone is, the real round starts and pays prizes."
+	]
+	quest.272DDEDA8986AF7E.title: "Ready? Press Y"
+	quest.27772ED003E3C5B6.quest_desc: [
+		"Every sign, your own patterns and the Stencil Hammer."
+	]
+	quest.27772ED003E3C5B6.title: "Sign painter"
+	quest.27B5092765B1742F.quest_desc: [
+		"A lime plastic stud + paper + redstone: 4 cards. One mini-game from the catalogue."
+		"Cards go in the 24 slots of the Program tab and are read left to right."
+	]
+	quest.27B5092765B1742F.title: "Party Card: Mini-game"
+	quest.27E0EE1DE702627E.quest_desc: [
+		"Three Default Dice, or a Double + a Default Die. Three linked dice: 3 to 30."
+	]
+	quest.27E0EE1DE702627E.title: "Triple Dice"
+	quest.280705EA919A80DA.quest_desc: [
+		"A ceramic pig with an Inventory Cartridge: each redstone pulse gives (or takes) its items to a target: the player of the turn, the mini-game winners, everyone, or the nearest player. All-or-nothing mode can sell a star for coins."
+	]
+	quest.280705EA919A80DA.title: "Piggy Bank"
+	quest.2ABA40709E3044BA.quest_desc: [
+		"Iron, glass, mushroom stems, paper and redstone. Placed in the arena, it holds the mini-game's page. Its lamp is red (idle), orange (trial round) or green (playing). A comparator reads its state."
+	]
+	quest.2ABA40709E3044BA.title: "Mini-game Controller"
+	quest.2B3995C665E08E2E.quest_desc: [
+		"You can run a whole party, and drive it with redstone."
+	]
+	quest.2B3995C665E08E2E.title: "Party host"
+	quest.2BAA43480CA56926.quest_desc: [
+		"A gold ingot over two iron bars, in a column. Stack as many segments as you like on the base."
+	]
+	quest.2BAA43480CA56926.title: "Goal Pole"
+	quest.2BD1848C751D2C08.quest_desc: [
+		"Garnet crystal ball, gold block and blaze rod, in a column. A golden wand in Kamek style."
+	]
+	quest.2BD1848C751D2C08.title: "Tokenizer Wand"
+	quest.2CC4E00732BE3C9B.quest_desc: [
+		"Book and quill + map + clock + the \"otherside\" disc, shapeless. Holds 91 pages. Put it in the Party Controller: the roulette draws its mini-games."
+	]
+	quest.2CC4E00732BE3C9B.title: "Mini Games Catalogue"
+	quest.2D64151C55086784.quest_desc: [
+		"You have built, played and collected everything Steve Party Maker has to offer. Thank you for playing the beta!"
+	]
+	quest.2D64151C55086784.quest_subtitle: "Every chapter complete"
+	quest.2D64151C55086784.title: "Steve Party Master"
+	quest.2E1EFBCB9519EEE1.quest_desc: [
+		"6 plastic blocks of one colour in two columns: 6 opaque pipes (16 colours). A pipe placed against another (or in front of its mouth) connects to it."
+	]
+	quest.2E1EFBCB9519EEE1.title: "Lime Pipe"
+	quest.2E754E69CDD7EF1A.quest_desc: [
+		"Cartridge + chest. Links up to 8 chests (right-click them) and gives or takes items: positive items are bonus spaces (blue), negative ones malus spaces (red), empty is an item space (orange). The scroll wheel sets the amounts."
+	]
+	quest.2E754E69CDD7EF1A.title: "Inventory Cartridge"
+	quest.2EF12416B1262A81.quest_desc: [
+		"Right-click a mob with the wand (or shoot a spark at it), then draw a circle around it with the mouse. On the guide: a 1-block pawn; twice as big: 2 blocks; smaller: down to 0.25."
+		"The mob becomes a still, silent, invulnerable figurine, and you own it."
+	]
+	quest.2EF12416B1262A81.title: "Pionificus!"
+	quest.2F3A30222BF08C93.quest_desc: [
+		"Break a tile with a Silk Touch pickaxe: it drops as one item that keeps all its cartridges, their settings and its look. Place it again and it is back as it was."
+	]
+	quest.2F3A30222BF08C93.title: "Pack a tile"
+	quest.2F86298582A1E025.quest_desc: [
+		"Dice, special faces and modules: every roll can now be a surprise."
+	]
+	quest.2F86298582A1E025.title: "Dice collector"
+	quest.3015D9B1FF57C11A.quest_desc: [
+		"Blank face + fermented spider eye. A negative module: the pawn moves back, and coins won are lost."
+	]
+	quest.3015D9B1FF57C11A.title: "Dice Module: Reversed"
+	quest.308B809C31445486.quest_desc: [
+		"3 bricks in a row: 6 slabs."
+	]
+	quest.308B809C31445486.title: "Polished Orange Terracotta Brick Slab"
+	quest.30B76A9DDAC3BA6B.quest_desc: [
+		"At dusk, a full moon has a 25% chance of an Ephemeride: 6 waves of low shooting stars over each player, then a group of 3 to 5 Mulas lands where they went. A Dice Forge at full power guarantees it every full moon."
+	]
+	quest.30B76A9DDAC3BA6B.title: "Shooting-star night"
+	quest.30E06C6BD698E571.quest_desc: [
+		"9 fragments of one colour: a glowing, glass-like block of animated plasma (16 colours, 12 variants each). The black one is a starry night. It attracts curious Mulas."
+	]
+	quest.30E06C6BD698E571.title: "Block of Blue Star Fragments"
+	quest.33F2B84D658F752B.quest_desc: [
+		"Cartridge + emerald + gold nugget. A pawn that ends on it (or passes a Checkpoint with it) opens the shop of the nearest Boxed Trader for its player, Mario Party style. See the Shops chapter."
+	]
+	quest.33F2B84D658F752B.title: "Shop Cartridge"
+	quest.345F2775C4F5745A.quest_desc: [
+		"Stone buttons, gold, a chest and iron. Payments go into the linked registers; each sale sends a redstone pulse. Mine it with an iron pickaxe."
+	]
+	quest.345F2775C4F5745A.title: "Cash register"
+	quest.346595A5E4D15B1C.quest_desc: [
+		"9 identical planks: 2 big wooden boards, on a post, hanging or flat."
+	]
+	quest.346595A5E4D15B1C.title: "Wooden Panel"
+	quest.3476803BD17DBC9E.quest_desc: [
+		"A orange plastic stud + paper + redstone: 4 cards. Rings the Party Bells set to Event; the channel is the stack size."
+		"Cards go in the 24 slots of the Program tab and are read left to right."
+	]
+	quest.3476803BD17DBC9E.title: "Party Card: Event"
+	quest.35120B4602A51333.quest_desc: [
+		"Two rows of 3: 6 walls."
+	]
+	quest.35120B4602A51333.title: "Polished Orange Terracotta Wall"
+	quest.35237C08B4821CCD.quest_desc: [
+		"Hoppers on top and sides fill the forge, a hopper below takes the dice out. Powered by redstone, it restarts on its own once restocked. A comparator reads the output."
+	]
+	quest.35237C08B4821CCD.title: "Dice factory"
+	quest.3619C77AF2064C99.quest_desc: [
+		"Dropped by a yellow Mula when it bursts."
+	]
+	quest.3619C77AF2064C99.title: "Yellow Star Fragment"
+	quest.366E43B34F9C7D7E.quest_desc: [
+		"Planks and sticks (PPP / PPP / S S): 2 easel signs, in any wood, modded ones included. Stands on the ground."
+	]
+	quest.366E43B34F9C7D7E.title: "Easel Sign"
+	quest.3817AA11E5F4EFA0.quest_desc: [
+		"Your finish line is ready: jump, score, win."
+	]
+	quest.3817AA11E5F4EFA0.title: "Goal!"
+	quest.385B95560FE8A09B.quest_desc: [
+		"Cartridge + lime dye. A start space: a pawn placed on it binds to it, floats and takes its colour. The Party Controller only takes pawns bound to a start space."
+	]
+	quest.385B95560FE8A09B.title: "Start Cartridge"
+	quest.38DC8F88EE22AE2C.quest_desc: [
+		"A pipe that ends inside a solid block is a dead end: it warps you to the nearest mouth of the same colour within 100 blocks. Opaque and windowed pipes of one colour count as one colour."
+	]
+	quest.38DC8F88EE22AE2C.title: "Warp"
+	quest.3B5CBE11E9AEFBBE.quest_desc: [
+		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Entry\"."
+	]
+	quest.3B5CBE11E9AEFBBE.title: "Black Pipe: Entry"
+	quest.3E137565F331C99C.quest_desc: [
+		"6 stained glass of one colour: 6 stained glass pipes (16 colours)."
+	]
+	quest.3E137565F331C99C.title: "Magenta Stained Glass Pipe"
+	quest.3F4EF27EE42BEC9C.quest_desc: [
+		"Blank face + Coin: a +1 Coins face (stonecutter for +2 to +10). Instead of moving, the roller gains that many coins of the party."
+	]
+	quest.3F4EF27EE42BEC9C.title: "Coin Dice Face +1"
+	quest.405FC7652C003313.quest_desc: [
+		"Custom dice, a core at full height and Mulas dancing around it."
+	]
+	quest.405FC7652C003313.title: "Forgemaster"
+	quest.42057F6E6F797B1D.quest_desc: [
+		"Land on top of a pole: \"1up\", a golden heart for 10 s, no fall damage, and you stand upside down. Each landing scores a point for the base."
+	]
+	quest.42057F6E6F797B1D.title: "1up!"
+	quest.423032099703F693.quest_desc: [
+		"A plastic block over plastic pellets: 2 road signs of the block's colour. The Wrench cycles the plate: round, square, diamond, triangle, star, heart. Off its post, it floats."
+	]
+	quest.423032099703F693.title: "Plastic Road Sign"
+	quest.42C4E05F055ED63B.quest_desc: [
+		"A Power Star on top, obsidian, a blast furnace and a netherite ingot. It engraves dice with the faces and weights you choose, in a loop, by hand, hoppers or redstone."
+	]
+	quest.42C4E05F055ED63B.title: "Dice Forge"
+	quest.42D5C0FDC568C5B3.quest_desc: [
+		"Your pawn waits on its start space. Time to roll some dice!"
+	]
+	quest.42D5C0FDC568C5B3.title: "Pawn master"
+	quest.43758D7B5C5F556E.quest_desc: [
+		"Gold, a redstone torch, a chest and an amethyst shard. Give it a cartridge whose destinations are the tiles to drive: its redstone input replaces theirs (one lever switches a whole board)."
+		"A comparator on it reads what happens on its tiles: 14 bonus, 13 malus, 10 Stop, 8 Teleport, 1 a pawn passes..."
+	]
+	quest.43758D7B5C5F556E.title: "Board Space Redstone router"
+	quest.44A6CEA198F3D329.quest_desc: [
+		"Every recipe of the mod can be read in a recipe viewer (REI or EMI) if the pack has one: it also shows every tile with its cartridge."
+		"The mod's wiki (on its GitHub page) explains each block in detail."
+	]
+	quest.44A6CEA198F3D329.title: "Read the recipes"
+	quest.44BBB28CA9222EC6.quest_desc: [
+		"Right-click a pawn with a dye: its name and its base change colour (and its start space too)."
+	]
+	quest.44BBB28CA9222EC6.title: "Team colours"
+	quest.476FD02CC564638E.quest_desc: [
+		"3 blocks in a row: 6 slabs."
+	]
+	quest.476FD02CC564638E.title: "Polished Orange Terracotta Slab"
+	quest.486B21C664042E3A.quest_desc: [
+		"A star fragment (any colour), a gold ingot and a gold nugget, in a column. Right-click the trader to link it (the first to do so owns it), then each block: stall, stock chests, registers."
+	]
+	quest.486B21C664042E3A.title: "Shopkeeper Key"
+	quest.48EDC9CAA41959B9.quest_desc: [
+		"Dropped by a purple Mula when it bursts."
+	]
+	quest.48EDC9CAA41959B9.title: "Purple Star Fragment"
+	quest.49297133DC9D18C2.quest_desc: [
+		"One fragment each of blue, green, yellow, red and purple (or 5 black fragments), shapeless. Always shining. It is the default Star of a party, and goes into the Dice Forge and the iron and golden mini-game pipes."
+	]
+	quest.49297133DC9D18C2.title: "Power Star"
+	quest.4973F5A913628816.quest_desc: [
+		"Right-click a wild Mula with a star fragment of its own colour: 1 chance in 3. Tamed, it floats above you like a balloon and orbits your head when you stand still."
+	]
+	quest.4973F5A913628816.title: "Best friend"
+	quest.49C4BD610323C14F.quest_desc: [
+		"A placed Gravity Core never climbs and cannot explode: a fixed, safe attraction. Chicken carousel, item collector..."
+	]
+	quest.49C4BD610323C14F.title: "Merry-go-round"
+	quest.4A7A5955A37DF6B0.quest_desc: [
+		"Right-click a mouth, sneak in front of it, or fall into it: you rush through the pipe and come out of another end of the network, at random. Mobs, pawns and items go through too."
+	]
+	quest.4A7A5955A37DF6B0.title: "Wahoo!"
+	quest.4A9446B6E9669567.quest_desc: [
+		"Right-click it: five tabs (Status, Players, Program, Prizes, Settings). The Status tab lists what is missing before the \"Start the party\" button lights up. A \"!\" on a tab shows what to fix."
+	]
+	quest.4A9446B6E9669567.title: "The dashboard"
+	quest.4B862393844E8C60.quest_desc: [
+		"The Villager Block reacts to everything: stare at it, jump in front of it, show it emeralds, play a jukebox nearby... About 70 reactions to discover."
+	]
+	quest.4B862393844E8C60.title: "Squishy friend"
+	quest.4BD97BC245ABD3F0.quest_desc: [
+		"Stencil in one hand, dye in the other, right-click a sign or the full face of any block: the pattern is painted (1 dye; the stencil is never used up). On a wall, the paint can only be wiped with a wet sponge or a brush."
+	]
+	quest.4BD97BC245ABD3F0.title: "Paint a wall"
+	quest.4BE7B23596D212E5.quest_desc: [
+		"All 16 colours of star fragments, and a Power Star of your own."
+	]
+	quest.4BE7B23596D212E5.title: "Star collector"
+	quest.4C1ED42CA5A03E7A.quest_desc: [
+		"Right-click one of your pawns with the wand and draw a new circle to change its size."
+	]
+	quest.4C1ED42CA5A03E7A.title: "Resizing spell"
+	quest.4C6E654F6972F00F.quest_desc: [
+		"Crafting table: a die (default, forged, double or triple) + one or more module items gives the same die with those modules. The module items stay in the grid. A die can carry several modules: they are listed in its tooltip."
+	]
+	quest.4C6E654F6972F00F.title: "Fit a module"
+	quest.4D740A8C8B416C56.quest_desc: [
+		"Blank face + eye of ender. At forks the pawn chooses on its own, at random."
+	]
+	quest.4D740A8C8B416C56.title: "Dice Module: Homing"
+	quest.4DC6FEBAF30A3370.quest_desc: [
+		"Your shop is open, on and off the board."
+	]
+	quest.4DC6FEBAF30A3370.title: "Shopkeeper"
+	quest.4E3F2C32016B79DF.quest_desc: [
+		"Blank face + wind charge. Stop or again: after the result, keep it or roll again, once per module."
+	]
+	quest.4E3F2C32016B79DF.title: "Dice Module: Reroll"
+	quest.4F2AF3CC87A16DDE.quest_desc: [
+		"Press \"Play\" on the Mini-Game Controller (or \"Test\" in the page editor): everyone within 5 blocks of a linked pipe plays, without a party. Results show what each place would earn, nothing is paid, and everyone comes back."
+	]
+	quest.4F2AF3CC87A16DDE.title: "Test run"
+	quest.4F7FD0FED1B42870.quest_desc: [
+		"Placed against a solid block, a pipe is fixed to it (one block per pipe). The Wrench changes which one, down to none."
+	]
+	quest.4F7FD0FED1B42870.title: "Pipe fittings"
+	quest.4FFDA1440AD648B3.quest_desc: [
+		"Brewing stand: awkward potion + any star fragment gives a Potion of Luck (Luck I, 5:00), the only survival recipe for it."
+	]
+	quest.4FFDA1440AD648B3.title: "Potion of Luck"
+	quest.51391531ACB06CD3.quest_desc: [
+		"Fed to 40, the Mula grows three times bigger and bursts: 64 star fragments of its colour (a black one: 1). It flies away as a shooting star and is reborn 100 to 400 blocks away."
+	]
+	quest.51391531ACB06CD3.title: "Pop!"
+	quest.51CDCA2A7EA71CA8.quest_desc: [
+		"Wrench in hand, the board appears: chevrons along each link, step numbers, \"?\" on forks, \"!\" on dead ends."
+		"Click a Party Controller with the Wrench (or /steveparty board check) to list every problem of the board."
+	]
+	quest.51CDCA2A7EA71CA8.title: "Board view and check"
+	quest.51F269AB8B964D99.quest_desc: [
+		"A cross of 5 planks: 2 panels. Stencil + axe cut the board along the pattern: a silhouette."
+	]
+	quest.51F269AB8B964D99.title: "Cut-Out Wooden Panel"
+	quest.52B016C6225E8428.quest_desc: [
+		"Stamp a board tile: it takes the dye's colour with the pattern drawn darker. With a cartridge inside, the cartridge keeps the look. A wet sponge wipes it."
+	]
+	quest.52B016C6225E8428.title: "Stamp a tile"
+	quest.5322A5CC09B4DADC.quest_desc: [
+		"Two carpets over two barrels; the carpets give the awning's colours. Each column is an offer (9 max): the goods on top, prices 1 and 2 below. The goods are only a model: the sale takes the same item from the linked chests."
+	]
+	quest.5322A5CC09B4DADC.title: "Trading Stall"
+	quest.5392461055ABAF56.quest_desc: [
+		"Iron ingots, a smooth stone slab and an iron block. Insert a stencil and open the editor: left-click cuts a pixel, right-click fills it. Your library keeps up to 128 patterns, and learns every pattern you carry."
+	]
+	quest.5392461055ABAF56.title: "Stencil Maker"
+	quest.540F65F4778F3FD7.quest_desc: [
+		"Blue concrete, a stone pressure plate, a clock, iron and redstone. Give it a Cartridge whose destinations are blocks: jump on it and they vanish, appear or toggle for a set time (clock to change it). Plastic is switchable by default."
+	]
+	quest.540F65F4778F3FD7.title: "Hop Switch"
+	quest.55428C54977D8D69.quest_desc: [
+		"The Wrench breaks any plastic block in one hit, even under water. Shears are fast too."
+	]
+	quest.55428C54977D8D69.title: "Quick clean-up"
+	quest.55DCC18B70E655E2.quest_desc: [
+		"The Results tab of the page lists what ends the mini-game: linked podiums, goal pole bases (counters) and Step Controllers. A pulse on a podium, set with the Wrench, can register the nearest player or reset the group."
+	]
+	quest.55DCC18B70E655E2.title: "Results"
+	quest.564863446D9C8AC2.quest_desc: [
+		"Pawns bound to start spaces, then \"Start the party\" (or a redstone pulse). Everyone rolls for the order, then each round is one turn per pawn and a mini-game. Stars first, then coins, decide the winner."
+	]
+	quest.564863446D9C8AC2.title: "Let's party!"
+	quest.5738F405CD1ABF02.quest_desc: [
+		"Bricks, a sculk sensor, iron and redstone. The base counts the points of the poles stacked on it. Set it up with the Wrench."
+	]
+	quest.5738F405CD1ABF02.title: "Goal Pole Base"
+	quest.57714CCCE52A3BB1.quest_desc: [
+		"One plastic block gives 4 studs of its colour (4 studs in a square give the block back). A small piece on floor, wall or ceiling that needs no support."
+	]
+	quest.57714CCCE52A3BB1.title: "Blue Plastic Stud"
+	quest.57CE1899FD49EB32.quest_desc: [
+		"A spyglass on a copper ingot, over 3 sticks. At night, under a clear sky, look into it: the scroll wheel replays past shooting-star nights within 1000 blocks. Keep a star in the sights to light a guide star above the Mulas."
+	]
+	quest.57CE1899FD49EB32.title: "Telescope"
+	quest.5806AB33C242D3BE.quest_desc: [
+		"Leather, planks, a stencil and a stick. Loads 9 stencils and 9 dyes (sneak + right-click). Sneak + scroll picks the stencil or the colour (G switches), right-click stamps it, signs, walls, tiles and podiums included."
+	]
+	quest.5806AB33C242D3BE.title: "Stencil Hammer"
+	quest.58AD4044E1C5BEBD.quest_desc: [
+		"4 identical stones (stone, granite, deepslate, sandstone...): 1 engraved stone. The stencil really digs the pattern; side by side, their tops merge into one lintel."
+	]
+	quest.58AD4044E1C5BEBD.title: "Rock Sign"
+	quest.598F31A259B60ADB.quest_desc: [
+		"Both families in every shape, and checkerboard tiles."
+	]
+	quest.598F31A259B60ADB.title: "Master builder"
+	quest.59BCFCAF6BA910B4.quest_desc: [
+		"6 iron ingots, a Power Star and the copper mini-game pipe. Reaches the whole dimension."
+	]
+	quest.59BCFCAF6BA910B4.title: "Iron Mini-game Pipe"
+	quest.5A7CE62676D0F450.quest_desc: [
+		"A Podium + a gold ingot, shapeless. Only a look: the height of the column decides the place."
+	]
+	quest.5A7CE62676D0F450.title: "Gold Podium"
+	quest.5B4767F40E06F23E.quest_desc: [
+		"Mix star fragments like dyes: black + white. You get back as many fragments as you put in."
+	]
+	quest.5B4767F40E06F23E.title: "Gray Star Fragment"
+	quest.5B628A39A4C798B1.quest_desc: [
+		"The same with two polished concrete colours. Every pair of colours works; the item keeps its colours in its name."
+	]
+	quest.5B628A39A4C798B1.title: "Polished Concrete Tiles"
+	quest.5C4295392DE2E5D1.quest_desc: [
+		"6 copper ingots around a paper. Click it with a page: it becomes the entrance to that mini-game outside a party, within 100 blocks. Coloured pipes linked to it send each player to their role."
+	]
+	quest.5C4295392DE2E5D1.title: "Copper Mini-game Pipe"
+	quest.5C6EDA264FC2653D.quest_desc: [
+		"6 blocks in steps: 4 stairs."
+	]
+	quest.5C6EDA264FC2653D.title: "Polished Orange Terracotta Stairs"
+	quest.5DA080B1E3CBDCA8.quest_desc: [
+		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Players\"."
+	]
+	quest.5DA080B1E3CBDCA8.title: "Green Pipe: Players"
+	quest.5DD0CA51D02BCCC0.quest_desc: [
+		"A stick, a slime ball and a bowl. Right-click a mob to mute it; again to give its voice back."
+	]
+	quest.5DD0CA51D02BCCC0.title: "Plunger"
+	quest.5E174C6DCB411FC0.quest_desc: [
+		"Dropped by a black Mula when it bursts (only one, and black Mulas are rare)."
+	]
+	quest.5E174C6DCB411FC0.title: "Black Star Fragment"
+	quest.5E38267B9B2C3CF9.quest_desc: [
+		"4 light blue concrete in a square: 4 polished blocks (17 colours for terracotta, 16 for concrete). The stonecutter makes every shape from the vanilla block directly."
+	]
+	quest.5E38267B9B2C3CF9.title: "Polished Light Blue Concrete"
+	quest.5E623F55BBE37FE9.quest_desc: [
+		"Shears again on a trader that has already lost its bandana: you steal the look of its box. Wear it as a chestplate; sneak to hide inside: stand still 2 s and you become a real block."
+	]
+	quest.5E623F55BBE37FE9.title: "Box Costume"
+	quest.5EC05D8B076F3374.quest_desc: [
+		"Quests are shared per FTB Teams team. To share progress with friends, create a party with /ftbteams party create and invite them."
+		"Rewards stay personal: everyone claims their own."
+	]
+	quest.5EC05D8B076F3374.title: "Party up"
+	quest.5F62DDBD464BC0DA.quest_desc: [
+		"6 bricks in steps: 4 stairs."
+	]
+	quest.5F62DDBD464BC0DA.title: "Polished Light Blue Concrete Brick Stairs"
+	quest.5FECE4CA8D043161.quest_desc: [
+		"Trader, stall, a stock chest and a register, all linked with the key; an offer on the stall and stock in the chest. Customers right-click the trader and buy. The owner's shop is protected."
+	]
+	quest.5FECE4CA8D043161.title: "Open for business"
+	quest.61DD313CE6A35BC2.quest_desc: [
+		"Draw your own 16x16 pattern on the grid (flip, rotate, invert, undo...) and save it on the stencil."
+	]
+	quest.61DD313CE6A35BC2.title: "Cut a pattern"
+	quest.620A5C7BA9429AD1.quest_desc: [
+		"Tiles, checkpoints, every cartridge and a closed loop: your board is ready for pawns."
+	]
+	quest.620A5C7BA9429AD1.title: "Board builder"
+	quest.6305DEBDCAB9BBA0.quest_desc: [
+		"Blank face + clock. The die spins slowly; its roller hits it to stop on the face shown."
+	]
+	quest.6305DEBDCAB9BBA0.title: "Dice Module: Slow"
+	quest.639372715E2D9036.quest_desc: [
+		"Place two Teleport spaces of the same colour on one board. A dye on the tile (purple, green, orange, blue...) changes its network. A lone space of its colour sends nobody anywhere."
+	]
+	quest.639372715E2D9036.title: "A teleport network"
+	quest.63E7493B3F8C4B36.quest_desc: [
+		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Spectators\"."
+	]
+	quest.63E7493B3F8C4B36.title: "White Pipe: Spectators"
+	quest.653CF6E9C6766795.quest_desc: [
+		"4 plastic blocks and 2 glass: 6 windowed pipes, with a continuous window along the tube."
+	]
+	quest.653CF6E9C6766795.title: "Cyan Windowed Pipe"
+	quest.65FD4DC5FA855317.quest_desc: [
+		"Roll near one of your pawns standing on a linked board: it walks the result, step by step. At a fork, right-click an arrow empty-handed to choose the way."
+	]
+	quest.65FD4DC5FA855317.title: "Move a pawn"
+	quest.680DFFB134E7498D.quest_desc: [
+		"2 iron ingots and 2 nether quartz in a square: 4 Blank Dice Faces. Every face starts from a blank one (stonecutter), and the Dice Forge uses them up."
+	]
+	quest.680DFFB134E7498D.title: "Blank Dice Face"
+	quest.68FDB8B9B18F5221.quest_desc: [
+		"Redstone and an iron ingot. The Wrench links tiles together (modes Trace, Edit, Cut: R or sneak + scroll), shows the board and its problems, opens cartridge blocks with sneak + right-click, and breaks any plastic block in one hit."
+	]
+	quest.68FDB8B9B18F5221.title: "Wrench"
+	quest.69911E8F52BE5816.quest_desc: [
+		"At night, Mulas on a lead can lift you up like balloons: one big Mula, two half-full ones or three of any size. You land softly at dawn."
+	]
+	quest.69911E8F52BE5816.title: "Up, up and away"
+	quest.6A47B29FC1D81DDA.quest_desc: [
+		"Premium faces (1 to 10) shine in gold on the die. For now they count like normal numbers."
+	]
+	quest.6A47B29FC1D81DDA.title: "Premium Dice Face 10"
+	quest.6AD835CCA129C2DD.quest_desc: [
+		"4 plastic pellets + 1 dye + 1 amethyst shard, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
+	]
+	quest.6AD835CCA129C2DD.title: "Red Plastic Block"
+	quest.6B5FF43F4D5E73E2.quest_desc: [
+		"Plastic pellets around a shulker box. Right-click your pawn with an empty Token to store it, right-click a block to put it back: the way to move a pawn by hand."
+	]
+	quest.6B5FF43F4D5E73E2.title: "Token"
+	quest.6C63BD50698F0417.quest_desc: [
+		"Two rows of 3: 6 walls."
+	]
+	quest.6C63BD50698F0417.title: "Polished Light Blue Concrete Brick Wall"
+	quest.6D8D21CED52BF7F8.quest_desc: [
+		"Mix star fragments like dyes: blue + green. You get back as many fragments as you put in."
+	]
+	quest.6D8D21CED52BF7F8.title: "Cyan Star Fragment"
+	quest.6E22696E6BCB0E7C.quest_desc: [
+		"Cursed faces (1 to 3) show a purple skull. For now they count like normal numbers."
+	]
+	quest.6E22696E6BCB0E7C.title: "Cursed Dice Face 3"
+	quest.6E614CCC831846DA.quest_desc: [
+		"A Podium + a copper ingot, shapeless. Only a look: the height of the column decides the place."
+	]
+	quest.6E614CCC831846DA.title: "Bronze Podium"
+	quest.6EF85DD450A37FB8.quest_desc: [
+		"Page in hand, click a pipe mouth to link it (click again to unlink); linked pipes glow while you hold the page. When the mini-game starts, each player comes out of a pipe of their role."
+	]
+	quest.6EF85DD450A37FB8.title: "Link the pipes"
+	quest.6F216B6287815B35.quest_desc: [
+		"Map, stained glass, redstone torch, mushroom stems, a crafter, iron and redstone. The heart of a party."
+	]
+	quest.6F216B6287815B35.title: "Party Controller"
+	quest.6FC6A979673D9964.quest_desc: [
+		"Mix star fragments like dyes: purple + pink. You get back as many fragments as you put in."
+	]
+	quest.6FC6A979673D9964.title: "Magenta Star Fragment"
+	quest.6FE0D77A51E3FB74.quest_desc: [
+		"6 blocks in steps: 4 stairs. Aligned shapes of the same colour connect their textures too."
+	]
+	quest.6FE0D77A51E3FB74.title: "Green Plastic Stairs"
+	quest.7025AE0D120A1991.quest_desc: [
+		"A plastic block in still water rises to the surface, carrying whatever stands on it. Over soul sand, a bubble column sends it up fast (an elevator); over magma, down. A chain anchors it."
+	]
+	quest.7025AE0D120A1991.title: "It floats!"
+	quest.71CC2E37EF714902.quest_desc: [
+		"2 redstone, 2 paper and 2 plastic pellets. A cartridge gives a tile its role and its destinations. The plain Cartridge has no role: it is just a path."
+		"Right-click a block with it to add a destination; right-click in the air to open its menu. Every other cartridge is this one plus an ingredient."
+	]
+	quest.71CC2E37EF714902.title: "Cartridge"
+	quest.722DDCFD99F1743D.quest_desc: [
+		"Blank face + spider eye: a -1 Debt face (stonecutter for -2 to -10). The roller loses that many coins, never more than they have."
+	]
+	quest.722DDCFD99F1743D.title: "Debt Dice Face −1"
+	quest.734C85BCB3D708BB.quest_desc: [
+		"4 iron nuggets around a paper: 2 blank stencils. Structure chests sometimes hold stencils with one of 50 built-in patterns. A cut stencil + blank ones copy it."
+	]
+	quest.734C85BCB3D708BB.title: "Stencil"
+	quest.736773478A5996A7.quest_desc: [
+		"Cartridge + repeater. The player whose pawn ends on it rolls again at once, and gets the die back. One extra turn only."
+	]
+	quest.736773478A5996A7.title: "Roll Again Cartridge"
+	quest.7474041B576499AF.quest_desc: [
+		"Smelt sugar cane in a furnace. Plastic pellets are in almost everything: tiles, cartridges, tokens and every plastic block."
+	]
+	quest.7474041B576499AF.title: "Plastic Pellets"
+	quest.74A69E19FF0BCA86.quest_desc: [
+		"3 bricks in a row: 6 slabs."
+	]
+	quest.74A69E19FF0BCA86.title: "Polished Light Blue Concrete Brick Slab"
+	quest.75B73EB45B67D1C0.quest_desc: [
+		"Mulas fall from the sky on shooting-star nights (Ephemeride), mostly at full moon: follow the direction of the first wave of stars, 150 to 600 blocks away. Look at a Mula to complete this quest."
+	]
+	quest.75B73EB45B67D1C0.title: "A Mula!"
+	quest.75D850169554760C.quest_desc: [
+		"Click the first tile again to close the loop: confetti! A loop with a Start tile is all a party needs."
+		"Several links from one tile make a fork: the player chooses the way. No link: a dead end."
+	]
+	quest.75D850169554760C.title: "Close the loop"
+	quest.778C3F69BBD69981.quest_desc: [
+		"Two rows of 3: 6 walls."
+	]
+	quest.778C3F69BBD69981.title: "Polished Light Blue Concrete Wall"
+	quest.77D47E2D75956F53.quest_desc: [
+		"4 gold ingots, an eye of ender, 2 Power Stars and the iron mini-game pipe. Reaches every dimension."
+	]
+	quest.77D47E2D75956F53.title: "Golden Mini-game Pipe"
+	quest.77FE553DBC59E8E9.quest_desc: [
+		"Three wool: the colour of the wool makes the flag's (mixed like leather armour). Right-click a segment to hang it; it slides down when the goal is reached. Dye it again in the grid."
+	]
+	quest.77FE553DBC59E8E9.title: "Flag"
+	quest.78060E8B8175066C.quest_desc: [
+		"Blank face + compass. The roller picks the face."
+	]
+	quest.78060E8B8175066C.title: "Dice Module: Choice"
+	quest.785AA345B1B2CC7F.quest_desc: [
+		"Blank face + rabbit's foot. One extra roll per module (up to 5): keep the best one."
+	]
+	quest.785AA345B1B2CC7F.title: "Dice Module: Lucky"
+	quest.78C9F801227DBCA8.quest_desc: [
+		"Cartridge + red dye. A pawn that reaches a Stop space ends its move there, whatever steps it has left. Works on a Checkpoint too."
+	]
+	quest.78C9F801227DBCA8.title: "Stop Cartridge"
+	quest.79E5CE07E2521CF7.quest_desc: [
+		"Shears on an open trader that wears its bandana: it falls, and the trader hides for 20 s. Wear it on your head: traders ignore you. Give one back to a bald trader to change its colour."
+	]
+	quest.79E5CE07E2521CF7.title: "Bandana"
+	quest.79EBF22157E78E6D.quest_desc: [
+		"The core climbs with the fragments in the forge: 256 fragments (4 full stacks, or 4 black ones, each black counts as 64) lift it 16 blocks up. A forge at max level guarantees an Ephemeride every full moon."
+	]
+	quest.79EBF22157E78E6D.title: "Highest orbit"
+	quest.7A67F524EE372745.quest_desc: [
+		"Put a Shop Cartridge on your board within 32 blocks of the trader: a pawn that stops there opens the shop for its player, wherever they are. The turn waits for the purchases."
+	]
+	quest.7A67F524EE372745.title: "Shop stop"
+	quest.7B61B7E9D8BEF2E8.quest_desc: [
+		"Two plastic blocks (any colour) on top of each other: 4 sticks. The plastic fences are made of them."
+	]
+	quest.7B61B7E9D8BEF2E8.title: "Plastic Stick"
+	quest.7CD8704D1E8BE3C5.quest_desc: [
+		"A blue plastic stud + paper + redstone: 4 cards. Every pawn plays once."
+		"Cards go in the 24 slots of the Program tab and are read left to right."
+	]
+	quest.7CD8704D1E8BE3C5.title: "Party Card: Turns"
+	quest.7CE9B67A9BE1ED07.quest_desc: [
+		"A Mula eats only edible food of its colour: blue = cod, red = apples and red meat, green = melon, yellow = golden food and bread, purple = chorus and beetroot, black = cookies, stews and steak. The tooltip tells \"Mula food\"."
+	]
+	quest.7CE9B67A9BE1ED07.title: "Snack time"
+	quest.7D674A4D41A2C9AB.quest_desc: [
+		"Wrench on a segment: the pole lights up when the total is at least (or exactly, or less than) a value. \"Goal: per player\" gives each player who reaches it the highest free podium place."
+	]
+	quest.7D674A4D41A2C9AB.title: "Set a goal"
+	quest.7D6CB020DBA7A8FC.quest_desc: [
+		"Right-click in the air with the page: the editor opens. Give it a title, a description (bold, italic, colours, 400 characters) and an image (PNG or JPEG dropped on the window). The image shows on the big card when the mini-game is drawn."
+	]
+	quest.7D6CB020DBA7A8FC.title: "Write the page"
+	quest.7DADEB95247215E8.quest_desc: [
+		"A special face: the pawn stays where it is and the space under it triggers again."
+	]
+	quest.7DADEB95247215E8.title: "Dice Face 0"
+	quest.7E305E47E151BDCF.quest_desc: [
+		"Two rows of 3 blocks: 6 walls."
+	]
+	quest.7E305E47E151BDCF.title: "Purple Plastic Wall"
+	quest.7E41138FB7521482.quest_desc: [
+		"8 iron ingots around a wind charge. Rolls 1 to 10."
+	]
+	quest.7E41138FB7521482.title: "Default Dice"
+	quest.7F2770DE1C7C8D45.quest_desc: [
+		"Cartridge + ender pearl. A pawn that ends on it is sent to another Teleport space of the same network colour (violet, green, orange or blue)."
+	]
+	quest.7F2770DE1C7C8D45.title: "Teleport Cartridge"
+	quest.7FA9DC98F4753074.quest_desc: [
+		"Right-click the forge with the Gravity Core: it sinks in, then rises and floats above the forge. Sneak + right-click empty-handed takes it back. Hitting the floating core makes it explode (and it is lost)."
+	]
+	quest.7FA9DC98F4753074.title: "Ignite the forge"
+	reward_table.1FEF45914C419791.title: "Party Favors"
+	reward_table.536A6CC3E21C8B88.title: "Star Chest"
+}
