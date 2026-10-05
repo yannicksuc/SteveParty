@@ -27,6 +27,8 @@ public class PartyData {
      * (the HUD shows it through the standings' bonuses).
      */
     private final Set<UUID> protectedTokens = new LinkedHashSet<>();
+    /** The hidden traps of the Trap power-up: saved with the party, never sent to the clients. */
+    private final fr.lordfinn.steveparty.powerups.effects.TrapState traps = new fr.lordfinn.steveparty.powerups.effects.TrapState();
 
     // Constructor
     public PartyData() {
@@ -70,6 +72,7 @@ public class PartyData {
             } catch (IllegalArgumentException ignored) {
             }
         });
+        traps.readNbt(nbt);
     }
 
     /**
@@ -94,6 +97,7 @@ public class PartyData {
             protectedTokens.forEach(uuid -> protectedNbt.add(NbtString.of(uuid.toString())));
             nbt.put("ProtectedTokens", protectedNbt);
         }
+        traps.writeNbt(nbt);
         return nbt;
     }
 
@@ -209,6 +213,12 @@ public class PartyData {
         this.protectedTokens.clear();
         this.stepIndex = -1;
         this.steps.clear();
+        this.traps.clear();
+    }
+
+    /** The hidden traps set with the Trap power-up during this party (see {@code TrapEffect}). */
+    public fr.lordfinn.steveparty.powerups.effects.TrapState getTraps() {
+        return traps;
     }
 
     public int getNbTurn() {
