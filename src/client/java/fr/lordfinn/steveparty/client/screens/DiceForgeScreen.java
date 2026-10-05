@@ -49,6 +49,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
      */
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/dice_forge.png");
     private static final int ATLAS_SIZE = 512, OVERLAY_U = 256;
+    /** Part of each turning slot's position below one pixel (GUI px), by slot id; 0 for the slots that stay still. */
+    private final float[] subPixelX = new float[DiceForgeBlockEntity.SIZE], subPixelY = new float[DiceForgeBlockEntity.SIZE];
     private static final int LIGHT_SLOT_V = 336, LIGHT_SQUARE_U = 0, LIGHT_ROUND_U = 18, LIGHT_SLOT_SIZE = 18;
     /** The galaxy, drawn on the background's navy disc, under the overlay, and slowly turning. */
     private static final Identifier GALAXY = Steveparty.id("textures/gui/dice_forge_galaxy.png");
@@ -155,7 +157,9 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             Slot slot = handler.getSlot(i);
             if (!DiceFace.isFace(slot.getStack()) || totalWeight <= 0) continue;
             int alpha = 0x50 + Math.round(0xAF * slot.getStack().getCount() / (float) getMaxWeight());
+            pushSubPixel(context, slot);
             drawSlotContour(context, x + slot.x, y + slot.y, (alpha << 24) | 0xFFE08C);
+            context.getMatrices().pop();
         }
 
         // Over the galaxy: its ring, the module gems and the capsule
@@ -165,9 +169,17 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         drawCoreButton(context, x + CORE_X, y + CORE_Y, mouseX, mouseY, delta);
     }
 
-    private static void drawLightSlot(DrawContext context, int x, int y, Slot slot, int u) {
+    private void drawLightSlot(DrawContext context, int x, int y, Slot slot, int u) {
+        pushSubPixel(context, slot);
         context.drawTexture(TEXTURE, x + slot.x - 1, y + slot.y - 1, u, LIGHT_SLOT_V,
                 LIGHT_SLOT_SIZE, LIGHT_SLOT_SIZE, ATLAS_SIZE, ATLAS_SIZE);
+        context.getMatrices().pop();
+    }
+
+    /** Shifts the drawing by the part of a turning slot's position below one pixel, for a smooth rotation. */
+    private void pushSubPixel(DrawContext context, Slot slot) {
+        context.getMatrices().push();
+        if (slot.id < subPixelX.length) context.getMatrices().translate(subPixelX[slot.id], subPixelY[slot.id], 0);
     }
 
     /** The contour of a light square slot (no corners), in one colour. */
@@ -187,7 +199,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     /**
      * Moves the face slots with the galaxy (same angle, as if it carried them) and the fragment slots the other way,
-     * faster; the items stay upright, on whole pixels. Done before each frame, so that drawing and clicks agree.
+     * faster; the items stay upright. The slot keeps the whole pixel (clicks), the rest below one pixel shifts its
+     * drawing, so that the slots glide instead of stepping from pixel to pixel. Done before each frame.
      */
     private void turnSlots() {
         float angle = getGalaxyAngle();
@@ -201,12 +214,16 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         }
     }
 
-    private static void turnSlot(Slot slot, int restX, int restY, float degrees) {
+    private void turnSlot(Slot slot, int restX, int restY, float degrees) {
         double a = Math.toRadians(degrees), cos = Math.cos(a), sin = Math.sin(a);
         double dx = restX + 8 - GALAXY_CENTER_X, dy = restY + 8 - GALAXY_CENTER_Y;
+        double sx = GALAXY_CENTER_X + dx * cos - dy * sin - 8, sy = GALAXY_CENTER_Y + dx * sin + dy * cos - 8;
+        int px = (int) Math.floor(sx), py = (int) Math.floor(sy);
         SlotAccessor accessor = (SlotAccessor) slot;
-        accessor.steveparty$setX((int) Math.round(GALAXY_CENTER_X + dx * cos - dy * sin) - 8);
-        accessor.steveparty$setY((int) Math.round(GALAXY_CENTER_Y + dx * sin + dy * cos) - 8);
+        accessor.steveparty$setX(px);
+        accessor.steveparty$setY(py);
+        subPixelX[slot.id] = (float) (sx - px);
+        subPixelY[slot.id] = (float) (sy - py);
     }
 
     // ------------------------------------------------------------------ weights
@@ -387,9 +404,15 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         int index = slot.id;
         if (index < DiceForgeBlockEntity.SIZE && !slot.hasStack()) {
             ItemStack ghost = getGhostStack(index);
-            if (!ghost.isEmpty()) drawTranslucentItem(context, ghost, slot.x, slot.y, GHOST_ALPHA);
+            if (!ghost.isEmpty()) {
+                pushSubPixel(context, slot);
+                drawTranslucentItem(context, ghost, slot.x, slot.y, GHOST_ALPHA);
+                context.getMatrices().pop();
+            }
         }
+        pushSubPixel(context, slot);
         super.drawSlot(context, slot);
+        context.getMatrices().pop();
     }
 
     /** @return what to show at low opacity in an empty forge slot (remembered item, hint or preview). */
