@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyData;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.powerups.PowerUpTurn;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
 import fr.lordfinn.steveparty.entities.TokenStatus;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
@@ -62,6 +63,8 @@ public class TokenTurnPartyStep extends PartyStep {
     private @Nullable Integer rollCoins;
     /** The token the roll swapped this one with, empty until it did. */
     private String swapWith = "";
+    /** The power-up used during this turn and what it remembers until the end of it. Saved. */
+    private final PowerUpTurn powerUps = new PowerUpTurn();
 
     public TokenTurnPartyStep(NbtCompound nbt) {
         super(nbt);
@@ -84,6 +87,7 @@ public class TokenTurnPartyStep extends PartyStep {
         outcome = DiceOutcome.NONE;
         rollCoins = null;
         swapWith = "";
+        powerUps.reset();
         if (partyControllerEntity.getWorld() instanceof ServerWorld serverWorld) {
             if (this.tokenUUID == null) {
                 cancelTurn(partyControllerEntity.getPartyData().getOwners(serverWorld), partyControllerEntity);
@@ -211,6 +215,11 @@ public class TokenTurnPartyStep extends PartyStep {
 
     public void noteSwap(String with) {
         this.swapWith = with == null ? "" : with;
+    }
+
+    /** The power-up state of this turn: the power-up used, if any, and its data (see {@code PowerUpService}). */
+    public PowerUpTurn getPowerUps() {
+        return powerUps;
     }
 
     /** @return the total rolled for this turn by its player, 0 while they have not rolled */
@@ -418,6 +427,8 @@ public class TokenTurnPartyStep extends PartyStep {
         }
         this.absentDeadline = nbt.contains("AbsentDeadline") ? nbt.getLong("AbsentDeadline") : -1;
         this.replay = nbt.getBoolean("Replay");
+        // Field initializers run after super(nbt): the state may not exist yet on that first read
+        if (powerUps != null) powerUps.fromNbt(nbt.getCompound("PowerUps"));
     }
 
     @Override
@@ -433,6 +444,8 @@ public class TokenTurnPartyStep extends PartyStep {
             nbtCompound.putLong("AbsentDeadline", absentDeadline);
         if (replay)
             nbtCompound.putBoolean("Replay", true);
+        if (powerUps.hasUsed())
+            nbtCompound.put("PowerUps", powerUps.toNbt());
         return nbtCompound;
     }
 

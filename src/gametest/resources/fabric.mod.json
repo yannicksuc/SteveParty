@@ -12,6 +12,7 @@
       "fr.lordfinn.steveparty.gametest.TileFeedbackGameTests",
       "fr.lordfinn.steveparty.gametest.AdvanceBackGameTests",
       "fr.lordfinn.steveparty.gametest.ReplayTileGameTests",
+      "fr.lordfinn.steveparty.gametest.PowerUpGameTests",
       "fr.lordfinn.steveparty.gametest.PartyHudGameTests",
       "fr.lordfinn.steveparty.gametest.PartyHudLayoutGameTests",
       "fr.lordfinn.steveparty.gametest.PartyHudPlacementsGameTests",

@@ -55,6 +55,8 @@ public class ModItems {
     public static final List<Item> DICE_FACES = new ArrayList<>();
     /** The dice module items, one per module of DiceModules. */
     public static final List<Item> DICE_MODULES = new ArrayList<>();
+    /** The power-up items, one per power-up of PowerUps. */
+    public static final List<Item> POWER_UPS = new ArrayList<>();
     /** The base every dice module is crafted from, with seven star fragments of the module's colour. */
     public static final Item BLANK_DICE_MODULE = register(Item.class, "blank_dice_module");
 
@@ -196,6 +198,12 @@ public class ModItems {
         for (fr.lordfinn.steveparty.dice.DiceModule module : fr.lordfinn.steveparty.dice.DiceModules.all()) {
             Item item = new fr.lordfinn.steveparty.items.custom.DiceModuleItem(module, new Item.Settings());
             DICE_MODULES.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(module.itemPath())), item));
+        }
+
+        // One item per power-up (see PowerUps)
+        for (fr.lordfinn.steveparty.powerups.PowerUp powerUp : fr.lordfinn.steveparty.powerups.PowerUps.all()) {
+            Item item = new PowerUpItem(powerUp, new Item.Settings());
+            POWER_UPS.add(Registry.register(Registries.ITEM, RegistryKey.of(RegistryKeys.ITEM, Steveparty.id(powerUp.itemPath())), item));
         }
 
         // Register items to the custom item group.
@@ -361,6 +369,9 @@ public class ModItems {
             itemGroup.add(DEFAULT_DICE);
             itemGroup.add(DOUBLE_DICE);
             itemGroup.add(TRIPLE_DICE);
+            for (Item item : POWER_UPS) {
+                itemGroup.add(item);
+            }
         });
     }
 }

@@ -236,12 +236,13 @@ public record PartyLiveData(int roll, int stepsLeft, boolean moving, boolean sho
     }
 
     /**
-     * A power-up: an item of the {@link #POWER_UPS} tag, or a special die (a die with faces of its own or carrying
-     * modules).
+     * A power-up: a power-up item ({@code PowerUps}), an item of the {@link #POWER_UPS} tag, or a special die (a die
+     * with faces of its own or carrying modules).
      */
     public static boolean isPowerUp(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        return stack.isIn(POWER_UPS) || (stack.getItem() instanceof DefaultDiceItem
+        return stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.PowerUpItem || stack.isIn(POWER_UPS)
+                || (stack.getItem() instanceof DefaultDiceItem
                 && (DiceFacesComponent.hasFaces(stack) || !fr.lordfinn.steveparty.dice.DiceModules.of(stack).isEmpty()));
     }
 
