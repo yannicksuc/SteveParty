@@ -1,0 +1,43 @@
+{
+  "category": "cartridges",
+  "name": "book.steveparty.guide.cartridges.inventory.name",
+  "description": "book.steveparty.guide.cartridges.inventory.description",
+  "icon": {
+    "item": "steveparty:inventory_cartridge"
+  },
+  "x": 2,
+  "y": 6,
+  "sort_number": 7,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "cartridges/cartridge",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.inventory.page0.text",
+      "title": "book.steveparty.guide.cartridges.inventory.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.inventory.page1.text",
+      "title": "book.steveparty.guide.cartridges.inventory.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:inventory_cartridge",
+      "text": "book.steveparty.guide.cartridges.inventory.page2.text"
+    }
+  ]
+}

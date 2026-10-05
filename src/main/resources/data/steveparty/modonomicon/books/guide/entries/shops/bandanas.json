@@ -1,0 +1,33 @@
+{
+  "category": "shops",
+  "name": "book.steveparty.guide.shops.bandanas.name",
+  "description": "book.steveparty.guide.shops.bandanas.description",
+  "icon": {
+    "item": "steveparty:bandana"
+  },
+  "x": 5,
+  "y": -2,
+  "sort_number": 6,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "shops/trader",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/open_shop",
+    "tooltip": "book.steveparty.guide.lock.open_shop"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.shops.bandanas.page0.text",
+      "title": "book.steveparty.guide.shops.bandanas.page0.title"
+    }
+  ]
+}

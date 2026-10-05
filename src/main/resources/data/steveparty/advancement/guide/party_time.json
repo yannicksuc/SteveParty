@@ -1,0 +1,36 @@
+{
+  "parent": "steveparty:guide/lay_the_board",
+  "display": {
+    "icon": {
+      "id": "steveparty:party_controller"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.party_time.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.party_time.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "placed_party_controller": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "steveparty:party_controller"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed_party_controller"
+    ]
+  ]
+}

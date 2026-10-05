@@ -1,0 +1,33 @@
+{
+  "category": "pawns_dice",
+  "name": "book.steveparty.guide.pawns_dice.pawns.name",
+  "description": "book.steveparty.guide.pawns_dice.pawns.description",
+  "icon": {
+    "item": "minecraft:armor_stand"
+  },
+  "x": 0,
+  "y": -2,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "pawns_dice/wand",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/make_a_pawn",
+    "tooltip": "book.steveparty.guide.lock.make_a_pawn"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.pawns.page0.text",
+      "title": "book.steveparty.guide.pawns_dice.pawns.page0.title"
+    }
+  ]
+}

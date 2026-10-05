@@ -1,0 +1,33 @@
+{
+  "category": "stars_mula",
+  "name": "book.steveparty.guide.stars_mula.ephemeride.name",
+  "description": "book.steveparty.guide.stars_mula.ephemeride.description",
+  "icon": {
+    "item": "minecraft:clock"
+  },
+  "x": -4,
+  "y": 4,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "stars_mula/mula",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/stardust",
+    "tooltip": "book.steveparty.guide.lock.stardust"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.ephemeride.page0.text",
+      "title": "book.steveparty.guide.stars_mula.ephemeride.page0.title"
+    }
+  ]
+}

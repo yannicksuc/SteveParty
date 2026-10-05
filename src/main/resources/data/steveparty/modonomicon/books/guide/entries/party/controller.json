@@ -1,0 +1,29 @@
+{
+  "category": "party",
+  "name": "book.steveparty.guide.party.controller.name",
+  "description": "book.steveparty.guide.party.controller.description",
+  "icon": {
+    "item": "steveparty:party_controller"
+  },
+  "x": -3,
+  "y": 0,
+  "sort_number": 0,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.controller.page0.text",
+      "title": "book.steveparty.guide.party.controller.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.controller.page1.text",
+      "title": "book.steveparty.guide.party.controller.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:party_controller"
+    }
+  ]
+}

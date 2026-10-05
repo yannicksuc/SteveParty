@@ -1,0 +1,47 @@
+{
+  "parent": "steveparty:guide/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:trading_stall"
+    },
+    "title": {
+      "translate": "advancements.steveparty.guide.open_shop.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.guide.open_shop.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_shopkeeper_key": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:shopkeeper_key"
+          }
+        ]
+      }
+    },
+    "placed_trading_stall": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "steveparty:trading_stall"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_shopkeeper_key",
+      "placed_trading_stall"
+    ]
+  ]
+}

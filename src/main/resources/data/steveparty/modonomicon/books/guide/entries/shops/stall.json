@@ -1,0 +1,38 @@
+{
+  "category": "shops",
+  "name": "book.steveparty.guide.shops.stall.name",
+  "description": "book.steveparty.guide.shops.stall.description",
+  "icon": {
+    "item": "steveparty:trading_stall"
+  },
+  "x": -1,
+  "y": 0,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "shops/overview",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/open_shop",
+    "tooltip": "book.steveparty.guide.lock.open_shop"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.shops.stall.page0.text",
+      "title": "book.steveparty.guide.shops.stall.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:trading_stall",
+      "text": "book.steveparty.guide.shops.stall.page1.text"
+    }
+  ]
+}

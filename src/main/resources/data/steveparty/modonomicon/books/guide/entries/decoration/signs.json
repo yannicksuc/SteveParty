@@ -1,0 +1,39 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.signs.name",
+  "description": "book.steveparty.guide.decoration.signs.description",
+  "icon": {
+    "item": "steveparty:oak_easel_sign"
+  },
+  "x": 2,
+  "y": 6,
+  "sort_number": 9,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "decoration/stencils",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.signs.page0.text",
+      "title": "book.steveparty.guide.decoration.signs.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.signs.page1.text",
+      "title": "book.steveparty.guide.decoration.signs.page1.title"
+    },
+    {
+      "type": "modonomicon:spotlight",
+      "item": {
+        "item": "steveparty:plastic_road_sign"
+      },
+      "text": "book.steveparty.guide.decoration.signs.page2.text"
+    }
+  ]
+}

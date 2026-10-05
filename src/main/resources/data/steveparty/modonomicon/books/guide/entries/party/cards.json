@@ -1,0 +1,48 @@
+{
+  "category": "party",
+  "name": "book.steveparty.guide.party.cards.name",
+  "description": "book.steveparty.guide.party.cards.description",
+  "icon": {
+    "item": "steveparty:party_card_turns"
+  },
+  "x": 0,
+  "y": 1,
+  "sort_number": 4,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "party/controller",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/party_time",
+    "tooltip": "book.steveparty.guide.lock.party_time"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.cards.page0.text",
+      "title": "book.steveparty.guide.party.cards.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:party_card_turns",
+      "recipe_id_2": "steveparty:party_card_minigame",
+      "text": "book.steveparty.guide.party.cards.page1.text"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:party_card_event",
+      "recipe_id_2": "steveparty:party_card_repeat"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:party_card_sequence_start"
+    }
+  ]
+}

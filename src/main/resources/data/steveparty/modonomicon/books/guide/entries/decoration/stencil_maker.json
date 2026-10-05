@@ -1,0 +1,31 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.stencil_maker.name",
+  "description": "book.steveparty.guide.decoration.stencil_maker.description",
+  "icon": {
+    "item": "steveparty:stencil_maker"
+  },
+  "x": 2,
+  "y": 0,
+  "sort_number": 6,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "decoration/stencils",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.stencil_maker.page0.text",
+      "title": "book.steveparty.guide.decoration.stencil_maker.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:stencil_maker"
+    }
+  ]
+}

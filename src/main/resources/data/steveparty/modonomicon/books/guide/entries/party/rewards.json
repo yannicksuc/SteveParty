@@ -1,0 +1,38 @@
+{
+  "category": "party",
+  "name": "book.steveparty.guide.party.rewards.name",
+  "description": "book.steveparty.guide.party.rewards.description",
+  "icon": {
+    "item": "steveparty:coin"
+  },
+  "x": 0,
+  "y": -3,
+  "sort_number": 2,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "party/controller",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/party_time",
+    "tooltip": "book.steveparty.guide.lock.party_time"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.rewards.page0.text",
+      "title": "book.steveparty.guide.party.rewards.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:coin",
+      "text": "book.steveparty.guide.party.rewards.page1.text"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "category": "stars_mula",
+  "name": "book.steveparty.guide.stars_mula.gravity_core.name",
+  "description": "book.steveparty.guide.stars_mula.gravity_core.description",
+  "icon": {
+    "item": "steveparty:gravity_core"
+  },
+  "x": 2,
+  "y": -2,
+  "sort_number": 6,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "stars_mula/power_star",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/stardust",
+    "tooltip": "book.steveparty.guide.lock.stardust"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.stars_mula.gravity_core.page0.text",
+      "title": "book.steveparty.guide.stars_mula.gravity_core.page0.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:gravity_core",
+      "text": "book.steveparty.guide.stars_mula.gravity_core.page1.text"
+    }
+  ]
+}

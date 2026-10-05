@@ -1,0 +1,43 @@
+{
+  "category": "pawns_dice",
+  "name": "book.steveparty.guide.pawns_dice.modules.name",
+  "description": "book.steveparty.guide.pawns_dice.modules.description",
+  "icon": {
+    "item": "steveparty:dice_module_lucky"
+  },
+  "x": 0,
+  "y": 4,
+  "sort_number": 6,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "pawns_dice/dice",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/roll_the_dice",
+    "tooltip": "book.steveparty.guide.lock.roll_the_dice"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.modules.page0.text",
+      "title": "book.steveparty.guide.pawns_dice.modules.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.pawns_dice.modules.page1.text",
+      "title": "book.steveparty.guide.pawns_dice.modules.page1.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:dice_module_lucky",
+      "recipe_id_2": "steveparty:dice_module_choice"
+    }
+  ]
+}

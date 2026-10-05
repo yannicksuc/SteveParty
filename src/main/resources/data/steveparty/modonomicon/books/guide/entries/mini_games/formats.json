@@ -1,0 +1,33 @@
+{
+  "category": "mini_games",
+  "name": "book.steveparty.guide.mini_games.formats.name",
+  "description": "book.steveparty.guide.mini_games.formats.description",
+  "icon": {
+    "item": "steveparty:blue_pipe"
+  },
+  "x": -1,
+  "y": -2,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "mini_games/pages",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/mini_games",
+    "tooltip": "book.steveparty.guide.lock.mini_games"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.mini_games.formats.page0.text",
+      "title": "book.steveparty.guide.mini_games.formats.page0.title"
+    }
+  ]
+}

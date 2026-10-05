@@ -1,0 +1,32 @@
+{
+  "category": "shops",
+  "name": "book.steveparty.guide.shops.villager_block.name",
+  "description": "book.steveparty.guide.shops.villager_block.description",
+  "icon": {
+    "item": "steveparty:villager_block"
+  },
+  "x": -1,
+  "y": -2,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "shops/overview",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.shops.villager_block.page0.text",
+      "title": "book.steveparty.guide.shops.villager_block.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.shops.villager_block.page1.text",
+      "title": "book.steveparty.guide.shops.villager_block.page1.title"
+    }
+  ]
+}

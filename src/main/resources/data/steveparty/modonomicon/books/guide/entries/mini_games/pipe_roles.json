@@ -1,0 +1,32 @@
+{
+  "category": "mini_games",
+  "name": "book.steveparty.guide.mini_games.pipe_roles.name",
+  "description": "book.steveparty.guide.mini_games.pipe_roles.description",
+  "icon": {
+    "item": "steveparty:green_pipe"
+  },
+  "x": 2,
+  "y": -2,
+  "sort_number": 2,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "mini_games/formats",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/mini_games",
+    "tooltip": "book.steveparty.guide.lock.mini_games"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.mini_games.pipe_roles.page0.text",
+      "title": "book.steveparty.guide.mini_games.pipe_roles.page0.title"
+    }
+  ]
+}

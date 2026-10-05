@@ -1,0 +1,28 @@
+{
+  "name": "book.steveparty.guide.decoration.name",
+  "icon": {
+    "item": "steveparty:white_plastic_block"
+  },
+  "sort_number": 8,
+  "display_mode": "node",
+  "background": "modonomicon:textures/gui/dark_slate_seamless.png",
+  "background_width": 512,
+  "background_height": 512,
+  "background_parallax_layers": [
+    {
+      "background": "modonomicon:textures/gui/parallax/flow/base.png",
+      "speed": 0.7
+    },
+    {
+      "background": "modonomicon:textures/gui/parallax/flow/1.png",
+      "speed": 1.0
+    },
+    {
+      "background": "modonomicon:textures/gui/parallax/flow/2.png",
+      "speed": 1.4
+    }
+  ],
+  "max_scroll_x": 512,
+  "max_scroll_y": 512,
+  "show_category_button": true
+}

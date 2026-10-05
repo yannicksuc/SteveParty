@@ -1,0 +1,27 @@
+{
+  "category": "decoration",
+  "name": "book.steveparty.guide.decoration.floating.name",
+  "description": "book.steveparty.guide.decoration.floating.description",
+  "icon": {
+    "item": "steveparty:light_blue_plastic_block"
+  },
+  "x": 2,
+  "y": -9,
+  "sort_number": 1,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "decoration/plastic_blocks",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.decoration.floating.page0.text",
+      "title": "book.steveparty.guide.decoration.floating.page0.title"
+    }
+  ]
+}

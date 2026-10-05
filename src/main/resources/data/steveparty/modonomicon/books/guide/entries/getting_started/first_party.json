@@ -1,0 +1,32 @@
+{
+  "category": "getting_started",
+  "name": "book.steveparty.guide.getting_started.first_party.name",
+  "description": "book.steveparty.guide.getting_started.first_party.description",
+  "icon": {
+    "item": "steveparty:default_dice"
+  },
+  "x": 2,
+  "y": 1,
+  "sort_number": 2,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "getting_started/welcome",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.getting_started.first_party.page0.text",
+      "title": "book.steveparty.guide.getting_started.first_party.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.getting_started.first_party.page1.text",
+      "title": "book.steveparty.guide.getting_started.first_party.page1.title"
+    }
+  ]
+}

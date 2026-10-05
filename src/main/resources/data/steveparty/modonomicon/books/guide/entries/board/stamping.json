@@ -1,0 +1,32 @@
+{
+  "category": "board",
+  "name": "book.steveparty.guide.board.stamping.name",
+  "description": "book.steveparty.guide.board.stamping.description",
+  "icon": {
+    "item": "steveparty:stencil"
+  },
+  "x": 2,
+  "y": 0,
+  "sort_number": 4,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "board/placing",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.board.stamping.page0.text",
+      "title": "book.steveparty.guide.board.stamping.page0.title"
+    }
+  ]
+}
