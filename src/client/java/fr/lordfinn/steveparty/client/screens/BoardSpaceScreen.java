@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.client.gui.cartridge.CartridgePanel;
@@ -9,7 +10,6 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeRef;
 import fr.lordfinn.steveparty.screen_handlers.custom.BoardSpaceScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
@@ -90,13 +90,15 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        context.drawTexture(RenderLayer::getGuiOpaqueTexturedBackground, getTexture(), x, y, 0f, 0f,
+        context.drawTexture(getTexture(), x, y, 0f, 0f,
                 BoardSpaceScreenHandler.TILE_W, backgroundHeight, 256, 256);
         if (!isSingle) {
             int activeSlot = this.handler.getActiveSlot();
             if (activeSlot >= 0 && activeSlot < TEXTURES_OVERLAY.size()) {
-                context.drawTexture(RenderLayer::getGuiTexturedOverlay, TEXTURES_OVERLAY.get(activeSlot), x, y, 0, 0,
+                RenderSystem.enableBlend();
+                context.drawTexture(TEXTURES_OVERLAY.get(activeSlot), x, y, 0, 0,
                         BoardSpaceScreenHandler.TILE_W, backgroundHeight, 256, 256);
+                RenderSystem.disableBlend();
             }
             // The selected slot (its cartridge's menu is on the right): a gold frame
             int selected = handler.getSelectedSlot();

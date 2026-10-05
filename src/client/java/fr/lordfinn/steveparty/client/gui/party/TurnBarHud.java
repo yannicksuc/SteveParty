@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.hud.TurnStripLayout.Kind;
 import fr.lordfinn.steveparty.hud.TurnStripLayout.Type;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -248,8 +247,8 @@ final class TurnBarHud {
             }
             case MARKER -> {
                 int bob = Math.round((float) Math.sin(now * Math.PI / 12) * 1.2f);
-                context.drawGuiTexture(RenderLayer::getGuiTextured, HudDraw.ICON_MARKER, x + PAD, y + PAD + bob,
-                        TurnStripLayout.MARKER_W, TurnStripLayout.MARKER_H, HudDraw.white(alpha));
+                HudDraw.faded(alpha, () -> context.drawGuiTexture(HudDraw.ICON_MARKER, x + PAD, y + PAD + bob,
+                        TurnStripLayout.MARKER_W, TurnStripLayout.MARKER_H));
             }
         }
         if (scaled) matrices.pop();
@@ -272,8 +271,10 @@ final class TurnBarHud {
         UUID owner = player == null ? null : player.owner;
         if (owner != null) {
             Identifier skin = SkinUtils.getPlayerSkin(owner);
-            context.drawTexture(RenderLayer::getGuiTextured, skin, x, y, 8, 8, 8, 8, 8, 8, 64, 64, HudDraw.white(alpha));
-            context.drawTexture(RenderLayer::getGuiTextured, skin, x, y, 40, 8, 8, 8, 8, 8, 64, 64, HudDraw.white(alpha));
+            HudDraw.faded(alpha, () -> {
+                context.drawTexture(skin, x, y, 8, 8, 8, 8, 8, 8, 64, 64);
+                context.drawTexture(skin, x, y, 8, 8, 40, 8, 8, 8, 64, 64);
+            });
             return;
         }
         context.fill(x, y, x + 8, y + 8, HudDraw.fade(0xFF3F3F3F, alpha));

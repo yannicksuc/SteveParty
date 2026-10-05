@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
@@ -128,8 +127,10 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         int y = (this.height - this.backgroundHeight) / 2;
         drawGalaxy(context, x + GALAXY_CENTER_X, y + GALAXY_CENTER_Y);
         // Over it: its bevelled rim, the squares under the faces and the inventory panel
-        context.drawTexture(RenderLayer::getGuiTextured, TEXTURE, x, y, 0, 0,
+        RenderSystem.enableBlend();
+        context.drawTexture(TEXTURE, x, y, 0, 0,
                 this.backgroundWidth, this.backgroundHeight, 256, 256);
+        RenderSystem.disableBlend();
 
         // Faces: the brighter the frame, the more likely the face
         int totalWeight = getTotalWeight();
@@ -198,8 +199,10 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         matrices.translate(centerX, centerY, 0);
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angle));
         int half = GALAXY_SIZE / 2;
-        context.drawTexture(RenderLayer::getGuiTextured, GALAXY, -half, -half, 0, 0,
+        RenderSystem.enableBlend();
+        context.drawTexture(GALAXY, -half, -half, 0, 0,
                 GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE);
+        RenderSystem.disableBlend();
         matrices.pop();
     }
 
@@ -207,7 +210,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static int gaugeColor(float t) {
         float scaled = MathHelper.clamp(t, 0f, 1f) * (GAUGE_COLORS.length - 1);
         int from = Math.min(GAUGE_COLORS.length - 2, (int) scaled);
-        return ColorHelper.lerp(scaled - from, GAUGE_COLORS[from], GAUGE_COLORS[from + 1]);
+        return ColorHelper.Argb.lerp(scaled - from, GAUGE_COLORS[from], GAUGE_COLORS[from + 1]);
     }
 
     /** No title: the forge speaks for itself (the player inventory title stays). */

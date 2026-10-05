@@ -1,10 +1,10 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.hud.HudShapes;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
@@ -199,7 +199,7 @@ public final class ConsolePaint {
         if (TEXTURES.size() >= MAX_TEXTURES) clear();
         int h = out.length, w = out[0].length;
         NativeImage image = new NativeImage(w, h, true);
-        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) image.setColorArgb(x, y, out[y][x]);
+        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) image.setColor(x, y, ColorHelper.Abgr.toAbgr(out[y][x]));
         Identifier id = Steveparty.id("console/painted_" + serial++);
         MinecraftClient.getInstance().getTextureManager().registerTexture(id, new NativeImageBackedTexture(image));
         Tex tex = new Tex(id, w, h);
@@ -239,7 +239,7 @@ public final class ConsolePaint {
             }
         }
         if (band) {
-            int light = ColorHelper.lerp(0.45f, ramp.body(), 0xFFFFFFFF) | 0xFF000000;
+            int light = ColorHelper.Argb.lerp(0.45f, ramp.body(), 0xFFFFFFFF) | 0xFF000000;
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
                     boolean top = m[y][x] && !in(m, x, y - 2);
@@ -254,7 +254,9 @@ public final class ConsolePaint {
     }
 
     private static void draw(DrawContext context, Tex tex, int x, int y) {
-        context.drawTexture(RenderLayer::getGuiTextured, tex.id(), x, y, 0, 0, tex.width(), tex.height(), tex.width(), tex.height());
+        RenderSystem.enableBlend();
+        context.drawTexture(tex.id(), x, y, 0, 0, tex.width(), tex.height(), tex.width(), tex.height());
+        RenderSystem.disableBlend();
     }
 
     /** Forgets every painted shape (painted again when needed). */

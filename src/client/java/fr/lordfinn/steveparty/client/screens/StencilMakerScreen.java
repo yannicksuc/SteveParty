@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.SaveStencilPayload;
@@ -15,7 +16,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.sound.SoundEvents;
@@ -150,8 +150,10 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
         @Override
         public void drawMessage(DrawContext context, TextRenderer textRenderer, int color) {
-            context.drawTexture(RenderLayer::getGuiTextured, ICONS, getX() + 4, getY() + (height - ICON_SIZE) / 2,
+            RenderSystem.enableBlend();
+            context.drawTexture(ICONS, getX() + 4, getY() + (height - ICON_SIZE) / 2,
                     icon * ICON_SIZE, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE * ICON_COUNT, ICON_SIZE);
+            RenderSystem.disableBlend();
             drawScrollableText(context, textRenderer, getMessage(), getX() + 20, getY(), getX() + getWidth() - 3, getY() + getHeight(), color);
         }
     }
@@ -373,11 +375,12 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        context.drawTexture(RenderLayer::getGuiTexturedOverlay, BACKGROUND_TEXTURE, bgX, bgY, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight);
+        RenderSystem.enableBlend();
+        context.drawTexture(BACKGROUND_TEXTURE, bgX, bgY, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight);
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 16; j++) {
                 if (shape[i * 16 + j] == 1) continue;
-                context.drawTexture(RenderLayer::getGuiTexturedOverlay, STENCIL_TEXTURE, (stencilX + i * PIXEL_SIZE), (stencilY + j * PIXEL_SIZE), i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE, backgroundWidth / 2, backgroundHeight / 2);
+                context.drawTexture(STENCIL_TEXTURE, (stencilX + i * PIXEL_SIZE), (stencilY + j * PIXEL_SIZE), i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE, backgroundWidth / 2, backgroundHeight / 2);
             }
         }
         if (isInsideStencil(mouseX, mouseY)) {
@@ -388,7 +391,8 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         int buttonX = this.width / 2 - 32;
         int buttonY = saveButtonY();
         boolean isHovering = isSaveButtonHovered(mouseX, mouseY);
-        context.drawTexture(RenderLayer::getGuiTexturedOverlay, BUTTONS, buttonX, buttonY, 0, isHovering ? 16 : 0, 64, 16, 64, 64);
+        context.drawTexture(BUTTONS, buttonX, buttonY, 0, isHovering ? 16 : 0, 64, 16, 64, 64);
+        RenderSystem.disableBlend();
         boolean justSaved = Util.getMeasuringTimeMs() < savedMessageUntil;
         Text text = Text.translatable(justSaved ? "gui.steveparty.stencil_maker.saved" : "gui.steveparty.stencil_save");
         int textWidth = textRenderer.getWidth(text);

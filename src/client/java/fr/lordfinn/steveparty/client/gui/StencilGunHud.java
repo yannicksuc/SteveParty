@@ -129,7 +129,7 @@ public final class StencilGunHud {
             context.getMatrices().translate(colorX + INSET, y + INSET, 0);
             context.drawItem(dye, 0, 0);
             context.getMatrices().pop();
-            context.drawStackOverlay(client.textRenderer, dye, colorX + INSET, y + INSET);
+            context.drawItemInSlot(client.textRenderer, dye, colorX + INSET, y + INSET);
         } else {
             Text engrave = Text.translatable("hud.steveparty.stencil_gun.engrave");
             context.getMatrices().push();

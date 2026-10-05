@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.client.gui.party;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
@@ -16,8 +16,8 @@ import net.minecraft.util.math.MathHelper;
 
 /**
  * Drawing bits shared by the party HUDs, in the mod's GUI style (the board plates of {@link ToolHud}: light plates cut
- * like the mod's screens, dark text), every colour carrying the HUD's fade (vertex colours: the draw context is
- * deferred, no global shader colour).
+ * like the mod's screens, dark text), every colour carrying the HUD's fade (vertex colours for fills and text,
+ * the shader colour for textures: see {@link #faded}).
  */
 final class HudDraw {
     static final int TEXT = ToolHud.TEXT;
@@ -49,8 +49,8 @@ final class HudDraw {
 
     /** A colour with its alpha multiplied by {@code alpha} (0..1). */
     static int fade(int argb, float alpha) {
-        int a = MathHelper.clamp(Math.round(ColorHelper.getAlpha(argb) * alpha), 0, 255);
-        return ColorHelper.withAlpha(a, argb);
+        int a = MathHelper.clamp(Math.round(ColorHelper.Argb.getAlpha(argb) * alpha), 0, 255);
+        return ColorHelper.Argb.withAlpha(a, argb);
     }
 
     /** White, faded: the tint of sprites. */
@@ -58,8 +58,18 @@ final class HudDraw {
         return fade(0xFFFFFFFF, alpha);
     }
 
+    /** Runs texture draws blended and faded to {@code alpha} (1.21.1 textures take no colour: the shader colour). */
+    static void faded(float alpha, Runnable draw) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1f, 1f, 1f, ColorHelper.Argb.getAlpha(white(alpha)) / 255f);
+        draw.run();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.disableBlend();
+    }
+
     static void plate(DrawContext context, ToolHud.Plate plate, int x, int y, int width, int height, float alpha) {
-        context.drawGuiTexture(RenderLayer::getGuiTextured, plateSprite(plate), x, y, width, height, white(alpha));
+        faded(alpha, () -> context.drawGuiTexture(plateSprite(plate), x, y, width, height));
     }
 
     private static Identifier plateSprite(ToolHud.Plate plate) {
@@ -67,7 +77,7 @@ final class HudDraw {
     }
 
     static void icon(DrawContext context, Identifier icon, int x, int y, float alpha) {
-        context.drawGuiTexture(RenderLayer::getGuiTextured, icon, x, y, ICON, ICON, white(alpha));
+        faded(alpha, () -> context.drawGuiTexture(icon, x, y, ICON, ICON));
     }
 
     static void text(DrawContext context, Text text, int x, int y, int color, float alpha) {

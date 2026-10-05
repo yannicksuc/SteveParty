@@ -1,11 +1,11 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.components.StencilGunSelection;
 import fr.lordfinn.steveparty.items.custom.StencilGunItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
@@ -34,8 +34,10 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int x = (this.width - this.backgroundWidth) / 2;
         int y = (this.height - this.backgroundHeight) / 2;
-        context.drawTexture(RenderLayer::getGuiTextured, TEXTURE, x, y, 0.0F, 0.0F, this.backgroundWidth, ROWS * 18 + 17, 256, 256);
-        context.drawTexture(RenderLayer::getGuiTextured, TEXTURE, x, y + ROWS * 18 + 17, 0.0F, 126.0F, this.backgroundWidth, 96, 256, 256);
+        RenderSystem.enableBlend();
+        context.drawTexture(TEXTURE, x, y, 0.0F, 0.0F, this.backgroundWidth, ROWS * 18 + 17, 256, 256);
+        context.drawTexture(TEXTURE, x, y + ROWS * 18 + 17, 0.0F, 126.0F, this.backgroundWidth, 96, 256, 256);
+        RenderSystem.disableBlend();
     }
 
     @Override
