@@ -1,15 +1,15 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
-      "id": "steveparty:bandana",
+      "id": "steveparty:box_costume",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.bandana.title"
+      "translate": "advancements.steveparty.wild_cards.undercover.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.bandana.description"
+      "translate": "advancements.steveparty.wild_cards.undercover.description"
     },
     "frame": "task",
     "hidden": true
@@ -24,8 +24,8 @@
             "entity": "this",
             "predicate": {
               "equipment": {
-                "head": {
-                  "items": "steveparty:bandana"
+                "chest": {
+                  "items": "steveparty:box_costume"
                 }
               }
             }

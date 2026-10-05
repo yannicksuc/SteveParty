@@ -1,21 +1,21 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
-      "id": "steveparty:mula_spawn_egg",
+      "id": "steveparty:boxed_trader_spawn_egg",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.mula_pawn.title"
+      "translate": "advancements.steveparty.wild_cards.trader_pawn.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.mula_pawn.description"
+      "translate": "advancements.steveparty.wild_cards.trader_pawn.description"
     },
     "frame": "task",
     "hidden": true
   },
   "criteria": {
-    "mula": {
+    "trader": {
       "trigger": "steveparty:pawn_spell",
       "conditions": {
         "result": "tokenized",
@@ -24,7 +24,7 @@
             "condition": "minecraft:entity_properties",
             "entity": "this",
             "predicate": {
-              "type": "steveparty:mula"
+              "type": "steveparty:boxed_trader"
             }
           }
         ]
@@ -33,7 +33,7 @@
   },
   "requirements": [
     [
-      "mula"
+      "trader"
     ]
   ],
   "rewards": {

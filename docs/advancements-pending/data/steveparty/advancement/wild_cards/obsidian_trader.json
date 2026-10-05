@@ -1,15 +1,15 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
       "id": "minecraft:obsidian",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.obsidian_trader.title"
+      "translate": "advancements.steveparty.wild_cards.obsidian_trader.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.obsidian_trader.description"
+      "translate": "advancements.steveparty.wild_cards.obsidian_trader.description"
     },
     "frame": "challenge",
     "hidden": true

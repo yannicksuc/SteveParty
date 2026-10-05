@@ -1,21 +1,21 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
-      "id": "steveparty:boxed_trader_spawn_egg",
+      "id": "minecraft:sculk_shrieker",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.trader_pawn.title"
+      "translate": "advancements.steveparty.wild_cards.warden_pawn.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.trader_pawn.description"
+      "translate": "advancements.steveparty.wild_cards.warden_pawn.description"
     },
-    "frame": "task",
+    "frame": "challenge",
     "hidden": true
   },
   "criteria": {
-    "trader": {
+    "warden": {
       "trigger": "steveparty:pawn_spell",
       "conditions": {
         "result": "tokenized",
@@ -24,7 +24,7 @@
             "condition": "minecraft:entity_properties",
             "entity": "this",
             "predicate": {
-              "type": "steveparty:boxed_trader"
+              "type": "minecraft:warden"
             }
           }
         ]
@@ -33,10 +33,13 @@
   },
   "requirements": [
     [
-      "trader"
+      "warden"
     ]
   ],
   "rewards": {
-    "experience": 10
+    "experience": 50,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
   }
 }

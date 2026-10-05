@@ -5,10 +5,10 @@
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.root.title"
+      "translate": "advancements.steveparty.wild_cards.root.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.root.description"
+      "translate": "advancements.steveparty.wild_cards.root.description"
     },
     "frame": "task",
     "background": "steveparty:textures/block/plastic_block/magenta_plastic_block.png",

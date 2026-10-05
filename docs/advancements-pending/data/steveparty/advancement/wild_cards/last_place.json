@@ -1,15 +1,15 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
       "id": "steveparty:bronze_podium",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.last_place.title"
+      "translate": "advancements.steveparty.wild_cards.last_place.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.last_place.description"
+      "translate": "advancements.steveparty.wild_cards.last_place.description"
     },
     "frame": "task",
     "hidden": true

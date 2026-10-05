@@ -1,15 +1,15 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
       "id": "steveparty:dice_forge",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.spin_doctor.title"
+      "translate": "advancements.steveparty.wild_cards.spin_doctor.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.spin_doctor.description"
+      "translate": "advancements.steveparty.wild_cards.spin_doctor.description"
     },
     "frame": "goal",
     "hidden": true

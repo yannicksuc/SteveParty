@@ -1,15 +1,15 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
       "id": "steveparty:podium",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.taking_part.title"
+      "translate": "advancements.steveparty.wild_cards.taking_part.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.taking_part.description"
+      "translate": "advancements.steveparty.wild_cards.taking_part.description"
     },
     "frame": "task",
     "hidden": true

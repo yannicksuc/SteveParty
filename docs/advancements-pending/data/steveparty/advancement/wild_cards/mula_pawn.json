@@ -1,29 +1,30 @@
 {
-  "parent": "steveparty:party_animal/root",
+  "parent": "steveparty:wild_cards/root",
   "display": {
     "icon": {
-      "id": "minecraft:bone",
+      "id": "steveparty:mula_spawn_egg",
       "count": 1
     },
     "title": {
-      "translate": "advancements.steveparty.party_animal.roll_the_bones.title"
+      "translate": "advancements.steveparty.wild_cards.mula_pawn.title"
     },
     "description": {
-      "translate": "advancements.steveparty.party_animal.roll_the_bones.description"
+      "translate": "advancements.steveparty.wild_cards.mula_pawn.description"
     },
     "frame": "task",
     "hidden": true
   },
   "criteria": {
-    "rolled": {
-      "trigger": "steveparty:dice_rolled",
+    "mula": {
+      "trigger": "steveparty:pawn_spell",
       "conditions": {
-        "target": [
+        "result": "tokenized",
+        "entity": [
           {
             "condition": "minecraft:entity_properties",
             "entity": "this",
             "predicate": {
-              "type": "#minecraft:skeletons"
+              "type": "steveparty:mula"
             }
           }
         ]
@@ -32,7 +33,7 @@
   },
   "requirements": [
     [
-      "rolled"
+      "mula"
     ]
   ],
   "rewards": {
