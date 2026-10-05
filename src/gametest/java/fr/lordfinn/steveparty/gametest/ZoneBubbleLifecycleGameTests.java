@@ -293,7 +293,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         ArmorStandEntity stand = context.spawnEntity(EntityType.ARMOR_STAND, at(3, 3, 4));
         stand.setHeadRotation(new EulerAngle(10, 20, 30));
         stand.equipStack(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
-        ChestBoatEntity boat = context.spawnEntity(EntityType.OAK_CHEST_BOAT, at(4, 3, 4));
+        ChestBoatEntity boat = context.spawnEntity(EntityType.CHEST_BOAT, at(4, 3, 4));
         boat.setStack(0, new ItemStack(Items.DIAMOND, 4));
         VillagerEntity villager = context.spawnEntity(EntityType.VILLAGER, at(5, 3, 2));
         villager.setCustomName(Text.literal("Bob"));
@@ -345,7 +345,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
         context.assertTrue(bubble.isActive(), "the session begins");
         // the session: every block broken (neighbours told), every entity killed, something of its own left behind
         for (BlockPos pos : states.keySet()) world.setBlockState(pos, Blocks.COBBLESTONE.getDefaultState(), Block.NOTIFY_ALL);
-        for (Entity entity : world.getOtherEntities(null, zone.bounds().expand(1), entity -> !(entity instanceof PlayerEntity))) entity.kill(world);
+        for (Entity entity : world.getOtherEntities(null, zone.bounds().expand(1), entity -> !(entity instanceof PlayerEntity))) entity.kill();
         context.spawnEntity(EntityType.COW, at(3, 3, 3));
         bubble.endNow();
 
@@ -518,13 +518,13 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
                 ZoneBubble bubble = ZoneBubbles.begin(server, UUID.randomUUID(), zoneAt(world, far), List.of(), List.of(), ZoneBubble.Options.DEFAULT);
                 context.assertTrue(bubble.isActive(), "the session begins");
                 // spawned by the session before the chunk's entities are read
-                CowEntity early = EntityType.COW.create(world, net.minecraft.entity.SpawnReason.COMMAND);
+                CowEntity early = EntityType.COW.create(world);
                 early.refreshPositionAndAngles(far.getX() + 3.5, far.getY(), far.getZ() + 3.5, 0, 0);
                 world.spawnEntity(early);
                 // read from disk once the chunk is loaded again (it may take a while when the server is busy)
                 when(context, () -> world.getEntity(id) != null, 600, "the entities of the zone never came", () -> later(context, 1, () -> {
                     world.getEntity(id).discard();
-                    CowEntity cow = EntityType.COW.create(world, net.minecraft.entity.SpawnReason.COMMAND);
+                    CowEntity cow = EntityType.COW.create(world);
                     cow.refreshPositionAndAngles(far.getX() + 2.5, far.getY(), far.getZ() + 2.5, 0, 0);
                     world.spawnEntity(cow);
                     bubble.endNow();
@@ -556,7 +556,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
             context.assertTrue(bubble.isActive(), "the session begins");
             world.setChunkForced(chunk.x, chunk.z, false);
             world.getEntity(statue).discard();
-            CowEntity cow = EntityType.COW.create(world, net.minecraft.entity.SpawnReason.COMMAND);
+            CowEntity cow = EntityType.COW.create(world);
             cow.refreshPositionAndAngles(far.getX() + 2.5, far.getY(), far.getZ() + 2.5, 0, 0);
             world.spawnEntity(cow);
             ItemEntity loot = new ItemEntity(world, far.getX() + 1.5, far.getY(), far.getZ() + 2.5, new ItemStack(Items.DIAMOND, 64));

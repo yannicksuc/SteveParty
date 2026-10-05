@@ -217,7 +217,7 @@ public class StarFragmentMixingGameTests implements FabricGameTest {
                 List<RecipeEntry<CraftingRecipe>> found = matches(context, recipes, fragments(hand));
                 DyeColor expected = table.get(hand);
                 context.assertTrue(found.size() == (expected == null ? 0 : 1),
-                        hand + " matches " + found.stream().map(r -> r.id().getValue().toString()).toList()
+                        hand + " matches " + found.stream().map(r -> r.id().toString()).toList()
                                 + ", expected " + (expected == null ? "nothing" : expected.getName()));
                 checked++;
                 // next multiset (non-decreasing indexes)

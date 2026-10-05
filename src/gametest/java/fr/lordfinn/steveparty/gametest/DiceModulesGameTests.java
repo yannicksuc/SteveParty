@@ -378,7 +378,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         ServerPlayerEntity roller = player(context);
         roller.changeGameMode(GameMode.SURVIVAL);
         ItemStack enchanted = die("dice_face_4");
-        enchanted.addEnchantment(context.getWorld().getRegistryManager().getOrThrow(net.minecraft.registry.RegistryKeys.ENCHANTMENT)
+        enchanted.addEnchantment(context.getWorld().getRegistryManager().getWrapperOrThrow(net.minecraft.registry.RegistryKeys.ENCHANTMENT)
                 .getOrThrow(net.minecraft.enchantment.Enchantments.INFINITY), 1);
         context.assertTrue(!DiceModules.returnsToRoller(enchanted), "an enchanted die does not come back");
         DiceEntity dice = thrown(context, roller, enchanted, DICE);

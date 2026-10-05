@@ -141,7 +141,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void gameMasterWandControlsOtherPlayersTokens(TestContext context) {
         RegistryEntry<Enchantment> gameMaster = context.getWorld().getRegistryManager()
-                .getOrThrow(RegistryKeys.ENCHANTMENT).getOptional(TokenizerWandItem.GAME_MASTER).orElse(null);
+                .getWrapperOrThrow(RegistryKeys.ENCHANTMENT).getOptional(TokenizerWandItem.GAME_MASTER).orElse(null);
         context.assertTrue(gameMaster != null, "steveparty:game_master is registered");
 
         PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(1, 1, 1));
@@ -259,7 +259,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
 
                 NbtCompound nbt = new NbtCompound();
                 mula.writeNbt(nbt);
-                MulaEntity reloaded = ModEntities.MULA_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
+                MulaEntity reloaded = ModEntities.MULA_ENTITY.create(context.getWorld());
                 context.assertTrue(reloaded != null, "entity created");
                 reloaded.readNbt(nbt);
                 context.assertTrue(reloaded.isSitting() && reloaded.isInSittingPose(), "sitting saved");
@@ -287,7 +287,7 @@ public class GameplayRulesGameTests implements FabricGameTest {
         // amplifier 10: the entity ends 1 block high
         float initialHeight = pig.getHeight();
         pig.addStatusEffect(new StatusEffectInstance(SQUISHED, 20, 10));
-        double scale = pig.getAttributeBaseValue(EntityAttributes.SCALE);
+        double scale = pig.getAttributeBaseValue(EntityAttributes.GENERIC_SCALE);
         context.assertTrue(Math.abs(scale - 1.0 / initialHeight) < 0.01, "final scale applied at once: " + scale);
         // The hitbox follows on the next entity tick (dirty attributes are processed in LivingEntity#tick)
         context.runAtTick(2, () -> context.assertTrue(Math.abs(pig.getHeight() - 1.0F) < 0.01F,

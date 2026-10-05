@@ -323,7 +323,7 @@ public class ZoneForbiddenGameTests implements FabricGameTest {
 
     /** An entity of a type, made and added to the world at a relative position (whether the world takes it or not). */
     private static Entity spawn(TestContext context, EntityType<?> type, Vec3d relative) {
-        Entity entity = type.create(context.getWorld(), SpawnReason.SPAWN_ITEM_USE);
+        Entity entity = type.create(context.getWorld());
         Vec3d abs = context.getAbsolute(relative);
         entity.refreshPositionAndAngles(abs.x, abs.y, abs.z, 0, 0);
         if (entity instanceof net.minecraft.entity.mob.MobEntity mob) mob.setAiDisabled(true);

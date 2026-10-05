@@ -427,7 +427,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
         ServerPlayerEntity[] respawned = new ServerPlayerEntity[1];
         later(context, 3, () -> {
             player.getInventory().setStack(0, new ItemStack(Items.NETHERITE_BLOCK, 5));
-            player.kill(world);
+            player.kill();
             context.assertTrue(player.isDead(), "the participant died");
             List<ItemEntity> drops = itemsIn(context, zone(context));
             context.assertTrue(!drops.isEmpty() && drops.stream().allMatch(item -> inZone(context, item) && item.getStack().isOf(Items.NETHERITE_BLOCK)), "it dropped its session items, in the zone");
@@ -462,10 +462,10 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             context.assertTrue(!inZone(context, outsider), "who is not of the session and stood in the zone is put just out of it");
             context.assertTrue(inZone(context, inside), "the participant stays");
             // an ender pearl, a command...: not out of the zone
-            boolean teleported = inside.teleport(world, out.x, out.y, out.z, Set.of(), 0, 0, false);
+            boolean teleported = inside.teleport(world, out.x, out.y, out.z, Set.of(), 0, 0);
             context.assertTrue(!teleported && inZone(context, inside), "a participant is not teleported out");
             Vec3d in = context.getAbsolute(new Vec3d(2.5, 1, 2.5));
-            context.assertTrue(!outsider.teleport(world, in.x, in.y, in.z, Set.of(), 0, 0, false) && !inZone(context, outsider), "nobody else is teleported in");
+            context.assertTrue(!outsider.teleport(world, in.x, in.y, in.z, Set.of(), 0, 0) && !inZone(context, outsider), "nobody else is teleported in");
             // walking (or anything else moving it): sent back
             move(context, inside, 6.5, 1, 2.5);
             move(context, outsider, 2.5, 1, 2.5);
@@ -474,7 +474,7 @@ public class ZoneBubbleGameTests implements FabricGameTest {
             context.assertTrue(inZone(context, inside), "a participant out of the zone is put back in");
             context.assertTrue(!inZone(context, outsider), "an intruder is put back out");
             // the mod's own teleport: out with its leave, hands tied
-            ZoneBubbles.allowTeleports(() -> inside.teleport(world, out.x, out.y, out.z, Set.of(), 0, 0, false));
+            ZoneBubbles.allowTeleports(() -> inside.teleport(world, out.x, out.y, out.z, Set.of(), 0, 0));
             context.assertTrue(!inZone(context, inside), "the mod teleports a participant out");
         });
         later(context, 7, () -> {

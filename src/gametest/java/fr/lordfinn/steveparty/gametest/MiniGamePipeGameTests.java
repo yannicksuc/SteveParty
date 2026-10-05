@@ -794,7 +794,7 @@ public class MiniGamePipeGameTests implements FabricGameTest {
             context.assertTrue(!Registries.SCREEN_HANDLER.containsId(Steveparty.id(handler)), "no screen " + handler);
         }
         context.getWorld().getServer().getRecipeManager().values().forEach(recipe -> {
-            String path = recipe.id().getValue().toString();
+            String path = recipe.id().toString();
             context.assertTrue(!path.contains("here_we_") && !path.contains("teleportation_pad") && !path.contains("big_book"), "no recipe " + path);
         });
         for (String lang : List.of("en_us", "fr_fr")) {

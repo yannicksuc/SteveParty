@@ -14,17 +14,14 @@ import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.ServerRecipeManager;
+import net.minecraft.recipe.RecipeManager;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.loot.LootTable;
-import net.minecraft.recipe.display.RecipeDisplay;
-import net.minecraft.recipe.display.SlotDisplayContexts;
 import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.context.ContextParameterMap;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -49,19 +46,19 @@ public class RecipeGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyRecipeIsUnlockedByAnAdvancement(TestContext context) {
-        ServerRecipeManager recipes = context.getWorld().getServer().getRecipeManager();
-        Set<RegistryKey<Recipe<?>>> unlocked = new HashSet<>();
+        RecipeManager recipes = context.getWorld().getServer().getRecipeManager();
+        Set<Identifier> unlocked = new HashSet<>();
         for (AdvancementEntry advancement : context.getWorld().getServer().getAdvancementLoader().getAdvancements()) {
-            for (RegistryKey<Recipe<?>> key : advancement.value().rewards().recipes()) {
+            for (Identifier key : advancement.value().rewards().recipes()) {
                 // An advancement rewarding a recipe id that doesn't exist never shows that recipe in the book
-                if (key.getValue().getNamespace().equals(Steveparty.MOD_ID) || advancement.id().getNamespace().equals(Steveparty.MOD_ID))
-                    context.assertTrue(recipes.get(key).isPresent(), advancement.id() + " unlocks a missing recipe " + key.getValue());
+                if (key.getNamespace().equals(Steveparty.MOD_ID) || advancement.id().getNamespace().equals(Steveparty.MOD_ID))
+                    context.assertTrue(recipes.get(key).isPresent(), advancement.id() + " unlocks a missing recipe " + key);
                 unlocked.add(key);
             }
         }
         for (RecipeEntry<?> recipe : recipes.values()) {
-            if (!recipe.id().getValue().getNamespace().equals(Steveparty.MOD_ID) || recipe.value().isIgnoredInRecipeBook()) continue;
-            context.assertTrue(unlocked.contains(recipe.id()), "no advancement unlocks " + recipe.id().getValue());
+            if (!recipe.id().getNamespace().equals(Steveparty.MOD_ID) || recipe.value().isIgnoredInRecipeBook()) continue;
+            context.assertTrue(unlocked.contains(recipe.id()), "no advancement unlocks " + recipe.id());
         }
         context.complete();
     }
@@ -91,12 +88,10 @@ public class RecipeGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void everyItemHasASurvivalRoute(TestContext context) {
-        ContextParameterMap displayContext = SlotDisplayContexts.createParameters(context.getWorld());
         Set<Item> crafted = new HashSet<>();
         for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {
-            for (RecipeDisplay display : recipe.value().getDisplays()) {
-                display.result().getStacks(displayContext).forEach(stack -> crafted.add(stack.getItem()));
-            }
+            ItemStack output = recipe.value().getResult(context.getWorld().getRegistryManager());
+            if (!output.isEmpty()) crafted.add(output.getItem());
         }
         List<String> missing = new ArrayList<>();
         List<String> notMinable = new ArrayList<>();
@@ -107,9 +102,8 @@ public class RecipeGameTests implements FabricGameTest {
             // A placed block must give something back when mined
             if (item instanceof BlockItem blockItem) {
                 Block block = blockItem.getBlock();
-                boolean dropsSomething = block.getLootTableKey()
-                        .map(key -> context.getWorld().getServer().getReloadableRegistries().getLootTable(key) != LootTable.EMPTY)
-                        .orElse(false);
+                boolean dropsSomething = context.getWorld().getServer().getReloadableRegistries()
+                        .getLootTable(block.getLootTableKey()) != LootTable.EMPTY;
                 if (!dropsSomething) notMinable.add(path);
             }
         }

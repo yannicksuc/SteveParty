@@ -40,7 +40,7 @@ public class StarFragmentsBlockGameTests implements FabricGameTest {
             context.assertFalse(state.shouldSuffocate(world, pos), name + " does not suffocate");
             context.assertFalse(state.shouldBlockVision(world, pos), name + " does not block vision");
             context.assertFalse(state.isSolidBlock(world, pos), name + " is not a solid (opaque) block");
-            context.assertTrue(state.getOpacity() == 0, name + " lets light through like glass");
+            context.assertTrue(state.getOpacity(world, pos) == 0, name + " lets light through like glass");
             context.assertTrue(state.getLuminance() == 15, name + " keeps its light level 15");
             context.assertTrue(state.isSideInvisible(state, Direction.EAST), name + " hides faces against itself");
             BlockState other = BLOCKS.get((i + 1) % BLOCKS.size()).getDefaultState();

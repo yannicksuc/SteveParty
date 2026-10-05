@@ -66,7 +66,7 @@ public class TileContentsGameTests implements FabricGameTest {
         PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
         ItemStack pickaxe = new ItemStack(Items.DIAMOND_PICKAXE);
         if (silkTouch) {
-            pickaxe.addEnchantment(context.getWorld().getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT)
+            pickaxe.addEnchantment(context.getWorld().getRegistryManager().getWrapperOrThrow(RegistryKeys.ENCHANTMENT)
                     .getOrThrow(Enchantments.SILK_TOUCH), 1);
         }
         player.setStackInHand(Hand.MAIN_HAND, pickaxe);
