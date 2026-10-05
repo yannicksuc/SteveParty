@@ -6,7 +6,7 @@
 Lay out a board block by block, turn any mob into a pawn, roll the dice, play mini-games and race for stars.
 Everything is crafted in survival, and redstone can drive almost all of it.
 
-![Minecraft 1.21.3](https://img.shields.io/badge/Minecraft-1.21.3-62B47A?logo=minecraft&logoColor=white) ![Fabric](https://img.shields.io/badge/Loader-Fabric-DBD0B4) ![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)
+![Minecraft 1.21.1](https://img.shields.io/badge/Minecraft-1.21.1-62B47A?logo=minecraft&logoColor=white) ![Fabric](https://img.shields.io/badge/Loader-Fabric-DBD0B4) ![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)
 
 ---
 
@@ -89,9 +89,9 @@ patterns, and polished, bevelled and checkered building blocks.
 
 ## 📦 Requirements
 
-- Minecraft **1.21.3**, Fabric Loader **0.16.9+**
+- Minecraft **1.21.1**, Fabric Loader **0.16.9+**
 - [Fabric API](https://modrinth.com/mod/fabric-api)
-- [GeckoLib](https://modrinth.com/mod/geckolib) **4.7.1+**
+- [GeckoLib](https://modrinth.com/mod/geckolib) **4.7.3+**
 - Recommended: [REI](https://modrinth.com/mod/rei) to browse the recipes in game
 
 Install it on **both the client and the server**.
