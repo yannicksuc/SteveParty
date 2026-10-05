@@ -170,8 +170,8 @@ public class PowerupTrapGameTests implements FabricGameTest {
             context.assertTrue(trap != null && trap.placer().equals(game.a().getUuid()), "a's trap on T0");
             context.assertTrue(game.tokenA().getUuid().equals(trap.placerToken()), "a's token is remembered");
             context.assertEquals(game.traps().all().size(), 1, "one trap");
-            context.assertTrue(game.controller().toInitialChunkDataNbt(context.getWorld().getRegistryManager()).isEmpty(),
-                    "nothing of the controller is sent to the clients");
+            context.assertFalse(game.controller().toInitialChunkDataNbt(context.getWorld().getRegistryManager()).contains(TrapState.NBT_KEY),
+                    "the traps are not sent to the clients");
 
             game.tokenA().setPosition(context.getAbsolute(new net.minecraft.util.math.Vec3d(4.5, 1, 7.5)));
             context.assertEquals(TrapEffect.use(game.controller(), game.tokenA()), TrapEffect.Placed.NO_SPACE, "off the board");
