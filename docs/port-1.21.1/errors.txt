@@ -1,0 +1,781 @@
+src/client/java/fr/lordfinn/steveparty/client/StevepartyClient.java:69: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/StevepartyClient.java:74: package net.minecraft.item.equipment does not exist
+src/client/java/fr/lordfinn/steveparty/client/StevepartyClient.java:247: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/StevepartyClient.java:248: cannot find symbol  [symbol: class BipedEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/StevepartyClient.java:252: package EquipmentModel does not exist
+src/client/java/fr/lordfinn/steveparty/client/StevepartyClient.java:324: method register in class EntityRendererRegistry cannot be applied to given types;  [required: EntityType<? extends E>,EntityRendererFactory<E>; found:    EntityType<MulaStarEntity>,fr.lordfin[...]::new; reason: cannot infer type-variable(s) E]
+src/client/java/fr/lordfinn/steveparty/client/SwitchableClient.java:24: cannot find symbol  [symbol:   method getOptionalValue(Identifier); location: variable BLOCK of type DefaultedRegistry<Block>]
+src/client/java/fr/lordfinn/steveparty/client/SwitchableClient.java:26: no suitable method found for collect(Collector<Block,CAP#1,Set<Block>>)
+src/client/java/fr/lordfinn/steveparty/client/blockentity/DiceForgeConvergenceRenderer.java:9: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/DiceForgeConvergenceRenderer.java:85: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class DiceForgeConvergenceRenderer]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/DiceForgeConvergenceRenderer.java:114: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class DiceForgeConvergenceRenderer]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/DiceForgeCoreLayer.java:41: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/blockentity/DiceForgeOrbitRenderer.java:9: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/DiceForgeOrbitRenderer.java:92: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class DiceForgeOrbitRenderer]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/PodiumRenderer.java:218: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/PodiumRenderer.java:225: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/StencilCanvasBlockEntityRenderer.java:137: cannot find symbol  [symbol:   method withAlpha(int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/StencilCanvasBlockEntityRenderer.java:167: cannot find symbol  [symbol:   method withAlpha(int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/TradingStallBakedModel.java:14: TradingStallBakedModel is not abstract and does not override abstract method getOverrides() in BakedModel
+src/client/java/fr/lordfinn/steveparty/client/blockentity/TradingStallBlockEntityRenderer.java:12: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/TradingStallBlockEntityRenderer.java:72: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class TradingStallBlockEntityRenderer]
+src/client/java/fr/lordfinn/steveparty/client/blockentity/VillagerBlockEntityRenderer.java:68: method getEntityBlockLayer in class RenderLayers cannot be applied to given types;  [required: BlockState,boolean; found:    BlockState; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/board/ChevronSprites.java:46: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable sprite of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/board/ChevronSprites.java:55: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable sprite of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/board/ChevronSprites.java:58: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/board/ChevronSprites.java:64: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/board/WrenchClient.java:179: cannot find symbol  [symbol:   method drawStackOverlay(TextRenderer,ItemStack,int,int,String); location: variable context of type DrawContext]
+src/client/java/fr/lordfinn/steveparty/client/board/WrenchClient.java:190: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/compat/rei/CartridgeApplicationDisplay.java:44: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/compat/rei/SteveReiPlugin.java:71: incompatible types: no instance(s) of type variable(s) E exist so that List<E> conforms to RecipeEntry<?>
+src/client/java/fr/lordfinn/steveparty/client/compat/rei/SteveReiPlugin.java:79: incompatible types: no instance(s) of type variable(s) E exist so that List<E> conforms to RecipeEntry<?>
+src/client/java/fr/lordfinn/steveparty/client/compat/rei/SteveReiPlugin.java:83: incompatible types: no instance(s) of type variable(s) E exist so that List<E> conforms to RecipeEntry<?>
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:29: cannot find symbol  [symbol:   class RecipeGenerator; location: package net.minecraft.data.server.recipe]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:49: StevepartyRecipeProvider is not abstract and does not override abstract method generate(RecipeExporter) in FabricRecipeProvider
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:54: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:55: cannot find symbol  [symbol:   class RecipeGenerator; location: class StevepartyRecipeProvider]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:56: cannot find symbol  [symbol:   class RecipeGenerator; location: class StevepartyRecipeProvider]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:67: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:69: cannot find symbol  [symbol:   method ofItem(ItemConvertible); location: class Ingredient]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:71: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:74: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:77: method offerReversibleCompactingRecipes in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,RecipeCategory,ItemConvertible; found:    RecipeCategory,ItemConvertible,RecipeCategory,ItemConvertible,String,<null>,String,<null>; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:81: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:85: cannot find symbol  [symbol:   method ofItem(ItemConvertible); location: class Ingredient]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:89: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:95: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:99: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:108: method ofItems in class Ingredient cannot be applied to given types;  [required: ItemConvertible[]; found:    Stream<Item>; reason: varargs mismatch; Stream<Item> cannot be converted to ItemConvertible]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:111: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:120: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:124: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:126: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:127: no suitable method found for create(RegistryKey<Recipe<?>>)
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:129: incompatible types: RegistryKey<Recipe<?>> cannot be converted to Identifier
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:134: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:143: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Item,Item; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:144: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Item,Item; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:162: cannot find symbol  [symbol: method createShaped(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:177: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:189: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:194: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:233: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:251: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:261: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:273: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:285: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:296: cannot find symbol  [symbol: method createShaped(RecipeCategory,Item)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:307: cannot find symbol  [symbol: method createShapeless(RecipeCategory,TripleJumpShoesItem)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:326: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:338: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:350: cannot find symbol  [symbol: method createShaped(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:361: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Item)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:377: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Block,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:385: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:403: cannot find symbol  [symbol: method createShaped(RecipeCategory,Item,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:413: method generateFamily in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,BlockFamily,FeatureSet; found:    BlockFamily,FeatureSet; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:414: incompatible types: BlockFamily cannot be converted to RecipeExporter
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:426: cannot find symbol  [symbol: method createShapeless(RecipeCategory,Block,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:431: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:438: cannot find symbol  [symbol: method createShaped(RecipeCategory,Block,int)]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:461: method offerPolishedStoneRecipe in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,RecipeCategory,ItemConvertible,ItemConvertible; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:462: method offerPolishedStoneRecipe in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,RecipeCategory,ItemConvertible,ItemConvertible; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:463: method generateFamily in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,BlockFamily,FeatureSet; found:    BlockFamily,FeatureSet; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:464: incompatible types: BlockFamily cannot be converted to RecipeExporter
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:465: method generateFamily in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,BlockFamily,FeatureSet; found:    BlockFamily,FeatureSet; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:466: incompatible types: BlockFamily cannot be converted to RecipeExporter
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:468: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:469: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:470: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:490: method offerPolishedStoneRecipe in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,RecipeCategory,ItemConvertible,ItemConvertible; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:491: method offerPolishedStoneRecipe in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,RecipeCategory,ItemConvertible,ItemConvertible; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:492: method generateFamily in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,BlockFamily,FeatureSet; found:    BlockFamily,FeatureSet; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:493: incompatible types: BlockFamily cannot be converted to RecipeExporter
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:494: method generateFamily in class RecipeProvider cannot be applied to given types;  [required: RecipeExporter,BlockFamily,FeatureSet; found:    BlockFamily,FeatureSet; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:495: incompatible types: BlockFamily cannot be converted to RecipeExporter
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:497: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:498: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:499: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:520: incompatible types: RegistryKey<Recipe<?>> cannot be converted to Identifier
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:524: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:525: cannot find symbol  [symbol:   method ofItem(Block); location: class Ingredient]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:527: incompatible types: RegistryKey<Recipe<?>> cannot be converted to Identifier
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:529: cannot find symbol  [symbol:   method ofItem(Block); location: class Ingredient]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:529: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:530: cannot find symbol  [symbol: variable exporter]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:531: no suitable method found for create(RegistryKey<Recipe<?>>)
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:546: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/datagen/StevepartyRecipeProvider.java:548: method offerStonecuttingRecipe in class <anonymous RecipeGenerator> cannot be applied to given types;  [required: RecipeCategory,ItemConvertible,ItemConvertible,int; found:    RecipeCategory,Block,Block; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/entity/BlockTexturedBones.java:152: cannot find symbol  [symbol:   method getAlpha(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/entity/BlockTexturedBones.java:153: cannot find symbol  [symbol:   method getRed(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/entity/BlockTexturedBones.java:154: cannot find symbol  [symbol:   method getGreen(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/entity/BlockTexturedBones.java:155: cannot find symbol  [symbol:   method getBlue(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/entity/BoxedTraderEntityRenderLayer.java:23: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/entity/DiceEntityModel.java:15: DiceEntityModel is not abstract and does not override abstract method getTextureResource(DiceEntity) in GeoModel
+src/client/java/fr/lordfinn/steveparty/client/entity/DiceEntityRenderer.java:60: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaEntityRenderer.java:12: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaEntityRenderer.java:16: cannot find symbol  [symbol:   class ParticlesMode; location: package net.minecraft.particle]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaEntityRenderer.java:132: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class MulaEntityRenderer]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaEntityRenderer.java:153: cannot find symbol  [symbol:   class ParticlesMode; location: class MulaEntityRenderer]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaEntityRenderer.java:154: cannot find symbol  [symbol:   variable ParticlesMode; location: class MulaEntityRenderer]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaEntityRenderer.java:155: cannot find symbol  [symbol:   variable ParticlesMode; location: class MulaEntityRenderer]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaEntityRenderer.java:192: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:11: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:20: wrong number of type arguments; required 1
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:28: cannot find symbol  [symbol:   class EntityRenderState; location: class MulaStarRenderer]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:37: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:42: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:44: cannot find symbol  [symbol:   variable super; location: class MulaStarRenderer]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:50: cannot find symbol  [symbol:   variable x; location: variable state of type State]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:51: cannot find symbol  [symbol:   variable y; location: variable state of type State]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:52: cannot find symbol  [symbol:   variable z; location: variable state of type State]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:56: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:61: cannot find symbol  [symbol:   variable age; location: variable state of type State]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:65: cannot find symbol  [symbol:   variable squaredDistanceToCamera; location: variable state of type State]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:74: cannot find symbol  [symbol: variable dispatcher]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:81: cannot find symbol  [symbol: variable dispatcher]
+src/client/java/fr/lordfinn/steveparty/client/entity/MulaStarRenderer.java:86: cannot find symbol  [symbol:   variable super; location: class MulaStarRenderer]
+src/client/java/fr/lordfinn/steveparty/client/entity/costume/BoxCostumeClient.java:15: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/entity/costume/BoxCostumeClient.java:179: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class BoxCostumeClient]
+src/client/java/fr/lordfinn/steveparty/client/entity/costume/BoxCostumeClient.java:202: cannot find symbol  [symbol:   method lerp(float,int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/entity/costume/BoxCostumeClient.java:203: cannot find symbol  [symbol:   method withAlpha(int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/entity/costume/BoxCostumeClient.java:205: invalid method reference  [symbol:   method getGuiTexturedOverlay(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/entity/costume/BoxCostumeRenderer.java:51: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/entity/costume/BoxCostumeRenderer.java:65: method defaultRender in interface GeoRenderer<T> cannot be applied to given types;  [required: MatrixStack,BoxCostumeAnimatable,VertexConsumerProvider,RenderLayer,VertexConsumer,float,float,int; found:    MatrixStack,BoxCostumeAnimatable,VertexConsumerProvider,<null>,<null>,float,int; reason: actual and formal argument lists differ in length]
+src/client/java/fr/lordfinn/steveparty/client/flag/FlagPalettes.java:111: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/gui/ConsolePaint.java:202: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/gui/ConsolePaint.java:242: cannot find symbol  [symbol:   method lerp(float,int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/gui/ConsolePaint.java:257: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/MiniGamePageTooltipComponent.java:26: MiniGamePageTooltipComponent is not abstract and does not override abstract method getHeight() in TooltipComponent
+src/client/java/fr/lordfinn/steveparty/client/gui/MiniGamePageTooltipComponent.java:73: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/gui/MiniGamePageTooltipComponent.java:91: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/gui/PartyGui.java:143: cannot find symbol  [symbol:   method drawStackOverlay(@org.jetbrains.annotations.Nullable TextRenderer,ItemStack,int,int); location: variable context of type DrawContext]
+src/client/java/fr/lordfinn/steveparty/client/gui/StencilGunHud.java:132: cannot find symbol  [symbol:   method drawStackOverlay(TextRenderer,ItemStack,int,int); location: variable context of type DrawContext]
+src/client/java/fr/lordfinn/steveparty/client/gui/TileStampTooltipComponent.java:12: TileStampTooltipComponent is not abstract and does not override abstract method getHeight() in TooltipComponent
+src/client/java/fr/lordfinn/steveparty/client/gui/TileStampTooltipComponent.java:24: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/gui/TileStampTooltipComponent.java:34: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/gui/TileStampTooltipComponent.java:36: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/ToolHud.java:41: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudDraw.java:52: cannot find symbol  [symbol:   method getAlpha(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudDraw.java:53: cannot find symbol  [symbol:   method withAlpha(int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudDraw.java:62: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudDraw.java:70: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudPaint.java:72: cannot find symbol  [symbol:   method lerp(float,int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudPaint.java:81: cannot find symbol  [symbol:   method getGreen(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudPaint.java:81: cannot find symbol  [symbol:   method getRed(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudPaint.java:82: cannot find symbol  [symbol:   method getBlue(int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudPaint.java:112: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/HudPaint.java:129: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/NoticeHud.java:132: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/TurnBarHud.java:251: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/TurnBarHud.java:275: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/gui/party/TurnBarHud.java:276: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/hammer/StencilHammerStrikes.java:186: incompatible types: int cannot be converted to Vector3f
+src/client/java/fr/lordfinn/steveparty/client/items/DiceModulePips.java:43: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/items/StencilItemRenderer.java:11: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/items/StencilItemRenderer.java:17: cannot find symbol  [symbol:   class ModelTransformationMode; location: class StencilItemRenderer]
+src/client/java/fr/lordfinn/steveparty/client/minigame/MiniGamePageClient.java:43: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/minigame/MiniGamePageClient.java:185: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable pixels of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/minigame/PageZoneClient.java:26: cannot find symbol  [symbol:   class VertexRendering; location: package net.minecraft.client.render]
+src/client/java/fr/lordfinn/steveparty/client/minigame/PageZoneClient.java:204: cannot find symbol  [symbol:   variable VertexRendering; location: class PageZoneClient]
+src/client/java/fr/lordfinn/steveparty/client/mixin/EntityRenderDispatcherPipePoseMixin.java:10: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/EntityRenderDispatcherPipePoseMixin.java:21: cannot find symbol  [symbol:   class EntityRenderState; location: class EntityRenderDispatcherPipePoseMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/EntityRenderDispatcherPipePoseMixin.java:21: wrong number of type arguments; required 1
+src/client/java/fr/lordfinn/steveparty/client/mixin/EntityRenderDispatcherPipePoseMixin.java:34: cannot find symbol  [symbol:   class EntityRenderState; location: class EntityRenderDispatcherPipePoseMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/EntityRenderDispatcherPipePoseMixin.java:34: wrong number of type arguments; required 1
+src/client/java/fr/lordfinn/steveparty/client/mixin/EntityRendererBoxCostumeShadowMixin.java:5: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/EntityRendererBoxCostumeShadowMixin.java:15: cannot find symbol  [symbol:   class EntityRenderState; location: class EntityRendererBoxCostumeShadowMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/FallingBlockEntityRendererVillagerMixin.java:8: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/FallingBlockEntityRendererVillagerMixin.java:22: cannot find symbol  [symbol:   class FallingBlockEntityRenderState; location: class FallingBlockEntityRendererVillagerMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/ItemRendererStencilHammerFaceMixin.java:9: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/mixin/ItemRendererStencilHammerFaceMixin.java:24: cannot find symbol  [symbol:   class ModelTransformationMode; location: class ItemRendererStencilHammerFaceMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/ItemRendererTileFaceMixin.java:9: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/mixin/ItemRendererTileFaceMixin.java:24: cannot find symbol  [symbol:   class ModelTransformationMode; location: class ItemRendererTileFaceMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/ItemRendererWandOrbitMixin.java:10: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/mixin/ItemRendererWandOrbitMixin.java:22: cannot find symbol  [symbol:   class ModelTransformationMode; location: class ItemRendererWandOrbitMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRenderStateMixin.java:5: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRenderStateMixin.java:8: cannot find symbol  [symbol: class LivingEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererBoxCostumeMixin.java:8: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererBoxCostumeMixin.java:9: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererBoxCostumeMixin.java:28: cannot find symbol  [symbol:   class LivingEntityRenderState; location: class LivingEntityRendererBoxCostumeMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererBoxCostumeMixin.java:30: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class LivingEntityRendererBoxCostumeMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererSetupTransformsMixin.java:5: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererSetupTransformsMixin.java:15: cannot find symbol  [symbol: class LivingEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererSmoothFlipMixin.java:6: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererSmoothFlipMixin.java:14: cannot find symbol  [symbol: class LivingEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererSquishMixin.java:6: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/LivingEntityRendererSquishMixin.java:19: cannot find symbol  [symbol: class LivingEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelBoxCostumeMixin.java:9: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelBoxCostumeMixin.java:59: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityModelBoxCostumeMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelMixin.java:5: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelMixin.java:16: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityModelMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelStencilHammerMixin.java:7: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelStencilHammerMixin.java:19: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityModelStencilHammerMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelTelescopeMixin.java:5: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityModelTelescopeMixin.java:28: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityModelTelescopeMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRenderStateBoxCostumeMixin.java:5: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRenderStateBoxCostumeMixin.java:10: cannot find symbol  [symbol: class PlayerEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRenderStateStencilHammerMixin.java:4: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRenderStateStencilHammerMixin.java:9: cannot find symbol  [symbol: class PlayerEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRenderStateTelescopeMixin.java:4: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRenderStateTelescopeMixin.java:9: cannot find symbol  [symbol: class PlayerEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererBoxCostumeMixin.java:8: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererBoxCostumeMixin.java:20: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityRendererBoxCostumeMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererStencilHammerMixin.java:7: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererStencilHammerMixin.java:19: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityRendererStencilHammerMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererTelescopeMixin.java:7: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererTelescopeMixin.java:32: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityRendererTelescopeMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererTelescopeMixin.java:44: cannot find symbol  [symbol:   method getStackInArm(Arm); location: variable player of type AbstractClientPlayerEntity]
+src/client/java/fr/lordfinn/steveparty/client/mixin/PlayerEntityRendererTelescopeMixin.java:55: cannot find symbol  [symbol:   class PlayerEntityRenderState; location: class PlayerEntityRendererTelescopeMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/TokenBaseLivingEntityRendererMixin.java:9: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/TokenBaseLivingEntityRendererMixin.java:36: cannot find symbol  [symbol:   class LivingEntityRenderState; location: class TokenBaseLivingEntityRendererMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/TokenBaseLivingEntityRendererMixin.java:54: cannot find symbol  [symbol:   class LivingEntityRenderState; location: class TokenBaseLivingEntityRendererMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/TokenBaseLivingEntityRendererMixin.java:66: cannot find symbol  [symbol:   class LivingEntityRenderState; location: class TokenBaseLivingEntityRendererMixin]
+src/client/java/fr/lordfinn/steveparty/client/mixin/TokenBaseRenderStateMixin.java:4: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/mixin/TokenBaseRenderStateMixin.java:9: cannot find symbol  [symbol: class LivingEntityRenderState]
+src/client/java/fr/lordfinn/steveparty/client/model/BrickShadeModelPlugin.java:14: BrickShadeModelPlugin is not abstract and does not override abstract method onInitializeModelLoader(Context) in ModelLoadingPlugin
+src/client/java/fr/lordfinn/steveparty/client/model/BrickShadeModelPlugin.java:18: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/model/ConnectedPlasticModelPlugin.java:19: ConnectedPlasticModelPlugin is not abstract and does not override abstract method onInitializeModelLoader(Context) in ModelLoadingPlugin
+src/client/java/fr/lordfinn/steveparty/client/model/ConnectedPlasticModelPlugin.java:24: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/model/PolishedTilesItemModel.java:41: Plugin is not abstract and does not override abstract method onInitializeModelLoader(Context) in ModelLoadingPlugin
+src/client/java/fr/lordfinn/steveparty/client/model/PolishedTilesItemModel.java:42: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/model/TradingStallModelPlugin.java:15: TradingStallModelPlugin is not abstract and does not override abstract method onInitializeModelLoader(Context) in ModelLoadingPlugin
+src/client/java/fr/lordfinn/steveparty/client/model/TradingStallModelPlugin.java:19: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/model/sign/MaterialSprites.java:91: cannot find symbol  [symbol:   method getOptionalValue(Identifier); location: variable BLOCK of type DefaultedRegistry<Block>]
+src/client/java/fr/lordfinn/steveparty/client/model/sign/SignModel.java:27: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/model/sign/StencilSignModelPlugin.java:33: StencilSignModelPlugin is not abstract and does not override abstract method onInitializeModelLoader(Context) in ModelLoadingPlugin
+src/client/java/fr/lordfinn/steveparty/client/model/sign/StencilSignModelPlugin.java:42: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/model/sign/StencilSignModels.java:247: cannot find symbol  [symbol:   method lerp(float,int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/pipe/MiniGamePipeNotchRenderer.java:13: cannot find symbol  [symbol:   class VertexRendering; location: package net.minecraft.client.render]
+src/client/java/fr/lordfinn/steveparty/client/pipe/MiniGamePipeNotchRenderer.java:20: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/pipe/MiniGamePipeNotchRenderer.java:56: cannot find symbol  [symbol:   variable VertexRendering; location: class MiniGamePipeNotchRenderer]
+src/client/java/fr/lordfinn/steveparty/client/pipe/MiniGamePipeNotchRenderer.java:57: cannot find symbol  [symbol:   variable VertexRendering; location: class MiniGamePipeNotchRenderer]
+src/client/java/fr/lordfinn/steveparty/client/pipe/MiniGamePipeNotchRenderer.java:64: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class MiniGamePipeNotchRenderer]
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeModelPlugin.java:17: PipeModelPlugin is not abstract and does not override abstract method onInitializeModelLoader(Context) in ModelLoadingPlugin
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeModelPlugin.java:22: method does not override or implement a method from a supertype
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:10: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:11: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:12: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:136: cannot find symbol  [symbol:   class EntityRenderState; location: class PipeTravellerPose]
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:136: wrong number of type arguments; required 1
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:172: cannot find symbol  [symbol:   class LivingEntityRenderState; location: class PipeTravellerPose]
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:172: wrong number of type arguments; required 2
+src/client/java/fr/lordfinn/steveparty/client/pipe/PipeTravellerPose.java:178: cannot find symbol  [symbol:   class BipedEntityRenderState; location: class PipeTravellerPose]
+src/client/java/fr/lordfinn/steveparty/client/renderer/GlowingCuboidRenderer.java:95: cannot find symbol  [symbol:   variable VertexRendering; location: class GlowingCuboidRenderer]
+src/client/java/fr/lordfinn/steveparty/client/screens/BoardSpaceScreen.java:93: invalid method reference  [symbol:   method getGuiOpaqueTexturedBackground(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/BoardSpaceScreen.java:98: invalid method reference  [symbol:   method getGuiTexturedOverlay(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/CartridgeContainerScreen.java:21: invalid method reference  [symbol:   method getGuiOpaqueTexturedBackground(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/CashRegisterScreen.java:28: invalid method reference  [symbol:   method getGuiOpaqueTexturedBackground(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/DiceForgeScreen.java:131: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/DiceForgeScreen.java:201: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/DiceForgeScreen.java:210: cannot find symbol  [symbol:   method lerp(float,int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/screens/GoalPoleBaseScreen.java:374: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/HopSwitchScreen.java:57: invalid method reference  [symbol:   method getGuiTexturedOverlay(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/HopSwitchScreen.java:61: invalid method reference  [symbol:   method getGuiTexturedOverlay(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/MiniGamePageEditorScreen.java:874: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/MiniGamePageEditorScreen.java:1381: cannot find symbol  [symbol:   method lerp(float,int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/screens/MiniGamePageEditorScreen.java:1385: cannot find symbol  [symbol:   method lerp(float,int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/screens/MiniGamesCatalogueScreen.java:27: invalid method reference  [symbol:   method getGuiOpaqueTexturedBackground(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/PartyControllerScreen.java:413: cannot find symbol  [symbol:   method drawStackOverlay(TextRenderer,ItemStack,int,int); location: variable context of type DrawContext]
+src/client/java/fr/lordfinn/steveparty/client/screens/PartyControllerScreen.java:818: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/PartyControllerScreen.java:819: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/PartyControllerScreen.java:978: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/StencilGunScreen.java:37: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/StencilGunScreen.java:38: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/StencilMakerScreen.java:153: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/StencilMakerScreen.java:376: invalid method reference  [symbol:   method getGuiTexturedOverlay(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/StencilMakerScreen.java:380: invalid method reference  [symbol:   method getGuiTexturedOverlay(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/StencilMakerScreen.java:391: invalid method reference  [symbol:   method getGuiTexturedOverlay(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/TokenSpellScreen.java:954: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/screens/TradingStallScreen.java:29: invalid method reference  [symbol:   method getGuiOpaqueTexturedBackground(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/squish/SquishAnimations.java:10: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/squish/SquishAnimations.java:67: cannot find symbol  [symbol:   class LivingEntityRenderState; location: class SquishAnimations]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeClient.java:24: cannot find symbol  [symbol:   class Fog; location: package net.minecraft.client.render]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeClient.java:382: cannot find symbol  [symbol:   class Fog; location: class TelescopeClient]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeClient.java:382: cannot find symbol  [symbol:   method getShaderFog(); location: class RenderSystem]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeClient.java:383: cannot find symbol  [symbol:   variable Fog; location: class TelescopeClient]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeClient.java:481: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeClient.java:541: invalid method reference  [symbol:   method getGuiTextured(); location: class RenderLayer]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeClient.java:542: cannot find symbol  [symbol:   method withAlpha(int,int); location: class ColorHelper]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeModel.java:17: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/telescope/TelescopeModel.java:135: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class TelescopeModel]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/MobTextureColors.java:10: package net.minecraft.client.render.entity.state does not exist
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/MobTextureColors.java:83: cannot find symbol  [symbol:   class LivingEntityRenderState; location: class MobTextureColors]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/MobTextureColors.java:83: cannot find symbol  [symbol:   method getAndUpdateRenderState(Entity,float); location: variable livingRenderer of type LivingEntityRenderer]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/MobTextureColors.java:101: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/TokenSpellHand.java:9: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/TokenSpellHand.java:91: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class TokenSpellHand]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/WandOrbit.java:12: cannot find symbol  [symbol:   class ModelTransformationMode; location: package net.minecraft.item]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/WandOrbit.java:51: cannot find symbol  [symbol:   class ModelTransformationMode; location: class WandOrbit]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/WandOrbit.java:52: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class WandOrbit]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/WandOrbit.java:53: cannot find symbol  [symbol:   variable ModelTransformationMode; location: class WandOrbit]
+src/client/java/fr/lordfinn/steveparty/client/tokenspell/WandOrbit.java:59: cannot find symbol  [symbol:   class ModelTransformationMode; location: class WandOrbit]
+src/client/java/fr/lordfinn/steveparty/client/utils/StencilResourceManager.java:142: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/utils/StencilResourceManager.java:144: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/utils/TileStampTextures.java:540: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/utils/TileStampTextures.java:547: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/utils/TileStampTextures.java:558: cannot find symbol  [symbol:   method getColorArgb(int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/utils/TileStampTextures.java:609: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/utils/TileStampTextures.java:613: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/client/java/fr/lordfinn/steveparty/client/utils/TileStampTextures.java:622: cannot find symbol  [symbol:   method setColorArgb(int,int,int); location: variable image of type NativeImage]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:16: cannot find symbol  [symbol:   class EquippableComponent; location: package net.minecraft.component.type]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:296: cannot find symbol  [symbol:   variable SPAWN_ITEM_USE; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:317: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:335: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:347: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:357: cannot find symbol  [symbol:   class EquippableComponent; location: class BoxedTraderGameTests]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:357: cannot find symbol  [symbol:   variable EQUIPPABLE; location: class DataComponentTypes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:504: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:544: cannot find symbol  [symbol:   class EquippableComponent; location: class BoxedTraderGameTests]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:544: cannot find symbol  [symbol:   variable EQUIPPABLE; location: class DataComponentTypes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:550: method canEquip in class PlayerEntity cannot be applied to given types;  [required: ItemStack; found:    ItemStack,EquipmentSlot; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/BoxedTraderGameTests.java:555: method canEquip in class ArmorStandEntity cannot be applied to given types;  [required: ItemStack; found:    ItemStack,EquipmentSlot; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/CoreGameTests.java:76: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/CoreGameTests.java:196: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Enchantment>>); location: interface DynamicRegistryManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/DecisionsGameTests.java:36: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceForgeGameTests.java:312: cannot find symbol  [symbol:   method toNbt(DynamicRegistryManager); location: class ItemStack]
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceForgeGameTests.java:376: cannot find symbol  [symbol:   method toNbt(DynamicRegistryManager); location: class ItemStack]
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceModulesGameTests.java:381: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Enchantment>>); location: interface DynamicRegistryManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceRecipeGameTests.java:126: cannot find symbol  [symbol:   method getRecipeRemainders(CraftingRecipeInput); location: interface CraftingRecipe]
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceRecipeGameTests.java:140: package net.minecraft.recipe.display does not exist
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceRecipeGameTests.java:140: package net.minecraft.util.context does not exist
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceRecipeGameTests.java:144: no suitable method found for get(RegistryKey<Recipe<?>>)
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceRecipeGameTests.java:147: cannot find symbol  [symbol:   method getIngredientPlacement(); location: interface Recipe<CAP#1>]
+src/gametest/java/fr/lordfinn/steveparty/gametest/DiceRecipeGameTests.java:148: cannot find symbol  [symbol:   method getDisplays(); location: interface Recipe<CAP#1>]
+src/gametest/java/fr/lordfinn/steveparty/gametest/GameplayRulesGameTests.java:144: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Enchantment>>); location: interface DynamicRegistryManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/GameplayRulesGameTests.java:262: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/GameplayRulesGameTests.java:290: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/GravityGameTests.java:84: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/GravityGameTests.java:85: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/GravityGameTests.java:123: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/LootAndBrewingGameTests.java:37: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Enchantment>>); location: interface DynamicRegistryManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MiniGameControllerGameTests.java:620: cannot find symbol  [symbol:   method isAccepted(); location: class TypedActionResult<ItemStack>]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MiniGameControllerGameTests.java:751: cannot find symbol  [symbol:   method toNbt(WrapperLookup); location: class ItemStack]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MiniGamePipeGameTests.java:797: cannot find symbol  [symbol:   method getValue(); location: class Identifier]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MiniGameZoneGameTests.java:784: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MiniGameZoneGameTests.java:788: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MulaFeedbackGameTests.java:118: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MulaFeedbackGameTests.java:132: cannot find symbol  [symbol:   variable SPAWN_ITEM_USE; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MulaHomeGameTests.java:143: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/MulaRebirthGameTests.java:136: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/MulaSiteCapGameTests.java:37: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/MulaSiteCapGameTests.java:58: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/PipeGameTests.java:234: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/PipeGameTests.java:283: method damage in class ServerPlayerEntity cannot be applied to given types;  [required: DamageSource,float; found:    ServerWorld,DamageSource,int; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/PipeGameTests.java:432: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/PipeGameTests.java:441: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/PipeGameTests.java:721: cannot find symbol  [symbol:   variable MOVEMENT_SPEED; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:17: cannot find symbol  [symbol:   class ServerRecipeManager; location: package net.minecraft.recipe]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:22: package net.minecraft.recipe.display does not exist
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:23: package net.minecraft.recipe.display does not exist
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:27: package net.minecraft.util.context does not exist
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:52: cannot find symbol  [symbol:   class ServerRecipeManager; location: class RecipeGameTests]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:55: incompatible types: Identifier cannot be converted to RegistryKey<Recipe<?>>
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:63: cannot find symbol  [symbol:   method getValue(); location: class Identifier]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:64: cannot find symbol  [symbol:   method getValue(); location: class Identifier]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:94: cannot find symbol  [symbol:   class ContextParameterMap; location: class RecipeGameTests]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:94: cannot find symbol  [symbol:   variable SlotDisplayContexts; location: class RecipeGameTests]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:97: cannot find symbol  [symbol:   class RecipeDisplay; location: class RecipeGameTests]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:97: cannot find symbol  [symbol:   method getDisplays(); location: interface Recipe<CAP#1>]
+src/gametest/java/fr/lordfinn/steveparty/gametest/RecipeGameTests.java:111: cannot find symbol  [symbol:   method map((key)->con[...]EMPTY); location: class RegistryKey<LootTable>]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ReplayTileGameTests.java:224: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ShopGameTests.java:353: cannot find symbol  [symbol:   method toNbt(DynamicRegistryManager); location: class ItemStack]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ShopGameTests.java:667: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ShopGameTests.java:675: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ShopGameTests.java:678: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ShopGameTests.java:684: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ShopGameTests.java:690: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ShopGameTests.java:741: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Enchantment>>); location: interface DynamicRegistryManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/StarFragmentMixingGameTests.java:220: cannot find symbol  [symbol:   method getValue(); location: class Identifier]
+src/gametest/java/fr/lordfinn/steveparty/gametest/StarFragmentsBlockGameTests.java:43: method getOpacity in class AbstractBlockState cannot be applied to given types;  [required: BlockView,BlockPos; found:    no arguments; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/StencilGameTests.java:38: cannot find symbol  [symbol:   class LootWorldContext; location: package net.minecraft.loot.context]
+src/gametest/java/fr/lordfinn/steveparty/gametest/StencilGameTests.java:824: incompatible types: ItemActionResult cannot be converted to ActionResult
+src/gametest/java/fr/lordfinn/steveparty/gametest/StencilGameTests.java:833: cannot find symbol  [symbol:   method getGroup(ItemStack); location: class ItemCooldownManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/StencilGameTests.java:1075: cannot find symbol  [symbol:   class LootWorldContext; location: class StencilGameTests]
+src/gametest/java/fr/lordfinn/steveparty/gametest/StencilGameTests.java:1075: package LootWorldContext does not exist
+src/gametest/java/fr/lordfinn/steveparty/gametest/TileContentsGameTests.java:69: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Enchantment>>); location: interface DynamicRegistryManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TileFeedbackGameTests.java:97: cannot find symbol  [symbol:   method id(); location: class SoundEvent]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TileFeedbackGameTests.java:102: cannot find symbol  [symbol:   method id(); location: class SoundEvent]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TileStampGameTests.java:54: incompatible types: ItemActionResult cannot be converted to ActionResult
+src/gametest/java/fr/lordfinn/steveparty/gametest/TileTeleportGameTests.java:255: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TileTeleportGameTests.java:287: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TileTeleportGameTests.java:291: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TokenBaseGameTests.java:64: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TokenBaseGameTests.java:80: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TokenBaseGameTests.java:102: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TokenPawnGameTests.java:189: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TokenPawnGameTests.java:202: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TokenSpellGameTests.java:69: cannot find symbol  [symbol:   method getGroup(ItemStack); location: class ItemCooldownManager]
+src/gametest/java/fr/lordfinn/steveparty/gametest/TokenSpellGameTests.java:391: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/gametest/java/fr/lordfinn/steveparty/gametest/VillagerBlockGameTests.java:102: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/gametest/java/fr/lordfinn/steveparty/gametest/VillagerBlockGameTests.java:104: incomparable types: ItemActionResult and ActionResult
+src/gametest/java/fr/lordfinn/steveparty/gametest/VillagerBlockGameTests.java:106: incomparable types: ItemActionResult and ActionResult
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:184: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:210: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:239: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:280: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,int,int,boolean)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:303: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:326: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,int,int,boolean)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:351: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,int,int,boolean)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleExploitGameTests.java:446: method damage in class LivingEntity cannot be applied to given types;  [required: DamageSource,float; found:    ServerWorld,DamageSource,int; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleGameTests.java:430: method kill in class LivingEntity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleGameTests.java:465: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,int,int,boolean)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleGameTests.java:468: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,int,int,boolean)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleGameTests.java:477: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,int,int,boolean)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleLifecycleGameTests.java:296: cannot find symbol  [symbol:   variable OAK_CHEST_BOAT; location: class EntityType]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleLifecycleGameTests.java:348: method kill in class Entity cannot be applied to given types;  [required: no arguments; found:    ServerWorld; reason: actual and formal argument lists differ in length]
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleLifecycleGameTests.java:521: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleLifecycleGameTests.java:527: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneBubbleLifecycleGameTests.java:559: no suitable method found for create(ServerWorld,SpawnReason)
+src/gametest/java/fr/lordfinn/steveparty/gametest/ZoneForbiddenGameTests.java:326: cannot find symbol  [symbol:   variable SPAWN_ITEM_USE; location: class SpawnReason]
+src/main/java/fr/lordfinn/steveparty/blocks/ModBlocks.java:76: no suitable method found for register(RegistryKey<Block>,SwitchedOf[...]::new,Settings)
+src/main/java/fr/lordfinn/steveparty/blocks/ModBlocks.java:420: no suitable method found for register(RegistryKey<Block>,fr.lordfin[...]::new,Settings)
+src/main/java/fr/lordfinn/steveparty/blocks/ModBlocks.java:700: no suitable method found for register(RegistryKey<Block>,StencilPai[...]::new,Settings)
+src/main/java/fr/lordfinn/steveparty/blocks/ModBlocks.java:714: no suitable method found for register(RegistryKey<Block>,Function<Settings,Block>,Settings)
+src/main/java/fr/lordfinn/steveparty/blocks/ModBlocks.java:715: no suitable method found for register(Block,BiFunction<Block,Settings,Item>)
+src/main/java/fr/lordfinn/steveparty/blocks/custom/BoardSpaceRedstoneRouterBlock.java:22: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/BoardSpaceRedstoneRouterBlock.java:47: cannot find symbol  [symbol:   class WireOrientation; location: class BoardSpaceRedstoneRouterBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:23: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:83: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:84: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in DiceForgeBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:87: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:93: cannot find symbol  [symbol:   variable SUCCESS_SERVER; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:95: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:108: cannot find symbol  [symbol:   variable SUCCESS_SERVER; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:114: cannot find symbol  [symbol:   variable SUCCESS_SERVER; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlock.java:118: cannot find symbol  [symbol:   class WireOrientation; location: class DiceForgeBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/DiceForgeBlockEntity.java:265: cannot find symbol  [symbol:   method toNbt(WrapperLookup); location: variable stack of type ItemStack]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/GoalPoleBaseBlock.java:30: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/GoalPoleBaseBlock.java:123: cannot find symbol  [symbol:   class WireOrientation; location: class GoalPoleBaseBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/GoalPoleBaseBlockEntity.java:459: incompatible types: double cannot be converted to Vec3d
+src/main/java/fr/lordfinn/steveparty/blocks/custom/GoalPoleBlock.java:35: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/GoalPoleBlock.java:72: cannot find symbol  [symbol:   class WireOrientation; location: class GoalPoleBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/GoalPoleBlock.java:228: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/HopSwitchBlock.java:38: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/HopSwitchBlock.java:176: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/HopSwitchBlock.java:274: cannot find symbol  [symbol:   class WireOrientation; location: class HopSwitchBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/MiniGameControllerBlock.java:37: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/MiniGameControllerBlock.java:167: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/MiniGameControllerBlock.java:168: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in MiniGameControllerBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/MiniGameControllerBlock.java:171: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/MiniGameControllerBlock.java:175: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/MiniGameControllerBlock.java:213: cannot find symbol  [symbol:   class WireOrientation; location: class MiniGameControllerBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/MiniGameControllerBlockEntity.java:321: cannot find symbol  [symbol:   method toNbt(WrapperLookup); location: variable page of type ItemStack]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyBellBlock.java:32: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyBellBlock.java:89: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyBellBlock.java:90: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in PartyBellBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyBellBlock.java:96: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyBellBlock.java:158: cannot find symbol  [symbol:   class WireOrientation; location: class PartyBellBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:33: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:35: package software.bernie.geckolib.object does not exist
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:107: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:117: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:118: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in PartyController cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:129: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:132: incompatible types: ItemActionResult cannot be converted to ActionResult
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:136: package Color does not exist
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:139: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:143: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyController.java:154: cannot find symbol  [symbol:   class WireOrientation; location: class PartyController]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyControllerEntity.java:218: cannot find symbol  [symbol:   method toNbt(WrapperLookup,NbtCompound); location: variable catalogue of type ItemStack]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyControllerEntity.java:225: cannot find symbol  [symbol:   method toNbt(WrapperLookup); location: variable starItem of type ItemStack]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyControllerEntity.java:226: cannot find symbol  [symbol:   method toNbt(WrapperLookup); location: variable coinItem of type ItemStack]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyControllerEntity.java:228: cannot find symbol  [symbol:   method toNbt(WrapperLookup); location: variable bank of type ItemStack]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/PartyControllerEntity.java:579: cannot find symbol  [symbol:   method giveOrDropStack(ItemStack); location: variable holderPlayer of type ServerPlayerEntity]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PartyController/steps/MiniGameTeleports.java:21: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,float,float,boolean)
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PiggyBankBlock.java:29: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PiggyBankBlock.java:107: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PiggyBankBlock.java:125: cannot find symbol  [symbol:   class WireOrientation; location: class PiggyBankBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:14: cannot find symbol  [symbol:   class PlayerPosition; location: package net.minecraft.entity.player]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:37: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:72: cannot find symbol  [symbol:   variable DELTA_X; location: class PositionFlag]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:72: cannot find symbol  [symbol:   variable DELTA_Z; location: class PositionFlag]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:154: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:155: cannot find symbol  [symbol:   class ScheduledTickView; location: class PlasticBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:340: cannot find symbol  [symbol:   class PlayerPosition; location: class PlasticBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticBlock.java:492: cannot find symbol  [symbol:   class ScheduledTickView; location: class PlasticBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticFenceBlock.java:12: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticFenceBlock.java:31: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlasticFenceBlock.java:32: cannot find symbol  [symbol:   class ScheduledTickView; location: class PlasticFenceBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlotBlock.java:16: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlotBlock.java:118: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PlotBlock.java:119: cannot find symbol  [symbol:   class ScheduledTickView; location: class PlotBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:36: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:37: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:173: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:174: cannot find symbol  [symbol:   class ScheduledTickView; location: class PodiumBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:259: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:260: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in PodiumBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:274: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/PodiumBlock.java:296: cannot find symbol  [symbol:   class WireOrientation; location: class PodiumBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/StarFragmentsBlock.java:60: method isOpaqueFullCube in class AbstractBlockState cannot be applied to given types;  [required: BlockView,BlockPos; found:    no arguments; reason: actual and formal argument lists differ in length]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/StencilMakerBlockEntity.java:39: cannot find symbol  [symbol:   method toNbt(WrapperLookup); location: variable stencil of type ItemStack]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/TradingStallBlock.java:44: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/VillagerBlock.java:17: cannot find symbol  [symbol:   class LootWorldContext; location: package net.minecraft.loot.context]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/VillagerBlock.java:46: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/VillagerBlock.java:134: package LootWorldContext does not exist
+src/main/java/fr/lordfinn/steveparty/blocks/custom/VillagerBlock.java:208: cannot find symbol  [symbol:   class WireOrientation; location: class VillagerBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/VillagerBlock.java:262: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/VillagerBlock.java:263: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in VillagerBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/VillagerBlock.java:264: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/ABoardSpaceBlock.java:27: cannot find symbol  [symbol:   class WireOrientation; location: package net.minecraft.world.block]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/ABoardSpaceBlock.java:94: cannot find symbol  [symbol:   class WireOrientation; location: class ABoardSpaceBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/ABoardSpaceBlock.java:147: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/ATileBlock.java:26: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/ATileBlock.java:138: package net.minecraft.loot.context.LootWorldContext does not exist
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/ATileBlock.java:198: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/ATileBlock.java:199: cannot find symbol  [symbol:   class ScheduledTickView; location: class ATileBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/CartridgeContainer.java:55: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/CartridgeContainer.java:56: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in CartridgeContainer cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/CartridgeContainer.java:61: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class CartridgeContainer]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/CartridgeContainer.java:72: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/CartridgeContainer.java:84: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/CartridgeContainer.java:88: cannot find symbol  [symbol:   class Success; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/CheckPointBlock.java:37: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileContents.java:84: cannot find symbol  [symbol:   method getOptional(RegistryKey<Enchantment>); location: variable registry of type Registry<Enchantment>]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileContents.java:85: incompatible types: Object cannot be converted to RegistryEntry<Enchantment>
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileContents.java:86: incompatible types: Object cannot be converted to boolean
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileFeedback.java:372: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileFeedback.java:390: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileFeedback.java:399: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileFeedback.java:403: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileFeedback.java:408: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileFeedback.java:413: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileFeedback.java:421: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TilePartBlock.java:26: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TilePartBlock.java:128: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TilePartBlock.java:129: cannot find symbol  [symbol:   class ScheduledTickView; location: class TilePartBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TilePartBlock.java:142: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TilePartBlock.java:143: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in TilePartBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TilePartBlock.java:145: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TilePartBlock.java:146: incompatible types: ItemActionResult cannot be converted to ActionResult
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileTeleport.java:242: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/blocks/custom/boardspaces/TileTeleport.java:287: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/MiniGamePipeBlock.java:112: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in MiniGamePipeBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeBlock.java:36: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeBlock.java:157: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeBlock.java:158: cannot find symbol  [symbol:   class ScheduledTickView; location: class PipeBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeBlock.java:216: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeBlock.java:217: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in PipeBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeBlock.java:234: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeBlock.java:272: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeTravel.java:587: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,float,float,boolean)
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeTravel.java:714: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/pipe/PipeTravel.java:725: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/AbstractStencilSignBlock.java:28: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/AbstractStencilSignBlock.java:248: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/AbstractStencilSignBlock.java:249: cannot find symbol  [symbol:   class ScheduledTickView; location: class AbstractStencilSignBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/AbstractStencilSignBlock.java:275: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/AbstractStencilSignBlock.java:276: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractStencilSignBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/PlasticRoadSignBlock.java:9: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/PlasticRoadSignBlock.java:206: cannot find symbol  [symbol:   class ScheduledTickView; location: class PlasticRoadSignBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/PlasticRoadSignBlock.java:265: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in PlasticRoadSignBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/SignMaterial.java:64: cannot find symbol  [symbol:   method getOptionalValue(@org.jetbrains.annotations.Nullable Identifier); location: variable BLOCK of type DefaultedRegistry<Block>]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilInteractions.java:58: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilInteractions.java:64: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilInteractions.java:68: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilInteractions.java:79: cannot find symbol  [symbol:   variable PASS_TO_DEFAULT_BLOCK_ACTION; location: class ActionResult]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilPaintBlock.java:34: cannot find symbol  [symbol:   class ScheduledTickView; location: package net.minecraft.world.tick]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilPaintBlock.java:106: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilPaintBlock.java:107: cannot find symbol  [symbol:   class ScheduledTickView; location: class StencilPaintBlock]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilPaintBlock.java:125: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/blocks/custom/signs/StencilPaintBlock.java:126: onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in StencilPaintBlock cannot override onUseWithItem(ItemStack,BlockState,World,BlockPos,PlayerEntity,Hand,BlockHitResult) in AbstractBlock
+src/main/java/fr/lordfinn/steveparty/blocks/custom/villager/VillagerBlockEntity.java:37: package net.minecraft.item.consume does not exist
+src/main/java/fr/lordfinn/steveparty/blocks/custom/villager/VillagerBlockEntity.java:451: cannot find symbol  [symbol:   class UseAction; location: class VillagerBlockEntity]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/villager/VillagerBlockEntity.java:452: cannot find symbol  [symbol:   variable UseAction; location: class VillagerBlockEntity]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/villager/VillagerBlockEntity.java:453: cannot find symbol  [symbol:   variable UseAction; location: class VillagerBlockEntity]
+src/main/java/fr/lordfinn/steveparty/blocks/custom/villager/VillagerSoul.java:62: no suitable method found for create(ServerWorld,SpawnReason)
+src/main/java/fr/lordfinn/steveparty/blocks/switchable/SwitchableConfig.java:59: cannot find symbol  [symbol:   method getOptionalValue(Identifier); location: variable BLOCK of type DefaultedRegistry<Block>]
+src/main/java/fr/lordfinn/steveparty/blocks/switchable/SwitchedOffBlock.java:13: cannot find symbol  [symbol:   class LootWorldContext; location: package net.minecraft.loot.context]
+src/main/java/fr/lordfinn/steveparty/blocks/switchable/SwitchedOffBlock.java:74: package LootWorldContext does not exist
+src/main/java/fr/lordfinn/steveparty/blocks/switchable/SwitchedOffBlockEntity.java:43: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Block>>); location: variable registries of type WrapperLookup]
+src/main/java/fr/lordfinn/steveparty/board/BoardLinks.java:256: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/compat/rei/SteveReiCommonPlugin.java:7: cannot find symbol  [symbol:   class REICommonPlugin; location: package me.shedaniel.rei.api.common.plugins]
+src/main/java/fr/lordfinn/steveparty/compat/rei/SteveReiCommonPlugin.java:15: cannot find symbol  [symbol: class REICommonPlugin]
+src/main/java/fr/lordfinn/steveparty/compat/rei/SteveReiCommonPlugin.java:16: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/effect/SquishEffect.java:77: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/effect/SquishEffect.java:101: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/effect/SquishEffect.java:140: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/effect/SquishEffect.java:142: cannot find symbol  [symbol:   variable SCALE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/ModEntities.java:27: incompatible types: RegistryKey<EntityType<?>> cannot be converted to String
+src/main/java/fr/lordfinn/steveparty/entities/ModEntities.java:36: incompatible types: RegistryKey<EntityType<?>> cannot be converted to String
+src/main/java/fr/lordfinn/steveparty/entities/ModEntities.java:45: incompatible types: RegistryKey<EntityType<?>> cannot be converted to String
+src/main/java/fr/lordfinn/steveparty/entities/ModEntities.java:57: incompatible types: RegistryKey<EntityType<?>> cannot be converted to String
+src/main/java/fr/lordfinn/steveparty/entities/ModEntities.java:72: incompatible types: RegistryKey<EntityType<?>> cannot be converted to String
+src/main/java/fr/lordfinn/steveparty/entities/ModEntities.java:86: incompatible types: RegistryKey<EntityType<?>> cannot be converted to String
+src/main/java/fr/lordfinn/steveparty/entities/ModEntities.java:100: incompatible types: RegistryKey<EntityType<?>> cannot be converted to String
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderBoxes.java:109: no suitable method found for block(DefaultedRegistry<Block>,String,boolean)
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:240: cannot find symbol  [symbol:   variable MAX_HEALTH; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:241: cannot find symbol  [symbol:   variable ATTACK_DAMAGE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:242: cannot find symbol  [symbol:   variable ATTACK_SPEED; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:243: cannot find symbol  [symbol:   variable KNOCKBACK_RESISTANCE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:244: cannot find symbol  [symbol:   variable MOVEMENT_SPEED; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:245: cannot find symbol  [symbol:   variable FOLLOW_RANGE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:550: incompatible types: ServerWorld cannot be converted to ItemStack
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:609: cannot find symbol  [symbol:   method rotate(float,float); location: variable passenger of type Entity]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:1041: cannot find symbol  [symbol:   variable SPAWN_ITEM_USE; location: class SpawnReason]
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:1236: no suitable method found for dropStack(ServerWorld,ItemStack,float)
+src/main/java/fr/lordfinn/steveparty/entities/custom/BoxedTraderEntity.java:1263: no suitable method found for dropStack(ServerWorld,ItemStack,float)
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:304: cannot find symbol  [symbol:   variable MAX_HEALTH; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:305: cannot find symbol  [symbol:   variable ATTACK_DAMAGE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:306: cannot find symbol  [symbol:   variable ATTACK_SPEED; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:307: cannot find symbol  [symbol:   variable KNOCKBACK_RESISTANCE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:308: cannot find symbol  [symbol:   variable MOVEMENT_SPEED; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:439: cannot find symbol  [symbol:   method stream(); location: interface DynamicRegistryManager]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:452: cannot find symbol  [symbol:   method stream(); location: interface DynamicRegistryManager]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:503: cannot find symbol  [symbol:   method stream(); location: interface DynamicRegistryManager]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:510: cannot find symbol  [symbol:   method stream(); location: interface DynamicRegistryManager]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:525: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/entities/custom/DiceEntity.java:548: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/entities/custom/DirectionDisplayEntity.java:33: cannot find symbol  [symbol:   static ENTITY_INTERACTION_RANGE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DirectionDisplayEntity.java:89: cannot find symbol  [symbol: method rotate(int,float)]
+src/main/java/fr/lordfinn/steveparty/entities/custom/DirectionDisplayEntity.java:107: cannot find symbol  [symbol:   variable ENTITY_INTERACTION_RANGE; location: class DirectionDisplayEntity]
+src/main/java/fr/lordfinn/steveparty/entities/custom/ForgeCoreEntity.java:42: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:769: cannot find symbol  [symbol:   variable MAX_HEALTH; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:770: cannot find symbol  [symbol:   variable MOVEMENT_SPEED; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:771: cannot find symbol  [symbol:   variable FOLLOW_RANGE; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:772: cannot find symbol  [symbol:   variable FLYING_SPEED; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:788: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:794: method isInvulnerableTo in class LivingEntity cannot be applied to given types;  [required: DamageSource; found:    ServerWorld,DamageSource; reason: actual and formal argument lists differ in length]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:1218: incompatible types: ServerWorld cannot be converted to ItemConvertible
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:1468: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:1505: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaEntity.java:1507: method damage in class LivingEntity cannot be applied to given types;  [required: DamageSource,float; found:    ServerWorld,DamageSource,float; reason: actual and formal argument lists differ in length]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaRebirths.java:106: method getEntityFromNbt in class EntityType<T> cannot be applied to given types;  [required: NbtCompound,World; found:    NbtCompound,ServerWorld,SpawnReason; reason: actual and formal argument lists differ in length]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaRebirths.java:113: cannot find symbol  [symbol:   method getTopYInclusive(); location: variable world of type ServerWorld]
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaSpawnSites.java:312: no suitable method found for create(ServerWorld,SpawnReason)
+src/main/java/fr/lordfinn/steveparty/entities/custom/MulaStarEntity.java:173: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/entities/custom/PipeCarrierEntity.java:230: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/entities/custom/goals/MulaGoals.java:603: cannot find symbol  [symbol:   method getTopYInclusive(); location: variable world of type World]
+src/main/java/fr/lordfinn/steveparty/events/ModEvents.java:71: cannot find symbol  [symbol:   method getArgb(int,int,int,int); location: class ColorHelper]
+src/main/java/fr/lordfinn/steveparty/items/ModItems.java:53: cannot find symbol  [symbol:   method enchantable(int); location: class Settings]
+src/main/java/fr/lordfinn/steveparty/items/ModItems.java:174: cannot find symbol  [symbol:   method registryKey(RegistryKey<Item>); location: variable itemSettings of type Settings]
+src/main/java/fr/lordfinn/steveparty/items/ModItems.java:181: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Block>>); location: variable lookup of type WrapperLookup]
+src/main/java/fr/lordfinn/steveparty/items/custom/BandanaItem.java:8: cannot find symbol  [symbol:   class EquippableComponent; location: package net.minecraft.component.type]
+src/main/java/fr/lordfinn/steveparty/items/custom/BandanaItem.java:30: cannot find symbol  [symbol:   variable EQUIPPABLE; location: class DataComponentTypes]
+src/main/java/fr/lordfinn/steveparty/items/custom/BandanaItem.java:34: cannot find symbol  [symbol:   class EquippableComponent; location: class BandanaItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/BandanaItem.java:35: cannot find symbol  [symbol:   variable EquippableComponent; location: class BandanaItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/BandanaItem.java:49: cannot find symbol  [symbol:   variable EQUIPPABLE; location: class DataComponentTypes]
+src/main/java/fr/lordfinn/steveparty/items/custom/BoxCostumeItem.java:10: cannot find symbol  [symbol:   class EquippableComponent; location: package net.minecraft.component.type]
+src/main/java/fr/lordfinn/steveparty/items/custom/BoxCostumeItem.java:42: cannot find symbol  [symbol:   variable EQUIPPABLE; location: class DataComponentTypes]
+src/main/java/fr/lordfinn/steveparty/items/custom/BoxCostumeItem.java:42: cannot find symbol  [symbol:   variable EquippableComponent; location: class BoxCostumeItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/BoxCostumeItem.java:76: cannot find symbol  [symbol:   method isGliding(); location: variable player of type @org.jetbrains.annotations.Nullable PlayerEntity]
+src/main/java/fr/lordfinn/steveparty/items/custom/DefaultDiceItem.java:42: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/DefaultDiceItem.java:43: use(World,PlayerEntity,Hand) in DefaultDiceItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/DefaultDiceItem.java:72: no suitable method found for create(World,SpawnReason)
+src/main/java/fr/lordfinn/steveparty/items/custom/MiniGamePageItem.java:50: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/MiniGamePageItem.java:51: use(World,PlayerEntity,Hand) in MiniGamePageItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/MiniGamesCatalogueItem.java:28: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/MiniGamesCatalogueItem.java:29: use(World,PlayerEntity,Hand) in MiniGamesCatalogueItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/MultiDiceItem.java:29: use(World,PlayerEntity,Hand) in MultiDiceItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/StencilGunItem.java:165: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/StencilGunItem.java:166: use(World,PlayerEntity,Hand) in StencilGunItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/StencilGunItem.java:233: incompatible types: int cannot be converted to Vector3f
+src/main/java/fr/lordfinn/steveparty/items/custom/StencilHammerStrike.java:41: incompatible types: ItemStack cannot be converted to Item
+src/main/java/fr/lordfinn/steveparty/items/custom/StencilHammerStrike.java:50: incompatible types: ItemStack cannot be converted to Item
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenItem.java:186: method loadEntityWithPassengers in class EntityType<T> cannot be applied to given types;  [required: NbtCompound,World,Function<Entity,Entity>; found:    NbtCompound,World,SpawnReason,(e)->e; reason: actual and formal argument lists differ in length]
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:32: package net.minecraft.item.consume does not exist
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:118: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:119: use(World,PlayerEntity,Hand) in TokenizerWandItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:120: incompatible types: ItemStack cannot be converted to Item
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:132: cannot find symbol  [symbol:   class UseAction; location: class TokenizerWandItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:133: cannot find symbol  [symbol:   variable UseAction; location: class TokenizerWandItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:141: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:142: onStoppedUsing(ItemStack,World,LivingEntity,int) in TokenizerWandItem cannot override onStoppedUsing(ItemStack,World,LivingEntity,int) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:196: incompatible types: ItemStack cannot be converted to Item
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:219: incompatible types: ItemStack cannot be converted to Item
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:249: cannot find symbol  [symbol:   method getOptional(RegistryKey<Enchantment>); location: variable registry of type Registry<Enchantment>]
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:250: incompatible types: Object cannot be converted to RegistryEntry<Enchantment>
+src/main/java/fr/lordfinn/steveparty/items/custom/TokenizerWandItem.java:251: incompatible types: Object cannot be converted to boolean
+src/main/java/fr/lordfinn/steveparty/items/custom/TripleJumpShoesItem.java:8: package net.minecraft.item.equipment does not exist
+src/main/java/fr/lordfinn/steveparty/items/custom/TripleJumpShoesItem.java:9: package net.minecraft.item.equipment does not exist
+src/main/java/fr/lordfinn/steveparty/items/custom/TripleJumpShoesItem.java:33: cannot find symbol  [symbol:   class ArmorMaterial; location: class TripleJumpShoesItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/TripleJumpShoesItem.java:36: cannot find symbol  [symbol:   variable EquipmentType; location: class TripleJumpShoesItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/TripleJumpShoesItem.java:42: cannot find symbol  [symbol:   variable REPAIRS_LEATHER_ARMOR; location: class ItemTags]
+src/main/java/fr/lordfinn/steveparty/items/custom/TripleJumpShoesItem.java:44: cannot find symbol  [symbol:   variable EquipmentType; location: class TripleJumpShoesItem]
+src/main/java/fr/lordfinn/steveparty/items/custom/WrenchItem.java:65: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/WrenchItem.java:66: use(World,PlayerEntity,Hand) in WrenchItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/cartridges/CartridgeItem.java:81: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/items/custom/cartridges/CartridgeItem.java:82: use(World,PlayerEntity,Hand) in CartridgeItem cannot override use(World,PlayerEntity,Hand) in Item
+src/main/java/fr/lordfinn/steveparty/items/custom/cartridges/CartridgeItem.java:83: incompatible types: TypedActionResult<ItemStack> cannot be converted to ActionResult
+src/main/java/fr/lordfinn/steveparty/loot/ModLootTableModifiers.java:76: cannot find symbol  [symbol:   method getLootTableKey(); location: variable EVOKER of type EntityType<EvokerEntity>]
+src/main/java/fr/lordfinn/steveparty/loot/ModLootTableModifiers.java:77: cannot find symbol  [symbol:   method getLootTableKey(); location: variable ILLUSIONER of type EntityType<IllusionerEntity>]
+src/main/java/fr/lordfinn/steveparty/loot/ModLootTableModifiers.java:103: cannot find symbol  [symbol:   method getOrThrow(RegistryKey<Registry<Enchantment>>); location: variable registries of type WrapperLookup]
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZoneBorder.java:301: cannot find symbol  [symbol:   method relatives(); location: variable target of type TeleportTarget]
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZoneBorder.java:302: cannot find symbol  [symbol:   method position(); location: variable target of type TeleportTarget]
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZoneBubble.java:524: cannot find symbol  [symbol:   method getOptionalValue(Identifier); location: variable FLUID of type DefaultedRegistry<Fluid>]
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZoneBubble.java:526: cannot find symbol  [symbol:   method getOptionalValue(Identifier); location: variable BLOCK of type DefaultedRegistry<Block>]
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZoneBubble.java:888: cannot find symbol  [symbol:   variable LOAD; location: class SpawnReason]
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZoneBubbles.java:610: no suitable method found for teleport(ServerWorld,double,double,double,Set<Object>,float,float,boolean)
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZoneForbidden.java:158: cannot find symbol  [symbol:   method getTopYInclusive(); location: variable world of type ServerWorld]
+src/main/java/fr/lordfinn/steveparty/minigame/zone/ZonePlayerRules.java:52: incompatible types: bad return type in lambda expression
+src/main/java/fr/lordfinn/steveparty/mixin/ExplosionImplMixin.java:6: cannot find symbol  [symbol:   class ExplosionImpl; location: package net.minecraft.world.explosion]
+src/main/java/fr/lordfinn/steveparty/mixin/ExplosionImplMixin.java:18: cannot find symbol  [symbol: class ExplosionImpl]
+src/main/java/fr/lordfinn/steveparty/mixin/PreparedRecipesMixin.java:5: cannot find symbol  [symbol:   class PreparedRecipes; location: package net.minecraft.recipe]
+src/main/java/fr/lordfinn/steveparty/mixin/PreparedRecipesMixin.java:15: cannot find symbol  [symbol: class PreparedRecipes]
+src/main/java/fr/lordfinn/steveparty/mixin/PreparedRecipesMixin.java:29: cannot find symbol  [symbol:   method getValue(); location: class Identifier]
+src/main/java/fr/lordfinn/steveparty/mixin/PreparedRecipesMixin.java:30: cannot find symbol  [symbol:   method getValue(); location: class Identifier]
+src/main/java/fr/lordfinn/steveparty/mixin/ShearsItemMixin.java:47: cannot find symbol  [symbol:   method createEntryLookup(DefaultedRegistry<Block>); location: class Registries]
+src/main/java/fr/lordfinn/steveparty/mixin/ShearsItemMixin.java:54: no suitable method found for of(RegistryEntryList<Block>,float)
+src/main/java/fr/lordfinn/steveparty/mixin/TokenEntityMixin.java:385: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/mixin/TokenEntityMixin.java:388: cannot find symbol  [symbol: method forEachGiftedItem(ServerWorld,RegistryKey<LootTable>,BiConsumer<ServerWorld,ItemStack>)]
+src/main/java/fr/lordfinn/steveparty/mixin/TokenEntityMixin.java:407: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/mixin/TokenEntityMixin.java:412: method damage in class LivingEntity cannot be applied to given types;  [required: DamageSource,float; found:    ServerWorld,DamageSource,float; reason: actual and formal argument lists differ in length]
+src/main/java/fr/lordfinn/steveparty/mixin/TokenEntityMixin.java:431: method damage in class LivingEntity cannot be applied to given types;  [required: DamageSource,float; found:    ServerWorld,DamageSource,float; reason: actual and formal argument lists differ in length]
+src/main/java/fr/lordfinn/steveparty/mixin/ZoneBubbleExplosionMixin.java:7: cannot find symbol  [symbol:   class ExplosionImpl; location: package net.minecraft.world.explosion]
+src/main/java/fr/lordfinn/steveparty/mixin/ZoneBubbleExplosionMixin.java:26: cannot find symbol  [symbol: class ExplosionImpl]
+src/main/java/fr/lordfinn/steveparty/payloads/custom/ArrowParticlesPayload.java:15: cannot find symbol  [symbol:   variable PACKET_CODEC; location: class Vec3d]
+src/main/java/fr/lordfinn/steveparty/payloads/custom/ArrowParticlesPayload.java:16: cannot find symbol  [symbol:   variable PACKET_CODEC; location: class Vec3d]
+src/main/java/fr/lordfinn/steveparty/payloads/custom/EnchantedCircularParticlePayload.java:16: cannot find symbol  [symbol:   variable PACKET_CODEC; location: class Vec3d]
+src/main/java/fr/lordfinn/steveparty/payloads/custom/FloatingTextPayload.java:26: cannot find symbol  [symbol:   variable VECTOR_3F; location: interface PacketCodecs]
+src/main/java/fr/lordfinn/steveparty/payloads/custom/FloatingTextPayload.java:27: cannot find symbol  [symbol:   variable VECTOR_3F; location: interface PacketCodecs]
+src/main/java/fr/lordfinn/steveparty/payloads/custom/StencilHammerStrikePayload.java:32: cannot find symbol  [symbol:   variable VECTOR_3F; location: interface PacketCodecs]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:17: cannot find symbol  [symbol:   class IngredientPlacement; location: package net.minecraft.recipe]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:20: package net.minecraft.recipe.display does not exist
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:21: package net.minecraft.recipe.display does not exist
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:22: package net.minecraft.recipe.display does not exist
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:46: DiceModuleRecipe is not abstract and does not override abstract method getResult(WrapperLookup) in Recipe
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:48: cannot find symbol  [symbol:   class IngredientPlacement; location: class DiceModuleRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:74: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:88: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:111: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:113: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:127: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:128: cannot find symbol  [symbol:   class IngredientPlacement; location: class DiceModuleRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:129: cannot find symbol  [symbol:   method ofItem(Item); location: class Ingredient]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:129: cannot find symbol  [symbol:   variable IngredientPlacement; location: class DiceModuleRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:134: method does not override or implement a method from a supertype
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:135: cannot find symbol  [symbol:   class RecipeDisplay; location: class DiceModuleRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:137: cannot find symbol  [symbol:   class ShapelessCraftingRecipeDisplay; location: class DiceModuleRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:138: cannot find symbol  [symbol:   method toDisplay(); location: class Ingredient]
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:138: package SlotDisplay does not exist
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:139: package SlotDisplay does not exist
+src/main/java/fr/lordfinn/steveparty/recipes/DiceModuleRecipe.java:140: package SlotDisplay does not exist
+src/main/java/fr/lordfinn/steveparty/recipes/FlagDyeRecipe.java:17: FlagDyeRecipe is not abstract and does not override abstract method fits(int,int) in Recipe
+src/main/java/fr/lordfinn/steveparty/recipes/FlagDyeRecipe.java:31: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/FlagFromWoolRecipe.java:46: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/MaterialShapedRecipe.java:70: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/MiniGamePageCopyRecipe.java:17: MiniGamePageCopyRecipe is not abstract and does not override abstract method fits(int,int) in Recipe
+src/main/java/fr/lordfinn/steveparty/recipes/MiniGamePageCopyRecipe.java:31: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/MiniGamePageCopyRecipe.java:51: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/ModRecipes.java:17: cannot find symbol  [symbol:   class SpecialRecipeSerializer; location: class SpecialCraftingRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/ModRecipes.java:20: cannot find symbol  [symbol:   class SpecialRecipeSerializer; location: class SpecialCraftingRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/ModRecipes.java:26: cannot find symbol  [symbol:   class SpecialRecipeSerializer; location: class SpecialCraftingRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/ModRecipes.java:30: cannot find symbol  [symbol:   class SpecialRecipeSerializer; location: class SpecialCraftingRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/ModRecipes.java:37: cannot find symbol  [symbol:   class SpecialRecipeSerializer; location: class SpecialCraftingRecipe]
+src/main/java/fr/lordfinn/steveparty/recipes/MultiDiceRecipe.java:35: MultiDiceRecipe is not abstract and does not override abstract method fits(int,int) in Recipe
+src/main/java/fr/lordfinn/steveparty/recipes/MultiDiceRecipe.java:54: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/StencilCopyRecipe.java:14: StencilCopyRecipe is not abstract and does not override abstract method fits(int,int) in Recipe
+src/main/java/fr/lordfinn/steveparty/recipes/StencilCopyRecipe.java:36: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/StencilCopyRecipe.java:56: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/TileSizeRecipe.java:24: TileSizeRecipe is not abstract and does not override abstract method fits(int,int) in Recipe
+src/main/java/fr/lordfinn/steveparty/recipes/TileSizeRecipe.java:44: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/TradingStallRecipe.java:31: cannot find symbol  [symbol:   method size(); location: variable input of type CraftingRecipeInput]
+src/main/java/fr/lordfinn/steveparty/recipes/UnmirroredShapedRecipe.java:48: incompatible types: DefaultedList<Ingredient> cannot be converted to List<Optional<Ingredient>>
+src/main/java/fr/lordfinn/steveparty/screen_handlers/custom/CartridgeContainerScreenHandler.java:35: cannot find symbol  [symbol:   method addPlayerSlots(PlayerInventory,int,int); location: class CartridgeContainerScreenHandler]
+src/main/java/fr/lordfinn/steveparty/screen_handlers/custom/CashRegisterScreenHandler.java:34: cannot find symbol  [symbol:   method addPlayerSlots(PlayerInventory,int,int); location: class CashRegisterScreenHandler]
+src/main/java/fr/lordfinn/steveparty/screen_handlers/custom/MiniGamesCatalogueScreenHandler.java:39: cannot find symbol  [symbol:   method addPlayerInventorySlots(PlayerInventory,int,int); location: class MiniGamesCatalogueScreenHandler]
+src/main/java/fr/lordfinn/steveparty/screen_handlers/custom/MiniGamesCatalogueScreenHandler.java:40: cannot find symbol  [symbol:   method addPlayerHotbarSlots(PlayerInventory,int,int); location: class MiniGamesCatalogueScreenHandler]
+src/main/java/fr/lordfinn/steveparty/screen_handlers/custom/TradingStallScreenHandler.java:80: cannot find symbol  [symbol:   method addPlayerSlots(PlayerInventory,int,int); location: class TradingStallScreenHandler]
+src/main/java/fr/lordfinn/steveparty/utils/GravityPull.java:106: cannot find symbol  [symbol:   variable ARMOR; location: class EntityAttributes]
+src/main/java/fr/lordfinn/steveparty/utils/GravityPull.java:106: cannot find symbol  [symbol:   variable ARMOR_TOUGHNESS; location: class EntityAttributes]
