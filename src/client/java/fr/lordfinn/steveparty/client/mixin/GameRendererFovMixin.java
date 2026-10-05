@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class GameRendererFovMixin {
 
     @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
-    private void modifyFov(Camera camera, float tickDelta, boolean changingFov, CallbackInfoReturnable<Float> cir) {
+    private void modifyFov(Camera camera, float tickDelta, boolean changingFov, CallbackInfoReturnable<Double> cir) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null) {
             BlockPos posUnder = client.player.getBlockPos().down();
@@ -23,7 +23,7 @@ public class GameRendererFovMixin {
 
             if (onGoalPole && !client.player.isClimbing()) {
                 float progress = 1;
-                float flippedFov = (180 - cir.getReturnValueF()) + 180f * progress; // example: add to FOV
+                double flippedFov = (180 - cir.getReturnValueD()) + 180f * progress; // example: add to FOV
                 cir.setReturnValue(flippedFov);
             }
         }

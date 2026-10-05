@@ -10,14 +10,13 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexRendering;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ModelTransformationMode;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -53,8 +52,8 @@ public class MiniGamePipeNotchRenderer implements BlockEntityRenderer<MiniGamePi
         else matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(side == Direction.UP ? -90 : 90));
         VertexConsumer boxes = vertexConsumers.getBuffer(RenderLayer.getDebugFilledBox());
         // The slot, and the ledge the page stands on
-        VertexRendering.drawFilledBox(matrices, boxes, -0.27, -0.33, SIDE, 0.27, 0.33, SIDE + 0.02, 0.20F, 0.13F, 0.03F, 1F);
-        VertexRendering.drawFilledBox(matrices, boxes, -0.30, -0.40, SIDE, 0.30, -0.33, SIDE + 0.09, 0.62F, 0.42F, 0.08F, 1F);
+        WorldRenderer.renderFilledBox(matrices, boxes, -0.27, -0.33, SIDE, 0.27, 0.33, SIDE + 0.02, 0.20F, 0.13F, 0.03F, 1F);
+        WorldRenderer.renderFilledBox(matrices, boxes, -0.30, -0.40, SIDE, 0.30, -0.33, SIDE + 0.09, 0.62F, 0.42F, 0.08F, 1F);
         ItemStack page = pipe.getPage();
         if (!page.isEmpty()) {
             matrices.translate(0, 0, SIDE + 0.045);

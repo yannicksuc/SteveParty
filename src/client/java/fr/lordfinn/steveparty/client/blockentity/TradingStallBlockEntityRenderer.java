@@ -9,7 +9,7 @@ import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ModelTransformationMode;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.minecraft.util.math.Vec3d;

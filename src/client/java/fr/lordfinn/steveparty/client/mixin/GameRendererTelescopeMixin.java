@@ -14,9 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class GameRendererTelescopeMixin {
 
     @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
-    private void steveparty$telescopeZoom(Camera camera, float tickDelta, boolean changingFov, CallbackInfoReturnable<Float> cir) {
+    private void steveparty$telescopeZoom(Camera camera, float tickDelta, boolean changingFov, CallbackInfoReturnable<Double> cir) {
         float multiplier = TelescopeClient.fovMultiplier(tickDelta);
-        if (multiplier != 1f) cir.setReturnValue(cir.getReturnValueF() * multiplier);
+        if (multiplier != 1f) cir.setReturnValue(cir.getReturnValueD() * multiplier);
     }
 
     @Inject(method = "renderHand", at = @At("HEAD"), cancellable = true)

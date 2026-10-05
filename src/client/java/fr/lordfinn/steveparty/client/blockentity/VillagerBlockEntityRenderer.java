@@ -65,7 +65,7 @@ public class VillagerBlockEntityRenderer implements BlockEntityRenderer<Villager
         matrices.translate(-0.5f, 0, -0.5f);
 
         BlockState state = pose.disguise ? Blocks.COBBLESTONE.getDefaultState() : villager.getCachedState();
-        blocks.getModelRenderer().render(matrices.peek(), vertexConsumers.getBuffer(RenderLayers.getEntityBlockLayer(state)),
+        blocks.getModelRenderer().render(matrices.peek(), vertexConsumers.getBuffer(RenderLayers.getEntityBlockLayer(state, false)),
                 state, blocks.getModel(state), 1f, 1f, 1f, light, OverlayTexture.DEFAULT_UV);
         if (!pose.disguise && pose.expression != VillagerExpression.NONE) {
             drawExpression(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(EXPRESSIONS)),

@@ -244,7 +244,7 @@ public final class StencilSignModels {
                 // Paint, fading back to the bare engraving as it is brushed
                 int paint = 0xFF000000 | look.color().getEntityColor();
                 float fade = look.fade() / (float) StencilCanvasBlockEntity.MAX_FADE;
-                bottomColor = ColorHelper.lerp(fade, paint, bottomColor);
+                bottomColor = ColorHelper.Argb.lerp(fade, paint, bottomColor);
                 if (look.glowing() && look.fade() < StencilCanvasBlockEntity.MAX_FADE) bottomLight = SignModel.Light.EMISSIVE;
             }
             for (int y = 0; y < 16; y++) {

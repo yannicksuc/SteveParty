@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.utils.TileColors;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -43,7 +44,7 @@ final class ChevronSprites {
         float min = 1, max = 0;
         for (int x = 0; x < sprite.getWidth(); x++) {
             for (int y = 0; y < sprite.getHeight(); y++) {
-                int argb = sprite.getColorArgb(x, y);
+                int argb = ColorHelper.Abgr.toAbgr(sprite.getColor(x, y));
                 if ((argb >>> 24) == 0) continue;
                 float value = value(argb);
                 min = Math.min(min, value);
@@ -52,16 +53,16 @@ final class ChevronSprites {
         }
         for (int x = 0; x < sprite.getWidth(); x++) {
             for (int y = 0; y < sprite.getHeight(); y++) {
-                int argb = sprite.getColorArgb(x, y);
+                int argb = ColorHelper.Abgr.toAbgr(sprite.getColor(x, y));
                 int alpha = argb >>> 24;
                 if (alpha == 0) {
-                    image.setColorArgb(x, y, 0);
+                    image.setColor(x, y, 0);
                     continue;
                 }
                 // Lightest level of the sprite -> highlight, darkest -> deepest shade
                 float t = max > min ? (value(argb) - min) / (max - min) : 1;
                 float darkness = DARKEST + (LIGHTEST - DARKEST) * t;
-                image.setColorArgb(x, y, (alpha << 24) | TileColors.shade(key, darkness));
+                image.setColor(x, y, ColorHelper.Abgr.toAbgr((alpha << 24) | TileColors.shade(key, darkness)));
             }
         }
         Identifier id = MinecraftClient.getInstance().getTextureManager()
