@@ -2329,5 +2329,16 @@
   "message.steveparty.powerup.needs_tile": "Right-click a board space with it",
   "message.steveparty.powerup.no_player": "No other player to aim at",
   "message.steveparty.powerup.roll_note": "(%1$s %2$s %3$s)",
-  "gui.steveparty.powerup.pick_player": "%s: pick a player"
+  "gui.steveparty.powerup.pick_player": "%s: pick a player",
+  "item.steveparty.powerup_thief_bell": "Thief Bell",
+  "item.steveparty.powerup_golden_thief_bell": "Golden Thief Bell",
+  "tooltip.steveparty.powerup_thief_bell": "At the start of your turn, before rolling your die: steal 5 to 15 coins from another player",
+  "tooltip.steveparty.powerup_golden_thief_bell": "At the start of your turn, before rolling your die: steal a star from another player",
+  "gui.steveparty.thief_bell.prompt.thief": "Steal coins from whom?",
+  "gui.steveparty.thief_bell.prompt.golden": "Steal a star from whom?",
+  "gui.steveparty.thief_bell.option": "%1$s (%2$s × %3$s)",
+  "message.steveparty.thief_bell.stolen": "%1$s rings the %2$s and steals %3$s × %4$s from %5$s!",
+  "message.steveparty.thief_bell.nothing": "%1$s rings the %2$s, but %3$s has no %4$s to steal",
+  "message.steveparty.thief_bell.protected": "%1$s rings the %2$s, but %3$s is protected: nothing stolen",
+  "message.steveparty.thief_bell.nobody": "%1$s rings the %2$s, but there is nobody to steal from"
 }
