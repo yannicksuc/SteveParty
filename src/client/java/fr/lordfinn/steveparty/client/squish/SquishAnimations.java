@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.minecraft.sound.SoundCategory;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -63,31 +62,33 @@ public final class SquishAnimations {
         return (step + back) / PULSES;
     }
 
-    /** Applies the current animation frame of {@code entity}, if any, to its render state. */
-    public static void apply(LivingEntity entity, LivingEntityRenderState state, float tickDelta) {
-        if (ANIMATIONS.isEmpty()) return;
+    /**
+     * Applies the current animation frame of {@code entity}, if any: its squash and stretch (on the entity, see
+     * {@link SquishStretchState}).
+     *
+     * @return the multiplier of the scale it is drawn at (1 when it is not transforming)
+     */
+    public static float apply(LivingEntity entity, float tickDelta) {
+        if (ANIMATIONS.isEmpty()) return 1;
         Animation animation = ANIMATIONS.get(entity.getId());
-        if (animation == null) return;
+        if (animation == null) return 1;
 
         float elapsed = (entity.getWorld().getTime() - animation.startTime) + tickDelta;
         if (elapsed < 0 || elapsed >= animation.duration) {
             ANIMATIONS.remove(entity.getId());
-            return;
+            return 1;
         }
         float progress = elapsed / animation.duration;
 
         float scale = MathHelper.lerp(growth(progress), animation.startScale, animation.targetScale);
         // The entity already has its final scale: render it relatively to that one
-        if (animation.targetScale > 0) {
-            state.baseScale *= Math.max(0.05F, scale / animation.targetScale);
-        }
+        float multiplier = animation.targetScale > 0 ? Math.max(0.05F, scale / animation.targetScale) : 1;
         // Jelly: squash and stretch, strongest right after each pulse, fading at the end
         float pulseLocal = progress * PULSES - (int) (progress * PULSES);
         float envelope = (1 - progress * 0.6F) * (0.35F + 0.65F * (1 - pulseLocal));
         float stretch = 1 + STRETCH_AMPLITUDE * envelope * MathHelper.sin(elapsed * STRETCH_SPEED);
-        if (state instanceof SquishStretchState stretchState) {
-            stretchState.steveparty$setStretch(stretch);
-        }
+        ((SquishStretchState) entity).steveparty$setStretch(stretch);
+        return multiplier;
     }
 
     /**

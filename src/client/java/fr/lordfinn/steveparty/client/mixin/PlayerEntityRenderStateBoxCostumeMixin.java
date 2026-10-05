@@ -2,12 +2,13 @@ package fr.lordfinn.steveparty.client.mixin;
 
 import fr.lordfinn.steveparty.client.access.BoxCostumeRenderState;
 import fr.lordfinn.steveparty.client.entity.costume.BoxCostumeAnimatable;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(PlayerEntityRenderState.class)
+/** A player's Box Costume, for his renderer (1.21.1 has no render states: kept on the player, filled each frame). */
+@Mixin(AbstractClientPlayerEntity.class)
 public class PlayerEntityRenderStateBoxCostumeMixin implements BoxCostumeRenderState {
     @Unique
     @Nullable

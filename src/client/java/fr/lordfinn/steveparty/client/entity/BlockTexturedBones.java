@@ -149,10 +149,10 @@ public final class BlockTexturedBones {
         MinecraftClient client = MinecraftClient.getInstance();
         int tint = client.getBlockColors().getColor(state, pos == null ? null : client.world, pos, tintIndex);
         if (tint == -1) return renderColor;
-        return ColorHelper.getArgb(ColorHelper.getAlpha(renderColor),
-                ColorHelper.getRed(renderColor) * ColorHelper.getRed(tint) / 255,
-                ColorHelper.getGreen(renderColor) * ColorHelper.getGreen(tint) / 255,
-                ColorHelper.getBlue(renderColor) * ColorHelper.getBlue(tint) / 255);
+        return ColorHelper.Argb.getArgb(ColorHelper.Argb.getAlpha(renderColor),
+                ColorHelper.Argb.getRed(renderColor) * ColorHelper.Argb.getRed(tint) / 255,
+                ColorHelper.Argb.getGreen(renderColor) * ColorHelper.Argb.getGreen(tint) / 255,
+                ColorHelper.Argb.getBlue(renderColor) * ColorHelper.Argb.getBlue(tint) / 255);
     }
 
     /** The vanilla purple and black checker, from the block atlas. */
