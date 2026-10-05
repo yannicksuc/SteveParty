@@ -70,10 +70,10 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** The core: the center of the galaxy (CORE_X/Y: its center, between 4 pixels), shown once inserted. */
     private static final int CORE_X = DiceForgeScreenHandler.CENTER_X + 8, CORE_Y = DiceForgeScreenHandler.CENTER_Y + 8;
     /**
-     * The FORGE button is the arrow of the capsule, between the blank faces and the die: its pixels (x, y in GUI
-     * coordinates, as drawn by the art sources) and the box that takes the clicks.
+     * The FORGE button is the arrow of the capsule, between the blank faces and the die (only the screen draws it):
+     * its shaft from ARROW_X0, its head's base at ARROW_X1, and the box that takes the clicks.
      */
-    private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 3,
+    private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 5,
             ARROW_Y = DiceForgeScreenHandler.BLANK_Y + 8;
     private static final int[][] ARROW_PIXELS = arrowPixels();
     private static final int BUTTON_X0 = DiceForgeScreenHandler.BLANK_X + 17, BUTTON_X1 = DiceForgeScreenHandler.OUTPUT_X - 1,
@@ -83,7 +83,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
      * when it cannot be pressed.
      */
     private static final int ARROW_IDLE = 0xFFFFF0A8, ARROW_HOVERED = 0xFFFFFFFF, ARROW_RUNNING = 0xFFD9C2FF,
-            ARROW_OFF = 0xFF9B7FC8;
+            ARROW_OFF = 0xFF9B7FC8, ARROW_OFF_HOVERED = 0xFFC9B5EE;
     /** While forging it fills from the left through a smooth gradient of these colours, violet to gold; orange when blocked. */
     private static final int[] GAUGE_COLORS = {0xFF8A3FFC, 0xFFD23CF0, 0xFFFF4FA3, 0xFFFF8A3D, 0xFFFFD35A};
     private static final int GAUGE_BLOCKED = 0xFFE0703A;
@@ -94,7 +94,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** The arrow's pixels: a 2 px shaft, then a head 6 px tall narrowing over 3 columns. */
     private static int[][] arrowPixels() {
         List<int[]> pixels = new ArrayList<>();
-        for (int x = ARROW_X0; x <= ARROW_X1; x++) {
+        for (int x = ARROW_X0; x < ARROW_X1; x++) {
             pixels.add(new int[]{x, ARROW_Y - 1});
             pixels.add(new int[]{x, ARROW_Y});
         }
@@ -252,7 +252,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     private boolean isOverButton(double mouseX, double mouseY) {
-        if (!handler.isActivated()) return false;
         double px = mouseX - this.x, py = mouseY - this.y;
         return px >= BUTTON_X0 && px < BUTTON_X1 && py >= BUTTON_Y0 && py < BUTTON_Y1;
     }
@@ -276,7 +275,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
      */
     private void drawArrowButton(DrawContext context, int x, int y, int mouseX, int mouseY, float delta) {
         boolean enabled = isButtonEnabled();
-        int base = !enabled ? ARROW_OFF : isOverButton(mouseX, mouseY) ? ARROW_HOVERED
+        boolean hovered = isOverButton(mouseX, mouseY);
+        int base = hovered ? (enabled ? ARROW_HOVERED : ARROW_OFF_HOVERED) : !enabled ? ARROW_OFF
                 : handler.isRunning() ? ARROW_RUNNING : ARROW_IDLE;
         float progress = getSmoothProgress(delta);
         float length = ARROW_X1 + 2 - ARROW_X0;
