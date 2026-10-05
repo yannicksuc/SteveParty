@@ -43,7 +43,7 @@ public class FlagFromWoolRecipe extends ShapedRecipe {
         ItemStack result = super.craft(input, registries);
         List<DyeItem> dyes = new ArrayList<>();
         boolean allRed = true;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             DyeColor color = woolColor(input.getStackInSlot(i));
             if (color == null) continue;
             dyes.add(DyeItem.byColor(color));

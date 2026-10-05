@@ -8,8 +8,12 @@
     " R "
   ],
   "key": {
-    "R":"minecraft:redstone_block",
-    "W": "minecraft:nether_star"
+    "R": {
+      "item": "minecraft:redstone_block"
+    },
+    "W": {
+      "item": "minecraft:nether_star"
+    }
   },
   "result": {
     "id": "steveparty:garnet_crystal_ball"

@@ -8,8 +8,12 @@
     "III"
   ],
   "key": {
-    "I":"minecraft:iron_ingot",
-    "W":"minecraft:wind_charge"
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "W": {
+      "item": "minecraft:wind_charge"
+    }
   },
   "result": {
     "id": "steveparty:default_dice"

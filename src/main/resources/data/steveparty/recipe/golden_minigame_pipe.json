@@ -7,10 +7,18 @@
     "G G"
   ],
   "key": {
-    "G": "minecraft:gold_ingot",
-    "E": "minecraft:ender_eye",
-    "S": "steveparty:power_star",
-    "P": "steveparty:iron_minigame_pipe"
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "E": {
+      "item": "minecraft:ender_eye"
+    },
+    "S": {
+      "item": "steveparty:power_star"
+    },
+    "P": {
+      "item": "steveparty:iron_minigame_pipe"
+    }
   },
   "result": {
     "id": "steveparty:golden_minigame_pipe",

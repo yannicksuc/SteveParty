@@ -6,7 +6,9 @@
     "RRR"
   ],
   "key": {
-    "R": "#steveparty:rock_sign_materials"
+    "R": {
+      "tag": "steveparty:rock_sign_materials"
+    }
   },
   "result": {
     "id": "steveparty:rock_sign",

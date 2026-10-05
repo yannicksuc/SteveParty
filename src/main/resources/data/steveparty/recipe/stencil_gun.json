@@ -7,10 +7,18 @@
     " K "
   ],
   "key": {
-    "L": "minecraft:leather",
-    "P": "#minecraft:planks",
-    "S": "steveparty:stencil",
-    "K": "minecraft:stick"
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "P": {
+      "tag": "minecraft:planks"
+    },
+    "S": {
+      "item": "steveparty:stencil"
+    },
+    "K": {
+      "item": "minecraft:stick"
+    }
   },
   "result": {
     "id": "steveparty:stencil_gun",

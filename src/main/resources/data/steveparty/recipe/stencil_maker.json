@@ -5,9 +5,15 @@
     " I "
   ],
   "key": {
-    "i": "minecraft:iron_ingot",
-    "_": "minecraft:smooth_stone_slab",
-    "I": "minecraft:iron_block"
+    "i": {
+      "item": "minecraft:iron_ingot"
+    },
+    "_": {
+      "item": "minecraft:smooth_stone_slab"
+    },
+    "I": {
+      "item": "minecraft:iron_block"
+    }
   },
   "result": {
     "id": "steveparty:stencil_maker",
