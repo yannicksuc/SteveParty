@@ -84,7 +84,7 @@ public class SteveReiPlugin implements REIClientPlugin {
                 List.of(EntryIngredients.of(lucky), EntryIngredients.of(infinite), EntryIngredients.of(ModItems.DEFAULT_DICE)),
                 List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.TRIPLE_DICE), both))),
                 Optional.of(Steveparty.id("multi_dice/triple"))));
-        Steveparty.LOGGER.info("REI: {} dice module displays", DiceModules.all().size() + 2);
+        Steveparty.LOGGER.info("REI: {} die module displays", DiceModules.all().size() + 2);
     }
 
     @Override

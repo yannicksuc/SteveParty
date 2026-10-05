@@ -132,7 +132,7 @@ public record DiceFacesComponent(List<DiceFace> faces) {
         ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
         die.set(TYPE, component);
         die.set(DataComponentTypes.ITEM_NAME,
-                Text.translatableWithFallback("item.steveparty.forged_dice", "Forged Dice"));
+                Text.translatableWithFallback("item.steveparty.forged_dice", "Forged Die"));
         return die;
     }
 

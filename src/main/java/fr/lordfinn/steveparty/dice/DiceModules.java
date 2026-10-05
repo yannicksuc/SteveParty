@@ -106,7 +106,7 @@ public final class DiceModules {
 
     public static <T extends DiceModule> T register(T module) {
         if (REGISTRY.putIfAbsent(module.id(), module) != null)
-            throw new IllegalStateException("Dice module registered twice: " + module.id());
+            throw new IllegalStateException("Die module registered twice: " + module.id());
         return module;
     }
 

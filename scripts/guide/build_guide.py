@@ -480,8 +480,8 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "proche), flotte au-dessus de sa tête et tourne. **Frappe-le** pour l'arrêter.\n\n"
           "Le résultat fait avancer un pion du lanceur à 25 blocs, 1,5 s après. En partie, seul le pion dont "
           "c'est le tour bouge."),
-        T("- **Default Dice**: 1 to 10.\n- **Double Dice**: two linked dice, 2 to 20.\n"
-          "- **Triple Dice**: three, 3 to 30.\n- **Forged Dice**: its own faces, from the Dice Forge.\n\n"
+        T("- **Default Die**: 1 to 10.\n- **Double Dice**: two linked dice, 2 to 20.\n"
+          "- **Triple Dice**: three, 3 to 30.\n- **Forged Die**: its own faces, from the Dice Forge.\n\n"
           "A thrown die vanishes 2 s after its result.",
           "- **Dé par défaut** : 1 à 10.\n- **Dé double** : deux dés liés, 2 à 20.\n"
           "- **Dé triple** : trois, 3 à 30.\n- **Dé forgé** : ses propres faces, sorti de la forge à dés.\n\n"
@@ -492,7 +492,7 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "8 lingots de fer autour d'une charge de vent. Combine des dés pour en faire de plus gros ; ils se défont."),
         C("steveparty:triple_dice", "steveparty:triple_dice2"),
     ]),
-    E("faces", "steveparty:blank_dice_face", ("Dice Faces", "Faces de dé"), ("Material for custom dice", "De quoi graver des dés"), [
+    E("faces", "steveparty:blank_dice_face", ("Die Faces", "Faces de dé"), ("Material for custom dice", "De quoi graver des dés"), [
         T("Faces are only used in the **Dice Forge**. 2 iron ingots + 2 nether quartz give 4 **Blank Dice "
           "Faces**; the **stonecutter** turns a blank face into any number (0 to 10, premium or cursed) and "
           "back.\n\nOn a forged die, a blank face is a 0.",
@@ -515,7 +515,7 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "Blank face + ender pearl, or + a Coin. Debt: blank face + spider eye.",
           "Face vierge + perle de l'Ender, ou + une pièce. Dette : face vierge + œil d'araignée."),
     ], parents=["dice"], gate="roll_the_dice"),
-    E("modules", "steveparty:dice_module_lucky", ("Dice Modules", "Modules de dé"), ("Properties of a whole die", "Les propriétés d'un dé"), [
+    E("modules", "steveparty:dice_module_lucky", ("Die Modules", "Modules de dé"), ("Properties of a whole die", "Les propriétés d'un dé"), [
         T("A module changes the whole die (7 fragments of its colour + ingredient):\n"
           "- **Slow** (light blue, clock): stop it on the shown face;\n"
           "- **Choice** (blue, compass): pick the face;\n"
@@ -919,10 +919,10 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
     ], parents=["fragments"], gate="stardust"),
     E("gravity_core", "steveparty:gravity_core", ("Gravity Core", "Noyau de gravité"), ("A tiny planet", "Une petite planète"), [
         T("Placed, it glows and **pulls** everything within 8 blocks into an orbit, without fall damage; full "
-          "netherite armour resists. Mulas and pawns are never pulled.\n\n"
+          "iron armour (or heavier) resists. Mulas and pawns are never pulled.\n\n"
           "Its real job: waking up the **Dice Forge**.",
           "Posé, il brille et **attire** tout ce qui est à 8 blocs en orbite, sans dégâts de chute ; une armure "
-          "complète en netherite résiste. Mulas et pions ne sont jamais attirés.\n\n"
+          "complète en fer (ou plus lourde) résiste. Mulas et pions ne sont jamais attirés.\n\n"
           "Son vrai rôle : réveiller la **forge à dés**."),
         C("steveparty:gravity_core", None, "Crying obsidian, 4 black star fragments and a heavy core.",
           "Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd."),
@@ -948,13 +948,13 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "consomme ses faces vierges et un fragment par emplacement non noir.\n\n"
           "Les entonnoirs la remplissent (dessus, côtés) et sortent les dés par dessous. Alimentée = production "
           "activée. Un comparateur lit la sortie."),
-        T("A **Forged Dice** rolls one of its own faces, weighted: a face carved 10 times comes up 10 times as "
+        T("A **Forged Die** rolls one of its own faces, weighted: a face carved 10 times comes up 10 times as "
           "often. A single face makes a loaded die.\n\n"
           "Forged dice with the same faces stack and can make a Double or Triple Dice.",
           "Un **dé forgé** tire une de ses faces, selon son poids : une face gravée 10 fois sort 10 fois plus "
           "souvent. Une seule face = un dé truqué.\n\n"
           "Des dés forgés aux mêmes faces s'empilent et peuvent faire un dé double ou triple.",
-          "Forged Dice", "Dé forgé"),
+          "Forged Die", "Dé forgé"),
     ], parents=["dice_forge"], gate="dice_forge"),
     E("rising_core", "steveparty:gravity_core", ("The Rising Core", "Le noyau monte"), ("Orbits and explosions", "Orbites et explosions"), [
         T("The core rises with the fragments inside: 16 blocks × fragments / 320 (a black one counts as 64). With "
