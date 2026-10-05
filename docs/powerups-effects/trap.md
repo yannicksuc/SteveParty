@@ -19,7 +19,8 @@ Tests: `PowerupTrapGameTests`.
 - **Offline players:** while the owner or the victim is not connected, the trap does not go off and waits for the next stop (`Outcome.WAITING`).
 - **Hidden:**
   - Traps live in the party's data, on the server.
-  - `PartyData#writeToPacket` does not send them, and the controller sends no NBT to the clients.
+  - `PartyData#writeToPacket` does not send them.
+  - `PartyControllerEntity#toInitialChunkDataNbt` removes `PowerupTraps` from what the controller syncs to the clients. Its other data is still sent.
   - Only the owner gets a marker: every second, 3 faint red specks over each of their traps. These particles are sent to them alone (`ServerWorld#spawnParticles(viewer, ...)`). No client code is involved.
 - **When it goes off:**
   - a chat message to the players within 100 blocks;
@@ -53,6 +54,7 @@ TrapEffect.Result r = TrapEffect.onTokenStopped(controller, space, token);
 | Where | What |
 |---|---|
 | `BoardSpaceBlockEntity#onDestinationReached` (first line) | `TrapEffect.onTokenStopped(partyController, this, token)`, before the space's own role (shop, replay, teleport...) |
+| `PartyControllerEntity#toInitialChunkDataNbt` | the traps are removed from the controller's client sync (chunk data and update packets) |
 | `PartyData` | `traps` field, `getTraps()`, read and written with the party, cleared by `reset()` |
 | `Steveparty#onInitialize` | `TrapEffect.initialize()`, the owner's marker (a server tick) |
 | `lang/en_us.json`, `lang/fr_fr.json` | `item.steveparty.powerup_trap`, `tooltip.steveparty.powerup.trap`, `message.steveparty.powerup.trap.*` |

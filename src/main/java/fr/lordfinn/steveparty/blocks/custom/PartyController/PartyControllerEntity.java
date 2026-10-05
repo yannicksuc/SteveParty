@@ -288,6 +288,14 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         resumeDone = false;
     }
 
+    /** What the clients get: everything saved but the hidden traps (Trap power-up), which only their owner may know. */
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        NbtCompound nbt = super.toInitialChunkDataNbt(registries);
+        nbt.remove(fr.lordfinn.steveparty.powerups.effects.TrapState.NBT_KEY);
+        return nbt;
+    }
+
     private static ItemStack readCurrency(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper, PartyCurrency currency) {
         NbtElement element = nbt.get(currency.nbtKey());
         ItemStack stack = element == null ? ItemStack.EMPTY : ItemStack.fromNbt(wrapper, element).orElse(ItemStack.EMPTY);
