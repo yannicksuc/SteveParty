@@ -82,6 +82,7 @@ patterns, and polished, bevelled and checkered building blocks.
 
 ![Plastic blocks in 16 colours, pipes, road and easel signs, polished and checkered blocks](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/decoration.png)
 ![Easel signs, wooden panels, rock signs, plastic road signs and stencil paint](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/signs.png)
+![The Stencil Hammer stamps a red mushroom on the floor](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/stencil-hammer.gif)
 ![Plastic, windowed, stained glass, glass and mini-game pipes, and a small pipe network](https://raw.githubusercontent.com/yannicksuc/SteveParty/master/docs/screenshots/pipes.png)
 
 ---
