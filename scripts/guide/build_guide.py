@@ -930,12 +930,12 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
     E("dice_forge", "steveparty:dice_forge", ("Dice Forge", "Forge à dés"), ("Carve your own dice", "Graver ses propres dés"), [
         T("Right-click it with a **Gravity Core** to wake it up. In its screen:\n"
           "- a ring of **12 face** slots: a stack's size is the face's weight;\n"
-          "- **4 star fragment** slots, all different colours (black can repeat and is never used up);\n"
-          "- **blank faces**: one per face slot used;\n- **4 module** slots.",
+          "- **5 star fragment** slots, all different colours (black can repeat and is never used up);\n"
+          "- **blank faces**: one per face slot used;\n- **5 module** slots.",
           "Clic droit avec un **noyau de gravité** pour la réveiller. Dans son interface :\n"
           "- un anneau de **12 faces** : la taille d'une pile est le poids de la face ;\n"
-          "- **4 fragments d'étoile**, de couleurs toutes différentes (le noir peut se répéter et n'est jamais "
-          "consommé) ;\n- **faces vierges** : une par face utilisée ;\n- **4 modules**."),
+          "- **5 fragments d'étoile**, de couleurs toutes différentes (le noir peut se répéter et n'est jamais "
+          "consommé) ;\n- **faces vierges** : une par face utilisée ;\n- **5 modules**."),
         C("steveparty:dice_forge", None, "Power Star, obsidian, a blast furnace and a netherite ingot.",
           "Super étoile, obsidienne, un haut fourneau et un lingot de netherite."),
     ], parents=["gravity_core"], gate="stardust"),
@@ -957,12 +957,12 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
           "Forged Dice", "Dé forgé"),
     ], parents=["dice_forge"], gate="dice_forge"),
     E("rising_core", "steveparty:gravity_core", ("The Rising Core", "Le noyau monte"), ("Orbits and explosions", "Orbites et explosions"), [
-        T("The core rises with the fragments inside: 16 blocks × fragments / 256 (a black one counts as 64). At "
-          "the top, the forge is at **max level** and guarantees an Ephemeride on full moon nights.\n\n"
+        T("The core rises with the fragments inside: 16 blocks × fragments / 320 (a black one counts as 64). With "
+          "all 5 slots full, it is at the top: the forge is at **max level** and guarantees an Ephemeride on full moon nights.\n\n"
           "The raised core pulls things into orbit (up to 32 blocks). Hit it and it **explodes**: no block "
           "broken, but the core is lost. Sneak with an empty hand to take it back safely.",
-          "Le noyau monte avec les fragments présents : 16 blocs × fragments / 256 (un noir compte 64). Au sommet, "
-          "la forge est au **niveau maximal** et garantit une Éphéméride les nuits de pleine lune.\n\n"
+          "Le noyau monte avec les fragments présents : 16 blocs × fragments / 320 (un noir compte 64). Les 5 "
+          "emplacements pleins, il est au sommet : la forge est au **niveau maximal** et garantit une Éphéméride les nuits de pleine lune.\n\n"
           "Levé, il attire tout en orbite (jusqu'à 32 blocs). Frappé, il **explose** : aucun bloc cassé, mais le "
           "noyau est perdu. Accroupi main vide, on le reprend sans risque."),
     ], parents=["dice_forge"], gate="dice_forge"),

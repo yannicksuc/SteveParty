@@ -19,7 +19,7 @@
       "conditions": {
         "max_level": true,
         "black_fragments": {
-          "min": 4
+          "min": 5
         }
       }
     }

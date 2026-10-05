@@ -22,37 +22,36 @@ import static fr.lordfinn.steveparty.screen_handlers.ModScreensHandlers.DICE_FOR
 
 /**
  * Dice forge GUI. Handler slot indices match the forge inventory: 0..11 faces, 12 center (gravity core input,
- * hidden once the forge is activated: the screen draws the core there as the FORGE button), 13..16 star fragments
- * (NW, NE, SE, SW), 17 blank faces (left of the core), 18 output (right of the core), 19..22 dice modules (the four
- * satellites in the corners of the vortex), then the player inventory.
+ * hidden once the forge is activated: the screen draws the core there as the FORGE button), 13..17 star fragments
+ * (clockwise from the top), 18 blank faces and 19 output (in the capsule under the galaxy), 20..24 dice modules (the
+ * gems on the five points of the star, clockwise from the top), then the player inventory.
+ * <p>
+ * The positions below are the resting ones (galaxy at angle 0): the screen turns the face and fragment slots with the
+ * galaxy, client side only.
  * The FORGE button uses the vanilla button click packet (syncId + canUse, i.e. same forge open and in reach).
  */
 public class DiceForgeScreenHandler extends ScreenHandler {
     public static final int BUTTON_TOGGLE = 0;
-    /** Position (GUI coordinates) of the center slot (the core) and of the slots around it. */
-    public static final int CENTER_X = 80, CENTER_Y = 63;
-    /**
-     * Inner ring, 28 px from the core, one slot every 60 degrees: the blank faces on its left, the forged die on its
-     * right, and the 4 star fragments in between (NW, NE, SE, SW, at 330, 30, 150 and 210 degrees).
-     */
-    public static final int[][] FRAGMENT_POSITIONS = {
-            {CENTER_X - 14, CENTER_Y - 24}, {CENTER_X + 14, CENTER_Y - 24},
-            {CENTER_X + 14, CENTER_Y + 24}, {CENTER_X - 14, CENTER_Y + 24}
-    };
-    public static final int BLANK_X = CENTER_X - 28, BLANK_Y = CENTER_Y;
-    public static final int OUTPUT_X = CENTER_X + 28, OUTPUT_Y = CENTER_Y;
-    /** Outer ring, 54 px from the core, one face every 30 degrees (the squares of the texture sit under them). */
+    /** Center of the galaxy (GUI coordinates), and the center slot (the core) on it. */
+    public static final int GALAXY_X = 118, GALAXY_Y = 126;
+    public static final int CENTER_X = GALAXY_X - 8, CENTER_Y = GALAXY_Y - 8;
+    /** Inner ring, 28 px from the core, one fragment every 72 degrees from the top. */
+    public static final int FRAGMENT_RADIUS = 28;
+    public static final int[][] FRAGMENT_POSITIONS = {{110, 90}, {137, 109}, {126, 141}, {94, 141}, {83, 109}};
+    /** Outer ring, 54 px from the core, one face every 30 degrees. */
     public static final int[][] FACE_POSITIONS = {
-            {80, 9},   {53, 16},  {107, 16},
-            {33, 36},  {127, 36}, {26, 63},
-            {134, 63}, {33, 90},  {127, 90},
-            {53, 110}, {107, 110},{80, 117}
+            {110, 64}, {83, 71},   {137, 71},
+            {63, 91},  {157, 91},  {56, 118},
+            {164, 118}, {63, 145}, {157, 145},
+            {83, 165}, {137, 165}, {110, 172}
     };
-    /**
-     * The module slots: four satellites around the vortex, in the corners it leaves free (top left, top right, bottom
-     * left, bottom right), each drawn in the texture as a small moon.
-     */
-    public static final int[][] MODULE_POSITIONS = {{5, 19}, {155, 19}, {5, 107}, {155, 107}};
+    /** The capsule under the galaxy: blank faces on its left, the forged die on its right. */
+    public static final int BLANK_X = 95, BLANK_Y = 202;
+    public static final int OUTPUT_X = 125, OUTPUT_Y = 202;
+    /** The module slots: one gem on each point of the star, 90 px from the core, clockwise from the top. */
+    public static final int[][] MODULE_POSITIONS = {{110, 28}, {196, 90}, {163, 191}, {57, 191}, {24, 90}};
+    /** The player inventory panel: its slots start 8 and 7 px in, the hotbar 4 px under the rows. */
+    public static final int INVENTORY_X = 30, INVENTORY_Y = 230;
     private static final int PLAYER_INVENTORY_START = SIZE;
 
     private final Inventory inventory;
@@ -84,7 +83,7 @@ public class DiceForgeScreenHandler extends ScreenHandler {
             }
         });
 
-        // --- 4 star fragment slots around the core ---
+        // --- 5 star fragment slots around the core ---
         for (int i = 0; i < FRAGMENT_SLOTS; i++) {
             this.addSlot(new ForgeSlot(inventory, FIRST_FRAGMENT_SLOT + i, FRAGMENT_POSITIONS[i][0], FRAGMENT_POSITIONS[i][1]));
         }
@@ -109,8 +108,8 @@ public class DiceForgeScreenHandler extends ScreenHandler {
         }
 
         // --- Player inventory ---
-        // Matches the slot cells painted in the texture (rows at y = 143, 161, 179, hotbar at 201)
-        addPlayerSlots(playerInventory, 8, 143);
+        // Matches the slot cells painted in the texture (rows at y = 237, 255, 273, hotbar at 295)
+        addPlayerSlots(playerInventory, INVENTORY_X + 8, INVENTORY_Y + 7);
         addProperties(properties);
     }
 

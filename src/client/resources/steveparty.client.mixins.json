@@ -8,6 +8,7 @@
     "BossBarHudAccessor",
     "InGameHudAccessor",
     "ChatHudAccessor",
+    "SlotAccessor",
     "CameraPipeViewMixin",
     "ClientPlayerInteractionManagerVillagerPunchMixin",
     "EntityRenderDispatcherPipePoseMixin",
