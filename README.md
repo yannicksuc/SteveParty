@@ -52,13 +52,13 @@ The [wiki](https://github.com/yannicksuc/SteveParty/wiki) (in French) documents 
 
 | | Version |
 |---|---|
-| Minecraft | **1.21.3** (Java 21) |
+| Minecraft | **1.21.1** (Java 21) |
 | [Fabric Loader](https://fabricmc.net/use/) | 0.16.9 or later |
-| [Fabric API](https://modrinth.com/mod/fabric-api) | 0.110.0+1.21.3 |
-| [GeckoLib](https://modrinth.com/mod/geckolib) | 4.7.1 or later (Fabric 1.21.3) |
+| [Fabric API](https://modrinth.com/mod/fabric-api) | 0.116.17+1.21.1 |
+| [GeckoLib](https://modrinth.com/mod/geckolib) | 4.7.3 or later (Fabric 1.21.1) |
 | Recommended: [REI](https://modrinth.com/mod/rei) | to read the recipes in game |
 
-1. Install Fabric Loader for Minecraft 1.21.3.
+1. Install Fabric Loader for Minecraft 1.21.1.
 2. Put Fabric API, GeckoLib and the SteveParty `.jar` in your `mods/` folder.
 3. Launch the Fabric profile. All the items are in the **Steve Party** creative tab.
 
@@ -80,7 +80,7 @@ Requires JDK 21. Everything goes through the Gradle wrapper.
 Demo board, test world and the dev server scripts are described on the
 [Développement](https://github.com/yannicksuc/SteveParty/wiki/Developpement) wiki page.
 
-Stack: Fabric 1.21.3 (Yarn mappings), Architectury, GeckoLib 4.7.1, Java 21. Package `fr.lordfinn.steveparty`.
+Stack: Fabric 1.21.1 (Yarn mappings), Architectury, GeckoLib 4.7.3, Java 21. Package `fr.lordfinn.steveparty`.
 
 ### Releasing
 
