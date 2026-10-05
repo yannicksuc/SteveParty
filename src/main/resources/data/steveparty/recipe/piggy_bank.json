@@ -7,10 +7,18 @@
     "TRT"
   ],
   "key": {
-    "G": "minecraft:gold_nugget",
-    "T": "minecraft:pink_terracotta",
-    "C": "minecraft:chest",
-    "R": "minecraft:redstone"
+    "G": {
+      "item": "minecraft:gold_nugget"
+    },
+    "T": {
+      "item": "minecraft:pink_terracotta"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
   },
   "result": {
     "id": "steveparty:piggy_bank"

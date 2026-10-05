@@ -2,7 +2,18 @@
   "type": "minecraft:crafting_shapeless",
   "fabric:type": "minecraft:crafting_shapeless",
   "ingredients": [
-    "minecraft:writable_book", "minecraft:map", "minecraft:clock", "minecraft:music_disc_otherside"
+    {
+      "item": "minecraft:writable_book"
+    },
+    {
+      "item": "minecraft:map"
+    },
+    {
+      "item": "minecraft:clock"
+    },
+    {
+      "item": "minecraft:music_disc_otherside"
+    }
   ],
   "result": {
     "id": "steveparty:mini_games_catalogue",

@@ -6,8 +6,12 @@
     "#"
   ],
   "key": {
-    "P": "#steveparty:plastic_blocks",
-    "#": "steveparty:plastic_pellets"
+    "P": {
+      "tag": "steveparty:plastic_blocks"
+    },
+    "#": {
+      "item": "steveparty:plastic_pellets"
+    }
   },
   "result": {
     "id": "steveparty:plastic_road_sign",

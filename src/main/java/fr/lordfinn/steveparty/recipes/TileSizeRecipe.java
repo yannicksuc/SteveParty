@@ -26,6 +26,12 @@ public class TileSizeRecipe extends SpecialCraftingRecipe {
         super(category);
     }
 
+    /** A large tile alone is enough. */
+    @Override
+    public boolean fits(int width, int height) {
+        return width * height >= 1;
+    }
+
     @Override
     public boolean matches(CraftingRecipeInput input, World world) {
         return result(input) != null;
@@ -41,7 +47,7 @@ public class TileSizeRecipe extends SpecialCraftingRecipe {
         Item item = null;
         TileSize size = null;
         int count = 0;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (stack.isEmpty()) continue;
             if (!(stack.getItem() instanceof TileBlockItem)) return null;

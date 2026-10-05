@@ -7,8 +7,12 @@
     "S S"
   ],
   "key": {
-    "P": "#minecraft:planks",
-    "S": "minecraft:stick"
+    "P": {
+      "tag": "minecraft:planks"
+    },
+    "S": {
+      "item": "minecraft:stick"
+    }
   },
   "result": {
     "id": "steveparty:easel_sign",

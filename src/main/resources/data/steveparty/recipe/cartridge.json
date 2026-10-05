@@ -7,9 +7,15 @@
     "PP"
   ],
   "key": {
-    "P": "steveparty:plastic_pellets",
-    "L": "minecraft:paper",
-    "R": "minecraft:redstone"
+    "P": {
+      "item": "steveparty:plastic_pellets"
+    },
+    "L": {
+      "item": "minecraft:paper"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
   },
   "result": {
     "id": "steveparty:board_space_behavior"

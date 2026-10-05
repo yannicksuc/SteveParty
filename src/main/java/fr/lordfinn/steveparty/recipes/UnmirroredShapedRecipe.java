@@ -14,7 +14,6 @@ import net.minecraft.recipe.input.CraftingRecipeInput;
 import net.minecraft.world.World;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * A shaped recipe that does not also match its mirror image. Same JSON as {@code minecraft:crafting_shaped}, with
@@ -45,12 +44,12 @@ public class UnmirroredShapedRecipe extends ShapedRecipe {
         RawShapedRecipe raw = ((ShapedRecipeAccessor) this).getRaw();
         int width = raw.getWidth(), height = raw.getHeight();
         if (input.getWidth() != width || input.getHeight() != height) return false;
-        List<Optional<Ingredient>> ingredients = raw.getIngredients();
+        List<Ingredient> ingredients = raw.getIngredients();
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                Optional<Ingredient> ingredient = ingredients.get(x + y * width);
+                Ingredient ingredient = ingredients.get(x + y * width);
                 ItemStack stack = input.getStackInSlot(x, y);
-                if (ingredient.isPresent() ? !ingredient.get().test(stack) : !stack.isEmpty()) return false;
+                if (!ingredient.isEmpty() ? !ingredient.test(stack) : !stack.isEmpty()) return false;
             }
         }
         return true;
