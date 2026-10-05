@@ -7,10 +7,18 @@
     "GAG"
   ],
   "key": {
-    "G": "minecraft:gold_ingot",
-    "C": "minecraft:chest",
-    "A": "minecraft:amethyst_shard",
-    "P": "steveparty:polished_default_terracotta"
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "P": {
+      "item": "steveparty:polished_default_terracotta"
+    }
   },
   "result": {
     "id": "steveparty:looting_box"

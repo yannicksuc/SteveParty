@@ -8,7 +8,9 @@
     "P P"
   ],
   "key": {
-    "P": "steveparty:orange_plastic_block"
+    "P": {
+      "item": "steveparty:orange_plastic_block"
+    }
   },
   "result": {
     "id": "steveparty:orange_pipe",

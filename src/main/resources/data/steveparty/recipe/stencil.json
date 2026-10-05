@@ -7,8 +7,12 @@
     " N "
   ],
   "key": {
-    "N": "minecraft:iron_nugget",
-    "P": "minecraft:paper"
+    "N": {
+      "item": "minecraft:iron_nugget"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    }
   },
   "result": {
     "id": "steveparty:stencil",

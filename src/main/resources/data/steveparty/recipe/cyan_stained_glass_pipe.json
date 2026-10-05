@@ -8,7 +8,9 @@
     "G G"
   ],
   "key": {
-    "G": "minecraft:cyan_stained_glass"
+    "G": {
+      "item": "minecraft:cyan_stained_glass"
+    }
   },
   "result": {
     "id": "steveparty:cyan_stained_glass_pipe",

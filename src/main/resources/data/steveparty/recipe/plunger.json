@@ -8,9 +8,15 @@
     "C  "
   ],
   "key": {
-    "C":"minecraft:stick",
-    "U": "minecraft:slime_ball",
-    "L": "minecraft:bowl"
+    "C": {
+      "item": "minecraft:stick"
+    },
+    "U": {
+      "item": "minecraft:slime_ball"
+    },
+    "L": {
+      "item": "minecraft:bowl"
+    }
   },
   "result": {
     "id": "steveparty:plunger"

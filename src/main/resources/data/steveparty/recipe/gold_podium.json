@@ -2,8 +2,12 @@
   "type": "minecraft:crafting_shapeless",
   "category": "redstone",
   "ingredients": [
-    "steveparty:podium",
-    "minecraft:gold_ingot"
+    {
+      "item": "steveparty:podium"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    }
   ],
   "result": {
     "id": "steveparty:gold_podium"

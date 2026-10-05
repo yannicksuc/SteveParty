@@ -1,6 +1,8 @@
 {
   "type": "minecraft:stonecutting",
-  "ingredient": "steveparty:tile",
+  "ingredient": {
+    "item": "steveparty:tile"
+  },
   "result": {
     "id": "steveparty:tile",
     "count": 2,

@@ -8,8 +8,12 @@
     "P P"
   ],
   "key": {
-    "P": "steveparty:white_plastic_block",
-    "G": "minecraft:glass"
+    "P": {
+      "item": "steveparty:white_plastic_block"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    }
   },
   "result": {
     "id": "steveparty:white_windowed_pipe",

@@ -7,13 +7,27 @@
     "IRI"
   ],
   "key": {
-    "I":"minecraft:iron_ingot",
-    "R":"minecraft:redstone",
-    "G":"minecraft:glass_bottle",
-    "B":"minecraft:blue_dye",
-    "D":"minecraft:red_dye",
-    "L":"minecraft:sand",
-    "S": "gold_ingot"
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "G": {
+      "item": "minecraft:glass_bottle"
+    },
+    "B": {
+      "item": "minecraft:blue_dye"
+    },
+    "D": {
+      "item": "minecraft:red_dye"
+    },
+    "L": {
+      "item": "minecraft:sand"
+    },
+    "S": {
+      "item": "gold_ingot"
+    }
   },
   "result": {
     "id": "steveparty:step_controller"

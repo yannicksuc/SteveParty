@@ -37,6 +37,12 @@ public class MultiDiceRecipe extends SpecialCraftingRecipe {
         super(category);
     }
 
+    /** At least two dice. */
+    @Override
+    public boolean fits(int width, int height) {
+        return width * height >= 2;
+    }
+
     @Override
     public boolean matches(CraftingRecipeInput input, World world) {
         return result(input) != null;
@@ -51,7 +57,7 @@ public class MultiDiceRecipe extends SpecialCraftingRecipe {
     public static @Nullable ItemStack result(CraftingRecipeInput input) {
         List<ItemStack> dice = new ArrayList<>();
         int singles = 0, doubles = 0;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (stack.isEmpty()) continue;
             if (stack.isOf(ModItems.DEFAULT_DICE)) singles++;

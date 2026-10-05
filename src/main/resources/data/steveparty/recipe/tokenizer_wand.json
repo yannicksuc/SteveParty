@@ -8,9 +8,15 @@
     "R  "
   ],
   "key": {
-    "R":"minecraft:blaze_rod",
-    "B":"steveparty:garnet_crystal_ball",
-    "G": "minecraft:gold_block"
+    "R": {
+      "item": "minecraft:blaze_rod"
+    },
+    "B": {
+      "item": "steveparty:garnet_crystal_ball"
+    },
+    "G": {
+      "item": "minecraft:gold_block"
+    }
   },
   "result": {
     "id": "steveparty:tokenizer_wand"

@@ -24,6 +24,12 @@ public class StencilCopyRecipe extends SpecialCraftingRecipe {
         return StencilShape.isBlank(StencilItem.getShape(stack));
     }
 
+    /** A model stencil and at least one blank one. */
+    @Override
+    public boolean fits(int width, int height) {
+        return width * height >= 2;
+    }
+
     @Override
     public boolean matches(CraftingRecipeInput input, World world) {
         return model(input) != null;
@@ -33,7 +39,7 @@ public class StencilCopyRecipe extends SpecialCraftingRecipe {
     private static ItemStack model(CraftingRecipeInput input) {
         ItemStack model = null;
         int blanks = 0;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (stack.isEmpty()) continue;
             if (!isStencil(stack)) return null;
@@ -53,7 +59,7 @@ public class StencilCopyRecipe extends SpecialCraftingRecipe {
         ItemStack model = model(input);
         if (model == null) return ItemStack.EMPTY;
         int blanks = 0;
-        for (int i = 0; i < input.size(); i++) {
+        for (int i = 0; i < input.getSize(); i++) {
             ItemStack stack = input.getStackInSlot(i);
             if (!stack.isEmpty() && isBlank(stack)) blanks++;
         }
