@@ -190,7 +190,8 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
             for (ZoneBubble bubble : ZoneBubbles.all()) if (bubble.zone().bounds().intersects(area)) bubble.endNow();
             world.setChunkForced(chunk.x, chunk.z, false);
         });
-        when(context, () -> world.isChunkLoaded(chunk.toLong()), 100, "the far chunk's entities were never read", () -> {
+        // a server catching up runs its ticks back to back: the entities are read in wall-clock time, not ticks
+        when(context, () -> world.isChunkLoaded(chunk.toLong()), 600, "the far chunk's entities were never read", () -> {
             for (Entity entity : world.getOtherEntities(null, area, entity -> !(entity instanceof PlayerEntity))) entity.discard();
             for (BlockPos pos : BlockPos.iterate(far.add(-2, -1, -2), far.add(11, -1, 5))) world.setBlockState(pos, Blocks.STONE.getDefaultState());
             for (BlockPos pos : BlockPos.iterate(far.add(-2, 0, -2), far.add(11, 5, 5))) world.setBlockState(pos, Blocks.AIR.getDefaultState());
