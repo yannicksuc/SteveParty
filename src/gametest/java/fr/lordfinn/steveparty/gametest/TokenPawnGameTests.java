@@ -186,7 +186,7 @@ public class TokenPawnGameTests implements FabricGameTest {
         context.assertTrue(nbt.getBoolean("Silent"), "saved silent");
         context.assertFalse(nbt.getCompound("PreTokenState").getBoolean("Silent"), "saved its own voice setting");
 
-        CowEntity reloaded = EntityType.COW.create(context.getWorld(), SpawnReason.LOAD);
+        CowEntity reloaded = EntityType.COW.create(context.getWorld());
         context.assertTrue(reloaded != null, "cow created");
         reloaded.readNbt(nbt);
         context.assertTrue(token(reloaded).steveparty$isTokenized() && reloaded.isSilent() && reloaded.isAiDisabled(),
@@ -199,7 +199,7 @@ public class TokenPawnGameTests implements FabricGameTest {
         // A token saved before tokens were silenced (no Silent in its pre-token state, not silent itself)
         nbt.putBoolean("Silent", false);
         nbt.getCompound("PreTokenState").remove("Silent");
-        CowEntity legacy = EntityType.COW.create(context.getWorld(), SpawnReason.LOAD);
+        CowEntity legacy = EntityType.COW.create(context.getWorld());
         context.assertTrue(legacy != null, "cow created");
         legacy.readNbt(nbt);
         context.assertTrue(legacy.isSilent(), "an old token is silenced when loaded");

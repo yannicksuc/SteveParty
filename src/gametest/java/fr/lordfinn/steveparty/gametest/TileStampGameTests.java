@@ -22,6 +22,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -48,7 +49,7 @@ public class TileStampGameTests implements FabricGameTest {
         return StencilPatterns.byId(id).shape();
     }
 
-    private static ActionResult use(TestContext context, PlayerEntity player, BlockPos pos) {
+    private static ItemActionResult use(TestContext context, PlayerEntity player, BlockPos pos) {
         BlockPos abs = context.getAbsolutePos(pos);
         BlockHitResult hit = new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false);
         return context.getBlockState(pos).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit);
@@ -65,7 +66,7 @@ public class TileStampGameTests implements FabricGameTest {
     public void stencilAndDyeStampTheEmptyTile(TestContext context) {
         BoardSpaceBlockEntity tile = tile(context);
         PlayerEntity player = stencilAndDye(context, "coin", Items.RED_DYE, 3);
-        context.assertEquals(use(context, player, TILE), ActionResult.SUCCESS, "stamped");
+        context.assertEquals(use(context, player, TILE), ItemActionResult.SUCCESS, "stamped");
         TileStampComponent stamp = tile.getStamp();
         context.assertTrue(stamp != null && stamp.sameAs(pattern("coin"), DyeColor.RED), "a red coin on the tile: " + stamp);
         context.assertEquals(player.getOffHandStack().getCount(), 2, "one dye used");
@@ -110,7 +111,7 @@ public class TileStampGameTests implements FabricGameTest {
         use(context, stencilAndDye(context, "coin", Items.RED_DYE, 1), TILE);
         PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
         player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.WET_SPONGE));
-        context.assertEquals(use(context, player, TILE), ActionResult.SUCCESS, "washed");
+        context.assertEquals(use(context, player, TILE), ItemActionResult.SUCCESS, "washed");
         context.assertTrue(tile.getStamp() == null, "no look any more");
         context.complete();
     }
@@ -126,7 +127,7 @@ public class TileStampGameTests implements FabricGameTest {
         contents.set(StencilGunItem.STENCIL_SLOTS, new ItemStack(Items.LIME_DYE, 2));
         StencilGunItem.setContents(gun, contents);
         player.setStackInHand(Hand.MAIN_HAND, gun);
-        context.assertEquals(use(context, player, TILE), ActionResult.CONSUME, "the strike plays its own swing");
+        context.assertEquals(use(context, player, TILE), ItemActionResult.CONSUME, "the strike plays its own swing");
         context.assertTrue(tile.getStamp() != null && tile.getStamp().sameAs(pattern("coin"), DyeColor.LIME), "a lime coin stamped");
         context.assertEquals(StencilGunItem.contents(player.getMainHandStack()).get(StencilGunItem.STENCIL_SLOTS).getCount(), 1, "one lime dye used");
         context.assertTrue(StencilHammerStrike.isCoolingDown(player, Hand.MAIN_HAND), "the hammer swung");

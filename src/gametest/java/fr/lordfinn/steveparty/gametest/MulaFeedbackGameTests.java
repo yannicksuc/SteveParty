@@ -115,7 +115,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         }
         NbtCompound nbt = new NbtCompound();
         mula.writeNbt(nbt);
-        MulaEntity reloaded = ModEntities.MULA_ENTITY.create(context.getWorld(), SpawnReason.LOAD);
+        MulaEntity reloaded = ModEntities.MULA_ENTITY.create(context.getWorld());
         context.assertTrue(reloaded != null, "entity created");
         nbt.putBoolean("NoGravity", false); // like /summon with any NBT
         reloaded.readNbt(nbt);
@@ -129,7 +129,7 @@ public class MulaFeedbackGameTests implements FabricGameTest {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         context.assertTrue(!mula.isFresh(), "an entity that was not initialized (loaded) is not fresh");
         mula.initialize(context.getWorld(), context.getWorld().getLocalDifficulty(mula.getBlockPos()),
-                SpawnReason.SPAWN_ITEM_USE, null);
+                SpawnReason.SPAWN_EGG, null);
         context.assertTrue(mula.isFresh(), "just hatched from its egg");
         context.waitAndRun(45, () -> {
             context.assertTrue(!mula.isFresh(), "no longer fresh");

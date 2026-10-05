@@ -34,7 +34,7 @@ import java.util.UUID;
 public class MulaSiteCapGameTests implements FabricGameTest {
 
     private static MulaEntity mula(ServerWorld world, BlockPos at) {
-        MulaEntity mula = ModEntities.MULA_ENTITY.create(world, SpawnReason.EVENT);
+        MulaEntity mula = ModEntities.MULA_ENTITY.create(world);
         mula.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
         mula.setVariant(MulaEntity.MulaVariant.BLUE);
         return mula;
@@ -55,7 +55,7 @@ public class MulaSiteCapGameTests implements FabricGameTest {
     private static MulaEntity reloaded(ServerWorld world, MulaEntity mula) {
         NbtCompound nbt = new NbtCompound();
         if (!mula.saveSelfNbt(nbt)) throw new AssertionError("a Mula is saved");
-        Entity entity = EntityType.getEntityFromNbt(nbt, world, SpawnReason.LOAD).orElseThrow();
+        Entity entity = EntityType.getEntityFromNbt(nbt, world).orElseThrow();
         return (MulaEntity) entity;
     }
 

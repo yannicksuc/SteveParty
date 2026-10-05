@@ -35,7 +35,7 @@ import net.minecraft.loot.LootTable;
 import net.minecraft.loot.LootTables;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
-import net.minecraft.loot.context.LootWorldContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
@@ -48,6 +48,7 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -821,8 +822,8 @@ public class StencilGameTests implements FabricGameTest {
         PlayerEntity player = survivalPlayer(context);
         ItemStack gun = loadedGun();
         player.setStackInHand(Hand.MAIN_HAND, gun);
-        ActionResult first = context.getBlockState(SIGN).onUseWithItem(gun, context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
-        context.assertEquals(first, ActionResult.CONSUME, "the strike plays its own swing");
+        ItemActionResult first = context.getBlockState(SIGN).onUseWithItem(gun, context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertEquals(first, ItemActionResult.CONSUME, "the strike plays its own swing");
         // Straight away, with the blue dye: the hammer is still swinging
         StencilGunItem.scroll(player.getMainHandStack(), true, 1);
         context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
@@ -830,7 +831,7 @@ public class StencilGameTests implements FabricGameTest {
         context.assertTrue(sign.getColor() == DyeColor.RED, "no second strike while the first one swings");
         context.assertEquals(StencilGunItem.contents(player.getMainHandStack()).get(StencilGunItem.STENCIL_SLOTS + 3).getCount(), 1, "no blue dye used");
         // Once it has cooled down, it strikes again
-        player.getItemCooldownManager().remove(player.getItemCooldownManager().getGroup(player.getMainHandStack()));
+        player.getItemCooldownManager().remove((player.getMainHandStack().getItem()));
         context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
         context.assertTrue(sign.getColor() == DyeColor.BLUE, "blue once the swing is over");
         context.complete();
@@ -1072,7 +1073,7 @@ public class StencilGameTests implements FabricGameTest {
     public void stencilsAreFoundInStructureChests(TestContext context) {
         ServerWorld world = context.getWorld();
         LootTable table = world.getServer().getReloadableRegistries().getLootTable(LootTables.VILLAGE_CARTOGRAPHER_CHEST);
-        LootWorldContext loot = new LootWorldContext.Builder(world)
+        LootContextParameterSet loot = new LootContextParameterSet.Builder(world)
                 .add(LootContextParameters.ORIGIN, Vec3d.ofCenter(context.getAbsolutePos(BlockPos.ORIGIN)))
                 .build(LootContextTypes.CHEST);
         int found = 0;

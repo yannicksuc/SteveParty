@@ -99,11 +99,11 @@ public class VillagerBlockGameTests implements FabricGameTest {
         BlockState state = context.getWorld().getBlockState(context.getAbsolutePos(POS));
         try {
             context.assertTrue(state.onUseWithItem(ItemStack.EMPTY, context.getWorld(), player, Hand.MAIN_HAND, hit(context))
-                    == ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION, "empty hand: the block's own use (a poke)");
+                    == net.minecraft.util.ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION, "empty hand: the block's own use (a poke)");
             context.assertTrue(state.onUseWithItem(new ItemStack(Items.STONE), context.getWorld(), player, Hand.MAIN_HAND, hit(context))
-                    == ActionResult.PASS, "a block in hand is placed");
+                    == net.minecraft.util.ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION, "a block in hand is placed");
             context.assertTrue(state.onUseWithItem(new ItemStack(Items.WATER_BUCKET), context.getWorld(), player, Hand.MAIN_HAND, hit(context))
-                    == ActionResult.PASS, "an unwanted item keeps its use");
+                    == net.minecraft.util.ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION, "an unwanted item keeps its use");
             context.assertEquals(villager.getReaction(), VillagerReaction.REFUSE, "but it shakes its head");
             context.assertTrue(state.onUseWithItem(new ItemStack(Items.EMERALD), context.getWorld(), player, Hand.MAIN_HAND, hit(context))
                     .isAccepted(), "the emerald is taken (admired, not consumed)");

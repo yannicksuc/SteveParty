@@ -220,6 +220,6 @@ final class DiceTestKit {
     /** {@code player} hits the die (not sneaking). */
     static void hit(TestContext context, DiceEntity dice, ServerPlayerEntity player) {
         ServerWorld world = context.getWorld();
-        dice.damage(world, world.getDamageSources().playerAttack(player), 1F);
+        dice.damage(world.getDamageSources().playerAttack(player), 1F);
     }
 }

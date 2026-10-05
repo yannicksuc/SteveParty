@@ -133,7 +133,7 @@ public class MulaRebirthGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void oldCopyOfAPendingMulaIsRemoved(TestContext context) {
         ServerWorld world = context.getWorld();
-        MulaEntity mula = ModEntities.MULA_ENTITY.create(world, net.minecraft.entity.SpawnReason.TRIGGERED);
+        MulaEntity mula = ModEntities.MULA_ENTITY.create(world);
         UUID id = mula.getUuid();
         NbtCompound saved = new NbtCompound();
         mula.saveSelfNbt(saved);
