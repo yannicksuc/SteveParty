@@ -2,10 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": "minecraft:blast_furnace",
-    "N": "minecraft:netherite_ingot",
-    "O": "minecraft:obsidian",
-    "P": "steveparty:power_star"
+    "B": {
+      "item": "minecraft:blast_furnace"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "O": {
+      "item": "minecraft:obsidian"
+    },
+    "P": {
+      "item": "steveparty:power_star"
+    }
   },
   "pattern": [
     " P ",

@@ -3,8 +3,12 @@
   "category": "misc",
   "group": "cyan_star_fragment",
   "ingredients": [
-    "steveparty:blue_star_fragment",
-    "steveparty:green_star_fragment"
+    {
+      "item": "steveparty:blue_star_fragment"
+    },
+    {
+      "item": "steveparty:green_star_fragment"
+    }
   ],
   "result": {
     "count": 2,

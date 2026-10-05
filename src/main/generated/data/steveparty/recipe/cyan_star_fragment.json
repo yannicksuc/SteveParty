@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    "steveparty:cyan_star_fragments_block"
+    {
+      "item": "steveparty:cyan_star_fragments_block"
+    }
   ],
   "result": {
     "count": 9,

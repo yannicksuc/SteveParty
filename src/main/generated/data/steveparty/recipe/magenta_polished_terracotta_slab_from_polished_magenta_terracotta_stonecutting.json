@@ -1,6 +1,8 @@
 {
   "type": "minecraft:stonecutting",
-  "ingredient": "steveparty:polished_magenta_terracotta",
+  "ingredient": {
+    "item": "steveparty:polished_magenta_terracotta"
+  },
   "result": {
     "count": 2,
     "id": "steveparty:magenta_polished_terracotta_slab"

@@ -3,8 +3,12 @@
   "category": "building",
   "group": "polished_concrete_tiles_purple",
   "key": {
-    "A": "steveparty:polished_purple_concrete",
-    "B": "steveparty:polished_gray_concrete"
+    "A": {
+      "item": "steveparty:polished_purple_concrete"
+    },
+    "B": {
+      "item": "steveparty:polished_gray_concrete"
+    }
   },
   "pattern": [
     "AB",

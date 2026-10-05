@@ -3,12 +3,24 @@
   "category": "building",
   "group": "plastic_block",
   "ingredients": [
-    "steveparty:plastic_pellets",
-    "steveparty:plastic_pellets",
-    "steveparty:plastic_pellets",
-    "steveparty:plastic_pellets",
-    "minecraft:lime_dye",
-    "minecraft:amethyst_shard"
+    {
+      "item": "steveparty:plastic_pellets"
+    },
+    {
+      "item": "steveparty:plastic_pellets"
+    },
+    {
+      "item": "steveparty:plastic_pellets"
+    },
+    {
+      "item": "steveparty:plastic_pellets"
+    },
+    {
+      "item": "minecraft:lime_dye"
+    },
+    {
+      "item": "minecraft:amethyst_shard"
+    }
   ],
   "result": {
     "count": 4,

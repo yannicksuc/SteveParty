@@ -2,10 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": "minecraft:stone_button",
-    "C": "minecraft:chest",
-    "G": "minecraft:gold_ingot",
-    "I": "minecraft:iron_ingot"
+    "B": {
+      "item": "minecraft:stone_button"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
   },
   "pattern": [
     "BBB",

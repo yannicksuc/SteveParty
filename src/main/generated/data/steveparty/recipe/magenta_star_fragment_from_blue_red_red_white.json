@@ -3,10 +3,18 @@
   "category": "misc",
   "group": "magenta_star_fragment",
   "ingredients": [
-    "steveparty:blue_star_fragment",
-    "steveparty:red_star_fragment",
-    "steveparty:red_star_fragment",
-    "steveparty:white_star_fragment"
+    {
+      "item": "steveparty:blue_star_fragment"
+    },
+    {
+      "item": "steveparty:red_star_fragment"
+    },
+    {
+      "item": "steveparty:red_star_fragment"
+    },
+    {
+      "item": "steveparty:white_star_fragment"
+    }
   ],
   "result": {
     "count": 4,

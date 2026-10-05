@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "S": "minecraft:lime_concrete"
+    "S": {
+      "item": "minecraft:lime_concrete"
+    }
   },
   "pattern": [
     "SS",

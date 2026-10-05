@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": "minecraft:copper_ingot",
-    "S": "minecraft:spyglass",
-    "T": "minecraft:stick"
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "S": {
+      "item": "minecraft:spyglass"
+    },
+    "T": {
+      "item": "minecraft:stick"
+    }
   },
   "pattern": [
     " S ",

@@ -2,7 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "S": "steveparty:polished_brown_concrete"
+    "S": {
+      "item": "steveparty:polished_brown_concrete"
+    }
   },
   "pattern": [
     "SS",
