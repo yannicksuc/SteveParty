@@ -41,6 +41,9 @@ public class DefaultDiceItem extends Item {
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
+        // A power-up of the turn still at work (a player being picked, a warp): the roll waits
+        if (isServerWorld(world) && fr.lordfinn.steveparty.powerups.PowerUpService.refusesRoll(player))
+            return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             Vec3d spawnPosition = calculateSpawnPosition(player);
             DiceEntity diceEntity = spawnDiceEntity(world, spawnPosition);
@@ -95,6 +98,10 @@ public class DefaultDiceItem extends Item {
     /** The faces of a forged die, then one line per module. */
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        // Spent when rolled (no Infinity): it counts as a power-up for the party's limit
+        if (fr.lordfinn.steveparty.powerups.PowerUpLimit.counts(stack))
+            tooltip.add(Text.literal("[").append(Text.translatable("tooltip.steveparty.powerup.tag.power_up")).append("]")
+                    .formatted(net.minecraft.util.Formatting.LIGHT_PURPLE));
         DiceFacesComponent faces = stack.get(DiceFacesComponent.TYPE);
         if (faces != null && !faces.faces().isEmpty()) tooltip.add(faces.describe());
         tooltip.addAll(DiceModules.tooltip(stack));

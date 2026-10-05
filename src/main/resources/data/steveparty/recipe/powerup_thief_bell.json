@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "steveparty:coin" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:string" }
+  ],
+  "result": {
+    "id": "steveparty:powerup_thief_bell",
+    "count": 1
+  }
+}

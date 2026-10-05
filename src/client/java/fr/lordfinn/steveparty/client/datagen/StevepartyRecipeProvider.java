@@ -342,6 +342,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.REPLAY_CARTRIDGE, Items.REPEATER);
         // An ender pearl: the warp of the Teleport tile
         offerCartridge(ModItems.TELEPORT_CARTRIDGE, Items.ENDER_PEARL);
+        // A Power Star: the star the space sells
+        offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.POWER_STAR);
 
         // The Tile: a plastic board (pellets) under a cloth face (carpets), on the pressure plate that feels
         // the tokens landing on it; two at a time

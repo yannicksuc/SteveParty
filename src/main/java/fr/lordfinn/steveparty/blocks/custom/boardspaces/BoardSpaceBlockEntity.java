@@ -248,6 +248,7 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             updateBoardSpaceColor();
             return false;
         }
+        BoardSpaceType previousType = appliedType;
         appliedCartridge = stack;
         appliedType = type;
 
@@ -260,6 +261,9 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
         updateBoardSpaceColor();
         syncToClients();
         getTokensOnMe().forEach(token -> EVENT.invoker().onTileUpdated(token, this));
+        // A star space switched on or off: the party stars follow
+        if (previousType != type && (previousType == BoardSpaceType.TILE_STAR || type == BoardSpaceType.TILE_STAR))
+            fr.lordfinn.steveparty.service.PartyStars.onRoleChanged(serverWorld, pos, previousType, type);
         return true;
     }
 
@@ -516,6 +520,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
     }
 
     public void onDestinationReached(MobEntity token, PartyControllerEntity partyController) {
+        // A hidden trap (Trap power-up) springs on the tokens that stop here, before the space's own role
+        fr.lordfinn.steveparty.powerups.effects.TrapEffect.onTokenStopped(partyController, this, token);
         // A board space without cartridge acts as a default one: the game must go on
         ABoardSpaceBehavior behavior = this.getBoardSpaceBehavior();
         // Pushed here after a teleport: an ordinary space if the Teleport Cartridge says so, or if it is a teleport tile

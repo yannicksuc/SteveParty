@@ -371,6 +371,7 @@ public class StevepartyClient implements ClientModInitializer {
 
     private static void initParticleRenderers() {
         FloatingTextRenderer.registerRenderCallback();
+        fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer.initialize();
     }
 
     /** Client caches are per server connection: drop them on disconnect. */
@@ -378,6 +379,7 @@ public class StevepartyClient implements ClientModInitializer {
         PartyHud.clear();
         fr.lordfinn.steveparty.client.minigame.MiniGamePageClient.clear();
         FloatingTextRenderer.clear();
+        fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer.clear();
         GoalPoleFlipTracker.clear();
         SquishAnimations.clear();
         fr.lordfinn.steveparty.client.renderer.DestinationsRenderer.clear();

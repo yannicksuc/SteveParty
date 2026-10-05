@@ -6,7 +6,7 @@
     "item": "steveparty:advance_back_cartridge"
   },
   "x": 2,
-  "y": 0,
+  "y": -1,
   "sort_number": 4,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,

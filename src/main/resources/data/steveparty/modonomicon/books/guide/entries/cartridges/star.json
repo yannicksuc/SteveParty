@@ -1,0 +1,48 @@
+{
+  "category": "cartridges",
+  "name": "book.steveparty.guide.cartridges.star.name",
+  "description": "book.steveparty.guide.cartridges.star.description",
+  "icon": {
+    "item": "steveparty:star_cartridge"
+  },
+  "x": 2,
+  "y": 5,
+  "sort_number": 7,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "parents": [
+    {
+      "entry": "cartridges/cartridge",
+      "draw_arrow": true,
+      "line_enabled": true
+    }
+  ],
+  "condition": {
+    "type": "modonomicon:advancement",
+    "advancement_id": "steveparty:guide/lay_the_board",
+    "tooltip": "book.steveparty.guide.lock.lay_the_board"
+  },
+  "background_u_index": 1,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.star.page0.text",
+      "title": "book.steveparty.guide.cartridges.star.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.star.page1.text",
+      "title": "book.steveparty.guide.cartridges.star.page1.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.cartridges.star.page2.text",
+      "title": "book.steveparty.guide.cartridges.star.page2.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:star_cartridge",
+      "text": "book.steveparty.guide.cartridges.star.page3.text"
+    }
+  ]
+}

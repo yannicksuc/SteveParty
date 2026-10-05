@@ -73,7 +73,7 @@ public final class BoardView {
     static final int TELEPORT_SPARKLE = 0xFFB8F6FF;
     /** Chevrons: size, gap and speed (blocks, blocks per second). */
     private static final double DOT = 0.56, SPACING = 0.72, SPEED = 1.4;
-    /** The Shop Cartridge's yellow. */
+    /** The Shop Cartridge's lime green. */
     private static final int SHOP = 0xFF000000 | ShopCartridgeItem.COLOR;
     /** Where the merchants of the shop spaces are is looked up again every this many ticks. */
     private static final int SHOP_REFRESH_TICKS = 10;

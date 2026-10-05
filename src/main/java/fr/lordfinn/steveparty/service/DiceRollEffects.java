@@ -228,8 +228,9 @@ public final class DiceRollEffects {
         int applied = 0;
         if (player != null) {
             if (coins > 0) {
-                InventoryUtils.giveOrDrop(player, coin, coins);
-                applied = coins;
+                // Doubled by the Double Coins power-up of the roller's turn
+                applied = fr.lordfinn.steveparty.powerups.PowerUpService.coinsGained(roller, coins);
+                InventoryUtils.giveOrDrop(player, coin, applied);
             } else if (coins < 0) {
                 applied = -InventoryUtils.take(player.getInventory(), coin, -coins);
             }

@@ -50,6 +50,7 @@ import java.util.UUID;
  * @param catalogueLocked the controller is powered: the catalogue can't be taken out
  * @param gains           what the party pays at the end of each mini-game, by place (the Gains page)
  * @param practiceRound   the mini-games whose page has a Mini-game Controller start with a practice round
+ * @param maxPowerUps     the power-ups a player may carry during the party, 0 for no limit
  * @param steps           running / ended party: its steps around the current one, as a timeline; empty otherwise
  * @param program         what the program (its cards, or the default party) will play, as a timeline
  * @param bank            the chest the gains are taken from (see {@link PartyBank}): what it holds, whether it can pay a
@@ -59,7 +60,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
                                  Text action, Text actionDetail, int currentPlayer,
                                  List<PartyLiveData.Standing> players, Board board, boolean hasCatalogue,
                                  List<Page> pages, int currentPage, boolean canEdit, boolean following,
-                                 boolean catalogueLocked, MiniGameGains gains, boolean practiceRound,
+                                 boolean catalogueLocked, MiniGameGains gains, boolean practiceRound, int maxPowerUps,
                                  Timeline steps, Timeline program, PartyBank.Status bank) {
 
     public enum Phase { SETUP, RUNNING, ENDED }
@@ -328,7 +329,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
         return new PartyDashboardData(phase, round, rounds, data.getNbTurn(), stepIndex, steps.size(), action, detail,
                 currentPlayer, players, board, !controller.catalogue.isEmpty(), pages, currentPage,
                 controller.canEdit(player), controller.getInterestedPlayers().contains(player.getUuid()),
-                controller.isCatalogueLocked(), controller.getGains(), controller.hasPracticeRound(),
+                controller.isCatalogueLocked(), controller.getGains(), controller.hasPracticeRound(), controller.getMaxPowerUps(),
                 phase == Phase.SETUP ? Timeline.EMPTY : timelineOf(steps, stepIndex, tokens),
                 programTimeline(controller.getProgram().getHeldStacks(), data.getNbTurn()),
                 world.getServer() == null ? PartyBank.Status.NONE : PartyBank.status(controller, world.getServer(), players.isEmpty() ? 4 : players.size()));
@@ -426,7 +427,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             boolean canEdit = buf.readBoolean(), following = buf.readBoolean(), locked = buf.readBoolean();
             return new PartyDashboardData(phase, round, rounds, roundsSetting, stepIndex, stepCount, action, detail,
                     currentPlayer, players, board, hasCatalogue, pages, currentPage, canEdit, following, locked, MiniGameGains.read(buf),
-                    buf.readBoolean(), readTimeline(buf), readTimeline(buf),
+                    buf.readBoolean(), buf.readVarInt(), readTimeline(buf), readTimeline(buf),
                     new PartyBank.Status(PartyBank.State.values()[Math.clamp(buf.readVarInt(), 0, PartyBank.State.values().length - 1)],
                             buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         }
@@ -452,6 +453,7 @@ public record PartyDashboardData(Phase phase, int round, int rounds, int roundsS
             buf.writeBoolean(data.catalogueLocked);
             data.gains.write(buf);
             buf.writeBoolean(data.practiceRound);
+            buf.writeVarInt(data.maxPowerUps);
             writeTimeline(buf, data.steps);
             writeTimeline(buf, data.program);
             buf.writeVarInt(data.bank.state().ordinal());

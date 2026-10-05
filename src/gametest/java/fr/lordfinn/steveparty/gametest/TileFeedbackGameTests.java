@@ -122,7 +122,7 @@ public class TileFeedbackGameTests implements FabricGameTest {
         List<Integer> colours = List.of(0xFFFFFF, InventoryInteractorTileBehavior.GOOD_COLOR, InventoryInteractorTileBehavior.BAD_COLOR,
                 InventoryInteractorTileBehavior.NEUTRAL_COLOR, ShopCartridgeItem.COLOR, StopBoardSpaceBehavior.COLOR,
                 AdvanceBackCartridgeItem.FORWARD_COLOR, AdvanceBackCartridgeItem.BACK_COLOR, ReplayBoardSpaceBehavior.COLOR,
-                TileTeleport.COLOR);
+                TileTeleport.COLOR, fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR);
         for (int i = 0; i < colours.size(); i++) {
             for (int j = i + 1; j < colours.size(); j++) {
                 context.assertTrue(distance(colours.get(i), colours.get(j)) > 40,
@@ -137,6 +137,7 @@ public class TileFeedbackGameTests implements FabricGameTest {
         context.assertEquals(Landing.BACK.accent(), AdvanceBackCartridgeItem.BACK_COLOR, "back");
         context.assertEquals(Landing.REPLAY.accent(), ReplayBoardSpaceBehavior.COLOR, "replay");
         context.assertEquals(Landing.SHOP.accent(), ShopCartridgeItem.COLOR, "shop");
+        context.assertEquals(Landing.STAR.accent(), fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR, "star");
         context.complete();
     }
 

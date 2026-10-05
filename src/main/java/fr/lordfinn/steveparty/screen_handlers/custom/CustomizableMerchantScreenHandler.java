@@ -2,10 +2,12 @@ package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.MerchantScreenHandler;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.village.Merchant;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
@@ -32,6 +34,35 @@ public class CustomizableMerchantScreenHandler extends MerchantScreenHandler {
     }
 
 
+
+    /**
+     * The result of a trade is taken: refused, nothing paid, if it would bring a player of a running party past the
+     * power-ups they may carry ({@link fr.lordfinn.steveparty.powerups.PowerUpLimit}).
+     */
+    @Override
+    public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
+        if (slotIndex == RESULT_SLOT && overPowerUpLimit(player)) {
+            syncState();
+            return;
+        }
+        super.onSlotClick(slotIndex, button, actionType, player);
+    }
+
+    /** A shift-click on the result buys as long as it can: never past the power-up limit. */
+    @Override
+    public ItemStack quickMove(PlayerEntity player, int slot) {
+        if (slot == RESULT_SLOT && overPowerUpLimit(player)) return ItemStack.EMPTY;
+        return super.quickMove(player, slot);
+    }
+
+    private boolean overPowerUpLimit(PlayerEntity player) {
+        if (player.getWorld().isClient) return false;
+        ItemStack result = getSlot(RESULT_SLOT).getStack();
+        return !result.isEmpty() && fr.lordfinn.steveparty.powerups.PowerUpLimit.refuses(player, result);
+    }
+
+    /** The trade result slot of a merchant screen. */
+    private static final int RESULT_SLOT = 2;
 
     @Override
     public void onContentChanged(Inventory inventory) {

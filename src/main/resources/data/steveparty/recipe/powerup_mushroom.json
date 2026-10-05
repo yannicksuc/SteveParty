@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "minecraft:red_mushroom" },
+    { "item": "minecraft:sugar" },
+    { "item": "steveparty:coin" }
+  ],
+  "result": {
+    "id": "steveparty:powerup_mushroom",
+    "count": 1
+  }
+}

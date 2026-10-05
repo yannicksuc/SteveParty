@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DiceRollSequence;
 import fr.lordfinn.steveparty.events.DiceRollEvent;
+import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.mixin.FireworkRocketEntityAccessor;
 import fr.lordfinn.steveparty.data.handler.ListUuidTrackedDataHandler;
 import fr.lordfinn.steveparty.utils.MessageUtils;
@@ -276,18 +277,23 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         DiceOutcome result = DiceOutcome.of(faces);
         Map<DiceModule, Integer> modules = DiceModules.of(dieStack);
         for (Map.Entry<DiceModule, Integer> entry : modules.entrySet()) result = entry.getKey().modifyOutcome(result, entry.getValue());
+        // The power-up of the roller's turn (Mushroom: +3), after the modules
+        PowerUpService.Roll powered = this.getWorld().isClient ? new PowerUpService.Roll(result, null)
+                : PowerUpService.onRollFinished(this.getOwner().orElse(null), result);
+        result = powered.outcome();
         this.outcome = result;
         DiceOutcome announced = result;
         this.getOwner().ifPresent(owner -> {
             DiceRollEvent.EVENT.invoker().onRoll(this, owner, announced.steps());
             if (this.getWorld() instanceof ServerWorld world) {
                 String playerName = getPlayerNameByUuid(world.getServer(), owner);
-                // In the action bar: who rolled in aqua, the result in bold gold (coins and moves back keep their colour)
+                // In the action bar: who rolled in aqua, the result in bold gold (coins and moves back keep their colour),
+                // then what a power-up added to it
                 MutableText who = playerName == null ? Text.translatable("message.steveparty.unknown_player") : Text.literal(playerName);
-                MessageUtils.sendToNearby(world, this.getPos(), 20,
-                        Text.translatable("message.steveparty.die_rolled", who.formatted(Formatting.AQUA),
-                                announced.describe().copy().formatted(Formatting.GOLD, Formatting.BOLD)).formatted(Formatting.GRAY),
-                        MessageUtils.MessageType.ACTION_BAR);
+                MutableText message = Text.translatable("message.steveparty.die_rolled", who.formatted(Formatting.AQUA),
+                        announced.describe().copy().formatted(Formatting.GOLD, Formatting.BOLD)).formatted(Formatting.GRAY);
+                if (powered.note() != null) message.append(" ").append(powered.note());
+                MessageUtils.sendToNearby(world, this.getPos(), 20, message, MessageUtils.MessageType.ACTION_BAR);
             }
         });
         modules.forEach((module, count) -> module.afterRoll(this, announced, count));

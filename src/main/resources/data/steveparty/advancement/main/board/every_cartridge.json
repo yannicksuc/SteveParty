@@ -83,6 +83,16 @@
           }
         ]
       }
+    },
+    "star": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:star_cartridge"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -106,6 +116,9 @@
     ],
     [
       "teleport"
+    ],
+    [
+      "star"
     ]
   ],
   "rewards": {
