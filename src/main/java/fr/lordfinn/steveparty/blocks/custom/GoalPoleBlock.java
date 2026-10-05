@@ -32,7 +32,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 
@@ -69,8 +68,8 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
 
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock,
-                                  @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+                                  BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
         // Both properties in one state: two separate updates from the same old state would undo each other
         BlockState updated = state.with(ON_BASE, isOnBase(world, pos)).with(TOP, isTop(world, pos));
         if (updated != state) world.setBlockState(pos, updated);
@@ -226,7 +225,7 @@ public class GoalPoleBlock extends HorizontalFacingBlock implements BlockEntityP
     }
 
     @Override
-    protected boolean isTransparent(BlockState state) {
+    protected boolean isTransparent(BlockState state, BlockView world, BlockPos pos) {
         return true;
     }
 

@@ -75,13 +75,12 @@ public class ModBlocks {
     // get the original block's drops in a way the original block would not allow.
     public static final Block SWITCHED_OFF_BLOCK = Blocks.register(
             RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("switched_off_block")),
-            SwitchedOffBlock::new,
-            Block.Settings.create()
+            new SwitchedOffBlock(Block.Settings.create()
                     .solid()
                     .nonOpaque()
                     .strength(1.0f, 3_600_000f)
                     .sounds(BlockSoundGroup.BAMBOO_WOOD)
-                    .pistonBehavior(PistonBehavior.BLOCK));
+                    .pistonBehavior(PistonBehavior.BLOCK)));
 
     // Plastic studs: 8x8x4 pieces of the plastic block, on the floor, a wall or the ceiling
     public static final Block[] PLASTIC_STUDS = new Block[COLORS.length];
@@ -418,14 +417,13 @@ public class ModBlocks {
 
     /** The 3 other blocks of a large (2x2) tile (no item: placed and removed with the tile). */
     public static final Block TILE_PART = Blocks.register(RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("tile_part")),
-            fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock::new,
-            Block.Settings.create()
+            new fr.lordfinn.steveparty.blocks.custom.boardspaces.TilePartBlock(Block.Settings.create()
                     .strength(2f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)
                     .nonOpaque()
                     .dynamicBounds()
                     .dropsNothing()
-                    .pistonBehavior(net.minecraft.block.piston.PistonBehavior.BLOCK));
+                    .pistonBehavior(net.minecraft.block.piston.PistonBehavior.BLOCK)));
 
     public static final Block CHECK_POINT = register(CheckPointBlock::new,
             Block.Settings.create()
@@ -699,9 +697,8 @@ public class ModBlocks {
     /** Paint sprayed through a stencil on a block face (no item: made by stencils and the stencil gun). */
     public static final Block STENCIL_PAINT = Blocks.register(
             RegistryKey.of(RegistryKeys.BLOCK, Steveparty.id("stencil_paint")),
-            StencilPaintBlock::new,
-            AbstractBlock.Settings.create().replaceable().noCollision().nonOpaque().breakInstantly().dropsNothing()
-                    .pistonBehavior(PistonBehavior.DESTROY).sounds(BlockSoundGroup.WOOL));
+            new StencilPaintBlock(AbstractBlock.Settings.create().replaceable().noCollision().nonOpaque().breakInstantly().dropsNothing()
+                    .pistonBehavior(PistonBehavior.DESTROY).sounds(BlockSoundGroup.WOOL)));
 
     @SuppressWarnings({"unused", "SameParameterValue"})
     private static Block register(
@@ -711,8 +708,9 @@ public class ModBlocks {
         Identifier identifier = Steveparty.id(name);
         RegistryKey<Block> registryKey = RegistryKey.of(RegistryKeys.BLOCK, identifier);
 
-        Block block = Blocks.register(registryKey, factory, settings);
-        Items.register(block, blockItemFactory);
+        Block block = Blocks.register(registryKey, factory.apply(settings));
+        // Registered under the block's id (and linked to it, for block items)
+        Items.register(block, blockItemFactory.apply(block, new Item.Settings()));
         return block;
     }
 

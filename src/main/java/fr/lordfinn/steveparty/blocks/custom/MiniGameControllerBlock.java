@@ -29,12 +29,12 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -165,29 +165,29 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         // The Wrench is not for this block
-        if (stack.getItem() instanceof WrenchItem) return ActionResult.PASS;
-        if (!MiniGamePages.isPage(stack) || hand == Hand.OFF_HAND) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
-        if (world.isClient) return ActionResult.SUCCESS;
-        if (!(world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller)) return ActionResult.PASS;
+        if (stack.getItem() instanceof WrenchItem) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        if (!MiniGamePages.isPage(stack) || hand == Hand.OFF_HAND) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (world.isClient) return ItemActionResult.SUCCESS;
+        if (!(world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller)) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // Its slot is taken: the screen (where it can be swapped)
-        if (!controller.getPage().isEmpty()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        if (!controller.getPage().isEmpty()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (!MiniGamePages.canEdit(player)) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.no_build").formatted(Formatting.RED), true);
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         if (controller.isLockedFor(player)) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.locked").formatted(Formatting.RED), true);
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         if (!controller.accepts(stack)) {
             player.sendMessage(Text.translatable("message.steveparty.mini_game_controller.other_home").formatted(Formatting.RED), true);
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         controller.setPage(stack.split(1));
         world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_ADD_ITEM, SoundCategory.BLOCKS, 1f, 1f);
-        return ActionResult.SUCCESS;
+        return ItemActionResult.SUCCESS;
     }
 
     @Override
@@ -210,8 +210,8 @@ public class MiniGameControllerBlock extends Block implements BlockEntityProvide
 
     /** Redstone: only a change of its power is looked at (no polling); a rising edge acts out of a party. */
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
         if (!world.isClient && world.getBlockEntity(pos) instanceof MiniGameControllerBlockEntity controller) {
             controller.onPower(world.isReceivingRedstonePower(pos));
         }

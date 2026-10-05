@@ -35,7 +35,7 @@ public class CheckPointBlock extends ABoardSpaceBlock {
     }
 
     @Override
-    protected boolean isTransparent(BlockState state) {
+    protected boolean isTransparent(BlockState state, BlockView world, BlockPos pos) {
         return true;
     }
 

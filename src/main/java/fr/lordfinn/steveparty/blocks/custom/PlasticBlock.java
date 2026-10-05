@@ -11,7 +11,6 @@ import net.minecraft.block.BubbleColumnBlock;
 import net.minecraft.block.ChainBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
@@ -34,7 +33,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
-import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
@@ -67,9 +65,9 @@ public class PlasticBlock extends Block {
      * (0.7 blocks per tick up over soul sand, 0.3 down over magma), so 1.4 and 0.6 blocks per tick.
      */
     public static final int COLUMN_PERIOD = 5, COLUMN_UP_BLOCKS = 7, COLUMN_DOWN_BLOCKS = 3;
-    /** Player teleport flags: relative (unchanged) except the height and the vertical speed, set exactly. */
+    /** Player teleport flags: relative (unchanged) except the height, set exactly (the vertical speed: see place). */
     private static final Set<PositionFlag> ALL_BUT_HEIGHT = EnumSet.of(PositionFlag.X, PositionFlag.Z,
-            PositionFlag.Y_ROT, PositionFlag.X_ROT, PositionFlag.DELTA_X, PositionFlag.DELTA_Z);
+            PositionFlag.Y_ROT, PositionFlag.X_ROT);
     /** Speed of a player riding a piece in a bubble column (blocks per tick): the piece's, 1.4 up and 0.6 down. */
     private static final double RIDE_UP_SPEED = (double) COLUMN_UP_BLOCKS / COLUMN_PERIOD;
     private static final double RIDE_DOWN_SPEED = (double) COLUMN_DOWN_BLOCKS / COLUMN_PERIOD;
@@ -152,12 +150,11 @@ public class PlasticBlock extends Block {
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView,
-                                                   BlockPos pos, Direction direction, BlockPos neighborPos,
-                                                   BlockState neighborState, Random random) {
+    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState,
+                                                   WorldAccess world, BlockPos pos, BlockPos neighborPos) {
         // Water arriving, a bubble column forming, or a chain holding it being broken: try again
-        scheduleStep(tickView, world, pos, this);
-        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
+        scheduleStep(world, world, pos, this);
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
     }
 
     @Override
@@ -337,8 +334,9 @@ public class PlasticBlock extends Block {
     private static void place(ServerWorld world, ServerPlayerEntity player, double y, double speed,
                               BlockPos from, BlockPos to) {
         sendBlocks(world, player, from, to);
-        player.networkHandler.requestTeleport(new PlayerPosition(new Vec3d(0, y, 0), new Vec3d(0, speed, 0), 0, 0),
-                ALL_BUT_HEIGHT);
+        player.networkHandler.requestTeleport(0, y, 0, 0, 0, ALL_BUT_HEIGHT);
+        // The exact height resets the client's vertical speed: sent after it
+        glide(player, speed);
     }
 
     private static void sendBlocks(ServerWorld world, ServerPlayerEntity player, BlockPos from, BlockPos to) {
@@ -489,7 +487,7 @@ public class PlasticBlock extends Block {
      * way: a second one would be dropped anyway, so there is nothing to work out (the walk down the column is not
      * free, and a moving piece triggers this several times per move).
      */
-    public static void scheduleStep(ScheduledTickView ticks, WorldView world, BlockPos pos, Block block) {
+    public static void scheduleStep(WorldAccess ticks, WorldView world, BlockPos pos, Block block) {
         if (world.isClient() || ticks.getBlockTickScheduler().isQueued(pos, block)) return;
         ticks.scheduleBlockTick(pos, block, getDelay(world, pos));
     }

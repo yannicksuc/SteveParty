@@ -215,17 +215,17 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         nbt.put("interestedPlayers", playersNbt);
 
         if (!catalogue.isEmpty()) {
-            NbtElement item = catalogue.toNbt(wrapper, new NbtCompound());
+            NbtElement item = catalogue.encode(wrapper, new NbtCompound());
             nbt.put("catalogue", item);
             nbt.putBoolean("isCatalogued", true);
         } else {
             nbt.putBoolean("isCatalogued", false);
         }
         partyData.toNbt(nbt);
-        nbt.put(PartyCurrency.STAR.nbtKey(), starItem.toNbt(wrapper));
-        nbt.put(PartyCurrency.COIN.nbtKey(), coinItem.toNbt(wrapper));
+        nbt.put(PartyCurrency.STAR.nbtKey(), starItem.encode(wrapper));
+        nbt.put(PartyCurrency.COIN.nbtKey(), coinItem.encode(wrapper));
         nbt.put("MiniGameGains", gains.toNbt());
-        if (!bank.isEmpty()) nbt.put("BankCartridge", bank.toNbt(wrapper));
+        if (!bank.isEmpty()) nbt.put("BankCartridge", bank.encode(wrapper));
         nbt.putBoolean("PracticeRound", practiceRound);
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
@@ -576,7 +576,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             if (!itemStack.isEmpty() && player != null) {
                 player.getInventory().offerOrDrop(catalogue);
             } else if (holder instanceof ServerPlayerEntity holderPlayer) {
-                holderPlayer.giveOrDropStack(catalogue);
+                holderPlayer.getInventory().offerOrDrop(catalogue);
             } else {
                 ItemScatterer.spawn(world, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, catalogue);
             }

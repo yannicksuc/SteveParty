@@ -20,11 +20,12 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
+import fr.lordfinn.steveparty.blocks.ItemResults;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.util.ActionResult.PASS;
@@ -49,13 +50,13 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
 
     @Override
-    protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ItemActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         // Stencil + dye, the Stencil Hammer, a wet sponge: a new look for the tile (client-safe: decided the same way on both sides)
         ActionResult stamped = TileStamping.onUseWithItem(state, world, pos, player, hand, hit);
-        if (stamped != null) return stamped;
+        if (stamped != null) return ItemResults.of(stamped);
         // Client prediction: every behavior only handles dyes (and returns PASS otherwise)
-        if (world.isClient) return stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS;
-        return BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit);
+        if (world.isClient) return ItemResults.of(stack != null && stack.getItem() instanceof DyeItem ? SUCCESS : PASS);
+        return ItemResults.of(BoardSpaceBehaviorFactory.get(state.get(TILE_TYPE)).onUseWithItem(stack, state, world, pos, player, hit));
     }
 
     @Override
@@ -91,8 +92,8 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
 
     @Override
-    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
 
         if (world.getBlockEntity(pos) instanceof BoardSpaceBlockEntity tileEntity) {
             tileEntity.onNeighborUpdate();
@@ -144,7 +145,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
     }
 
     @Override
-    protected ActionResult.@Nullable Success openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+    protected @Nullable ActionResult openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         if (world.isClient) return null;
         BoardSpaceBlockEntity blockEntity = (BoardSpaceBlockEntity) world.getBlockEntity(pos);
         world.playSound(null, pos, ModSounds.OPEN_TILE_GUI_SOUND_EVENT, SoundCategory.BLOCKS, 1.0F, 1.0F);

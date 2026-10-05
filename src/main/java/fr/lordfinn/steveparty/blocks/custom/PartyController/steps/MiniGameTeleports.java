@@ -18,7 +18,8 @@ public final class MiniGameTeleports {
 
     public static void teleport(ServerPlayerEntity player, ServerWorld world, Vec3d target, float yaw, float pitch) {
         world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_TELEPORT, SoundCategory.PLAYERS, 0.6f, 1.0f);
-        player.teleport(world, target.x, target.y, target.z, Set.of(), yaw, pitch, true);
+        player.setCameraEntity(player);
+        player.teleport(world, target.x, target.y, target.z, Set.of(), yaw, pitch);
         player.fallDistance = 0;
         world.playSound(null, BlockPos.ofFloored(target), SoundEvents.ENTITY_PLAYER_TELEPORT, SoundCategory.PLAYERS, 0.6f, 1.2f);
     }
