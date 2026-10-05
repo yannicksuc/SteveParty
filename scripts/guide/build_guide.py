@@ -597,6 +597,29 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
           "banque. Le contrôleur ne crée jamais ni pièce ni étoile."),
         C("steveparty:coin", None, "One gold nugget makes a Coin.", "Une pépite d'or donne une pièce."),
     ], parents=["controller"], gate="party_time"),
+    E("powerups", "steveparty:powerup_mushroom", ("Power-ups", "Bonus"), ("A boost for your turn", "Un coup de pouce pour ton tour"), [
+        T("A **power-up** is used at the **start of your turn**, **before your roll**, and adds to it (a die "
+          "replaces the roll). Right-click it during your own turn: it is **consumed** and announced to everyone.\n\n"
+          "- **One** power-up per turn.\n"
+          "- Too late once your roll counts (a blank roll can still be rolled again).",
+          "Un **bonus** s'utilise au **début de ton tour**, **avant ton lancer**, et s'y ajoute (un dé, lui, "
+          "remplace le lancer). Clic droit pendant ton propre tour : il est **consommé** et annoncé à tous.\n\n"
+          "- **Un seul** bonus par tour.\n"
+          "- Trop tard une fois ton lancer compté (un lancer blanc peut encore être relancé)."),
+        T("- **Mushroom**: **+3** to your next roll this turn, with any die (plain, double, triple or forged).\n"
+          "- **Double Coins**: the coins you **gain** this turn are **doubled** (coin faces, item spaces). "
+          "Losses are not.\n\n"
+          "Sell them like dice, on a **Trading Stall**. Left without a price, they sell for **5** and **8** Coins.",
+          "- **Champignon** : **+3** à ton prochain lancer de ce tour, avec n'importe quel dé (simple, double, "
+          "triple ou forgé).\n"
+          "- **Double pièces** : les pièces que tu **gagnes** ce tour sont **doublées** (faces pièces, cases "
+          "objets). Pas les pertes.\n\n"
+          "Vends-les comme les dés, sur un **étal du marchand**. Sans prix, ils coûtent **5** et **8** pièces.",
+          "The Power-ups", "Les bonus"),
+        C("steveparty:powerup_mushroom", "steveparty:powerup_double_coins",
+          "Mushroom: red mushroom + sugar + Coin. Double Coins: 2 Coins + glowstone dust + paper.",
+          "Champignon : champignon rouge + sucre + pièce. Double pièces : 2 pièces + poudre de glowstone + papier."),
+    ], parents=["rewards"], gate="party_time"),
     E("step_controller", "steveparty:step_controller", ("Step controller", "Contrôleur de pas"), ("Next, restart or back", "Suivant, recommencer, retour"), [
         T("Right-click to switch mode: **up** = next step, **side** = restart the step, **down** = previous step. "
           "A rising redstone edge applies it to the nearest Party Controller (64 blocks).\n\n"
