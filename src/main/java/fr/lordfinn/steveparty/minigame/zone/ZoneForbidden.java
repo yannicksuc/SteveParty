@@ -155,7 +155,7 @@ public final class ZoneForbidden {
         BlockBox box = zone.box();
         Predicate<BlockState> forbidden = ZoneForbidden::isForbidden;
         int firstSection = world.getSectionIndex(Math.max(box.getMinY(), world.getBottomY()));
-        int lastSection = world.getSectionIndex(Math.min(box.getMaxY(), world.getTopYInclusive()));
+        int lastSection = world.getSectionIndex(Math.min(box.getMaxY(), world.getTopY() - 1));
         for (int chunkX = zone.minChunkX(); chunkX <= zone.maxChunkX(); chunkX++) {
             for (int chunkZ = zone.minChunkZ(); chunkZ <= zone.maxChunkZ(); chunkZ++) {
                 // the loaded chunk straight from its holder; only one that is not there is asked for (and waited for)

@@ -40,7 +40,8 @@ public class ForgeCoreEntity extends Entity {
     }
 
     @Override
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+    public boolean damage(DamageSource source, float amount) {
+        if (!(this.getWorld() instanceof ServerWorld world)) return false;
         if (isRemoved()) return false;
         discard();
         if (forgePos != null && world.getBlockEntity(forgePos) instanceof DiceForgeBlockEntity forge) {

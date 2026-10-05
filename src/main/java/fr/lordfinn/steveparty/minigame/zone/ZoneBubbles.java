@@ -607,7 +607,7 @@ public final class ZoneBubbles {
     private static void teleport(ServerPlayerEntity player, ServerWorld world, Vec3d to, float yaw, float pitch) {
         ZoneBorder.bypass++;
         try {
-            player.teleport(world, to.x, to.y, to.z, Set.of(), yaw, pitch, false);
+            player.teleport(world, to.x, to.y, to.z, Set.of(), yaw, pitch);
             player.setVelocity(Vec3d.ZERO);
             player.fallDistance = 0;
         } finally {

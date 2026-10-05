@@ -17,14 +17,10 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootTable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -40,7 +36,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 
 import static fr.lordfinn.steveparty.events.TileUpdatedEvent.EVENT;
 
@@ -377,17 +372,6 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         }
     }
 
-    /**
-     * A token is a game piece: it does not produce items on its own. Blocks the periodic "gifts" of the living
-     * mobs (chicken eggs, armadillo scutes...); their timers still reset, so nothing is stored up for later.
-     * Player actions (brushing, shearing...) and death loot are not affected.
-     */
-    @Override
-    public boolean forEachGiftedItem(ServerWorld world, RegistryKey<LootTable> lootTableKey, BiConsumer<ServerWorld, ItemStack> lootConsumer) {
-        if (this.steveparty$isTokenized()) return false;
-        return super.forEachGiftedItem(world, lootTableKey, lootConsumer);
-    }
-
     public int steveparty$getPawnAge() {
         return this.steveparty$pawnAge;
     }
@@ -405,11 +389,11 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
     }
 
     @Override
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+    public boolean damage(DamageSource source, float amount) {
         if (this.steveparty$isTokenized()) {
             // /kill, void, etc. must still be able to remove a token
             if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-                return super.damage(world, source, amount);
+                return super.damage(source, amount);
             }
             // Hitting a token relaunches a stuck move while it still has steps to walk. Outside a party, a resting
             // token just reminds the player how tokens are moved.
@@ -428,6 +412,6 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
             }
             return false;
         }
-        return super.damage(world, source, amount);
+        return super.damage(source, amount);
     }
 }

@@ -600,7 +600,7 @@ public final class MulaGoals {
                 double ground = home != null ? home.getY() + 1.0 : groundBelow(world, mula.getX(), mula.getY(), mula.getZ());
                 if (Double.isNaN(ground)) return false;
                 night = true;
-                skyY = MulaBrain.nightAltitude(ground, world.getTopYInclusive(), mula.getId());
+                skyY = MulaBrain.nightAltitude(ground, world.getTopY() - 1, mula.getId());
                 return true;
             }
             if (MulaBrain.isMorning(world.getTimeOfDay())) {
