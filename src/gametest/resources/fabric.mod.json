@@ -88,7 +88,8 @@
       "fr.lordfinn.steveparty.gametest.InventoryCartridgeGameTests",
       "fr.lordfinn.steveparty.gametest.PolishedTilesGameTests",
       "fr.lordfinn.steveparty.gametest.BoardExplosionGameTests",
-      "fr.lordfinn.steveparty.gametest.PowerupTrapGameTests"
+      "fr.lordfinn.steveparty.gametest.PowerupTrapGameTests",
+      "fr.lordfinn.steveparty.gametest.StarWhistleGameTests"
     ]
   },
   "depends": {
