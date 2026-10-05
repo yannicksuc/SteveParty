@@ -221,7 +221,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         // The player threw a (named, like a forged one) die: it was spent
         ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
         die.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, net.minecraft.text.Text.literal("Lucky"));
-        DiceEntity dice = ModEntities.DICE_ENTITY.create(context.getWorld(), SpawnReason.TRIGGERED);
+        DiceEntity dice = ModEntities.DICE_ENTITY.create(context.getWorld());
         context.assertTrue(dice != null, "dice created");
         dice.setItemReference(die.copy());
         turn(data).onDiceRoll(dice, player.getUuid(), 4, controller);

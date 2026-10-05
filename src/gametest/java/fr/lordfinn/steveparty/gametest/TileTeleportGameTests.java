@@ -252,7 +252,7 @@ public class TileTeleportGameTests implements FabricGameTest {
     }
 
     private static float scaleOf(MobEntity mob) {
-        return (float) mob.getAttributeBaseValue(EntityAttributes.SCALE);
+        return (float) mob.getAttributeBaseValue(EntityAttributes.GENERIC_SCALE);
     }
 
     // ---------------------------------------------------------------- tests
@@ -284,11 +284,11 @@ public class TileTeleportGameTests implements FabricGameTest {
                 "no second move during the warp");
         context.assertEquals(landings.size(), 1, "one landing: the teleport tile's");
         context.assertEquals(landings.getFirst().landing(), TileFeedback.Landing.TELEPORT, "with the teleport jingle");
-        context.waitAndRun(8, () -> context.assertTrue(pig.getAttributeValue(EntityAttributes.SCALE) < 0.9 * scaleOf(pig), "shrinking"));
+        context.waitAndRun(8, () -> context.assertTrue(pig.getAttributeValue(EntityAttributes.GENERIC_SCALE) < 0.9 * scaleOf(pig), "shrinking"));
         context.waitAndRun(WAIT, () -> {
             assertStandsOn(context, pig, to, "stays on the other tile");
             context.assertTrue(!TileTeleport.isTeleporting(pig), "done");
-            context.assertTrue(pig.getAttributeInstance(EntityAttributes.SCALE).getModifier(fr.lordfinn.steveparty.Steveparty.id("teleport_shrink")) == null,
+            context.assertTrue(pig.getAttributeInstance(EntityAttributes.GENERIC_SCALE).getModifier(fr.lordfinn.steveparty.Steveparty.id("teleport_shrink")) == null,
                     "back to its size");
             context.assertEquals(teleports.size(), 1, "one teleport, no chain");
             context.assertEquals(teleports.getFirst().to(), to, "to the other violet tile");

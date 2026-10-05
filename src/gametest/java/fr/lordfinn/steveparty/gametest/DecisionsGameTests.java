@@ -19,7 +19,7 @@ public class DecisionsGameTests implements FabricGameTest {
     public void sittingMulaStandsUpWhenHit(TestContext context) {
         MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
         mula.setSitting(true);
-        mula.damage(context.getWorld(), context.getWorld().getDamageSources().generic(), 1.0F);
+        mula.damage(context.getWorld().getDamageSources().generic(), 1.0F);
         context.assertTrue(!mula.isSitting(), "stands up when hurt");
         context.complete();
     }
@@ -33,7 +33,7 @@ public class DecisionsGameTests implements FabricGameTest {
         links.setOwner(trader.getUuid(), UUID.randomUUID());
         links.linkBlock(trader.getUuid(), stall);
 
-        trader.kill(context.getWorld());
+        trader.kill();
 
         context.assertTrue(links.getOwner(trader.getUuid()) == null, "owner forgotten");
         context.assertTrue(links.getVendorsLinkedTo(stall).isEmpty(), "links forgotten");

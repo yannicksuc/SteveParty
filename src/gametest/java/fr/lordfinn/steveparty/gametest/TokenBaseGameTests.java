@@ -61,7 +61,7 @@ public class TokenBaseGameTests implements FabricGameTest {
     public void baseDoesNotScaleWithTheMob(TestContext context) {
         PigEntity pig = spawnPig(context);
         ((TokenizedEntityInterface) pig).steveparty$setTokenized(true);
-        pig.getAttributeInstance(EntityAttributes.SCALE).setBaseValue(0.5);
+        pig.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(0.5);
         // Dirty attributes (and so the scale) are applied in LivingEntity#tick
         context.waitAndRun(2, () -> {
             assertClose(context, TokenBase.getBodyHeight(pig), PIG_HEIGHT * 0.5F, "scaled body");
@@ -77,7 +77,7 @@ public class TokenBaseGameTests implements FabricGameTest {
         NbtCompound nbt = new NbtCompound();
         pig.writeNbt(nbt);
 
-        PigEntity reloaded = EntityType.PIG.create(context.getWorld(), SpawnReason.LOAD);
+        PigEntity reloaded = EntityType.PIG.create(context.getWorld());
         context.assertTrue(reloaded != null, "pig created");
         reloaded.readNbt(nbt);
         context.assertTrue(((TokenizedEntityInterface) reloaded).steveparty$isTokenized(), "still a token");
@@ -99,7 +99,7 @@ public class TokenBaseGameTests implements FabricGameTest {
         NbtCompound nbt = new NbtCompound();
         pig.writeNbt(nbt);
         nbt.putBoolean("Tokenized", false); // written by older versions on every mob
-        PigEntity reloaded = EntityType.PIG.create(context.getWorld(), SpawnReason.LOAD);
+        PigEntity reloaded = EntityType.PIG.create(context.getWorld());
         context.assertTrue(reloaded != null, "pig created");
         reloaded.readNbt(nbt);
         assertClose(context, reloaded.getHeight(), PIG_HEIGHT, "reloaded regular height");

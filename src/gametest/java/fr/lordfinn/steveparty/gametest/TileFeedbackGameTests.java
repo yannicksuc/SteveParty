@@ -94,12 +94,12 @@ public class TileFeedbackGameTests implements FabricGameTest {
         for (Landing landing : Landing.values()) {
             context.assertTrue(!landing.layers().isEmpty(), landing + " has a jingle");
             for (TileFeedback.Layer layer : landing.layers()) {
-                context.assertEquals(layer.sound().id().getNamespace(), "minecraft", landing + " vanilla sound");
+                context.assertEquals(layer.sound().getId().getNamespace(), "minecraft", landing + " vanilla sound");
                 context.assertTrue(layer.volume() > 0 && layer.volume() <= 0.7F, landing + " not too loud");
             }
             context.assertTrue(landing.noticeKey().startsWith("message.steveparty.tile_landed."), "notice key");
         }
-        context.assertTrue(Registries.SOUND_EVENT.containsId(Landing.GOOD.layers().getFirst().sound().id()), "registered sound");
+        context.assertTrue(Registries.SOUND_EVENT.containsId(Landing.GOOD.layers().getFirst().sound().getId()), "registered sound");
         context.complete();
     }
 

@@ -350,7 +350,7 @@ public class ShopGameTests implements FabricGameTest {
         net.minecraft.nbt.NbtCompound saved = stall.createNbt(context.getWorld().getRegistryManager());
         net.minecraft.nbt.NbtList items = new net.minecraft.nbt.NbtList();
         for (int slot : new int[]{0, 27}) {
-            net.minecraft.nbt.NbtCompound entry = (net.minecraft.nbt.NbtCompound) new ItemStack(Items.GOLD_BLOCK).toNbt(context.getWorld().getRegistryManager());
+            net.minecraft.nbt.NbtCompound entry = (net.minecraft.nbt.NbtCompound) new ItemStack(Items.GOLD_BLOCK).encode(context.getWorld().getRegistryManager());
             entry.putByte("Slot", (byte) slot);
             items.add(entry);
         }
@@ -664,7 +664,7 @@ public class ShopGameTests implements FabricGameTest {
     public void boxedTraderBandanaColorIsRandomSavedAndNeverRerolled(TestContext context) {
         ServerWorld world = context.getWorld();
         // Summoned (initialize): a colour is picked
-        BoxedTraderEntity summoned = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        BoxedTraderEntity summoned = ModEntities.BOXED_TRADER_ENTITY.create(world);
         summoned.initialize(world, world.getLocalDifficulty(summoned.getBlockPos()), SpawnReason.COMMAND, null);
         int color = summoned.getBandanaColor();
         context.assertTrue(color >= 0 && color < BoxedTraderEntity.BANDANA_COLORS, "colour 0-4 after spawn, got " + color);
@@ -672,22 +672,22 @@ public class ShopGameTests implements FabricGameTest {
         NbtCompound saved = summoned.writeNbt(new NbtCompound());
         context.assertEquals(saved.getInt(BoxedTraderEntity.BANDANA_COLOR_NBT), color, "colour saved");
         for (int i = 0; i < 20; i++) {
-            BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+            BoxedTraderEntity loaded = ModEntities.BOXED_TRADER_ENTITY.create(world);
             loaded.readNbt(saved);
             context.assertEquals(loaded.getBandanaColor(), color, "colour kept on reload " + i);
-            loaded.initialize(world, world.getLocalDifficulty(loaded.getBlockPos()), SpawnReason.LOAD, null);
+            loaded.initialize(world, world.getLocalDifficulty(loaded.getBlockPos()), SpawnReason.CHUNK_GENERATION, null);
             context.assertEquals(loaded.getBandanaColor(), color, "colour not re-rolled by initialize " + i);
         }
         // Summon with NBT: the given colour is used
         NbtCompound given = new NbtCompound();
         given.putInt(BoxedTraderEntity.BANDANA_COLOR_NBT, 3);
-        BoxedTraderEntity fromNbt = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.COMMAND);
+        BoxedTraderEntity fromNbt = ModEntities.BOXED_TRADER_ENTITY.create(world);
         fromNbt.readNbt(given);
         context.assertEquals(fromNbt.getBandanaColor(), 3, "BandanaColor from NBT");
         // Trader saved before bandanas existed: gets one when loaded
         NbtCompound legacy = summoned.writeNbt(new NbtCompound());
         legacy.remove(BoxedTraderEntity.BANDANA_COLOR_NBT);
-        BoxedTraderEntity old = ModEntities.BOXED_TRADER_ENTITY.create(world, SpawnReason.LOAD);
+        BoxedTraderEntity old = ModEntities.BOXED_TRADER_ENTITY.create(world);
         old.readNbt(legacy);
         context.assertTrue(old.getBandanaColor() >= 0 && old.getBandanaColor() < BoxedTraderEntity.BANDANA_COLORS, "legacy trader gets a colour");
         // Spawned from code without initialize() nor NBT (villager block fall): picked on its first tick
@@ -738,6 +738,6 @@ public class ShopGameTests implements FabricGameTest {
     }
 
     private static RegistryEntry<Enchantment> sharpness(TestContext context) {
-        return context.getWorld().getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(Enchantments.SHARPNESS);
+        return context.getWorld().getRegistryManager().getWrapperOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(Enchantments.SHARPNESS);
     }
 }

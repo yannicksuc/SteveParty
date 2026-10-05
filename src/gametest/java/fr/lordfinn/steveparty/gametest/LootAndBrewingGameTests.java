@@ -34,7 +34,7 @@ public class LootAndBrewingGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void gameMasterIsTreasureOnly(TestContext context) {
         RegistryEntry<Enchantment> gameMaster = context.getWorld().getRegistryManager()
-                .getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(ModLootTableModifiers.GAME_MASTER);
+                .getWrapperOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(ModLootTableModifiers.GAME_MASTER);
         context.assertTrue(gameMaster.isIn(EnchantmentTags.TREASURE), "treasure");
         context.assertTrue(!gameMaster.isIn(EnchantmentTags.IN_ENCHANTING_TABLE), "not in enchanting table");
         context.assertTrue(!gameMaster.isIn(EnchantmentTags.TRADEABLE), "not tradeable");

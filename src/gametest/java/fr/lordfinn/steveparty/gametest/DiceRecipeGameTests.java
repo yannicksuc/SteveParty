@@ -123,7 +123,7 @@ public class DiceRecipeGameTests implements FabricGameTest {
         // The module item is not consumed: it is the remainder of its slot
         CraftingRecipeInput input = CraftingRecipeInput.create(3, 1, List.of(forged, module(DiceModules.INFINITY), new ItemStack(DiceModules.LUCKY.item(), 3)));
         DefaultedList<ItemStack> remainders = recipe(context, forged, module(DiceModules.INFINITY), new ItemStack(DiceModules.LUCKY.item(), 3))
-                .orElseThrow().value().getRecipeRemainders(input);
+                .orElseThrow().value().getRemainder(input);
         context.assertTrue(remainders.get(0).isEmpty(), "the die is used up");
         context.assertTrue(remainders.get(1).isOf(DiceModules.INFINITY.item()) && remainders.get(1).getCount() == 1, "the module comes back");
         context.assertTrue(remainders.get(2).isOf(DiceModules.LUCKY.item()) && remainders.get(2).getCount() == 1, "one per slot comes back");
@@ -137,15 +137,13 @@ public class DiceRecipeGameTests implements FabricGameTest {
     /** One recipe per module, shown in the recipe book: a die and the module item give the die carrying it. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void eachModuleHasItsRecipeInTheRecipeBook(TestContext context) {
-        net.minecraft.util.context.ContextParameterMap displayContext = net.minecraft.recipe.display.SlotDisplayContexts.createParameters(context.getWorld());
         for (DiceModule module : DiceModules.all()) {
-            net.minecraft.registry.RegistryKey<net.minecraft.recipe.Recipe<?>> key = net.minecraft.registry.RegistryKey.of(
-                    net.minecraft.registry.RegistryKeys.RECIPE, fr.lordfinn.steveparty.Steveparty.id("dice_with_module_" + module.id()));
+            net.minecraft.util.Identifier key = fr.lordfinn.steveparty.Steveparty.id("dice_with_module_" + module.id());
             RecipeEntry<?> entry = context.getWorld().getServer().getRecipeManager().get(key).orElse(null);
             context.assertTrue(entry != null && entry.value() instanceof DiceModuleRecipe recipe && recipe.module() == module, "the recipe of " + module);
             context.assertTrue(!entry.value().isIgnoredInRecipeBook(), "shown in the recipe book");
-            context.assertTrue(!entry.value().getIngredientPlacement().hasNoPlacement(), "it can be placed from the recipe book");
-            List<ItemStack> results = entry.value().getDisplays().getFirst().result().getStacks(displayContext);
+            context.assertTrue(!entry.value().getIngredients().isEmpty(), "it can be placed from the recipe book");
+            List<ItemStack> results = List.of(entry.value().getResult(context.getWorld().getRegistryManager()));
             context.assertTrue(results.size() == 1 && DiceModules.of(results.getFirst()).equals(Map.of(module, 1)), "its result: a die carrying " + module);
             // Each grid is crafted by one recipe: the one of its first module
             ItemStack plain = new ItemStack(ModItems.DEFAULT_DICE);

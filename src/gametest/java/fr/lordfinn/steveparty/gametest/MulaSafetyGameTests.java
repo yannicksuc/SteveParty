@@ -37,7 +37,7 @@ public class MulaSafetyGameTests implements FabricGameTest {
                 "hot_floor", sources.hotFloor(), "another Mula", sources.mobAttack(other));
         harmless.forEach((name, source) -> {
             float before = mula.getHealth();
-            mula.damage(world, source, 10f);
+            mula.damage(source, 10f);
             context.assertTrue(mula.getHealth() == before, name + " deals 0: " + (before - mula.getHealth()));
         });
         context.assertTrue(!mula.handleFallDamage(40f, 1f, sources.fall()), "no fall damage from a long fall");
@@ -48,7 +48,7 @@ public class MulaSafetyGameTests implements FabricGameTest {
         try {
             float before = mula.getHealth();
             mula.timeUntilRegen = 0;
-            mula.damage(world, sources.playerAttack(player), 2f);
+            mula.damage(sources.playerAttack(player), 2f);
             context.assertTrue(mula.getHealth() < before, "a player can still hit it");
         } finally {
             world.getServer().getPlayerManager().remove(player);

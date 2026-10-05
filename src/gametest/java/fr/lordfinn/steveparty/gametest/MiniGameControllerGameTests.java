@@ -617,7 +617,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
 
             // Sneak + click in the air: the mode ends, the zone stays
             player.setSneaking(true);
-            context.assertTrue(stack.use(world, player, Hand.MAIN_HAND).isAccepted(), "sneak + click in the air");
+            context.assertTrue(stack.use(world, player, Hand.MAIN_HAND).getResult().isAccepted(), "sneak + click in the air");
             player.setSneaking(false);
             context.assertTrue(!PageZoneTool.isInMode(stack) && MiniGamePages.get(server, id).zone() != null, "the mode ended, the zone stays");
             // Opening the editor ends it too
@@ -748,7 +748,7 @@ public class MiniGameControllerGameTests implements FabricGameTest {
 
             MiniGameControllerBlockEntity controller = home(context, HOME, null);
             NbtCompound saved = controller.createNbt(registries);
-            saved.put("Page", pageItem(id).toNbt(registries));
+            saved.put("Page", pageItem(id).encode(registries));
             saved.put("ZoneCartridge", cartridge);
             controller.read(saved, registries);
             controller.serverTick(world);

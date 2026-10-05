@@ -81,8 +81,8 @@ public class GravityGameTests implements FabricGameTest {
             double d = GravityPull.resistance(diamond);
             context.assertTrue(d > 0.8 && d < 1, "full diamond: barely pulled (" + d + ")");
             // The bigger the hitbox, the less pulled
-            var golem = EntityType.IRON_GOLEM.create(context.getWorld(), net.minecraft.entity.SpawnReason.COMMAND);
-            var cow = EntityType.COW.create(context.getWorld(), net.minecraft.entity.SpawnReason.COMMAND);
+            var golem = EntityType.IRON_GOLEM.create(context.getWorld());
+            var cow = EntityType.COW.create(context.getWorld());
             context.assertTrue(GravityPull.resistance(cow) > 0.3, "a cow is bigger than a player: less pulled");
             context.assertTrue(GravityPull.resistance(golem) > GravityPull.resistance(cow), "an iron golem even less");
             context.complete();
@@ -120,10 +120,10 @@ public class GravityGameTests implements FabricGameTest {
             List<ForgeCoreEntity> hitboxes = context.getWorld().getEntitiesByClass(ForgeCoreEntity.class,
                     new Box(core, core).expand(1), e -> true);
             context.assertTrue(hitboxes.size() == 1, "one hitbox on the core: " + hitboxes.size());
-            CowEntity cow = EntityType.COW.create(context.getWorld(), net.minecraft.entity.SpawnReason.COMMAND);
+            CowEntity cow = EntityType.COW.create(context.getWorld());
             cow.refreshPositionAndAngles(core.x + 3, core.y - 0.5, core.z, 0, 0);
             context.getWorld().spawnEntity(cow);
-            hitboxes.get(0).damage(context.getWorld(), context.getWorld().getDamageSources().generic(), 1f);
+            hitboxes.get(0).damage(context.getWorld().getDamageSources().generic(), 1f);
             context.assertTrue(!forge.isActivated(), "the core is gone");
             context.assertTrue(forge.getStack(FIRST_FRAGMENT_SLOT).isOf(ModItems.BLACK_STAR_FRAGMENT), "nothing else lost");
             context.waitAndRun(3, () -> {
