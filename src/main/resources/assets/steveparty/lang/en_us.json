@@ -541,6 +541,7 @@
   "message.steveparty.star.bought": "⭐ %s bought the star for %s coins!",
   "message.steveparty.star.bought_title": "⭐ %s got a star!",
   "message.steveparty.star.no_offer": "None of your tokens is at the star.",
+  "message.steveparty.star.bank_empty": "⭐ The bank has no star left! Fill the Party Controller's chests with stars.",
   "message.steveparty.die_rolled": "%s rolled %s",
   "message.steveparty.unknown_player": "Unknown player",
   "message.steveparty.disconnected_player": "Disconnected player",

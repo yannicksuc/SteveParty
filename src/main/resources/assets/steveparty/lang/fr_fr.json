@@ -99,6 +99,7 @@
   "message.steveparty.star.bought": "⭐ %s a acheté l'étoile pour %s pièces !",
   "message.steveparty.star.bought_title": "⭐ %s gagne une étoile !",
   "message.steveparty.star.no_offer": "Aucun de tes pions n'est sur l'étoile.",
+  "message.steveparty.star.bank_empty": "⭐ La banque n'a plus d'étoile ! Remplis les coffres du Party Controller avec des étoiles.",
   "message.steveparty.die_rolled": "%s fait %s",
   "message.steveparty.unknown_player": "Joueur inconnu",
   "message.steveparty.game_started": "Le jeu a commencé !\n",
