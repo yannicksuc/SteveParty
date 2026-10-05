@@ -30,7 +30,7 @@ import java.util.UUID;
 
 import static fr.lordfinn.steveparty.entities.ModEntities.DIRECTION_DISPLAY_ENTITY;
 import static fr.lordfinn.steveparty.utils.QuaternionsUtils.dirToYAngle;
-import static net.minecraft.entity.attribute.EntityAttributes.ENTITY_INTERACTION_RANGE;
+import static net.minecraft.entity.attribute.EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE;
 
 public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
     private Vec3d encodedVelocity;
@@ -86,7 +86,10 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
                 new Vector3f(size), null);
         this.setTransformation(scaleTransformation);
         this.setBillboardMode(BillboardMode.VERTICAL);
-        this.rotate(0, (float) Math.toDegrees((float) Math.toRadians(90f)));
+        this.setYaw(0);
+        this.setPitch((float) Math.toDegrees((float) Math.toRadians(90f)));
+        this.prevYaw = this.getYaw();
+        this.prevPitch = this.getPitch();
         world.spawnEntity(this);
     }
 
@@ -104,7 +107,7 @@ public class DirectionDisplayEntity extends DisplayEntity.BlockDisplayEntity {
 
     private boolean isPlayerLookingAt(ServerPlayerEntity player, DirectionDisplayEntity entity) {
         if (!player.getActiveItem().isEmpty()) return false;
-        double maxDistance = player.getAttributeValue(ENTITY_INTERACTION_RANGE); // Distance maximale pour le raycast
+        double maxDistance = player.getAttributeValue(PLAYER_ENTITY_INTERACTION_RANGE); // Distance maximale pour le raycast
         Vec3d start = player.getEyePos(); // Position des yeux du joueur
         Vec3d direction = player.getRotationVec(1.0F); // Direction du regard du joueur
         Vec3d end = start.add(direction.multiply(maxDistance)); // Fin du rayon (distance maximale)

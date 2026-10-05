@@ -521,9 +521,9 @@ public final class ZoneBubble {
             int delay = nbt.getInt("Delay");
             TickPriority priority = TickPriority.byIndex(nbt.getInt("Priority"));
             if (nbt.getBoolean("Fluid")) {
-                Registries.FLUID.getOptionalValue(id).ifPresent(fluid -> world.scheduleFluidTick(pos, fluid, delay, priority));
+                Registries.FLUID.getOrEmpty(id).ifPresent(fluid -> world.scheduleFluidTick(pos, fluid, delay, priority));
             } else {
-                Registries.BLOCK.getOptionalValue(id).ifPresent(block -> world.scheduleBlockTick(pos, block, delay, priority));
+                Registries.BLOCK.getOrEmpty(id).ifPresent(block -> world.scheduleBlockTick(pos, block, delay, priority));
             }
         }
         ticks = new NbtList();
@@ -885,7 +885,7 @@ public final class ZoneBubble {
     /** The entities the zone held when the session began are made again, as they were. */
     private void restoreEntities() {
         for (NbtCompound saved : entities) {
-            Entity entity = EntityType.loadEntityWithPassengers(saved.copy(), world, SpawnReason.LOAD, loaded -> loaded);
+            Entity entity = EntityType.loadEntityWithPassengers(saved.copy(), world, loaded -> loaded);
             if (entity == null) continue;
             if (world.spawnNewEntityAndPassengers(entity)) continue;
             // one of them got away with its UUID: the one of the session goes, the one remembered comes back

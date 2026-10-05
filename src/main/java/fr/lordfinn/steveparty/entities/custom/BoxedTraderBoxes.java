@@ -106,7 +106,7 @@ public final class BoxedTraderBoxes {
             return;
         }
         try {
-            add(BlockArgumentParser.block(Registries.BLOCK, member, false).blockState(), into);
+            add(BlockArgumentParser.block(Registries.BLOCK.getReadOnlyWrapper(), member, false).blockState(), into);
         } catch (CommandSyntaxException e) {
             Steveparty.LOGGER.warn("Unknown Boxed Trader box {}: {}", member, e.getMessage());
         }

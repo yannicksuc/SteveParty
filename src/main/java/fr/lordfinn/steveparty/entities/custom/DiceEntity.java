@@ -301,11 +301,11 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return LivingEntity.createLivingAttributes()
-                .add(EntityAttributes.MAX_HEALTH, 20.0D)
-                .add(EntityAttributes.ATTACK_DAMAGE, 0.0D)
-                .add(EntityAttributes.ATTACK_SPEED, 0.0D)
-                .add(EntityAttributes.KNOCKBACK_RESISTANCE, 0.3D)
-                .add(EntityAttributes.MOVEMENT_SPEED, 0.3D);
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0D)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 0.0D)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 0.0D)
+                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.3D)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3D);
     }
 
     @Override
@@ -436,7 +436,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 Optional<ItemStack> itemReference = Optional.empty();
                 try {
                     itemReference = ItemStack.fromNbt(
-                            RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream()), itemReferenceNbt);
+                            this.getRegistryManager(), itemReferenceNbt);
                 } catch (Exception ex) {
                     System.err.println("Failed to parse ItemReference from NBT: " + ex.getMessage());
                 }
@@ -449,7 +449,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             }
             if (nbt.contains("DieStack", NbtElement.COMPOUND_TYPE)) {
                 try {
-                    this.dieStack = ItemStack.fromNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream()),
+                    this.dieStack = ItemStack.fromNbt(this.getRegistryManager(),
                             nbt.getCompound("DieStack")).orElse(ItemStack.EMPTY);
                 } catch (Exception ex) {
                     this.dieStack = ItemStack.EMPTY;
@@ -499,15 +499,15 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             ItemStack itemRef = this.getItemReference();
             if (itemRef != null && !itemRef.isEmpty()) {
                 try {
-                    nbt.put("ItemReference", itemRef.toNbt(
-                            RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream())
+                    nbt.put("ItemReference", itemRef.encode(
+                            this.getRegistryManager()
                     ));
                 } catch (Exception e) {
                     System.err.println("Failed to write ItemReference to NBT: " + e.getMessage());
                 }
             } else if (dieStack != null && !dieStack.isEmpty()) {
                 try {
-                    nbt.put("DieStack", dieStack.toNbt(RegistryWrapper.WrapperLookup.of(this.getRegistryManager().stream())));
+                    nbt.put("DieStack", dieStack.encode(this.getRegistryManager()));
                 } catch (Exception e) {
                     System.err.println("Failed to write DieStack to NBT: " + e.getMessage());
                 }
@@ -523,7 +523,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
 
     @Override
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+    public boolean damage(DamageSource source, float amount) {
+        if (!(this.getWorld() instanceof ServerWorld world)) return false;
         // /kill, the void, /damage with generic_kill...: damage that ignores invulnerability removes the dice
         if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             killDice();
@@ -546,7 +547,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
      * play the living entity death animation. Like an explosion, an Infinity die goes back to its online owner.
      */
     @Override
-    public void kill(ServerWorld world) {
+    public void kill() {
         killDice();
     }
 

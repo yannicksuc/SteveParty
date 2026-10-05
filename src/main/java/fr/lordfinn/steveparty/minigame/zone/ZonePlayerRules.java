@@ -12,6 +12,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -49,7 +50,7 @@ final class ZonePlayerRules {
         // an item used in the air acts where its user stands
         UseItemCallback.EVENT.register((player, world, hand) ->
                 !ZoneBorder.ACTIVE || world.isClient || !forbidden(player, player.getStackInHand(hand)) && allowed(player, world, player.getBlockPos())
-                        ? ActionResult.PASS : ActionResult.FAIL);
+                        ? TypedActionResult.pass(player.getStackInHand(hand)) : TypedActionResult.fail(player.getStackInHand(hand)));
     }
 
     /** @return true if the player is of a session and holds an item the server forbids to sessions: it uses it on nothing */

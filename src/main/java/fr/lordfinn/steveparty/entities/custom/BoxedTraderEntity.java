@@ -237,12 +237,12 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return LivingEntity.createLivingAttributes()
-                .add(EntityAttributes.MAX_HEALTH, 20.0D)
-                .add(EntityAttributes.ATTACK_DAMAGE, 0.0D)
-                .add(EntityAttributes.ATTACK_SPEED, 0.0D)
-                .add(EntityAttributes.KNOCKBACK_RESISTANCE, 0.3D)
-                .add(EntityAttributes.MOVEMENT_SPEED, 0.3D)
-                .add(EntityAttributes.FOLLOW_RANGE, 16.0D);
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0D)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 0.0D)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 0.0D)
+                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.3D)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3D)
+                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 16.0D);
     }
 
     @Override
@@ -547,7 +547,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         }
         // Cash registers full or missing: never destroy the payment, drop it at the trader instead
         if (!stack.isEmpty() && this.getWorld() instanceof ServerWorld serverWorld) {
-            this.dropStack(serverWorld, stack.copyAndEmpty());
+            this.dropStack(stack.copyAndEmpty());
         }
     }
 
@@ -606,7 +606,10 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     protected void updatePassengerPosition(Entity passenger, PositionUpdater positionUpdater) {
         if (this.hasPassenger(passenger)) {
             passenger.setPos(this.getX(), this.getY(), this.getZ());
-            passenger.rotate(this.getYaw(), this.getPitch());
+            passenger.setYaw(this.getYaw());
+            passenger.setPitch(this.getPitch());
+            passenger.prevYaw = passenger.getYaw();
+            passenger.prevPitch = passenger.getPitch();
             passenger.setHeadYaw(this.getYaw());
             passenger.updateTrackedHeadRotation(this.getYaw(), 0);
         }
@@ -1038,7 +1041,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     public @Nullable EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
         if (getBandanaColor() < 0) rollBandanaColor();
         // From his spawn egg: a random box (see BoxedTraderBoxes)
-        if (spawnReason == SpawnReason.SPAWN_ITEM_USE || spawnReason == SpawnReason.DISPENSER) {
+        if (spawnReason == SpawnReason.SPAWN_EGG || spawnReason == SpawnReason.DISPENSER) {
             setBlockState(BoxedTraderBoxes.pick(this.random));
         }
         return super.initialize(world, difficulty, spawnReason, entityData);
@@ -1233,7 +1236,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     /** Shears on an open merchant with his bandana: it drops, he is shocked, then stays closed for 20 s, bald. */
     private void stealBandana(PlayerEntity player, ItemStack shears, Hand hand) {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
-        this.dropStack(world, BandanaItem.create(Math.max(0, getBandanaColor())), 1.4F);
+        this.dropStack(BandanaItem.create(Math.max(0, getBandanaColor())), 1.4F);
         world.playSoundFromEntity(null, this, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.PLAYERS, 1.0F, 1.0F);
         if (!player.isInCreativeMode()) shears.damage(1, player, LivingEntity.getSlotForHand(hand));
         setHasBandana(false);
@@ -1260,7 +1263,7 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
      */
     private void stealBox(PlayerEntity player, ItemStack shears, Hand hand) {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
-        this.dropStack(world, BoxCostumeItem.create(blockState), 1.0F);
+        this.dropStack(BoxCostumeItem.create(blockState), 1.0F);
         world.playSoundFromEntity(null, this, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.PLAYERS, 1.0F, 0.8F);
         world.playSoundFromEntity(null, this, blockState.getSoundGroup().getBreakSound(), SoundCategory.NEUTRAL, 1.0F, 1.0F);
         world.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, blockState), this.getX(), this.getY() + 0.6, this.getZ(),
