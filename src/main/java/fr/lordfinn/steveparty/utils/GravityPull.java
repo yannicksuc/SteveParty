@@ -103,7 +103,7 @@ public final class GravityPull {
     public static double resistance(Entity entity) {
         double armour = 0;
         if (entity instanceof LivingEntity living) {
-            double weight = attribute(living, EntityAttributes.ARMOR) + attribute(living, EntityAttributes.ARMOR_TOUGHNESS);
+            double weight = attribute(living, EntityAttributes.GENERIC_ARMOR) + attribute(living, EntityAttributes.GENERIC_ARMOR_TOUGHNESS);
             armour = MathHelper.clamp(weight / IMMUNE_WEIGHT, 0, 1);
         }
         Box box = entity.getBoundingBox();

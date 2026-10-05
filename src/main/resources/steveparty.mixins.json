@@ -23,6 +23,7 @@
     "TokenEntityMixin",
     "TokenBaseDimensionsMixin",
     "TokenTurtleMixin",
+    "TokenChickenMixin",
     "TokenPawnInteractionMixin",
     "TokenMerchantMixin",
     "MixinPistonBlock",

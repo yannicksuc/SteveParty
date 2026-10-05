@@ -24,7 +24,7 @@ public class ModEntities {
                     // The dice keeps moving (thrown, then springing around its target): synced every tick so the
                     // client does not draw it blocks behind its real position (see DiceEntity#updateTrackedPositionAndAngles)
                     .trackingTickInterval(1)
-                    .build(DICE_ENTITY_KEY)
+                    .build(DICE_ENTITY_KEY.getValue().toString())
     );
 
     public static final RegistryKey<EntityType<?>> BOXED_TRADER_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("boxed_trader"));
@@ -33,7 +33,7 @@ public class ModEntities {
             EntityType.Builder
                     .create(BoxedTraderEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1.5f)
-                    .build(BOXED_TRADER_ENTITY_KEY)
+                    .build(BOXED_TRADER_ENTITY_KEY.getValue().toString())
     );
 
     public static final RegistryKey<EntityType<?>> DIRECTION_DISPLAY_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("direction_display"));
@@ -42,7 +42,7 @@ public class ModEntities {
             EntityType.Builder
                     .<DirectionDisplayEntity>create(DirectionDisplayEntity::new, SpawnGroup.MISC)
                     .dimensions(1f, 1f)
-                    .build(DIRECTION_DISPLAY_ENTITY_KEY)
+                    .build(DIRECTION_DISPLAY_ENTITY_KEY.getValue().toString())
     );
 
     public static final RegistryKey<EntityType<?>> MULA_ENTITY_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("mula"));
@@ -54,7 +54,7 @@ public class ModEntities {
                     .dimensions(MulaEntity.MODEL_SIZE, MulaEntity.MODEL_SIZE)
                     .eyeHeight(MulaEntity.MODEL_EYE_HEIGHT)
                     .makeFireImmune()
-                    .build(MULA_ENTITY_KEY)
+                    .build(MULA_ENTITY_KEY.getValue().toString())
     );
 
     /** A burst Mula flying away as a shooting star (a show: never saved, its path is a formula). */
@@ -69,7 +69,7 @@ public class ModEntities {
                     .makeFireImmune()
                     .maxTrackingRange(16)
                     .trackingTickInterval(20)
-                    .build(MULA_STAR_KEY)
+                    .build(MULA_STAR_KEY.getValue().toString())
     );
 
     /** Hitbox of the dice forge core in the sky: hitting it blows the core up. */
@@ -83,7 +83,7 @@ public class ModEntities {
                     .disableSummon()
                     .makeFireImmune()
                     .maxTrackingRange(10)
-                    .build(FORGE_CORE_KEY)
+                    .build(FORGE_CORE_KEY.getValue().toString())
     );
 
     /** What carries a traveller through a warp pipe (invisible, ridden). */
@@ -97,7 +97,7 @@ public class ModEntities {
                     .makeFireImmune()
                     .maxTrackingRange(10)
                     .trackingTickInterval(20)
-                    .build(PIPE_CARRIER_KEY)
+                    .build(PIPE_CARRIER_KEY.getValue().toString())
     );
 
     public static void initialize() {
