@@ -671,6 +671,17 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
           "Sans prix sur un étal, en pièces : Champignon **5**, Double pièces et Cadenas **8**, Piège **10**, "
           "Cloche **12**, Sifflet **15**, Tuyau **25**, Cloche dorée **40**.",
           "Getting Them", "Les obtenir"),
+        T("During a party, a player carries at most **3** power-ups: **Max power-ups** on the Party Controller's "
+          "Settings page (∞: no limit). **Dice without Infinity** count too, being spent; a die with Infinity is "
+          "your own and does not.\n\n"
+          "At the limit, shops refuse to sell, Inventory spaces keep the extra in their chest, and power-ups on "
+          "the ground stay there.",
+          "Pendant une partie, un joueur porte au plus **3** bonus : **Bonus maximum** dans les réglages du Party "
+          "Controller (∞ : illimité). Les **dés sans Infini** comptent aussi, car ils sont dépensés ; un dé Infini "
+          "est le tien et ne compte pas.\n\n"
+          "À la limite, les boutiques refusent de vendre, les cases Inventaire gardent le surplus dans leur coffre, "
+          "et les bonus au sol y restent.",
+          "The Limit", "La limite"),
         C("steveparty:powerup_mushroom", "steveparty:powerup_double_coins",
           "Mushroom: red mushroom + sugar + Coin. Double Coins: Coin + glowstone dust + paper.",
           "Champignon : champignon rouge + sucre + pièce. Double pièces : pièce + poudre de glowstone + papier."),

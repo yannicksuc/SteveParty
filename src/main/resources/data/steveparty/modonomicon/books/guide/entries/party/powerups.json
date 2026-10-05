@@ -49,28 +49,33 @@
       "title": "book.steveparty.guide.party.powerups.page4.title"
     },
     {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.party.powerups.page5.text",
+      "title": "book.steveparty.guide.party.powerups.page5.title"
+    },
+    {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:powerup_mushroom",
       "recipe_id_2": "steveparty:powerup_double_coins",
-      "text": "book.steveparty.guide.party.powerups.page5.text"
+      "text": "book.steveparty.guide.party.powerups.page6.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:powerup_padlock",
       "recipe_id_2": "steveparty:powerup_trap",
-      "text": "book.steveparty.guide.party.powerups.page6.text"
+      "text": "book.steveparty.guide.party.powerups.page7.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:powerup_thief_bell",
       "recipe_id_2": "steveparty:powerup_golden_thief_bell",
-      "text": "book.steveparty.guide.party.powerups.page7.text"
+      "text": "book.steveparty.guide.party.powerups.page8.text"
     },
     {
       "type": "modonomicon:crafting_recipe",
       "recipe_id_1": "steveparty:powerup_star_whistle",
       "recipe_id_2": "steveparty:powerup_golden_pipe",
-      "text": "book.steveparty.guide.party.powerups.page8.text"
+      "text": "book.steveparty.guide.party.powerups.page9.text"
     }
   ]
 }
