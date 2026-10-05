@@ -1,0 +1,27 @@
+{
+  "parent": "steveparty:stars/ignition",
+  "display": {
+    "icon": {
+      "id": "minecraft:tnt",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.big_bang.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.big_bang.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "boom": {
+      "trigger": "steveparty:forge_core_exploded"
+    }
+  },
+  "requirements": [
+    [
+      "boom"
+    ]
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "parent": "steveparty:main/dice/triple_dice",
+  "display": {
+    "icon": {
+      "id": "steveparty:triple_dice",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.three_of_a_kind.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.three_of_a_kind.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "triple": {
+      "trigger": "steveparty:dice_rolled",
+      "conditions": {
+        "dice_count": 3,
+        "all_equal": true
+      }
+    }
+  },
+  "requirements": [
+    [
+      "triple"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

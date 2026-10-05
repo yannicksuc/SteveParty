@@ -1,0 +1,53 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:goal_pole",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.leap_of_faith.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.leap_of_faith.description"
+    },
+    "frame": "goal",
+    "hidden": true
+  },
+  "criteria": {
+    "leap": {
+      "trigger": "minecraft:fall_from_height",
+      "conditions": {
+        "distance": {
+          "y": {
+            "min": 30.0
+          }
+        },
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "stepping_on": {
+                "block": {
+                  "blocks": "steveparty:goal_pole"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "leap"
+    ]
+  ],
+  "rewards": {
+    "experience": 50,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

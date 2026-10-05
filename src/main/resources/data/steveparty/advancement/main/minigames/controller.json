@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/minigames/page",
+  "display": {
+    "icon": {
+      "id": "steveparty:mini_game_controller",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.controller.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.controller.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:mini_game_controller"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

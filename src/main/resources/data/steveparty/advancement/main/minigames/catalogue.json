@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/party/party_controller",
+  "display": {
+    "icon": {
+      "id": "steveparty:mini_games_catalogue",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.catalogue.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.catalogue.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:mini_games_catalogue"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

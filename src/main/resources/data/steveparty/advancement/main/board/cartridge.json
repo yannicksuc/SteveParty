@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/board/first_tile",
+  "display": {
+    "icon": {
+      "id": "steveparty:board_space_behavior",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.cartridge.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.cartridge.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_cartridge": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:board_space_behavior"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_cartridge"
+    ]
+  ]
+}

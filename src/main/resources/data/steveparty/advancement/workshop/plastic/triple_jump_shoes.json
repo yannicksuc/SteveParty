@@ -1,0 +1,41 @@
+{
+  "parent": "steveparty:workshop/plastic/hop_switch",
+  "display": {
+    "icon": {
+      "id": "steveparty:triple_jump_shoes",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.plastic.triple_jump_shoes.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.plastic.triple_jump_shoes.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "wearing": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "equipment": {
+                "feet": {
+                  "items": "steveparty:triple_jump_shoes"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "wearing"
+    ]
+  ]
+}

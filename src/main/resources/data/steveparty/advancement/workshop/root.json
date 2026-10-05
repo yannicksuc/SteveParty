@@ -1,0 +1,94 @@
+{
+  "display": {
+    "icon": {
+      "id": "steveparty:light_blue_plastic_block",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.root.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.root.description"
+    },
+    "frame": "task",
+    "background": "steveparty:textures/block/plastic_block/light_blue_plastic_block.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "has_workshop_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:plastic_pellets",
+              "steveparty:stencil",
+              "steveparty:villager_block",
+              "steveparty:trading_stall",
+              "steveparty:flag",
+              "steveparty:hop_switch",
+              "steveparty:looting_box",
+              "steveparty:triple_jump_shoes",
+              "steveparty:plunger",
+              "steveparty:white_pipe",
+              "steveparty:white_windowed_pipe",
+              "steveparty:white_stained_glass_pipe",
+              "steveparty:orange_pipe",
+              "steveparty:orange_windowed_pipe",
+              "steveparty:orange_stained_glass_pipe",
+              "steveparty:magenta_pipe",
+              "steveparty:magenta_windowed_pipe",
+              "steveparty:magenta_stained_glass_pipe",
+              "steveparty:light_blue_pipe",
+              "steveparty:light_blue_windowed_pipe",
+              "steveparty:light_blue_stained_glass_pipe",
+              "steveparty:yellow_pipe",
+              "steveparty:yellow_windowed_pipe",
+              "steveparty:yellow_stained_glass_pipe",
+              "steveparty:lime_pipe",
+              "steveparty:lime_windowed_pipe",
+              "steveparty:lime_stained_glass_pipe",
+              "steveparty:pink_pipe",
+              "steveparty:pink_windowed_pipe",
+              "steveparty:pink_stained_glass_pipe",
+              "steveparty:gray_pipe",
+              "steveparty:gray_windowed_pipe",
+              "steveparty:gray_stained_glass_pipe",
+              "steveparty:light_gray_pipe",
+              "steveparty:light_gray_windowed_pipe",
+              "steveparty:light_gray_stained_glass_pipe",
+              "steveparty:cyan_pipe",
+              "steveparty:cyan_windowed_pipe",
+              "steveparty:cyan_stained_glass_pipe",
+              "steveparty:purple_pipe",
+              "steveparty:purple_windowed_pipe",
+              "steveparty:purple_stained_glass_pipe",
+              "steveparty:blue_pipe",
+              "steveparty:blue_windowed_pipe",
+              "steveparty:blue_stained_glass_pipe",
+              "steveparty:brown_pipe",
+              "steveparty:brown_windowed_pipe",
+              "steveparty:brown_stained_glass_pipe",
+              "steveparty:green_pipe",
+              "steveparty:green_windowed_pipe",
+              "steveparty:green_stained_glass_pipe",
+              "steveparty:red_pipe",
+              "steveparty:red_windowed_pipe",
+              "steveparty:red_stained_glass_pipe",
+              "steveparty:black_pipe",
+              "steveparty:black_windowed_pipe",
+              "steveparty:black_stained_glass_pipe",
+              "steveparty:glass_pipe"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_workshop_item"
+    ]
+  ]
+}

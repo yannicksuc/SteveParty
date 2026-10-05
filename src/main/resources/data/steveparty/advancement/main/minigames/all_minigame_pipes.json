@@ -1,0 +1,65 @@
+{
+  "parent": "steveparty:main/minigames/minigame_pipe",
+  "display": {
+    "icon": {
+      "id": "steveparty:golden_minigame_pipe",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.all_minigame_pipes.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.all_minigame_pipes.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "copper": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:copper_minigame_pipe"
+          }
+        ]
+      }
+    },
+    "iron": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:iron_minigame_pipe"
+          }
+        ]
+      }
+    },
+    "golden": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:golden_minigame_pipe"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "copper"
+    ],
+    [
+      "iron"
+    ],
+    [
+      "golden"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

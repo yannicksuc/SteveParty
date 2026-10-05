@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:stars/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:telescope",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.telescope.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.telescope.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:telescope"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

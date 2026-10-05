@@ -1,0 +1,45 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:bandana",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.bandana.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.bandana.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "wearing": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "equipment": {
+                "head": {
+                  "items": "steveparty:bandana"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "wearing"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

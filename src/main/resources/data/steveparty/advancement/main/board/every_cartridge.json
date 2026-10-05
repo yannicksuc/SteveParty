@@ -1,0 +1,117 @@
+{
+  "parent": "steveparty:main/board/cartridge",
+  "display": {
+    "icon": {
+      "id": "steveparty:teleport_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.every_cartridge.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.every_cartridge.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "start": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:tile_behavior_start"
+          }
+        ]
+      }
+    },
+    "stop": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:board_space_behavior_stop"
+          }
+        ]
+      }
+    },
+    "shop": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:shop_cartridge"
+          }
+        ]
+      }
+    },
+    "inventory": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:inventory_cartridge"
+          }
+        ]
+      }
+    },
+    "advance_back": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:advance_back_cartridge"
+          }
+        ]
+      }
+    },
+    "replay": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:replay_cartridge"
+          }
+        ]
+      }
+    },
+    "teleport": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:teleport_cartridge"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "start"
+    ],
+    [
+      "stop"
+    ],
+    [
+      "shop"
+    ],
+    [
+      "inventory"
+    ],
+    [
+      "advance_back"
+    ],
+    [
+      "replay"
+    ],
+    [
+      "teleport"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

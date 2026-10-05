@@ -1,0 +1,26 @@
+{
+  "parent": "steveparty:stars/telescope",
+  "display": {
+    "icon": {
+      "id": "minecraft:spyglass",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.telescope_found.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.telescope_found.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "found": {
+      "trigger": "steveparty:telescope_star_found"
+    }
+  },
+  "requirements": [
+    [
+      "found"
+    ]
+  ]
+}

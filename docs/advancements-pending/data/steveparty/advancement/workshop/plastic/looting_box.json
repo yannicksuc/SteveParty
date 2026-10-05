@@ -1,0 +1,26 @@
+{
+  "parent": "steveparty:workshop/plastic/hop_switch",
+  "display": {
+    "icon": {
+      "id": "steveparty:looting_box",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.plastic.looting_box.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.plastic.looting_box.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "bonk": {
+      "trigger": "steveparty:looting_box_hit"
+    }
+  },
+  "requirements": [
+    [
+      "bonk"
+    ]
+  ]
+}

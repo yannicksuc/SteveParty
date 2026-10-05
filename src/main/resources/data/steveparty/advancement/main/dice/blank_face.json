@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/dice/default_dice",
+  "display": {
+    "icon": {
+      "id": "steveparty:blank_dice_face",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.blank_face.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.blank_face.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_face": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:blank_dice_face"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_face"
+    ]
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "parent": "steveparty:main/party/finish",
+  "display": {
+    "icon": {
+      "id": "steveparty:step_controller",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.marathon.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.marathon.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "long": {
+      "trigger": "steveparty:party_ended",
+      "conditions": {
+        "rounds": {
+          "min": 20
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "long"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/coins_25"
+    ]
+  }
+}

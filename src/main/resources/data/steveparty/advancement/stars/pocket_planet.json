@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:stars/gravity_core",
+  "display": {
+    "icon": {
+      "id": "steveparty:gravity_core",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.pocket_planet.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.pocket_planet.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:gravity_core"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

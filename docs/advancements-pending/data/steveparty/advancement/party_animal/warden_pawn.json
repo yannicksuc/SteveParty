@@ -1,0 +1,45 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:sculk_shrieker",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.warden_pawn.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.warden_pawn.description"
+    },
+    "frame": "challenge",
+    "hidden": true
+  },
+  "criteria": {
+    "warden": {
+      "trigger": "steveparty:pawn_spell",
+      "conditions": {
+        "result": "tokenized",
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "minecraft:warden"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "warden"
+    ]
+  ],
+  "rewards": {
+    "experience": 50,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

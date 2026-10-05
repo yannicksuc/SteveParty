@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:stars/telescope_found",
+  "display": {
+    "icon": {
+      "id": "minecraft:compass",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.landing_site.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.landing_site.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "steveparty:mula_site_reached"
+    }
+  },
+  "requirements": [
+    [
+      "reached"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/star_fragment"
+    ]
+  }
+}

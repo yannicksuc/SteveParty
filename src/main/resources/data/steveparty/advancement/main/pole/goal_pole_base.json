@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:goal_pole_base",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pole.goal_pole_base.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pole.goal_pole_base.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:goal_pole_base"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

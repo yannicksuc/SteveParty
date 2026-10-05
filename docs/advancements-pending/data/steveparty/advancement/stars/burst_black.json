@@ -1,0 +1,45 @@
+{
+  "parent": "steveparty:stars/burst",
+  "display": {
+    "icon": {
+      "id": "steveparty:black_star_fragment",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.burst_black.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.burst_black.description"
+    },
+    "frame": "challenge",
+    "hidden": true
+  },
+  "criteria": {
+    "burst": {
+      "trigger": "steveparty:mula_burst",
+      "conditions": {
+        "mula": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Variant:5}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "burst"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/star_fragments"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/pawns/tokenizer_wand",
+  "display": {
+    "icon": {
+      "id": "steveparty:token",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.first_pawn.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.first_pawn.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "tokenized": {
+      "trigger": "steveparty:pawn_spell",
+      "conditions": {
+        "result": "tokenized"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tokenized"
+    ]
+  ]
+}

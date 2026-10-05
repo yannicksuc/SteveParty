@@ -1,0 +1,40 @@
+{
+  "parent": "steveparty:stars/feed",
+  "display": {
+    "icon": {
+      "id": "minecraft:potion",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.potion.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.potion.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "potion": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula"
+            }
+          }
+        ],
+        "item": {
+          "items": "minecraft:potion"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "potion"
+    ]
+  ]
+}

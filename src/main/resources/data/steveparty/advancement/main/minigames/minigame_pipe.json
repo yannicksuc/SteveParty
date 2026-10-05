@@ -1,0 +1,37 @@
+{
+  "parent": "steveparty:main/minigames/page",
+  "display": {
+    "icon": {
+      "id": "steveparty:copper_minigame_pipe",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.minigame_pipe.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.minigame_pipe.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:copper_minigame_pipe",
+              "steveparty:iron_minigame_pipe",
+              "steveparty:golden_minigame_pipe"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

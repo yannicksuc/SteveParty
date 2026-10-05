@@ -1,0 +1,26 @@
+{
+  "parent": "steveparty:main/minigames/play",
+  "display": {
+    "icon": {
+      "id": "steveparty:mini_game_controller",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.ready.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.ready.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "ready": {
+      "trigger": "steveparty:minigame_ready"
+    }
+  },
+  "requirements": [
+    [
+      "ready"
+    ]
+  ]
+}

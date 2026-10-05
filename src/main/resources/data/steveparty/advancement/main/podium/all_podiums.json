@@ -1,0 +1,74 @@
+{
+  "parent": "steveparty:main/podium/podium",
+  "display": {
+    "icon": {
+      "id": "steveparty:gold_podium",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.podium.all_podiums.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.podium.all_podiums.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "gold": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:gold_podium"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "silver": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:silver_podium"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "bronze": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:bronze_podium"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "gold"
+    ],
+    [
+      "silver"
+    ],
+    [
+      "bronze"
+    ]
+  ]
+}

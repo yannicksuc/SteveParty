@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:stars/feed",
+  "display": {
+    "icon": {
+      "id": "steveparty:blue_star_fragment",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.burst.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.burst.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "burst": {
+      "trigger": "steveparty:mula_burst"
+    }
+  },
+  "requirements": [
+    [
+      "burst"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/star_fragment"
+    ]
+  }
+}
