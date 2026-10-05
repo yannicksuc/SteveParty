@@ -36,7 +36,7 @@ public class StencilMakerBlockEntity extends SyncedBlockEntity implements Extend
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
         if (stencil != null && !stencil.isEmpty()) {
-            NbtElement stencilNbt = stencil.toNbt(registries);
+            NbtElement stencilNbt = stencil.encode(registries);
             nbt.put("stencil", stencilNbt);
         }
         nbt.putBoolean("stencilIn", (stencil != null && !stencil.isEmpty()));

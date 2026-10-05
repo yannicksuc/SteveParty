@@ -12,6 +12,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -20,7 +21,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 
@@ -81,18 +81,18 @@ public class DiceForgeBlock extends BlockWithEntity {
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         // Right-clicking with the gravity (heavy) core inserts it in the forge hole and activates the forge
         if (!DiceForgeBlockEntity.isGravityCore(stack) || state.get(ACTIVATED)) {
-            return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+            return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        if (world.isClient) return ActionResult.SUCCESS;
+        if (world.isClient) return ItemActionResult.SUCCESS;
         if (world.getBlockEntity(pos) instanceof DiceForgeBlockEntity blockEntity) {
             blockEntity.activate();
             stack.decrementUnlessCreative(1, player);
-            return ActionResult.SUCCESS_SERVER;
+            return ItemActionResult.SUCCESS;
         }
-        return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -105,18 +105,18 @@ public class DiceForgeBlock extends BlockWithEntity {
                 player.sendMessage(Text.translatableWithFallback("message.steveparty.dice_forge.core_settling",
                         "The gravity core is still settling into the forge"), true);
             }
-            return ActionResult.SUCCESS_SERVER;
+            return ActionResult.SUCCESS;
         }
         if (world.isClient) return ActionResult.SUCCESS;
         if (world.getBlockEntity(pos) instanceof DiceForgeBlockEntity diceForgeBlockEntity) {
             player.openHandledScreen(diceForgeBlockEntity);
         }
-        return ActionResult.SUCCESS_SERVER;
+        return ActionResult.SUCCESS;
     }
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
         updatePower(world, pos);
     }
 

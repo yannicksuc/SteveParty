@@ -59,7 +59,7 @@ public final class VillagerSoul {
      * block that never had one (creative, older worlds), as a new villager of the place's biome.
      */
     public static VillagerEntity release(ServerWorld world, BlockPos pos, @Nullable NbtCompound soul) {
-        VillagerEntity villager = EntityType.VILLAGER.create(world, SpawnReason.CONVERSION);
+        VillagerEntity villager = EntityType.VILLAGER.create(world);
         if (villager == null) return null;
         if (soul != null) {
             villager.readNbt(soul);

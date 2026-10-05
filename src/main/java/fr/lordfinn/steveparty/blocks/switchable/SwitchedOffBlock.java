@@ -10,7 +10,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.context.LootWorldContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -71,7 +71,7 @@ public class SwitchedOffBlock extends BlockWithEntity {
 
     // Exactly the drops of the original block: nothing without the tool it requires
     @Override
-    protected List<ItemStack> getDroppedStacks(BlockState state, LootWorldContext.Builder builder) {
+    protected List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
         BlockState stored = storedState(builder.getOptional(LootContextParameters.BLOCK_ENTITY));
         if (stored == null || stored.isAir()) return List.of();
         if (stored.isToolRequired()) {

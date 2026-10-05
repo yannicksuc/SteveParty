@@ -253,7 +253,7 @@ public final class BoardLinks {
         Vec3d a = BoardSpaces.standPos(world, from).add(0, 0.25, 0), b = BoardSpaces.standPos(world, to).add(0, 0.25, 0);
         Vec3d step = b.subtract(a);
         int count = Math.max(2, (int) Math.ceil(step.length() / 0.35));
-        DustParticleEffect dust = new DustParticleEffect(color, 1.1F);
+        DustParticleEffect dust = new DustParticleEffect(Vec3d.unpackRgb(color).toVector3f(), 1.1F);
         for (int i = 0; i <= count; i++) {
             Vec3d p = a.add(step.multiply(i / (double) count));
             world.spawnParticles(dust, p.x, p.y, p.z, 1, 0, 0, 0, 0);

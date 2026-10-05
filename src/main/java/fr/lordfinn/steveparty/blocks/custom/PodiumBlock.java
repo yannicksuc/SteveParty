@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
 import com.mojang.serialization.MapCodec;
+import fr.lordfinn.steveparty.blocks.ItemResults;
 import fr.lordfinn.steveparty.items.custom.MiniGamePageItem;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
@@ -30,11 +31,10 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
-import net.minecraft.world.block.WireOrientation;
-import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -171,8 +171,8 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
-                                                   Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState,
+                                                   WorldAccess world, BlockPos pos, BlockPos neighborPos) {
         if (direction == Direction.UP) return above(state, neighborState);
         if (direction == Direction.DOWN) return below(state, neighborState);
         return state;
@@ -257,21 +257,21 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
      * (what a signal does); a block in hand is placed; anything else, or nothing: the player registers ({@link #onUse}).
      */
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         ActionResult stamped = PodiumBanner.onUseWithItem(state, world, pos, player, hand, hit);
-        if (stamped != null) return stamped;
+        if (stamped != null) return ItemResults.of(stamped);
         if (stack.getItem() instanceof MiniGamePageItem) {
             if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer)
                 Podiums.clickLink(serverPlayer, hand, serverWorld, pos, MiniGamePodiumLink.Kind.PODIUM);
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
-        if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
+        if (hand != Hand.MAIN_HAND) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         if (stack.getItem() instanceof WrenchItem) {
             if (world instanceof ServerWorld serverWorld && player instanceof ServerPlayerEntity serverPlayer)
                 Podiums.cycleSignal(serverPlayer, serverWorld, pos);
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
-        return stack.getItem() instanceof BlockItem ? ActionResult.PASS : ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        return stack.getItem() instanceof BlockItem ? ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION : ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     /** Right click: the player registers on the podium, or leaves it if it already shows him. */
@@ -293,8 +293,8 @@ public class PodiumBlock extends Block implements BlockEntityProvider {
     // ---------------------------------------------------------------- redstone
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
         if (world.isClient) return;
         PodiumBlockEntity podium = master(world, pos);
         if (podium != null) podium.onRedstoneInput(columnPower(world, pos) > 0);

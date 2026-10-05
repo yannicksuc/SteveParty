@@ -25,6 +25,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -35,7 +36,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 import static net.minecraft.sound.SoundEvents.BLOCK_STONE_BUTTON_CLICK_OFF;
@@ -152,18 +152,18 @@ public class HopSwitchBlock extends CartridgeContainer {
     // Interaction (right-click)
     // -----------------------------
     @Override
-    protected ActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state,
+    protected ItemActionResult onUseWithoutCartridgeContainerOpener(ItemStack stack, BlockState state,
                                                                 World world, BlockPos pos,
                                                                 PlayerEntity player, Hand hand,
                                                                 BlockHitResult hit) {
-        if (!stack.isOf(Items.CLOCK)) return ActionResult.PASS;
+        if (!stack.isOf(Items.CLOCK)) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // Same decision on both sides (called client-side too by CartridgeContainer)
-        if (world.isClient) return ActionResult.CONSUME;
+        if (world.isClient) return ItemActionResult.CONSUME;
 
         HopSwitchBlockEntity be = (HopSwitchBlockEntity) world.getBlockEntity(pos);
         if (be != null) increaseDuration(be, player);
 
-        return ActionResult.CONSUME;
+        return ItemActionResult.CONSUME;
     }
     @Override
     public NamedScreenHandlerFactory createScreenHandlerFactory(BlockState state, net.minecraft.world.World world, BlockPos pos) {
@@ -173,7 +173,7 @@ public class HopSwitchBlock extends CartridgeContainer {
     }
 
     @Override
-    protected ActionResult.@Nullable Success openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+    protected @Nullable ActionResult openScreen(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         if (world.isClient) return null;
 
         HopSwitchBlockEntity blockEntity = (HopSwitchBlockEntity) world.getBlockEntity(pos);
@@ -271,7 +271,7 @@ public class HopSwitchBlock extends CartridgeContainer {
     // -----------------------------
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock,
-                                  @Nullable WireOrientation wireOrientation, boolean notify) {
+                                  BlockPos sourcePos, boolean notify) {
         if (world.isClient) return;
 
         boolean powered = world.isReceivingRedstonePower(pos);

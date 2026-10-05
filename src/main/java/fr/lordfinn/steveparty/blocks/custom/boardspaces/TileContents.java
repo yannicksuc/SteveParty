@@ -81,7 +81,7 @@ public final class TileContents {
     public static boolean hasSilkTouch(WorldView world, ItemStack tool) {
         if (tool.isEmpty()) return false;
         return world.getRegistryManager().getOptional(RegistryKeys.ENCHANTMENT)
-                .flatMap(registry -> registry.getOptional(Enchantments.SILK_TOUCH))
+                .flatMap(registry -> registry.getEntry(Enchantments.SILK_TOUCH))
                 .map(silkTouch -> EnchantmentHelper.getLevel(silkTouch, tool) > 0)
                 .orElse(false);
     }

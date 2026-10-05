@@ -318,7 +318,7 @@ public class MiniGameControllerBlockEntity extends SyncedBlockEntity implements 
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
-        if (!page.isEmpty()) nbt.put("Page", page.toNbt(wrapper));
+        if (!page.isEmpty()) nbt.put("Page", page.encode(wrapper));
         if (powered) nbt.putBoolean("Powered", true);
     }
 

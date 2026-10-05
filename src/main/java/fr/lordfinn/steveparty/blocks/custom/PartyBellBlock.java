@@ -19,6 +19,7 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -29,7 +30,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -87,13 +87,13 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     // ---------------------------------------------------------------- interaction
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (stack.getItem() instanceof WrenchItem) {
             if (!world.isClient) toggleWaiting(state, world, pos, player);
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         // Empty hand: onUse (cycle the moment); any other item keeps its own use (placing redstone next to it...)
-        return stack.isEmpty() ? ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION : ActionResult.PASS;
+        return stack.isEmpty() ? ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -155,8 +155,8 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
         if (world.isClient || !(world.getBlockEntity(pos) instanceof PartyBellBlockEntity bell)) return;
         // While the bell pulses, a wire it powers powers it back: that is not a signal sent to the bell
         bell.onRedstoneInput(world.isReceivingRedstonePower(pos), state.get(POWERED));
