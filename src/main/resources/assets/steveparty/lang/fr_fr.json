@@ -2301,5 +2301,12 @@
   "advancements.steveparty.wild_cards.last_place.title": "Ce sera pour la prochaine fois",
   "advancements.steveparty.wild_cards.last_place.description": "Terminer une partie à la dernière place",
   "advancements.steveparty.wild_cards.taking_part.title": "L'important, c'est de participer",
-  "advancements.steveparty.wild_cards.taking_part.description": "Finir un mini-jeu sans obtenir de place"
+  "advancements.steveparty.wild_cards.taking_part.description": "Finir un mini-jeu sans obtenir de place",
+  "item.steveparty.powerup_trap": "Piège",
+  "tooltip.steveparty.powerup.trap": "À utiliser au début de son tour, avant de lancer le dé : pose un piège caché sur la case où se trouve son pion. Le prochain pion d'un autre joueur qui s'y arrête lui donne 10 pièces (au plus ce qu'il a). Un piège par case : un nouveau remplace l'ancien.",
+  "message.steveparty.powerup.trap.set": "Piège posé sur cette case. Vous seul le voyez.",
+  "message.steveparty.powerup.trap.no_space": "Votre pion n'est pas sur une case du plateau : aucun piège posé.",
+  "message.steveparty.powerup.trap.sprung": "%1$s s'arrête sur le piège de %2$s et lui donne %3$s × %4$s !",
+  "message.steveparty.powerup.trap.sprung_empty": "%1$s s'arrête sur le piège de %2$s, mais n'a pas de %3$s à donner !",
+  "message.steveparty.powerup.trap.disarmed": "Le Cadenas de %1$s désamorce le piège de %2$s !"
 }

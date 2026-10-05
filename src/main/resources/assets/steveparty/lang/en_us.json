@@ -2301,5 +2301,12 @@
   "advancements.steveparty.wild_cards.last_place.title": "Better Luck Next Time",
   "advancements.steveparty.wild_cards.last_place.description": "Finish a party in last place",
   "advancements.steveparty.wild_cards.taking_part.title": "It's the Taking Part That Counts",
-  "advancements.steveparty.wild_cards.taking_part.description": "Finish a mini-game without a place"
+  "advancements.steveparty.wild_cards.taking_part.description": "Finish a mini-game without a place",
+  "item.steveparty.powerup_trap": "Trap",
+  "tooltip.steveparty.powerup.trap": "Use it at the start of your turn, before you roll the die: sets a hidden trap on the space your token stands on. The next token of another player to stop there gives you 10 coins (at most what they hold). One trap per space: a new one replaces the old one.",
+  "message.steveparty.powerup.trap.set": "Trap set on this space. Only you can see it.",
+  "message.steveparty.powerup.trap.no_space": "Your token is not on a board space: no trap set.",
+  "message.steveparty.powerup.trap.sprung": "%1$s stops on %2$s's trap and gives them %3$s × %4$s!",
+  "message.steveparty.powerup.trap.sprung_empty": "%1$s stops on %2$s's trap, but has no %3$s to give!",
+  "message.steveparty.powerup.trap.disarmed": "%1$s's Padlock disarms %2$s's trap!"
 }

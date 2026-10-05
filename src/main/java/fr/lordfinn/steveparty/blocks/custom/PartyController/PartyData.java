@@ -21,6 +21,8 @@ public class PartyData {
     private List<UUID> tokens = new ArrayList<>();
     private int stepIndex = -1;
     private int nbTurn = 10;
+    /** The hidden traps of the Trap power-up: saved with the party, never sent to the clients. */
+    private final fr.lordfinn.steveparty.powerups.effects.TrapState traps = new fr.lordfinn.steveparty.powerups.effects.TrapState();
 
     // Constructor
     public PartyData() {
@@ -57,6 +59,7 @@ public class PartyData {
         if (nbt.contains("NbTurn")) {
             this.nbTurn = nbt.getInt("NbTurn");
         }
+        traps.readNbt(nbt);
     }
 
     /**
@@ -76,6 +79,7 @@ public class PartyData {
         nbt.put("Tokens", tokensNbtList);
         nbt.putInt("StepIndex", stepIndex);
         nbt.putInt("NbTurn", nbTurn);
+        traps.writeNbt(nbt);
         return nbt;
     }
 
@@ -181,6 +185,12 @@ public class PartyData {
         this.tokens.clear();
         this.stepIndex = -1;
         this.steps.clear();
+        this.traps.clear();
+    }
+
+    /** The hidden traps set with the Trap power-up during this party (see {@code TrapEffect}). */
+    public fr.lordfinn.steveparty.powerups.effects.TrapState getTraps() {
+        return traps;
     }
 
     public int getNbTurn() {
