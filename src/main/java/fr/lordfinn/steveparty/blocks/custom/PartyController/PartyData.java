@@ -21,6 +21,12 @@ public class PartyData {
     private List<UUID> tokens = new ArrayList<>();
     private int stepIndex = -1;
     private int nbTurn = 10;
+    /**
+     * Tokens shielded by a Padlock power-up until their next turn. Managed by
+     * {@link fr.lordfinn.steveparty.powerups.effects.PowerUpProtection}: saved with the party, never sent to clients
+     * (the HUD shows it through the standings' bonuses).
+     */
+    private final Set<UUID> protectedTokens = new LinkedHashSet<>();
 
     // Constructor
     public PartyData() {
@@ -57,6 +63,13 @@ public class PartyData {
         if (nbt.contains("NbTurn")) {
             this.nbTurn = nbt.getInt("NbTurn");
         }
+        protectedTokens.clear();
+        nbt.getList("ProtectedTokens", 8).forEach(token -> {
+            try {
+                protectedTokens.add(UUID.fromString(token.asString()));
+            } catch (IllegalArgumentException ignored) {
+            }
+        });
     }
 
     /**
@@ -76,6 +89,11 @@ public class PartyData {
         nbt.put("Tokens", tokensNbtList);
         nbt.putInt("StepIndex", stepIndex);
         nbt.putInt("NbTurn", nbTurn);
+        if (!protectedTokens.isEmpty()) {
+            NbtList protectedNbt = new NbtList();
+            protectedTokens.forEach(uuid -> protectedNbt.add(NbtString.of(uuid.toString())));
+            nbt.put("ProtectedTokens", protectedNbt);
+        }
         return nbt;
     }
 
@@ -175,10 +193,20 @@ public class PartyData {
 
     public void removeToken(UUID uuid) {
         this.tokens.remove(uuid);
+        this.protectedTokens.remove(uuid);
+    }
+
+    /**
+     * The tokens currently shielded by a Padlock (live set). Read and change it through
+     * {@link fr.lordfinn.steveparty.powerups.effects.PowerUpProtection} only.
+     */
+    public Set<UUID> getProtectedTokens() {
+        return protectedTokens;
     }
 
     public void reset() {
         this.tokens.clear();
+        this.protectedTokens.clear();
         this.stepIndex = -1;
         this.steps.clear();
     }
