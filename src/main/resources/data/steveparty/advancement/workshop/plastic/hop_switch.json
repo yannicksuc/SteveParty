@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:workshop/plastic/block",
+  "display": {
+    "icon": {
+      "id": "steveparty:hop_switch",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.plastic.hop_switch.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.plastic.hop_switch.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "on_switch": {
+      "trigger": "minecraft:enter_block",
+      "conditions": {
+        "block": "steveparty:hop_switch"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "on_switch"
+    ]
+  ]
+}

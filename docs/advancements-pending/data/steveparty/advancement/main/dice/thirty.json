@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/dice/three_of_a_kind",
+  "display": {
+    "icon": {
+      "id": "steveparty:premium_dice_face_10",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.thirty.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.thirty.description"
+    },
+    "frame": "challenge",
+    "hidden": true
+  },
+  "criteria": {
+    "thirty": {
+      "trigger": "steveparty:dice_rolled",
+      "conditions": {
+        "dice_count": 3,
+        "forged": false,
+        "total": 30
+      }
+    }
+  },
+  "requirements": [
+    [
+      "thirty"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/coins_25"
+    ]
+  }
+}

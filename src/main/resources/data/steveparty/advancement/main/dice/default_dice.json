@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:default_dice",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.default_dice.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.default_dice.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_dice": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:default_dice"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_dice"
+    ]
+  ]
+}

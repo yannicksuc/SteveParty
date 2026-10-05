@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:stars/power_star",
+  "display": {
+    "icon": {
+      "id": "steveparty:gravity_core",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.gravity_core.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.gravity_core.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:gravity_core"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

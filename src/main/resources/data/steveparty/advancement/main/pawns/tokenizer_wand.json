@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/pawns/crystal_ball",
+  "display": {
+    "icon": {
+      "id": "steveparty:tokenizer_wand",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.tokenizer_wand.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.tokenizer_wand.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_wand": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:tokenizer_wand"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_wand"
+    ]
+  ]
+}

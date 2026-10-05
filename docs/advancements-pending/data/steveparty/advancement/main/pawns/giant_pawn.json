@@ -1,0 +1,31 @@
+{
+  "parent": "steveparty:main/pawns/first_pawn",
+  "display": {
+    "icon": {
+      "id": "steveparty:token",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.giant_pawn.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.giant_pawn.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "giant": {
+      "trigger": "steveparty:pawn_spell",
+      "conditions": {
+        "size": {
+          "min": 1.95
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "giant"
+    ]
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:obsidian",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.obsidian_trader.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.obsidian_trader.description"
+    },
+    "frame": "challenge",
+    "hidden": true
+  },
+  "criteria": {
+    "created": {
+      "trigger": "steveparty:boxed_trader_created",
+      "conditions": {
+        "block": {
+          "blocks": "minecraft:obsidian"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "created"
+    ]
+  ],
+  "rewards": {
+    "experience": 50,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "parent": "steveparty:workshop/shops/trading_stall",
+  "display": {
+    "icon": {
+      "id": "steveparty:shopkeeper_key",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.shopkeeper_key.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.shopkeeper_key.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "linked": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:boxed_trader"
+            }
+          }
+        ],
+        "item": {
+          "items": "steveparty:shopkeeper_key"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "linked"
+    ]
+  ]
+}

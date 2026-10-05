@@ -1,0 +1,35 @@
+{
+  "parent": "steveparty:main/minigames/win",
+  "display": {
+    "icon": {
+      "id": "steveparty:blue_plastic_block",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.minigames.team_win.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.minigames.team_win.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "won": {
+      "trigger": "steveparty:minigame_ended",
+      "conditions": {
+        "place": 1,
+        "practice": false,
+        "in_party": true,
+        "format": "teams",
+        "team_size": {
+          "min": 2
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "won"
+    ]
+  ]
+}

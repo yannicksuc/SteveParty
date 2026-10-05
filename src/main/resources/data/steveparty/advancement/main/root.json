@@ -1,0 +1,49 @@
+{
+  "display": {
+    "icon": {
+      "id": "steveparty:party_controller",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.root.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.root.description"
+    },
+    "frame": "task",
+    "background": "steveparty:textures/block/polished_yellow_terracotta.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "has_party_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:tile",
+              "steveparty:advanced_tile",
+              "steveparty:board_space_behavior",
+              "steveparty:default_dice",
+              "steveparty:tokenizer_wand",
+              "steveparty:token",
+              "steveparty:party_controller",
+              "steveparty:wrench",
+              "steveparty:coin",
+              "steveparty:mini_game_page",
+              "steveparty:mini_games_catalogue",
+              "steveparty:goal_pole_base",
+              "steveparty:podium"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_party_item"
+    ]
+  ]
+}

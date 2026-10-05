@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:workshop/shops/villager_block",
+  "display": {
+    "icon": {
+      "id": "steveparty:bandana",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.bandana.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.bandana.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:bandana"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

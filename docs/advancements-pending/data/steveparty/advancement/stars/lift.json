@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:stars/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:lead",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.lift.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.lift.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "lifted": {
+      "trigger": "steveparty:mula_lifted"
+    }
+  },
+  "requirements": [
+    [
+      "lifted"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/star_fragment"
+    ]
+  }
+}

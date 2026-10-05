@@ -1,0 +1,30 @@
+{
+  "parent": "steveparty:stars/forge_die",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_face_6",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.loaded_die.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.loaded_die.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "forged": {
+      "trigger": "steveparty:dice_forged",
+      "conditions": {
+        "faces": 1
+      }
+    }
+  },
+  "requirements": [
+    [
+      "forged"
+    ]
+  ]
+}

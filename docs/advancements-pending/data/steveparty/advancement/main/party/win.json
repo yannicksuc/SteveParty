@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/party/finish",
+  "display": {
+    "icon": {
+      "id": "steveparty:power_star",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.win.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.win.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "won": {
+      "trigger": "steveparty:party_ended",
+      "conditions": {
+        "rank": 1,
+        "pawns": {
+          "min": 2
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "won"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

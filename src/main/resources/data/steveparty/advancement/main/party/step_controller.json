@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/party/party_controller",
+  "display": {
+    "icon": {
+      "id": "steveparty:step_controller",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.step_controller.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.step_controller.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:step_controller"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

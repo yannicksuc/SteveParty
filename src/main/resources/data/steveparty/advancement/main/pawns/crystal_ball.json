@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:garnet_crystal_ball",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.crystal_ball.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.crystal_ball.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_ball": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:garnet_crystal_ball"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_ball"
+    ]
+  ]
+}

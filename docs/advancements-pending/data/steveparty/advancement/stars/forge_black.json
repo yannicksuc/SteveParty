@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:stars/forge_max",
+  "display": {
+    "icon": {
+      "id": "steveparty:black_star_fragment",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.forge_black.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.forge_black.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "black": {
+      "trigger": "steveparty:dice_forge_level",
+      "conditions": {
+        "max_level": true,
+        "black_fragments": {
+          "min": 4
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "black"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/star_fragments"
+    ]
+  }
+}

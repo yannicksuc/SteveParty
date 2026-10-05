@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/party/start",
+  "display": {
+    "icon": {
+      "id": "steveparty:replay_cartridge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.replay.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.replay.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "replay": {
+      "trigger": "steveparty:pawn_landed",
+      "conditions": {
+        "space": "replay"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "replay"
+    ]
+  ]
+}

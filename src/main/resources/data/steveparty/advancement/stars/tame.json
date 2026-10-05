@@ -1,0 +1,37 @@
+{
+  "parent": "steveparty:stars/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:red_star_fragment",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.tame.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.tame.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "tamed": {
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tamed"
+    ]
+  ]
+}

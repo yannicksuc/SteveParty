@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:workshop/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:stencil",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.signs.stencil.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.signs.stencil.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:stencil"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "steveparty:main/dice/default_dice",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_face_10",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.roll_ten.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.roll_ten.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "ten": {
+      "trigger": "steveparty:dice_rolled",
+      "conditions": {
+        "dice_count": 1,
+        "forged": false,
+        "total": 10
+      }
+    }
+  },
+  "requirements": [
+    [
+      "ten"
+    ]
+  ]
+}

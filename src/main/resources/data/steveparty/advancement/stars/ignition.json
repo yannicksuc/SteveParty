@@ -1,0 +1,44 @@
+{
+  "parent": "steveparty:stars/dice_forge",
+  "display": {
+    "icon": {
+      "id": "steveparty:gravity_core",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.ignition.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.ignition.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "core": {
+      "trigger": "minecraft:item_used_on_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:dice_forge"
+              }
+            }
+          },
+          {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "items": "steveparty:gravity_core"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "core"
+    ]
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:main/dice/special_faces",
+  "display": {
+    "icon": {
+      "id": "steveparty:swap_dice_face",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.swap.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.swap.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "swap": {
+      "trigger": "steveparty:dice_rolled",
+      "conditions": {
+        "has_face": "swap"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "swap"
+    ]
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:sculk_sensor",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.library_rules.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.library_rules.description"
+    },
+    "frame": "goal",
+    "hidden": true
+  },
+  "criteria": {
+    "silenced": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "minecraft:warden",
+              "nbt": "{Silent:1b}"
+            }
+          }
+        ],
+        "item": {
+          "items": "steveparty:plunger"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "silenced"
+    ]
+  ],
+  "rewards": {
+    "experience": 50,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

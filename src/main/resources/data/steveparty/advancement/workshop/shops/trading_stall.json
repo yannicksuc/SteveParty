@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:workshop/shops/villager_block",
+  "display": {
+    "icon": {
+      "id": "steveparty:trading_stall",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.trading_stall.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.trading_stall.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:trading_stall"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

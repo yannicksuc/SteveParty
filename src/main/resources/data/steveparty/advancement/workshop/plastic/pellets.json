@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:workshop/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:plastic_pellets",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.plastic.pellets.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.plastic.pellets.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:plastic_pellets"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

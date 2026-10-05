@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:stars/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:power_star",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.power_star.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.power_star.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:power_star"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

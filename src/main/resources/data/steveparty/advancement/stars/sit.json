@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:stars/tame",
+  "display": {
+    "icon": {
+      "id": "minecraft:lead",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.sit.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.sit.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "sitting": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula",
+              "nbt": "{Sitting:1b}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "sitting"
+    ]
+  ]
+}

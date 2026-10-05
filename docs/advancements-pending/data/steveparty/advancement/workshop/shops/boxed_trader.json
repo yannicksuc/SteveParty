@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:workshop/shops/villager_block",
+  "display": {
+    "icon": {
+      "id": "steveparty:boxed_trader_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.boxed_trader.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.boxed_trader.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "created": {
+      "trigger": "steveparty:boxed_trader_created"
+    }
+  },
+  "requirements": [
+    [
+      "created"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}
