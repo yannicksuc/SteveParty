@@ -21,6 +21,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -63,14 +64,14 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
 
     /** Right click in the air: a board space aimed at from afar, or (sneaking) the end of the chain. */
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
-        if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
+        if (hand != Hand.MAIN_HAND) return TypedActionResult.pass(player.getStackInHand(hand));
         ItemStack stack = player.getStackInHand(hand);
         if (world.isClient) {
             boolean acts = player.isSneaking() ? WrenchActions.origin(stack, world) != null : WrenchActions.aimedBoardSpace(player, world) != null;
-            return acts ? ActionResult.SUCCESS : ActionResult.PASS;
+            return acts ? TypedActionResult.success(stack) : TypedActionResult.pass(stack);
         }
-        return WrenchActions.use((ServerPlayerEntity) player, stack, (ServerWorld) world);
+        return new TypedActionResult<>(WrenchActions.use((ServerPlayerEntity) player, stack, (ServerWorld) world), stack);
     }
 
     /** The mode, origin and chain change at every click: no re-equip animation of the hand. */

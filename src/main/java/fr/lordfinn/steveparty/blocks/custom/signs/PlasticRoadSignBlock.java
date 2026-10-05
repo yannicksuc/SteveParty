@@ -6,7 +6,6 @@ import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.world.tick.ScheduledTickView;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.math.Direction;
 import net.minecraft.server.world.ServerWorld;
@@ -23,6 +22,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.hit.BlockHitResult;
@@ -30,6 +30,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 /**
@@ -203,11 +204,11 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
     }
 
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
-                                                   Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world,
+                                                   BlockPos pos, BlockPos neighborPos) {
         // Water arriving, a bubble column forming, or a chain holding it being broken: try again
-        if (floats(state)) PlasticBlock.scheduleStep(tickView, world, pos, this);
-        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
+        if (floats(state)) PlasticBlock.scheduleStep(world, world, pos, this);
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
     }
 
     @Override
@@ -262,14 +263,14 @@ public class PlasticRoadSignBlock extends AbstractStencilSignBlock {
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
                                          Hand hand, BlockHitResult hit) {
         if (hand == Hand.MAIN_HAND && stack.isOf(ModItems.WRENCH)) {
             if (!world.isClient) {
                 world.setBlockState(pos, state.with(PLATE, state.get(PLATE).next()), Block.NOTIFY_ALL);
                 world.playSound(null, pos, SoundEvents.BLOCK_BAMBOO_WOOD_HIT, SoundCategory.BLOCKS, 1.0F, 1.2F);
             }
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         return super.onUseWithItem(stack, state, world, pos, player, hand, hit);
     }

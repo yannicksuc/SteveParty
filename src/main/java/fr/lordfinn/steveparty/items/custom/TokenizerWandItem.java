@@ -29,10 +29,11 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import fr.lordfinn.steveparty.sounds.ModSounds;
-import net.minecraft.item.consume.UseAction;
+import net.minecraft.util.UseAction;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
@@ -54,6 +55,8 @@ import static net.minecraft.entity.effect.StatusEffects.LEVITATION;
 public class TokenizerWandItem extends Item {
     /** Data-driven enchantment (data/steveparty/enchantment/game_master.json): control any player's token. */
     public static final RegistryKey<Enchantment> GAME_MASTER = RegistryKey.of(RegistryKeys.ENCHANTMENT, Steveparty.id("game_master"));
+    /** Enchanting table enchantability of the wand (it can only receive steveparty:game_master). */
+    private static final int ENCHANTABILITY = 10;
 
     /**
      * Bounds of the token size: its biggest dimension (height, or width when wider than tall), in blocks.
@@ -116,11 +119,12 @@ public class TokenizerWandItem extends Item {
      * wand where the player looks (see {@link TokenizerFlare}); hitting a mob the spell could take opens the spell on it.
      */
     @Override
-    public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        if (user.getItemCooldownManager().isCoolingDown(user.getStackInHand(hand))) return ActionResult.PASS;
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+        ItemStack stack = user.getStackInHand(hand);
+        if (user.getItemCooldownManager().isCoolingDown(this)) return TypedActionResult.pass(stack);
         user.setCurrentHand(hand);
-        if (user instanceof ServerPlayerEntity player) TokenizerFlare.start(player, user.getStackInHand(hand));
-        return ActionResult.CONSUME;
+        if (user instanceof ServerPlayerEntity player) TokenizerFlare.start(player, stack);
+        return TypedActionResult.consume(stack);
     }
 
     @Override
@@ -139,9 +143,19 @@ public class TokenizerWandItem extends Item {
     }
 
     @Override
-    public boolean onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+    public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
         if (user instanceof ServerPlayerEntity player) TokenizerFlare.fizzle(player);
-        return false;
+    }
+
+    /** Enchanting table: the wand can only receive steveparty:game_master (see its supported items tag). */
+    @Override
+    public boolean isEnchantable(ItemStack stack) {
+        return true;
+    }
+
+    @Override
+    public int getEnchantability() {
+        return ENCHANTABILITY;
     }
 
     /** A mob the spell can take: alive, not a boss, and not someone else's token (unless allowed). */
@@ -193,7 +207,7 @@ public class TokenizerWandItem extends Item {
     public static SpellResult castSpell(ServerPlayerEntity player, int entityId, float requestedSize, int requestedColor) {
         ItemStack wand = heldWand(player);
         if (wand.isEmpty()) return SpellResult.NO_WAND;
-        if (player.getItemCooldownManager().isCoolingDown(wand)) return SpellResult.COOLDOWN;
+        if (player.getItemCooldownManager().isCoolingDown(wand.getItem())) return SpellResult.COOLDOWN;
         Entity entity = player.getWorld().getEntityById(entityId);
         if (!(entity instanceof MobEntity mob) || !mob.isAlive()) return SpellResult.INVALID_TARGET;
         if (mob.getWorld() != player.getWorld() || player.squaredDistanceTo(mob) > MAX_SPELL_DISTANCE * MAX_SPELL_DISTANCE) {
@@ -216,7 +230,7 @@ public class TokenizerWandItem extends Item {
         } else {
             tokenizeEntity(mob, player, size, color);
         }
-        player.getItemCooldownManager().set(wand, SPELL_COOLDOWN);
+        player.getItemCooldownManager().set(wand.getItem(), SPELL_COOLDOWN);
         playCastBurst(player, mob);
         playCastSounds(player, mob);
         return resize ? SpellResult.RESIZED : SpellResult.TOKENIZED;
@@ -246,7 +260,7 @@ public class TokenizerWandItem extends Item {
     /** @return true if {@code stack} carries the data-driven {@code steveparty:game_master} enchantment. */
     public static boolean hasGameMaster(ItemStack stack, World world) {
         return world.getRegistryManager().getOptional(RegistryKeys.ENCHANTMENT)
-                .flatMap(registry -> registry.getOptional(GAME_MASTER))
+                .flatMap(registry -> registry.getEntry(GAME_MASTER))
                 .map(enchantment -> EnchantmentHelper.getLevel(enchantment, stack) > 0)
                 .orElse(false);
     }

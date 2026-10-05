@@ -20,6 +20,7 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -32,8 +33,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
-import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -155,8 +156,8 @@ public class PipeBlock extends Block implements BlockEntityProvider {
      * so pipes set by commands or structures keep the connections they are given. A solid block going away frees it.
      */
     @Override
-    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos,
-                                                   Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+    protected BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world,
+                                                   BlockPos pos, BlockPos neighborPos) {
         boolean joins = isPipe(neighborState) && neighborState.get(PipeShape.connection(direction.getOpposite()));
         if (isPipe(neighborState) && joins != state.get(PipeShape.connection(direction))) state = state.with(PipeShape.connection(direction), joins);
         if (state.get(SOLID).direction() == direction && (joins || !isSolid(world, neighborPos, neighborState, direction.getOpposite()))) {
@@ -214,24 +215,24 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (stack.getItem() instanceof WrenchItem) {
             if (!world.isClient) {
                 PipeSolid solid = cycleSolid(world, pos, state);
                 world.playSound(null, pos, SoundEvents.BLOCK_BAMBOO_WOOD_HIT, SoundCategory.BLOCKS, 1f, 1.3f);
                 player.sendMessage(Text.translatable("message.steveparty.pipe.solid." + solid.asString()), true);
             }
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         // A mini-game page: the pipe is linked to it (or unlinked)
         if (stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.MiniGamePageItem) {
             if (world instanceof ServerWorld serverWorld && player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer) {
                 fr.lordfinn.steveparty.minigame.MiniGamePipes.click(serverPlayer, hand, serverWorld, pos);
             }
-            return ActionResult.SUCCESS;
+            return ItemActionResult.SUCCESS;
         }
         // A block in hand is placed against the pipe (to go on with the run); anything else: into the mouth
-        return stack.getItem() instanceof BlockItem ? ActionResult.PASS : ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        return stack.getItem() instanceof BlockItem ? ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION : ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     /** Right click on a mouth: in you go. */
@@ -270,7 +271,7 @@ public class PipeBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    protected boolean isTransparent(BlockState state) {
+    protected boolean isTransparent(BlockState state, BlockView world, BlockPos pos) {
         return true;
     }
 

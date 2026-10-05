@@ -5,6 +5,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -26,7 +27,7 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         if (isServerWorld(world)) {
             List<DiceEntity> diceEntities = new ArrayList<>();
             for (int i = 0; i < numberOfDice; i++) {
@@ -50,7 +51,7 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
                 diceEntities.getFirst().startRoll();
             }
         }
-        return ActionResult.SUCCESS;
+        return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
     }
 
     private void linkDiceEntities(List<DiceEntity> diceEntities) {

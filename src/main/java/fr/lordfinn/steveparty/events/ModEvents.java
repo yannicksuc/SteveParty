@@ -68,7 +68,7 @@ public class ModEvents {
 
         // Create a TextColor using the RGB value
         Text newName = Text.literal(livingEntity.getName().getString())
-                .styled(style -> style.withColor(ColorHelper.getArgb(255,
+                .styled(style -> style.withColor(ColorHelper.Argb.getArgb(255,
                         (colorRgb >> 16) & 0xFF,  // Red
                         (colorRgb >> 8) & 0xFF,   // Green
                         colorRgb & 0xFF)));       // Blue

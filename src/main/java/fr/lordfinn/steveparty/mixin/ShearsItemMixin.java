@@ -8,10 +8,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ShearsItem;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryEntryLookup;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
@@ -44,14 +41,10 @@ public abstract class ShearsItemMixin {
     private static void addCustomBlocksToToolComponent(CallbackInfoReturnable<ToolComponent> cir) {
         ToolComponent original = cir.getReturnValue();
 
-        RegistryEntryLookup<Block> lookup = Registries.createEntryLookup(Registries.BLOCK);
-
-        RegistryEntryList<Block> plasticBlocks = lookup.getOrThrow(STEVEPARTY$PLASTIC);
-
         ToolComponent newComp = new ToolComponent(
                 Stream.concat(
                         original.rules().stream(),
-                        Stream.of(ToolComponent.Rule.of(plasticBlocks, 6.0f))
+                        Stream.of(ToolComponent.Rule.of(STEVEPARTY$PLASTIC, 6.0f))
                 ).toList(),
                 original.defaultMiningSpeed(),
                 original.damagePerBlock()
