@@ -516,26 +516,26 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "Face vierge + perle de l'Ender, ou + une pièce. Dette : face vierge + œil d'araignée."),
     ], parents=["dice"], gate="roll_the_dice"),
     E("modules", "steveparty:dice_module_lucky", ("Dice Modules", "Modules de dé"), ("Properties of a whole die", "Les propriétés d'un dé"), [
-        T("A module changes the whole die (blank face + ingredient):\n"
-          "- **Slow** (clock): stop it on the shown face;\n"
-          "- **Choice** (compass): pick the face;\n"
-          "- **Infinity** (echo shard): it comes back;\n"
-          "- **Lucky** (rabbit's foot, up to 5): extra rolls, keep the best;\n"
-          "- **Reroll** (wind charge, up to 5): keep or roll again.",
-          "Un module change tout le dé (face vierge + ingrédient) :\n"
-          "- **Lent** (horloge) : l'arrêter sur la face affichée ;\n"
-          "- **Au choix** (boussole) : choisir la face ;\n"
-          "- **Infini** (éclat d'écho) : il revient ;\n"
-          "- **Chanceux** (patte de lapin, jusqu'à 5) : lancers en plus, garder le meilleur ;\n"
-          "- **Relance** (charge de vent, jusqu'à 5) : garder ou relancer."),
-        T("- **Reversed** (fermented spider eye): the pawn goes backwards;\n"
-          "- **Skeleton Key** (tripwire hook): ignores Stop and shop spaces;\n"
-          "- **Homing** (eye of ender): picks forks at random.\n\n"
-          "Add modules to a die at the crafting table (the modules stay in the grid) or in the Dice Forge.",
-          "- **Inversé** (œil d'araignée fermenté) : le pion recule ;\n"
-          "- **Passe-partout** (crochet) : ignore les cases Stop et boutique ;\n"
-          "- **Tête chercheuse** (œil de l'Ender) : choisit les bifurcations au hasard.\n\n"
-          "Ajoute des modules à un dé à l'établi (les modules restent dans la grille) ou dans la forge à dés.",
+        T("A module changes the whole die (7 fragments of its colour + ingredient):\n"
+          "- **Slow** (light blue, clock): stop it on the shown face;\n"
+          "- **Choice** (blue, compass): pick the face;\n"
+          "- **Infinity** (purple, echo shard): it comes back;\n"
+          "- **Lucky** (green, rabbit's foot, up to 5): extra rolls, keep the best;\n"
+          "- **Reroll** (orange, wind charge, up to 5): keep or roll again.",
+          "Un module change tout le dé (7 fragments de sa couleur + ingrédient) :\n"
+          "- **Lent** (bleu clair, horloge) : l'arrêter sur la face affichée ;\n"
+          "- **Au choix** (bleu, boussole) : choisir la face ;\n"
+          "- **Infini** (violet, éclat d'écho) : il revient ;\n"
+          "- **Chanceux** (vert, patte de lapin, jusqu'à 5) : lancers en plus, garder le meilleur ;\n"
+          "- **Relance** (orange, charge de vent, jusqu'à 5) : garder ou relancer."),
+        T("- **Reversed** (red, fermented spider eye): the pawn goes backwards;\n"
+          "- **Skeleton Key** (yellow, tripwire hook): ignores Stop and shop spaces;\n"
+          "- **Homing** (magenta, eye of ender): picks forks at random.\n\n"
+          "Base: a blank module (blank face + 4 gold nuggets). Add modules to a die at the crafting table (the modules stay in the grid) or in the Dice Forge.",
+          "- **Inversé** (rouge, œil d'araignée fermenté) : le pion recule ;\n"
+          "- **Passe-partout** (jaune, crochet) : ignore les cases Stop et boutique ;\n"
+          "- **Tête chercheuse** (magenta, œil de l'Ender) : choisit les bifurcations au hasard.\n\n"
+          "Base : un module vierge (face vierge + 4 pépites d'or). Ajoute des modules à un dé à l'établi (ils restent dans la grille) ou dans la forge à dés.",
           "More Modules", "Autres modules"),
         C("steveparty:dice_module_lucky", "steveparty:dice_module_choice"),
     ], parents=["dice"], gate="roll_the_dice"),

@@ -1,13 +1,21 @@
 {
-  "type": "minecraft:crafting_shapeless",
+  "type": "minecraft:crafting_shaped",
   "category": "misc",
-  "ingredients": [
-    {
-      "item": "steveparty:blank_dice_face"
+  "key": {
+    "F": {
+      "item": "steveparty:purple_star_fragment"
     },
-    {
+    "I": {
       "item": "minecraft:echo_shard"
+    },
+    "M": {
+      "item": "steveparty:blank_dice_module"
     }
+  },
+  "pattern": [
+    "FIF",
+    "FMF",
+    "FFF"
   ],
   "result": {
     "count": 1,

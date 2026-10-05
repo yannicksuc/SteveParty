@@ -1665,6 +1665,7 @@
   "item.steveparty.dice_module_infinity": "Dice Module: Infinity",
   "dice_module.steveparty.infinity": "Infinity",
   "dice_module.steveparty.infinity.desc": "comes back to you after the roll",
+  "item.steveparty.blank_dice_module": "Blank Dice Module",
   "item.steveparty.dice_module_lucky": "Dice Module: Lucky",
   "dice_module.steveparty.lucky": "Lucky",
   "dice_module.steveparty.lucky.desc": "rolled %s times, keep the result you prefer",

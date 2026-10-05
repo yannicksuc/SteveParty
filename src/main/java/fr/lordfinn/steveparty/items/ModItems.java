@@ -55,6 +55,8 @@ public class ModItems {
     public static final List<Item> DICE_FACES = new ArrayList<>();
     /** The dice module items, one per module of DiceModules. */
     public static final List<Item> DICE_MODULES = new ArrayList<>();
+    /** The base every dice module is crafted from, with seven star fragments of the module's colour. */
+    public static final Item BLANK_DICE_MODULE = register(Item.class, "blank_dice_module");
 
     public static Item blankDiceFace() {
         return DICE_FACES.getFirst();
@@ -352,6 +354,7 @@ public class ModItems {
             for (Item item : DICE_FACES) {
                 itemGroup.add(item);
             }
+            itemGroup.add(BLANK_DICE_MODULE);
             for (Item item : DICE_MODULES) {
                 itemGroup.add(item);
             }
