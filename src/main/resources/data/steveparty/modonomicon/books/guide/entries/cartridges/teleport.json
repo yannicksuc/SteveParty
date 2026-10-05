@@ -6,7 +6,7 @@
     "item": "steveparty:teleport_cartridge"
   },
   "x": 2,
-  "y": 4,
+  "y": 3,
   "sort_number": 6,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,

@@ -120,15 +120,20 @@ public class TokenMovementService {
         );
     }
 
-    /** A token reached a board space: a shop stop may keep it while its owner shops (ShopStops), else it goes on. */
+    /**
+     * A token reached a board space: the star may keep it while its owner chooses to buy it (PartyStars), a shop stop
+     * while its owner shops (ShopStops), else it goes on.
+     */
     private static @NotNull ActionResult onTileReached(MobEntity entity, BoardSpaceBlockEntity tile) {
-        if (!entity.getWorld().isClient && ShopStops.onTileReached(entity, tile)) return ActionResult.SUCCESS;
+        if (!entity.getWorld().isClient && (PartyStars.onTileReached(entity, tile) || ShopStops.onTileReached(entity, tile)))
+            return ActionResult.SUCCESS;
         return tryToMoveEntityOnBoard(entity, tile);
     }
 
     private static @NotNull ActionResult tryToMoveEntityOnBoard(MobEntity entity, BoardSpaceBlockEntity tile) {
         if (entity.getWorld().isClient) return ActionResult.PASS;
         if (ShopStops.isShopping(entity.getUuid())) return ActionResult.PASS; // its owner is shopping
+        if (PartyStars.isDeciding(entity.getUuid())) return ActionResult.PASS; // its owner may buy the star
         int nbSteps = ((TokenizedEntityInterface) entity).steveparty$getNbSteps();
         if (nbSteps == 0) return ActionResult.PASS;
         // The extra move of a Move Forward / Back tile starts on its own, once its landing is heard
