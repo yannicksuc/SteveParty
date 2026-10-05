@@ -1,0 +1,33 @@
+{
+  "parent": "steveparty:main/board/cartridge",
+  "display": {
+    "icon": {
+      "id": "steveparty:tile_behavior_start",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.start_space.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.start_space.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_start": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:tile_behavior_start"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_start"
+    ]
+  ]
+}

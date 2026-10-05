@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:workshop/shops/trading_stall",
+  "display": {
+    "icon": {
+      "id": "steveparty:cash_register",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.shops.cash_register.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.shops.cash_register.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:cash_register"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:main/board/first_tile",
+  "display": {
+    "icon": {
+      "id": "steveparty:check_point",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.check_point.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.check_point.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "steveparty:check_point"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed"
+    ]
+  ]
+}

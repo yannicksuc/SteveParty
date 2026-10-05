@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:main/pole/top",
+  "display": {
+    "icon": {
+      "id": "steveparty:goal_pole",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pole.goal.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pole.goal.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "goal": {
+      "trigger": "steveparty:pole_goal_reached"
+    }
+  },
+  "requirements": [
+    [
+      "goal"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

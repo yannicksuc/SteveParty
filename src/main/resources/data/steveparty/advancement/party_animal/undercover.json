@@ -1,0 +1,45 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:box_costume",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.undercover.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.undercover.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "wearing": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "equipment": {
+                "chest": {
+                  "items": "steveparty:box_costume"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "wearing"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

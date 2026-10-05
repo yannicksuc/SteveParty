@@ -1,0 +1,47 @@
+{
+  "parent": "steveparty:workshop/signs/stencil",
+  "display": {
+    "icon": {
+      "id": "steveparty:stencil_gun",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.signs.stencil_hammer.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.signs.stencil_hammer.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "stamped": {
+      "trigger": "minecraft:item_used_on_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": [
+                  "steveparty:tile",
+                  "steveparty:advanced_tile"
+                ]
+              }
+            }
+          },
+          {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "items": "steveparty:stencil_gun"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stamped"
+    ]
+  ]
+}

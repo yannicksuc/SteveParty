@@ -1,0 +1,41 @@
+{
+  "parent": "steveparty:main/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:tile",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.board.first_tile.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.board.first_tile.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "placed_tile": {
+      "trigger": "minecraft:placed_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": [
+                  "steveparty:tile",
+                  "steveparty:advanced_tile"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "placed_tile"
+    ]
+  ]
+}

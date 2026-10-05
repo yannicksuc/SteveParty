@@ -1,0 +1,36 @@
+{
+  "parent": "steveparty:main/party/party_controller",
+  "display": {
+    "icon": {
+      "id": "steveparty:coin",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.coins.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.coins.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "stack": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:coin",
+            "count": {
+              "min": 64
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stack"
+    ]
+  ]
+}

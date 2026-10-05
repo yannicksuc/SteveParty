@@ -1,0 +1,46 @@
+{
+  "parent": "steveparty:main/pawns/tokenizer_wand",
+  "display": {
+    "icon": {
+      "id": "steveparty:tokenizer_wand",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.game_master.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.game_master.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "has_enchanted_wand": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:tokenizer_wand",
+            "predicates": {
+              "minecraft:enchantments": [
+                {
+                  "enchantments": "steveparty:game_master"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_enchanted_wand"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

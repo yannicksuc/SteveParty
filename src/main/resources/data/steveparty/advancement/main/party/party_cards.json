@@ -1,0 +1,91 @@
+{
+  "parent": "steveparty:main/party/party_controller",
+  "display": {
+    "icon": {
+      "id": "steveparty:party_card_repeat",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.party.party_cards.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.party.party_cards.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "turns": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:party_card_turns"
+          }
+        ]
+      }
+    },
+    "minigame": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:party_card_minigame"
+          }
+        ]
+      }
+    },
+    "event": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:party_card_event"
+          }
+        ]
+      }
+    },
+    "repeat": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:party_card_repeat"
+          }
+        ]
+      }
+    },
+    "sequence_start": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:party_card_sequence_start"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "turns"
+    ],
+    [
+      "minigame"
+    ],
+    [
+      "event"
+    ],
+    [
+      "repeat"
+    ],
+    [
+      "sequence_start"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

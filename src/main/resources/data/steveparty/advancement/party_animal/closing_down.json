@@ -1,0 +1,38 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:iron_sword",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.closing_down.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.closing_down.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "killed": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:boxed_trader"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "killed"
+    ]
+  ]
+}

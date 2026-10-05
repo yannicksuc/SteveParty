@@ -1,0 +1,42 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:mula_spawn_egg",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.mula_pawn.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.mula_pawn.description"
+    },
+    "frame": "task",
+    "hidden": true
+  },
+  "criteria": {
+    "mula": {
+      "trigger": "steveparty:pawn_spell",
+      "conditions": {
+        "result": "tokenized",
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "steveparty:mula"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "mula"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

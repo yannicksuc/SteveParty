@@ -1,0 +1,65 @@
+{
+  "parent": "steveparty:party_animal/root",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_forge",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.party_animal.spin_doctor.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.party_animal.spin_doctor.description"
+    },
+    "frame": "goal",
+    "hidden": true
+  },
+  "criteria": {
+    "orbit": {
+      "trigger": "steveparty:entity_orbiting",
+      "conditions": {
+        "source": "dice_forge",
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "minecraft:villager"
+            }
+          },
+          {
+            "condition": "minecraft:inverted",
+            "term": {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "nbt": "{VillagerData:{profession:\"minecraft:none\"}}"
+              }
+            }
+          },
+          {
+            "condition": "minecraft:inverted",
+            "term": {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "nbt": "{VillagerData:{profession:\"minecraft:nitwit\"}}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "orbit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50,
+    "loot": [
+      "steveparty:advancement_reward/coins_10"
+    ]
+  }
+}

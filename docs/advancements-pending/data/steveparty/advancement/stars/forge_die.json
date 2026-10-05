@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:stars/ignition",
+  "display": {
+    "icon": {
+      "id": "steveparty:default_dice",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.forge_die.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.forge_die.description"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "forged": {
+      "trigger": "steveparty:dice_forged"
+    }
+  },
+  "requirements": [
+    [
+      "forged"
+    ]
+  ],
+  "rewards": {
+    "experience": 25,
+    "loot": [
+      "steveparty:advancement_reward/star_fragment"
+    ]
+  }
+}

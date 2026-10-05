@@ -1,0 +1,29 @@
+{
+  "parent": "steveparty:stars/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:potion",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.stars.luck_potion.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.stars.luck_potion.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "brewed": {
+      "trigger": "minecraft:brewed_potion",
+      "conditions": {
+        "potion": "minecraft:luck"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "brewed"
+    ]
+  ]
+}

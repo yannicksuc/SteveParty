@@ -1,0 +1,42 @@
+{
+  "parent": "steveparty:main/dice/blank_face",
+  "display": {
+    "icon": {
+      "id": "steveparty:dice_module_lucky",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.dice.module.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.dice.module.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has_module": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "steveparty:dice_module_slow",
+              "steveparty:dice_module_choice",
+              "steveparty:dice_module_infinity",
+              "steveparty:dice_module_lucky",
+              "steveparty:dice_module_reroll",
+              "steveparty:dice_module_reversed",
+              "steveparty:dice_module_skeleton_key",
+              "steveparty:dice_module_homing"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_module"
+    ]
+  ]
+}

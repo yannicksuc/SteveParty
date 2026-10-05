@@ -1,0 +1,40 @@
+{
+  "parent": "steveparty:main/pawns/tokenizer_wand",
+  "display": {
+    "icon": {
+      "id": "steveparty:token",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.main.pawns.pocket_pawn.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.main.pawns.pocket_pawn.description"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "stored": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "nbt": "{Tokenized:1b}"
+            }
+          }
+        ],
+        "item": {
+          "items": "steveparty:token"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stored"
+    ]
+  ]
+}
