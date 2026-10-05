@@ -9,7 +9,6 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -183,7 +182,7 @@ public class TokenItem extends Item {
     }
 
     private Entity createEntityFromData(World world, NbtCompound entityData) {
-        return EntityType.loadEntityWithPassengers(entityData, world, SpawnReason.COMMAND, e -> e);
+        return EntityType.loadEntityWithPassengers(entityData, world, e -> e);
     }
 
     /** @return true if the entity was added to the world. */

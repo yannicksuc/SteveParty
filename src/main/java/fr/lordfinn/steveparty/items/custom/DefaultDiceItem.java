@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -15,6 +14,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -40,7 +40,7 @@ public class DefaultDiceItem extends Item {
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         if (isServerWorld(world)) {
             Vec3d spawnPosition = calculateSpawnPosition(player);
             DiceEntity diceEntity = spawnDiceEntity(world, spawnPosition);
@@ -51,7 +51,7 @@ public class DefaultDiceItem extends Item {
                 diceEntity.startRoll();
             }
         }
-        return ActionResult.SUCCESS;
+        return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
     }
 
     protected void decrementDiceInHand(PlayerEntity player, Hand hand) {
@@ -69,7 +69,7 @@ public class DefaultDiceItem extends Item {
     }
 
     protected DiceEntity spawnDiceEntity(World world, Vec3d spawnPosition) {
-        DiceEntity diceEntity = DICE_ENTITY.create(world, SpawnReason.TRIGGERED);
+        DiceEntity diceEntity = DICE_ENTITY.create(world);
         if (diceEntity != null) {
             diceEntity.setPosition(spawnPosition.x, spawnPosition.y + 0.5, spawnPosition.z);
             diceEntity.setNoGravity(true);

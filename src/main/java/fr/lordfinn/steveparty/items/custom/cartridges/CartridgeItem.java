@@ -12,6 +12,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipData;
@@ -79,10 +80,10 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
 
     /** Right click in the air: its menu, for the cartridge in that hand (on a block: the block's own use). */
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         if (isTargetingBlock(player)) return super.use(world, player, hand);
         if (player instanceof ServerPlayerEntity serverPlayer) CartridgeMenus.openInHand(serverPlayer, hand);
-        return ActionResult.SUCCESS;
+        return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
     }
 
     private static final int LINE_WIDTH = 46;

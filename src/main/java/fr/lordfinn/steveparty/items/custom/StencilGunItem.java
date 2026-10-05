@@ -28,7 +28,9 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
@@ -163,12 +165,12 @@ public class StencilGunItem extends Item {
     // ---------------------------------------------------------------- use
 
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         if (player.isSneaking()) {
             if (!world.isClient) openLoader(player, hand);
-            return ActionResult.SUCCESS;
+            return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
         }
-        return ActionResult.PASS;
+        return TypedActionResult.pass(player.getStackInHand(hand));
     }
 
     /**
@@ -230,7 +232,7 @@ public class StencilGunItem extends Item {
     public static void playSpray(World world, BlockPos pos, @Nullable DyeColor color) {
         world.playSound(null, pos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.PLAYERS, 0.35F, 1.9F);
         if (color != null && world instanceof ServerWorld serverWorld) {
-            serverWorld.spawnParticles(new DustParticleEffect(color.getEntityColor(), 1.0F),
+            serverWorld.spawnParticles(new DustParticleEffect(Vec3d.unpackRgb(color.getEntityColor()).toVector3f(), 1.0F),
                     pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0.0);
         }
     }
