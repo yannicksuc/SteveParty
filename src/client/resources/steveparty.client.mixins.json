@@ -23,7 +23,6 @@
     "HeldItemRendererStencilHammerMixin",
     "HeldItemRendererTokenSpellMixin",
     "InGameHudToolHudMixin",
-    "DrawContextDiceModulesMixin",
     "EntityRendererBoxCostumeShadowMixin",
     "EntityRendererNameTagMixin",
     "LivingEntityRendererBoxCostumeMixin",

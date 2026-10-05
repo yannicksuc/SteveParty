@@ -515,7 +515,7 @@
   "message.steveparty.tile_landed.replay": "🎲 %s rolls again!",
   "message.steveparty.tile_landed.replay_spent": "%s already rolled again: no extra turn",
   "message.steveparty.tile_landed.teleport": "🌀 %s is teleported!",
-  "message.steveparty.owned_dice_rolled": "%s was rolled on %s's die",
+  "message.steveparty.die_rolled": "%s rolled %s",
   "message.steveparty.unknown_player": "Unknown player",
   "message.steveparty.disconnected_player": "Disconnected player",
   "message.steveparty.game_started": "The game has started !\n",

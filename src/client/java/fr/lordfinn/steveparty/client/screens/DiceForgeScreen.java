@@ -20,6 +20,9 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.RotationAxis;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
@@ -45,10 +48,12 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/dice_forge.png");
     private static final int ATLAS_SIZE = 512, OVERLAY_U = 256;
     private static final int LIGHT_SLOT_V = 336, LIGHT_SQUARE_U = 0, LIGHT_ROUND_U = 18, LIGHT_SLOT_SIZE = 18;
-    /** The galaxy, drawn on the background's navy disc, under the overlay. */
+    /** The galaxy, drawn on the background's navy disc, under the overlay, slowly turning (its slots stay still). */
     private static final Identifier GALAXY = Steveparty.id("textures/gui/dice_forge_galaxy.png");
     private static final int GALAXY_SIZE = 142;
     private static final int GALAXY_CENTER_X = DiceForgeScreenHandler.GALAXY_X, GALAXY_CENTER_Y = DiceForgeScreenHandler.GALAXY_Y;
+    /** One turn of the galaxy (ms). */
+    private static final long GALAXY_TURN_MS = 150_000;
     private static final float GHOST_ALPHA = 0.35f;
     private static final String KEY = "gui.steveparty.dice_forge.";
     /** Tooltips wrap at this width (GUI px), so that long hints stay readable. */
@@ -168,11 +173,16 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         return handler.isActivated() && (handler.isRunning() || handler.getStatus().allowsRunning());
     }
 
-    /** The galaxy, still, on the background's navy disc and under its ring. */
+    /** The galaxy turns slowly around its center, on the background's navy disc and under its ring. */
     private static void drawGalaxy(DrawContext context, int centerX, int centerY) {
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(centerX, centerY, 0);
+        float angle = (Util.getMeasuringTimeMs() % GALAXY_TURN_MS) / (float) GALAXY_TURN_MS * 360f;
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angle));
         int half = GALAXY_SIZE / 2;
-        context.drawTexture(GALAXY, centerX - half, centerY - half, 0, 0,
-                GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE);
+        context.drawTexture(GALAXY, -half, -half, 0, 0, GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE, GALAXY_SIZE);
+        matrices.pop();
     }
 
     /** @return the gauge colour at {@code t} (0 at the arrow's tail, 1 at its tip), blended smoothly between GAUGE_COLORS. */
