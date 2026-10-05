@@ -81,7 +81,7 @@ public class DiceForgeModulesGameTests implements FabricGameTest {
     public void moduleSlotsTakeModulesOnly(TestContext context) {
         DiceForgeBlockEntity forge = placeActivatedForge(context);
         int slot = FIRST_MODULE_SLOT;
-        context.assertEquals(MODULE_SLOTS, 4, "four module slots");
+        context.assertEquals(MODULE_SLOTS, 5, "five module slots");
         context.assertEquals(SIZE, FIRST_MODULE_SLOT + MODULE_SLOTS, "they come last");
         context.assertTrue(forge.isValid(slot, module(DiceModules.SLOW, 1)), "a module goes in a module slot");
         context.assertTrue(!forge.isValid(slot, new ItemStack(face("dice_face_2"))), "a face does not");

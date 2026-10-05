@@ -66,8 +66,8 @@ import java.util.UUID;
  * Dice Forge.
  * <p>
  * Layout: 12 face slots around the vortex, the center slot (gravity core input while the forge is not activated;
- * afterwards the GUI draws the core there as the FORGE button), 4 star fragment slots around the center, the blank
- * faces slot, the output slot and 4 module slots (the satellites in the corners of the GUI).
+ * afterwards the GUI draws the core there as the FORGE button), 5 star fragment slots around the center, the blank
+ * faces slot, the output slot and 5 module slots (the gems on the points of the star in the GUI).
  * <p>
  * Modules ({@link DiceModules}) are not consumed either: every die forged carries the modules present, the count of
  * a module slot being how many of that module the die gets (the same module in several slots adds up, up to its
@@ -101,13 +101,13 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public static final int FACE_SLOTS = 12;
     public static final int CENTER_SLOT = 12;
     public static final int FIRST_FRAGMENT_SLOT = 13;
-    public static final int FRAGMENT_SLOTS = 4;
+    public static final int FRAGMENT_SLOTS = 5;
     /** Blank dice faces consumed by each craft (one per face slot used). */
     public static final int BLANK_SLOT = FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS;
     public static final int OUTPUT_SLOT = BLANK_SLOT + 1;
     /** Dice modules put on every die forged (not consumed). */
     public static final int FIRST_MODULE_SLOT = OUTPUT_SLOT + 1;
-    public static final int MODULE_SLOTS = 4;
+    public static final int MODULE_SLOTS = 5;
     public static final int SIZE = FIRST_MODULE_SLOT + MODULE_SLOTS;
     /**
      * Layout indices: the face slots, the fragment slots, then the blank faces slot. Only the fragments and the blank
@@ -129,8 +129,11 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public static final int CORE_INSERT_TICKS = 30;
     /** Activation time of a forge without its core. */
     private static final long NO_ACTIVATION = Long.MIN_VALUE / 2;
-    /** Fragments counted for the core altitude: 256 (4 full stacks) lift it {@link #MAX_CORE_ALTITUDE} blocks. */
-    public static final int MAX_ALTITUDE_FRAGMENTS = 256;
+    /**
+     * Fragments counted for the core altitude: every fragment slot full (5 full stacks, 320) lifts it
+     * {@link #MAX_CORE_ALTITUDE} blocks.
+     */
+    public static final int MAX_ALTITUDE_FRAGMENTS = FRAGMENT_SLOTS * 64;
     public static final float MAX_CORE_ALTITUDE = 16f;
     /** A black fragment is never consumed: it counts as a full stack. */
     public static final int BLACK_FRAGMENT_WORTH = 64;
@@ -158,8 +161,13 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     public static final int FLAG_BLOCKED = 1 << 2;
     public static final int FLAG_POWERED = 1 << 3;
 
-    /** 3: faces are weights, blank faces slot, die output moved from the center slot to its own slot. */
-    private static final int FORMAT_VERSION = 3;
+    /**
+     * 3: faces are weights, blank faces slot, die output moved from the center slot to its own slot.
+     * 4: 5 fragment slots (13..17) and 5 module slots: the blank faces, output and module slots move up by one.
+     */
+    private static final int FORMAT_VERSION = 4;
+    /** Version 3 slots and layout index from which everything moved up by one (the 5th fragment slot). */
+    private static final int V3_BLANK_SLOT = 17, V3_SIZE = 23, V3_BLANK_LAYOUT_INDEX = 16;
     private static final int[] DOWN_SLOTS = {OUTPUT_SLOT};
     private static final int[] OTHER_SLOTS = IntStream.range(0, SIZE).toArray();
 
@@ -283,6 +291,13 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
             }
         }
         int version = nbt.getInt("ForgeVersion");
+        if (version < 4) {
+            // Version 3 had 4 fragment slots: the blank faces, output and module slots move up by one
+            for (int slot = V3_SIZE - 1; slot >= V3_BLANK_SLOT; slot--) {
+                inventory.set(slot + 1, inventory.get(slot));
+            }
+            inventory.set(V3_BLANK_SLOT, ItemStack.EMPTY);
+        }
         ItemStack center = inventory.get(CENTER_SLOT);
         if (!center.isEmpty()) {
             if (version < 2) {
@@ -307,11 +322,14 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         if (nbt.contains("Layout", NbtElement.LIST_TYPE)) {
             NbtList layoutNbt = nbt.getList("Layout", NbtElement.STRING_TYPE);
             // Faces saved by older versions are forgotten (they are no longer remembered)
-            for (int i = FACE_SLOTS; i < Math.min(LAYOUT_SIZE, layoutNbt.size()); i++) {
+            for (int i = FACE_SLOTS; i < layoutNbt.size(); i++) {
+                // Version 3 remembered 4 fragments: its blank faces index moves up by one
+                int index = version < 4 && i >= V3_BLANK_LAYOUT_INDEX ? i + 1 : i;
+                if (index >= LAYOUT_SIZE) break;
                 Identifier id = Identifier.tryParse(layoutNbt.getString(i));
                 if (id == null) continue;
                 Item item = Registries.ITEM.get(id);
-                layout[i] = item == Items.AIR ? null : item;
+                layout[index] = item == Items.AIR ? null : item;
             }
         }
     }
@@ -449,7 +467,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
         }
     }
 
-    /** @return the inventory slot of a layout index (faces 0..11, fragments 13..16, then the blank faces slot). */
+    /** @return the inventory slot of a layout index (faces 0..11, fragments 13..17, then the blank faces slot). */
     public static int layoutSlot(int layoutIndex) {
         if (layoutIndex < FACE_SLOTS) return layoutIndex;
         if (layoutIndex == BLANK_LAYOUT_INDEX) return BLANK_SLOT;
@@ -660,7 +678,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
 
     // ---- core altitude
 
-    /** @return fragments counted for the altitude: every fragment, a black one worth a full stack (max 256). */
+    /** @return fragments counted for the altitude: every fragment, a black one worth a full stack (max 320). */
     public static int countAltitudeFragments(Inventory inventory) {
         int total = 0;
         for (int i = FIRST_FRAGMENT_SLOT; i < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS; i++) {
@@ -677,7 +695,7 @@ public class DiceForgeBlockEntity extends LootableContainerBlockEntity implement
     }
 
     /**
-     * The forge at its highest level: core in, lifted to its maximum ({@value #MAX_ALTITUDE_FRAGMENTS} fragments, 4
+     * The forge at its highest level: core in, lifted to its maximum (every fragment slot full: 5
      * full stacks, or black fragments which count as infinite). Such a forge guarantees an ephemeride at full moon.
      */
     public boolean isMaxLevel() {

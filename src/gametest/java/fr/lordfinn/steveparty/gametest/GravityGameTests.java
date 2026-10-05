@@ -30,7 +30,7 @@ public class GravityGameTests implements FabricGameTest {
     /** Core insertion, then the core rising to its highest (4 black fragments: 16 blocks). */
     private static final int RISE_TICKS = CORE_INSERT_TICKS + 160;
 
-    /** An activated forge with 4 black fragments: its core rises to the top. */
+    /** An activated forge with 5 black fragments: its core rises to the top. */
     private static DiceForgeBlockEntity risingForge(TestContext context) {
         context.setBlockState(FORGE_POS, ModBlocks.DICE_FORGE.getDefaultState());
         DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);

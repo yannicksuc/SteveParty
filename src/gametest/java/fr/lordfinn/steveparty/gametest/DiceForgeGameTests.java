@@ -7,13 +7,16 @@ import fr.lordfinn.steveparty.blocks.custom.DiceForgeBlockEntity;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.DiceFace;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.screen_handlers.custom.DiceForgeScreenHandler;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
@@ -65,6 +68,7 @@ public class DiceForgeGameTests implements FabricGameTest {
         forge.setStack(FIRST_FRAGMENT_SLOT + 1, new ItemStack(ModItems.RED_STAR_FRAGMENT, 3));
         forge.setStack(FIRST_FRAGMENT_SLOT + 2, new ItemStack(ModItems.BLUE_STAR_FRAGMENT, 3));
         forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.GREEN_STAR_FRAGMENT, 3));
+        forge.setStack(FIRST_FRAGMENT_SLOT + 4, new ItemStack(ModItems.YELLOW_STAR_FRAGMENT, 3));
         forge.setStack(BLANK_SLOT, blanks(10));
         context.assertTrue(forge.start(), "production starts");
 
@@ -115,9 +119,11 @@ public class DiceForgeGameTests implements FabricGameTest {
         context.assertTrue(!forge.start(), "craft refused with two red slots");
 
         forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
+        context.assertEquals(forge.getStatus(), Status.MISSING_FRAGMENT, "the 5 fragment slots are all needed");
+        forge.setStack(FIRST_FRAGMENT_SLOT + 4, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
         context.assertEquals(forge.getStatus(), Status.NOT_ENOUGH_BLANK_FACES, "no blank faces yet");
         forge.setStack(BLANK_SLOT, blanks(2));
-        context.assertEquals(forge.getStatus(), Status.OK, "1 red + 3 black is valid");
+        context.assertEquals(forge.getStatus(), Status.OK, "1 red + 4 black is valid");
         GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
     }
 
@@ -384,7 +390,51 @@ public class DiceForgeGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Core altitude: every fragment counts, a black one as a full stack, 256 fragments = 16 blocks (max). */
+    /**
+     * Forges saved with 4 fragment slots (version 3): the blank faces, output and module slots move up by one, the
+     * 5th fragment slot is empty, and the remembered blank faces follow their slot.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void version3SlotsMoveUpForTheFifthFragment(TestContext context) {
+        context.setBlockState(FORGE_POS, ModBlocks.DICE_FORGE.getDefaultState());
+        DiceForgeBlockEntity forge = context.getBlockEntity(FORGE_POS);
+        var registries = context.getWorld().getRegistryManager();
+        ItemStack forged = DiceFacesComponent.createDie(List.of(new ItemStack(face(3))));
+        NbtList items = new NbtList();
+        // Version 3: fragments 13..16, blank faces 17, output 18, modules 19..22
+        Object[][] saved = {{16, new ItemStack(ModItems.RED_STAR_FRAGMENT, 5)}, {17, blanks(7)},
+                {18, forged.copyWithCount(2)}, {19, new ItemStack(DiceModules.LUCKY.item(), 2)},
+                {22, new ItemStack(DiceModules.SLOW.item())}};
+        for (Object[] entry : saved) {
+            NbtCompound item = (NbtCompound) ((ItemStack) entry[1]).encode(registries);
+            item.putByte("Slot", (byte) (int) (Integer) entry[0]);
+            items.add(item);
+        }
+        NbtList layout = new NbtList();
+        for (int i = 0; i < 17; i++) {
+            layout.add(NbtString.of(i == 15 ? "steveparty:red_star_fragment" : i == 16 ? "steveparty:blank_dice_face" : ""));
+        }
+        NbtCompound nbt = new NbtCompound();
+        nbt.put("Items", items);
+        nbt.put("Layout", layout);
+        nbt.putInt("ForgeVersion", 3);
+        forge.read(nbt, registries);
+
+        context.assertEquals(forge.getStack(FIRST_FRAGMENT_SLOT + 3).getCount(), 5, "4th fragment slot unchanged");
+        context.assertTrue(forge.getStack(FIRST_FRAGMENT_SLOT + 4).isEmpty(), "the 5th fragment slot is new, empty");
+        context.assertEquals(forge.getStack(BLANK_SLOT).getCount(), 7, "blank faces moved to their new slot");
+        context.assertEquals(forge.getStack(OUTPUT_SLOT).getCount(), 2, "dice moved to the new output slot");
+        context.assertEquals(forge.getStack(FIRST_MODULE_SLOT).getCount(), 2, "first module moved");
+        context.assertTrue(forge.getStack(FIRST_MODULE_SLOT + 3).isOf(DiceModules.SLOW.item()), "last old module moved");
+        context.assertTrue(forge.getStack(FIRST_MODULE_SLOT + 4).isEmpty(), "the 5th module slot is new, empty");
+        DiceForgeScreenHandler handler = new DiceForgeScreenHandler(1, DiceTestKit.player(context).getInventory(), forge, forge.getProperties());
+        context.assertTrue(handler.getGhost(FIRST_FRAGMENT_SLOT + 3) == ModItems.RED_STAR_FRAGMENT, "fragment ghost kept");
+        context.assertTrue(handler.getGhost(FIRST_FRAGMENT_SLOT + 4) == null, "no ghost on the new fragment slot");
+        context.assertTrue(handler.getGhost(BLANK_SLOT) == ModItems.blankDiceFace(), "blank faces ghost follows its slot");
+        context.complete();
+    }
+
+    /** Core altitude: every fragment counts, a black one as a full stack, 320 fragments (5 stacks) = 16 blocks (max). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void coreAltitudeFollowsTheFragments(TestContext context) {
         DiceForgeBlockEntity forge = placeActivatedForge(context);
@@ -392,12 +442,13 @@ public class DiceForgeGameTests implements FabricGameTest {
         forge.setStack(FIRST_FRAGMENT_SLOT + 1, new ItemStack(ModItems.BLUE_STAR_FRAGMENT, 40));
         forge.setStack(FIRST_FRAGMENT_SLOT + 2, new ItemStack(ModItems.YELLOW_STAR_FRAGMENT, 20));
         forge.setStack(FIRST_FRAGMENT_SLOT + 3, new ItemStack(ModItems.BLACK_STAR_FRAGMENT, 1));
-        context.assertEquals(countAltitudeFragments(forge), 188, "64 + 40 + 20 + black (64)");
-        context.assertTrue(Math.abs(getTargetAltitude(forge) - 11.75f) < 1e-4, "188 / 256 x 16 blocks");
+        forge.setStack(FIRST_FRAGMENT_SLOT + 4, new ItemStack(ModItems.GREEN_STAR_FRAGMENT, 52));
+        context.assertEquals(countAltitudeFragments(forge), 240, "64 + 40 + 20 + black (64) + 52");
+        context.assertTrue(Math.abs(getTargetAltitude(forge) - 12f) < 1e-4, "240 / 320 x 16 blocks");
         for (int i = 0; i < FRAGMENT_SLOTS; i++) {
             forge.setStack(FIRST_FRAGMENT_SLOT + i, new ItemStack(ModItems.BLACK_STAR_FRAGMENT));
         }
-        context.assertTrue(getTargetAltitude(forge) == MAX_CORE_ALTITUDE, "4 black fragments: 16 blocks");
+        context.assertTrue(getTargetAltitude(forge) == MAX_CORE_ALTITUDE, "5 black fragments: 16 blocks");
         GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
     }
 }
