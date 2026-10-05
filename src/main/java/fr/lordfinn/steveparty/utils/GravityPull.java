@@ -20,16 +20,16 @@ import net.minecraft.world.World;
  * instead of shooting through it. Once there, they orbit it: they circle it at its height, a few blocks away. Used by
  * the core of the dice forge and by the gravity core block.
  * <p>
- * Heavy entities resist it: the more armour and toughness, the less an entity is pulled (full netherite, 20 + 12, not at
- * all), and the bigger its hitbox beyond a player's, the less too (its volume acting as its mass). The pull only changes an entity's velocity by a limited amount each tick (weaker far
+ * Heavy entities resist it: the more armour and toughness, the less an entity is pulled (full iron, 15 armour points,
+ * not at all, nor anything heavier), and the bigger its hitbox beyond a player's, the less too (its volume acting as its mass). The pull only changes an entity's velocity by a limited amount each tick (weaker far
  * away), so a strong enough force (elytra, knockback...) breaks free.
  * <p>
  * Players move themselves: their pull is computed on their own client (the local player), like gravity, with no packet
  * each tick; the server pulls every other entity.
  */
 public final class GravityPull {
-    /** Armour + toughness of an entity the pull no longer moves: full netherite. */
-    public static final double IMMUNE_WEIGHT = 32;
+    /** Armour + toughness of an entity the pull no longer moves: full iron armour (2 + 6 + 5 + 2). */
+    public static final double IMMUNE_WEIGHT = 15;
     /** Hitbox volume up to which an entity is pulled fully: a player's (0.6 x 1.8 x 0.6); bigger ones less. */
     public static final double FULL_PULL_VOLUME = 0.6 * 1.8 * 0.6;
     /** Speed an entity heads for its orbit at: this share of its distance per tick, at most MAX_SPEED (blocks/tick). */

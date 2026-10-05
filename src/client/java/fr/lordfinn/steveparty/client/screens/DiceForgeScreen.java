@@ -391,16 +391,34 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         context.drawOrderedTooltip(textRenderer, wrapped, mouseX, mouseY);
     }
 
-    /** A slot's guide: its name in bold and colour, then short points in grey. */
-    private static List<Text> slotGuide(String name, String nameFallback, Formatting colour, String[][] points) {
+    /** A slot's guide: its name in bold and colour, its tags ([Optional], [Never used up]...), then short points in grey. */
+    private static List<Text> slotGuide(String name, String nameFallback, Formatting colour, Tag[] tags, String[][] points) {
         List<Text> lines = new ArrayList<>();
         lines.add(Text.translatableWithFallback(KEY + name, nameFallback).formatted(colour, Formatting.BOLD));
+        if (tags.length > 0) {
+            MutableText line = Text.empty();
+            for (int i = 0; i < tags.length; i++) {
+                if (i > 0) line.append(Text.literal(" "));
+                line.append(Text.literal("[").append(Text.translatableWithFallback(KEY + tags[i].key(), tags[i].fallback()))
+                        .append("]").formatted(tags[i].colour()));
+            }
+            lines.add(line);
+        }
         for (String[] point : points) {
             lines.add(Text.literal("• ").formatted(colour)
                     .append(Text.translatableWithFallback(KEY + point[0], point[1]).formatted(Formatting.GRAY)));
         }
         return lines;
     }
+
+    /** A tag of a slot's guide, in its own colour. */
+    private record Tag(String key, String fallback, Formatting colour) {
+    }
+
+    private static final Tag NOT_CONSUMED = new Tag("tag.not_consumed", "Not consumed", Formatting.GREEN);
+    private static final Tag NEVER_USED_UP = new Tag("tag.never_used_up", "Never used up", Formatting.GREEN);
+    private static final Tag OPTIONAL = new Tag("tag.optional", "Optional", Formatting.AQUA);
+    private static final Tag[] FACE_TAGS = {NOT_CONSUMED}, FRAGMENT_TAGS = {}, MODULE_TAGS = {OPTIONAL, NEVER_USED_UP};
 
     private static final String[][] FACE_POINTS = {
             {"face_slot.weight", "Stack size = the face's weight"},
@@ -411,9 +429,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             {"fragment_slot.black", "Black can repeat and is never used up"},
             {"fragment_slot.use", "One fragment of each colour per die"}};
     private static final String[][] MODULE_POINTS = {
-            {"module_slot.optional", "Optional"},
             {"module_slot.every", "Put on every die forged"},
-            {"module_slot.kept", "Never used up"},
             {"module_slot.count", "Stack size = how many the die gets"}};
 
     private MutableText getBlankFacesHint() {
@@ -424,11 +440,11 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private void drawGhostTooltip(DrawContext context, int index, int mouseX, int mouseY) {
         List<Text> guide = null;
         if (isModuleSlot(index)) {
-            guide = slotGuide("module_slot", "Dice module slot", Formatting.AQUA, MODULE_POINTS);
+            guide = slotGuide("module_slot", "Die module slot", Formatting.AQUA, MODULE_TAGS, MODULE_POINTS);
         } else if (index >= FIRST_FRAGMENT_SLOT && index < FIRST_FRAGMENT_SLOT + FRAGMENT_SLOTS) {
-            guide = slotGuide("fragment_slot", "Star fragment slot", Formatting.LIGHT_PURPLE, FRAGMENT_POINTS);
+            guide = slotGuide("fragment_slot", "Star fragment slot", Formatting.LIGHT_PURPLE, FRAGMENT_TAGS, FRAGMENT_POINTS);
         } else if (index < FACE_SLOTS) {
-            guide = slotGuide("face_slot", "Dice face slot", Formatting.GOLD, FACE_POINTS);
+            guide = slotGuide("face_slot", "Die face slot", Formatting.GOLD, FACE_TAGS, FACE_POINTS);
         }
         if (guide != null) {
             Item remembered = handler.getGhost(index);

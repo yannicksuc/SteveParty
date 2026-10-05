@@ -64,22 +64,28 @@ public class GravityGameTests implements FabricGameTest {
         stand.equipStack(EquipmentSlot.FEET, new ItemStack(Items.NETHERITE_BOOTS));
     }
 
-    /** Armour weighs an entity down: none is fully pulled, full netherite not at all, diamond a little. */
+    /** Armour weighs an entity down: none is fully pulled, full iron (or heavier) not at all, chainmail a little. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void armourResistsThePull(TestContext context) {
         ArmorStandEntity bare = standAt(context, context.getAbsolute(new Vec3d(1.5, 2, 1.5)));
         ArmorStandEntity netherite = standAt(context, context.getAbsolute(new Vec3d(2.5, 2, 1.5)));
         wearNetherite(netherite);
-        ArmorStandEntity diamond = standAt(context, context.getAbsolute(new Vec3d(3.5, 2, 1.5)));
-        diamond.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
-        diamond.equipStack(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
-        diamond.equipStack(EquipmentSlot.LEGS, new ItemStack(Items.DIAMOND_LEGGINGS));
-        diamond.equipStack(EquipmentSlot.FEET, new ItemStack(Items.DIAMOND_BOOTS));
+        ArmorStandEntity iron = standAt(context, context.getAbsolute(new Vec3d(3.5, 2, 1.5)));
+        iron.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+        iron.equipStack(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+        iron.equipStack(EquipmentSlot.LEGS, new ItemStack(Items.IRON_LEGGINGS));
+        iron.equipStack(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
+        ArmorStandEntity chainmail = standAt(context, context.getAbsolute(new Vec3d(4.5, 2, 1.5)));
+        chainmail.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.CHAINMAIL_HELMET));
+        chainmail.equipStack(EquipmentSlot.CHEST, new ItemStack(Items.CHAINMAIL_CHESTPLATE));
+        chainmail.equipStack(EquipmentSlot.LEGS, new ItemStack(Items.CHAINMAIL_LEGGINGS));
+        chainmail.equipStack(EquipmentSlot.FEET, new ItemStack(Items.CHAINMAIL_BOOTS));
         context.waitAndRun(2, () -> {
             context.assertTrue(GravityPull.resistance(bare) == 0, "no armour: fully pulled");
             context.assertTrue(GravityPull.resistance(netherite) >= 1, "full netherite: not pulled");
-            double d = GravityPull.resistance(diamond);
-            context.assertTrue(d > 0.8 && d < 1, "full diamond: barely pulled (" + d + ")");
+            context.assertTrue(GravityPull.resistance(iron) >= 1, "full iron: not pulled");
+            double c = GravityPull.resistance(chainmail);
+            context.assertTrue(c > 0.6 && c < 1, "full chainmail: barely pulled (" + c + ")");
             // The bigger the hitbox, the less pulled
             var golem = EntityType.IRON_GOLEM.create(context.getWorld());
             var cow = EntityType.COW.create(context.getWorld());
