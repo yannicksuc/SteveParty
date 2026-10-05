@@ -1,0 +1,292 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "finish"
+	group: "7821141F991152DB"
+	icon: {
+		id: "steveparty:goal_pole"
+	}
+	id: "6D6E3AE0E24B2C6E"
+	images: [ ]
+	order_index: 5
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			id: "5738F405CD1ABF02"
+			rewards: [
+				{
+					id: "178EF038140B5634"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "6F5A496B25275293"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					id: "236B3CE966973090"
+					item: {
+						count: 1
+						id: "steveparty:goal_pole_base"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"5738F405CD1ABF02"
+			]
+			id: "2BAA43480CA56926"
+			rewards: [
+				{
+					id: "6DFDD1AD26AF66DA"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "4A562704E4CB8308"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "6914C602C1009F84"
+					item: {
+						count: 1
+						id: "steveparty:goal_pole"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"2BAA43480CA56926"
+			]
+			id: "77FE553DBC59E8E9"
+			rewards: [
+				{
+					id: "150007562771E0E2"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "0DEACD23C81ACF5F"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "0E06F9D901C3D9BA"
+					item: {
+						count: 1
+						id: "steveparty:flag"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -1.5d
+		}
+		{
+			dependencies: [
+				"2BAA43480CA56926"
+			]
+			icon: {
+				id: "minecraft:golden_apple"
+			}
+			id: "42057F6E6F797B1D"
+			rewards: [
+				{
+					id: "2AC277224AAD2F78"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "55F2F35857DDFD8C"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "45662F04C1891224"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"2BAA43480CA56926"
+				"68FDB8B9B18F5221"
+			]
+			icon: {
+				id: "minecraft:target"
+			}
+			id: "7D674A4D41A2C9AB"
+			rewards: [
+				{
+					id: "102A2A123F7EA523"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "0E6B54A99D5FAC05"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "77901CFA8B30F41A"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 1.5d
+		}
+		{
+			dependencies: [
+				"7D674A4D41A2C9AB"
+			]
+			icon: {
+				id: "minecraft:redstone"
+			}
+			id: "23960C8EFFCAEE1A"
+			optional: true
+			rewards: [
+				{
+					id: "145F5F1FF1533FC7"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "269ADA99DAF75376"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "250CD00163E6B3FD"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: 1.5d
+		}
+		{
+			dependencies: [
+				"5738F405CD1ABF02"
+			]
+			id: "169B6F8AE6D4D572"
+			rewards: [
+				{
+					id: "22F4D31EC65E70DA"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "5447E96185B3F5FE"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "35C7BF52974277F7"
+					item: {
+						count: 1
+						id: "steveparty:triple_jump_shoes"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 2.5d
+		}
+		{
+			dependencies: [
+				"42057F6E6F797B1D"
+				"77FE553DBC59E8E9"
+				"7D674A4D41A2C9AB"
+				"169B6F8AE6D4D572"
+			]
+			icon: {
+				id: "steveparty:flag"
+			}
+			id: "3817AA11E5F4EFA0"
+			rewards: [
+				{
+					id: "002A6137E3D1C446"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "5283D011BD678843"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "0E4AB008B1C6C57C"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "610F56F73CFBCC90"
+					type: "checkmark"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+	]
+}

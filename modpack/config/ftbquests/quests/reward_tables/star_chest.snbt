@@ -1,0 +1,113 @@
+{
+	icon: {
+		id: "steveparty:power_star"
+	}
+	id: "536A6CC3E21C8B88"
+	loot_size: 1
+	order_index: 1
+	rewards: [
+		{
+			id: "74957E9242F95B2F"
+			item: {
+				count: 1
+				id: "steveparty:power_star"
+			}
+			weight: 3.0f
+		}
+		{
+			count: 25
+			id: "7F7918164600C267"
+			item: {
+				count: 1
+				id: "steveparty:coin"
+			}
+			weight: 4.0f
+		}
+		{
+			id: "790ADE4F709FA92B"
+			item: {
+				count: 1
+				id: "steveparty:triple_dice"
+			}
+			weight: 3.0f
+		}
+		{
+			count: 2
+			id: "0F16F3241FE7DC3F"
+			item: {
+				count: 1
+				id: "steveparty:premium_dice_face_10"
+			}
+			weight: 3.0f
+		}
+		{
+			id: "586BCB948DDB8B81"
+			item: {
+				count: 1
+				id: "steveparty:dice_module_lucky"
+			}
+			weight: 2.0f
+		}
+		{
+			id: "49E824419B254E90"
+			item: {
+				count: 1
+				id: "steveparty:dice_module_reroll"
+			}
+			weight: 2.0f
+		}
+		{
+			id: "0BB5AD680D3CE23C"
+			item: {
+				count: 1
+				id: "steveparty:dice_module_choice"
+			}
+		}
+		{
+			id: "13C9F0267A5F0FDF"
+			item: {
+				count: 1
+				id: "steveparty:dice_module_infinity"
+			}
+		}
+		{
+			id: "2E76C351BCB4EF85"
+			item: {
+				count: 1
+				id: "steveparty:dice_module_skeleton_key"
+			}
+			weight: 2.0f
+		}
+		{
+			count: 2
+			id: "1C977E8275FA0E27"
+			item: {
+				count: 1
+				id: "steveparty:swap_dice_face"
+			}
+			weight: 2.0f
+		}
+		{
+			id: "6640CA134047C614"
+			item: {
+				count: 1
+				id: "steveparty:black_star_fragment"
+			}
+		}
+		{
+			id: "2811015B006260A5"
+			item: {
+				count: 1
+				id: "steveparty:white_star_fragments_block"
+			}
+			weight: 2.0f
+		}
+		{
+			id: "04E8DD0F3F2F9C9D"
+			type: "xp_levels"
+			weight: 3.0f
+			xp_levels: 10
+		}
+	]
+	use_title: true
+}

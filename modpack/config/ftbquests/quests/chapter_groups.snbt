@@ -1,0 +1,28 @@
+{
+	chapter_groups: [
+		{
+			icon: {
+				id: "steveparty:party_controller"
+			}
+			id: "7821141F991152DB"
+		}
+		{
+			icon: {
+				id: "steveparty:trading_stall"
+			}
+			id: "10335C0348F8FC8A"
+		}
+		{
+			icon: {
+				id: "steveparty:power_star"
+			}
+			id: "60AFE736E3EC9353"
+		}
+		{
+			icon: {
+				id: "steveparty:red_plastic_block"
+			}
+			id: "64160321E5CDD4E4"
+		}
+	]
+}

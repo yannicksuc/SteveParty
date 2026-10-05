@@ -1,0 +1,191 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "misc"
+	group: "64160321E5CDD4E4"
+	icon: {
+		id: "steveparty:looting_box"
+	}
+	id: "3243C179234B96AF"
+	images: [ ]
+	order_index: 4
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			id: "203C683BC60BB2EA"
+			rewards: [
+				{
+					id: "0EAAC4AE2D2CA9D1"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "2ED58F8C740318FC"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					id: "65BB6C3F3C25207E"
+					item: {
+						count: 1
+						id: "steveparty:looting_box"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"203C683BC60BB2EA"
+				"2E754E69CDD7EF1A"
+			]
+			icon: {
+				id: "minecraft:gold_ingot"
+			}
+			id: "1FD5DF613F9840F0"
+			rewards: [
+				{
+					id: "4FEE588DDA1E16EE"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "3D5FB7410F3BC92E"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "7B3565C8B0996D45"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			id: "5DD0CA51D02BCCC0"
+			rewards: [
+				{
+					id: "0DC99F81EDEA2712"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "4E1F77B0063241B2"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "5141EFB87E590A9F"
+					item: {
+						count: 1
+						id: "steveparty:plunger"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 2.0d
+		}
+		{
+			dependencies: [
+				"25F6A5B53D501ECE"
+			]
+			icon: {
+				id: "steveparty:villager_block"
+			}
+			id: "4B862393844E8C60"
+			optional: true
+			rewards: [
+				{
+					id: "514B470CA19C09E8"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "251A8E311E8F8956"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "31D429BFEF50A56D"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: 2.0d
+		}
+		{
+			dependencies: [
+				"1FD5DF613F9840F0"
+				"5DD0CA51D02BCCC0"
+			]
+			icon: {
+				id: "steveparty:plunger"
+			}
+			id: "19A1A7E217DE13A3"
+			rewards: [
+				{
+					id: "2A7C8577FD853208"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "5F8F134BDE68EDF9"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "097FC902D6DA3F46"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "5201730A6B7D5364"
+					type: "checkmark"
+				}
+			]
+			x: 4.5d
+			y: 1.0d
+		}
+	]
+}

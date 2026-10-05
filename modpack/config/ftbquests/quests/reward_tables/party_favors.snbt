@@ -1,0 +1,124 @@
+{
+	icon: {
+		id: "steveparty:coin"
+	}
+	id: "1FEF45914C419791"
+	loot_size: 1
+	order_index: 0
+	rewards: [
+		{
+			count: 5
+			id: "71B4EEF824E0831E"
+			item: {
+				count: 1
+				id: "steveparty:coin"
+			}
+			weight: 10.0f
+		}
+		{
+			count: 12
+			id: "635C351BF22010A1"
+			item: {
+				count: 1
+				id: "steveparty:coin"
+			}
+			weight: 3.0f
+		}
+		{
+			count: 8
+			id: "7C89BFC74BBEFAD9"
+			item: {
+				count: 1
+				id: "steveparty:plastic_pellets"
+			}
+			weight: 8.0f
+		}
+		{
+			count: 4
+			id: "66DDF4045FE0B6C8"
+			item: {
+				count: 1
+				id: "steveparty:blank_dice_face"
+			}
+			weight: 6.0f
+		}
+		{
+			count: 3
+			id: "2EC0404B6CD3B91F"
+			item: {
+				count: 1
+				id: "steveparty:board_space_behavior"
+			}
+			weight: 6.0f
+		}
+		{
+			id: "3AF522F883EC0A84"
+			item: {
+				count: 1
+				id: "steveparty:default_dice"
+			}
+			weight: 4.0f
+		}
+		{
+			count: 4
+			id: "314A8D18F47A90D5"
+			item: {
+				count: 1
+				id: "steveparty:tile"
+			}
+			weight: 5.0f
+		}
+		{
+			count: 4
+			id: "2865D86D8574AEAE"
+			item: {
+				count: 1
+				id: "steveparty:blue_star_fragment"
+			}
+			weight: 2.0f
+		}
+		{
+			count: 4
+			id: "048DDE175BEE1BC2"
+			item: {
+				count: 1
+				id: "steveparty:red_star_fragment"
+			}
+			weight: 2.0f
+		}
+		{
+			count: 4
+			id: "13627F8A511E6C73"
+			item: {
+				count: 1
+				id: "steveparty:yellow_star_fragment"
+			}
+			weight: 2.0f
+		}
+		{
+			count: 4
+			id: "27ABEB66A2F8F08B"
+			item: {
+				count: 1
+				id: "steveparty:green_star_fragment"
+			}
+			weight: 2.0f
+		}
+		{
+			count: 4
+			id: "150EE903E9C033CA"
+			item: {
+				count: 1
+				id: "steveparty:purple_star_fragment"
+			}
+			weight: 2.0f
+		}
+		{
+			id: "73C65AF40A72D1B8"
+			type: "xp"
+			weight: 4.0f
+			xp: 100
+		}
+	]
+	use_title: true
+}
