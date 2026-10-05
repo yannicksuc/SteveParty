@@ -5,14 +5,14 @@
   "icon": {
     "item": "steveparty:telescope"
   },
-  "x": -1,
+  "x": -7,
   "y": 4,
   "sort_number": 4,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "parents": [
     {
-      "entry": "stars_mula/ephemeride",
+      "entry": "stars_mula/mula",
       "draw_arrow": true,
       "line_enabled": true
     }
@@ -22,6 +22,7 @@
     "advancement_id": "steveparty:guide/stardust",
     "tooltip": "book.steveparty.guide.lock.stardust"
   },
+  "background_u_index": 1,
   "pages": [
     {
       "type": "modonomicon:text",
