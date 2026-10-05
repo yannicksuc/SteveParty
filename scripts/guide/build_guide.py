@@ -599,26 +599,62 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
     ], parents=["controller"], gate="party_time"),
     E("powerups", "steveparty:powerup_mushroom", ("Power-ups", "Bonus"), ("A boost for your turn", "Un coup de pouce pour ton tour"), [
         T("A **power-up** is used at the **start of your turn**, **before your roll**, and adds to it (a die "
-          "replaces the roll). Right-click it during your own turn: it is **consumed** and announced to everyone.\n\n"
+          "replaces the roll). Right-click it during your own turn: it is **consumed** only if it worked.\n\n"
           "- **One** power-up per turn.\n"
           "- Too late once your roll counts (a blank roll can still be rolled again).",
           "Un **bonus** s'utilise au **début de ton tour**, **avant ton lancer**, et s'y ajoute (un dé, lui, "
-          "remplace le lancer). Clic droit pendant ton propre tour : il est **consommé** et annoncé à tous.\n\n"
+          "remplace le lancer). Clic droit pendant ton propre tour : il n'est **consommé** que s'il a fait effet.\n\n"
           "- **Un seul** bonus par tour.\n"
           "- Trop tard une fois ton lancer compté (un lancer blanc peut encore être relancé)."),
-        T("- **Mushroom**: **+3** to your next roll this turn, with any die (plain, double, triple or forged).\n"
-          "- **Double Coins**: the coins you **gain** this turn are **doubled** (coin faces, item spaces). "
-          "Losses are not.\n\n"
-          "Sell them like dice, on a **Trading Stall**. Left without a price, they sell for **5** and **8** Coins.",
-          "- **Champignon** : **+3** à ton prochain lancer de ce tour, avec n'importe quel dé (simple, double, "
-          "triple ou forgé).\n"
-          "- **Double pièces** : les pièces que tu **gagnes** ce tour sont **doublées** (faces pièces, cases "
-          "objets). Pas les pertes.\n\n"
-          "Vends-les comme les dés, sur un **étal du marchand**. Sans prix, ils coûtent **5** et **8** pièces.",
-          "The Power-ups", "Les bonus"),
+        T("- **Mushroom**: **+3** to your next roll this turn, with any die.\n"
+          "- **Double Coins**: the coins you **gain** this turn are **doubled**. Losses are not.\n"
+          "- **Padlock**: blocks **one** Thief Bell or Trap aimed at you, until your next turn. Kept if you are "
+          "already protected.",
+          "- **Champignon** : **+3** à ton prochain lancer de ce tour, avec n'importe quel dé.\n"
+          "- **Double pièces** : les pièces que tu **gagnes** ce tour sont **doublées**. Pas les pertes.\n"
+          "- **Cadenas** : bloque **une** Cloche voleuse ou un Piège contre toi, jusqu'à ton prochain tour. Gardé "
+          "si tu es déjà protégé.",
+          "For You", "Pour toi"),
+        T("- **Thief Bell**: pick a player (15 s, else the richest) and steal **5 to 15** of their coins.\n"
+          "- **Golden Thief Bell**: the same, for **one star**.\n"
+          "- **Trap**: hidden on your pawn's space. The next other player to stop there gives you **10** coins.\n\n"
+          "A Padlock parries them. A bell is kept if its target has nothing to steal.",
+          "- **Cloche voleuse** : choisis un joueur (15 s, sinon le plus riche) et vole-lui **5 à 15** pièces.\n"
+          "- **Cloche voleuse dorée** : pareil, pour **une étoile**.\n"
+          "- **Piège** : caché sur la case de ton pion. Le prochain autre joueur qui s'y arrête te donne **10** "
+          "pièces.\n\n"
+          "Un Cadenas les pare. Une cloche est gardée si sa cible n'a rien à voler.",
+          "Against the Others", "Contre les autres"),
+        T("- **Star Whistle**: the Star flies off to another Star space.\n"
+          "- **Golden Pipe**: your pawn warps just **before the Star**, then you roll your die.\n\n"
+          "Both are kept when there is no Star.",
+          "- **Sifflet d'étoile** : l'étoile s'envole vers une autre case étoile.\n"
+          "- **Tuyau doré** : ton pion se téléporte juste **avant l'étoile**, puis tu lances ton dé.\n\n"
+          "Les deux sont gardés s'il n'y a pas d'étoile.",
+          "The Star", "L'étoile"),
+        T("Power-ups are **easy to craft**: at most one Coin and one or two common items.\n\n"
+          "The **board's maker** chooses how players get them: a **Trading Stall**, the Boxed Trader, a Shop "
+          "space, or an **Inventory space** handing out a chest's content.\n\n"
+          "Unpriced on a stall, in Coins: Mushroom **5**, Double Coins and Padlock **8**, Trap **10**, "
+          "Thief Bell **12**, Whistle **15**, Pipe **25**, Golden Bell **40**.",
+          "Les bonus se **fabriquent facilement** : une pièce au plus et un ou deux objets courants.\n\n"
+          "Le **créateur du plateau** choisit comment les proposer : **étal du marchand**, Boxed Trader, case "
+          "Boutique, ou **case Inventaire** (le contenu d'un coffre).\n\n"
+          "Sans prix sur un étal, en pièces : Champignon **5**, Double pièces et Cadenas **8**, Piège **10**, "
+          "Cloche **12**, Sifflet **15**, Tuyau **25**, Cloche dorée **40**.",
+          "Getting Them", "Les obtenir"),
         C("steveparty:powerup_mushroom", "steveparty:powerup_double_coins",
-          "Mushroom: red mushroom + sugar + Coin. Double Coins: 2 Coins + glowstone dust + paper.",
-          "Champignon : champignon rouge + sucre + pièce. Double pièces : 2 pièces + poudre de glowstone + papier."),
+          "Mushroom: red mushroom + sugar + Coin. Double Coins: Coin + glowstone dust + paper.",
+          "Champignon : champignon rouge + sucre + pièce. Double pièces : pièce + poudre de glowstone + papier."),
+        C("steveparty:powerup_padlock", "steveparty:powerup_trap",
+          "Padlock: Coin + iron ingot + tripwire hook. Trap: Coin + stone pressure plate + string.",
+          "Cadenas : pièce + lingot de fer + crochet. Piège : pièce + plaque de pression en pierre + ficelle."),
+        C("steveparty:powerup_thief_bell", "steveparty:powerup_golden_thief_bell",
+          "Thief Bell: Coin + gold ingot + string. Golden Thief Bell: Thief Bell + 2 gold ingots.",
+          "Cloche voleuse : pièce + lingot d'or + ficelle. Cloche voleuse dorée : Cloche voleuse + 2 lingots d'or."),
+        C("steveparty:powerup_star_whistle", "steveparty:powerup_golden_pipe",
+          "Star Whistle: Coin + bamboo + glowstone dust. Golden Pipe: Coin + 2 gold ingots + ender pearl.",
+          "Sifflet d'étoile : pièce + bambou + poudre de glowstone. Tuyau doré : pièce + 2 lingots d'or + perle de l'Ender."),
     ], parents=["rewards"], gate="party_time"),
     E("step_controller", "steveparty:step_controller", ("Step controller", "Contrôleur de pas"), ("Next, restart or back", "Suivant, recommencer, retour"), [
         T("Right-click to switch mode: **up** = next step, **side** = restart the step, **down** = previous step. "
