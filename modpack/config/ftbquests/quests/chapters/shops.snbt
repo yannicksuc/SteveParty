@@ -1,0 +1,361 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "shops"
+	group: "10335C0348F8FC8A"
+	icon: {
+		id: "steveparty:trading_stall"
+	}
+	id: "386B56372B494AA4"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
+			id: "25F6A5B53D501ECE"
+			rewards: [
+				{
+					id: "58F861683B3BE45A"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "0B240C13486B1AB2"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			size: 1.25d
+			tasks: [
+				{
+					id: "4826DEC992C8CF25"
+					item: {
+						count: 1
+						id: "steveparty:villager_block"
+					}
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"25F6A5B53D501ECE"
+			]
+			icon: {
+				id: "steveparty:boxed_trader_spawn_egg"
+			}
+			id: "0530BAFFB80A6149"
+			rewards: [
+				{
+					id: "54B37F27D6B97D0B"
+					type: "xp"
+					xp: 50
+				}
+				{
+					count: 3
+					id: "7A398E25DCB1F7B0"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "5AC4A724DD1AFC8D"
+					observation_type: "entity_type"
+					timer: 20L
+					to_observe: "steveparty:boxed_trader"
+					type: "observation"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"0530BAFFB80A6149"
+			]
+			id: "5322A5CC09B4DADC"
+			rewards: [
+				{
+					id: "45CE726A6F0E0491"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "34407D23187F1F27"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "5223D13A17283B07"
+					item: {
+						count: 1
+						id: "steveparty:trading_stall"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -1.5d
+		}
+		{
+			dependencies: [
+				"0530BAFFB80A6149"
+			]
+			id: "345F2775C4F5745A"
+			rewards: [
+				{
+					id: "040FCCCFBFC29728"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "013B5BAC831137D4"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "130EB2D8F6A1C4E3"
+					item: {
+						count: 1
+						id: "steveparty:cash_register"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"0530BAFFB80A6149"
+			]
+			id: "486B21C664042E3A"
+			rewards: [
+				{
+					id: "3C0473E46948C40F"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "442305BAF828805D"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "24F56D1CEA055182"
+					item: {
+						count: 1
+						id: "steveparty:shopkeeper_key"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 1.5d
+		}
+		{
+			dependencies: [
+				"5322A5CC09B4DADC"
+				"345F2775C4F5745A"
+				"486B21C664042E3A"
+			]
+			icon: {
+				id: "minecraft:emerald"
+			}
+			id: "5FECE4CA8D043161"
+			rewards: [
+				{
+					id: "4EB6E0F4EA23A99A"
+					type: "xp"
+					xp: 50
+				}
+				{
+					id: "6D7A2352CF91EACF"
+					table_id: 2301134424961554321L
+					type: "random"
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "724851414A6C2453"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"5FECE4CA8D043161"
+				"33F2B84D658F752B"
+			]
+			icon: {
+				id: "steveparty:shop_cartridge"
+			}
+			id: "7A67F524EE372745"
+			rewards: [
+				{
+					id: "604A984008754ABE"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "25A54411ED37E3AC"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "7B8AA92F4232C599"
+					type: "checkmark"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: [
+				"0530BAFFB80A6149"
+			]
+			id: "79E5CE07E2521CF7"
+			rewards: [
+				{
+					id: "3B1FB3406681AB7F"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "7B0754384A4EB5C3"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "4BC0965463D7B4EE"
+					item: {
+						count: 1
+						id: "steveparty:bandana"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 2.0d
+		}
+		{
+			dependencies: [
+				"79E5CE07E2521CF7"
+			]
+			id: "5E623F55BBE37FE9"
+			rewards: [
+				{
+					id: "4B030D4652144513"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 2
+					id: "41DE65A51DF30FA9"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "7269CB7A50D4382C"
+					item: {
+						count: 1
+						id: "steveparty:box_costume"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 3.5d
+		}
+		{
+			dependencies: [
+				"7A67F524EE372745"
+				"5FECE4CA8D043161"
+				"5E623F55BBE37FE9"
+			]
+			icon: {
+				id: "steveparty:shopkeeper_key"
+			}
+			id: "4DC6FEBAF30A3370"
+			rewards: [
+				{
+					id: "302442F1C94F46E2"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+				{
+					count: 10
+					id: "3478126F1F1FB36E"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					id: "298D0DD80700692C"
+					table_id: 6010736241247292296L
+					type: "random"
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [
+				{
+					id: "737354CCCC5502A2"
+					type: "checkmark"
+				}
+			]
+			x: 10.0d
+			y: 0.0d
+		}
+	]
+}
