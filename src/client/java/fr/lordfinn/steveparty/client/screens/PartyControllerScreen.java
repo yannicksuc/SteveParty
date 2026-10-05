@@ -353,6 +353,16 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         PracticeSwitch practice = addDrawableChild(new PracticeSwitch(x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H, state, data.practiceRound()));
         practice.active = data.canEdit();
         practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
+        // The power-ups a player may carry (0: no limit)
+        int limitY = y + SETTINGS_Y + 2 * SETTINGS_ROW + 1;
+        ConsoleButton fewer = addDrawableChild(new ConsoleButton(sx, limitY, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,
+                () -> click(PartyControllerScreenHandler.BUTTON_MAX_POWER_UPS_DOWN, 1)));
+        ConsoleButton more = addDrawableChild(new ConsoleButton(sx + 52, limitY, STEP, STEP, Text.literal("+"), ConsoleButton.Kind.SCREEN, null,
+                () -> click(PartyControllerScreenHandler.BUTTON_MAX_POWER_UPS_UP, 1)));
+        fewer.active = data.canEdit() && data.maxPowerUps() > 0;
+        more.active = data.canEdit() && data.maxPowerUps() < fr.lordfinn.steveparty.powerups.PowerUpLimit.MAX;
+        fewer.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.max_powerups.less") : Text.translatable(KEY + "locked")));
+        more.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.max_powerups.more") : Text.translatable(KEY + "locked")));
     }
 
     private void addGainsButtons(PartyDashboardData data) {
@@ -1073,6 +1083,11 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         ConsolePaint.inset(context, fieldX, SETTINGS_Y + 1, 31, 15, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
         light(context, Text.literal(value), fieldX + (32 - textRenderer.getWidth(value) + 1) / 2, SETTINGS_Y + 5, WHITE);
         context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.practice"), room), CX, SETTINGS_Y + SETTINGS_ROW + 5, WHITE, true);
+        int limitY = SETTINGS_Y + 2 * SETTINGS_ROW;
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.max_powerups"), room), CX, limitY + 5, WHITE, true);
+        String limit = data.maxPowerUps() <= 0 ? "∞" : Integer.toString(data.maxPowerUps());
+        ConsolePaint.inset(context, fieldX, limitY + 1, 31, 15, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
+        light(context, Text.literal(limit), fieldX + (32 - textRenderer.getWidth(limit) + 1) / 2, limitY + 5, WHITE);
     }
 
     /** The practice round: its state, then a switch (green and to the right when on). */
@@ -1196,8 +1211,8 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         // The label of a setting: what it does
         if (data != null && page() == Page.SETTINGS && emptyHand && mx >= CX && mx < CX + CW - 72) {
             int row = Math.floorDiv(my - SETTINGS_Y, SETTINGS_ROW);
-            if (my >= SETTINGS_Y && row >= 0 && row < 2 && my < SETTINGS_Y + row * SETTINGS_ROW + 18) {
-                String key = row == 0 ? "settings.rounds" : "settings.practice";
+            if (my >= SETTINGS_Y && row >= 0 && row < 3 && my < SETTINGS_Y + row * SETTINGS_ROW + 18) {
+                String key = row == 0 ? "settings.rounds" : row == 1 ? "settings.practice" : "settings.max_powerups";
                 tooltip(context, List.of(Text.translatable(KEY + key + ".tooltip").formatted(Formatting.GRAY)), mouseX, mouseY);
                 return;
             }

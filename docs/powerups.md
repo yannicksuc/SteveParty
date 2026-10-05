@@ -24,6 +24,15 @@ a theft would really happen, and by another player's Trap only (`TrapEffect.isPr
 `PartyStars.place`, announced). To plug another one (a test), `PowerUpStar.install(...)`. A board without an active
 star space has no star: both are then refused, not consumed.
 
+## How many a player carries (`PowerUpLimit`)
+
+The Party Controller's « Max power-ups » setting (`getMaxPowerUps`, NBT `MaxPowerUps`, Settings page, 3 by default,
+0 = no limit) caps what a player of a **running** party carries: every `PowerUpItem` and every die **without**
+Infinity (spent when rolled), counted by items; a die with Infinity does not count. Enforced in
+`CustomizableMerchantScreenHandler` (every Boxed Trader / shop stop purchase: refused, nothing paid; a Trading Stall
+sells through a Boxed Trader), `InventoryInteractorTileBehavior.handleTransfer` (the extra stays in the chest) and
+`PowerUpPickupMixin` (items on the ground). Outside a party: no limit. A consumable die's tooltip shows `[Power-up]`.
+
 ## Plugging in a new power-up
 
 1. One class extending `PowerUp` (see `MushroomPowerUp`, `DoubleCoinsPowerUp`):
