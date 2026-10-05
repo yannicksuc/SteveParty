@@ -2301,5 +2301,16 @@
   "advancements.steveparty.wild_cards.last_place.title": "Better Luck Next Time",
   "advancements.steveparty.wild_cards.last_place.description": "Finish a party in last place",
   "advancements.steveparty.wild_cards.taking_part.title": "It's the Taking Part That Counts",
-  "advancements.steveparty.wild_cards.taking_part.description": "Finish a mini-game without a place"
+  "advancements.steveparty.wild_cards.taking_part.description": "Finish a mini-game without a place",
+  "item.steveparty.powerup_thief_bell": "Thief Bell",
+  "item.steveparty.powerup_golden_thief_bell": "Golden Thief Bell",
+  "tooltip.steveparty.powerup_thief_bell": "At the start of your turn, before rolling your die: steal 5 to 15 coins from another player",
+  "tooltip.steveparty.powerup_golden_thief_bell": "At the start of your turn, before rolling your die: steal a star from another player",
+  "gui.steveparty.thief_bell.prompt.thief": "Steal coins from whom?",
+  "gui.steveparty.thief_bell.prompt.golden": "Steal a star from whom?",
+  "gui.steveparty.thief_bell.option": "%1$s (%2$s × %3$s)",
+  "message.steveparty.thief_bell.stolen": "%1$s rings the %2$s and steals %3$s × %4$s from %5$s!",
+  "message.steveparty.thief_bell.nothing": "%1$s rings the %2$s, but %3$s has no %4$s to steal",
+  "message.steveparty.thief_bell.protected": "%1$s rings the %2$s, but %3$s is protected: nothing stolen",
+  "message.steveparty.thief_bell.nobody": "%1$s rings the %2$s, but there is nobody to steal from"
 }
