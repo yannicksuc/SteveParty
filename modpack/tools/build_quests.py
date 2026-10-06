@@ -468,7 +468,7 @@ MODULES = [
     ("choice", ["Blank face + compass. The roller picks the face."],
      ["Face vierge + boussole. Le lanceur choisit la face."]),
     ("power_up", ["Blank module + echo shard. The die becomes a power-up: used once, in place of your roll (every other die comes back to its roller)."],
-     ["Module vierge + éclat d'écho. Le dé devient un power-up : utilisé une fois, à la place de ton lancer (tout autre dé revient à son lanceur)."]),
+     ["Module vierge + éclat d'écho. Le dé devient un bonus : utilisé une fois, à la place de ton lancer (tout autre dé revient à son lanceur)."]),
     ("lucky", ["Blank face + rabbit's foot. One extra roll per module (up to 5): keep the best one."],
      ["Face vierge + patte de lapin. Un lancer de plus par module (jusqu'à 5) : gardez le meilleur."]),
     ("reroll", ["Blank face + wind charge. Stop or again: after the result, keep it or roll again, once per module."],
