@@ -9,6 +9,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -129,9 +130,16 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
                 this.steveparty$preTokenSilent = mob.isSilent();
                 this.steveparty$hasPreTokenState = true;
             }
-            // A static pawn: no AI at all (goals, brain, look / move controls), silent, not led nor in love
+            // A static pawn: no AI at all (goals, brain, look / move controls), silent, not led nor in love. The brain
+            // only stops ticking (NoAI) and forgets where it was going: its other memories stay (a villager's job
+            // site and home: wiped, it could lose its profession, and its trades with it)
             mob.setAiDisabled(true);
-            mob.clearGoalsAndTasks();
+            this.goalSelector.clear(goal -> true);
+            this.targetSelector.clear(goal -> true);
+            mob.getBrain().forget(MemoryModuleType.WALK_TARGET);
+            mob.getBrain().forget(MemoryModuleType.LOOK_TARGET);
+            mob.getBrain().forget(MemoryModuleType.PATH);
+            mob.getBrain().forget(MemoryModuleType.ATTACK_TARGET);
             mob.setTarget(null);
             mob.getNavigation().stop();
             mob.setJumping(false);
