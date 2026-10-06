@@ -58,13 +58,7 @@ public class StencilResourceManager {
         /** Side of the texture: 16 + 2 margins. */
         public int size() {
             return StencilShape.SIDE + 2 * margin;
-        }
-
-        /** How much bigger than a 16x16 texture the quad must be to keep the same pixel size. */
-        public float scale() {
-            return size() / (float) StencilShape.SIDE;
-        }
-    }
+        }    }
 
     /** Max number of textures kept on the GPU (tiny 16x16 textures). */
     private static final int MAX_CACHED_TEXTURES = 512;
