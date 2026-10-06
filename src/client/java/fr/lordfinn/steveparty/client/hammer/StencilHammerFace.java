@@ -18,7 +18,7 @@ import org.joml.Matrix4f;
 /**
  * The stencil the Stencil Hammer will print, drawn on the drum skins of its head (the front one strikes, the back one
  * is the one its holder sees in first person), in the
- * selected paint (a dark see-through print when it only engraves, nothing without a stencil): like a stamp's face.
+ * selected paint (a dark print when it only engraves, nothing without a stencil): like a stamp's face.
  * <p>
  * Drawn in the item model's own space, right after the model (so it follows every display transform, the strike
  * animation included): the drum faces of the user's geometry are x 0..16, y 2..18 at z = -3.5 (the front one, facing
@@ -29,8 +29,12 @@ public final class StencilHammerFace {
     private static final float FRONT_Z = (-3.5F - 0.06F) / 16F;
     private static final float BACK_Z = (19.5F + 0.06F) / 16F;
     private static final float X0 = 0F, X1 = 1F, Y0 = 2F / 16F, Y1 = 18F / 16F;
-    /** Engraved: a dark, see-through print (like an engraved sign's symbol). */
-    private static final int ENGRAVED_COLOR = 0x6A1E1A16;
+    /**
+     * Engraved: the look of a dark, see-through print (like an engraved sign's symbol) on the pastel yellow skin, but
+     * opaque. A see-through print is drawn before the hammer itself (its own buffer is flushed first) and writes depth:
+     * the skin behind it was hidden, and the world showed through the hammer.
+     */
+    private static final int ENGRAVED_COLOR = 0xFF988544;
 
     /** What was worked out for a hammer's contents and selection (the components are immutable: identity is enough). */
     private static final class Entry {
