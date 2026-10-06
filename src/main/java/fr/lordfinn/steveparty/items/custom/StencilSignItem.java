@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.signs.AbstractStencilSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.PlasticRoadSignBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.RockSignBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.SignMaterial;
 import fr.lordfinn.steveparty.blocks.custom.signs.WoodenCutoutPanelBlock;
 import fr.lordfinn.steveparty.blocks.custom.signs.WoodenPanelBlock;
@@ -58,6 +59,9 @@ public class StencilSignItem extends BlockItem {
         }
         if (getBlock() instanceof WoodenCutoutPanelBlock) {
             tooltip.add(Text.translatable("tooltip.steveparty.cutout_panel.usage").formatted(Formatting.DARK_GRAY));
+        }
+        if (getBlock() instanceof RockSignBlock) {
+            tooltip.add(Text.translatable("tooltip.steveparty.rock_sign.usage").formatted(Formatting.DARK_GRAY));
         }
         StencilCanvasComponent canvas = stack.get(ModComponents.STENCIL_CANVAS);
         if (canvas != null) {
