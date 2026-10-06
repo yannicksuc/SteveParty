@@ -542,6 +542,37 @@ public class ShopGameTests implements FabricGameTest {
         });
     }
 
+    /**
+     * A hopper fills a shop but never empties it: hoppers under its stock (both halves of a double chest, only one
+     * linked, of a shop with no owner) pull nothing, while the same hopper under a chest of no shop empties it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
+    public void hoppersNeverPullFromAShopStock(TestContext context) {
+        BlockPos left = new BlockPos(1, 2, 1), right = new BlockPos(2, 2, 1), plain = new BlockPos(4, 2, 1);
+        context.setBlockState(left, Blocks.CHEST.getDefaultState().with(ChestBlock.CHEST_TYPE, ChestType.LEFT));
+        context.setBlockState(right, Blocks.CHEST.getDefaultState().with(ChestBlock.CHEST_TYPE, ChestType.RIGHT));
+        context.setBlockState(plain, Blocks.CHEST);
+        for (BlockPos chest : List.of(left, right, plain)) {
+            context.setBlockState(chest.down(), Blocks.HOPPER);
+            inventoryAt(context, chest).setStack(0, new ItemStack(Items.DIAMOND, 4));
+        }
+        UUID shop = shopOf(context, null, left);
+        context.assertTrue(ShopProtection.isShopStock(context.getWorld(), context.getAbsolutePos(right)),
+                "the other half of a linked double chest is stock too");
+        context.waitAndRun(60, () -> {
+            try {
+                context.assertEquals(inventoryAt(context, left).count(Items.DIAMOND), 4, "nothing pulled from the linked half");
+                context.assertEquals(inventoryAt(context, right).count(Items.DIAMOND), 4, "nothing pulled from the other half");
+                context.assertTrue(inventoryAt(context, left.down()).isEmpty() && inventoryAt(context, right.down()).isEmpty(),
+                        "the hoppers under the stock stay empty");
+                context.assertEquals(inventoryAt(context, plain).count(Items.DIAMOND), 0, "a chest of no shop is emptied");
+            } finally {
+                forgetShops(context, shop);
+            }
+            context.complete();
+        });
+    }
+
     /** The links' reverse index follows every change: a link, an unlink, a merchant forgotten. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theMerchantOfABlockIsKnownAtOnce(TestContext context) {
