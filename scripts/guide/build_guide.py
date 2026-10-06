@@ -598,6 +598,15 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
           "un front montant de redstone.\n\nUn comparateur lit la phase : 0 repos, 1 préparation, 2 tour, "
           "3 mini-jeu, 4 attente d'une cloche, 5 fin.",
           "Starting", "Lancer"),
+        T("During a party, *Stop the party* (Status page, click twice) ends it at once, without a winner: a running "
+          "mini-game is called off, every pawn goes back to its start space, out of the game, and a new party can "
+          "start. Only an operator or a Game Master may; breaking the controller stops it too. Operators can also "
+          "run `/steveparty party stop`.",
+          "Pendant une partie, *Arrêter la partie* (page État, deux clics) la termine aussitôt, sans gagnant : le "
+          "mini-jeu en cours est annulé, chaque pion retourne sur sa case de départ, hors jeu, et une nouvelle partie "
+          "peut commencer. Seul un opérateur ou un Maître du jeu le peut ; casser le contrôleur l'arrête aussi. Les "
+          "opérateurs peuvent aussi lancer `/steveparty party stop`.",
+          "Stopping", "Arrêter"),
         C("steveparty:party_controller"),
     ]),
     E("flow", "minecraft:clock", ("How a Party Plays", "Déroulement"), ("From the first roll to the podium", "Du premier lancer au podium"), [

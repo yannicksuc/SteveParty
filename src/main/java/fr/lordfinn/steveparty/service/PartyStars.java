@@ -107,6 +107,11 @@ public final class PartyStars {
         return OFFERS.containsKey(token);
     }
 
+    /** The party of the token was stopped: its choice is dropped (nothing is bought, nothing goes on). */
+    public static void cancelOffer(UUID token) {
+        OFFERS.remove(token);
+    }
+
     /** True if {@code pos} is a star space that is on (its active cartridge is a Star Cartridge); false if not loaded. */
     @SuppressWarnings("deprecation") // isChunkLoaded(BlockPos): nothing is loaded for this
     public static boolean isActiveStarSpace(World world, BlockPos pos) {

@@ -292,6 +292,11 @@ public abstract class TokenEntityMixin extends LivingEntity implements Tokenized
         this.setVelocity(Vec3d.ZERO);
     }
 
+    public void steveparty$stopMoving() {
+        this.targetPosition = null;
+        this.setVelocity(Vec3d.ZERO);
+    }
+
     public void steveparty$setNbSteps(int step) {
         this.dataTracker.set(NB_STEPS, step);
     }

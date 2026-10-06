@@ -10,6 +10,9 @@ public interface TokenizedEntityInterface {
     boolean steveparty$isTokenized();
     void steveparty$setTargetPosition(Vector3d target, double speed);
 
+    /** Drops the position it was moving to (it stops where it is, without arriving anywhere). */
+    void steveparty$stopMoving();
+
     int steveparty$getNbSteps();
 
     void steveparty$setNbSteps(int nbSteps);
