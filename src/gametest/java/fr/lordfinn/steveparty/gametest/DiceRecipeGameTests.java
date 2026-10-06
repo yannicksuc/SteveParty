@@ -120,7 +120,8 @@ public class DiceRecipeGameTests implements FabricGameTest {
                 DiceModules.REROLL, new Item[]{ModItems.ORANGE_STAR_FRAGMENT, Items.WIND_CHARGE},
                 DiceModules.REVERSED, new Item[]{ModItems.RED_STAR_FRAGMENT, Items.FERMENTED_SPIDER_EYE},
                 DiceModules.SKELETON_KEY, new Item[]{ModItems.YELLOW_STAR_FRAGMENT, Items.TRIPWIRE_HOOK},
-                DiceModules.HOMING, new Item[]{ModItems.MAGENTA_STAR_FRAGMENT, Items.ENDER_EYE});
+                DiceModules.HOMING, new Item[]{ModItems.MAGENTA_STAR_FRAGMENT, Items.ENDER_EYE},
+                DiceModules.FIRECRACKER, new Item[]{ModItems.PINK_STAR_FRAGMENT, Items.TNT});
         context.assertEquals(recipes.size(), DiceModules.all().size(), "every module has its recipe");
         recipes.forEach((module, parts) -> {
             ItemStack f = new ItemStack(parts[0]), i = new ItemStack(parts[1]), m = new ItemStack(ModItems.BLANK_DICE_MODULE);
