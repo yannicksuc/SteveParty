@@ -6,6 +6,12 @@ import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
@@ -19,6 +25,8 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 
 /**
@@ -48,6 +56,16 @@ public class GravityCoreBlock extends Block implements BlockEntityProvider {
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return SHAPE;
+    }
+
+    /**
+     * A player orbiting it is in the air: mining it is not slowed down for that (the vanilla airborne penalty is five
+     * times slower), so it can be broken by hand from its orbit.
+     */
+    @Override
+    protected float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
+        float delta = super.calcBlockBreakingDelta(state, player, world, pos);
+        return player.isOnGround() ? delta : delta * 5.0F;
     }
 
     // --- Client-side: particle effects ---
@@ -147,13 +165,23 @@ public class GravityCoreBlock extends Block implements BlockEntityProvider {
      * Play ambient sounds occasionally to enhance the epic effect.
      */
     private void playAmbientSounds(ServerWorld world, BlockPos pos, Random random) {
-        if (random.nextFloat() < 0.5F) {
-            world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME,
-                    SoundCategory.BLOCKS, 0.8F, 0.5F + random.nextFloat() * 0.5F);
-        }
+        // Discreet: a soft chime every few seconds on average, heard only close by (a quiet sound carries less far)
         if (random.nextFloat() < 0.2F) {
-            world.playSound(null, pos, SoundEvents.BLOCK_FIRE_AMBIENT,
-                    SoundCategory.BLOCKS, 0.4F, 0.5F + random.nextFloat() * 0.3F);
+            world.playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME,
+                    SoundCategory.BLOCKS, 0.25F, 0.5F + random.nextFloat() * 0.5F);
         }
+        if (random.nextFloat() < 0.05F) {
+            world.playSound(null, pos, SoundEvents.BLOCK_FIRE_AMBIENT,
+                    SoundCategory.BLOCKS, 0.15F, 0.5F + random.nextFloat() * 0.3F);
+        }
+    }
+
+    /** What it does once placed, and how not to get stuck in its orbit. */
+    @Override
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType options) {
+        super.appendTooltip(stack, context, tooltip, options);
+        tooltip.add(Text.translatable("block.steveparty.gravity_core.tooltip.pull").formatted(Formatting.LIGHT_PURPLE));
+        tooltip.add(Text.translatable("block.steveparty.gravity_core.tooltip.armour").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("block.steveparty.gravity_core.tooltip.escape").formatted(Formatting.GRAY));
     }
 }
