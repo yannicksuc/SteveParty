@@ -12,7 +12,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
  * C2S: the player cast the token spell (confirmed the size slider of the Tokenizer Wand). Everything is validated
  * again by the server in {@link TokenizerWandItem#castSpell}.
  *
- * @param entityId network id of the targeted mob
+ * @param entityId network id of the targeted mob, or {@link #CLOSED} when the spell screen was closed without casting
  * @param size     chosen size of the token's biggest dimension, in blocks (clamped by the server)
  * @param color    token colour computed from the mob texture (0xRRGGBB), or -1 if the client could not compute it
  */
@@ -25,8 +25,20 @@ public record TokenSpellPayload(int entityId, float size, int color) implements 
                     PacketCodecs.INTEGER, TokenSpellPayload::color,
                     TokenSpellPayload::new);
 
+    /** {@link #entityId} of the message sent when the spell screen closes without casting (no entity has this id). */
+    public static final int CLOSED = -1;
+
+    /** The spell screen was closed without casting. */
+    public static TokenSpellPayload closed() {
+        return new TokenSpellPayload(CLOSED, 0, -1);
+    }
+
     /** Server-side handler (must run on the server thread). */
     public void handle(ServerPlayerEntity player) {
+        if (entityId == CLOSED) {
+            TokenizerWandItem.spellClosed(player.getUuid());
+            return;
+        }
         TokenizerWandItem.castSpell(player, entityId, size, color);
     }
 

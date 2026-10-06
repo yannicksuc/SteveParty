@@ -13,6 +13,9 @@ import java.util.EnumSet;
  * faster the farther it lags (it still catches up with a sprinting player), and teleports beyond the follow range as
  * before. Within {@value #DIRECT_RANGE} blocks it floats straight to its place above the owner's head (the move control
  * steers and slows it); farther, it follows a path recomputed every {@value #REPATH_TICKS} ticks (it was every tick).
+ * <p>
+ * Several Mulas following the same player keep {@value #SPACING} blocks apart: each one's place above the owner is
+ * pushed away from its nearest mates, and Mulas resting too close to one another drift apart.
  */
 public class FollowOwnerWhileFlyingGoal extends Goal {
     /** Ticks between two path computations (vanilla pets use the same). */
@@ -25,6 +28,8 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
     private static final double DANCE_WITH_OWNER = 14;
     /** Closer than this (blocks), it flies straight to its place instead of following a path. */
     private static final double DIRECT_RANGE = 8;
+    /** Mulas keep at least this far apart (blocks, centre to centre). */
+    private static final double SPACING = 1.3;
 
     private final MulaEntity entity;
     private PlayerEntity owner;
@@ -51,13 +56,46 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         // at home by a Dice Forge (dancing or not) with its owner close by: it stays; it follows them if they leave
         if ((entity.isDancing() || entity.homeForge() != null)
                 && entity.squaredDistanceTo(owner) < DANCE_WITH_OWNER * DANCE_WITH_OWNER) return false;
-        return !(entity.squaredDistanceTo(owner) < (double)(minDistance * minDistance));
+        return !(entity.squaredDistanceTo(owner) < (double)(minDistance * minDistance)) || crowding() != null;
     }
 
     @Override
     public boolean shouldContinue() {
         return owner != null && owner.isAlive() && !owner.isSpectator() && !entity.cannotFollowOwner()
-                && entity.squaredDistanceTo(owner) > (double)(minDistance * minDistance);
+                && (entity.squaredDistanceTo(owner) > (double)(minDistance * minDistance) || crowding() != null);
+    }
+
+    /** The first of its nearest Mulas (refreshed by its brain) closer than {@link #SPACING}, or null. */
+    private MulaEntity crowding() {
+        MulaBrain brain = entity.getMulaBrain();
+        for (int i = 0; i < brain.neighbourCount(); i++) {
+            MulaEntity other = brain.neighbour(i);
+            if (other != null && other != entity && other.isAlive() && other.squaredDistanceTo(entity) < SPACING * SPACING) return other;
+        }
+        return null;
+    }
+
+    /**
+     * {@code [x, y, z]} pushed sideways out of the {@link #SPACING} of its nearest Mulas (in place). Two Mulas exactly
+     * on top of each other part along a direction of their own (from the entity id).
+     */
+    private void spreadOut(double[] target) {
+        MulaBrain brain = entity.getMulaBrain();
+        for (int i = 0; i < brain.neighbourCount(); i++) {
+            MulaEntity other = brain.neighbour(i);
+            if (other == null || other == entity || !other.isAlive()) continue;
+            double dx = target[0] - other.getX(), dz = target[2] - other.getZ();
+            double distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance >= SPACING || Math.abs(target[1] - other.getY()) >= SPACING) continue;
+            if (distance < 1.0E-3) {
+                double angle = entity.getId() * 2.399963; // golden angle: neighbours' ids part different ways
+                dx = Math.cos(angle);
+                dz = Math.sin(angle);
+                distance = 1;
+            }
+            target[0] += dx / distance * (SPACING - distance);
+            target[2] += dz / distance * (SPACING - distance);
+        }
     }
 
     @Override
@@ -85,6 +123,15 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         // Look at the owner
         entity.getLookControl().lookAt(owner, 10.0f, 10.0f);
 
+        // Already close to the owner: only drifting out of another Mula
+        if (entity.squaredDistanceTo(owner) <= (double)(minDistance * minDistance)) {
+            entity.getNavigation().stop();
+            double[] place = {entity.getX(), entity.getY(), entity.getZ()};
+            spreadOut(place);
+            entity.getMoveControl().moveTo(place[0], place[1], place[2], speed * MIN_SPEED);
+            return;
+        }
+
         // Too far to path (beyond the follow range): catch up like vanilla pets do
         double distanceSq = entity.squaredDistanceTo(owner);
         if (distanceSq > (double)(maxDistance * maxDistance)) {
@@ -96,10 +143,12 @@ public class FollowOwnerWhileFlyingGoal extends Goal {
         if (!close && --repathTicks > 0 && !entity.getNavigation().isIdle()) return;
         repathTicks = REPATH_TICKS;
 
-        // Target 2 blocks above player
-        double targetX = owner.getX();
-        double targetY = owner.getY() + 2.0;
-        double targetZ = owner.getZ();
+        // Target 2 blocks above player, out of the way of the other Mulas
+        double[] place = {owner.getX(), owner.getY() + 2.0, owner.getZ()};
+        spreadOut(place);
+        double targetX = place[0];
+        double targetY = place[1];
+        double targetZ = place[2];
 
         if (close) {
             // close by: floats straight to its place above the owner's head (no path: path nodes sit on the floor,

@@ -67,7 +67,15 @@ public class TokenSpellScreen extends Screen {
     private static final int VALIDATE_TICKS = 12;
     /** Duration of the morph of a drawn stroke into the clean circle. */
     private static final int MORPH_TICKS = 9;
+    /**
+     * The stroke keeps its last points only: looping round and round never makes it grow without end (drawing it,
+     * thousands of dots and sparkles a frame, froze the game), and the circle is fitted to the last loops drawn.
+     */
     private static final int MAX_STROKE_POINTS = 800;
+    /** Most sparkles riding on a stroke (one every 40 pixels). */
+    private static final int MAX_STROKE_SPARKLES = 48;
+    /** How long positions far from the cursor's jump point are taken as stale (before the jump), at most. */
+    private static final long JUMP_SETTLE_NANOS = 150_000_000L;
     private static final float MIN_DRAWN_RADIUS = 8;
     private static final int HEIGHT_MARK_COLOR = 0xC150EB;
     /**
@@ -96,6 +104,8 @@ public class TokenSpellScreen extends Screen {
     /** The freehand stroke being traced (GUI coordinates) and its length. */
     private final List<float[]> stroke = new ArrayList<>();
     private float strokeLength;
+    /** Length of the points kept in {@link #stroke} (GUI pixels). */
+    private float keptLength;
     /** Morph of the finished stroke into the clean circle: its points, their angle around the fitted centre. */
     private final List<float[]> morphFrom = new ArrayList<>();
     private final List<Float> morphAngles = new ArrayList<>();
@@ -114,6 +124,7 @@ public class TokenSpellScreen extends Screen {
     private boolean cursorPlaced;
     /** Just jumped: mouse positions far from the jump point are stale (still the centre) until one arrives near it. */
     private boolean awaitingJump;
+    private long jumpNanos;
     private float jumpX, jumpY;
     private static final int CURSOR_ATTEMPTS = 10;
     private int cursorAttempts;
@@ -283,7 +294,11 @@ public class TokenSpellScreen extends Screen {
     public void removed() {
         super.removed();
         TokenSpellHand.clear();
-        if (!cast) playSound(ModSounds.TOKEN_SPELL_CANCEL, 1.0F);
+        if (!cast) {
+            playSound(ModSounds.TOKEN_SPELL_CANCEL, 1.0F);
+            // The server keeps the wand from casting a flare while the screen is open: it is closed
+            if (ClientPlayNetworking.canSend(TokenSpellPayload.ID)) ClientPlayNetworking.send(TokenSpellPayload.closed());
+        }
     }
 
     // ------------------------------------------------------------------ sounds
@@ -427,6 +442,7 @@ public class TokenSpellScreen extends Screen {
         stroke.clear();
         morphTicks = -1;
         strokeLength = 0;
+        keptLength = 0;
         lastTwinkleLength = 0;
         traceTo(x, y);
     }
@@ -459,7 +475,8 @@ public class TokenSpellScreen extends Screen {
         // While the cursor jumps to the shape's start, the old (centre) positions still come in: not a line to draw
         if (!cursorPlaced) return;
         if (awaitingJump) {
-            if (Math.hypot(x - jumpX, y - jumpY) > 4) return;
+            // Only for a moment: a player already drawing away from it must not lose the whole stroke
+            if (Math.hypot(x - jumpX, y - jumpY) > 4 && System.nanoTime() - jumpNanos < JUMP_SETTLE_NANOS) return;
             awaitingJump = false;
         }
         x = MathHelper.clamp(x, 0, width);
@@ -469,9 +486,15 @@ public class TokenSpellScreen extends Screen {
             float step = (float) Math.hypot(x - last[0], y - last[1]);
             if (step < 2) return;
             strokeLength += step;
+            keptLength += step;
         }
-        if (stroke.size() >= MAX_STROKE_POINTS) return;
         stroke.add(new float[]{x, y});
+        // At most two and a half full-size circles, and MAX_STROKE_POINTS points: the oldest go
+        float maxLength = maxRadius() * MathHelper.TAU * 2.5F;
+        while (stroke.size() > 2 && (stroke.size() > MAX_STROKE_POINTS || keptLength > maxLength)) {
+            float[] first = stroke.removeFirst(), next = stroke.getFirst();
+            keptLength -= (float) Math.hypot(next[0] - first[0], next[1] - first[1]);
+        }
     }
 
     /**
@@ -718,6 +741,7 @@ public class TokenSpellScreen extends Screen {
             jumpY = (float) (cursorTargetY * window.getScaledHeight() / window.getHeight());
             if (dragging) startStroke(drawButton, jumpX, jumpY);
             awaitingJump = true;
+            jumpNanos = System.nanoTime();
             return;
         } else if ((Math.abs(actualX[0] - cursorLastX) > 3 || Math.abs(actualY[0] - cursorLastY) > 3)
                 // (back at the window's centre: vanilla recentred it after our try, not the player)
@@ -909,6 +933,7 @@ public class TokenSpellScreen extends Screen {
     private void drawStroke(DrawContext context, List<float[]> points, float time) {
         int[] colors = KamekShapeEffect.COLORS;
         float length = 0, nextSparkle = 20;
+        int sparkles = 0;
         for (int i = 1; i < points.size(); i++) {
             float[] a = points.get(i - 1), b = points.get(i);
             float segment = (float) Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -932,7 +957,7 @@ public class TokenSpellScreen extends Screen {
             }
             length += segment;
             if (length - nextSparkle > 400) nextSparkle = length - 400;
-            while (length >= nextSparkle) {
+            while (length >= nextSparkle && sparkles++ < MAX_STROKE_SPARKLES) {
                 float twinkle = 0.5F + 0.5F * MathHelper.sin(time * 0.6F + nextSparkle * 0.1F);
                 drawSprite(context, SPARKLE, b[0], b[1], (int) nextSparkle % 80 < 40 ? 0xFFFFFF : colors[(int) (nextSparkle / 40) % colors.length],
                         (int) (110 + 145 * twinkle));

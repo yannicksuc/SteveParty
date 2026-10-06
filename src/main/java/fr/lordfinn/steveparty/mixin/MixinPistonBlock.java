@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.sugar.Local;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.villager.VillagerSoul;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PistonBlock;
 import net.minecraft.block.piston.PistonHandler;
@@ -51,7 +52,11 @@ public class MixinPistonBlock {
         return hasBlockEntity && !state.isOf(VILLAGER_BLOCK);
     }
 
-    /** A sticky piston retracting with a villager block at its head: the villager comes back out instead. */
+    /**
+     * A sticky piston retracting with a villager block at its head: the villager comes back out instead. Clients run
+     * the same pull (block event): the block goes there too, or their piston would drag a villager block the server
+     * no longer has and leave it at the piston's face (a ghost block, until the chunk is reloaded).
+     */
     @Inject(
             method = "move(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;Z)Z",
             at = @At("HEAD")
@@ -59,9 +64,13 @@ public class MixinPistonBlock {
     private void steveparty$pullVillagerOut(World world, BlockPos pos, Direction dir, boolean extend,
                                             CallbackInfoReturnable<Boolean> cir) {
         // move(..., false) only happens for sticky pistons pulling a block
-        if (extend || !(world instanceof ServerWorld server)) return;
+        if (extend) return;
         BlockPos pulled = pos.offset(dir, 2);
         if (!world.getBlockState(pulled).isOf(VILLAGER_BLOCK)) return;
+        if (!(world instanceof ServerWorld server)) {
+            world.setBlockState(pulled, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            return;
+        }
         NbtCompound soul = world.getBlockEntity(pulled) instanceof VillagerBlockEntity villager ? villager.getSoul() : null;
         // gone before the piston handles it: nothing left to pull
         world.setBlockState(pulled, Blocks.AIR.getDefaultState());

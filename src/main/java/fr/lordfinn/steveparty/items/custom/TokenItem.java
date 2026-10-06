@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.components.EntityDataComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -7,6 +8,8 @@ import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -52,7 +55,8 @@ public class TokenItem extends Item {
 
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-        if (entity instanceof BoxedTraderEntity merchant) {
+        // A Boxed Trader carries tokens; a Boxed Trader turned into a token is stored like any other token
+        if (entity instanceof BoxedTraderEntity merchant && !TokenBase.isToken(merchant)) {
             return handleMerchantInteraction(stack, user, merchant, hand);
         }
 
@@ -120,6 +124,10 @@ public class TokenItem extends Item {
     }
 
     private void handleTokenization(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        // Still floating up from the spell: put back down, so it is not placed again in mid-air
+        entity.removeStatusEffect(StatusEffects.LEVITATION);
+        entity.setVelocity(Vec3d.ZERO);
+        entity.fallDistance = 0;
         NbtCompound entityData = createEntityData(entity);
         NbtList attributesData = entity.getAttributes().toNbt();
 
