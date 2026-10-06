@@ -43,6 +43,8 @@ import java.util.List;
  * <p>
  * Painted symbols take the dye's sign colour; engraved ones are a dark, see-through print of the shape. Brushing
  * fades them. Sprayed paint lets a little of its wall show through; a plastic plate's symbol stops at its outline.
+ * Paint sprayed on a see-through block (glass, star fragments...) is solid and seen from both sides: through the
+ * block, from behind, the symbol reads mirrored, like a sticker on a window.
  */
 public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity> implements BlockEntityRenderer<T> {
     /** Symbols stay visible as far as signs are usually seen (the default is 64 blocks). */
@@ -73,6 +75,8 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         final byte[] shape;
         final StencilResourceManager.Kind kind;
         final boolean sign;
+        /** Sprayed on a see-through block: opaque, and drawn on both sides. */
+        final boolean seeThroughSupport;
         @Nullable Identifier texture;
         int textureGeneration;
         @Nullable BlockState transformPost;
@@ -80,12 +84,14 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         final Matrix3f normalTransform = new Matrix3f();
         boolean hasTransform;
 
-        Cache(BlockState state, List<SymbolLayouts.SymbolQuad> quads, byte[] shape, StencilResourceManager.Kind kind, boolean sign) {
+        Cache(BlockState state, List<SymbolLayouts.SymbolQuad> quads, byte[] shape, StencilResourceManager.Kind kind, boolean sign,
+              boolean seeThroughSupport) {
             this.state = state;
             this.quads = quads;
             this.shape = shape;
             this.kind = kind;
             this.sign = sign;
+            this.seeThroughSupport = seeThroughSupport;
         }
     }
 
@@ -133,7 +139,7 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
                       @Nullable DyeColor color, int fade, boolean glowing, int light, @Nullable Vector3f revealFrom, float radius) {
         int argb = color == null ? ENGRAVED_COLOR : 0xFF000000 | color.getSignColor();
         float alpha = FADE_ALPHA[Math.clamp(fade, 0, FADE_ALPHA.length - 1)]
-                * (state.getBlock() instanceof StencilPaintBlock ? SPRAY_ALPHA : 1.0F);
+                * (state.getBlock() instanceof StencilPaintBlock && !cache.seeThroughSupport ? SPRAY_ALPHA : 1.0F);
         argb = ColorHelper.Argb.withAlpha(Math.round((argb >>> 24) * alpha), argb);
         int symbolLight = glowing && color != null ? FULL_BRIGHT : light;
         VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(cache.texture));
@@ -146,15 +152,19 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
             matrices.peek().getNormalMatrix().mul(cache.normalTransform);
         }
         for (SymbolLayouts.SymbolQuad quad : cache.quads) {
-            if (revealFrom == null) drawQuad(matrices.peek(), consumer, quad, argb, symbolLight);
-            else drawRevealed(matrices.peek(), consumer, quad, cache, argb, symbolLight, revealFrom, radius);
+            if (revealFrom == null) drawQuad(matrices.peek(), consumer, quad, argb, symbolLight, false);
+            else drawRevealed(matrices.peek(), consumer, quad, cache, argb, symbolLight, revealFrom, radius, false);
+            if (!cache.seeThroughSupport) continue;
+            // Its back, seen through the block it is sprayed on
+            if (revealFrom == null) drawQuad(matrices.peek(), consumer, quad, argb, symbolLight, true);
+            else drawRevealed(matrices.peek(), consumer, quad, cache, argb, symbolLight, revealFrom, radius, true);
         }
         matrices.pop();
     }
 
     /** The part of a quad already stamped: cells within {@code radius} of the hit point, the edge fading in. */
     private static void drawRevealed(MatrixStack.Entry entry, VertexConsumer consumer, SymbolLayouts.SymbolQuad quad, Cache cache,
-                                     int argb, int light, Vector3f from, float radius) {
+                                     int argb, int light, Vector3f from, float radius, boolean back) {
         Vector3f center = new Vector3f();
         for (int i = 0; i < REVEAL_GRID; i++) {
             float u0 = (float) i / REVEAL_GRID, u1 = (float) (i + 1) / REVEAL_GRID;
@@ -166,11 +176,13 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
                 if (inside <= 0) continue;
                 int cellArgb = ColorHelper.Argb.withAlpha(Math.round((argb >>> 24) * inside), argb);
                 Matrix4f matrix = entry.getPositionMatrix();
-                Vector3f n = quad.normal();
-                vertex(consumer, matrix, entry, lerp(quad, u0, v0, new Vector3f()), u0, v0, cellArgb, light, n);
-                vertex(consumer, matrix, entry, lerp(quad, u0, v1, new Vector3f()), u0, v1, cellArgb, light, n);
-                vertex(consumer, matrix, entry, lerp(quad, u1, v1, new Vector3f()), u1, v1, cellArgb, light, n);
-                vertex(consumer, matrix, entry, lerp(quad, u1, v0, new Vector3f()), u1, v0, cellArgb, light, n);
+                Vector3f n = back ? new Vector3f(quad.normal()).negate() : quad.normal();
+                // The back face winds the other way round (same corners, so same place on the texture)
+                float ua = back ? u1 : u0, ub = back ? u0 : u1;
+                vertex(consumer, matrix, entry, lerp(quad, ua, v0, new Vector3f()), ua, v0, cellArgb, light, n);
+                vertex(consumer, matrix, entry, lerp(quad, ua, v1, new Vector3f()), ua, v1, cellArgb, light, n);
+                vertex(consumer, matrix, entry, lerp(quad, ub, v1, new Vector3f()), ub, v1, cellArgb, light, n);
+                vertex(consumer, matrix, entry, lerp(quad, ub, v0, new Vector3f()), ub, v0, cellArgb, light, n);
             }
         }
     }
@@ -185,18 +197,23 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
     private static Cache createCache(StencilCanvasBlockEntity entity, BlockState state) {
         List<SymbolLayouts.SymbolQuad> quads = List.of();
         boolean sign = false;
+        boolean seeThroughSupport = false;
         if (state.getBlock() instanceof StencilPaintBlock) {
             quads = List.of(SymbolLayouts.forPaint(state));
+            World world = entity.getWorld();
+            BlockPos support = entity.getPos().offset(StencilPaintBlock.getFacing(state).getOpposite());
+            seeThroughSupport = world != null && !world.getBlockState(support).isOpaqueFullCube(world, support);
         } else if (state.getBlock() instanceof AbstractStencilSignBlock && !(state.getBlock() instanceof RockSignBlock)) {
             quads = SymbolLayouts.forSign(state);
             sign = true;
         }
         byte[] shape = quads.isEmpty() ? null : entity.getShape();
-        if (shape == null) return new Cache(state, List.of(), StencilShape.blank(), StencilResourceManager.Kind.FLAT, false);
+        if (shape == null) return new Cache(state, List.of(), StencilShape.blank(), StencilResourceManager.Kind.FLAT, false, false);
         if (state.getBlock() instanceof PlasticRoadSignBlock) shape = masked(shape, state.get(PlasticRoadSignBlock.PLATE).mask());
         // Wooden signs keep their painted wood grain; everything else is a plain print
         boolean woodGrain = entity.getColor() != null && (state.getBlock() instanceof EaselSignBlock || state.getBlock() instanceof WoodenPanelBlock);
-        return new Cache(state, quads, shape, woodGrain ? StencilResourceManager.Kind.WOOD : StencilResourceManager.Kind.FLAT, sign);
+        return new Cache(state, quads, shape, woodGrain ? StencilResourceManager.Kind.WOOD : StencilResourceManager.Kind.FLAT, sign,
+                seeThroughSupport);
     }
 
     /** A sign is drawn where its model is, which depends on its block state and on the post it rests against. */
@@ -217,9 +234,18 @@ public class StencilCanvasBlockEntityRenderer<T extends StencilCanvasBlockEntity
         return shape;
     }
 
-    /** Draws a quad given in pixels. */
-    private static void drawQuad(MatrixStack.Entry entry, VertexConsumer consumer, SymbolLayouts.SymbolQuad quad, int argb, int light) {
+    /** Draws a quad given in pixels; {@code back}: its back face (wound the other way, facing the other way). */
+    private static void drawQuad(MatrixStack.Entry entry, VertexConsumer consumer, SymbolLayouts.SymbolQuad quad, int argb, int light,
+                                 boolean back) {
         Matrix4f matrix = entry.getPositionMatrix();
+        if (back) {
+            Vector3f n = new Vector3f(quad.normal()).negate();
+            vertex(consumer, matrix, entry, quad.topRight(), 1, 0, argb, light, n);
+            vertex(consumer, matrix, entry, quad.bottomRight(), 1, 1, argb, light, n);
+            vertex(consumer, matrix, entry, quad.bottomLeft(), 0, 1, argb, light, n);
+            vertex(consumer, matrix, entry, quad.topLeft(), 0, 0, argb, light, n);
+            return;
+        }
         Vector3f n = quad.normal();
         vertex(consumer, matrix, entry, quad.topLeft(), 0, 0, argb, light, n);
         vertex(consumer, matrix, entry, quad.bottomLeft(), 0, 1, argb, light, n);
