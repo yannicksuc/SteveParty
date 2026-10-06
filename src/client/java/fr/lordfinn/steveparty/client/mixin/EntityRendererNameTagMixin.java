@@ -20,6 +20,10 @@ public abstract class EntityRendererNameTagMixin {
             target = "Lnet/minecraft/client/render/entity/EntityRenderer;hasLabel(Lnet/minecraft/entity/Entity;)Z"))
     private boolean steveparty$hideNameTag(EntityRenderer<?> renderer, Entity entity, Operation<Boolean> original) {
         if (PipeTravellerPose.hidesNameTag(entity)) return false;
+        // Hidden in the box (or a block of the grid): straight from the synced state, whatever the box animation
+        if (entity instanceof net.minecraft.entity.player.PlayerEntity player
+                && (fr.lordfinn.steveparty.items.custom.BoxCostumeItem.isHiddenInBox(player)
+                || fr.lordfinn.steveparty.items.custom.BoxCostumeBlock.isBlockAligned(player))) return false;
         if (entity instanceof BoxCostumeRenderState costume) {
             BoxCostumeAnimatable box = costume.steveparty$getBoxCostume();
             if (box != null && box.isHidden()) return false;
