@@ -46,6 +46,7 @@
     "PlayerEntityRendererStencilHammerMixin",
     "PlayerEntityRenderStateStencilHammerMixin",
     "TokenBaseLivingEntityRendererMixin",
+    "TitleScreenBackgroundMixin",
     "TokenBaseRenderStateMixin",
     "WindowBackgroundDevMixin",
     "WorldRendererBreakingAccessor",
