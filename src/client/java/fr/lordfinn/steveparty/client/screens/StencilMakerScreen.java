@@ -75,6 +75,8 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     /** Mouse button painting on the grid (-1: none), and the last pixel painted, to draw lines while dragging. */
     private int paintingButton = -1;
     private int lastPixelX, lastPixelY;
+    /** The shape before the stroke being drawn: one undo step per stroke, and none (redo kept) if it changed nothing. */
+    private byte[] strokeStart;
     private long lastSoundTime;
     private long savedMessageUntil;
     private IconButton libraryButton;
@@ -216,25 +218,30 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private void apply(byte[] next) {
         if (Arrays.equals(next, shape)) return;
         pushUndo();
-        shape = next;
+        // A copy: drawing changes the shape in place, and a library thumbnail must not change with it
+        shape = next.clone();
         playEditSound();
     }
 
     private void pushUndo() {
-        undo.push(shape.clone());
+        pushUndo(shape.clone());
+    }
+
+    private void pushUndo(byte[] previous) {
+        undo.push(previous);
         while (undo.size() > HISTORY) undo.removeLast();
         redo.clear();
     }
 
     private void undo() {
-        if (undo.isEmpty()) return;
+        if (undo.isEmpty() || paintingButton != -1) return;
         redo.push(shape);
         shape = undo.pop();
         playEditSound();
     }
 
     private void redo() {
-        if (redo.isEmpty()) return;
+        if (redo.isEmpty() || paintingButton != -1) return;
         undo.push(shape);
         shape = redo.pop();
         playEditSound();
@@ -284,7 +291,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isInsideStencil(mouseX, mouseY) && (button == 0 || button == 1)) {
-            pushUndo();
+            strokeStart = shape.clone();
             paintingButton = button;
             lastPixelX = pixelX(mouseX);
             lastPixelY = pixelY(mouseY);
@@ -326,7 +333,8 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         if (paintingButton == button) {
             paintingButton = -1;
             // A click that changed nothing leaves no undo step
-            if (!undo.isEmpty() && Arrays.equals(undo.peek(), shape)) undo.pop();
+            if (strokeStart != null && !Arrays.equals(strokeStart, shape)) pushUndo(strokeStart);
+            strokeStart = null;
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
@@ -335,16 +343,27 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (Screen.hasControlDown()) {
-            if (keyCode == GLFW.GLFW_KEY_Z && !Screen.hasShiftDown()) {
+            boolean z = isLetter(keyCode, scanCode, "z", GLFW.GLFW_KEY_Z);
+            if (z && !Screen.hasShiftDown()) {
                 undo();
                 return true;
             }
-            if (keyCode == GLFW.GLFW_KEY_Y || (keyCode == GLFW.GLFW_KEY_Z && Screen.hasShiftDown())) {
+            if (isLetter(keyCode, scanCode, "y", GLFW.GLFW_KEY_Y) || (z && Screen.hasShiftDown())) {
                 redo();
                 return true;
             }
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /**
+     * Whether the key pressed is the one printed {@code letter} on the player's keyboard layout (Ctrl+Z is the Z key on
+     * AZERTY too, not the key where a QWERTY Z is); {@code fallback} (a QWERTY position) when the layout has no name
+     * for it.
+     */
+    private static boolean isLetter(int keyCode, int scanCode, String letter, int fallback) {
+        String name = GLFW.glfwGetKeyName(keyCode, scanCode);
+        return name != null ? name.equalsIgnoreCase(letter) : keyCode == fallback;
     }
 
     /**

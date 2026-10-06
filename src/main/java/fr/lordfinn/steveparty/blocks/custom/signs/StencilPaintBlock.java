@@ -205,11 +205,13 @@ public class StencilPaintBlock extends BlockWithEntity implements StencilCanvasB
         return player.isCreative();
     }
 
-    /** Hitting the paint does nothing outside creative. Both sides. */
+    /** Hitting the paint does nothing outside creative, and tells how to get it off. Both sides. */
     public static void registerBreakRule() {
-        net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) ->
-                !player.isSpectator() && world.getBlockState(pos).isOf(ModBlocks.STENCIL_PAINT) && !canBreak(player)
-                        ? ActionResult.FAIL : ActionResult.PASS);
+        net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+            if (player.isSpectator() || !world.getBlockState(pos).isOf(ModBlocks.STENCIL_PAINT) || canBreak(player)) return ActionResult.PASS;
+            StencilInteractions.hint(world, player, "message.steveparty.stencil_paint.remove");
+            return ActionResult.FAIL;
+        });
     }
 
     @Override

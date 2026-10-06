@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.signs.StencilInteractions;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.components.InventoryComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -188,7 +189,14 @@ public class StencilGunItem extends Item {
         }
         ItemStack gun = context.getStack();
         Load load = selectedLoad(gun);
-        if (load.shape() == null || load.color() == null) return ActionResult.PASS;
+        if (load.shape() == null) return ActionResult.PASS;
+        if (load.color() == null) {
+            // "Engrave" is for signs: a block face takes paint
+            if (StencilItem.canTakePaint(world, context)) {
+                StencilInteractions.hint(world, player, "message.steveparty.stencil_gun.engrave_signs_only");
+            }
+            return ActionResult.PASS;
+        }
         BlockPos canvasPos = StencilPaintBlock.paintPos(world, context.getBlockPos(), context.getSide());
         boolean sprayed = StencilPaintBlock.spray(world, context.getBlockPos(), context.getSide(), load.shape(), load.color(),
                 player.getHorizontalFacing());
@@ -258,5 +266,7 @@ public class StencilGunItem extends Item {
             tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.dye_left", contents.get(load.dyeSlot()).getCount()).formatted(Formatting.DARK_GRAY));
         }
         tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.usage").formatted(Formatting.DARK_GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.stencil_gun.no_tool").formatted(Formatting.DARK_GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.stencil.remove").formatted(Formatting.DARK_GRAY));
     }
 }
