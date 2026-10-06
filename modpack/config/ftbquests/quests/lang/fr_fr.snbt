@@ -317,9 +317,9 @@
 	]
 	quest.2107B23BC93CF590.title: "Tuyau rouge : Équipe B"
 	quest.226EA47348D44FE3.quest_desc: [
-		"Module vierge + éclat d'écho. Le dé devient un power-up : utilisé une fois, à la place de ton lancer (tout autre dé revient à son lanceur)."
+		"Module vierge + éclat d'écho. Le dé devient un bonus : utilisé une fois, à la place de ton lancer (tout autre dé revient à son lanceur)."
 	]
-	quest.226EA47348D44FE3.title: "Module power-up"
+	quest.226EA47348D44FE3.title: "Module bonus"
 	quest.2275C38C50DEE4C0.quest_desc: [
 		"Mélangez les fragments comme des colorants : gris + blanc. On récupère autant de fragments qu'on en a mis."
 	]
