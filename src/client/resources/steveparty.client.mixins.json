@@ -16,6 +16,7 @@
     "GameRendererFovMixin",
     "GameRendererStencilHammerShakeMixin",
     "GameRendererTelescopeMixin",
+    "KeyboardInputTelescopeMixin",
     "PlayerEntityModelTelescopeMixin",
     "PlayerEntityRendererTelescopeMixin",
     "LivingEntityRendererTelescopeMixin",
