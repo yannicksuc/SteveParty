@@ -467,8 +467,8 @@ MODULES = [
      ["Face vierge + horloge. Le dé tourne lentement ; son lanceur le frappe pour l'arrêter sur la face affichée."]),
     ("choice", ["Blank face + compass. The roller picks the face."],
      ["Face vierge + boussole. Le lanceur choisit la face."]),
-    ("infinity", ["Blank face + echo shard. The die comes back to its roller after the roll."],
-     ["Face vierge + éclat d'écho. Le dé revient à son lanceur après le lancer."]),
+    ("power_up", ["Blank module + echo shard. The die becomes a power-up: used once, in place of your roll (every other die comes back to its roller)."],
+     ["Module vierge + éclat d'écho. Le dé devient un power-up : utilisé une fois, à la place de ton lancer (tout autre dé revient à son lanceur)."]),
     ("lucky", ["Blank face + rabbit's foot. One extra roll per module (up to 5): keep the best one."],
      ["Face vierge + patte de lapin. Un lancer de plus par module (jusqu'à 5) : gardez le meilleur."]),
     ("reroll", ["Blank face + wind charge. Stop or again: after the result, keep it or roll again, once per module."],
@@ -1189,7 +1189,7 @@ REWARD_TABLES = [
      "rewards": [
          (IT("power_star", 1), 3), (IT("coin", 25), 4), (IT("triple_dice", 1), 3), (IT("premium_dice_face_10", 2), 3),
          (IT("dice_module_lucky", 1), 2), (IT("dice_module_reroll", 1), 2), (IT("dice_module_choice", 1), 1),
-         (IT("dice_module_infinity", 1), 1), (IT("dice_module_skeleton_key", 1), 2), (IT("swap_dice_face", 2), 2),
+         (IT("dice_module_power_up", 1), 1), (IT("dice_module_skeleton_key", 1), 2), (IT("swap_dice_face", 2), 2),
          (IT("black_star_fragment", 1), 1), (IT("white_star_fragments_block", 1), 2), (LV(10), 3),
      ]},
 ]

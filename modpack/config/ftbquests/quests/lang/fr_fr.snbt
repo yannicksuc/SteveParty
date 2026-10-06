@@ -155,10 +155,6 @@
 		"De l'or, une plaque de pression lourde, de la redstone et des blocs de quartz. Les podiums retiennent qui a gagné : la colonne la plus haute est la 1re place. Accroupissez-vous dessus ou clic droit pour le prendre. Liez-les à la page en cliquant dessus avec elle."
 	]
 	quest.0CE8734A07EDA523.title: "Podium"
-	quest.0D163B243691FC3F.quest_desc: [
-		"Face vierge + éclat d'écho. Le dé revient à son lanceur après le lancer."
-	]
-	quest.0D163B243691FC3F.title: "Module de dé : Infini"
 	quest.0D2D7E4E7239F684.quest_desc: [
 		"« Tracer la zone » dans l'éditeur, puis cliquez deux coins (128 blocs par côté au plus). Avec l'option Restaurer, chaque manche se joue à part dans la zone, avec un inventaire de manche vide, et l'arène est remise comme construite à la fin."
 	]
@@ -320,6 +316,10 @@
 		"6 blocs de plastique de la couleur en deux colonnes : 6 tuyaux. Lié à une page, un tuyau de cette couleur a le rôle « Équipe B ». Les tuyaux violets et orange sont les équipes C et D."
 	]
 	quest.2107B23BC93CF590.title: "Tuyau rouge : Équipe B"
+	quest.226EA47348D44FE3.quest_desc: [
+		"Module vierge + éclat d'écho. Le dé devient un power-up : utilisé une fois, à la place de ton lancer (tout autre dé revient à son lanceur)."
+	]
+	quest.226EA47348D44FE3.title: "Module power-up"
 	quest.2275C38C50DEE4C0.quest_desc: [
 		"Mélangez les fragments comme des colorants : gris + blanc. On récupère autant de fragments qu'on en a mis."
 	]

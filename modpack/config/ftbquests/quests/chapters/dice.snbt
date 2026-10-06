@@ -517,15 +517,15 @@
 			dependencies: [
 				"680DFFB134E7498D"
 			]
-			id: "0D163B243691FC3F"
+			id: "226EA47348D44FE3"
 			rewards: [
 				{
-					id: "14E29470B023DD3E"
+					id: "71190258938FF6A4"
 					type: "xp"
 					xp: 15
 				}
 				{
-					id: "442714F9F6B9D86E"
+					id: "19981DA3FE970D65"
 					item: {
 						count: 1
 						id: "steveparty:coin"
@@ -535,10 +535,10 @@
 			]
 			tasks: [
 				{
-					id: "34C6BEACE514DFDD"
+					id: "06271B19BC6CFCD3"
 					item: {
 						count: 1
-						id: "steveparty:dice_module_infinity"
+						id: "steveparty:dice_module_power_up"
 					}
 					type: "item"
 				}
@@ -715,7 +715,7 @@
 			dependencies: [
 				"6305DEBDCAB9BBA0"
 				"78060E8B8175066C"
-				"0D163B243691FC3F"
+				"226EA47348D44FE3"
 				"785AA345B1B2CC7F"
 				"4E3F2C32016B79DF"
 				"3015D9B1FF57C11A"

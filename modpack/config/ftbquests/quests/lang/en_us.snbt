@@ -88,7 +88,7 @@
 	quest.04F1186B64C11C43.quest_desc: [
 		"Blank face + tripwire hook. During this move the pawn ignores Stop spaces and shop stops."
 	]
-	quest.04F1186B64C11C43.title: "Dice Module: Skeleton Key"
+	quest.04F1186B64C11C43.title: "Die Module: Skeleton Key"
 	quest.0530BAFFB80A6149.quest_desc: [
 		"Place the Villager Block on the block to imitate, then fall on it from high enough (12 blocks on dirt or hay, 16 on stone, 30 on iron): a Boxed Trader appears, disguised as that block. Look at one to complete this quest."
 	]
@@ -118,7 +118,7 @@
 	quest.07380C5346B9F4F8.quest_desc: [
 		"Stonecutter: a blank face becomes any number from 0 to 10. Any face goes back to blank the same way."
 	]
-	quest.07380C5346B9F4F8.title: "Dice Face 6"
+	quest.07380C5346B9F4F8.title: "Die Face 6"
 	quest.07635CE1A88BD949.quest_desc: [
 		"4 orange terracotta in a square: 4 polished blocks (17 colours for terracotta, 16 for concrete). The stonecutter makes every shape from the vanilla block directly."
 	]
@@ -155,10 +155,6 @@
 		"Gold, a heavy pressure plate, redstone and quartz blocks. Podiums record who won: the highest column is first place. Sneak on one or right-click it to take it. Link podiums to the page by clicking them with it."
 	]
 	quest.0CE8734A07EDA523.title: "Podium"
-	quest.0D163B243691FC3F.quest_desc: [
-		"Blank face + echo shard. The die comes back to its roller after the roll."
-	]
-	quest.0D163B243691FC3F.title: "Dice Module: Infinity"
 	quest.0D2D7E4E7239F684.quest_desc: [
 		"\"Draw the zone\" in the editor, then click two corners (128 blocks per side at most). With the Restore option, each round plays apart in the zone with an empty round inventory, and the arena is put back as built at the end."
 	]
@@ -279,7 +275,7 @@
 	quest.1E5F2B0FBCFDA39D.quest_desc: [
 		"Blank face + ender pearl. The roller's pawn swaps places with another player's pawn of their choice."
 	]
-	quest.1E5F2B0FBCFDA39D.title: "Swap Dice Face"
+	quest.1E5F2B0FBCFDA39D.title: "Swap Die Face"
 	quest.1E702253EDB71ED3.quest_desc: [
 		"4 polished blocks in a square: 4 bevelled bricks. Each brick has its own shade, and big walls never repeat."
 	]
@@ -320,6 +316,10 @@
 		"6 plastic blocks of the colour in two columns: 6 pipes. Linked to a page, a pipe of this colour has the role \"Team B\". Purple and orange pipes are teams C and D."
 	]
 	quest.2107B23BC93CF590.title: "Red Pipe: Team B"
+	quest.226EA47348D44FE3.quest_desc: [
+		"Blank module + echo shard. The die becomes a power-up: used once, in place of your roll (every other die comes back to its roller)."
+	]
+	quest.226EA47348D44FE3.title: "Power-up Module"
 	quest.2275C38C50DEE4C0.quest_desc: [
 		"Mix star fragments like dyes: gray + white. You get back as many fragments as you put in."
 	]
@@ -426,7 +426,7 @@
 	quest.3015D9B1FF57C11A.quest_desc: [
 		"Blank face + fermented spider eye. A negative module: the pawn moves back, and coins won are lost."
 	]
-	quest.3015D9B1FF57C11A.title: "Dice Module: Reversed"
+	quest.3015D9B1FF57C11A.title: "Die Module: Reversed"
 	quest.308B809C31445486.quest_desc: [
 		"3 bricks in a row: 6 slabs."
 	]
@@ -495,7 +495,7 @@
 	quest.3F4EF27EE42BEC9C.quest_desc: [
 		"Blank face + Coin: a +1 Coins face (stonecutter for +2 to +10). Instead of moving, the roller gains that many coins of the party."
 	]
-	quest.3F4EF27EE42BEC9C.title: "Coin Dice Face +1"
+	quest.3F4EF27EE42BEC9C.title: "Coin Die Face +1"
 	quest.405FC7652C003313.quest_desc: [
 		"Custom dice, a core at full height and Mulas dancing around it."
 	]
@@ -585,7 +585,7 @@
 	quest.4D740A8C8B416C56.quest_desc: [
 		"Blank face + eye of ender. At forks the pawn chooses on its own, at random."
 	]
-	quest.4D740A8C8B416C56.title: "Dice Module: Homing"
+	quest.4D740A8C8B416C56.title: "Die Module: Homing"
 	quest.4DC6FEBAF30A3370.quest_desc: [
 		"Your shop is open, on and off the board."
 	]
@@ -593,7 +593,7 @@
 	quest.4E3F2C32016B79DF.quest_desc: [
 		"Blank face + wind charge. Stop or again: after the result, keep it or roll again, once per module."
 	]
-	quest.4E3F2C32016B79DF.title: "Dice Module: Reroll"
+	quest.4E3F2C32016B79DF.title: "Die Module: Reroll"
 	quest.4F2AF3CC87A16DDE.quest_desc: [
 		"Press \"Play\" on the Mini-Game Controller (or \"Test\" in the page editor): everyone within 5 blocks of a linked pipe plays, without a party. Results show what each place would earn, nothing is paid, and everyone comes back."
 	]
@@ -739,7 +739,7 @@
 	quest.6305DEBDCAB9BBA0.quest_desc: [
 		"Blank face + clock. The die spins slowly; its roller hits it to stop on the face shown."
 	]
-	quest.6305DEBDCAB9BBA0.title: "Dice Module: Slow"
+	quest.6305DEBDCAB9BBA0.title: "Die Module: Slow"
 	quest.639372715E2D9036.quest_desc: [
 		"Place two Teleport spaces of the same colour on one board. A dye on the tile (purple, green, orange, blue...) changes its network. A lone space of its colour sends nobody anywhere."
 	]
@@ -759,7 +759,7 @@
 	quest.680DFFB134E7498D.quest_desc: [
 		"2 iron ingots and 2 nether quartz in a square: 4 Blank Dice Faces. Every face starts from a blank one (stonecutter), and the Dice Forge uses them up."
 	]
-	quest.680DFFB134E7498D.title: "Blank Dice Face"
+	quest.680DFFB134E7498D.title: "Blank Die Face"
 	quest.68FDB8B9B18F5221.quest_desc: [
 		"Redstone and an iron ingot. The Wrench links tiles together (modes Trace, Edit, Cut: R or sneak + scroll), shows the board and its problems, opens cartridge blocks with sneak + right-click, and breaks any plastic block in one hit."
 	]
@@ -771,7 +771,7 @@
 	quest.6A47B29FC1D81DDA.quest_desc: [
 		"Premium faces (1 to 10) shine in gold on the die. For now they count like normal numbers."
 	]
-	quest.6A47B29FC1D81DDA.title: "Premium Dice Face 10"
+	quest.6A47B29FC1D81DDA.title: "Premium Die Face 10"
 	quest.6AD835CCA129C2DD.quest_desc: [
 		"4 plastic pellets + 1 dye + 1 amethyst shard, shapeless: 4 blocks of the dye's colour. 8 blocks around a dye recolour them. Neighbours of the same colour merge into one piece (up to 4x2x4)."
 	]
@@ -791,7 +791,7 @@
 	quest.6E22696E6BCB0E7C.quest_desc: [
 		"Cursed faces (1 to 3) show a purple skull. For now they count like normal numbers."
 	]
-	quest.6E22696E6BCB0E7C.title: "Cursed Dice Face 3"
+	quest.6E22696E6BCB0E7C.title: "Cursed Die Face 3"
 	quest.6E614CCC831846DA.quest_desc: [
 		"A Podium + a copper ingot, shapeless. Only a look: the height of the column decides the place."
 	]
@@ -824,7 +824,7 @@
 	quest.722DDCFD99F1743D.quest_desc: [
 		"Blank face + spider eye: a -1 Debt face (stonecutter for -2 to -10). The roller loses that many coins, never more than they have."
 	]
-	quest.722DDCFD99F1743D.title: "Debt Dice Face −1"
+	quest.722DDCFD99F1743D.title: "Debt Die Face −1"
 	quest.734C85BCB3D708BB.quest_desc: [
 		"4 iron nuggets around a paper: 2 blank stencils. Structure chests sometimes hold stencils with one of 50 built-in patterns. A cut stencil + blank ones copy it."
 	]
@@ -865,11 +865,11 @@
 	quest.78060E8B8175066C.quest_desc: [
 		"Blank face + compass. The roller picks the face."
 	]
-	quest.78060E8B8175066C.title: "Dice Module: Choice"
+	quest.78060E8B8175066C.title: "Die Module: Choice"
 	quest.785AA345B1B2CC7F.quest_desc: [
 		"Blank face + rabbit's foot. One extra roll per module (up to 5): keep the best one."
 	]
-	quest.785AA345B1B2CC7F.title: "Dice Module: Lucky"
+	quest.785AA345B1B2CC7F.title: "Die Module: Lucky"
 	quest.78C9F801227DBCA8.quest_desc: [
 		"Cartridge + red dye. A pawn that reaches a Stop space ends its move there, whatever steps it has left. Works on a Checkpoint too."
 	]
@@ -910,7 +910,7 @@
 	quest.7DADEB95247215E8.quest_desc: [
 		"A special face: the pawn stays where it is and the space under it triggers again."
 	]
-	quest.7DADEB95247215E8.title: "Dice Face 0"
+	quest.7DADEB95247215E8.title: "Die Face 0"
 	quest.7E305E47E151BDCF.quest_desc: [
 		"Two rows of 3 blocks: 6 walls."
 	]
@@ -918,7 +918,7 @@
 	quest.7E41138FB7521482.quest_desc: [
 		"8 iron ingots around a wind charge. Rolls 1 to 10."
 	]
-	quest.7E41138FB7521482.title: "Default Dice"
+	quest.7E41138FB7521482.title: "Default Die"
 	quest.7F2770DE1C7C8D45.quest_desc: [
 		"Cartridge + ender pearl. A pawn that ends on it is sent to another Teleport space of the same network colour (violet, green, orange or blue)."
 	]
