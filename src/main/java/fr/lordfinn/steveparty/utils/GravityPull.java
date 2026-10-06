@@ -62,6 +62,8 @@ public final class GravityPull {
         }
         // Mulas float on their own (they dance round the forge instead)
         if (entity instanceof fr.lordfinn.steveparty.entities.custom.MulaEntity) return false;
+        // Thrown dice float to their target or hover where thrown: a core must not steal them from their roller
+        if (entity instanceof fr.lordfinn.steveparty.entities.custom.DiceEntity) return false;
         // Board tokens are moved by the board only
         if (entity instanceof TokenizedEntityInterface token && token.steveparty$isTokenized()) return false;
         if (entity instanceof PlayerEntity player) return client && player.isMainPlayer();
