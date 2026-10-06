@@ -612,4 +612,35 @@ public class BoardLinkingGameTests implements FabricGameTest {
                     "unlinked in the hand: like a new one " + held.getComponentChanges());
         });
     }
+
+    /**
+     * A cartridge in the hand clicked on the ground opens its menu and links nothing; clicked where its linked tile was
+     * (the tile broken since), it unlinks it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCartridgeOnTheGroundOpensItsMenuOrUnlinksAMissingTile(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
+        context.setBlockState(new BlockPos(3, 0, 3), Blocks.STONE);
+        withPlayer(context, true, player -> {
+            ItemStack held = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+            player.setStackInHand(Hand.MAIN_HAND, held);
+            BlockPos ground = context.getAbsolutePos(new BlockPos(3, 0, 3));
+            ItemStack inHand = player.getMainHandStack();
+            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
+            context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "the ground is not linked");
+            context.assertTrue(player.currentScreenHandler != player.playerScreenHandler, "its menu is open");
+            player.closeHandledScreen();
+
+            BlockPos tile = t.getFirst();
+            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(tile.toCenterPos(), net.minecraft.util.math.Direction.UP, tile, false)));
+            context.assertEquals(inHand.get(ModComponents.DESTINATIONS_COMPONENT).destinations(), List.of(tile), "the tile is linked");
+            context.setBlockState(new BlockPos(1, 1, 1), Blocks.AIR);
+            BlockPos under = tile.down();
+            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(under.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, under, false)));
+            context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "the missing tile is unlinked by clicking under it");
+        });
+    }
 }

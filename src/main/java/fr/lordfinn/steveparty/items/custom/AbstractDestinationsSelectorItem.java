@@ -15,6 +15,7 @@ import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -25,6 +26,8 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.jetbrains.annotations.Nullable;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity.getDestinationsStatus;
 import static fr.lordfinn.steveparty.components.DestinationsComponent.DEFAULT;
@@ -77,8 +80,16 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
         return world.isClient;
     }
 
-    protected static String getWorldName(ServerWorld serverWorld) {
-        return serverWorld.getRegistryKey().getValue().toString();
+    protected static String getWorldName(World world) {
+        return world.getRegistryKey().getValue().toString();
+    }
+
+    /**
+     * Whether its destinations are board spaces, a destination with none there any more being shown as such (with how
+     * to fix it) in the tooltip.
+     */
+    protected boolean showsMissingDestinations() {
+        return false;
     }
 
     private DestinationsComponent getBoardSpaceBehaviorComponent(ItemStack stack) {
@@ -129,7 +140,7 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
 
         if (!tileDestinations.isEmpty()) {
             addTooltipHeading(tooltip, component);
-            addDestinationsToTooltip(tooltip, tileDestinations);
+            addDestinationsToTooltip(tooltip, tileDestinations, component, holder == null ? null : holder.getWorld());
         } else {
             addNoDestinationsMessage(tooltip);
         }
@@ -144,12 +155,27 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
                 .setStyle(Style.EMPTY.withColor(0xEA528E).withBold(true)));
     }
 
-    protected void addDestinationsToTooltip(List<Text> tooltip, List<BoardSpaceDestination> tileDestinations) {
+    /**
+     * The destinations, one per line; one where no board space is any more (for {@link #showsMissingDestinations()}) in
+     * red, followed by how to fix it.
+     */
+    protected void addDestinationsToTooltip(List<Text> tooltip, List<BoardSpaceDestination> tileDestinations,
+                                            DestinationsComponent component, @Nullable World world) {
+        boolean missing = false;
         for (BoardSpaceDestination destination : tileDestinations) {
             BlockPos pos = destination.position();
-            tooltip.add(Text.translatable("tooltip.steveparty.destination_entry",
-                            pos.getX(), pos.getY(), pos.getZ())
-                    .setStyle(Style.EMPTY.withColor(Formatting.WHITE)));
+            // Only where the client knows the world (same dimension, chunk loaded): never a false alarm
+            boolean gone = showsMissingDestinations() && !destination.isTile() && world != null
+                    && getWorldName(world).equals(component.world()) && world.isChunkLoaded(pos);
+            MutableText entry = Text.translatable("tooltip.steveparty.destination_entry", pos.getX(), pos.getY(), pos.getZ())
+                    .setStyle(Style.EMPTY.withColor(gone ? Formatting.RED : Formatting.WHITE));
+            if (gone) entry.append(Text.translatable("tooltip.steveparty.destination_missing").formatted(Formatting.RED));
+            tooltip.add(entry);
+            missing |= gone;
+        }
+        if (missing) {
+            fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem.addWrapped(tooltip,
+                    Text.translatable("tooltip.steveparty.destination_missing.hint"), Formatting.GOLD);
         }
     }
 
