@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.minigame.zone.ZoneBorder;
 import fr.lordfinn.steveparty.minigame.zone.ZoneBubbles;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
@@ -55,7 +56,8 @@ import java.util.function.Predicate;
  *     capped end (the pipe goes into a solid block: a warp) it comes out of the nearest mouth of the colour of that
  *     capped end in another network, within 100 blocks ({@link PipeNetworks#nearestMouth}), or where the cartridge of
  *     that end says ({@link PipeDestinationProvider});
- *     with nowhere to go (or a mouth blocked by a block in front of it), it travels back through the pipes and comes out of the mouth it went in.</li>
+ *     with nowhere to go (or a mouth blocked by a block in front of it), it travels back through the pipes and comes out of the mouth it went in.
+ *     Pipes changed on the way: see {@link #reroute} (cut off from every mouth, it gets out of the last pipe it was in).</li>
  *     <li>Inside, nothing hurts it (walls, landing, cramming) and it does not collide; it comes out with the speed it
  *     had inside, without any fall damage from before.</li>
  * </ul>
@@ -472,9 +474,14 @@ public final class PipeTravel {
     }
 
     /**
-     * The end it was going to is no more (the pipe was lengthened, shortened, turned): on along the pipes as they are
-     * now to another end of the network it is in, picked at random; out of the mouth it went in if it is not in a
-     * network any more (or after a few changes), else out where it is.
+     * The end it was going to is no more (the pipe was lengthened, shortened, turned, broken). As the pipes are now:
+     * <ul>
+     *     <li>its network has another end: on to one of them, picked at random;</li>
+     *     <li>the only end left is the mouth it went in: back through the pipes to it (like a warp with nowhere to go);</li>
+     *     <li>its pipe is cut off from every mouth (a closed loop, nothing left, or after a few changes): out of the last
+     *     pipe it was in, on its nearest free side (the top first), never sent back to a mouth far away; out where it
+     *     is if there is no free side.</li>
+     * </ul>
      */
     private static void reroute(ServerWorld world, PipeCarrierEntity carrier, Entity traveller) {
         List<Vec3d> path = carrier.points();
@@ -484,33 +491,70 @@ public final class PipeTravel {
             if (PipeBlock.isPipe(world.getBlockState(pos))) here = pos;
         }
         PipeNetworks.Network network = here == null ? null : PipeNetworks.of(world).network(here);
+        PipeNetworks.End origin = carrier.origin();
         if (network != null && carrier.reroute()) {
             // Not back where it went in, if it can go elsewhere
             List<PipeNetworks.End> ends = new ArrayList<>(network.ends());
-            if (ends.size() > 1) ends.remove(carrier.origin());
-            if (!ends.isEmpty()) {
-                PipeNetworks.End target = ends.get(world.random.nextInt(ends.size()));
-                List<BlockPos> pipes = network.path(here, target.pos());
-                if (!pipes.isEmpty()) {
-                    List<Vec3d> points = new ArrayList<>();
-                    points.add(carrier.getPos());
-                    for (BlockPos pipe : pipes) points.add(Vec3d.ofCenter(pipe));
-                    points.add(face(target.pos(), target.dir(), target.capped() ? 0.3 : 0.5));
-                    carrier.setLeg(points, carrier.speed(), target);
-                    return;
-                }
+            boolean originLeft = origin != null && ends.remove(origin);
+            if (!ends.isEmpty() && leg(carrier, network, here, ends.get(world.random.nextInt(ends.size())))) return;
+            if (originLeft && !blocked(world, origin) && leg(carrier, network, here, origin)) {
+                carrier.markReturned();
+                world.playSound(null, carrier.getX(), carrier.getY(), carrier.getZ(), SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.BLOCKS, 0.7F, 0.6F);
+                return;
             }
         }
-        PipeNetworks.End origin = carrier.origin();
-        if (origin != null && PipeShape.mouth(world.getBlockState(origin.pos()), origin.dir()) != null && !blocked(world, origin)) {
-            exit(world, carrier, traveller, origin);
-            return;
-        }
+        if (here != null && ejectFrom(world, carrier, traveller, here)) return;
         Vec3d at = carrier.getPos();
         carrier.setDismountAt(at);
         traveller.stopRiding();
         carrier.discard();
         traveller.requestTeleport(at.x, at.y - traveller.getHeight() / 2, at.z);
+    }
+
+    /** Sends the carrier on from where it is, along the pipes from {@code here} to {@code target}; false if no way. */
+    private static boolean leg(PipeCarrierEntity carrier, PipeNetworks.Network network, BlockPos here, PipeNetworks.End target) {
+        List<BlockPos> pipes = network.path(here, target.pos());
+        if (pipes.isEmpty()) return false;
+        List<Vec3d> points = new ArrayList<>();
+        points.add(carrier.getPos());
+        for (BlockPos pipe : pipes) points.add(Vec3d.ofCenter(pipe));
+        points.add(face(target.pos(), target.dir(), target.capped() ? 0.3 : 0.5));
+        carrier.setLeg(points, carrier.speed(), target);
+        return true;
+    }
+
+    /** The sides a traveller cut off in a pipe gets out by, in that order. */
+    private static final Direction[] EJECT_SIDES = {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.DOWN};
+
+    /**
+     * Out of the pipe {@code pipe} (the traveller is cut off from every mouth): standing on its nearest free side at its
+     * full size, the top first, with the sound of a mouth.
+     *
+     * @return false if no side is free (nothing done)
+     */
+    static boolean ejectFrom(ServerWorld world, PipeCarrierEntity carrier, Entity traveller, BlockPos pipe) {
+        EntityDimensions size = traveller.getType().getDimensions();
+        Vec3d center = Vec3d.ofCenter(pipe);
+        for (Direction side : EJECT_SIDES) {
+            Vec3d feet = switch (side) {
+                case UP -> new Vec3d(center.x, pipe.getY() + 1.0, center.z);
+                case DOWN -> new Vec3d(center.x, pipe.getY() - size.height() - 0.01, center.z);
+                default -> new Vec3d(center.x + side.getOffsetX() * (0.5 + size.width() / 2 + 0.02), pipe.getY(),
+                        center.z + side.getOffsetZ() * (0.5 + size.width() / 2 + 0.02));
+            };
+            if (!world.isSpaceEmpty(traveller, size.getBoxAt(feet))) continue;
+            carrier.setDismountAt(feet);
+            traveller.stopRiding();
+            carrier.discard();
+            traveller.requestTeleport(feet.x, feet.y, feet.z);
+            traveller.setVelocity(Vec3d.ZERO);
+            traveller.velocityModified = true;
+            traveller.fallDistance = 0;
+            world.playSound(null, feet.x, feet.y, feet.z, SoundEvents.ENTITY_PUFFER_FISH_BLOW_UP, SoundCategory.BLOCKS, 0.7F, 1.3F);
+            world.playSound(null, feet.x, feet.y, feet.z, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.BLOCKS, 1.0F, 1.2F);
+            return true;
+        }
+        return false;
     }
 
     /**

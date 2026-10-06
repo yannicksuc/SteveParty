@@ -85,7 +85,7 @@ public final class WorldLabels {
         PlayerEntity player = MinecraftClient.getInstance().player;
         if (player == null) return false;
         for (ItemStack stack : player.getHandItems()) {
-            if (stack.getItem() instanceof WrenchItem) return true;
+            if (stack.getItem() instanceof WrenchItem || stack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem) return true;
         }
         return false;
     }
