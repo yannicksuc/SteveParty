@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.SaveStencilPayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
@@ -377,10 +378,13 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         RenderSystem.enableBlend();
         context.drawTexture(BACKGROUND_TEXTURE, bgX, bgY, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight);
-        for (int i = 0; i < 16; i++) {
-            for (int j = 0; j < 16; j++) {
-                if (shape[i * 16 + j] == 1) continue;
-                context.drawTexture(STENCIL_TEXTURE, (stencilX + i * PIXEL_SIZE), (stencilY + j * PIXEL_SIZE), i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE, backgroundWidth / 2, backgroundHeight / 2);
+        // The 18x18 plate: its 1 px frame around the canvas, the shape cut out of the 16x16 inside
+        int plate = StencilResourceManager.Kind.METAL.size() * PIXEL_SIZE, margin = StencilResourceManager.Kind.METAL.margin();
+        for (int i = -margin; i < 16 + margin; i++) {
+            for (int j = -margin; j < 16 + margin; j++) {
+                if (i >= 0 && i < 16 && j >= 0 && j < 16 && shape[i * 16 + j] == 1) continue;
+                context.drawTexture(STENCIL_TEXTURE, stencilX + i * PIXEL_SIZE, stencilY + j * PIXEL_SIZE,
+                        (i + margin) * PIXEL_SIZE, (j + margin) * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE, plate, plate);
             }
         }
         if (isInsideStencil(mouseX, mouseY)) {
