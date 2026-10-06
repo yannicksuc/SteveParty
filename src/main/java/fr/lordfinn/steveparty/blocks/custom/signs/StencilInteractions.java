@@ -11,6 +11,8 @@ import net.minecraft.item.AxeItem;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.text.Text;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -35,7 +37,8 @@ import java.util.Objects;
  * What the items do on a {@link StencilCanvasBlock}:
  * <ul>
  *     <li>stencil + dye (one in each hand, either way round): paints the stencil's shape in that colour;</li>
- *     <li>stencil alone: engraves the shape, unpainted;</li>
+ *     <li>stencil alone: engraves the shape, unpainted; on a {@link RockSignBlock} the stone is carved: it takes a
+ *     pickaxe in the other hand (1 wear);</li>
  *     <li>dye alone: repaints the symbol already there;</li>
  *     <li>glow ink sac: the paint glows (on a painted symbol only); sponge: it stops glowing;</li>
  *     <li>brush, held on it: fades the symbol a little every half second, then scrubs it off;</li>
@@ -43,7 +46,9 @@ import java.util.Objects;
  *     <li>Stencil Hammer: strikes its selected stencil in its selected colour ({@link StencilHammerStrike}).</li>
  * </ul>
  * On a cut-out panel ({@link StencilCanvasBlock#usesSilhouette()}) a stencil and an axe (one in each hand) cut the
- * board along the stencil, using the axe; a wet sponge gives it back its whole board.
+ * board along the stencil, using the axe; a wet sponge gives it back its whole board. The hammer needs no tool on the
+ * other signs, but can't cut a panel.
+ * When the tool is missing, the player is told what to hold (action bar).
  * Nothing is used up when nothing changes (same symbol, same colour...).
  */
 public final class StencilInteractions {
@@ -62,6 +67,12 @@ public final class StencilInteractions {
         boolean silhouette = state.getBlock() instanceof StencilCanvasBlock block && block.usesSilhouette();
         // One interaction per click: handled on the pass of the hand holding the leading item
         Hand acting = isTool(main, silhouette) ? Hand.MAIN_HAND : isTool(off, silhouette) ? Hand.OFF_HAND : null;
+        if (acting == null && silhouette && hand == Hand.MAIN_HAND
+                && (main.getItem() instanceof StencilGunItem || off.getItem() instanceof StencilGunItem)) {
+            // The hammer stamps, it doesn't cut
+            hint(world, player, "message.steveparty.stencil.cutout_needs_axe");
+            return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
         if (acting != hand) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
         ItemStack leading = acting == Hand.MAIN_HAND ? main : off;
@@ -77,7 +88,11 @@ public final class StencilInteractions {
         // What the hammer stamps (read before the dye is used up)
         DyeColor hammerColor = hammer ? StencilGunItem.selectedLoad(leading).color() : null;
         Runnable action = resolve(canvas, main, off, player, silhouette);
-        if (action == null) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (action == null) {
+            String missing = missingTool(state, main, off, silhouette);
+            if (missing != null) hint(world, player, missing);
+            return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
         if (!world.isClient) {
             action.run();
             world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(player, state));
@@ -122,6 +137,38 @@ public final class StencilInteractions {
         return BrushResult.GONE;
     }
 
+    /**
+     * Why a stencil click did nothing, when it is for want of the right tool in the other hand (a translation key),
+     * else null: a cut-out panel is cut with an axe, a rock sign engraved with a pickaxe (or painted with a dye).
+     */
+    public static @Nullable String missingTool(BlockState state, ItemStack main, ItemStack off, boolean silhouette) {
+        boolean paint = state.getBlock() instanceof StencilPaintBlock;
+        ItemStack leading = isTool(main, silhouette) ? main : off;
+        if (paint && leading.getItem() instanceof StencilGunItem && StencilGunItem.selectedLoad(leading).shape() != null
+                && StencilGunItem.selectedLoad(leading).color() == null) {
+            return "message.steveparty.stencil_gun.engrave_signs_only";
+        }
+        boolean stencil = main.getItem() instanceof StencilItem || off.getItem() instanceof StencilItem;
+        if (!stencil) return null;
+        boolean dye = main.getItem() instanceof DyeItem || off.getItem() instanceof DyeItem;
+        // Sprayed paint is a layer of paint: it can be repainted, not engraved
+        if (paint) return dye ? null : "message.steveparty.stencil.block_needs_dye";
+        if (silhouette) {
+            return main.getItem() instanceof AxeItem || off.getItem() instanceof AxeItem ? null : "message.steveparty.stencil.cutout_needs_axe";
+        }
+        if (!(state.getBlock() instanceof RockSignBlock)) return null;
+        return dye || isPickaxe(main) || isPickaxe(off) ? null : "message.steveparty.stencil.rock_needs_pickaxe";
+    }
+
+    private static boolean isPickaxe(ItemStack stack) {
+        return stack.isIn(ItemTags.PICKAXES);
+    }
+
+    /** Tells the player (action bar, client side: once per click) what the click is missing. */
+    public static void hint(World world, PlayerEntity player, String key) {
+        if (world.isClient) player.sendMessage(Text.translatable(key), true);
+    }
+
     /** @return what the click does (run server side only), or null if it would change nothing. */
     private static @Nullable Runnable resolve(StencilCanvasBlockEntity canvas, ItemStack main, ItemStack off,
                                               PlayerEntity player, boolean silhouette) {
@@ -157,6 +204,8 @@ public final class StencilInteractions {
             ItemStack gun = leading;
             StencilGunItem.Load load = StencilGunItem.selectedLoad(gun);
             if (load.shape() == null) return null;
+            // Engraving is for signs: sprayed paint is only repainted
+            if (load.color() == null && canvas.getCachedState().getBlock() instanceof StencilPaintBlock) return null;
             if (sameSymbol(canvas, load.shape(), load.color())) return null;
             return () -> {
                 canvas.setSymbol(load.shape(), load.color());
@@ -172,9 +221,19 @@ public final class StencilInteractions {
             // A blank stencil has nothing to paint or engrave
             if (StencilShape.isBlank(shape)) return null;
             DyeColor color = dye.isEmpty() ? null : ((DyeItem) dye.getItem()).getColor();
+            // Stone is carved with a pickaxe: without one (nor a dye) a rock sign stays as it is
+            boolean rock = canvas.getCachedState().getBlock() instanceof RockSignBlock;
+            Hand pickaxeHand = isPickaxe(main) ? Hand.MAIN_HAND : isPickaxe(off) ? Hand.OFF_HAND : null;
+            if (rock && color == null && pickaxeHand == null) return null;
+            // Sprayed paint is only repainted, never engraved (like the block face it is on)
+            if (color == null && canvas.getCachedState().getBlock() instanceof StencilPaintBlock) return null;
             if (sameSymbol(canvas, shape, color)) return null;
             return () -> {
                 canvas.setSymbol(shape, color);
+                if (rock && color == null) {
+                    player.getStackInHand(pickaxeHand).damage(1, player, pickaxeHand == Hand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
+                    play(world, pos, SoundEvents.BLOCK_STONE_BREAK, 1.2F);
+                }
                 play(world, pos, SoundEvents.BLOCK_METAL_PLACE, 1.0F);
                 if (color != null) {
                     play(world, pos, SoundEvents.ITEM_DYE_USE, 1.0F);

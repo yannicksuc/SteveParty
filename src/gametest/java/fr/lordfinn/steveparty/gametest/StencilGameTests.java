@@ -315,6 +315,43 @@ public class StencilGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
+    public void rockSignsAreEngravedWithAPickaxe(TestContext context) {
+        context.setBlockState(SIGN.down(), Blocks.STONE);
+        context.setBlockState(SIGN, ModBlocks.ROCK_SIGN);
+        PlayerEntity player = survivalPlayer(context);
+        StencilCanvasBlockEntity rock = at(context, SIGN);
+        // A stencil alone doesn't carve stone
+        player.setStackInHand(Hand.MAIN_HAND, stencil("star"));
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertTrue(!rock.hasShape(), "not engraved without a pickaxe");
+        // Stencil + pickaxe (either hand) engraves, using the pickaxe
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
+        player.setStackInHand(Hand.OFF_HAND, stencil("star"));
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.getBlockState(SIGN).onUseWithItem(player.getOffHandStack(), context.getWorld(), player, Hand.OFF_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertTrue(Arrays.equals(rock.getShape(), pattern("star")) && rock.isEngraved(), "star engraved");
+        context.assertEquals(player.getMainHandStack().getDamage(), 1, "pickaxe used");
+        // Stencil + dye paints it, no pickaxe needed
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.RED_DYE));
+        context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
+        context.assertTrue(rock.getColor() == DyeColor.RED, "painted red");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void sprayedPaintIsRepaintedNotEngraved(TestContext context) {
+        BlockPos floor = new BlockPos(1, 1, 1);
+        context.setBlockState(floor, Blocks.STONE);
+        StencilPaintBlock.spray(context.getWorld(), context.getAbsolutePos(floor), Direction.UP, pattern("coin"), DyeColor.YELLOW, Direction.NORTH);
+        StencilCanvasBlockEntity paint = at(context, floor.up());
+        PlayerEntity player = survivalPlayer(context);
+        player.setStackInHand(Hand.MAIN_HAND, stencil("star"));
+        context.getBlockState(floor.up()).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, floor.up(), Direction.UP));
+        context.assertTrue(Arrays.equals(paint.getShape(), pattern("coin")) && paint.getColor() == DyeColor.YELLOW, "still the yellow coin");
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
     public void postSignsStandOnFencesAndWalls(TestContext context) {
         BlockPos abs = context.getAbsolutePos(SIGN);
         for (var sign : List.of(ModBlocks.WOODEN_PANEL, ModBlocks.WOODEN_CUTOUT_PANEL, ModBlocks.PLASTIC_ROAD_SIGN)) {

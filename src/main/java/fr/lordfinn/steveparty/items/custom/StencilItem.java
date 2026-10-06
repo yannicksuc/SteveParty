@@ -1,10 +1,13 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.blocks.custom.signs.StencilCanvasBlock;
+import fr.lordfinn.steveparty.blocks.custom.signs.StencilInteractions;
 import fr.lordfinn.steveparty.blocks.custom.signs.StencilPaintBlock;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.Item;
@@ -56,8 +59,12 @@ public class StencilItem extends Item {
         PlayerEntity player = context.getPlayer();
         if (player == null) return ActionResult.PASS;
         ItemStack other = player.getStackInHand(context.getHand() == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND);
-        if (!(other.getItem() instanceof DyeItem dyeItem)) return ActionResult.PASS;
         World world = context.getWorld();
+        if (!(other.getItem() instanceof DyeItem dyeItem)) {
+            // Only signs are engraved: a block face takes paint
+            if (canTakePaint(world, context)) StencilInteractions.hint(world, player, "message.steveparty.stencil.block_needs_dye");
+            return ActionResult.PASS;
+        }
         DyeColor color = dyeItem.getColor();
         boolean sprayed = StencilPaintBlock.spray(world, context.getBlockPos(), context.getSide(), getShape(context.getStack()),
                 color, player.getHorizontalFacing());
@@ -70,6 +77,13 @@ public class StencilItem extends Item {
         return ActionResult.SUCCESS;
     }
 
+    /** Whether the clicked face is one sprayed paint could go on (a full face, not a sign). */
+    static boolean canTakePaint(World world, ItemUsageContext context) {
+        BlockState target = world.getBlockState(context.getBlockPos());
+        return !(target.getBlock() instanceof StencilCanvasBlock)
+                && target.isSideSolidFullSquare(world, context.getBlockPos(), context.getSide());
+    }
+
     @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
@@ -80,5 +94,8 @@ public class StencilItem extends Item {
         if (pattern != null) tooltip.add(pattern.name().copy().formatted(Formatting.GOLD));
         else if (!StencilShape.isBlank(shape)) tooltip.add(Text.translatable("tooltip.steveparty.stencil.custom").formatted(Formatting.GOLD));
         tooltip.add(Text.translatable("tooltip.steveparty.stencil.usage").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.stencil.usage_tools").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.stencil.usage_engrave").formatted(Formatting.DARK_GRAY));
+        tooltip.add(Text.translatable("tooltip.steveparty.stencil.remove").formatted(Formatting.DARK_GRAY));
     }
 }
