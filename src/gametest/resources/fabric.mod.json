@@ -16,6 +16,7 @@
       "fr.lordfinn.steveparty.gametest.PowerUpWiringGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpStarGameTests",
       "fr.lordfinn.steveparty.gametest.PowerUpLimitGameTests",
+      "fr.lordfinn.steveparty.gametest.AllowedDiceGameTests",
       "fr.lordfinn.steveparty.gametest.PartyHudGameTests",
       "fr.lordfinn.steveparty.gametest.PartyHudLayoutGameTests",
       "fr.lordfinn.steveparty.gametest.PartyHudPlacementsGameTests",
