@@ -65,7 +65,10 @@ public class PlasticBlock extends Block {
      * (0.7 blocks per tick up over soul sand, 0.3 down over magma), so 1.4 and 0.6 blocks per tick.
      */
     public static final int COLUMN_PERIOD = 5, COLUMN_UP_BLOCKS = 7, COLUMN_DOWN_BLOCKS = 3;
-    /** Player teleport flags: relative (unchanged) except the height, set exactly (the vertical speed: see place). */
+    /**
+     * Player teleport flags: relative (unchanged on the client) except the height, set exactly (the vertical speed: see
+     * place). In 1.21.1 the coordinates passed with them are still absolute on the server: see {@link #place}.
+     */
     private static final Set<PositionFlag> ALL_BUT_HEIGHT = EnumSet.of(PositionFlag.X, PositionFlag.Z,
             PositionFlag.Y_ROT, PositionFlag.X_ROT);
     /** Speed of a player riding a piece in a bubble column (blocks per tick): the piece's, 1.4 up and 0.6 down. */
@@ -334,7 +337,10 @@ public class PlasticBlock extends Block {
     private static void place(ServerWorld world, ServerPlayerEntity player, double y, double speed,
                               BlockPos from, BlockPos to) {
         sendBlocks(world, player, from, to);
-        player.networkHandler.requestTeleport(0, y, 0, 0, 0, ALL_BUT_HEIGHT);
+        // 1.21.1: the server takes x, z, yaw and pitch as they are (only the packet sent to the client is relative):
+        // zeros here would put the player at 0, 0
+        player.networkHandler.requestTeleport(player.getX(), y, player.getZ(), player.getYaw(), player.getPitch(),
+                ALL_BUT_HEIGHT);
         // The exact height resets the client's vertical speed: sent after it
         glide(player, speed);
     }

@@ -8,6 +8,8 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
@@ -25,6 +27,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -59,6 +62,16 @@ public class CashRegisterBlock extends HorizontalFacingBlock implements BlockEnt
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         return Objects.requireNonNull(super.getPlacementState(ctx))
                 .with(Properties.HORIZONTAL_FACING, ctx.getHorizontalPlayerFacing().getOpposite());
+    }
+
+    /** In the inventory: what it does in a shop. */
+    @Override
+    public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, List<Text> tooltip,
+                              net.minecraft.item.tooltip.TooltipType options) {
+        super.appendTooltip(stack, context, tooltip, options);
+        for (String line : List.of("till")) {
+            tooltip.add(Text.translatable("tooltip.steveparty.cash_register." + line).formatted(net.minecraft.util.Formatting.GRAY));
+        }
     }
 
     @Override
