@@ -1500,6 +1500,8 @@
   "rei.steveparty.cartridge_application": "Cartridge application",
   "rei.steveparty.cartridge_application.how": "Right-click the tile with the cartridge, or put it in its slot",
   "rei.steveparty.cartridge_application.advanced": "The Advanced Tile holds up to 16 cartridges: the redstone power picks the active one",
+  "rei.steveparty.dice_forge": "Dice Forge",
+  "rei.steveparty.dice_forge.how": "Wake the forge with a Gravity Core. Each face slot weighs its stack size and uses one blank face. Five fragments of different colours, modules optional. Click the arrow.",
   "block.steveparty.party_bell": "Party Bell",
   "block.steveparty.podium": "Podium",
   "block.steveparty.piggy_bank": "Piggy Bank",

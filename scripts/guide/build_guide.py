@@ -515,9 +515,9 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "- **Dé triple** : trois, 3 à 30.\n- **Dé forgé** : ses propres faces, sorti de la forge à dés.\n\n"
           "Un dé lancé disparaît 2 s après son résultat.",
           "The Dice", "Les dés"),
-        C("steveparty:default_dice", "steveparty:double_dice",
-          "8 iron ingots around a wind charge. Combine dice for bigger ones; they split back.",
-          "8 lingots de fer autour d'une charge de vent. Combine des dés pour en faire de plus gros ; ils se défont."),
+        C("steveparty:double_dice", None,
+          "Dice come out of the **Dice Forge**. Combine them for bigger ones; they split back.",
+          "Les dés sortent de la **forge à dés**. Combine-les pour en faire de plus gros ; ils se défont."),
         C("steveparty:triple_dice", "steveparty:triple_dice2"),
     ]),
     E("faces", "steveparty:blank_dice_face", ("Die Faces", "Faces de dé"), ("Material for custom dice", "De quoi graver des dés"), [
