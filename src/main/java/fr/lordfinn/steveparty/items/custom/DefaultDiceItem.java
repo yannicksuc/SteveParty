@@ -17,7 +17,10 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -32,6 +35,10 @@ import static fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY;
 public class DefaultDiceItem extends Item {
 
     protected static final float VELOCITY_MULTIPLIER = 0.6F;
+    /** The least upward speed of a throw (blocks per tick). */
+    private static final double MIN_UPWARD_VELOCITY = 0.2;
+    /** How far in front of the eyes the die appears, at most (blocks). */
+    private static final double SPAWN_DISTANCE = 1.5;
     private static final float SOUND_VOLUME_1 = 0.2F;
     private static final float SOUND_PITCH_1 = 1.5F;
     private static final float SOUND_VOLUME_2 = 0.4F;
@@ -71,16 +78,29 @@ public class DefaultDiceItem extends Item {
         return !world.isClient && world instanceof ServerWorld;
     }
 
+    /**
+     * Where the die appears: in front of the thrower's eyes, short of any block in the way (looking at the floor or a
+     * wall), raised until its box is free, so that it never starts inside the terrain.
+     */
     protected Vec3d calculateSpawnPosition(PlayerEntity player) {
-        Vec3d playerPos = player.getPos();
-        Vec3d lookVec = player.getRotationVec(1.0F).multiply(2);
-        return playerPos.add(lookVec);
+        World world = player.getWorld();
+        Vec3d eyes = player.getEyePos();
+        Vec3d look = player.getRotationVec(1.0F);
+        BlockHitResult hit = world.raycast(new RaycastContext(eyes, eyes.add(look.multiply(SPAWN_DISTANCE)),
+                RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, player));
+        double reach = hit.getType() == HitResult.Type.MISS ? SPAWN_DISTANCE : Math.max(0, eyes.distanceTo(hit.getPos()) - 0.6);
+        // The die's position is the bottom of its box: its centre goes on the line of sight
+        Vec3d position = eyes.add(look.multiply(reach)).subtract(0, DICE_ENTITY.getHeight() / 2, 0);
+        for (int step = 0; step < 12 && !world.isSpaceEmpty(DICE_ENTITY.getDimensions().getBoxAt(position)); step++) {
+            position = position.add(0, 0.25, 0);
+        }
+        return position;
     }
 
     protected DiceEntity spawnDiceEntity(World world, Vec3d spawnPosition) {
         DiceEntity diceEntity = DICE_ENTITY.create(world);
         if (diceEntity != null) {
-            diceEntity.setPosition(spawnPosition.x, spawnPosition.y + 0.5, spawnPosition.z);
+            diceEntity.setPosition(spawnPosition.x, spawnPosition.y, spawnPosition.z);
             diceEntity.setNoGravity(true);
             world.spawnEntity(diceEntity);
         }
@@ -89,11 +109,19 @@ public class DefaultDiceItem extends Item {
 
     /** Aims the die and gives it its roller and its item (the roll itself starts with {@link DiceEntity#startRoll}). */
     protected void configureDiceEntity(DiceEntity diceEntity, PlayerEntity player, Hand hand) {
-        Vec3d velocity = player.getRotationVec(1.0F).multiply(VELOCITY_MULTIPLIER);
-        diceEntity.setVelocity(velocity);
+        diceEntity.setVelocity(throwVelocity(player));
         diceEntity.setOwner(player.getUuid());
         diceEntity.findTarget(player.isSneaking() ? PlayerEntity.class : MobEntity.class);
         diceEntity.setItemReference(player.getStackInHand(hand).copyWithCount(1));
+    }
+
+    /**
+     * The die is tossed upward: thrown at the floor it bounces up instead of digging in, thrown straight ahead it
+     * still rises a little (an untargeted die then falls back on its own, see DiceEntity).
+     */
+    protected Vec3d throwVelocity(PlayerEntity player) {
+        Vec3d velocity = player.getRotationVec(1.0F).multiply(VELOCITY_MULTIPLIER);
+        return new Vec3d(velocity.x, Math.max(MIN_UPWARD_VELOCITY, Math.abs(velocity.y)), velocity.z);
     }
 
     protected void playSounds(World world, DiceEntity diceEntity) {
