@@ -1416,8 +1416,8 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	private PlayState animationPredicate(AnimationState<MulaEntity> state) {
-		// a board token: no animation at all, the model settles in its rest pose (a still pawn)
-		if (isToken()) return PlayState.STOP;
+		// a board token: its idle, gently floating in place (stopped, the model fell back to its bind pose)
+		if (isToken()) return state.setAndContinue(IDLE_ANIM);
 		if (isDanceLocked()) {
 			return state.setAndContinue(DANCE_ANIMS[MulaDances.STYLE[Math.max(0, currentDance())]]);
 		}
