@@ -114,7 +114,7 @@ public class BoxCostumeRenderer extends GeoObjectRenderer<BoxCostumeAnimatable> 
     @Override
     public void renderCubesOfBone(MatrixStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, int renderColor) {
         // Box bones: drawn with the block's faces by the render layer
-        if (BlockTexturedBones.isBoxBone(bone)) return;
+        if (BlockTexturedBones.isBoxBone(bone) || BlockTexturedBones.isHiddenInside(bone, this.animatable.getBlock())) return;
         super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, renderColor);
     }
 }

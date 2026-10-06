@@ -6,6 +6,7 @@
   "client": [
     "BipedEntityModelPipeSwimMixin",
     "BossBarHudAccessor",
+    "CapeFeatureRendererBoxCostumeMixin",
     "InGameHudAccessor",
     "ChatHudAccessor",
     "CameraPipeViewMixin",

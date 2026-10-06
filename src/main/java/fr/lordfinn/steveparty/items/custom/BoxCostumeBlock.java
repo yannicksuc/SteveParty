@@ -1,12 +1,15 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.function.BooleanBiFunction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,11 +21,13 @@ import org.jetbrains.annotations.Nullable;
  * moves: nothing to correct, no rubber-banding). Moving again is free; he is pushed again after the next stop.</li>
  * <li>Standing still on the centre of a valid cell, he is <b>block-aligned</b>: his bounding box is that cell's full
  * cube, and he is a hard obstacle like a shulker or a boat: players and mobs stand on him, jump on him and bump into
- * him, and don't push him. Both sides work it out from what they already know (hidden, position, on ground), so the
- * one jumping on him has no jitter. As soon as he moves or stands up he is an ordinary player again: whoever stood
- * on him just falls.</li>
- * <li>A valid cell: feet on the full top face of the block below, the cell free of blocks and of water or lava.
- * Elsewhere (slab, stairs, fence, water, a block in the way...) he is neither pushed nor a block.</li>
+ * him, and don't push him. Every side works it out from what it already knows (hidden, position), so the
+ * one jumping on him has no jitter; once a block, he stays one while hidden on that centre, whoever stands on him.
+ * As soon as he moves or stands up he is an ordinary player again: whoever stood on him just falls.</li>
+ * <li>A valid spot: feet on a floor whose top is a whole flat square (a full block, but also a dirt path, farmland, a
+ * slab, a carpet...), the cube above it free of blocks and of water or lava. Elsewhere (stairs, fence, water, a
+ * block in the way...) he is neither pushed nor a block. The cube stands on that floor: on a dirt path it is 1/16
+ * lower than on grass.</li>
  * </ul>
  * Attacks and projectiles still hit him as usual (on the cube while he is one).
  */
@@ -93,53 +98,88 @@ public final class BoxCostumeBlock {
 
     /**
      * One tick of the push to the grid, for the side that moves the player: once he has
-     * been still long enough on a valid cell, a quarter of the way to its centre each tick, then right on it. His own
-     * moves (any position other than where the push left him) start the wait again.
+     * been still long enough on the ground on a valid spot, a quarter of the way to its centre each tick, then right
+     * on it. His own moves (any position other than where the push left him) start the wait again.
      */
     private static void pushToGrid(PlayerEntity player) {
         if (!(player instanceof Hider hider)) return;
         boolean unmoved = trackStillness(player, hider);
-        BlockPos cell = unmoved && hider.steveparty$getStillTicks() >= STILL_TICKS ? validCell(player) : null;
-        if (cell == null) return;
-        double dx = cell.getX() + 0.5 - player.getX(), dz = cell.getZ() + 0.5 - player.getZ();
+        Vec3d spot = unmoved && hider.steveparty$getStillTicks() >= STILL_TICKS && player.isOnGround() ? blockSpot(player) : null;
+        if (spot == null) return;
+        double dx = spot.x - player.getX(), dz = spot.z - player.getZ();
         if (dx == 0 && dz == 0) return;
         boolean arrives = dx * dx + dz * dz < PUSH_END * PUSH_END;
-        double x = arrives ? cell.getX() + 0.5 : player.getX() + dx * PUSH, z = arrives ? cell.getZ() + 0.5 : player.getZ() + dz * PUSH;
-        player.setPosition(x, cell.getY(), z);
+        double x = arrives ? spot.x : player.getX() + dx * PUSH, z = arrives ? spot.z : player.getZ() + dz * PUSH;
+        player.setPosition(x, spot.y, z);
         player.setVelocity(0, player.getVelocity().y, 0);
         // The push itself is not a move of his: he is still "unmoved" next tick
         hider.steveparty$setLastPos(player.getPos());
     }
 
-    /** Works out whether the player is a block of the grid, resizing him when it changes. */
+    /**
+     * Works out whether the player is a block of the grid, resizing him when it changes. He becomes one standing
+     * still on the centre of a valid spot with no one in the way; he stays one as long as he is hidden on that centre,
+     * whoever stands on him or bumps into him (the sides that only watch him get his position and ground state late
+     * or rounded: they must not let him flicker, or those standing on him fall through).
+     */
     private static void updateAligned(PlayerEntity player) {
         if (!(player instanceof Hider hider)) return;
-        Vec3d last = hider.steveparty$getLastPos();
-        BlockPos cell = BoxCostumeItem.isHiddenInBox(player) && last != null && last.squaredDistanceTo(player.getPos()) < UNMOVED_SQUARED
-                ? validCell(player) : null;
-        boolean aligned = cell != null && Math.abs(cell.getX() + 0.5 - player.getX()) < CENTRED
-                && Math.abs(cell.getZ() + 0.5 - player.getZ()) < CENTRED;
+        Vec3d spot = BoxCostumeItem.isHiddenInBox(player) ? blockSpot(player) : null;
+        boolean centred = spot != null && Math.abs(spot.x - player.getX()) < CENTRED && Math.abs(spot.z - player.getZ()) < CENTRED;
+        boolean aligned;
+        if (hider.steveparty$isBlockAligned()) {
+            aligned = centred;
+        } else {
+            Vec3d last = hider.steveparty$getLastPos();
+            aligned = centred && last != null && last.squaredDistanceTo(player.getPos()) < UNMOVED_SQUARED && nobodyInside(player, spot);
+        }
         if (aligned == hider.steveparty$isBlockAligned()) return;
         hider.steveparty$setBlockAligned(aligned);
         player.calculateDimensions();
     }
 
+    /** No mob, player or solid entity (boat, shulker, another hider-block) in the cube he would become. */
+    private static boolean nobodyInside(PlayerEntity player, Vec3d spot) {
+        return player.getWorld().getOtherEntities(player, cube(spot),
+                entity -> !entity.isSpectator() && (entity instanceof LivingEntity || entity.isCollidable())).isEmpty();
+    }
+
+    private static Box cube(Vec3d spot) {
+        return new Box(spot.x - 0.5, spot.y, spot.z - 0.5, spot.x + 0.5, spot.y + 1.0, spot.z + 0.5).contract(1.0E-3);
+    }
+
     /**
-     * @return the block cell a hidden player can be a block of: the one he stands in, feet on the full top face of
-     * the block below, free of blocks and fluids; null if he is not hidden, not on the ground or the cell is no good
+     * @return where a hidden player can be a block, at his place: the centre of the block column he stands in, at the
+     * height of his floor; null if he is not hidden, not standing on a floor (see {@link #floorTop}) or the cube
+     * there would be in blocks or fluids
      */
     @Nullable
-    public static BlockPos validCell(PlayerEntity player) {
-        if (!BoxCostumeItem.isHiddenInBox(player) || !player.isOnGround()) return null;
-        double y = player.getY();
-        int floorY = MathHelper.floor(y + 0.5);
-        if (Math.abs(y - floorY) > CENTRED) return null;
+    public static Vec3d blockSpot(PlayerEntity player) {
+        if (!BoxCostumeItem.isHiddenInBox(player)) return null;
         World world = player.getWorld();
-        BlockPos cell = BlockPos.ofFloored(player.getX(), floorY, player.getZ());
-        BlockPos below = cell.down();
-        if (!world.getBlockState(below).isSideSolidFullSquare(world, below, Direction.UP)) return null;
-        if (!world.getFluidState(cell).isEmpty()) return null;
-        if (!world.isSpaceEmpty(player, new Box(cell).contract(1.0E-3))) return null;
-        return cell;
+        double y = player.getY();
+        BlockPos support = BlockPos.ofFloored(player.getX(), y - CENTRED, player.getZ());
+        double top = floorTop(world, support);
+        if (Double.isNaN(top) || Math.abs(y - top) > CENTRED) return null;
+        Vec3d spot = new Vec3d(support.getX() + 0.5, top, support.getZ() + 0.5);
+        Box cube = cube(spot);
+        if (world.getBlockCollisions(player, cube).iterator().hasNext()) return null;
+        for (BlockPos pos : BlockPos.iterate(BlockPos.ofFloored(cube.minX, cube.minY, cube.minZ), BlockPos.ofFloored(cube.maxX, cube.maxY, cube.maxZ))) {
+            if (!world.getFluidState(pos).isEmpty()) return null;
+        }
+        return spot;
+    }
+
+    /**
+     * @return the height of the top of the block at {@code pos} if its top is a whole flat square (any full block,
+     * but also a dirt path, farmland, a slab, a carpet, soul sand...); NaN for no floor (air, stairs, a fence...)
+     */
+    public static double floorTop(World world, BlockPos pos) {
+        VoxelShape shape = world.getBlockState(pos).getCollisionShape(world, pos);
+        if (shape.isEmpty()) return Double.NaN;
+        double max = shape.getMax(Direction.Axis.Y);
+        VoxelShape topLayer = VoxelShapes.cuboid(0, Math.max(0, max - 1.0E-3), 0, 1, max, 1);
+        if (max > 1.0 || VoxelShapes.matchesAnywhere(topLayer, shape, BooleanBiFunction.ONLY_FIRST)) return Double.NaN;
+        return pos.getY() + max;
     }
 }

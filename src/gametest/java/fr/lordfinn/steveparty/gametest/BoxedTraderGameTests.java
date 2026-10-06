@@ -432,9 +432,9 @@ public class BoxedTraderGameTests implements FabricGameTest {
         // In water
         context.setBlockState(new BlockPos(5, 1, 5), Blocks.WATER);
         ServerPlayerEntity wet = hiddenPlayerAt(context, new Vec3d(5.3, 1, 5.3));
-        // On a slab: not on the full top face of a block
-        context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE_SLAB);
-        ServerPlayerEntity onSlab = hiddenPlayerAt(context, new Vec3d(1.3, 1.5, 1.3));
+        // On the upper step of stairs: its top is not a whole square
+        context.setBlockState(new BlockPos(1, 1, 1), Blocks.STONE_STAIRS);
+        ServerPlayerEntity onSlab = hiddenPlayerAt(context, new Vec3d(1.3, 2, 1.3));
         // A fence post in the cell
         context.setBlockState(new BlockPos(1, 1, 5), Blocks.OAK_FENCE);
         ServerPlayerEntity fenced = hiddenPlayerAt(context, new Vec3d(1.9, 1, 5.9));
@@ -599,5 +599,93 @@ public class BoxedTraderGameTests implements FabricGameTest {
             context.assertTrue(Math.abs(MathHelper.wrapDegrees(trader.getBodyYaw()) % 90) < 1e-3, "body yaw on a quarter turn: " + trader.getBodyYaw());
             context.complete();
         });
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void aHiddenPlayerOnANonFullFloorBecomesABlockToo(TestContext context) {
+        floor(context);
+        context.setBlockState(new BlockPos(1, 0, 1), Blocks.DIRT_PATH);
+        context.setBlockState(new BlockPos(5, 1, 1), Blocks.STONE_SLAB);
+        context.setBlockState(new BlockPos(1, 1, 5), Blocks.WHITE_CARPET);
+        context.setBlockState(new BlockPos(5, 0, 5), Blocks.FARMLAND);
+        List<Vec3d> starts = List.of(new Vec3d(1.3, 15 / 16.0, 1.2), new Vec3d(5.3, 1.5, 1.2), new Vec3d(1.3, 1 + 1 / 16.0, 5.2),
+                new Vec3d(5.3, 15 / 16.0, 5.2));
+        List<ServerPlayerEntity> players = starts.stream().map(start -> hiddenPlayerAt(context, start)).toList();
+        try {
+            for (int i = 0; i < players.size(); i++) {
+                ServerPlayerEntity player = players.get(i);
+                Vec3d start = context.getAbsolute(starts.get(i));
+                costumeTicks(player, BoxCostumeBlock.STILL_TICKS + 40);
+                Vec3d centre = new Vec3d(Math.floor(start.x) + 0.5, start.y, Math.floor(start.z) + 0.5);
+                context.assertTrue(player.getPos().squaredDistanceTo(centre) < 1e-12, "pushed to the centre, on his floor: " + player.getPos() + " / " + centre);
+                context.assertTrue(BoxCostumeBlock.isBlockAligned(player), "a block on " + context.getWorld().getBlockState(BlockPos.ofFloored(start.subtract(0, 0.01, 0))));
+                context.assertTrue(Math.abs(player.getBoundingBox().minY - start.y) < 1e-9, "the cube stands on that floor: " + player.getBoundingBox());
+            }
+        } finally {
+            players.forEach(player -> disconnect(context, player));
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void aHiddenBlockStopsOthersAndStaysOneUnderThem(TestContext context) {
+        floor(context);
+        ServerPlayerEntity hider = hiddenPlayerAt(context, new Vec3d(3.5, 1, 3.5));
+        costumeTicks(hider, 2);
+        ServerPlayerEntity walker = context.createMockCreativeServerPlayerInWorld();
+        walker.changeGameMode(GameMode.SURVIVAL);
+        try {
+            context.assertTrue(BoxCostumeBlock.isBlockAligned(hider), "still on the centre: a block");
+            // Walking into him: stopped against the cube
+            walker.setPosition(context.getAbsolute(new Vec3d(2.0, 1, 3.5)));
+            walker.move(net.minecraft.entity.MovementType.SELF, new Vec3d(1.0, 0, 0));
+            double face = context.getAbsolute(new Vec3d(3.0, 1, 3.5)).x;
+            context.assertTrue(Math.abs(walker.getBoundingBox().maxX - face) < 1e-6, "stopped by the cube: " + walker.getBoundingBox().maxX + " / " + face);
+            // Standing on him, then something lands in his cell: he stays a block, on every side
+            walker.setPosition(context.getAbsolute(new Vec3d(3.5, 2.2, 3.5)));
+            walker.move(net.minecraft.entity.MovementType.SELF, new Vec3d(0, -1.0, 0));
+            context.assertTrue(Math.abs(walker.getY() - context.getAbsolute(new Vec3d(3.5, 2, 3.5)).y) < 1e-6, "standing on him: y " + walker.getY());
+            ArmorStandEntity stand = context.spawnEntity(net.minecraft.entity.EntityType.ARMOR_STAND, new Vec3d(3.9, 1, 3.9));
+            hider.setOnGround(false);
+            for (int i = 0; i < 20; i++) BoxCostumeBlock.tick(hider, i % 2 == 0);
+            context.assertTrue(BoxCostumeBlock.isBlockAligned(hider) && hider.isCollidable(), "still a block under him and with someone in his cell");
+            walker.move(net.minecraft.entity.MovementType.SELF, new Vec3d(0, -0.5, 0));
+            context.assertTrue(Math.abs(walker.getY() - context.getAbsolute(new Vec3d(3.5, 2, 3.5)).y) < 1e-6, "does not fall through: y " + walker.getY());
+            stand.discard();
+        } finally {
+            disconnect(context, walker);
+            disconnect(context, hider);
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anObserverSeesTheHiddenBlockWithoutHisGroundFlag(TestContext context) {
+        floor(context);
+        // As another client sees him: right on the centre, the ground flag not (yet) synced, never moved by this side
+        ServerPlayerEntity hider = hiddenPlayerAt(context, new Vec3d(3.5, 1, 3.5));
+        hider.setOnGround(false);
+        try {
+            for (int i = 0; i < 3; i++) BoxCostumeBlock.tick(hider, false);
+            context.assertTrue(BoxCostumeBlock.isBlockAligned(hider), "a block for those who watch him");
+        } finally {
+            disconnect(context, hider);
+        }
+        context.complete();
+    }
+
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aBoxKeepsTheStateOfTheBlockItemAndRefusesTinyBlocks(TestContext context) {
+        var tiles = (fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock) fr.lordfinn.steveparty.blocks.ModBlocks.POLISHED_CONCRETE_TILES;
+        var red = fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor.RED;
+        var blue = fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesColor.BLUE;
+        BlockState box = BoxedTraderEntity.boxBlockOf(tiles.stack(red, blue, 1));
+        context.assertTrue(box != null && box.equals(tiles.with(red, blue)), "the tiles' colours are kept: " + box);
+        context.assertTrue(BoxedTraderEntity.boxBlockOf(new ItemStack(Items.DRAGON_EGG)) != null, "a dragon egg can be a box");
+        context.assertTrue(BoxedTraderEntity.boxBlockOf(new ItemStack(Items.PISTON)) != null, "a piston can be a box");
+        context.assertTrue(BoxedTraderEntity.boxBlockOf(new ItemStack(Items.TORCH)) == null, "a torch can't");
+        context.assertTrue(BoxedTraderEntity.boxBlockOf(new ItemStack(Items.OAK_FENCE)) == null, "a fence can't");
+        context.assertTrue(BoxedTraderEntity.boxBlockOf(new ItemStack(Items.CHEST)) == null, "a chest (not drawn as a model) can't");
+        context.complete();
     }
 }

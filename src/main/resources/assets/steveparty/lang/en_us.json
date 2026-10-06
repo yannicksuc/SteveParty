@@ -1087,6 +1087,7 @@
   "message.steveparty.shop.access_denied": "Only a Shopkeeper Key linked to this shop's trader can open it.",
   "message.steveparty.shop.no_owner_access_denied": "This shop isn't linked to a trader yet: hold a Shopkeeper Key to set it up.",
   "message.steveparty.trader.busy": "The trader is busy.",
+  "message.steveparty.trader.not_a_box": "He can't make a box out of %s.",
   "item.steveparty.forged_dice": "Forged Die",
   "tooltip.steveparty.dice_faces": "Faces: %s",
   "gui.steveparty.dice_forge.start_hint": "Start forging: loops until stopped or a slot runs out",
