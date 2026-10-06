@@ -27,11 +27,12 @@ star space has no star: both are then refused, not consumed.
 ## How many a player carries (`PowerUpLimit`)
 
 The Party Controller's « Max power-ups » setting (`getMaxPowerUps`, NBT `MaxPowerUps`, Settings page, 3 by default,
-0 = no limit) caps what a player of a **running** party carries: every `PowerUpItem` and every die **without**
-Infinity (spent when rolled), counted by items; a die with Infinity does not count. Enforced in
+0 = no limit) caps what a player of a **running** party carries: every `PowerUpItem` and every die **carrying**
+the Power-up module (spent when rolled), counted by items; any other die comes back to its roller and does not count. Enforced in
 `CustomizableMerchantScreenHandler` (every Boxed Trader / shop stop purchase: refused, nothing paid; a Trading Stall
 sells through a Boxed Trader), `InventoryInteractorTileBehavior.handleTransfer` (the extra stays in the chest) and
-`PowerUpPickupMixin` (items on the ground). Outside a party: no limit. A consumable die's tooltip shows `[Power-up]`.
+`PowerUpPickupMixin` (items on the ground). Outside a party: no limit. A Power-up die's tooltip shows `[Power-up] [Consumed]` and the power-up points; thrown
+during its player's turn it is the turn's power-up (`PowerUpService.onDieThrown`: refused after another one).
 
 ## Plugging in a new power-up
 

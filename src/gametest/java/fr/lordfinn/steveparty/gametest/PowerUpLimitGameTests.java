@@ -2,12 +2,16 @@ package fr.lordfinn.steveparty.gametest;
 
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
 import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.ModEntities;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.powerups.PowerUpLimit;
+import fr.lordfinn.steveparty.powerups.PowerUpService;
 import fr.lordfinn.steveparty.powerups.PowerUps;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Blocks;
@@ -25,14 +29,16 @@ import net.minecraft.test.TestContext;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.world.GameMode;
 
 import java.util.List;
 
 import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
 
 /**
- * The party's « Max power-ups » setting ({@link PowerUpLimit}): 3 by default, saved; power-ups and dice without
- * Infinity count, a die with Infinity does not; a purchase past it is refused with nothing paid; 0 is no limit.
+ * The party's « Max power-ups » setting ({@link PowerUpLimit}): 3 by default, saved; power-ups and dice carrying the
+ * Power-up module count, any other die does not; a purchase past it is refused with nothing paid; 0 is no limit. A
+ * Power-up die thrown is the power-up of the turn.
  */
 public class PowerUpLimitGameTests implements FabricGameTest {
     private static final String BATCH = "powerup_limit";
@@ -64,13 +70,13 @@ public class PowerUpLimitGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
-    public void aDieWithoutInfinityCounts(TestContext context) {
+    public void aPowerUpDieCounts(TestContext context) {
         ServerPlayerEntity player = player(context);
         partyOf(context, player);
-        ItemStack plain = die("dice_face_1", "dice_face_2");
-        context.assertTrue(PowerUpLimit.counts(plain), "a die without Infinity counts");
+        ItemStack powerUp = with(die("dice_face_1", "dice_face_2"), DiceModules.POWER_UP, 1);
+        context.assertTrue(PowerUpLimit.counts(powerUp), "a Power-up die counts");
         context.assertTrue(PowerUpLimit.counts(new ItemStack(PowerUps.MUSHROOM.item())), "a power-up counts");
-        fill(player, plain.copy(), plain.copy(), new ItemStack(PowerUps.MUSHROOM.item()));
+        fill(player, powerUp.copy(), powerUp.copy(), new ItemStack(PowerUps.MUSHROOM.item()));
         context.assertEquals(PowerUpLimit.carried(player), 3, "piles counted by their items");
         context.assertEquals(PowerUpLimit.room(player), 0, "the limit reached");
         context.assertEquals(PowerUpLimit.allowed(player, new ItemStack(PowerUps.TRAP.item())), 0, "nothing more");
@@ -78,15 +84,72 @@ public class PowerUpLimitGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
-    public void anInfinityDieDoesNotCount(TestContext context) {
+    public void aPlainDieDoesNotCount(TestContext context) {
         ServerPlayerEntity player = player(context);
         partyOf(context, player);
-        ItemStack infinity = with(die("dice_face_1", "dice_face_2"), DiceModules.INFINITY, 1);
-        context.assertTrue(!PowerUpLimit.counts(infinity), "a die with Infinity does not count");
-        fill(player, infinity.copy(), infinity.copy(), infinity.copy(), infinity.copy(), new ItemStack(Items.DIAMOND, 10));
+        ItemStack plain = with(die("dice_face_1", "dice_face_2"), DiceModules.LUCKY, 1);
+        context.assertTrue(!PowerUpLimit.counts(plain), "a die without the Power-up module does not count");
+        context.assertTrue(!PowerUpLimit.counts(new ItemStack(ModItems.DOUBLE_DICE)), "nor a Double Dice");
+        fill(player, plain.copy(), plain.copy(), plain.copy(), plain.copy(), new ItemStack(ModItems.TRIPLE_DICE),
+                new ItemStack(Items.DIAMOND, 10));
         context.assertEquals(PowerUpLimit.carried(player), 0, "nothing carried");
         context.assertEquals(PowerUpLimit.room(player), 3, "room for 3");
         context.complete();
+    }
+
+    /** {@code player} right-clicks the air with {@code stack} in their main hand. */
+    private static boolean use(TestContext context, ServerPlayerEntity player, ItemStack stack) {
+        player.setStackInHand(Hand.MAIN_HAND, stack);
+        return stack.use(context.getWorld(), player, Hand.MAIN_HAND).getResult().isAccepted();
+    }
+
+    /** Removes the dice thrown by the test (they would roll on, then come back). */
+    private static void discardDice(TestContext context, ServerPlayerEntity player) {
+        context.getWorld().getEntitiesByType(ModEntities.DICE_ENTITY, player.getBoundingBox().expand(16), dice -> true)
+                .forEach(DiceEntity::discard);
+    }
+
+    /**
+     * A Power-up die thrown during the turn is its power-up: consumed, no other power-up after it. A plain die thrown
+     * is not one: a power-up may still come.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
+    public void aPowerUpDieIsThePowerUpOfTheTurn(TestContext context) {
+        ServerPlayerEntity player = player(context);
+        player.changeGameMode(GameMode.SURVIVAL);
+        PartyControllerEntity controller = partyOf(context, player);
+        TokenTurnPartyStep turn = (TokenTurnPartyStep) controller.getPartyData().getCurrentStep();
+        context.waitAndRun(2, () -> {
+            ItemStack plain = die("dice_face_1", "dice_face_2");
+            context.assertTrue(use(context, player, plain.copy()), "a plain die is thrown");
+            discardDice(context, player);
+            context.assertTrue(!turn.getPowerUps().hasUsed(), "a plain die is not the power-up of the turn");
+
+            context.assertTrue(use(context, player, with(plain.copy(), DiceModules.POWER_UP, 1)), "a Power-up die is thrown");
+            discardDice(context, player);
+            context.assertTrue(player.getMainHandStack().isEmpty(), "consumed");
+            context.assertTrue(turn.getPowerUps().hasUsed(), "the power-up of the turn");
+            context.assertTrue(!use(context, player, new ItemStack(PowerUps.MUSHROOM.item())), "no other power-up after it");
+            context.assertEquals(player.getMainHandStack().getCount(), 1, "the Mushroom is kept");
+            context.complete();
+        });
+    }
+
+    /** After another power-up this turn, a Power-up die is refused (kept); a plain die may still be thrown. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
+    public void aPowerUpDieIsRefusedAfterAnotherPowerUp(TestContext context) {
+        ServerPlayerEntity player = player(context);
+        player.changeGameMode(GameMode.SURVIVAL);
+        partyOf(context, player);
+        context.waitAndRun(2, () -> {
+            context.assertTrue(use(context, player, new ItemStack(PowerUps.MUSHROOM.item())), "a Mushroom is used");
+            ItemStack powerUp = with(die("dice_face_1", "dice_face_2"), DiceModules.POWER_UP, 1);
+            context.assertTrue(!use(context, player, powerUp.copy()), "the Power-up die is refused");
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(player.getMainHandStack(), powerUp), "and kept");
+            context.assertTrue(PowerUpService.rollRefusal(player, die("dice_face_1")) == null, "a plain die may be thrown");
+            discardDice(context, player);
+            context.complete();
+        });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)

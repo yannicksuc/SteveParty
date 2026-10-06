@@ -70,11 +70,9 @@ public class PowerUpItem extends Item {
      */
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(tag("tag.power_up", Formatting.LIGHT_PURPLE).append(" ").append(tag("tag.consumed", Formatting.RED)));
+        tooltip.add(tags());
         for (Text line : powerUp.effectLines()) tooltip.add(point(line));
-        tooltip.add(point(Text.translatable(KEY + "when",
-                Text.translatable(KEY + "when.turn").formatted(Formatting.AQUA),
-                Text.translatable(KEY + "when.before_roll").formatted(Formatting.AQUA)).formatted(Formatting.GRAY)));
+        tooltip.add(point(when()));
         switch (powerUp.target()) {
             case PLAYER -> tooltip.add(point(Text.translatable(KEY + "target.player",
                     Text.translatable(KEY + "target.player.word").formatted(Formatting.AQUA)).formatted(Formatting.GRAY)));
@@ -83,10 +81,32 @@ public class PowerUpItem extends Item {
             default -> {
             }
         }
-        tooltip.add(point(Text.translatable(KEY + "one_per_turn").formatted(Formatting.GRAY)));
+        tooltip.add(point(onePerTurn()));
         tooltip.add(Text.translatable(KEY + "price",
                 Text.translatable(KEY + "coins", powerUp.defaultPrice()).formatted(Formatting.GOLD)).formatted(Formatting.DARK_GRAY));
         super.appendTooltip(stack, context, tooltip, type);
+    }
+
+    /** The tags of a power-up's tooltip: [Power-up] [Consumed] (a die carrying the Power-up module shows them too). */
+    public static MutableText tags() {
+        return tag("tag.power_up", Formatting.LIGHT_PURPLE).append(" ").append(tag("tag.consumed", Formatting.RED));
+    }
+
+    /** "Right-click during your turn, before your roll". */
+    public static Text when() {
+        return Text.translatable(KEY + "when",
+                Text.translatable(KEY + "when.turn").formatted(Formatting.AQUA),
+                Text.translatable(KEY + "when.before_roll").formatted(Formatting.AQUA)).formatted(Formatting.GRAY);
+    }
+
+    /** "One power-up per turn". */
+    public static Text onePerTurn() {
+        return Text.translatable(KEY + "one_per_turn").formatted(Formatting.GRAY);
+    }
+
+    /** A point of the tooltip, its bullet in {@code colour}. */
+    public static MutableText point(Text line, Formatting colour) {
+        return Text.literal("• ").formatted(colour).append(line);
     }
 
     private static MutableText tag(String key, Formatting colour) {
@@ -94,6 +114,6 @@ public class PowerUpItem extends Item {
     }
 
     private MutableText point(Text line) {
-        return Text.literal("• ").formatted(powerUp.color()).append(line);
+        return point(line, powerUp.color());
     }
 }

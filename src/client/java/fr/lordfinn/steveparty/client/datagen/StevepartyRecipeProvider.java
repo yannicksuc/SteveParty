@@ -174,7 +174,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .offerTo(exporter);
         offerModule(DiceModules.SLOW, ModItems.LIGHT_BLUE_STAR_FRAGMENT, Items.CLOCK);
         offerModule(DiceModules.CHOICE, ModItems.BLUE_STAR_FRAGMENT, Items.COMPASS);
-        offerModule(DiceModules.INFINITY, ModItems.PURPLE_STAR_FRAGMENT, Items.ECHO_SHARD);
+        offerModule(DiceModules.POWER_UP, ModItems.PURPLE_STAR_FRAGMENT, Items.ECHO_SHARD);
         offerModule(DiceModules.LUCKY, ModItems.GREEN_STAR_FRAGMENT, Items.RABBIT_FOOT);
         offerModule(DiceModules.REROLL, ModItems.ORANGE_STAR_FRAGMENT, Items.WIND_CHARGE);
         offerModule(DiceModules.REVERSED, ModItems.RED_STAR_FRAGMENT, Items.FERMENTED_SPIDER_EYE);

@@ -29,7 +29,7 @@ import java.util.Map;
  *     <li><b>Lucky ×N</b>: N + 1 rolls, the roller keeps the result they prefer;</li>
  *     <li><b>Reroll ×N</b>: once the result is known (after the Lucky pick), keep it or roll everything again, up to
  *     N times; the last roll is final;</li>
- *     <li><b>Reversed</b> applies to the final result; <b>Infinity</b>, <b>Skeleton Key</b> and <b>Homing</b> are
+ *     <li><b>Reversed</b> applies to the final result; <b>Power-up</b>, <b>Skeleton Key</b> and <b>Homing</b> are
  *     independent of the others.</li>
  * </ul>
  */
@@ -50,11 +50,19 @@ public final class DiceModules {
             return true;
         }
     });
-    /** The die goes back to its roller after the roll. */
-    public static final DiceModule INFINITY = register(new DiceModule("infinity", 1, false) {
+    /**
+     * The die is a power-up: spent once rolled (any other die goes back to its roller); in a party it is rolled in
+     * place of the player's die, counts in the « Max power-ups » and is the power-up of the turn.
+     */
+    public static final DiceModule POWER_UP = register(new DiceModule("power_up", 1, false) {
         @Override
-        public boolean returnsToRoller() {
+        public boolean makesPowerUp() {
             return true;
+        }
+
+        @Override
+        public Text itemDescription() {
+            return Text.translatable("dice_module.steveparty.power_up.item_desc");
         }
     });
     /** One more roll per module: the roller keeps the result they prefer. */
@@ -148,12 +156,17 @@ public final class DiceModules {
         return count(die, module) > 0;
     }
 
-    /** True if the die goes back to its roller once rolled (a module says so: Infinity). */
-    public static boolean returnsToRoller(@Nullable ItemStack die) {
+    /** True if the die is a power-up, spent once rolled (a module says so: Power-up). */
+    public static boolean isPowerUp(@Nullable ItemStack die) {
         for (DiceModule module : of(die).keySet()) {
-            if (module.returnsToRoller()) return true;
+            if (module.makesPowerUp()) return true;
         }
         return false;
+    }
+
+    /** True if the die goes back to its roller once rolled: any die but a power-up one. */
+    public static boolean returnsToRoller(@Nullable ItemStack die) {
+        return die != null && !die.isEmpty() && !isPowerUp(die);
     }
 
     /** Puts these modules on a die, replacing what it carried (none: removes the component). Counts are capped. */

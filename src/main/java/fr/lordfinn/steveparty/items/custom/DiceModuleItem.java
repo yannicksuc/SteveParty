@@ -27,7 +27,7 @@ public class DiceModuleItem extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(module.description(1).copy().formatted(module.negative() ? Formatting.RED : Formatting.GRAY));
+        tooltip.add(module.itemDescription().copy().formatted(module.negative() ? Formatting.RED : Formatting.GRAY));
         if (module.stacks()) {
             tooltip.add(Text.translatable("tooltip.steveparty.dice_module.stacks", module.maxCount()).formatted(Formatting.DARK_GRAY));
         }

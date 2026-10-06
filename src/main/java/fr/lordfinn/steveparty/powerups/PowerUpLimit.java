@@ -21,8 +21,8 @@ import java.util.UUID;
  * « Max power-ups » setting ({@link PartyControllerEntity#getMaxPowerUps}, 3 by default, 0 for no limit).
  * <p>
  * What counts, by the number of items of each stack: every power-up item ({@link PowerUpItem}), and every die
- * without the Infinity module (plain, double, triple or forged): it replaces the roll and is spent. A die with
- * Infinity comes back to its roller, its permanent die: it does not count.
+ * carrying the Power-up module (plain, double, triple or forged): it replaces the roll and is spent. Any other die
+ * comes back to its roller, their own die: it does not count.
  * <p>
  * Enforced on what a party gives during it: a purchase (Trading Stall through a Boxed Trader, a Shop space) is
  * refused with nothing paid, an Inventory space leaves the extra in its chest, a power-up on the ground is not picked
@@ -37,11 +37,11 @@ public final class PowerUpLimit {
     private PowerUpLimit() {
     }
 
-    /** True if {@code stack} counts as a power-up for the limit: a power-up item, or a die without Infinity. */
+    /** True if {@code stack} counts as a power-up for the limit: a power-up item, or a die carrying Power-up. */
     public static boolean counts(ItemStack stack) {
         if (stack.isEmpty()) return false;
         if (stack.getItem() instanceof PowerUpItem) return true;
-        return stack.getItem() instanceof DefaultDiceItem && !DiceModules.has(stack, DiceModules.INFINITY);
+        return stack.getItem() instanceof DefaultDiceItem && DiceModules.isPowerUp(stack);
     }
 
     /** The power-ups {@code player} carries (inventory, armour, off hand and the stack held by the cursor), by items. */

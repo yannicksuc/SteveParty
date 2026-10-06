@@ -22,7 +22,7 @@
             "items": [
               "steveparty:dice_module_slow",
               "steveparty:dice_module_choice",
-              "steveparty:dice_module_infinity",
+              "steveparty:dice_module_power_up",
               "steveparty:dice_module_lucky",
               "steveparty:dice_module_reroll",
               "steveparty:dice_module_reversed",

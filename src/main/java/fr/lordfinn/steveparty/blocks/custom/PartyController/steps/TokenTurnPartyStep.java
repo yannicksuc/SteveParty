@@ -236,8 +236,8 @@ public class TokenTurnPartyStep extends PartyStep {
     }
 
     /**
-     * The item of a rolled die (a group of linked dice: the one holding it), empty if nothing was spent: a die carrying
-     * the Infinity module goes back to its owner by itself.
+     * The item of a rolled die (a group of linked dice: the one holding it), empty if nothing was spent: a die without
+     * the Power-up module goes back to its owner by itself.
      */
     private static ItemStack spentDie(DiceEntity dice) {
         List<DiceEntity> group = new java.util.ArrayList<>(List.of(dice));

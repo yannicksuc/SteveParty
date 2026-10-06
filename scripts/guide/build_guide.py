@@ -510,10 +510,10 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
           "c'est le tour bouge."),
         T("- **Default Die**: 1 to 10.\n- **Double Dice**: two linked dice, 2 to 20.\n"
           "- **Triple Dice**: three, 3 to 30.\n- **Forged Die**: its own faces, from the Dice Forge.\n\n"
-          "A thrown die vanishes 2 s after its result.",
+          "A thrown die vanishes 2 s after its result and comes back to you (a Power-up die is spent).",
           "- **Dé par défaut** : 1 à 10.\n- **Dé double** : deux dés liés, 2 à 20.\n"
           "- **Dé triple** : trois, 3 à 30.\n- **Dé forgé** : ses propres faces, sorti de la forge à dés.\n\n"
-          "Un dé lancé disparaît 2 s après son résultat.",
+          "Un dé lancé disparaît 2 s après son résultat et te revient (un dé power-up est dépensé).",
           "The Dice", "Les dés"),
         C("steveparty:double_dice", None,
           "Dice come out of the **Dice Forge**. Combine them for bigger ones; they split back.",
@@ -547,13 +547,13 @@ category("pawns_dice", "steveparty:tokenizer_wand", ("Pawns & Dice", "Pions et d
         T("A module changes the whole die (7 fragments of its colour + ingredient):\n"
           "- **Slow** (light blue, clock): stop it on the shown face;\n"
           "- **Choice** (blue, compass): pick the face;\n"
-          "- **Infinity** (purple, echo shard): it comes back;\n"
+          "- **Power-up** (purple, echo shard): a power-up die, used once;\n"
           "- **Lucky** (green, rabbit's foot, up to 5): extra rolls, keep the best;\n"
           "- **Reroll** (orange, wind charge, up to 5): keep or roll again.",
           "Un module change tout le dé (7 fragments de sa couleur + ingrédient) :\n"
           "- **Lent** (bleu clair, horloge) : l'arrêter sur la face affichée ;\n"
           "- **Au choix** (bleu, boussole) : choisir la face ;\n"
-          "- **Infini** (violet, éclat d'écho) : il revient ;\n"
+          "- **Power-up** (violet, éclat d'écho) : dé bonus à usage unique ;\n"
           "- **Chanceux** (vert, patte de lapin, jusqu'à 5) : lancers en plus, garder le meilleur ;\n"
           "- **Relance** (orange, charge de vent, jusqu'à 5) : garder ou relancer."),
         T("- **Reversed** (red, fermented spider eye): the pawn goes backwards;\n"
@@ -627,11 +627,11 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
     ], parents=["controller"], gate="party_time"),
     E("powerups", "steveparty:powerup_mushroom", ("Power-ups", "Bonus"), ("A boost for your turn", "Un coup de pouce pour ton tour"), [
         T("A **power-up** is used at the **start of your turn**, **before your roll**, and adds to it (a die "
-          "replaces the roll). Right-click it during your own turn: it is **consumed** only if it worked.\n\n"
+          "with the Power-up module replaces the roll). Right-click it during your own turn: it is **consumed** only if it worked.\n\n"
           "- **One** power-up per turn.\n"
           "- Too late once your roll counts (a blank roll can still be rolled again).",
-          "Un **bonus** s'utilise au **début de ton tour**, **avant ton lancer**, et s'y ajoute (un dé, lui, "
-          "remplace le lancer). Clic droit pendant ton propre tour : il n'est **consommé** que s'il a fait effet.\n\n"
+          "Un **bonus** s'utilise au **début de ton tour**, **avant ton lancer**, et s'y ajoute (un dé avec le "
+          "module power-up, lui, remplace le lancer). Clic droit pendant ton propre tour : il n'est **consommé** que s'il a fait effet.\n\n"
           "- **Un seul** bonus par tour.\n"
           "- Trop tard une fois ton lancer compté (un lancer blanc peut encore être relancé)."),
         T("- **Mushroom**: **+3** to your next roll this turn, with any die.\n"
@@ -672,13 +672,13 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
           "Cloche **12**, Sifflet **15**, Tuyau **25**, Cloche dorée **40**.",
           "Getting Them", "Les obtenir"),
         T("During a party, a player carries at most **3** power-ups: **Max power-ups** on the Party Controller's "
-          "Settings page (∞: no limit). **Dice without Infinity** count too, being spent; a die with Infinity is "
-          "your own and does not.\n\n"
+          "Settings page (∞: no limit). **Dice with the Power-up module** count too, being spent; any other die "
+          "is your own and does not.\n\n"
           "At the limit, shops refuse to sell, Inventory spaces keep the extra in their chest, and power-ups on "
           "the ground stay there.",
           "Pendant une partie, un joueur porte au plus **3** bonus : **Bonus maximum** dans les réglages du Party "
-          "Controller (∞ : illimité). Les **dés sans Infini** comptent aussi, car ils sont dépensés ; un dé Infini "
-          "est le tien et ne compte pas.\n\n"
+          "Controller (∞ : illimité). Les **dés avec le module power-up** comptent aussi, car ils sont dépensés ; "
+          "tout autre dé est le tien et ne compte pas.\n\n"
           "À la limite, les boutiques refusent de vendre, les cases Inventaire gardent le surplus dans leur coffre, "
           "et les bonus au sol y restent.",
           "The Limit", "La limite"),

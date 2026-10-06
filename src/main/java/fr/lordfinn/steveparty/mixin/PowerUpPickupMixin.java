@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * A player of a running party does not pick up power-ups (or dice without Infinity) past what the party lets them
+ * A player of a running party does not pick up power-ups (dice carrying the Power-up module included) past what the party lets them
  * carry ({@link PowerUpLimit}): at the limit the item stays on the ground; below it, only what fits is picked up, the
  * rest stays there as its own item.
  */

@@ -115,7 +115,7 @@ public class DiceRecipeGameTests implements FabricGameTest {
         Map<DiceModule, Item[]> recipes = Map.of(
                 DiceModules.SLOW, new Item[]{ModItems.LIGHT_BLUE_STAR_FRAGMENT, Items.CLOCK},
                 DiceModules.CHOICE, new Item[]{ModItems.BLUE_STAR_FRAGMENT, Items.COMPASS},
-                DiceModules.INFINITY, new Item[]{ModItems.PURPLE_STAR_FRAGMENT, Items.ECHO_SHARD},
+                DiceModules.POWER_UP, new Item[]{ModItems.PURPLE_STAR_FRAGMENT, Items.ECHO_SHARD},
                 DiceModules.LUCKY, new Item[]{ModItems.GREEN_STAR_FRAGMENT, Items.RABBIT_FOOT},
                 DiceModules.REROLL, new Item[]{ModItems.ORANGE_STAR_FRAGMENT, Items.WIND_CHARGE},
                 DiceModules.REVERSED, new Item[]{ModItems.RED_STAR_FRAGMENT, Items.FERMENTED_SPIDER_EYE},
@@ -140,23 +140,23 @@ public class DiceRecipeGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aModuleIsAddedToADieAtTheCraftingTable(TestContext context) {
         ItemStack forged = die("dice_face_2", "coin_dice_face_5");
-        ItemStack result = craft(context, forged, module(DiceModules.INFINITY));
+        ItemStack result = craft(context, forged, module(DiceModules.POWER_UP));
         context.assertTrue(result.isOf(ModItems.DEFAULT_DICE) && result.getCount() == 1, "a die, got " + result);
-        context.assertTrue(DiceModules.has(result, DiceModules.INFINITY), "carrying the module");
+        context.assertTrue(DiceModules.has(result, DiceModules.POWER_UP), "carrying the module");
         context.assertEquals(result.get(DiceFacesComponent.TYPE), forged.get(DiceFacesComponent.TYPE), "its faces are kept");
-        context.assertTrue(recipe(context, forged, module(DiceModules.INFINITY)).orElseThrow().value() instanceof DiceModuleRecipe, "the module recipe");
+        context.assertTrue(recipe(context, forged, module(DiceModules.POWER_UP)).orElseThrow().value() instanceof DiceModuleRecipe, "the module recipe");
 
         // The module item is not consumed: it is the remainder of its slot
-        CraftingRecipeInput input = CraftingRecipeInput.create(3, 1, List.of(forged, module(DiceModules.INFINITY), new ItemStack(DiceModules.LUCKY.item(), 3)));
-        DefaultedList<ItemStack> remainders = recipe(context, forged, module(DiceModules.INFINITY), new ItemStack(DiceModules.LUCKY.item(), 3))
+        CraftingRecipeInput input = CraftingRecipeInput.create(3, 1, List.of(forged, module(DiceModules.POWER_UP), new ItemStack(DiceModules.LUCKY.item(), 3)));
+        DefaultedList<ItemStack> remainders = recipe(context, forged, module(DiceModules.POWER_UP), new ItemStack(DiceModules.LUCKY.item(), 3))
                 .orElseThrow().value().getRemainder(input);
         context.assertTrue(remainders.get(0).isEmpty(), "the die is used up");
-        context.assertTrue(remainders.get(1).isOf(DiceModules.INFINITY.item()) && remainders.get(1).getCount() == 1, "the module comes back");
+        context.assertTrue(remainders.get(1).isOf(DiceModules.POWER_UP.item()) && remainders.get(1).getCount() == 1, "the module comes back");
         context.assertTrue(remainders.get(2).isOf(DiceModules.LUCKY.item()) && remainders.get(2).getCount() == 1, "one per slot comes back");
 
         // The modules a die already carries are kept
         ItemStack more = craft(context, result, module(DiceModules.SLOW));
-        context.assertTrue(DiceModules.has(more, DiceModules.INFINITY) && DiceModules.has(more, DiceModules.SLOW), "Infinity kept, Slow added");
+        context.assertTrue(DiceModules.has(more, DiceModules.POWER_UP) && DiceModules.has(more, DiceModules.SLOW), "Power-up kept, Slow added");
         context.complete();
     }
 
@@ -222,13 +222,13 @@ public class DiceRecipeGameTests implements FabricGameTest {
     public void multiDiceKeepTheModulesAndFacesOfTheirDice(TestContext context) {
         ItemStack plain = new ItemStack(ModItems.DEFAULT_DICE);
         ItemStack lucky2 = with(plain.copy(), DiceModules.LUCKY, 2);
-        ItemStack lucky1Infinite = with(with(plain.copy(), DiceModules.LUCKY, 1), DiceModules.INFINITY, 1);
+        ItemStack lucky1PowerUp = with(with(plain.copy(), DiceModules.LUCKY, 1), DiceModules.POWER_UP, 1);
 
         // The union of the modules: the highest count of each
-        ItemStack doubled = craft(context, lucky2, lucky1Infinite);
+        ItemStack doubled = craft(context, lucky2, lucky1PowerUp);
         context.assertTrue(doubled.isOf(ModItems.DOUBLE_DICE), "a Double Dice, got " + doubled);
-        context.assertEquals(DiceModules.of(doubled), Map.of(DiceModules.LUCKY, 2, DiceModules.INFINITY, 1), "Lucky x2 (the highest), Infinity");
-        context.assertTrue(recipe(context, lucky2, lucky1Infinite).orElseThrow().value() instanceof MultiDiceRecipe, "the multi dice recipe");
+        context.assertEquals(DiceModules.of(doubled), Map.of(DiceModules.LUCKY, 2, DiceModules.POWER_UP, 1), "Lucky x2 (the highest), Power-up");
+        context.assertTrue(recipe(context, lucky2, lucky1PowerUp).orElseThrow().value() instanceof MultiDiceRecipe, "the multi dice recipe");
         context.assertEquals(DiceModules.of(craft(context, lucky2, plain)), Map.of(DiceModules.LUCKY, 2), "with a plain die: its modules");
 
         ItemStack tripled = craft(context, lucky2, plain, with(plain.copy(), DiceModules.REVERSED, 1));
@@ -236,7 +236,7 @@ public class DiceRecipeGameTests implements FabricGameTest {
         context.assertEquals(DiceModules.of(tripled), Map.of(DiceModules.LUCKY, 2, DiceModules.REVERSED, 1), "the modules of the three dice");
         ItemStack fromDouble = craft(context, doubled, with(plain.copy(), DiceModules.SLOW, 1));
         context.assertTrue(fromDouble.isOf(ModItems.TRIPLE_DICE), "a Double Dice and a die: a Triple Dice, got " + fromDouble);
-        context.assertEquals(DiceModules.of(fromDouble), Map.of(DiceModules.LUCKY, 2, DiceModules.INFINITY, 1, DiceModules.SLOW, 1), "the modules of both");
+        context.assertEquals(DiceModules.of(fromDouble), Map.of(DiceModules.LUCKY, 2, DiceModules.POWER_UP, 1, DiceModules.SLOW, 1), "the modules of both");
 
         // Faces: the same on every die are kept; different faces don't combine
         ItemStack forged = die("dice_face_3", "coin_dice_face_2");

@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.powerups.PowerUpService;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -13,6 +14,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.Vec3d;
@@ -41,8 +43,8 @@ public class DefaultDiceItem extends Item {
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
-        // A power-up of the turn still at work (a player being picked, a warp): the roll waits
-        if (isServerWorld(world) && fr.lordfinn.steveparty.powerups.PowerUpService.refusesRoll(player))
+        // A power-up of the turn still at work (a player being picked, a warp), or a power-up die after another one
+        if (isServerWorld(world) && PowerUpService.refusesRoll(player, player.getStackInHand(hand)))
             return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             Vec3d spawnPosition = calculateSpawnPosition(player);
@@ -50,6 +52,7 @@ public class DefaultDiceItem extends Item {
             if (diceEntity != null) {
                 configureDiceEntity(diceEntity, player, hand);
                 playSounds(world, diceEntity);
+                PowerUpService.onDieThrown(player, player.getStackInHand(hand));
                 decrementDiceInHand(player, hand);
                 diceEntity.startRoll();
             }
@@ -95,13 +98,19 @@ public class DefaultDiceItem extends Item {
         world.playSound(null, diceEntity.getBlockPos(), SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.AMBIENT, SOUND_VOLUME_2, SOUND_PITCH_2);
     }
 
-    /** The faces of a forged die, then one line per module. */
+    /**
+     * A die carrying the Power-up module first shows what a power-up shows (its tags, what it does, when); then the
+     * faces of a forged die, then one line per module.
+     */
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        // Spent when rolled (no Infinity): it counts as a power-up for the party's limit
-        if (fr.lordfinn.steveparty.powerups.PowerUpLimit.counts(stack))
-            tooltip.add(Text.literal("[").append(Text.translatable("tooltip.steveparty.powerup.tag.power_up")).append("]")
-                    .formatted(net.minecraft.util.Formatting.LIGHT_PURPLE));
+        if (DiceModules.isPowerUp(stack)) {
+            tooltip.add(PowerUpItem.tags());
+            tooltip.add(PowerUpItem.point(Text.translatable("tooltip.steveparty.powerup.die.effect")
+                    .formatted(Formatting.GRAY), Formatting.LIGHT_PURPLE));
+            tooltip.add(PowerUpItem.point(PowerUpItem.when(), Formatting.LIGHT_PURPLE));
+            tooltip.add(PowerUpItem.point(PowerUpItem.onePerTurn(), Formatting.LIGHT_PURPLE));
+        }
         DiceFacesComponent faces = stack.get(DiceFacesComponent.TYPE);
         if (faces != null && !faces.faces().isEmpty()) tooltip.add(faces.describe());
         tooltip.addAll(DiceModules.tooltip(stack));

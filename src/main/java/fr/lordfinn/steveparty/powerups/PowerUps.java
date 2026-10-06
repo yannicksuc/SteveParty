@@ -41,6 +41,12 @@ public final class PowerUps {
      */
     static final PowerUp SPENT = new PowerUp("spent", 1, Formatting.GRAY) {
     };
+    /**
+     * Stands for a die carrying the Power-up module, thrown this turn: the power-up of the turn, it does nothing more
+     * (its roll is the die's). Not registered (no item; saved, it reads back as {@link #SPENT}).
+     */
+    static final PowerUp DIE = new PowerUp("die", 1, Formatting.LIGHT_PURPLE) {
+    };
 
     private PowerUps() {
     }

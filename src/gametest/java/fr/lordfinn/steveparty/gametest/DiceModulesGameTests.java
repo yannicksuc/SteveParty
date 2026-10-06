@@ -44,7 +44,7 @@ import static fr.lordfinn.steveparty.gametest.DiceTestKit.*;
 
 /**
  * The dice modules: what a die carries and shows, how each one changes the roll (Slow, Choice, Lucky, Reroll,
- * Reversed, Infinity) or the move (Skeleton Key, Homing), and how they combine.
+ * Reversed, Power-up) or the move (Skeleton Key, Homing), and how they combine.
  */
 public class DiceModulesGameTests implements FabricGameTest {
     private static final String BATCH = "dice_modules";
@@ -62,7 +62,7 @@ public class DiceModulesGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void modulesAreRegisteredWithTheirItems(TestContext context) {
-        context.assertEquals(DiceModules.all().size(), 8, "slow, choice, infinity, lucky, reroll, reversed, skeleton key, homing");
+        context.assertEquals(DiceModules.all().size(), 8, "slow, choice, power-up, lucky, reroll, reversed, skeleton key, homing");
         context.assertEquals(ModItems.DICE_MODULES.size(), DiceModules.all().size(), "one item per module");
         for (DiceModule module : DiceModules.all()) {
             Item item = module.item();
@@ -71,7 +71,7 @@ public class DiceModulesGameTests implements FabricGameTest {
             context.assertEquals(DiceModules.get(module.id()), module, "found by its id");
         }
         context.assertTrue(DiceModules.LUCKY.stacks() && DiceModules.REROLL.stacks(), "Lucky and Reroll stack");
-        for (DiceModule module : List.of(DiceModules.SLOW, DiceModules.CHOICE, DiceModules.INFINITY, DiceModules.REVERSED,
+        for (DiceModule module : List.of(DiceModules.SLOW, DiceModules.CHOICE, DiceModules.POWER_UP, DiceModules.REVERSED,
                 DiceModules.SKELETON_KEY, DiceModules.HOMING)) {
             context.assertTrue(!module.stacks(), module + " does not stack");
         }
@@ -83,14 +83,16 @@ public class DiceModulesGameTests implements FabricGameTest {
     /** Several modules on one die, with their counts; the same modules give stackable dice; the tooltip lists them. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aDieCarriesSeveralModulesWithTheirCounts(TestContext context) {
-        ItemStack die = with(with(with(die("dice_face_1", "dice_face_6"), DiceModules.LUCKY, 2), DiceModules.INFINITY, 1), DiceModules.REVERSED, 1);
+        ItemStack die = with(with(with(die("dice_face_1", "dice_face_6"), DiceModules.LUCKY, 2), DiceModules.POWER_UP, 1), DiceModules.REVERSED, 1);
         Map<DiceModule, Integer> modules = DiceModules.of(die);
         context.assertEquals(modules.size(), 3, "three modules");
         context.assertEquals(DiceModules.count(die, DiceModules.LUCKY), 2, "Lucky x2");
-        context.assertTrue(DiceModules.has(die, DiceModules.INFINITY) && !DiceModules.has(die, DiceModules.SLOW), "has / has not");
-        context.assertTrue(DiceModules.returnsToRoller(die), "Infinity: it goes back to its roller");
+        context.assertTrue(DiceModules.has(die, DiceModules.POWER_UP) && !DiceModules.has(die, DiceModules.SLOW), "has / has not");
+        context.assertTrue(DiceModules.isPowerUp(die) && !DiceModules.returnsToRoller(die), "Power-up: it is spent");
+        context.assertTrue(DiceModules.returnsToRoller(die("dice_face_1")) && !DiceModules.isPowerUp(die("dice_face_1")),
+                "any other die goes back to its roller");
 
-        ItemStack same = with(with(with(die("dice_face_1", "dice_face_6"), DiceModules.REVERSED, 1), DiceModules.INFINITY, 1), DiceModules.LUCKY, 2);
+        ItemStack same = with(with(with(die("dice_face_1", "dice_face_6"), DiceModules.REVERSED, 1), DiceModules.POWER_UP, 1), DiceModules.LUCKY, 2);
         context.assertTrue(ItemStack.areItemsAndComponentsEqual(die, same), "the same modules in another order: the same die (stackable)");
 
         // Counts are capped, a module that doesn't stack counts once
@@ -99,10 +101,17 @@ public class DiceModulesGameTests implements FabricGameTest {
         context.assertEquals(DiceModules.count(capped, DiceModules.SLOW), 1, "Slow counts once");
         context.assertTrue(DiceModules.set(capped.copy(), Map.of()).get(DiceModulesComponent.TYPE) == null, "no module: no component");
 
-        // The tooltip: the faces, then one line per module, its count if several; a negative module in red
+        // The tooltip: a Power-up die first shows what a power-up shows (its tags, three points), then the faces, then
+        // one line per module, its count if several; a negative module in red. A plain die has no tag.
         List<Text> tooltip = new ArrayList<>();
         die.getItem().appendTooltip(die, Item.TooltipContext.DEFAULT, tooltip, TooltipType.BASIC);
-        context.assertEquals(tooltip.size(), 4, "the faces line and three module lines");
+        context.assertEquals(tooltip.size(), 8, "the tags, three points, the faces line and three module lines");
+        context.assertTrue(tooltip.getFirst().equals(fr.lordfinn.steveparty.items.custom.PowerUpItem.tags()),
+                "tagged like the power-ups, got " + tooltip.getFirst().getString());
+        List<Text> plainTooltip = new ArrayList<>();
+        ItemStack plain = with(die("dice_face_1", "dice_face_6"), DiceModules.LUCKY, 2);
+        plain.getItem().appendTooltip(plain, Item.TooltipContext.DEFAULT, plainTooltip, TooltipType.BASIC);
+        context.assertEquals(plainTooltip.size(), 2, "a plain die: the faces line and its module line, no tag");
         List<Text> lines = DiceModules.tooltip(die);
         Text lucky = lines.stream().filter(line -> line.getString().contains("×2")).findFirst().orElse(null);
         context.assertTrue(lucky != null, "Lucky shows its count");
@@ -350,38 +359,32 @@ public class DiceModulesGameTests implements FabricGameTest {
         });
     }
 
-    // ---------------------------------------------------------------- Infinity
+    // ---------------------------------------------------------------- back to the roller, or spent (Power-up)
 
-    /** The die goes back to its roller after the roll; a plain die is spent. */
+    /** Outside a party, a die goes back to its roller after the roll, with its faces and modules. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
-    public void infinityDieComesBackToItsRoller(TestContext context) {
+    public void aPlainDieComesBackToItsRoller(TestContext context) {
         ServerPlayerEntity roller = player(context);
         roller.changeGameMode(GameMode.SURVIVAL);
-        ItemStack die = with(with(die("dice_face_4"), DiceModules.INFINITY, 1), DiceModules.LUCKY, 1);
+        ItemStack die = with(die("dice_face_4"), DiceModules.LUCKY, 1);
         DiceEntity dice = thrown(context, roller, die, DICE);
-        DiceEntity plain = thrown(context, roller, die("dice_face_4"), DICE.east());
-        hit(context, plain, roller);
         hit(context, dice, roller);
         DicePrompts.answer(roller, DicePrompts.pending(roller).id(), 0);
-        when(context, () -> dice.isRemoved() && plain.isRemoved(), 100, "the dice go away once seen", () -> {
+        when(context, dice::isRemoved, 100, "the die goes away once seen", () -> {
             List<ItemStack> held = roller.getInventory().main.stream().filter(stack -> stack.isOf(ModItems.DEFAULT_DICE)).toList();
-            context.assertEquals(held.size(), 1, "one die came back");
+            context.assertEquals(held.size(), 1, "the die came back");
             context.assertTrue(ItemStack.areItemsAndComponentsEqual(held.getFirst(), die) && held.getFirst().getCount() == 1,
-                    "the Infinity die, with its faces and modules");
+                    "the same die, with its faces and modules");
             context.complete();
         });
     }
 
-    /** The Infinity enchantment no longer does anything on a die: the module replaced it. */
+    /** A die carrying the Power-up module is spent once rolled, outside a party too. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = BATCH)
-    public void theInfinityEnchantmentNoLongerKeepsADie(TestContext context) {
+    public void aPowerUpDieIsSpent(TestContext context) {
         ServerPlayerEntity roller = player(context);
         roller.changeGameMode(GameMode.SURVIVAL);
-        ItemStack enchanted = die("dice_face_4");
-        enchanted.addEnchantment(context.getWorld().getRegistryManager().getWrapperOrThrow(net.minecraft.registry.RegistryKeys.ENCHANTMENT)
-                .getOrThrow(net.minecraft.enchantment.Enchantments.INFINITY), 1);
-        context.assertTrue(!DiceModules.returnsToRoller(enchanted), "an enchanted die does not come back");
-        DiceEntity dice = thrown(context, roller, enchanted, DICE);
+        DiceEntity dice = thrown(context, roller, with(die("dice_face_4"), DiceModules.POWER_UP, 1), DICE);
         hit(context, dice, roller);
         when(context, dice::isRemoved, 100, "the die goes away", () -> {
             context.assertTrue(roller.getInventory().main.stream().noneMatch(stack -> stack.isOf(ModItems.DEFAULT_DICE)), "it is spent");
@@ -389,12 +392,24 @@ public class DiceModulesGameTests implements FabricGameTest {
         });
     }
 
-    /** A rolled die hit again goes away at once (Infinity: back to its roller); it is not rolled twice. */
+    /** A creative roller kept their die when throwing it: none is given back (no copies piling up). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
+    public void aCreativeRollerGetsNoCopyBack(TestContext context) {
+        ServerPlayerEntity roller = player(context);
+        DiceEntity dice = thrown(context, roller, die("dice_face_4"), DICE);
+        hit(context, dice, roller);
+        hit(context, dice, roller);
+        context.assertTrue(dice.isRemoved(), "gone");
+        context.assertTrue(roller.getInventory().main.stream().noneMatch(stack -> stack.isOf(ModItems.DEFAULT_DICE)), "no copy given");
+        context.complete();
+    }
+
+    /** A rolled die hit again goes away at once (back to its roller); it is not rolled twice. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = BATCH)
     public void aRolledDieIsNotRolledAgain(TestContext context) {
         ServerPlayerEntity roller = player(context);
         roller.changeGameMode(GameMode.SURVIVAL);
-        ItemStack die = with(die("dice_face_4"), DiceModules.INFINITY, 1);
+        ItemStack die = die("dice_face_4");
         DiceEntity dice = thrown(context, roller, die, DICE);
         hit(context, dice, roller);
         context.assertTrue(dice.isRollFinished() && !dice.isRemoved(), "rolled, shown for a moment");
@@ -404,9 +419,9 @@ public class DiceModulesGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** A replay gives the spent die back, but not an Infinity die: it comes back by itself. */
+    /** A replay gives a spent Power-up die back, but not a plain die: it comes back by itself. */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = BATCH)
-    public void anInfinityDieIsNotGivenBackTwiceByAReplay(TestContext context) {
+    public void aPlainDieIsNotGivenBackTwiceByAReplay(TestContext context) {
         path(context, 2, 0, new ItemStack(ModItems.REPLAY_CARTRIDGE));
         ServerPlayerEntity roller = player(context);
         roller.changeGameMode(GameMode.SURVIVAL);
@@ -414,7 +429,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         PartyControllerEntity controller = party(context, roller.getUuid(), pig);
         TokenTurnPartyStep turn = (TokenTurnPartyStep) controller.getPartyData().getCurrentStep();
         DiceEntity dice = context.spawnEntity(fr.lordfinn.steveparty.entities.ModEntities.DICE_ENTITY, DICE);
-        dice.setItemReference(with(die("dice_face_4"), DiceModules.INFINITY, 1));
+        dice.setItemReference(die("dice_face_4"));
         turn.onDiceRoll(dice, roller.getUuid(), 4, controller);
         dice.discard();
         context.assertTrue(turn.grantReplay(controller) != null, "a replay is granted");

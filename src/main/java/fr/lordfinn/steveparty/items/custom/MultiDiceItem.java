@@ -28,8 +28,8 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
-        // A power-up of the turn still at work (a player being picked, a warp): the roll waits
-        if (isServerWorld(world) && fr.lordfinn.steveparty.powerups.PowerUpService.refusesRoll(player))
+        // A power-up of the turn still at work (a player being picked, a warp), or a power-up die after another one
+        if (isServerWorld(world) && fr.lordfinn.steveparty.powerups.PowerUpService.refusesRoll(player, player.getStackInHand(hand)))
             return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             List<DiceEntity> diceEntities = new ArrayList<>();
@@ -50,6 +50,7 @@ public abstract class MultiDiceItem extends DefaultDiceItem {
                     playSounds(world, dice);
                     if (i > 0) dice.follow(thrown.copy());
                 }
+                fr.lordfinn.steveparty.powerups.PowerUpService.onDieThrown(player, thrown);
                 decrementDiceInHand(player, hand);
                 diceEntities.getFirst().startRoll();
             }
