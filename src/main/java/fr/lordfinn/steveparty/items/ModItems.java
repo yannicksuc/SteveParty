@@ -41,6 +41,7 @@ public class ModItems {
     public static final Item STENCIL = register(StencilItem.class, "stencil");
     public static final Item STENCIL_GUN = registerUnstackable(StencilGunItem.class, "stencil_gun");
     public static final Item WRENCH = registerUnstackable(WrenchItem.class, "wrench");
+    public static final Item TILE_LINKER_BRUSH = registerUnstackable(fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem.class, "tile_linker_brush");
     public static final Item BOARD_SPACE_BEHAVIOR = register(CartridgeItem.class, "board_space_behavior");
     public static final Item TILE_BEHAVIOR_START = register(StartCartridgeItem.class, "tile_behavior_start");
     /** Its tile's face is anthracite until dyed. */
@@ -225,6 +226,7 @@ public class ModItems {
             itemGroup.add(CHECK_POINT);
             itemGroup.add(BOARD_SPACE_REDSTONE_ROUTER);
             itemGroup.add(WRENCH);
+            itemGroup.add(TILE_LINKER_BRUSH);
             itemGroup.add(BOARD_SPACE_BEHAVIOR);
             itemGroup.add(BOARD_SPACE_BEHAVIOR_STOP);
             itemGroup.add(TILE_BEHAVIOR_START);

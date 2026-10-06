@@ -287,7 +287,8 @@ public final class BoardView {
     }
 
     static boolean holdsWrench(ClientPlayerEntity player) {
-        return player.getMainHandStack().getItem() instanceof WrenchItem || player.getOffHandStack().getItem() instanceof WrenchItem;
+        return player.getMainHandStack().getItem() instanceof WrenchItem || player.getOffHandStack().getItem() instanceof WrenchItem
+                || player.getMainHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
     }
 
     /**

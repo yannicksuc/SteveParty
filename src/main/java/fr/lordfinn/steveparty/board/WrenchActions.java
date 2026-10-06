@@ -347,7 +347,7 @@ public final class WrenchActions {
      *
      * @return false if the origin has no cartridge and none could be supplied
      */
-    private static boolean addLink(ServerPlayerEntity player, ServerWorld world, BlockPos origin,
+    static boolean addLink(ServerPlayerEntity player, ServerWorld world, BlockPos origin,
                                    CartridgeContainerBlockEntity originContainer, int slot, BlockPos target) {
         ItemStack cartridge = BoardLinks.ensureCartridge(player, originContainer, slot);
         if (cartridge.isEmpty()) {
@@ -371,7 +371,7 @@ public final class WrenchActions {
         return true;
     }
 
-    private static void removeLink(ServerPlayerEntity player, ServerWorld world, CartridgeContainerBlockEntity container, int slot, BlockPos target) {
+    static void removeLink(ServerPlayerEntity player, ServerWorld world, CartridgeContainerBlockEntity container, int slot, BlockPos target) {
         List<BlockPos> links = new ArrayList<>(BoardLinks.links(container, slot));
         links.remove(target);
         writeLinks(player, world, container, slot, links);

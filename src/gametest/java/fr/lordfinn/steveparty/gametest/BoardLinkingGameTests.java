@@ -643,4 +643,51 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "the missing tile is unlinked by clicking under it");
         });
     }
+
+    // ---------------------------------------------------------------- the Tile Linker Brush
+
+    static void paint(ServerPlayerEntity player, ItemStack brush, TestContext context, BlockPos... stroke) {
+        for (BlockPos pos : stroke) fr.lordfinn.steveparty.board.TileLinkerBrush.paint(player, brush, context.getWorld(), pos);
+        fr.lordfinn.steveparty.board.TileLinkerBrush.endStroke(player);
+    }
+
+    /** A stroke links each painted tile to the next; going over a link again, either way, erases it. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBrushPaintsLinksAndErasesThemWhenRepainted(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE,
+                new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1), new BlockPos(7, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+            player.setStackInHand(Hand.MAIN_HAND, brush);
+            paint(player, brush, context, t.get(0), t.get(1), t.get(2), t.get(3));
+            for (int i = 0; i < 3; i++) context.assertEquals(links(context, t.get(i)), List.of(t.get(i + 1)), "tile " + i + " linked to the next");
+            context.assertEquals(links(context, t.get(3)), List.of(), "the last one leads nowhere yet");
+            paint(player, brush, context, t.get(0), t.get(1));
+            context.assertEquals(links(context, t.get(0)), List.of(), "repainted the same way: erased");
+            paint(player, brush, context, t.get(3), t.get(2));
+            context.assertEquals(links(context, t.get(2)), List.of(), "repainted the other way: erased");
+            context.assertEquals(links(context, t.get(3)), List.of(), "and not linked back");
+            context.assertEquals(links(context, t.get(1)), List.of(t.get(2)), "the link in between kept");
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, null), "undone");
+            context.assertEquals(links(context, t.get(2)), List.of(t.get(3)), "the erased link is back");
+        });
+    }
+
+    /** The brush's level is the slot of a 16-slot board space whose cartridge gets the link. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBrushLevelPicksTheSlotOfAnAdvancedTile(TestContext context) {
+        List<BlockPos> advanced = tiles(context, ModBlocks.ADVANCED_TILE, new BlockPos(1, 1, 1));
+        List<BlockPos> next = tiles(context, ModBlocks.TILE, new BlockPos(4, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+            player.setStackInHand(Hand.MAIN_HAND, brush);
+            for (int i = 0; i < 8; i++) fr.lordfinn.steveparty.board.TileLinkerBrush.cycleLevel(player, brush, 1);
+            context.assertEquals(fr.lordfinn.steveparty.board.TileLinkerBrush.level(brush), 7, "powered, 0... 7");
+            paint(player, brush, context, advanced.getFirst(), next.getFirst());
+            BoardSpaceBlockEntity tile = boardSpace(context, advanced.getFirst());
+            context.assertEquals(BoardLinks.links(tile, 7), List.of(next.getFirst()), "linked in slot 7");
+            for (int i = 0; i < 9; i++) fr.lordfinn.steveparty.board.TileLinkerBrush.cycleLevel(player, brush, 1);
+            context.assertTrue(!brush.contains(ModComponents.LINK_LEVEL), "back to the powered slot: no component left");
+        });
+    }
 }
