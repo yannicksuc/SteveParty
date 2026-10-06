@@ -8,7 +8,12 @@ import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeMenus;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.CartridgeModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.ColorModule;
 import fr.lordfinn.steveparty.items.custom.cartridges.menu.InfoModule;
+import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.text.Style;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -78,7 +83,34 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         return new ColorModule("color", MENU_KEY + "color", defaultColor);
     }
 
-    /** Right click in the air: its menu, for the cartridge in that hand (on a block: the block's own use). */
+    /**
+     * Right click on a block the block did not take (the ground, any block while sneaking): a board space or a router
+     * is added to its links (or removed, the former way of linking); a spot it is linked to although no board space is
+     * there any more is unlinked; anything else opens its menu, as in the air.
+     */
+    @Override
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        if (context.getHand() == Hand.OFF_HAND) return ActionResult.PASS;
+        World world = context.getWorld();
+        BlockPos pos = context.getBlockPos();
+        if (BoardLinks.container(world, pos) != null || linksTo(context.getStack(), pos)) return toggleDestination(context);
+        if (context.getPlayer() instanceof ServerPlayerEntity serverPlayer) CartridgeMenus.openInHand(serverPlayer, context.getHand());
+        return ActionResult.success(world.isClient());
+    }
+
+    /** Whether it is linked to {@code pos} or the block above (a link is to the board space, a click on what holds it). */
+    private static boolean linksTo(ItemStack stack, BlockPos pos) {
+        DestinationsComponent links = stack.get(ModComponents.DESTINATIONS_COMPONENT);
+        return links != null && (links.destinations().contains(pos) || links.destinations().contains(pos.up()));
+    }
+
+    /** A cartridge's links lead to board spaces: one with none there any more is shown, with how to fix it. */
+    @Override
+    protected boolean showsMissingDestinations() {
+        return true;
+    }
+
+    /** Right click in the air: its menu, for the cartridge in that hand (on a block: see {@link #useOnBlock}). */
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         if (isTargetingBlock(player)) return super.use(world, player, hand);
@@ -87,6 +119,8 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
     }
 
     private static final int LINE_WIDTH = 46;
+    /** The colour of the « Configurable » tag of the tooltip. */
+    private static final int CONFIGURABLE_COLOR = 0xFCB017;
 
     /** Adds {@code text} as lines of at most {@link #LINE_WIDTH} characters (a tooltip line doesn't wrap by itself). */
     public static void addWrapped(List<Text> tooltip, Text text, Formatting formatting) {
@@ -115,6 +149,9 @@ public class CartridgeItem extends AbstractDestinationsSelectorItem implements C
         String id = net.minecraft.registry.Registries.ITEM.getId(this).getPath();
         addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge.what"), Formatting.GRAY);
         addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge." + id), Formatting.GRAY);
+        // A tag: it has settings, and where to find them
+        tooltip.add(Text.translatable("tooltip.steveparty.cartridge.configurable.tag").setStyle(Style.EMPTY.withColor(CONFIGURABLE_COLOR).withBold(true))
+                .append(Text.translatable("tooltip.steveparty.cartridge.configurable").setStyle(Style.EMPTY.withColor(Formatting.GRAY).withBold(false))));
         addWrapped(tooltip, Text.translatable("tooltip.steveparty.cartridge.use"), Formatting.DARK_GRAY);
         super.appendTooltip(stack, context, tooltip, type);
         TileStampComponent stamp = stack.get(ModComponents.TILE_STAMP);
