@@ -103,6 +103,14 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
      */
     public static final int THROW_GRACE_TICKS = 10;
 
+    /** Command tag of the firework a die bursts into: it hurts no one (see FireworkRocketEntityHarmlessMixin). */
+    public static final String HARMLESS_FIREWORK_TAG = "steveparty.harmless_dice_firework";
+    /** Firecracker module: reach of the blast (blocks), like a firework rocket's. */
+    public static final double BLAST_RANGE = 5.0;
+    /** Firecracker module: damage at the die, three times a one-star firework rocket's (5 + 2). */
+    public static final float BLAST_DAMAGE = 21.0F;
+    /** Firecracker module: horizontal and upward speed given at the die (blocks per tick), less with the distance. */
+    private static final double BLAST_KNOCKBACK = 1.2, BLAST_LIFT = 0.5;
     /** Untargeted die: how much its upward speed drops each tick (blocks per tick²). */
     private static final double FREE_GRAVITY = 0.04;
     /** Untargeted die: the least height it floats at above the ground (blocks). */
@@ -719,6 +727,8 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     public void remove(RemovalReason reason) {
         if (!this.getWorld().isClient && reason == RemovalReason.DISCARDED) {
             summonFirework(createStopFireworkItem());
+            // One blast per throw: the lead's (the dice of a Double / Triple Dice burst together)
+            if (!follower && DiceModules.has(dieStack, DiceModules.FIRECRACKER)) firecrackerBlast();
         }
         super.remove(reason);
     }
@@ -727,8 +737,47 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         if (this.getWorld() instanceof ServerWorld world) {
             FireworkRocketEntity firework = new FireworkRocketEntity(world, this.getX(), this.getY() + this.getHeight() / 2, this.getZ(), itemstack);
             ((FireworkRocketEntityAccessor) firework).setLifeTime(1);
+            firework.addCommandTag(HARMLESS_FIREWORK_TAG);
             world.spawnEntity(firework);
         }
+    }
+
+    /**
+     * Firecracker module: the die bursts for real. The living entities around it (players included, its roller too)
+     * within {@link #BLAST_RANGE} blocks and in its line of sight are hurt, three times what a firework rocket of one
+     * star deals, less with the distance, and thrown back hard.
+     */
+    private void firecrackerBlast() {
+        if (!(this.getWorld() instanceof ServerWorld world)) return;
+        Vec3d center = this.getBoundingBox().getCenter();
+        DamageSource source = world.getDamageSources().explosion(this, getOnlineOwner());
+        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class, this.getBoundingBox().expand(BLAST_RANGE),
+                e -> !(e instanceof DiceEntity) && !e.isSpectator() && e.isAlive())) {
+            double distance = center.distanceTo(entity.getBoundingBox().getCenter());
+            if (distance > BLAST_RANGE || !inBlastSight(world, center, entity)) continue;
+            double near = 1 - distance / BLAST_RANGE;
+            entity.damage(source, (float) (BLAST_DAMAGE * Math.sqrt(near)));
+            Vec3d away = entity.getBoundingBox().getCenter().subtract(center);
+            Vec3d flat = new Vec3d(away.x, 0, away.z);
+            flat = flat.lengthSquared() < 1.0E-4 ? Vec3d.ZERO : flat.normalize();
+            double push = BLAST_KNOCKBACK * near * (1 - knockbackResistance(entity));
+            entity.addVelocity(flat.x * push, BLAST_LIFT * near, flat.z * push);
+            entity.velocityModified = true;
+        }
+        world.playSound(null, center.x, center.y, center.z, SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 1.0F, 1.4F);
+    }
+
+    private static boolean inBlastSight(ServerWorld world, Vec3d center, LivingEntity entity) {
+        for (Vec3d point : List.of(entity.getBoundingBox().getCenter(), entity.getEyePos())) {
+            if (world.raycast(new RaycastContext(center, point, RaycastContext.ShapeType.COLLIDER,
+                    RaycastContext.FluidHandling.NONE, entity)).getType() == HitResult.Type.MISS) return true;
+        }
+        return false;
+    }
+
+    private static double knockbackResistance(LivingEntity entity) {
+        return entity.getAttributes().hasAttribute(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE)
+                ? Math.min(1, entity.getAttributeValue(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE)) : 0;
     }
 
     private ItemStack createStopFireworkItem() {

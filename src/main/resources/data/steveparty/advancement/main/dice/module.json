@@ -27,7 +27,8 @@
               "steveparty:dice_module_reroll",
               "steveparty:dice_module_reversed",
               "steveparty:dice_module_skeleton_key",
-              "steveparty:dice_module_homing"
+              "steveparty:dice_module_homing",
+              "steveparty:dice_module_firecracker"
             ]
           }
         ]
