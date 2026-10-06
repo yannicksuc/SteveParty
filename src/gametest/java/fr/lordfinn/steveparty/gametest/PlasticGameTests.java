@@ -443,6 +443,27 @@ public class PlasticGameTests implements FabricGameTest {
         });
     }
 
+    /**
+     * A player standing in the water lifted onto a block's last step (out of the water) is put on it where they
+     * stand: only their height changes (playtest: they were sent to 0, 0).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPlayerPutOnTheBlockKeepsTheirPlace(TestContext context) {
+        waterColumn(context);
+        var player = context.createMockCreativeServerPlayerInWorld();
+        net.minecraft.util.math.Vec3d feet = context.getAbsolute(new net.minecraft.util.math.Vec3d(X + 0.5, TOP, Z + 0.5));
+        player.refreshPositionAndAngles(feet.x, feet.y, feet.z, 30, 10);
+        context.setBlockState(new BlockPos(X, TOP - 1, Z), plastic());
+        context.waitAndRun(risingTicks(1), () -> {
+            context.expectBlock(plastic(), new BlockPos(X, TOP, Z));
+            context.assertTrue(Math.abs(player.getX() - feet.x) < 0.01 && Math.abs(player.getZ() - feet.z) < 0.01,
+                    "the player kept their place: " + player.getPos() + " vs " + feet);
+            context.assertTrue(Math.abs(player.getY() - (feet.y + 1)) < 0.01, "the player is on the block: " + player.getY());
+            context.assertTrue(player.getYaw() == 30 && player.getPitch() == 10, "the player kept their facing");
+            context.complete();
+        });
+    }
+
     /** It never crushes what it carries into a ceiling: it waits, and rises once the way is clear. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void itWaitsRatherThanCrushingARider(TestContext context) {
