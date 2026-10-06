@@ -1424,6 +1424,7 @@
   "message.steveparty.board.check.no_shop": "%s shop spaces without a merchant around:",
   "message.steveparty.board.summary.no_shop": "%s shop spaces without a merchant",
   "gamerule.stevepartyShopStopSeconds": "SteveParty: seconds to shop at a shop stop",
+  "gamerule.stevepartyTokenizeBosses": "SteveParty: the Tokenizer Wand can take the Ender Dragon and the Wither",
   "gui.steveparty.party_controller.tab.state": "Status",
   "gui.steveparty.party_controller.tab.state.tooltip": "The party, and what it takes to start one",
   "gui.steveparty.party_controller.tab.players": "Players",
