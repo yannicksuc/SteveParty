@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.screen_handlers.custom;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
+import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 
 /**
  * The Party Controller's dashboard: five pages (state, players, program, gains, settings) fed by a
@@ -41,12 +43,14 @@ import java.util.EnumSet;
  * following the party, open to anyone), the catalogue slot follows the block's rule (locked while powered).
  * <p>
  * The currency slots (the Star and Coin items, shown on the Gains page) are « ghost » slots: clicking one with an item picks that item (nothing is taken), clicking it
- * with an empty hand puts the default item back.
+ * with an empty hand puts the default item back. The « Allowed dice » slots (Settings page) are ghost slots too: clicking one
+ * with a die lists a copy of it (nothing is taken), with an empty hand takes it off the list, while « Restrict dice » is on. Each listed die shows twice:
+ * in the row of the page (its first {@link #DICE_ROW}) and in the panel it opens (all of them).
  */
 public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
-            BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7;
+            BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7, BUTTON_RESTRICT_DICE = 8;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -84,12 +88,22 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     /** Gains page: the bank's Inventory Cartridge (after the program's slots), at the content's top left. */
     public static final int SLOT_BANK = PROGRAM_FIRST_SLOT + PartyControllerEntity.PROGRAM_SLOTS;
     public static final int BANK_X = CONTENT_X + 1, BANK_Y = CONTENT_Y + 1;
+    /**
+     * Settings page: the « Allowed dice » ghost slots after the bank's, the row of the page (its first dice, on the 4th
+     * setting row, left of the panel's toggle) then the panel (every die, 3 rows of 9 over the other settings).
+     */
+    public static final int DICE_ROW = 4, DICE_COLUMNS = 9;
+    public static final int DICE_FIRST_SLOT = SLOT_BANK + 1, DICE_PANEL_FIRST_SLOT = DICE_FIRST_SLOT + DICE_ROW;
+    public static final int DICE_ROW_Y = CONTENT_Y + 18 + 3 * 22 + 1, DICE_ROW_X = CONTENT_X + CONTENT_WIDTH - 16 - 2 - DICE_ROW * 18 + 1;
+    public static final int DICE_PANEL_X = CONTENT_X + (CONTENT_WIDTH - DICE_COLUMNS * 18) / 2 + 1, DICE_PANEL_Y = CONTENT_Y + 21;
 
     private final @Nullable PartyControllerEntity controller;
     private final BlockPos pos;
     private final PlayerEntity player;
     /** Client: the page shown (which slots are enabled). */
     private Page page = Page.STATE;
+    /** Client: the « Allowed dice » panel is open (its slots shown instead of the row's). */
+    private boolean diceOpen;
     /** Client: the last data received; server: the last data sent. Null until the first one. */
     private @Nullable PartyDashboardData data;
     // server
@@ -103,24 +117,19 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     /** Server side. */
     public PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, PartyControllerEntity controller) {
         this(syncId, playerInventory, controller.getPos(), controller, catalogueInventory(controller), currencyInventory(controller),
-                controller.getProgram());
+                controller.getProgram(), bankInventory(controller), diceInventory(controller));
     }
 
     /** Client side. */
     public PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload payload) {
         this(syncId, playerInventory, payload.pos(), null, new SimpleInventory(1), new SimpleInventory(2),
-                new SimpleInventory(PartyControllerEntity.PROGRAM_SLOTS), new SimpleInventory(1));
+                new SimpleInventory(PartyControllerEntity.PROGRAM_SLOTS), new SimpleInventory(1),
+                new SimpleInventory(PartyControllerEntity.MAX_ALLOWED_DICE));
     }
 
     private PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos,
                                          @Nullable PartyControllerEntity controller, Inventory catalogue, Inventory currencies,
-                                         Inventory program) {
-        this(syncId, playerInventory, pos, controller, catalogue, currencies, program, bankInventory(controller));
-    }
-
-    private PartyControllerScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos,
-                                         @Nullable PartyControllerEntity controller, Inventory catalogue, Inventory currencies,
-                                         Inventory program, Inventory bank) {
+                                         Inventory program, Inventory bank, Inventory dice) {
         super(ModScreensHandlers.PARTY_CONTROLLER_SCREEN_HANDLER, syncId);
         this.controller = controller;
         this.pos = pos;
@@ -139,11 +148,14 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         for (int i = 0; i < PartyControllerEntity.PROGRAM_SLOTS; i++)
             addSlot(new CardSlot(program, i, PROGRAM_X + (i % PROGRAM_COLUMNS) * 18, PROGRAM_Y + (i / PROGRAM_COLUMNS) * 18));
         addSlot(new BankSlot(bank));
+        for (int i = 0; i < DICE_ROW; i++)
+            addSlot(new DiceSlot(dice, i, DICE_ROW_X + i * 18, DICE_ROW_Y, false));
+        for (int i = 0; i < PartyControllerEntity.MAX_ALLOWED_DICE; i++)
+            addSlot(new DiceSlot(dice, i, DICE_PANEL_X + (i % DICE_COLUMNS) * 18, DICE_PANEL_Y + (i / DICE_COLUMNS) * 18, true));
     }
 
     /** The bank's cartridge slot (server: the controller's; client: filled by the slot sync). */
-    private static Inventory bankInventory(@Nullable PartyControllerEntity controller) {
-        if (controller == null) return new SimpleInventory(1);
+    private static Inventory bankInventory(PartyControllerEntity controller) {
         return new Inventory() {
             @Override public int size() { return 1; }
             @Override public boolean isEmpty() { return controller.getBank().isEmpty(); }
@@ -195,6 +207,19 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         };
     }
 
+    /** The allowed dice, read-only: they change through {@link #onSlotClick} only. */
+    private static Inventory diceInventory(PartyControllerEntity controller) {
+        return new SimpleInventory(PartyControllerEntity.MAX_ALLOWED_DICE) {
+            @Override public ItemStack getStack(int slot) {
+                List<ItemStack> dice = controller.getAllowedDice();
+                return slot < dice.size() ? dice.get(slot) : ItemStack.EMPTY;
+            }
+            @Override public ItemStack removeStack(int slot, int amount) { return ItemStack.EMPTY; }
+            @Override public ItemStack removeStack(int slot) { return ItemStack.EMPTY; }
+            @Override public void setStack(int slot, ItemStack stack) {}
+        };
+    }
+
     // ------------------------------------------------------------------ slots
 
     private class PageSlot extends Slot {
@@ -236,7 +261,11 @@ public class PartyControllerScreenHandler extends ScreenHandler {
 
     private class GhostSlot extends PageSlot {
         GhostSlot(Inventory inventory, int index, int x, int y) {
-            super(inventory, index, x, y, EnumSet.of(Page.GAINS));
+            this(inventory, index, x, y, EnumSet.of(Page.GAINS));
+        }
+
+        GhostSlot(Inventory inventory, int index, int x, int y, EnumSet<Page> pages) {
+            super(inventory, index, x, y, pages);
         }
 
         @Override
@@ -247,6 +276,27 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         @Override
         public boolean canTakeItems(PlayerEntity playerEntity) {
             return false;
+        }
+    }
+
+    /** An « Allowed dice » ghost slot: in the row of the Settings page, or in its panel (shown while it is open). */
+    private class DiceSlot extends GhostSlot {
+        private final boolean inPanel;
+
+        DiceSlot(Inventory inventory, int index, int x, int y, boolean inPanel) {
+            super(inventory, index, x, y, EnumSet.of(Page.SETTINGS));
+            this.inPanel = inPanel;
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return controller != null || (page == Page.SETTINGS && inPanel == diceOpen);
+        }
+
+        @Override
+        public boolean canBeHighlighted() {
+            // The greyed places don't light up
+            return isDiceSlotUsable(id);
         }
     }
 
@@ -303,6 +353,37 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         return slotIndex == SLOT_STAR || slotIndex == SLOT_COIN;
     }
 
+    public static boolean isDiceSlot(int slotIndex) {
+        return slotIndex >= DICE_FIRST_SLOT && slotIndex < DICE_PANEL_FIRST_SLOT + PartyControllerEntity.MAX_ALLOWED_DICE;
+    }
+
+    /** The place in the allowed dice of a dice slot (the row's and the panel's share the first ones). */
+    public static int diceIndexOf(int slotIndex) {
+        return slotIndex < DICE_PANEL_FIRST_SLOT ? slotIndex - DICE_FIRST_SLOT : slotIndex - DICE_PANEL_FIRST_SLOT;
+    }
+
+    /** The dice listed (the list has no gaps: the listed ones come first). */
+    public int allowedDiceCount() {
+        if (controller != null) return controller.getAllowedDice().size();
+        int count = 0;
+        while (count < PartyControllerEntity.MAX_ALLOWED_DICE && !slots.get(DICE_PANEL_FIRST_SLOT + count).getStack().isEmpty()) count++;
+        return count;
+    }
+
+    /** Whether the dice are restricted (server: the controller's setting, client: what the server said). */
+    public boolean isRestrictDice() {
+        if (controller != null) return controller.isRestrictDice();
+        return data != null && data.restrictDice();
+    }
+
+    /**
+     * Whether a dice slot takes a click: the dice restricted, a listed die or the first free place (client: greyed
+     * otherwise).
+     */
+    public boolean isDiceSlotUsable(int slotIndex) {
+        return isDiceSlot(slotIndex) && isRestrictDice() && diceIndexOf(slotIndex) <= allowedDiceCount();
+    }
+
     public static PartyCurrency currencyOf(int slotIndex) {
         return slotIndex == SLOT_STAR ? PartyCurrency.STAR : PartyCurrency.COIN;
     }
@@ -320,6 +401,11 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         if (isGhostSlot(slotIndex)) {
             if (controller != null && actionType == SlotActionType.PICKUP)
                 pickCurrency(player, currencyOf(slotIndex), getCursorStack());
+            return;
+        }
+        if (isDiceSlot(slotIndex)) {
+            if (controller != null && actionType == SlotActionType.PICKUP)
+                pickAllowedDie(player, diceIndexOf(slotIndex), getCursorStack());
             return;
         }
         super.onSlotClick(slotIndex, button, actionType, player);
@@ -340,14 +426,42 @@ public class PartyControllerScreenHandler extends ScreenHandler {
         return true;
     }
 
+    /**
+     * A click on an « Allowed dice » slot: a die lists a copy of it there (after the last one if the slot is further),
+     * an empty hand takes the die there off the list. Server side.
+     */
+    public boolean pickAllowedDie(PlayerEntity player, int index, ItemStack picked) {
+        if (controller == null) return false;
+        if (!controller.canEdit(player)) {
+            player.sendMessage(Text.translatable("gui.steveparty.party_controller.locked").formatted(Formatting.RED), true);
+            return false;
+        }
+        if (!controller.isRestrictDice()) {
+            player.sendMessage(Text.translatable("gui.steveparty.party_controller.settings.allowed_dice.off").formatted(Formatting.RED), true);
+            return false;
+        }
+        boolean changed;
+        if (picked.isEmpty()) {
+            changed = controller.removeAllowedDie(index);
+        } else if (!AllowedDice.isDie(picked)) {
+            player.sendMessage(Text.translatable("gui.steveparty.party_controller.settings.allowed_dice.not_a_die").formatted(Formatting.RED), true);
+            return false;
+        } else {
+            changed = controller.setAllowedDie(index, picked);
+            if (!changed) player.sendMessage(Text.translatable("gui.steveparty.party_controller.settings.allowed_dice.listed").formatted(Formatting.RED), true);
+        }
+        if (changed) refreshNow = true;
+        return changed;
+    }
+
     @Override
     public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
-        return !isGhostSlot(slot.id) && super.canInsertIntoSlot(stack, slot);
+        return !isGhostSlot(slot.id) && !isDiceSlot(slot.id) && super.canInsertIntoSlot(stack, slot);
     }
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int index) {
-        if (index < 0 || index >= slots.size() || isGhostSlot(index)) return ItemStack.EMPTY;
+        if (index < 0 || index >= slots.size() || isGhostSlot(index) || isDiceSlot(index)) return ItemStack.EMPTY;
         Slot slot = slots.get(index);
         if (!slot.hasStack()) return ItemStack.EMPTY;
         ItemStack stack = slot.getStack();
@@ -413,6 +527,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
             case BUTTON_MAX_POWER_UPS_DOWN, BUTTON_MAX_POWER_UPS_UP -> {
                 if (!controller.canEdit(player)) return false;
                 controller.setMaxPowerUps(controller.getMaxPowerUps() + (id == BUTTON_MAX_POWER_UPS_UP ? 1 : -1));
+            }
+            case BUTTON_RESTRICT_DICE -> {
+                if (!controller.canEdit(player)) return false;
+                controller.setRestrictDice(!controller.isRestrictDice());
             }
             case BUTTON_PRACTICE -> {
                 if (!controller.canEdit(player)) return false;
@@ -483,6 +601,15 @@ public class PartyControllerScreenHandler extends ScreenHandler {
     /** Client: the page shown. */
     public void setPage(Page page) {
         this.page = page;
+    }
+
+    public boolean isDiceOpen() {
+        return diceOpen;
+    }
+
+    /** Client: opens or closes the « Allowed dice » panel. */
+    public void setDiceOpen(boolean diceOpen) {
+        this.diceOpen = diceOpen;
     }
 
     public BlockPos getPos() {

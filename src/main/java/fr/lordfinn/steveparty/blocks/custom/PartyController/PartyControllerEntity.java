@@ -105,6 +105,15 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      * See {@link fr.lordfinn.steveparty.powerups.PowerUpLimit}.
      */
     private int maxPowerUps = fr.lordfinn.steveparty.powerups.PowerUpLimit.DEFAULT;
+    /** Only the allowed dice may be thrown during a party (Settings page); off: every die. */
+    private boolean restrictDice;
+    /**
+     * The dice a player may throw during a party while {@link #restrictDice} is on (Settings page; empty: every die),
+     * one of each, in the order they were picked; {@link fr.lordfinn.steveparty.dice.AllowedDice#defaults} at first.
+     */
+    private final List<ItemStack> allowedDice = new ArrayList<>(fr.lordfinn.steveparty.dice.AllowedDice.defaults());
+    /** The most dice the « Allowed dice » setting lists. */
+    public static final int MAX_ALLOWED_DICE = 27;
     /**
      * The star space holding the party's star (see {@link fr.lordfinn.steveparty.service.PartyStars}); null while the
      * party has no star yet, or while it waits, hidden, for a star space to be switched on. Saved with the party.
@@ -239,6 +248,11 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (!bank.isEmpty()) nbt.put("BankCartridge", bank.encode(wrapper));
         nbt.putBoolean("PracticeRound", practiceRound);
         nbt.putInt("MaxPowerUps", maxPowerUps);
+        nbt.putBoolean("RestrictDice", restrictDice);
+        // Saved even empty (every die): only a controller without it gets the default dice
+        NbtList diceNbt = new NbtList();
+        allowedDice.forEach(die -> diceNbt.add(die.encode(wrapper)));
+        nbt.put("AllowedDice", diceNbt);
         if (starSpace != null) nbt.putLong("StarSpace", starSpace.asLong());
         if (!tokensToRelease.isEmpty()) {
             NbtList releaseNbt = new NbtList();
@@ -285,6 +299,13 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         maxPowerUps = nbt.contains("MaxPowerUps")
                 ? Math.clamp(nbt.getInt("MaxPowerUps"), 0, fr.lordfinn.steveparty.powerups.PowerUpLimit.MAX)
                 : fr.lordfinn.steveparty.powerups.PowerUpLimit.DEFAULT;
+        restrictDice = nbt.getBoolean("RestrictDice");
+        allowedDice.clear();
+        if (!nbt.contains("AllowedDice")) allowedDice.addAll(fr.lordfinn.steveparty.dice.AllowedDice.defaults());
+        for (NbtElement element : nbt.getList("AllowedDice", NbtElement.COMPOUND_TYPE)) {
+            if (allowedDice.size() >= MAX_ALLOWED_DICE) break;
+            ItemStack.fromNbt(wrapper, element).filter(fr.lordfinn.steveparty.dice.AllowedDice::isDie).ifPresent(allowedDice::add);
+        }
         starSpace = nbt.contains("StarSpace") ? BlockPos.fromLong(nbt.getLong("StarSpace")) : null;
         tokensToRelease.clear();
         nbt.getList("TokensToRelease", NbtElement.STRING_TYPE).forEach(element -> {
@@ -434,6 +455,46 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (this.maxPowerUps == clamped) return;
         this.maxPowerUps = clamped;
         markDirty();
+    }
+
+    /** Whether only the allowed dice may be thrown during this party (off: every die). */
+    public boolean isRestrictDice() {
+        return restrictDice;
+    }
+
+    public void setRestrictDice(boolean restrictDice) {
+        if (this.restrictDice == restrictDice) return;
+        this.restrictDice = restrictDice;
+        markDirty();
+    }
+
+    /** The dice a player may throw during this party while the dice are restricted, empty for every die (read-only). */
+    public List<ItemStack> getAllowedDice() {
+        return Collections.unmodifiableList(allowedDice);
+    }
+
+    /**
+     * Puts a copy of {@code die} (one) at {@code index} of the allowed dice, replacing the one there, or after the
+     * last one when {@code index} is past it. False if it is not a die, is already listed elsewhere, or the list is full.
+     */
+    public boolean setAllowedDie(int index, ItemStack die) {
+        if (!fr.lordfinn.steveparty.dice.AllowedDice.isDie(die) || index < 0) return false;
+        for (int i = 0; i < allowedDice.size(); i++) {
+            if (fr.lordfinn.steveparty.dice.AllowedDice.sameDie(allowedDice.get(i), die)) return false;
+        }
+        if (index < allowedDice.size()) allowedDice.set(index, die.copyWithCount(1));
+        else if (allowedDice.size() < MAX_ALLOWED_DICE) allowedDice.add(die.copyWithCount(1));
+        else return false;
+        markDirty();
+        return true;
+    }
+
+    /** Takes the die at {@code index} off the allowed dice (the next ones move up). False if there is none. */
+    public boolean removeAllowedDie(int index) {
+        if (index < 0 || index >= allowedDice.size()) return false;
+        allowedDice.remove(index);
+        markDirty();
+        return true;
     }
 
     /** Sets the number of rounds of the next party: only while no party runs (the rounds are generated at its start). */
