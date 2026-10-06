@@ -220,8 +220,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         if (texture == null) return;
 
         int dir = entity.getCachedState().get(ROTATION_8);
-        // The head sits on the pedestal of the model, on the front side (toward the player who placed the tile).
-        // The model only has 4 orientations: diagonals keep the pedestal of the previous side, the head still looks diagonally.
+        // The head sits on the pedestal of the model, on the front side (toward the player who placed the tile),
+        // diagonals included (tile_start_45)
         Vector3f front = frontVector(dir);
         Vector3f pedestal = new Vector3f(9f / 16, 0, 9f / 16).mul(front);
         if (small) pedestal.mul(TileSize.SMALL_SCALE, 1, TileSize.SMALL_SCALE);
@@ -279,16 +279,12 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
     }
 
     /**
-     * Side the tile faces, snapped to the 4 orientations of the start tile model: rotation 0 = placed while looking
-     * north, faces south; the rotation turns clockwise (2 = west, 4 = north, 6 = east), like the blockstate "y".
+     * Side the tile faces, in 8 steps of 45°: rotation 0 = placed while looking north, faces south; the rotation turns
+     * clockwise (2 = west, 4 = north, 6 = east), like the blockstate "y"; odd ones are the diagonals of tile_start_45.
      */
     private static Vector3f frontVector(int rot) {
-        return switch ((rot >> 1) & 3) {
-            case 0 -> new Vector3f(0, 0, 1);
-            case 1 -> new Vector3f(-1, 0, 0);
-            case 2 -> new Vector3f(0, 0, -1);
-            default -> new Vector3f(1, 0, 0);
-        };
+        double angle = Math.toRadians(rot * 45);
+        return new Vector3f((float) -Math.sin(angle), 0, (float) Math.cos(angle));
     }
 
     /**
