@@ -233,4 +233,40 @@ public class DiceGameTests implements FabricGameTest {
             context.complete();
         });
     }
+
+    // ---------------------------------------------------------------- the burst of a die
+
+    private static net.minecraft.entity.passive.PigEntity pigNextTo(TestContext context, DiceEntity dice) {
+        net.minecraft.entity.passive.PigEntity pig = context.spawnEntity(net.minecraft.entity.EntityType.PIG, DICE_POS.add(2, 0, 0));
+        pig.setAiDisabled(true);
+        pig.setNoGravity(true);
+        return pig;
+    }
+
+    /** A die going away bursts into a firework that hurts no one. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPlainDieBurstHurtsNoOne(TestContext context) {
+        DiceEntity dice = spawnDice(context);
+        net.minecraft.entity.passive.PigEntity pig = pigNextTo(context, dice);
+        dice.discard();
+        context.waitAndRun(10, () -> {
+            context.assertTrue(pig.isAlive() && pig.getHealth() == pig.getMaxHealth(), "the pig next to it is unhurt");
+            context.complete();
+        });
+    }
+
+    /** Firecracker module: the burst hurts (three times a firework) and throws back. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aFirecrackerDieBurstHurtsAndKnocksBack(TestContext context) {
+        DiceEntity dice = spawnDice(context);
+        net.minecraft.item.ItemStack die = new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE);
+        fr.lordfinn.steveparty.dice.DiceModules.set(die, java.util.Map.of(fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER, 1));
+        dice.setItemReference(die);
+        net.minecraft.entity.passive.PigEntity pig = pigNextTo(context, dice);
+        double before = pig.getX();
+        dice.discard();
+        context.assertTrue(!pig.isAlive() || pig.getHealth() < pig.getMaxHealth(), "the pig is hurt");
+        context.assertTrue(!pig.isAlive() || pig.getVelocity().x > 0.1, "and thrown back, away from the die");
+        context.complete();
+    }
 }

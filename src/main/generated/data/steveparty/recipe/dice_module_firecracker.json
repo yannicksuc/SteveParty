@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "F": {
+      "item": "steveparty:pink_star_fragment"
+    },
+    "I": {
+      "item": "minecraft:tnt"
+    },
+    "M": {
+      "item": "steveparty:blank_dice_module"
+    }
+  },
+  "pattern": [
+    "FIF",
+    "FMF",
+    "FFF"
+  ],
+  "result": {
+    "count": 1,
+    "id": "steveparty:dice_module_firecracker"
+  }
+}

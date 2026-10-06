@@ -93,6 +93,16 @@
           }
         ]
       }
+    },
+    "firecracker": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:dice_module_firecracker"
+          }
+        ]
+      }
     }
   },
   "requirements": [
@@ -119,6 +129,9 @@
     ],
     [
       "homing"
+    ],
+    [
+      "firecracker"
     ]
   ],
   "rewards": {

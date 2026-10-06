@@ -62,7 +62,7 @@ public class DiceModulesGameTests implements FabricGameTest {
 
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void modulesAreRegisteredWithTheirItems(TestContext context) {
-        context.assertEquals(DiceModules.all().size(), 8, "slow, choice, power-up, lucky, reroll, reversed, skeleton key, homing");
+        context.assertEquals(DiceModules.all().size(), 9, "slow, choice, power-up, lucky, reroll, reversed, skeleton key, homing, firecracker");
         context.assertEquals(ModItems.DICE_MODULES.size(), DiceModules.all().size(), "one item per module");
         for (DiceModule module : DiceModules.all()) {
             Item item = module.item();
@@ -72,7 +72,7 @@ public class DiceModulesGameTests implements FabricGameTest {
         }
         context.assertTrue(DiceModules.LUCKY.stacks() && DiceModules.REROLL.stacks(), "Lucky and Reroll stack");
         for (DiceModule module : List.of(DiceModules.SLOW, DiceModules.CHOICE, DiceModules.POWER_UP, DiceModules.REVERSED,
-                DiceModules.SKELETON_KEY, DiceModules.HOMING)) {
+                DiceModules.SKELETON_KEY, DiceModules.HOMING, DiceModules.FIRECRACKER)) {
             context.assertTrue(!module.stacks(), module + " does not stack");
         }
         context.assertTrue(DiceModules.REVERSED.negative() && DiceModules.REVERSED.color() == Formatting.RED, "Reversed is negative: red");

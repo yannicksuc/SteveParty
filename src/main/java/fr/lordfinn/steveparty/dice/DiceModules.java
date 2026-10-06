@@ -30,7 +30,7 @@ import java.util.Map;
  *     <li><b>Reroll ×N</b>: once the result is known (after the Lucky pick), keep it or roll everything again, up to
  *     N times; the last roll is final;</li>
  *     <li><b>Reversed</b> applies to the final result; <b>Power-up</b>, <b>Skeleton Key</b> and <b>Homing</b> are
- *     independent of the others.</li>
+ *     independent of the others, and so is <b>Firecracker</b> (the die's burst hurts and knocks back).</li>
  * </ul>
  */
 public final class DiceModules {
@@ -108,6 +108,12 @@ public final class DiceModules {
             return forks.isEmpty() ? null : forks.get(random.nextInt(forks.size()));
         }
     });
+
+    /**
+     * The die bursts for real when it goes away: its blast hurts the players and mobs around it (three times what a
+     * plain die's firework would) and throws them back hard (see DiceEntity). A plain die's burst hurts no one.
+     */
+    public static final DiceModule FIRECRACKER = register(new DiceModule("firecracker", 1, false));
 
     private DiceModules() {
     }
