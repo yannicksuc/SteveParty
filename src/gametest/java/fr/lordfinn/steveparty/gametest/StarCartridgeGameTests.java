@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.ShopCartridgeItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem;
+import fr.lordfinn.steveparty.powerups.effects.PartyStarRelocator;
 import fr.lordfinn.steveparty.service.DiceRollEffects;
 import fr.lordfinn.steveparty.service.PartyStars;
 import fr.lordfinn.steveparty.service.TokenMovementService;
@@ -273,6 +274,50 @@ public class StarCartridgeGameTests implements FabricGameTest {
                     finish(context, List.of(STAR), owner);
                 });
             });
+        });
+    }
+
+    /**
+     * The star space the clients draw the star and its light beam over: exactly one of the board's star spaces during
+     * the party, the new one once the star moved, none once the party is over.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "star_cartridge_shownStarSpaceFollowsTheStar")
+    public void shownStarSpaceFollowsTheStar(TestContext context) {
+        floor(context);
+        List<BlockPos> starSpaces = List.of(STAR, OTHER, ANOTHER);
+        for (BlockPos pos : starSpaces) space(context, pos, ModBlocks.TILE, new ItemStack(ModItems.STAR_CARTRIDGE), null);
+        List<BlockPos> absolute = starSpaces.stream().map(context::getAbsolutePos).toList();
+        CowEntity cow = context.spawnEntity(EntityType.COW, START);
+        context.setBlockState(CONTROLLER, ModBlocks.PARTY_CONTROLLER);
+        PartyControllerEntity controller = context.getBlockEntity(CONTROLLER);
+        PartyData data = new PartyData();
+        data.addToken(cow.getUuid());
+        data.addStep(new PartyStep());
+        data.addStep(new PartyStep());
+        data.addStep(new EndPartyStep(new ArrayList<>(List.of(cow.getUuid()))));
+        controller.setPartyData(data);
+        controller.nextStep();
+        controller.nextStep();
+        context.assertTrue(data.isStarted(), "the party runs");
+
+        PartyStars.onPartyStarted(controller, context.getWorld());
+        List<BlockPos> shown = PartyStars.shownStarSpaces(context.getWorld()).stream().filter(absolute::contains).toList();
+        context.assertTrue(shown.size() == 1 && shown.get(0).equals(controller.getStarSpace()),
+                "one star space shown, the star's: " + shown + " / " + controller.getStarSpace());
+
+        BlockPos before = shown.get(0);
+        context.assertTrue(PartyStarRelocator.INSTANCE.moveStarElsewhere(controller, context.getWorld().getRandom()), "moved");
+        shown = PartyStars.shownStarSpaces(context.getWorld()).stream().filter(absolute::contains).toList();
+        context.assertTrue(shown.size() == 1 && !shown.get(0).equals(before) && shown.get(0).equals(controller.getStarSpace()),
+                "the shown star space followed the star: " + shown + " (was " + before + ")");
+
+        controller.nextStep();
+        context.assertTrue(!data.isStarted() && data.isAtEnd(), "party over");
+        context.assertTrue(PartyStars.shownStarSpaces(context.getWorld()).stream().noneMatch(absolute::contains),
+                "no star space shown once the party is over");
+        later(context, 25, () -> {
+            context.assertTrue(controller.getStarSpace() == null, "the party over lost its star, got " + controller.getStarSpace());
+            finish(context, starSpaces, null);
         });
     }
 

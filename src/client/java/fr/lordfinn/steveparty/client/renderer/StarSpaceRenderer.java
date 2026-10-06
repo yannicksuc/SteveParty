@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -26,15 +27,18 @@ import java.util.List;
 /**
  * The party stars (see fr.lordfinn.steveparty.service.PartyStars): a big Power Star floating and turning over each
  * star space holding one, drawn at any distance (no entity, nothing ticks on the server), with a few gold sparks rising
- * from it so that it is seen from afar. The spaces come from {@link StarSpacesPayload}.
+ * from it and a golden beacon beam up to the build height, so that it is seen from afar. The spaces come from
+ * {@link StarSpacesPayload}.
  */
 @Environment(EnvType.CLIENT)
 public final class StarSpaceRenderer {
     /** Over the space's surface, in blocks; its size; degrees per tick it turns. */
     private static final double HEIGHT = 1.6;
     private static final float SCALE = 1.4F, SPIN = 3.0F;
-    /** Farther than this, the star is not drawn (beyond any board), in blocks. */
+    /** Farther than this, the star and its beam are not drawn (beyond any board; a beacon's range too), in blocks. */
     private static final double MAX_DISTANCE = 256;
+    /** The beam's colour: the Star space's yellow (ARGB). */
+    private static final int BEAM_COLOR = 0xFFFFD83D;
     /** Every how many ticks a spark rises from a star. */
     private static final int SPARK_INTERVAL = 3;
 
@@ -69,6 +73,13 @@ public final class StarSpaceRenderer {
             for (BlockPos space : stars) {
                 Vec3d at = BoardSpaces.standPos(world, space);
                 if (at.squaredDistanceTo(camera) > MAX_DISTANCE * MAX_DISTANCE) continue;
+                // The beam: from the space's surface up to the build height (the vanilla beam, centred on its cell)
+                int bottom = MathHelper.floor(at.y);
+                matrices.push();
+                matrices.translate(at.x - 0.5 - camera.x, bottom - camera.y, at.z - 0.5 - camera.z);
+                BeaconBlockEntityRenderer.renderBeam(matrices, consumers, BeaconBlockEntityRenderer.BEAM_TEXTURE, tickDelta,
+                        1.0F, world.getTime(), 0, Math.max(1, world.getTopY() - bottom), BEAM_COLOR, 0.2F, 0.25F);
+                matrices.pop();
                 matrices.push();
                 matrices.translate(at.x - camera.x, at.y + HEIGHT + 0.12 * MathHelper.sin(time * 0.08F) - camera.y, at.z - camera.z);
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * SPIN));
