@@ -405,6 +405,7 @@
   "message.steveparty.shop.access_denied": "Seule une Clé du Marchand liée au marchand de cette boutique peut l'ouvrir.",
   "message.steveparty.shop.no_owner_access_denied": "Cette boutique n'est liée à aucun marchand : tenez une Clé du Marchand pour l'installer.",
   "message.steveparty.trader.busy": "Le marchand est occupé.",
+  "message.steveparty.trader.not_a_box": "Il ne peut pas faire de boîte avec %s.",
   "item.steveparty.forged_dice": "Dé forgé",
   "tooltip.steveparty.dice_faces": "Faces : %s",
   "gui.steveparty.dice_forge.start_hint": "Lancer la forge : boucle jusqu'à l'arrêt ou jusqu'à ce qu'un emplacement soit vide",

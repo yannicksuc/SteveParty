@@ -585,6 +585,11 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
             if (!this.getWorld().isClient) giveBoxBlock(player, held);
             return ActionResult.SUCCESS;
         }
+        // Any other block: he can't make a box of it, and says so
+        if (isBoxGlitched() && !hidden && held.getItem() instanceof BlockItem) {
+            if (!this.getWorld().isClient) player.sendMessage(Text.translatable("message.steveparty.trader.not_a_box", held.getName()), true);
+            return ActionResult.SUCCESS;
+        }
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity) {
             // One customer at a time: never rebuild the offers under another player's screen
             if (isBusyFor(player)) {
@@ -1278,15 +1283,28 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
         nextFunAge = this.age + SHOCK_TICKS + THEFT_HIDE_TICKS;
     }
 
+    /** A block filling at least this share of its space can be a box (a dragon egg can, a torch or a fence can't). */
+    private static final double MIN_BOX_FILL = 0.5;
+
     /**
-     * @return the box a held item would give him: the default state of its block, if it is a full block that can be a
-     * box (see {@link #isValidBoxBlock}); null for anything else
+     * @return the box a held item would give him: its block with the state the item places (the colours of polished
+     * tiles...), if it can be a box (see {@link #canBeABox}); null for anything else
      */
     @Nullable
     public static BlockState boxBlockOf(ItemStack stack) {
         if (!(stack.getItem() instanceof BlockItem blockItem)) return null;
-        BlockState state = blockItem.getBlock().getDefaultState();
-        return isValidBoxBlock(state) && state.isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN) ? state : null;
+        BlockState state = stack.getOrDefault(DataComponentTypes.BLOCK_STATE, net.minecraft.component.type.BlockStateComponent.DEFAULT)
+                .applyToState(blockItem.getBlock().getDefaultState());
+        return canBeABox(state) ? state : null;
+    }
+
+    /** A block drawn as a model (see {@link #isValidBoxBlock}) whose shape fills at least half of its space. */
+    public static boolean canBeABox(@Nullable BlockState state) {
+        if (!isValidBoxBlock(state)) return false;
+        net.minecraft.util.shape.VoxelShape shape = state.getOutlineShape(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
+        if (shape.isEmpty()) return false;
+        Box bounds = shape.getBoundingBox();
+        return bounds.getLengthX() * bounds.getLengthY() * bounds.getLengthZ() >= MIN_BOX_FILL;
     }
 
     /** A block on a merchant whose box lost its look: it becomes his box, one is used up, he is delighted. */
