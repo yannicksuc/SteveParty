@@ -42,7 +42,9 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static fr.lordfinn.steveparty.components.ModComponents.MOB_ENTITY_COMPONENT;
@@ -86,6 +88,21 @@ public class TokenizerWandItem extends Item {
      * wanders off while the circle is being drawn the spell is cast anyway (the client casts it right away).
      */
     public static final double MAX_SPELL_DISTANCE = 32.0;
+    /**
+     * A spell screen left open longer than this (ticks) no longer blocks the wand: its close was lost (the client
+     * says when it closes it).
+     */
+    private static final int SPELL_OPEN_TIMEOUT = 20 * 60;
+    /**
+     * A token resized again within this many ticks of its last resize is resized quietly for the other players (the
+     * caster still hears everything): the same spell over and over was unbearable for everyone around.
+     */
+    private static final int QUIET_RESIZE_TICKS = 100;
+
+    /** Server: when each player's spell screen was opened (server ticks), until it is cast or closed. */
+    private static final Map<UUID, Integer> OPEN_SPELLS = new HashMap<>();
+    /** Server: when each token was last resized (server ticks). */
+    private static final Map<UUID, Integer> LAST_RESIZES = new HashMap<>();
 
     public enum SpellResult {
         TOKENIZED, RESIZED, NO_WAND, COOLDOWN, INVALID_TARGET, OUT_OF_REACH, BOSS, NOT_ALLOWED;
@@ -125,6 +142,9 @@ public class TokenizerWandItem extends Item {
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
         if (user.getItemCooldownManager().isCoolingDown(this)) return TypedActionResult.pass(stack);
+        // The press that sent the flare is still held after it hit (the spell screen is opening or open): the client
+        // keeps using the wand, and each new flare would hit the same mob and open the spell again, over and over
+        if (user instanceof ServerPlayerEntity player && isSpellOpen(player)) return TypedActionResult.fail(stack);
         user.setCurrentHand(hand);
         if (user instanceof ServerPlayerEntity player) TokenizerFlare.start(player, stack);
         return TypedActionResult.consume(stack);
@@ -169,7 +189,22 @@ public class TokenizerWandItem extends Item {
         return !isBoss(mob);
     }
 
+    /** Whether {@code player} has the spell screen open (the server opened it, the client did not close it yet). */
+    public static boolean isSpellOpen(ServerPlayerEntity player) {
+        Integer openedAt = OPEN_SPELLS.get(player.getUuid());
+        if (openedAt == null) return false;
+        if (player.getServer() != null && player.getServer().getTicks() - openedAt <= SPELL_OPEN_TIMEOUT) return true;
+        OPEN_SPELLS.remove(player.getUuid());
+        return false;
+    }
+
+    /** The player's spell screen closed (cast, cancelled, or the player left). */
+    public static void spellClosed(UUID player) {
+        OPEN_SPELLS.remove(player);
+    }
+
     static void openSpell(ServerPlayerEntity player, MobEntity mob) {
+        if (player.getServer() != null) OPEN_SPELLS.put(player.getUuid(), player.getServer().getTicks());
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         boolean resize = token.steveparty$isTokenized();
         float size = resize ? currentTokenSize(mob) : DEFAULT_TOKEN_SIZE;
@@ -208,6 +243,7 @@ public class TokenizerWandItem extends Item {
      * does not pause the game and the payload can be forged.
      */
     public static SpellResult castSpell(ServerPlayerEntity player, int entityId, float requestedSize, int requestedColor) {
+        spellClosed(player.getUuid());
         ItemStack wand = heldWand(player);
         if (wand.isEmpty()) return SpellResult.NO_WAND;
         if (player.getItemCooldownManager().isCoolingDown(wand.getItem())) return SpellResult.COOLDOWN;
@@ -228,14 +264,15 @@ public class TokenizerWandItem extends Item {
 
         float size = clampTokenSize(requestedSize);
         int color = sanitizeColor(requestedColor);
+        boolean othersHear = !resize || !resizedLately(mob);
         if (resize) {
-            resizeToken(mob, size, color);
+            resizeToken(mob, player, size, color, othersHear);
         } else {
             tokenizeEntity(mob, player, size, color);
         }
         player.getItemCooldownManager().set(wand.getItem(), SPELL_COOLDOWN);
         playCastBurst(player, mob);
-        playCastSounds(player, mob);
+        if (othersHear) playCastSounds(player, mob);
         return resize ? SpellResult.RESIZED : SpellResult.TOKENIZED;
     }
 
@@ -301,14 +338,25 @@ public class TokenizerWandItem extends Item {
         playSpellEffects(mob);
     }
 
+    /**
+     * Whether {@code mob} was resized within the last {@link #QUIET_RESIZE_TICKS} ticks; records this resize. Old
+     * records are dropped as it goes.
+     */
+    private static boolean resizedLately(MobEntity mob) {
+        if (mob.getServer() == null) return false;
+        int now = mob.getServer().getTicks();
+        LAST_RESIZES.values().removeIf(at -> now - at > QUIET_RESIZE_TICKS);
+        return LAST_RESIZES.put(mob.getUuid(), now) != null;
+    }
+
     /** Resizes a token: owner, steps, status, name... are kept; the colour too, unless it was never set. */
-    private static void resizeToken(MobEntity mob, float size, int color) {
+    private static void resizeToken(MobEntity mob, ServerPlayerEntity caster, float size, int color, boolean othersHear) {
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         if (token.steveparty$getTokenColor() == NO_COLOR && color != NO_COLOR) {
             applyColor(mob, null, color);
         }
         // No levitation: a token standing on a board space stays there
-        SquishEffect.squishToSize(mob, size, TRANSFORM_DURATION);
+        SquishEffect.squishToSize(mob, size, TRANSFORM_DURATION, caster, othersHear);
         playSpellEffects(mob);
     }
 

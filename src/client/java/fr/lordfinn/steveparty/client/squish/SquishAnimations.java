@@ -44,7 +44,7 @@ public final class SquishAnimations {
             ANIMATIONS.remove(payload.entityId());
             return;
         }
-        ANIMATIONS.put(payload.entityId(), new Animation(now, payload.duration(), payload.startScale(), payload.targetScale()));
+        ANIMATIONS.put(payload.entityId(), new Animation(now, payload.duration(), payload.startScale(), payload.targetScale(), payload.quiet()));
     }
 
     public static void clear() {
@@ -142,7 +142,7 @@ public final class SquishAnimations {
                             (random.nextDouble() - 0.5) * 0.35, (random.nextDouble() - 0.2) * 0.3, (random.nextDouble() - 0.5) * 0.35);
                 }
             }
-            playPulseSounds(world, entity, animation, age, pulseTick);
+            if (!animation.quiet()) playPulseSounds(world, entity, animation, age, pulseTick);
         }
     }
 
@@ -167,7 +167,7 @@ public final class SquishAnimations {
         }
     }
 
-    private record Animation(long startTime, int duration, float startScale, float targetScale) {
+    private record Animation(long startTime, int duration, float startScale, float targetScale, boolean quiet) {
         boolean isOver(long now) {
             return now < startTime || now - startTime >= duration;
         }

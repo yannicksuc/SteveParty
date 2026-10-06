@@ -60,7 +60,10 @@ public final class TokenizerFlare {
 
     /** A player's flare is forgotten when they leave. */
     public static void initialize() {
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> FLARES.remove(handler.player.getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            FLARES.remove(handler.player.getUuid());
+            TokenizerWandItem.spellClosed(handler.player.getUuid());
+        });
     }
 
     /**
