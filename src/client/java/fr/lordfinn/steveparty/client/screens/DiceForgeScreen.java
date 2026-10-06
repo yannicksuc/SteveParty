@@ -79,6 +79,18 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** While forging it fills from the left through a smooth gradient of these colours, violet to gold; orange when blocked. */
     private static final int[] GAUGE_COLORS = {0xFF8A3FFC, 0xFFD23CF0, 0xFFFF4FA3, 0xFFFF8A3D, 0xFFFFD35A};
     private static final int GAUGE_BLOCKED = 0xFFE0703A;
+    /** The button's frame: white when hovered (like a vanilla button), and its sunken look while held down. */
+    private static final int BUTTON_HOVER_FRAME = 0xFFFFFFFF, BUTTON_PRESSED_FILL = 0x70000000, BUTTON_PRESSED_SHADOW = 0xC0000000;
+    /** Ready to forge, the resting arrow pulses towards white once per PULSE_MS, by at most PULSE_AMOUNT. */
+    private static final long PULSE_MS = 1200;
+    private static final float PULSE_AMOUNT = 0.55f;
+    /** Free GUI pixels kept around the forge; with less room (large GUI scales) the whole screen is shrunk to fit. */
+    private static final int FIT_MARGIN = 4;
+
+    /** The FORGE button is held down (clicked on it, not released yet). */
+    private boolean buttonPressed;
+    /** Scale the screen is drawn at: 1, or less when the window is too small for it at this GUI scale. */
+    private float fit = 1f;
 
     private final ItemStack gravityCore = new ItemStack(ModBlocks.GRAVITY_CORE);
     private final ItemStack blankFace = new ItemStack(net.minecraft.registry.Registries.ITEM.get(Steveparty.id("blank_dice_face")));
@@ -100,6 +112,29 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         super(handler, inventory, title);
         this.backgroundWidth = 236;
         this.backgroundHeight = 330;
+    }
+
+    /**
+     * At a large GUI scale the forge (330 px tall) does not fit in the window: the screen is then laid out on a larger
+     * virtual screen and drawn shrunk ({@link #fit}), mouse coordinates converted, so the star and the whole inventory
+     * stay visible and usable.
+     */
+    @Override
+    protected void init() {
+        int realWidth = this.width, realHeight = this.height;
+        if (client != null) {
+            realWidth = client.getWindow().getScaledWidth();
+            realHeight = client.getWindow().getScaledHeight();
+        }
+        fit = Math.min(1f, Math.min(realWidth / (float) (backgroundWidth + 2 * FIT_MARGIN),
+                realHeight / (float) (backgroundHeight + 2 * FIT_MARGIN)));
+        this.width = MathHelper.ceil(realWidth / fit);
+        this.height = MathHelper.ceil(realHeight / fit);
+        super.init();
+    }
+
+    private double toScreen(double coordinate) {
+        return coordinate / fit;
     }
 
     @Override
@@ -222,14 +257,32 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private void drawArrowButton(DrawContext context, int x, int y, int mouseX, int mouseY, float delta) {
         boolean enabled = isButtonEnabled();
         boolean hovered = isOverButton(mouseX, mouseY);
+        boolean pressed = enabled && hovered && buttonPressed;
+        int left = x + BUTTON_X0, top = y + BUTTON_Y0, right = x + BUTTON_X1, bottom = y + BUTTON_Y1;
+        if (pressed) {
+            // Sunken: darker inside, a shadow along its top and left edges, the arrow one pixel lower
+            context.fill(left, top, right, bottom, BUTTON_PRESSED_FILL);
+            context.fill(left, top, right, top + 1, BUTTON_PRESSED_SHADOW);
+            context.fill(left, top + 1, left + 1, bottom, BUTTON_PRESSED_SHADOW);
+        }
+        if (hovered && enabled) context.drawBorder(left - 1, top - 1, right - left + 2, bottom - top + 2, BUTTON_HOVER_FRAME);
+
         int base = hovered ? (enabled ? ARROW_HOVERED : ARROW_OFF_HOVERED) : !enabled ? ARROW_OFF
                 : handler.isRunning() ? ARROW_RUNNING : ARROW_IDLE;
+        if (!hovered && enabled && !handler.isRunning() && handler.getStatus() == Status.OK) {
+            // Ready to forge: a gentle pulse invites the click
+            float wave = 0.5f - 0.5f * MathHelper.cos((Util.getMeasuringTimeMs() % PULSE_MS) / (float) PULSE_MS * MathHelper.TAU);
+            base = ColorHelper.Argb.lerp(wave * PULSE_AMOUNT, ARROW_IDLE, ARROW_HOVERED);
+        }
         float progress = getSmoothProgress(delta);
         float length = ARROW_X1 + 2 - ARROW_X0;
+        int shift = pressed ? 1 : 0;
         for (int[] pixel : ARROW_PIXELS) {
             float t = (pixel[0] - ARROW_X0) / length;
             int color = t >= progress ? base : handler.isBlocked() ? GAUGE_BLOCKED : gaugeColor(t);
-            context.fill(x + pixel[0], y + pixel[1], x + pixel[0] + 1, y + pixel[1] + 1, color);
+            if (pressed) color = ColorHelper.Argb.lerp(0.25f, color, 0xFF000000);
+            int px = x + pixel[0] + shift, py = y + pixel[1] + shift;
+            context.fill(px, py, px + 1, py + 1, color);
         }
     }
 
@@ -316,7 +369,10 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        mouseX = toScreen(mouseX);
+        mouseY = toScreen(mouseY);
         if (button == 0 && isOverButton(mouseX, mouseY)) {
+            buttonPressed = isButtonEnabled();
             if (isButtonEnabled() && client != null && client.interactionManager != null) {
                 client.interactionManager.clickButton(handler.syncId, DiceForgeScreenHandler.BUTTON_TOGGLE);
                 MinecraftClient.getInstance().getSoundManager()
@@ -325,6 +381,27 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) buttonPressed = false;
+        return super.mouseReleased(toScreen(mouseX), toScreen(mouseY), button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        return super.mouseDragged(toScreen(mouseX), toScreen(mouseY), button, toScreen(deltaX), toScreen(deltaY));
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        return super.mouseScrolled(toScreen(mouseX), toScreen(mouseY), horizontalAmount, verticalAmount);
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        super.mouseMoved(toScreen(mouseX), toScreen(mouseY));
     }
 
     // ------------------------------------------------------------------ slots: ghosts and previews
@@ -357,10 +434,18 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(DrawContext context, int realMouseX, int realMouseY, float delta) {
+        // Drawn shrunk when the window is too small (see init), the tooltips at full size
+        int mouseX = (int) toScreen(realMouseX), mouseY = (int) toScreen(realMouseY);
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.scale(fit, fit, 1f);
         super.render(context, mouseX, mouseY, delta);
+        matrices.pop();
+        mouseX = realMouseX;
+        mouseY = realMouseY;
 
-        if (isOverButton(mouseX, mouseY)) {
+        if (isOverButton(toScreen(mouseX), toScreen(mouseY))) {
             drawWrappedTooltip(context, getButtonTooltip(), mouseX, mouseY);
         } else if (focusedSlot != null && focusedSlot.id < DiceForgeBlockEntity.SIZE && handler.getCursorStack().isEmpty()) {
             if (focusedSlot.hasStack()) {
