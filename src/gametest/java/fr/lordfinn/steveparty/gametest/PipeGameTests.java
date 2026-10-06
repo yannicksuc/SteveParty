@@ -875,6 +875,39 @@ public class PipeGameTests implements FabricGameTest {
         });
     }
 
+    /**
+     * The way out taken away on the way, leaving the traveller in a closed loop cut off from every mouth: it gets out of
+     * the last pipe it was in (on its top), not back at the mouth it went in.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void cutOffInAClosedLoopGetsOutOfTheLastPipe(TestContext context) {
+        // West mouth (1) → (2) → a ring of four (3..4, 2..3) → (5) → east mouth (6)
+        context.setBlockState(new BlockPos(1, 2, 2), pipe(RED, PipeSolid.NONE, Direction.EAST));
+        context.setBlockState(new BlockPos(2, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST));
+        context.setBlockState(new BlockPos(3, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST, Direction.SOUTH));
+        context.setBlockState(new BlockPos(4, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST, Direction.SOUTH));
+        context.setBlockState(new BlockPos(4, 2, 3), pipe(RED, PipeSolid.NONE, Direction.NORTH, Direction.WEST));
+        context.setBlockState(new BlockPos(3, 2, 3), pipe(RED, PipeSolid.NONE, Direction.NORTH, Direction.EAST));
+        context.setBlockState(new BlockPos(5, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.EAST));
+        context.setBlockState(new BlockPos(6, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST));
+        ItemEntity item = floating(context, new Vec3d(0.8, 2.5, 2.5));
+        context.assertTrue(PipeTravel.enter(context.getWorld(), context.getAbsolutePos(new BlockPos(1, 2, 2)), Direction.WEST, item, 0), "in");
+        when(context, () -> item.getVehicle() instanceof PipeCarrierEntity, 5, "never went in", () -> {
+            // The way in and the way out taken away: the ring is closed, with no mouth
+            context.setBlockState(new BlockPos(2, 2, 2), Blocks.AIR);
+            context.setBlockState(new BlockPos(5, 2, 2), Blocks.AIR);
+            context.setBlockState(new BlockPos(6, 2, 2), Blocks.AIR);
+            context.setBlockState(new BlockPos(3, 2, 2), pipe(RED, PipeSolid.NONE, Direction.EAST, Direction.SOUTH));
+            context.setBlockState(new BlockPos(4, 2, 2), pipe(RED, PipeSolid.NONE, Direction.WEST, Direction.SOUTH));
+            when(context, () -> item.age > 3 && !item.hasVehicle(), 80, "never came out", () -> {
+                Vec3d at = relative(context, item);
+                context.assertTrue(Math.abs(at.x - 4.5) < 0.3 && Math.abs(at.z - 2.5) < 0.3 && at.y >= 2.99,
+                        "out on top of the last pipe of the loop, not at the mouth it went in: " + at);
+                context.complete();
+            });
+        });
+    }
+
     /** Pipes added between two trips: the second goes the new way (the network is worked out again). */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
     public void aNetworkChangedBetweenTripsIsUsedAsItIs(TestContext context) {

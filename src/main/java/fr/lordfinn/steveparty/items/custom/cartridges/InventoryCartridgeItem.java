@@ -61,7 +61,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
      *     is one; it does not open. With the cartridge in the off hand and nothing in the main hand, too;</li>
      *     <li>a board space or a router, sneaking: added to the destinations, or removed ({@link #useOnBlock}). Not
      *     sneaking, the board space opens its interface, where cartridges are put in, as for every cartridge;</li>
-     *     <li>anything else: its own use.</li>
+     *     <li>anything else: its menu (see {@link CartridgeItem#useOnBlock}).</li>
      * </ul>
      */
     public static void initialize() {
@@ -104,12 +104,12 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
     /**
      * Reached when the block did not take the click (sneaking, or a block without a use): a board space or a router
-     * is added to the destinations (or removed), in either hand; anything else is left alone.
+     * is added to the destinations (or removed), in either hand; anything else as every cartridge (its menu).
      */
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         World world = context.getWorld();
-        if (fr.lordfinn.steveparty.board.BoardLinks.container(world, context.getBlockPos()) == null) return ActionResult.PASS;
+        if (fr.lordfinn.steveparty.board.BoardLinks.container(world, context.getBlockPos()) == null) return super.useOnBlock(context);
         return toggleDestination(context);
     }
 
@@ -205,7 +205,7 @@ public class InventoryCartridgeItem extends CartridgeItem {
 
         if (!tileDestinations.isEmpty()) {
             this.addTooltipHeading(tooltip, component);
-            this.addDestinationsToTooltip(tooltip, tileDestinations);
+            this.addDestinationsToTooltip(tooltip, tileDestinations, component, holder == null ? null : holder.getWorld());
         } else {
             this.addNoDestinationsMessage(tooltip);
         }

@@ -33,7 +33,9 @@ public record WrenchActionPayload(int action, int direction) implements CustomPa
         /** Sneak + mode key: placed board spaces are linked (or not) while tracing. */
         AUTO_LINK,
         /** Sneak + mouse wheel with a 16-slot origin: the slot whose cartridge is edited. */
-        SLOT
+        SLOT,
+        /** Sneak + mouse wheel with the Tile Linker Brush: its level (the slot its links go in). */
+        LEVEL
     }
 
     public WrenchActionPayload(Action action, int direction) {
@@ -49,7 +51,18 @@ public record WrenchActionPayload(int action, int direction) implements CustomPa
     public void handle(ServerPlayerEntity player) {
         if (action < 0 || action >= Action.values().length) return;
         ItemStack wrench = player.getMainHandStack();
-        if (!WrenchActions.isWrench(wrench)) return;
+        Action control = Action.values()[action];
+        if (wrench.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem) {
+            // The brush: its level, and the undo history shared with the Wrench
+            switch (control) {
+                case LEVEL -> fr.lordfinn.steveparty.board.TileLinkerBrush.cycleLevel(player, wrench, direction);
+                case UNDO, REDO -> fr.lordfinn.steveparty.board.LinkHistory.undo(player, control == Action.UNDO, null);
+                default -> {
+                }
+            }
+            return;
+        }
+        if (!WrenchActions.isWrench(wrench) || control == Action.LEVEL) return;
         WrenchActions.control(player, wrench, Action.values()[action], Integer.signum(direction));
     }
 }

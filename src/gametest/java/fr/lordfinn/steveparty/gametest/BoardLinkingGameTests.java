@@ -583,4 +583,111 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(links(context, t.get(0)), List.of(), "survival: the link is gone");
         });
     }
+
+    /**
+     * A cartridge linked then unlinked (in a tile with the Wrench, or in the hand) is the same as a new one again: no
+     * empty links left on it, so it stacks with new ones.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anUnlinkedCartridgeStacksWithNewOnes(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack wrench = wrench(player);
+            for (BlockPos pos : t) click(player, wrench, context, pos);
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "linked");
+            WrenchActions.endChain(player, wrench, context.getWorld(), false);
+            wrench.set(ModComponents.WRENCH_STATE, WrenchState.of(wrench).withMode(WrenchMode.CUT));
+            click(player, wrench, context, t.get(0));
+            BoardSpaceBlockEntity boardSpace = boardSpace(context, t.get(0));
+            ItemStack cut = boardSpace.getStack(boardSpace.getActiveSlot());
+            ItemStack fresh = new ItemStack(cut.getItem());
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(cut, fresh), "cut in its tile: like a new one " + cut.getComponentChanges());
+
+            ItemStack held = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+            var item = (fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem) held.getItem();
+            item.addOrRemoveDestination(DestinationsComponent.DEFAULT, t.get(1), player, held, context.getWorld());
+            context.assertTrue(held.contains(ModComponents.DESTINATIONS_COMPONENT), "linked in the hand");
+            item.addOrRemoveDestination(held.get(ModComponents.DESTINATIONS_COMPONENT), t.get(1), player, held, context.getWorld());
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(held, new ItemStack(ModItems.TILE_BEHAVIOR_START)),
+                    "unlinked in the hand: like a new one " + held.getComponentChanges());
+        });
+    }
+
+    /**
+     * A cartridge in the hand clicked on the ground opens its menu and links nothing; clicked where its linked tile was
+     * (the tile broken since), it unlinks it.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCartridgeOnTheGroundOpensItsMenuOrUnlinksAMissingTile(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
+        context.setBlockState(new BlockPos(3, 0, 3), Blocks.STONE);
+        withPlayer(context, true, player -> {
+            ItemStack held = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+            player.setStackInHand(Hand.MAIN_HAND, held);
+            BlockPos ground = context.getAbsolutePos(new BlockPos(3, 0, 3));
+            ItemStack inHand = player.getMainHandStack();
+            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
+            context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "the ground is not linked");
+            context.assertTrue(player.currentScreenHandler != player.playerScreenHandler, "its menu is open");
+            player.closeHandledScreen();
+
+            BlockPos tile = t.getFirst();
+            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(tile.toCenterPos(), net.minecraft.util.math.Direction.UP, tile, false)));
+            context.assertEquals(inHand.get(ModComponents.DESTINATIONS_COMPONENT).destinations(), List.of(tile), "the tile is linked");
+            context.setBlockState(new BlockPos(1, 1, 1), Blocks.AIR);
+            BlockPos under = tile.down();
+            inHand.useOnBlock(new net.minecraft.item.ItemUsageContext(player, Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(under.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, under, false)));
+            context.assertTrue(!inHand.contains(ModComponents.DESTINATIONS_COMPONENT), "the missing tile is unlinked by clicking under it");
+        });
+    }
+
+    // ---------------------------------------------------------------- the Tile Linker Brush
+
+    static void paint(ServerPlayerEntity player, ItemStack brush, TestContext context, BlockPos... stroke) {
+        for (BlockPos pos : stroke) fr.lordfinn.steveparty.board.TileLinkerBrush.paint(player, brush, context.getWorld(), pos);
+        fr.lordfinn.steveparty.board.TileLinkerBrush.endStroke(player);
+    }
+
+    /** A stroke links each painted tile to the next; going over a link again, either way, erases it. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBrushPaintsLinksAndErasesThemWhenRepainted(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE,
+                new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1), new BlockPos(7, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+            player.setStackInHand(Hand.MAIN_HAND, brush);
+            paint(player, brush, context, t.get(0), t.get(1), t.get(2), t.get(3));
+            for (int i = 0; i < 3; i++) context.assertEquals(links(context, t.get(i)), List.of(t.get(i + 1)), "tile " + i + " linked to the next");
+            context.assertEquals(links(context, t.get(3)), List.of(), "the last one leads nowhere yet");
+            paint(player, brush, context, t.get(0), t.get(1));
+            context.assertEquals(links(context, t.get(0)), List.of(), "repainted the same way: erased");
+            paint(player, brush, context, t.get(3), t.get(2));
+            context.assertEquals(links(context, t.get(2)), List.of(), "repainted the other way: erased");
+            context.assertEquals(links(context, t.get(3)), List.of(), "and not linked back");
+            context.assertEquals(links(context, t.get(1)), List.of(t.get(2)), "the link in between kept");
+            context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, null), "undone");
+            context.assertEquals(links(context, t.get(2)), List.of(t.get(3)), "the erased link is back");
+        });
+    }
+
+    /** The brush's level is the slot of a 16-slot board space whose cartridge gets the link. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBrushLevelPicksTheSlotOfAnAdvancedTile(TestContext context) {
+        List<BlockPos> advanced = tiles(context, ModBlocks.ADVANCED_TILE, new BlockPos(1, 1, 1));
+        List<BlockPos> next = tiles(context, ModBlocks.TILE, new BlockPos(4, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+            player.setStackInHand(Hand.MAIN_HAND, brush);
+            for (int i = 0; i < 8; i++) fr.lordfinn.steveparty.board.TileLinkerBrush.cycleLevel(player, brush, 1);
+            context.assertEquals(fr.lordfinn.steveparty.board.TileLinkerBrush.level(brush), 7, "powered, 0... 7");
+            paint(player, brush, context, advanced.getFirst(), next.getFirst());
+            BoardSpaceBlockEntity tile = boardSpace(context, advanced.getFirst());
+            context.assertEquals(BoardLinks.links(tile, 7), List.of(next.getFirst()), "linked in slot 7");
+            for (int i = 0; i < 9; i++) fr.lordfinn.steveparty.board.TileLinkerBrush.cycleLevel(player, brush, 1);
+            context.assertTrue(!brush.contains(ModComponents.LINK_LEVEL), "back to the powered slot: no component left");
+        });
+    }
 }

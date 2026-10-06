@@ -9,6 +9,8 @@ import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.board.WrenchMode;
 import fr.lordfinn.steveparty.board.WrenchState;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.payloads.custom.WrenchActionPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -56,19 +58,24 @@ public final class WrenchClient {
         });
         // Left click in the air: undo (sneaking: redo). Left click on a block keeps breaking it.
         ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> {
-            if (clickCount <= 0 || client.currentScreen != null || !holdsWrench(client)) return false;
+            if (clickCount <= 0 || client.currentScreen != null || !(holdsWrench(client) || holdsBrush(client))) return false;
             HitResult target = client.crosshairTarget;
             if (target != null && target.getType() != HitResult.Type.MISS) return false;
             send(player.isSneaking() ? WrenchActionPayload.Action.REDO : WrenchActionPayload.Action.UNDO, 1);
             return true;
         });
         HudRenderCallback.EVENT.register(WrenchClient::renderHud);
+        HudRenderCallback.EVENT.register(WrenchClient::renderBrushHud);
         WrenchOverlay.initialize();
         BoardView.initialize();
     }
 
     static boolean holdsWrench(MinecraftClient client) {
         return client.player != null && client.player.getMainHandStack().getItem() instanceof WrenchItem;
+    }
+
+    static boolean holdsBrush(MinecraftClient client) {
+        return client.player != null && client.player.getMainHandStack().getItem() instanceof TileLinkerBrushItem;
     }
 
     private static void send(WrenchActionPayload.Action action, int direction) {
@@ -82,7 +89,12 @@ public final class WrenchClient {
      */
     public static boolean onScroll(double vertical) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen != null || client.player == null || !client.player.isSneaking() || !holdsWrench(client)) return false;
+        if (client.currentScreen != null || client.player == null || !client.player.isSneaking()) return false;
+        if (holdsBrush(client)) {
+            if (vertical != 0) send(WrenchActionPayload.Action.LEVEL, vertical > 0 ? -1 : 1);
+            return true;
+        }
+        if (!holdsWrench(client)) return false;
         if (vertical == 0) return true;
         send(editsSlots(client) ? WrenchActionPayload.Action.SLOT : WrenchActionPayload.Action.MODE, vertical > 0 ? -1 : 1);
         return true;
@@ -124,12 +136,7 @@ public final class WrenchClient {
         Text mode = Text.translatable("hud.steveparty.wrench.panel", state.mode().displayName().copy().formatted(Formatting.RESET), detail);
         int[] counts = BoardView.counts();
         boolean problems = counts[1] + counts[2] > 0;
-        Text board = counts[0] == 0 ? null : problems
-                ? Text.translatable("hud.steveparty.board.summary.problems",
-                        BoardText.Plate.NUMBER.of(Text.translatable("hud.steveparty.board.spaces", counts[0])),
-                        (counts[1] > 0 ? BoardText.Plate.DEAD_END : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.dead_ends", counts[1])),
-                        (counts[2] > 0 ? BoardText.Plate.UNREACHABLE : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.unreachable", counts[2])))
-                : BoardText.Plate.OK.of(Text.translatable("hud.steveparty.board.summary.ok", Text.translatable("hud.steveparty.board.spaces", counts[0])));
+        Text board = boardSummary();
 
         int gap = 4;
         // The cartridge the next new space will get: none left in survival -> a red box and a hint
@@ -164,6 +171,51 @@ public final class WrenchClient {
                         Text.translatable(state.autoLink() ? "hud.steveparty.wrench.auto_link.on" : "hud.steveparty.wrench.auto_link.off"))
                 : Text.translatable("hud.steveparty.wrench.hint", MODE_KEY.getBoundKeyLocalizedText());
         ToolHud.hint(context, hint, context.getScaledWindowWidth() / 2, y);
+    }
+
+    /**
+     * The Tile Linker Brush HUD, in the tools' look: the brush, the cartridge a new linked tile will get (and how many
+     * are left), a plate with its level, the board summary, and the controls.
+     */
+    private static void renderBrushHud(DrawContext context, RenderTickCounter tickCounter) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.options.hudHidden || client.currentScreen != null || client.player == null || client.world == null || !holdsBrush(client)) return;
+        ItemStack brush = client.player.getMainHandStack();
+        Text level = Text.translatable("hud.steveparty.tile_linker_brush.panel", TileLinkerBrush.levelText(TileLinkerBrush.level(brush)));
+        ItemStack cartridge = BoardLinks.cartridgeSource(client.player);
+        int left = BoardLinks.cartridgesLeft(client.player);
+        List<ToolHud.Element> tool = new ArrayList<>();
+        tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> {
+            ToolHud.box(context, x, y, true);
+            context.drawItem(brush, x + INSET, y + INSET);
+        }));
+        tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> cartridgeBox(context, x, y, cartridge, left)));
+        if (cartridge.isEmpty()) {
+            Text none = BoardText.Plate.DEAD_END.of(Text.translatable("hud.steveparty.wrench.no_cartridge"));
+            tool.add(ToolHud.element(ToolHud.textPlateWidth(none), (x, y) -> ToolHud.textPlate(context, x, y, none, ToolHud.Plate.RED)));
+        }
+        tool.add(ToolHud.element(ToolHud.textPlateWidth(level), (x, y) -> ToolHud.textPlate(context, x, y, level, ToolHud.Plate.GREEN)));
+        List<List<ToolHud.Element>> groups = new ArrayList<>(List.of(tool));
+        Text board = boardSummary();
+        if (board != null) {
+            ToolHud.Plate boardPlate = BoardView.counts()[1] + BoardView.counts()[2] > 0 ? ToolHud.Plate.ORANGE : ToolHud.Plate.GREEN;
+            groups.add(List.of(ToolHud.element(ToolHud.textPlateWidth(board), (x, y) -> ToolHud.textPlate(context, x, y, board, boardPlate))));
+        }
+        int y = ToolHud.rows(context, groups, 4);
+        ToolHud.hint(context, Text.translatable("hud.steveparty.tile_linker_brush.hint"), context.getScaledWindowWidth() / 2, y);
+    }
+
+    /** The board around, summed up (null: no board space around). */
+    private static @org.jetbrains.annotations.Nullable Text boardSummary() {
+        int[] counts = BoardView.counts();
+        if (counts[0] == 0) return null;
+        if (counts[1] + counts[2] == 0) {
+            return BoardText.Plate.OK.of(Text.translatable("hud.steveparty.board.summary.ok", Text.translatable("hud.steveparty.board.spaces", counts[0])));
+        }
+        return Text.translatable("hud.steveparty.board.summary.problems",
+                BoardText.Plate.NUMBER.of(Text.translatable("hud.steveparty.board.spaces", counts[0])),
+                (counts[1] > 0 ? BoardText.Plate.DEAD_END : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.dead_ends", counts[1])),
+                (counts[2] > 0 ? BoardText.Plate.UNREACHABLE : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.unreachable", counts[2])));
     }
 
     /**
