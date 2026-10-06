@@ -3,17 +3,25 @@ package fr.lordfinn.steveparty.items.custom;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
+import fr.lordfinn.steveparty.blocks.custom.CashRegisterBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.TradingStallBlockEntity;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.text.MutableText;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
@@ -21,7 +29,13 @@ import net.minecraft.world.World;
 
 import java.util.*;
 
+/**
+ * Sets up a shop: linked first to a Boxed Trader (who becomes the player's), it then links the blocks of his shop,
+ * each with its role: Trading Stalls (the offers), containers (the stock he sells from) and Cash Registers (where
+ * the payments go). Its tooltip says so, and every link tells what the shop has and what it still lacks.
+ */
 public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
+    private static final String KEY = "message.steveparty.shopkeeper_key.";
     /** Ticks between two refreshes of the displayed destinations from the persistent link state. */
     private static final int DISPLAY_REFRESH_INTERVAL = 10;
 
@@ -58,6 +72,7 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
             // The destinations shown by the key are derived from the persistent link state
             refreshDestinations(stack, (ServerWorld) entity.getWorld());
             user.sendMessage(Text.translatable("message.steveparty.shopkeeper_key.linked", entity.getDisplayName()), false);
+            sendShopStatus(user, (ServerWorld) entity.getWorld(), uuid);
             return ActionResult.SUCCESS;
         }
         return ActionResult.PASS;
@@ -102,16 +117,76 @@ public class ShopkeeperKeyItem extends AbstractDestinationsSelectorItem {
         // The persistent state is the single source of truth: toggle it, then derive the key display from it
         // (two keys linked to the same trader can no longer disagree).
         boolean linked = vendorLinks.toggleLink(vendorId, GlobalPos.create(world.getRegistryKey(), pos));
+        Text block = world.getBlockState(pos).getBlock().getName();
         if (linked) {
-            player.sendMessage(Text.translatable("message.steveparty.shopkeeper_key.linked_block", pos.toShortString(), vendorId.toString()), true);
+            ShopRole role = ShopRole.of(world.getBlockEntity(pos));
+            player.sendMessage(Text.translatable(KEY + "linked_block", block,
+                    Text.translatable(KEY + "role." + role.key)).formatted(role == ShopRole.NONE ? Formatting.RED : Formatting.GREEN), false);
             playSelectSound(pos, player);
         } else {
-            player.sendMessage(Text.translatable("message.steveparty.shopkeeper_key.unlinked_block", pos.toShortString(), vendorId.toString()), true);
+            player.sendMessage(Text.translatable(KEY + "unlinked_block", block).formatted(Formatting.GOLD), false);
             playCancelSound(pos, player);
         }
+        sendShopStatus(player, (ServerWorld) world, vendorId);
         refreshDestinations(stack, (ServerWorld) world);
 
         return ActionResult.SUCCESS;
+    }
+
+    /** What a linked block does in a shop. */
+    enum ShopRole {
+        STALL("stall"), STOCK("stock"), REGISTER("register"), NONE("none");
+
+        final String key;
+
+        ShopRole(String key) {
+            this.key = key;
+        }
+
+        static ShopRole of(@org.jetbrains.annotations.Nullable BlockEntity blockEntity) {
+            if (blockEntity instanceof TradingStallBlockEntity) return STALL;
+            if (blockEntity instanceof CashRegisterBlockEntity) return REGISTER;
+            if (blockEntity instanceof net.minecraft.inventory.Inventory) return STOCK;
+            return NONE;
+        }
+    }
+
+    /**
+     * Tells the player what the trader's shop has (stalls, stock containers, cash registers linked in this world) and
+     * what to link next: a stall and a stock container are needed to sell, a cash register keeps the payments (else
+     * they drop at the trader's feet).
+     */
+    public static void sendShopStatus(PlayerEntity player, ServerWorld world, UUID vendorId) {
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
+        if (state == null) return;
+        int stalls = 0, stock = 0, registers = 0;
+        for (BlockPos pos : state.getLinkedPositionsIn(vendorId, world.getRegistryKey())) {
+            if (!world.isChunkLoaded(pos)) continue;
+            switch (ShopRole.of(world.getBlockEntity(pos))) {
+                case STALL -> stalls++;
+                case STOCK -> stock++;
+                case REGISTER -> registers++;
+                default -> { }
+            }
+        }
+        MutableText status = Text.translatable(KEY + "status", stalls, stock, registers).formatted(Formatting.GRAY);
+        String next = stalls == 0 ? "next.stall" : stock == 0 ? "next.stock" : registers == 0 ? "next.register" : "ready";
+        status.append(" ").append(Text.translatable(KEY + next)
+                .formatted(next.equals("ready") ? Formatting.GREEN : Formatting.YELLOW));
+        player.sendMessage(status, false);
+    }
+
+    /** How to set up a shop with the key: the next step first (link a trader, then his blocks), each block's role. */
+    @Environment(EnvType.CLIENT)
+    @Override
+    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        boolean linked = stack.contains(ModComponents.SHOPKEEPER_UUID);
+        tooltip.add(Text.translatable("tooltip.steveparty.shopkeeper_key." + (linked ? "linked" : "unlinked"))
+                .formatted(linked ? Formatting.GREEN : Formatting.YELLOW));
+        for (String line : List.of("blocks", "stall", "stock", "register", "toggle")) {
+            tooltip.add(Text.translatable("tooltip.steveparty.shopkeeper_key." + line).formatted(Formatting.GRAY));
+        }
+        if (linked) super.appendTooltip(stack, context, tooltip, type);
     }
 
     @Override
