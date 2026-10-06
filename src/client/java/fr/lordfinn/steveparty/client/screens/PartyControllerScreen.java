@@ -129,12 +129,16 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     private static final int TAB_INK = 0xFF4A3A10, TAB_RED = 0xFFB3202A, TAB_WARN = 0xFFB36200;
     private static final float MARQUEE_SPEED = 28F;
     private static final long MARQUEE_PAUSE_MS = 700;
+    /** How long the « Stop the party » button waits for its confirmation (a second click). */
+    private static final long STOP_CONFIRM_MS = 4000;
 
     private boolean openSoundPlayed;
     private int playersScroll;
     /** A local refusal shown on the page for a few seconds (currency slots). */
     private @Nullable Text flash;
     private long flashUntil;
+    /** Until when a second click on « Stop the party » stops it (0: not asked). */
+    private long stopConfirmUntil;
     /** The data the widgets were built for: rebuilt when a new one arrives. */
     private @Nullable PartyDashboardData builtFor;
     /** The first step shown of each timeline; the running party's follows the current step until it is scrolled. */
@@ -194,8 +198,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     @Override
     protected void handledScreenTick() {
         super.handledScreenTick();
-        // New state from the server: the buttons follow (enabled, labels, tooltips)
-        if (data() != builtFor) clearAndInit();
+        // New state from the server: the buttons follow (enabled, labels, tooltips); the stop confirmation runs out
+        boolean confirmOver = stopConfirmUntil != 0 && Util.getMeasuringTimeMs() > stopConfirmUntil;
+        if (confirmOver) stopConfirmUntil = 0;
+        if (data() != builtFor || confirmOver) clearAndInit();
     }
 
     // ------------------------------------------------------------------ tabs
@@ -326,7 +332,11 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 data.following() ? ConsoleButton.Kind.GOLD : ConsoleButton.Kind.SCREEN, null, () -> click(BUTTON_FOLLOW)));
         follow.setTooltip(Tooltip.of(Text.translatable(KEY + "follow.tooltip")));
 
-        if (data.phase() == Phase.RUNNING) return;
+        if (data.phase() == Phase.RUNNING) {
+            addStopButton(data);
+            return;
+        }
+        stopConfirmUntil = 0;
         // The main action (the board is checked again every two seconds while the dashboard is open, and at the launch)
         Blocker blocker = data.launchBlocker();
         Text launchText = Text.translatable(KEY + (data.phase() == Phase.ENDED ? "launch.again" : "launch"));
@@ -341,6 +351,31 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 ? Text.translatable(KEY + "launch.tooltip")
                 : Text.empty().append(Text.translatable(KEY + "launch.blocked").formatted(Formatting.RED)).append("\n")
                         .append(blockerText(blocker).copy().formatted(Formatting.GRAY))));
+    }
+
+    /**
+     * Stops the running party (bottom left): a first click asks for a confirmation, a second one within
+     * {@link #STOP_CONFIRM_MS} stops it (checked again by the server).
+     */
+    private void addStopButton(PartyDashboardData data) {
+        boolean confirming = stopConfirmUntil != 0;
+        Text stopText = Text.translatable(KEY + "stop");
+        Text confirmText = Text.translatable(KEY + "stop.confirm");
+        // As wide as its widest label: it does not move when asking
+        int stopWidth = Math.max(textRenderer.getWidth(stopText), textRenderer.getWidth(confirmText)) - 1 + 20;
+        ConsoleButton stop = addDrawableChild(new ConsoleButton(x + CX, y + BUTTON_Y, stopWidth, BTN_H, confirming ? confirmText : stopText,
+                confirming ? ConsoleButton.Kind.GOLD : ConsoleButton.Kind.RED, null, () -> {
+            if (stopConfirmUntil != 0) {
+                stopConfirmUntil = 0;
+                click(BUTTON_STOP);
+            } else {
+                stopConfirmUntil = Util.getMeasuringTimeMs() + STOP_CONFIRM_MS;
+            }
+            clearAndInit();
+        }));
+        stop.active = data.canEdit();
+        stop.setTooltip(Tooltip.of(!data.canEdit() ? Text.translatable(KEY + "locked")
+                : Text.translatable(KEY + (confirming ? "stop.confirm.tooltip" : "stop.tooltip"))));
     }
 
     private void addSettingsButtons(PartyDashboardData data) {

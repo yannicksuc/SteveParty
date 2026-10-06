@@ -172,14 +172,22 @@ public class PartyController extends HorizontalFacingBlock implements BlockEntit
     }
 
     @Override
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        // Broken by a player: its running party stops, told as stopped by them (else onStateReplaced stops it)
+        if (!world.isClient && world.getBlockEntity(pos) instanceof PartyControllerEntity entity)
+            entity.stopParty(player.getDisplayName());
+        return super.onBreak(world, pos, state, player);
+    }
+
+    @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
             PartyControllerEntity entity = (PartyControllerEntity) world.getBlockEntity(pos);
             if (entity != null) {
+                // The party is gone: it stops (its mini-game still reads the catalogue), its players' steps HUD goes too
+                entity.onControllerRemoved();
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.catalogue);
                 ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, entity.getBank());
-                // The party is gone: its players' steps HUD must go too
-                entity.onControllerRemoved();
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);

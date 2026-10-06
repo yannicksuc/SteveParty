@@ -31,10 +31,8 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -71,8 +69,8 @@ public final class TileTeleport {
     private static final double MIN_SCALE = 0.05;
     private static final Identifier SHRINK_MODIFIER = Steveparty.id("teleport_shrink");
 
-    /** Tokens being teleported (server thread). */
-    private static final Set<UUID> TELEPORTING = ServerMemory.forgetOnStop(new HashSet<>());
+    /** Tokens being teleported, with the task of their animation (server thread). */
+    private static final Map<UUID, UUID> TELEPORTING = ServerMemory.forgetOnStop(new HashMap<>());
     /**
      * Tokens pushed one space on after a teleport, until they land: whether that space triggers its effect (server
      * thread, not saved: a restart in the middle ends it as an ordinary move).
@@ -188,7 +186,19 @@ public final class TileTeleport {
     // ---------------------------------------------------------------- the teleport
 
     public static boolean isTeleporting(MobEntity token) {
-        return TELEPORTING.contains(token.getUuid());
+        return TELEPORTING.containsKey(token.getUuid());
+    }
+
+    /**
+     * The party of the token was stopped: its teleport stops where it is (back to its size, nothing more happens: no
+     * arrival, no push).
+     */
+    public static void cancel(MobEntity token) {
+        PUSHED.remove(token.getUuid());
+        UUID task = TELEPORTING.remove(token.getUuid());
+        if (task == null) return;
+        SCHEDULER.cancel(task);
+        setScale(token, 1);
     }
 
     /**
@@ -197,11 +207,12 @@ public final class TileTeleport {
      */
     public static void teleport(ServerWorld world, MobEntity token, BlockPos from, BlockPos to, int color, Runnable onArrived) {
         UUID id = token.getUuid();
-        if (!TELEPORTING.add(id)) return;
+        if (TELEPORTING.containsKey(id)) return;
         Vec3d start = BoardSpaces.standPos(world, from), end = BoardSpaces.standPos(world, to);
         float yaw = token.getYaw();
         int[] tick = {0};
         UUID task = UUID.randomUUID();
+        TELEPORTING.put(id, task);
         world.playSound(null, start.x, start.y, start.z, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, SoundCategory.BLOCKS, 0.3F, 1.5F);
         SCHEDULER.repeat(task, 1, () -> {
             int t = ++tick[0];

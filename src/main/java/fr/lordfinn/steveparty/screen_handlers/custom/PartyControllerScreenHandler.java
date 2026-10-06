@@ -50,7 +50,8 @@ import java.util.List;
 public class PartyControllerScreenHandler extends ScreenHandler {
     public static final int SLOT_CATALOGUE = 0, SLOT_STAR = 1, SLOT_COIN = 2, PLAYER_SLOTS = 3;
     public static final int BUTTON_LAUNCH = 0, BUTTON_FOLLOW = 1, BUTTON_ROUNDS_DOWN = 2, BUTTON_ROUNDS_UP = 3,
-            BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7, BUTTON_RESTRICT_DICE = 8;
+            BUTTON_PRACTICE = 5, BUTTON_MAX_POWER_UPS_DOWN = 6, BUTTON_MAX_POWER_UPS_UP = 7, BUTTON_RESTRICT_DICE = 8,
+            BUTTON_STOP = 9;
     /**
      * The steppers of the Gains page: {@code BUTTON_GAINS + row * 4 + column}, the columns being coins less, coins
      * more, stars less, stars more (see {@link #gainButton}).
@@ -541,6 +542,10 @@ public class PartyControllerScreenHandler extends ScreenHandler {
                 if (PartyDashboardData.launchBlocker(controller.getPartyData().isStarted(), board, controller.canEdit(player))
                         != PartyDashboardData.Blocker.NONE) return false;
                 controller.boot();
+            }
+            case BUTTON_STOP -> {
+                // The screen asked for a confirmation first; the same rule as the settings (a party runs: operator or Game Master)
+                if (!controller.canEdit(player) || !controller.stopParty(player.getDisplayName())) return false;
             }
             default -> {
                 return false;

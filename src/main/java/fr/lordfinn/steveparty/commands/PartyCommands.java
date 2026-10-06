@@ -33,6 +33,8 @@ import static net.minecraft.server.command.CommandManager.literal;
  *     <li>{@code /steveparty skip_turn [token] [controller pos]}: skips the current turn if it waits for its absent token</li>
  *     <li>{@code /steveparty exclude <token> [controller pos]}: excludes a token from the party (own token, absent
  *     current turn, or any token with a Game Master wand in hand)</li>
+ *     <li>{@code /steveparty party stop [controller pos]} (operators): stops the running party, as the dashboard's
+ *     « Stop the party » button does; without a position, the closest one within {@link #STOP_RANGE} blocks</li>
  * </ul>
  * Without a position, the closest running party within {@link #RANGE} blocks (containing the token, if given) is used.
  */
@@ -40,6 +42,8 @@ public class PartyCommands {
     /** A non-op player must be this close to the party controller to use the commands. */
     public static final int RANGE = PartyControllerEntity.PARTY_AUDIENCE_RADIUS;
     private static final int OP_LEVEL = 2;
+    /** {@code /steveparty party stop} without a position: the closest running party this close. */
+    public static final int STOP_RANGE = 64;
 
     private static final SuggestionProvider<ServerCommandSource> PARTY_TOKENS = (context, builder) -> {
         findParty(context.getSource(), null, null).ifPresent(party ->
@@ -65,7 +69,31 @@ public class PartyCommands {
                                 .executes(context -> exclude(context.getSource(), UuidArgumentType.getUuid(context, "token"), null))
                                 .then(argument("controller", BlockPosArgumentType.blockPos())
                                         .executes(context -> exclude(context.getSource(),
-                                                UuidArgumentType.getUuid(context, "token"), getPos(context)))))));
+                                                UuidArgumentType.getUuid(context, "token"), getPos(context))))))
+                .then(literal("party").requires(source -> source.hasPermissionLevel(OP_LEVEL))
+                        .then(literal("stop")
+                                .executes(context -> stop(context.getSource(), null))
+                                .then(argument("controller", BlockPosArgumentType.blockPos())
+                                        .executes(context -> stop(context.getSource(), getPos(context)))))));
+    }
+
+    private static int stop(ServerCommandSource source, @Nullable BlockPos controllerPos) {
+        ServerWorld world = source.getWorld();
+        PartyControllerEntity party = controllerPos != null
+                ? PartyControllerEntity.getPartyControllerEntity(world, controllerPos)
+                : PartyControllerEntity.getActivePartyControllers().stream()
+                        .filter(entity -> !entity.isRemoved() && entity.getWorld() == world && entity.getPartyData().isStarted())
+                        .filter(entity -> entity.getPos().toCenterPos().isInRange(source.getPosition(), STOP_RANGE))
+                        .min(Comparator.comparingDouble(entity -> entity.getPos().toCenterPos().squaredDistanceTo(source.getPosition())))
+                        .orElse(null);
+        if (party == null || !party.stopParty(source.getDisplayName())) {
+            source.sendError(Text.translatableWithFallback("command.steveparty.no_party", "No running party found."));
+            return 0;
+        }
+        BlockPos at = party.getPos();
+        source.sendFeedback(() -> Text.translatableWithFallback("command.steveparty.party_stopped",
+                "Party of the controller at %s, %s, %s stopped.", at.getX(), at.getY(), at.getZ()), true);
+        return 1;
     }
 
     private static BlockPos getPos(CommandContext<ServerCommandSource> context) {

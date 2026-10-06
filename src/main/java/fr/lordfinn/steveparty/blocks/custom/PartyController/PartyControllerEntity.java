@@ -69,6 +69,10 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private boolean resumeDone = false;
     /** Tokens that left the party (excluded / party over) while not loaded: released as soon as they are loaded. */
     private final Set<UUID> tokensToRelease = new LinkedHashSet<>();
+    /** The start tile each token of the running party started from (where {@link #stopParty} sends it back). */
+    private final Map<UUID, BlockPos> startTiles = new LinkedHashMap<>();
+    /** Tokens of a stopped party that were not loaded: sent back to their start tile as soon as they are loaded. */
+    private final Map<UUID, BlockPos> tokensToSendHome = new LinkedHashMap<>();
     /** Radius around the controller in which the players are told about the party (absent turns, exclusions...). */
     public static final int PARTY_AUDIENCE_RADIUS = 100;
     /** Last phase given to comparators, to notify them only when it changes. */
@@ -259,6 +263,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             tokensToRelease.forEach(uuid -> releaseNbt.add(NbtString.of(uuid.toString())));
             nbt.put("TokensToRelease", releaseNbt);
         }
+        if (!startTiles.isEmpty()) nbt.put("StartTiles", writeTokenTiles(startTiles));
+        if (!tokensToSendHome.isEmpty()) nbt.put("TokensToSendHome", writeTokenTiles(tokensToSendHome));
         if (!lastWinners.isEmpty()) {
             NbtList winnersNbt = new NbtList();
             lastWinners.forEach(uuid -> winnersNbt.add(NbtString.of(uuid.toString())));
@@ -314,6 +320,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             } catch (IllegalArgumentException ignored) {
             }
         });
+        readTokenTiles(nbt.getCompound("StartTiles"), startTiles);
+        readTokenTiles(nbt.getCompound("TokensToSendHome"), tokensToSendHome);
         lastWinners.clear();
         nbt.getList("LastWinners", NbtElement.STRING_TYPE).forEach(element -> {
             try {
@@ -332,6 +340,23 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         NbtCompound nbt = super.toInitialChunkDataNbt(registries);
         nbt.remove(fr.lordfinn.steveparty.powerups.effects.TrapState.NBT_KEY);
         return nbt;
+    }
+
+    /** Tokens and board spaces: the UUIDs as keys, the positions as longs. */
+    private static NbtCompound writeTokenTiles(Map<UUID, BlockPos> tiles) {
+        NbtCompound nbt = new NbtCompound();
+        tiles.forEach((token, tile) -> nbt.putLong(token.toString(), tile.asLong()));
+        return nbt;
+    }
+
+    private static void readTokenTiles(NbtCompound nbt, Map<UUID, BlockPos> tiles) {
+        tiles.clear();
+        for (String key : nbt.getKeys()) {
+            try {
+                tiles.put(UUID.fromString(key), BlockPos.fromLong(nbt.getLong(key)));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
     }
 
     private static ItemStack readCurrency(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper, PartyCurrency currency) {
@@ -537,18 +562,27 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
 
     /** The tokens that would play if a party started now: the ones bound to the start tiles around, in their order. */
     public List<UUID> findStartTokens(ServerWorld serverWorld) {
-        List<UUID> tokens = new ArrayList<>();
+        return new ArrayList<>(findStartTokenTiles(serverWorld).keySet());
+    }
+
+    /** The tokens bound to the start tiles around, in their order, each with its start tile (the first one bound to it). */
+    public Map<UUID, BlockPos> findStartTokenTiles(ServerWorld serverWorld) {
+        Map<UUID, BlockPos> tokens = new LinkedHashMap<>();
         for (BlockPos tilePos : findStartTiles(serverWorld, this.getPos())) {
             if (!(serverWorld.getBlockEntity(tilePos) instanceof BoardSpaceBlockEntity tile)) continue;
             String potentialUuid = tile.getActiveCartridgeItemStack().get(TB_START_BOUND_ENTITY);
             if (potentialUuid == null) continue;
             try {
-                UUID uuid = UUID.fromString(potentialUuid);
-                if (!tokens.contains(uuid)) tokens.add(uuid);
+                tokens.putIfAbsent(UUID.fromString(potentialUuid), tilePos);
             } catch (IllegalArgumentException ignored) {
             }
         }
         return tokens;
+    }
+
+    /** The start tile a token of the running party started from, null if unknown. */
+    public @Nullable BlockPos getStartTile(UUID token) {
+        return startTiles.get(token);
     }
 
     /**
@@ -559,7 +593,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      */
     public void serverTick(ServerWorld serverWorld) {
         fr.lordfinn.steveparty.service.PartyStars.tick(this, serverWorld);
-        if (!tokensToRelease.isEmpty() && serverWorld.getTime() % 20 == 0)
+        if ((!tokensToRelease.isEmpty() || !tokensToSendHome.isEmpty()) && serverWorld.getTime() % 20 == 0)
             releasePendingTokens(serverWorld);
         if (serverWorld.getTime() % 20 == 0) syncChunkHold();
         if (serverWorld.getTime() % LIVE_SYNC_INTERVAL_TICKS == 0)
@@ -649,9 +683,14 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     }
 
     private void getTokenFromStartTiles(ServerWorld serverWorld) {
-        List<UUID> tokens = findStartTokens(serverWorld);
+        Map<UUID, BlockPos> tokens = findStartTokenTiles(serverWorld);
         partyData.reset();
-        tokens.forEach(partyData::addToken);
+        startTiles.clear();
+        startTiles.putAll(tokens);
+        for (UUID tokenUUID : tokens.keySet()) {
+            partyData.addToken(tokenUUID);
+            tokensToSendHome.remove(tokenUUID);
+        }
     }
 
     private void sendStartGameInfos() {
@@ -1089,7 +1128,94 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
                 changed = true;
             }
         }
+        Iterator<Map.Entry<UUID, BlockPos>> homes = tokensToSendHome.entrySet().iterator();
+        while (homes.hasNext()) {
+            Map.Entry<UUID, BlockPos> home = homes.next();
+            if (isTokenInRunningParty(home.getKey())) {
+                homes.remove(); // it plays again: it stays where it is
+                changed = true;
+            } else if (serverWorld.getEntity(home.getKey()) instanceof MobEntity mob) {
+                sendHome(serverWorld, mob, home.getValue());
+                homes.remove();
+                changed = true;
+            }
+        }
         if (changed) markDirty();
+    }
+
+    /**
+     * Stops the running party at once, without a winner: the current step ends (a mini-game sends its players back
+     * and gives its zone back, nothing is paid), the shop stops, star choices, teleports, pipe travels and dice of its
+     * tokens are dropped, every token goes back onto the start tile it started from, out of the game, and the
+     * controller is back as before the party (a new one can start). Everyone around is told.
+     *
+     * @param stoppedBy who stopped it, null when its controller is broken or replaced
+     * @return false if no party runs (nothing done)
+     */
+    public boolean stopParty(@Nullable Text stoppedBy) {
+        if (!(this.world instanceof ServerWorld serverWorld) || !partyData.isStarted()) return false;
+        List<ServerPlayerEntity> audience = getPartyAudience();
+        endCurrentStep();
+        Set<UUID> tokens = new LinkedHashSet<>(partyData.getTokens());
+        Map<UUID, BlockPos> homes = new HashMap<>(startTiles);
+        // A party started without them (an older save): the start tiles still bound to its tokens
+        if (!homes.keySet().containsAll(tokens)) findStartTokenTiles(serverWorld).forEach(homes::putIfAbsent);
+        dropDiceOf(serverWorld, tokens, getPlayersInOrder());
+        for (UUID tokenUUID : tokens) {
+            fr.lordfinn.steveparty.service.ShopStops.cancel(tokenUUID);
+            fr.lordfinn.steveparty.service.PartyStars.cancelOffer(tokenUUID);
+            BlockPos home = homes.get(tokenUUID);
+            if (home != null) {
+                if (serverWorld.getEntity(tokenUUID) instanceof MobEntity mob) sendHome(serverWorld, mob, home);
+                else tokensToSendHome.put(tokenUUID, home);
+            }
+            releaseToken(serverWorld, tokenUUID);
+        }
+        partyData.reset();
+        startTiles.clear();
+        setStarSpace(null);
+        fr.lordfinn.steveparty.service.PartyStars.sync(serverWorld);
+        // The players' HUDs go (steps, standings)
+        clearInterestedPlayers();
+        lastLiveData = PartyLiveData.EMPTY;
+        Text message = stoppedBy != null
+                ? Text.translatableWithFallback("message.steveparty.party_stopped", "The party was stopped by %s.", stoppedBy)
+                : Text.translatableWithFallback("message.steveparty.party_stopped.removed", "The party was stopped: its Party Controller is gone.");
+        MessageUtils.sendToPlayers(audience, message.copy().formatted(Formatting.RED), MessageUtils.MessageType.CHAT);
+        markDirty();
+        return true;
+    }
+
+    /** Gives the dice thrown for a stopped party (for one of its tokens, or by one of its players) back to their owners. */
+    private void dropDiceOf(ServerWorld serverWorld, Set<UUID> tokens, List<UUID> players) {
+        net.minecraft.util.math.Box around = new net.minecraft.util.math.Box(pos).expand(START_TILES_SEARCH_RADIUS);
+        for (DiceEntity dice : serverWorld.getEntitiesByClass(DiceEntity.class, around, dice ->
+                dice.getTarget().filter(tokens::contains).isPresent() || dice.getOwner().filter(players::contains).isPresent())) {
+            dice.kill();
+        }
+    }
+
+    /**
+     * Puts a token of a stopped party back on its start tile, standing still as at the beginning: out of a pipe or a
+     * teleport, its move and the destinations it was choosing from forgotten.
+     */
+    private static void sendHome(ServerWorld serverWorld, MobEntity mob, BlockPos home) {
+        if (mob.getVehicle() instanceof fr.lordfinn.steveparty.entities.custom.PipeCarrierEntity) mob.stopRiding();
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.cancel(mob);
+        BoardSpaceBlockEntity space = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.boardSpaceOf(mob);
+        if (space != null) space.hideDestinations();
+        if (mob instanceof TokenizedEntityInterface token) {
+            token.steveparty$setNbSteps(0);
+            token.steveparty$stopMoving();
+        }
+        fr.lordfinn.steveparty.service.DiceRollEffects.clearMoveModules(mob.getUuid());
+        net.minecraft.util.math.Vec3d stand = fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces.standPos(serverWorld, home);
+        mob.requestTeleport(stand.x, stand.y, stand.z);
+        mob.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+        mob.fallDistance = 0;
+        // Its path starts again there
+        fr.lordfinn.steveparty.service.AdvanceBackMoves.forgetTrail(mob.getUuid());
+        fr.lordfinn.steveparty.service.AdvanceBackMoves.noteAt(mob, home);
     }
 
     public static boolean isTokenInRunningParty(UUID tokenUUID) {
@@ -1233,6 +1359,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
      */
     public void onControllerRemoved() {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
+        // A running party stops with it (already done if the player breaking it is known: see PartyController#onBreak)
+        stopParty(null);
         PartyChunkHolds.release(serverWorld, pos);
         for (UUID playerUUID : interestedPlayers) {
             ServerPlayerEntity player = serverWorld.getServer().getPlayerManager().getPlayer(playerUUID);
@@ -1245,7 +1373,10 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     public void clearInterestedPlayers() {
         if (this.world == null) return;
         for (UUID playerUUID : interestedPlayers) {
-            if (this.world.getPlayerByUuid(playerUUID) instanceof ServerPlayerEntity player)
+            // In any dimension (a player still on a mini-game's arena)
+            ServerPlayerEntity player = this.world.getServer() != null
+                    ? this.world.getServer().getPlayerManager().getPlayer(playerUUID) : null;
+            if (player != null)
                 this.sendClearPacketToPlayer(player);
         }
         interestedPlayers.clear();

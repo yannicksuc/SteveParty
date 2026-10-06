@@ -355,6 +355,18 @@ public final class ShopStops {
         goOn(stop);
     }
 
+    /**
+     * The party of the token was stopped: its stop ends at once, silently, and nothing goes on after it (the screen
+     * closes, the merchant stops glowing).
+     */
+    public static void cancel(UUID token) {
+        Stop stop = STOPS.remove(token);
+        if (stop == null) return;
+        ServerPlayerEntity owner = stop.world.getServer().getPlayerManager().getPlayer(stop.owner);
+        if (owner != null && stop.handler != null && owner.currentScreenHandler == stop.handler) owner.closeHandledScreen();
+        if (stop.world.getEntity(stop.trader) instanceof BoxedTraderEntity trader) trader.removeStatusEffect(StatusEffects.GLOWING);
+    }
+
     /** A paused token walks its remaining steps; a landing during a party ends the turn. */
     private static void goOn(Stop stop) {
         ServerWorld world = stop.world;

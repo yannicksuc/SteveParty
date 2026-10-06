@@ -268,6 +268,8 @@
   "book.steveparty.guide.party.controller.page1.title": "Restrict Dice",
   "book.steveparty.guide.party.controller.page2.text": "It takes the pawns bound to a start space within 100 blocks. Press *Start party*, or send it a rising redstone edge.\n\nA comparator reads the phase: 0 idle, 1 setup, 2 turn, 3 mini-game, 4 waiting for a bell, 5 end.",
   "book.steveparty.guide.party.controller.page2.title": "Starting",
+  "book.steveparty.guide.party.controller.page3.text": "During a party, *Stop the party* (Status page, click twice) ends it at once, without a winner: a running mini-game is called off, every pawn goes back to its start space, out of the game, and a new party can start. Only an operator or a Game Master may; breaking the controller stops it too. Operators can also run `/steveparty party stop`.",
+  "book.steveparty.guide.party.controller.page3.title": "Stopping",
   "book.steveparty.guide.party.flow.description": "From the first roll to the podium",
   "book.steveparty.guide.party.flow.name": "How a Party Plays",
   "book.steveparty.guide.party.flow.page0.text": "1. Bound pawns join.\n2. Each owner rolls once: the highest goes first.\n3. The program is built: by default, one turn per pawn then a mini-game, every round.\n4. On its turn, a pawn's owner rolls and moves.\n5. Mini-games pick teams and a page, then send the players through pipes.\n6. The end: pawns are freed.",
