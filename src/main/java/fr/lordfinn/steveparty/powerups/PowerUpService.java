@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntit
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.TokenTurnPartyStep;
+import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.dice.DiceOutcome;
 import fr.lordfinn.steveparty.dice.DicePrompts;
 import fr.lordfinn.steveparty.items.custom.PowerUpItem;
@@ -197,20 +198,43 @@ public final class PowerUpService {
      * player being picked, a warp). Asked by the dice items.
      */
     public static @Nullable Text rollRefusal(PlayerEntity player) {
-        Turn turn = turnOf(player.getUuid());
-        return turn != null && isHeld(turn) ? Text.translatable("message.steveparty.powerup.wait") : null;
+        return rollRefusal(player, ItemStack.EMPTY);
     }
 
     /**
-     * The dice items' check: true (and the player told why, in the action bar) if {@code player} may not throw a die
-     * now (see {@link #rollRefusal}).
+     * Why {@code player} may not throw {@code die} now, null if they may: see {@link #rollRefusal(PlayerEntity)}; a die
+     * carrying the Power-up module is a power-up: not after another one this turn.
      */
-    public static boolean refusesRoll(PlayerEntity player) {
+    public static @Nullable Text rollRefusal(PlayerEntity player, ItemStack die) {
+        Turn turn = turnOf(player.getUuid());
+        if (turn == null) return null;
+        if (isHeld(turn)) return Text.translatable("message.steveparty.powerup.wait");
+        if (DiceModules.isPowerUp(die) && turn.state().hasUsed()) return Text.translatable("message.steveparty.powerup.already_used");
+        return null;
+    }
+
+    /**
+     * The dice items' check: true (and the player told why, in the action bar) if {@code player} may not throw
+     * {@code die} now (see {@link #rollRefusal(PlayerEntity, ItemStack)}).
+     */
+    public static boolean refusesRoll(PlayerEntity player, ItemStack die) {
         if (!(player instanceof ServerPlayerEntity serverPlayer)) return false;
-        Text why = rollRefusal(serverPlayer);
+        Text why = rollRefusal(serverPlayer, die);
         if (why == null) return false;
         refuse(serverPlayer, why);
         return true;
+    }
+
+    /**
+     * {@code player} just threw {@code die}: one carrying the Power-up module, thrown during their turn before their
+     * roll counts, is the power-up of the turn (no other one after it).
+     */
+    public static void onDieThrown(PlayerEntity player, ItemStack die) {
+        if (player.getWorld().isClient || !DiceModules.isPowerUp(die)) return;
+        Turn turn = turnOf(player.getUuid());
+        if (turn == null || turn.step().hasRolled() || turn.state().hasUsed()) return;
+        turn.state().use(PowerUps.DIE);
+        turn.controller().markDirty();
     }
 
     /** The other players of the party who are online: those a power-up may aim at. */

@@ -101,7 +101,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     /** A practice round before each mini-game whose page has a Mini-game Controller (Settings page). */
     private boolean practiceRound = true;
     /**
-     * The power-ups a player may carry during a party, dice without Infinity included (Settings page; 0: no limit).
+     * The power-ups a player may carry during a party, dice carrying the Power-up module included (Settings page; 0: no limit).
      * See {@link fr.lordfinn.steveparty.powerups.PowerUpLimit}.
      */
     private int maxPowerUps = fr.lordfinn.steveparty.powerups.PowerUpLimit.DEFAULT;
@@ -424,7 +424,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         markDirty();
     }
 
-    /** The power-ups a player may carry during this party (dice without Infinity included), 0 for no limit. */
+    /** The power-ups a player may carry during this party (Power-up dice included), 0 for no limit. */
     public int getMaxPowerUps() {
         return maxPowerUps;
     }

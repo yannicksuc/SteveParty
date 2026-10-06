@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "steveparty:dice_module_infinity"
+        "recipe": "steveparty:dice_module_power_up"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -26,7 +26,7 @@
   ],
   "rewards": {
     "recipes": [
-      "steveparty:dice_module_infinity"
+      "steveparty:dice_module_power_up"
     ]
   }
 }

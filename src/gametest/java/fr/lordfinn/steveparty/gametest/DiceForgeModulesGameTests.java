@@ -51,17 +51,17 @@ public class DiceForgeModulesGameTests implements FabricGameTest {
         DiceForgeBlockEntity forge = placeActivatedForge(context);
         fill(forge);
         forge.setStack(FIRST_MODULE_SLOT, module(DiceModules.LUCKY, 2));
-        forge.setStack(FIRST_MODULE_SLOT + 1, module(DiceModules.INFINITY, 1));
+        forge.setStack(FIRST_MODULE_SLOT + 1, module(DiceModules.POWER_UP, 1));
         forge.setStack(FIRST_MODULE_SLOT + 2, module(DiceModules.LUCKY, 1));
-        forge.setStack(FIRST_MODULE_SLOT + 3, module(DiceModules.INFINITY, 1));
-        context.assertEquals(modulesOf(forge), Map.of(DiceModules.LUCKY, 3, DiceModules.INFINITY, 1), "Lucky adds up, Infinity counts once");
+        forge.setStack(FIRST_MODULE_SLOT + 3, module(DiceModules.POWER_UP, 1));
+        context.assertEquals(modulesOf(forge), Map.of(DiceModules.LUCKY, 3, DiceModules.POWER_UP, 1), "Lucky adds up, Power-up counts once");
         context.assertEquals(forge.getStatus(), Status.OK, "ready");
         context.assertTrue(forge.start(), "production starts");
 
         context.waitAndRun(2 * CRAFT_TIME + 10, () -> {
             ItemStack output = forge.getStack(OUTPUT_SLOT);
             context.assertTrue(output.isOf(ModItems.DEFAULT_DICE) && output.getCount() == 2, "two dice forged, stacked: " + output);
-            context.assertEquals(DiceModules.of(output), Map.of(DiceModules.LUCKY, 3, DiceModules.INFINITY, 1), "they carry the modules");
+            context.assertEquals(DiceModules.of(output), Map.of(DiceModules.LUCKY, 3, DiceModules.POWER_UP, 1), "they carry the modules");
             context.assertTrue(output.get(DiceFacesComponent.TYPE).faces().size() == 2, "and their faces");
             context.assertEquals(forge.getStack(FIRST_MODULE_SLOT).getCount(), 2, "the modules are not consumed");
             context.assertEquals(forge.getStack(FIRST_MODULE_SLOT + 1).getCount(), 1, "the modules are not consumed");
@@ -70,7 +70,7 @@ public class DiceForgeModulesGameTests implements FabricGameTest {
             // Taking a module out changes the next die
             forge.setStack(FIRST_MODULE_SLOT + 1, ItemStack.EMPTY);
             forge.setStack(FIRST_MODULE_SLOT + 3, ItemStack.EMPTY);
-            context.assertTrue(!DiceModules.has(forge.createDie(), DiceModules.INFINITY), "the next die has no Infinity");
+            context.assertTrue(!DiceModules.has(forge.createDie(), DiceModules.POWER_UP), "the next die has no Power-up");
             forge.toggleProduction();
             GravityGameTests.removeAndComplete(context, FORGE_POS); // its core has risen
         });

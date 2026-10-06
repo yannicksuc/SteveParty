@@ -206,7 +206,7 @@ public class ReplayTileGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** The die spent for the turn comes back for the replay (a forged die included); the replay flag is saved. */
+    /** The Power-up die spent for the turn comes back for the replay (a forged die included); the replay flag is saved. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theSpentDieComesBackAndTheReplayIsSaved(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
@@ -218,8 +218,9 @@ public class ReplayTileGameTests implements FabricGameTest {
         PartyControllerEntity controller = startParty(context, token.getUuid(), UUID.randomUUID());
         PartyData data = controller.getPartyData();
 
-        // The player threw a (named, like a forged one) die: it was spent
-        ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
+        // The player threw a (named, like a forged one) Power-up die: it was spent
+        ItemStack die = fr.lordfinn.steveparty.dice.DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE),
+                java.util.Map.of(fr.lordfinn.steveparty.dice.DiceModules.POWER_UP, 1));
         die.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, net.minecraft.text.Text.literal("Lucky"));
         DiceEntity dice = ModEntities.DICE_ENTITY.create(context.getWorld());
         context.assertTrue(dice != null, "dice created");

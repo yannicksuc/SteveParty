@@ -56,8 +56,8 @@ import static fr.lordfinn.steveparty.utils.EntitiesUtils.getPlayerNameByUuid;
 import static net.minecraft.component.DataComponentTypes.FIREWORKS;
 
 /**
- * A thrown die. It rolls until a player hits it, then shows its result for a moment and goes away (a die carrying the
- * Infinity module goes back to its roller). The dice of a Double / Triple Dice are linked: they stop together and add
+ * A thrown die. It rolls until a player hits it, then shows its result for a moment and goes away, back to its roller (a die
+ * carrying the Power-up module is spent). The dice of a Double / Triple Dice are linked: they stop together and add
  * up into one roll ({@link DiceOutcome}); the first one (the lead) holds the item and runs the roll
  * ({@link DiceRollSequence}: the modules of the die decide how it stops), the others follow it.
  */
@@ -332,7 +332,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 if (this.isRolling())
                     this.getWorld().playSound(null, this.getBlockPos(), SoundEvents.ENTITY_BREEZE_WHIRL, SoundCategory.AMBIENT, 1F, 0.7F);
                 else {
-                    // The result was seen: the thrown die goes away (Infinity: back to its roller)
+                    // The result was seen: the thrown die goes away, back to its roller (Power-up: spent)
                     if (!follower && isRollFinished()) {
                         secondsSinceRolled++;
                         if (secondsSinceRolled >= 2 && !itemReference.isEmpty()) explode(null);
@@ -554,7 +554,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     /**
      * /kill (and any other generic kill) removes the dice at once: a dice has no health to lose, and dying would
-     * play the living entity death animation. Like an explosion, an Infinity die goes back to its online owner.
+     * play the living entity death animation. Like an explosion, the die goes back to its online owner (Power-up: spent).
      */
     @Override
     public void kill() {
@@ -570,7 +570,7 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
 
     /**
      * A player (not sneaking) hit one of the dice of this throw (lead only). Rolling: the roll stops, or its modules
-     * decide ({@link DiceRollSequence#hit}). Rolled: the thrown die goes away at once (Infinity: back to its roller);
+     * decide ({@link DiceRollSequence#hit}). Rolled: the thrown die goes away at once (back to its roller);
      * a bare die (no item: summoned) rolls again.
      */
     private void onPlayerHit(ServerPlayerEntity player) {
@@ -603,8 +603,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
     }
 
     /**
-     * Removes the dice. A die carrying the Infinity module is not lost: it goes back to its owner when the owner is online,
-     * otherwise to the player who exploded it (anyone may explode a dice).
+     * Removes the dice. A die is not lost (unless it carries the Power-up module): it goes back to its owner when the
+     * owner is online, otherwise to the player who exploded it (anyone may explode a dice). A creative owner kept theirs
+     * when throwing it: none is given back to them.
      */
     private void giveBackDice(@Nullable ServerPlayerEntity player) {
         giveBackDice(player, RemovalReason.DISCARDED);
@@ -615,8 +616,9 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
         if (sequence != null) sequence.cancel();
         if (!diceItem.isEmpty() && DiceModules.returnsToRoller(diceItem)) {
             ServerPlayerEntity recipient = getOnlineOwner();
+            boolean kept = recipient != null && recipient.isInCreativeMode();
             if (recipient == null) recipient = player;
-            if (recipient != null)
+            if (recipient != null && !kept)
                 recipient.getInventory().offerOrDrop(diceItem);
         }
         this.remove(reason);

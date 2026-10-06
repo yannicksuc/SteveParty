@@ -83,6 +83,11 @@ public class DiceModule {
         return Text.translatable("dice_module.steveparty." + id + ".desc", descriptionValue(count));
     }
 
+    /** What it does, on the tooltip of its item (its description by default). */
+    public Text itemDescription() {
+        return description(1);
+    }
+
     /** The number shown in the description for {@code count} modules (the count itself by default). */
     protected int descriptionValue(int count) {
         return count;
@@ -123,8 +128,11 @@ public class DiceModule {
     public void afterRoll(DiceEntity dice, DiceOutcome outcome, int count) {
     }
 
-    /** onSpent (Infinity): true if the die goes back to its roller once rolled instead of being lost. */
-    public boolean returnsToRoller() {
+    /**
+     * onSpent (Power-up): true if the die is a power-up: spent once rolled instead of going back to its roller, and in a
+     * party rolled in place of the player's die, as the power-up of the turn.
+     */
+    public boolean makesPowerUp() {
         return false;
     }
 

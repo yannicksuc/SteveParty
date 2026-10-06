@@ -64,7 +64,8 @@ public class SteveReiPlugin implements REIClientPlugin {
     /**
      * The Dice Forge (no recipe type REI could read): any die faces, their blank faces, 5 fragments of different colours
      * (each slot cycles through the colours, offset so that they never match), any module, the Gravity Core; out come
-     * forged dice, and the plain Default Die so that its recipe lookup lands here.
+     * forged dice, and the plain Default Die so that its recipe lookup lands here; each also with the Power-up module,
+     * so that a power-up die's lookup lands here too.
      */
     private static void registerDiceForgeDisplay(DisplayRegistry registry) {
         List<ItemStack> faces = ModItems.DICE_FACES.subList(1, ModItems.DICE_FACES.size()).stream().map(ItemStack::new).toList();
@@ -78,6 +79,7 @@ public class SteveReiPlugin implements REIClientPlugin {
         List<ItemStack> dice = new ArrayList<>();
         dice.add(DiceFacesComponent.createDie(List.of(new ItemStack(ModItems.DICE_FACES.get(2)), new ItemStack(ModItems.DICE_FACES.get(7)))));
         dice.add(new ItemStack(ModItems.DEFAULT_DICE));
+        for (ItemStack die : List.copyOf(dice)) dice.add(powerUp(die.copy()));
         registry.add(new DiceForgeDisplay(EntryIngredients.ofItemStacks(faces), EntryIngredients.of(ModItems.blankDiceFace()),
                 fragments, EntryIngredients.ofItemStacks(ModItems.DICE_MODULES.stream().map(ItemStack::new).toList()), EntryIngredients.of(ModBlocks.GRAVITY_CORE),
                 EntryIngredients.ofItemStacks(dice)));
@@ -101,14 +103,14 @@ public class SteveReiPlugin implements REIClientPlugin {
                     Optional.of(Steveparty.id("dice_module/" + module.id()))));
         }
         ItemStack lucky = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.LUCKY, 2));
-        ItemStack infinite = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.INFINITY, 1));
-        Map<DiceModule, Integer> both = DiceModules.union(DiceModules.of(lucky), DiceModules.of(infinite));
+        ItemStack slow = DiceModules.set(new ItemStack(ModItems.DEFAULT_DICE), Map.of(DiceModules.SLOW, 1));
+        Map<DiceModule, Integer> both = DiceModules.union(DiceModules.of(lucky), DiceModules.of(slow));
         registry.add(DefaultCustomShapelessDisplay.simple(
-                List.of(EntryIngredients.of(lucky), EntryIngredients.of(infinite)),
+                List.of(EntryIngredients.of(lucky), EntryIngredients.of(slow)),
                 List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.DOUBLE_DICE), both))),
                 Optional.of(Steveparty.id("multi_dice/double"))));
         registry.add(DefaultCustomShapelessDisplay.simple(
-                List.of(EntryIngredients.of(lucky), EntryIngredients.of(infinite), EntryIngredients.of(ModItems.DEFAULT_DICE)),
+                List.of(EntryIngredients.of(lucky), EntryIngredients.of(slow), EntryIngredients.of(ModItems.DEFAULT_DICE)),
                 List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.TRIPLE_DICE), both))),
                 Optional.of(Steveparty.id("multi_dice/triple"))));
         Steveparty.LOGGER.info("REI: {} die module displays", DiceModules.all().size() + 2);
@@ -131,6 +133,16 @@ public class SteveReiPlugin implements REIClientPlugin {
         // Technical blocks never show (a large tile's parts have no item; kept in case one gets one)
         registry.removeEntry(EntryStacks.of(ModBlocks.TILE_PART));
         Steveparty.LOGGER.info("REI: {} extra tile entries", count);
+        // Each die: its power-up version (carrying the Power-up module) after the plain one
+        for (Item die : List.of(ModItems.DEFAULT_DICE, ModItems.DOUBLE_DICE, ModItems.TRIPLE_DICE))
+            registry.addEntriesAfter(EntryStacks.of(die), List.of(EntryStacks.of(powerUp(new ItemStack(die)))));
+    }
+
+    /** {@code die} carrying the Power-up module (on top of its own modules). */
+    private static ItemStack powerUp(ItemStack die) {
+        Map<DiceModule, Integer> modules = new java.util.LinkedHashMap<>(DiceModules.of(die));
+        modules.put(DiceModules.POWER_UP, 1);
+        return DiceModules.set(die, modules);
     }
 
     /** {@code tile} (holding a cartridge) as a REI entry; its tooltip and face tell its role (TileContents). */

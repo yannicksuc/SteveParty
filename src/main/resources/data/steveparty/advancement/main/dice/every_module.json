@@ -34,12 +34,12 @@
         ]
       }
     },
-    "infinity": {
+    "power_up": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "steveparty:dice_module_infinity"
+            "items": "steveparty:dice_module_power_up"
           }
         ]
       }
@@ -103,7 +103,7 @@
       "choice"
     ],
     [
-      "infinity"
+      "power_up"
     ],
     [
       "lucky"
