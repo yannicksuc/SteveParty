@@ -221,16 +221,24 @@ public final class PartyStars {
 
     /** Tells the players of {@code world} where the stars of its running parties stand. */
     public static void sync(ServerWorld world) {
+        StarSpacesPayload payload = new StarSpacesPayload(shownStarSpaces(world));
+        for (ServerPlayerEntity player : world.getPlayers()) {
+            if (ServerPlayNetworking.canSend(player, StarSpacesPayload.ID)) ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /**
+     * The star spaces the clients draw a star and its light beam over: those holding the star of a running party of
+     * {@code world}, each once. A party over (or reset) shows none.
+     */
+    public static List<BlockPos> shownStarSpaces(ServerWorld world) {
         List<BlockPos> stars = new ArrayList<>();
         for (PartyControllerEntity party : PartyControllerEntity.getActivePartyControllers()) {
             BlockPos star = party.getStarSpace();
             if (!party.isRemoved() && party.getWorld() == world && party.getPartyData().isStarted() && star != null
                     && !stars.contains(star)) stars.add(star);
         }
-        StarSpacesPayload payload = new StarSpacesPayload(stars);
-        for (ServerPlayerEntity player : world.getPlayers()) {
-            if (ServerPlayNetworking.canSend(player, StarSpacesPayload.ID)) ServerPlayNetworking.send(player, payload);
-        }
+        return stars;
     }
 
     // ---------------------------------------------------------------- reaching the star
