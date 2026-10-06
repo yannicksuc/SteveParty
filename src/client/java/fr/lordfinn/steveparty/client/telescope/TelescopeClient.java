@@ -40,7 +40,7 @@ import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4fStack;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -314,6 +314,9 @@ public final class TelescopeClient {
         if (night == null && guideAlpha <= 0.01f) return;
 
         Vec3d camera = context.camera().getPos();
+        // The camera's rotation, baked into the vertices: after the whole world the model-view no longer has it, and
+        // shader packs (Iris) ignore a model-view changed this late (the stars stayed stuck on the screen)
+        VIEW.set(context.positionMatrix());
         // On the sky's dome: beyond the terrain drawn, but before the clouds (which would hide them)
         float dome = MathHelper.clamp(client.gameRenderer.getViewDistance() * 1.8f, 64f, 320f);
         float clouds = world.getDimensionEffects().getCloudsHeight();
@@ -374,10 +377,6 @@ public final class TelescopeClient {
             }
         }
 
-        // After the whole world (clouds included): the camera's rotation is no longer applied
-        Matrix4fStack modelView = RenderSystem.getModelViewStack();
-        modelView.pushMatrix();
-        modelView.mul(context.positionMatrix());
         // no fog on them (as BackgroundRenderer#clearFog)
         float fogStart = RenderSystem.getShaderFogStart();
         RenderSystem.setShaderFogStart(Float.MAX_VALUE);
@@ -388,7 +387,6 @@ public final class TelescopeClient {
             if (built != null) heartLayer.draw(built);
         } finally {
             RenderSystem.setShaderFogStart(fogStart);
-            modelView.popMatrix();
             glowBuffer = heartBuffer = null;
         }
     }
@@ -424,8 +422,11 @@ public final class TelescopeClient {
         vertex(vertices, cx - rx * w + ux * h, cy + uy * h, cz - rz * w + uz * h, 0f, 0f, r, g, b, alpha);
     }
 
+    /** The camera's rotation for the stars being built (renderSky). */
+    private static final Matrix4f VIEW = new Matrix4f();
+
     private static void vertex(VertexConsumer vertices, float x, float y, float z, float u, float v, int r, int g, int b, int alpha) {
-        vertices.vertex(x, y, z).color(r, g, b, Math.min(255, alpha)).texture(u, v)
+        vertices.vertex(VIEW, x, y, z).color(r, g, b, Math.min(255, alpha)).texture(u, v)
                 .overlay(OverlayTexture.DEFAULT_UV).light(0xF000F0).normal(0f, 1f, 0f);
     }
 
