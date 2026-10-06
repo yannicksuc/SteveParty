@@ -10,7 +10,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.util.Identifier;
-import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 
 public class StencilItemRenderer implements DynamicItemRenderer {
     @Override
@@ -22,48 +22,47 @@ public class StencilItemRenderer implements DynamicItemRenderer {
 
         matrices.push();
 
-        StencilRenderUtils.renderSymbol(
+        StencilRenderUtils.renderPlate(
                 matrices,
                 vertexConsumers,
                 light,
                 overlay,
                 textureId,
-                0xFFFFFF,
-                false,
+                shape,
+                StencilResourceManager.Kind.METAL.margin(),
                 (s) -> {
-                    MatrixStack.Entry entry = s.peek();
-                    Matrix4f matrix = entry.getPositionMatrix();
+                    // On the stack (not only the position matrix) so the normals turn too: the plate's sides are lit
                     switch (mode) {
                         case GUI -> {
-                            matrix.translate(0f, 0.5f, 0f);
-                            matrix.rotate((float) Math.toRadians(180f), 0, 1, 0);
-                            matrix.rotate((float) Math.toRadians(-90f), 1, 0, 0);
+                            s.translate(0f, 0.5f, 0f);
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(180f), 0, 1, 0));
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(-90f), 1, 0, 0));
                         }
                         case FIRST_PERSON_LEFT_HAND -> {
-                            matrix.translate(-0.8f, 0.3f, -1.2f);
-                            matrix.rotate((float) Math.toRadians(80f), 1, 0, 0);
-                            matrix.rotate((float) Math.toRadians(170f), 0, 1, 0);
-                            matrix.rotate((float) Math.toRadians(-5f), 0, 0, 1);
+                            s.translate(-0.8f, 0.3f, -1.2f);
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(80f), 1, 0, 0));
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(170f), 0, 1, 0));
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(-5f), 0, 0, 1));
                         }
                         case FIRST_PERSON_RIGHT_HAND -> {
-                            matrix.translate(0.8f, 0.3f, -1.2f);
-                            matrix.rotate((float) Math.toRadians(80f), 1, 0, 0);
-                            matrix.rotate((float) Math.toRadians(190f), 0, 1, 0);
-                            matrix.rotate((float) Math.toRadians(5f), 0, 0, 1);
+                            s.translate(0.8f, 0.3f, -1.2f);
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(80f), 1, 0, 0));
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(190f), 0, 1, 0));
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(5f), 0, 0, 1));
                         }
                         case THIRD_PERSON_RIGHT_HAND, THIRD_PERSON_LEFT_HAND -> {
-                            matrix.translate(0f, 0.77f, -0.05f);
-                            matrix.rotate((float) Math.toRadians(180f), 0, 0, 1);
-                            matrix.rotate((float) Math.toRadians(60f), 1, 0, 0);
-                            matrix.scale(0.5f);
+                            s.translate(0f, 0.77f, -0.05f);
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(180f), 0, 0, 1));
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(60f), 1, 0, 0));
+                            s.scale(0.5f, 0.5f, 0.5f);
                         }
                         case GROUND -> {
-                            matrix.translate(0, 0.2f, 0f);
-                            matrix.scale(0.5f, 0.5f, 0.5f);
+                            s.translate(0, 0.2f, 0f);
+                            s.scale(0.5f, 0.5f, 0.5f);
                         }
                         case FIXED -> {
-                            matrix.translate(0, 0.5f, 0.5f);
-                            matrix.rotate((float) Math.toRadians(-90f), 1, 0, 0);
+                            s.translate(0, 0.5f, 0.5f);
+                            s.multiply(new Quaternionf().rotateAxis((float) Math.toRadians(-90f), 1, 0, 0));
                         }
                         default -> {
                         }
