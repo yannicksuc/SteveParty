@@ -104,6 +104,16 @@ public class TradingStallBlock extends HorizontalFacingBlock implements BlockEnt
         return createCodec(TradingStallBlock::new);
     }
 
+    /** In the inventory: what it does in a shop. */
+    @Override
+    public void appendTooltip(ItemStack stack, net.minecraft.item.Item.TooltipContext context, List<Text> tooltip,
+                              net.minecraft.item.tooltip.TooltipType options) {
+        super.appendTooltip(stack, context, tooltip, options);
+        for (String line : List.of("offers", "models", "sale", "access")) {
+            tooltip.add(Text.translatable("tooltip.steveparty.trading_stall." + line).formatted(net.minecraft.util.Formatting.GRAY));
+        }
+    }
+
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!world.isClient) {
