@@ -180,6 +180,7 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerModule(DiceModules.REVERSED, ModItems.RED_STAR_FRAGMENT, Items.FERMENTED_SPIDER_EYE);
         offerModule(DiceModules.SKELETON_KEY, ModItems.YELLOW_STAR_FRAGMENT, Items.TRIPWIRE_HOOK);
         offerModule(DiceModules.HOMING, ModItems.MAGENTA_STAR_FRAGMENT, Items.ENDER_EYE);
+        offerModule(DiceModules.FIRECRACKER, ModItems.PINK_STAR_FRAGMENT, Items.TNT);
 
         ShapedRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.DICE_FACES.get(0), 4) // output 4 blank dice faces
                 .pattern("IQ")
