@@ -19,6 +19,8 @@ import net.fabricmc.loader.api.FabricLoader;
  * when FancyMenu is loaded (the modpack's title screen; the mod alone keeps the vanilla one) and
  * textures/gui/title/sky.png exists: the poster layers back to front with a smooth mouse parallax, then the
  * animated logo (the 72 frames of art/logo/steve_party_maker_animated.gif) laid out on its own at the top centre.
+ * Once per game launch, the logo intro (TitleLogoIntro) builds the logo first, in the same place and scale, then
+ * hands off to the loop with a short cross-fade while the bob and breath fade in.
  * Textures: the art sources, linear filtering (.mcmeta) so the sub-pixel motion never shimmers.
  * FancyMenu keeps the buttons, panel and texts on top (modpack layout steveparty_title_screen.txt, no background).
  */
@@ -46,6 +48,9 @@ public final class TitleScreenBackground {
     /** The FancyMenu button panel's top, in GUI pixels above the bottom (layout: bottom-centered, y = -100). */
     private static final int PANEL_TOP_FROM_BOTTOM = 100, LOGO_PANEL_GAP = 6;
 
+    /** Cross-fade from the intro's last frame to the loop, then the bob and breath fade-in, in seconds. */
+    private static final double INTRO_CROSSFADE = 0.3, SETTLE = 1.5;
+
     /** Easing rate toward the target (1/s): about 0.3 s to close 2/3 of the gap, the same at any frame rate. */
     private static final double EASE_RATE = 3.5;
     /** Seconds without mouse motion before the idle drift fades in, and the fade length. */
@@ -54,6 +59,11 @@ public final class TitleScreenBackground {
     private static Boolean available;
     private static boolean texturesLoaded;
     private static long lastNanos, startNanos, lastMoveNanos;
+    /** The intro: loaded on the first title screen, null once played (or when it cannot load). */
+    private static TitleLogoIntro intro;
+    private static boolean introDone;
+    /** When the intro started (0 = not yet), and when the loop started (its frame 0, the bob's fade-in). */
+    private static long introStartNanos, loopStartNanos;
     private static double lastMouseX = Double.NaN, lastMouseY;
     /** Eased parallax position, -1..1 on each axis (0 = centre). */
     private static double posX, posY;
@@ -75,6 +85,7 @@ public final class TitleScreenBackground {
         });
         // ~70 MB of VRAM (the logo sheet is 3744x3420): give it back once in a world, reloaded on the next title screen.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.world != null && intro != null) endIntro(client);
             if (texturesLoaded && client.world != null) {
                 texturesLoaded = false;
                 for (Layer layer : LAYERS) client.getTextureManager().destroyTexture(layer.texture);
@@ -94,7 +105,7 @@ public final class TitleScreenBackground {
     public static void render(DrawContext context, int width, int height) {
         MinecraftClient client = MinecraftClient.getInstance();
         long now = System.nanoTime();
-        if (lastNanos == 0) startNanos = lastMoveNanos = lastNanos = now;
+        if (lastNanos == 0) startNanos = lastMoveNanos = lastNanos = loopStartNanos = now;
         double dt = Math.min((now - lastNanos) / 1e9, 0.1);
         lastNanos = now;
         double t = (now - startNanos) / 1e9;
@@ -147,13 +158,58 @@ public final class TitleScreenBackground {
         logoH = Math.min(logoH, width * 0.9f * LOGO_H / LOGO_W);
         if (logoH <= 0) return;
         float logoScale = logoH / LOGO_H;
-        // Gentle bob and breath, out of phase so it floats rather than pulses.
-        float bob = (float) Math.sin(t * Math.PI * 2 / 4.2) * height * 0.005f;
-        float breath = 1 + (float) Math.sin(t * Math.PI * 2 / 5.6 + 0.8) * 0.008f;
+        MinecraftClient client = MinecraftClient.getInstance();
+        int introFrame = -1;
+        float loopAlpha = 1;
+        if (!introDone) {
+            if (intro == null) {
+                intro = TitleLogoIntro.load(client.getResourceManager()).orElse(null);
+                if (intro == null) introDone = true;
+                else {
+                    intro.preload(client);
+                    client.getTextureManager().getTexture(LOGO);
+                    now = System.nanoTime();
+                }
+            }
+            if (intro != null) {
+                // Held on its first frame until the loading overlay is gone, so it plays in full view.
+                if (introStartNanos == 0 && client.getOverlay() == null) introStartNanos = now;
+                double played = introStartNanos == 0 ? 0 : (now - introStartNanos) / 1e9;
+                introFrame = (int) (played * intro.fps);
+                double over = played - (double) intro.frameCount() / intro.fps;
+                if (over >= 0) loopStartNanos = introStartNanos + (long) (intro.frameCount() * 1e9 / intro.fps);
+                if (over >= INTRO_CROSSFADE) {
+                    endIntro(client);
+                    introFrame = -1;
+                } else if (over >= 0) {
+                    loopAlpha = (float) (over / INTRO_CROSSFADE);
+                    loopAlpha = loopAlpha * loopAlpha * (3 - 2 * loopAlpha);
+                } else {
+                    loopAlpha = 0;
+                }
+            }
+        }
+        // Gentle bob and breath, out of phase so it floats rather than pulses, faded in once the loop starts.
+        double settle = introFrame >= 0 && loopAlpha == 0 ? 0 : MathHelper.clamp((now - loopStartNanos) / 1e9 / SETTLE, 0, 1);
+        settle = settle * settle * (3 - 2 * settle);
+        float bob = (float) (Math.sin(t * Math.PI * 2 / 4.2) * settle) * height * 0.005f;
+        float breath = 1 + (float) (Math.sin(t * Math.PI * 2 / 5.6 + 0.8) * settle) * 0.008f;
         float centerX = width / 2f - (float) posX * LOGO_DEPTH * travel;
         float centerY = top + logoH / 2 - (float) posY * LOGO_DEPTH * travel + bob;
 
-        int frame = (int) ((now - startNanos) / LOGO_FRAME_NANOS % LOGO_FRAMES);
+        if (introFrame >= 0) {
+            // The intro's final logo rect maps onto the loop's: same centre, same height.
+            float introScale = logoScale * breath * LOGO_H / intro.logoH;
+            context.getMatrices().push();
+            context.getMatrices().translate(centerX, centerY, 0);
+            context.getMatrices().scale(introScale, introScale, 1);
+            context.getMatrices().translate(-(intro.logoX + intro.logoW / 2f), -(intro.logoY + intro.logoH / 2f), 0);
+            intro.draw(context, introFrame);
+            context.getMatrices().pop();
+            if (loopAlpha <= 0) return;
+        }
+
+        int frame = (int) (Math.max(0, now - loopStartNanos) / LOGO_FRAME_NANOS % LOGO_FRAMES);
         int u = (frame % LOGO_COLS) * (LOGO_W + 2 * LOGO_PAD) + LOGO_PAD;
         int v = (frame / LOGO_COLS) * (LOGO_H + 2 * LOGO_PAD) + LOGO_PAD;
 
@@ -161,8 +217,18 @@ public final class TitleScreenBackground {
         context.getMatrices().translate(centerX, centerY, 0);
         context.getMatrices().scale(logoScale * breath, logoScale * breath, 1);
         context.getMatrices().translate(-LOGO_W / 2f, -LOGO_H / 2f, 0);
+        // Over the intro's held last frame, so the logo never turns see-through mid-fade.
+        if (loopAlpha < 1) RenderSystem.setShaderColor(1, 1, 1, loopAlpha);
         context.drawTexture(LOGO, 0, 0, LOGO_W, LOGO_H, u, v, LOGO_W, LOGO_H, LOGO_SHEET_W, LOGO_SHEET_H);
+        if (loopAlpha < 1) RenderSystem.setShaderColor(1, 1, 1, 1);
         context.getMatrices().pop();
+    }
+
+    /** Once per game launch: frees the intro's atlases (also when the player leaves the title screen mid-intro). */
+    private static void endIntro(MinecraftClient client) {
+        intro.free(client);
+        intro = null;
+        introDone = true;
     }
 
     private record Layer(Identifier texture, int width, int height, int x, int y, float depth) {
