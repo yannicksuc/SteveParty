@@ -39,6 +39,9 @@ public class ModComponents {
     /** Mode, chain, edited slot and auto link of a Wrench (see WrenchState). */
     public static final ComponentType<fr.lordfinn.steveparty.board.WrenchState> WRENCH_STATE =
             registerComponent("wrench-state", fr.lordfinn.steveparty.board.WrenchState.CODEC);
+    /** The level (0-15) of a Tile Linker Brush: the slot its links go in; absent: the powered one (see TileLinkerBrush). */
+    public static final ComponentType<Integer> LINK_LEVEL =
+            registerComponent("link-level", Codec.INT);
     /**
      * Legacy: token selected by the Tokenizer Wand when it could move tokens. No longer written; kept registered so
      * wands saved by older versions still load (an unknown component would drop the item), and stripped from them

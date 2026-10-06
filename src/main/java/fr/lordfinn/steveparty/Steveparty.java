@@ -102,6 +102,7 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.commands.MiniGamePageCommand.initialize();
         fr.lordfinn.steveparty.commands.PodiumCommand.initialize();
         fr.lordfinn.steveparty.board.WrenchActions.initialize();
+        fr.lordfinn.steveparty.board.TileLinkerBrush.initialize();
         new TokenMovementService();
         fr.lordfinn.steveparty.service.ShopStops.initialize();
         fr.lordfinn.steveparty.powerups.effects.TrapEffect.initialize();

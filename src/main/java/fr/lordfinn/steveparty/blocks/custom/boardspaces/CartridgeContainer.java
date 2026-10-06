@@ -62,6 +62,8 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         if (mainHandStack.isEmpty() && offHandStack.isEmpty()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         // The Wrench links board spaces with a plain right click (sneaking opens the interface: see WrenchActions)
         if (mainHandStack.getItem() instanceof WrenchItem && isLinkedWithWrench()) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        // The Tile Linker Brush paints links over them
+        if (mainHandStack.getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem && isLinkedWithWrench()) return ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         // A Wrench in the off hand (to link the tiles being placed) lets the main hand item act
         boolean offHandOpener = offHandStack.getItem() instanceof CartridgeContainerOpener
                 && (mainHandStack.isEmpty() || !(offHandStack.getItem() instanceof WrenchItem));
