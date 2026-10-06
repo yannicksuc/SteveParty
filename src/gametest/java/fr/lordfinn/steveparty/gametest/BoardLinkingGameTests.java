@@ -583,4 +583,33 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(links(context, t.get(0)), List.of(), "survival: the link is gone");
         });
     }
+
+    /**
+     * A cartridge linked then unlinked (in a tile with the Wrench, or in the hand) is the same as a new one again: no
+     * empty links left on it, so it stacks with new ones.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void anUnlinkedCartridgeStacksWithNewOnes(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
+        withPlayer(context, true, player -> {
+            ItemStack wrench = wrench(player);
+            for (BlockPos pos : t) click(player, wrench, context, pos);
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "linked");
+            WrenchActions.endChain(player, wrench, context.getWorld(), false);
+            wrench.set(ModComponents.WRENCH_STATE, WrenchState.of(wrench).withMode(WrenchMode.CUT));
+            click(player, wrench, context, t.get(0));
+            BoardSpaceBlockEntity boardSpace = boardSpace(context, t.get(0));
+            ItemStack cut = boardSpace.getStack(boardSpace.getActiveSlot());
+            ItemStack fresh = new ItemStack(cut.getItem());
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(cut, fresh), "cut in its tile: like a new one " + cut.getComponentChanges());
+
+            ItemStack held = new ItemStack(ModItems.TILE_BEHAVIOR_START);
+            var item = (fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem) held.getItem();
+            item.addOrRemoveDestination(DestinationsComponent.DEFAULT, t.get(1), player, held, context.getWorld());
+            context.assertTrue(held.contains(ModComponents.DESTINATIONS_COMPONENT), "linked in the hand");
+            item.addOrRemoveDestination(held.get(ModComponents.DESTINATIONS_COMPONENT), t.get(1), player, held, context.getWorld());
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(held, new ItemStack(ModItems.TILE_BEHAVIOR_START)),
+                    "unlinked in the hand: like a new one " + held.getComponentChanges());
+        });
+    }
 }

@@ -9,7 +9,6 @@ import fr.lordfinn.steveparty.components.ShopLinkComponent;
 import fr.lordfinn.steveparty.entities.custom.BoxedTraderEntity;
 import fr.lordfinn.steveparty.persistent_state.VendorLinkPersistentState;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
-import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
@@ -326,8 +325,7 @@ public final class WrenchActions {
         ItemStack current = container.getStack(slot);
         if (current.isEmpty() || current.getItem() == offHand.getItem()) return false;
         ItemStack replacement = offHand.copyWithCount(1);
-        replacement.set(ModComponents.DESTINATIONS_COMPONENT,
-                current.getOrDefault(ModComponents.DESTINATIONS_COMPONENT, DestinationsComponent.DEFAULT));
+        BoardLinks.setLinks(replacement, BoardLinks.links(current), world);
         boolean creative = player.getAbilities().creativeMode;
         if (!creative) offHand.decrement(1);
         ItemStack removed = container.removeStack(slot);

@@ -101,9 +101,18 @@ public final class BoardLinks {
     public static boolean setLinks(World world, CartridgeContainerBlockEntity container, int slot, List<BlockPos> links) {
         ItemStack cartridge = container.getStack(slot);
         if (cartridge.isEmpty() || !(cartridge.getItem() instanceof CartridgeItem)) return false;
-        cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(links), worldName(world)));
+        setLinks(cartridge, links, world);
         sync(container);
         return true;
+    }
+
+    /**
+     * Writes {@code links} on {@code cartridge}; without any, the component goes entirely, so that a cartridge linked
+     * then unlinked is the same as a new one again (and stacks with them).
+     */
+    public static void setLinks(ItemStack cartridge, List<BlockPos> links, World world) {
+        if (links.isEmpty()) cartridge.remove(ModComponents.DESTINATIONS_COMPONENT);
+        else cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(links), worldName(world)));
     }
 
     /** Saves {@code container} and sends it to the clients. */

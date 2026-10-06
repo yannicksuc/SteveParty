@@ -151,7 +151,8 @@ public final class BoardBlueprint {
                     BlockPos target = follow.apply(link);
                     if (target != null) moved.add(target);
                 }
-                cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(moved, links.world()));
+                if (moved.isEmpty()) cartridge.remove(ModComponents.DESTINATIONS_COMPONENT);
+                else cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(moved, links.world()));
             }
             // Its containers follow too (those that fall outside are dropped), in the world it is pasted in
             if (!fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.isEmpty(cartridge)) {
@@ -271,8 +272,7 @@ public final class BoardBlueprint {
             ItemStack cartridge = new ItemStack(i == 0 ? ModItems.TILE_BEHAVIOR_START : ModItems.BOARD_SPACE_BEHAVIOR);
             boolean last = i == cells.size() - 1;
             BlockPos next = last ? (closed ? cells.getFirst() : null) : cells.get(i + 1);
-            cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(
-                    next == null ? new ArrayList<>() : new ArrayList<>(List.of(next)), BoardLinks.worldName(world)));
+            BoardLinks.setLinks(cartridge, next == null ? List.of() : List.of(next), world);
             container.setStack(0, cartridge);
             if (next != null) BoardLinks.orient(world, cell, next);
             BoardLinks.sync(container);
