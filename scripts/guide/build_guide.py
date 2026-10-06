@@ -577,13 +577,20 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
           "- **Players**: pawns, stars and coins;\n"
           "- **Program**: the catalogue and 24 party card slots;\n"
           "- **Rewards**: what each place earns;\n"
-          "- **Settings**: turns (1-50) and practice round.",
+          "- **Settings**: turns, practice round, max power-ups, **Restrict dice**.",
           "Le **contrôleur de fête** mène la partie. Clic droit pour son tableau de bord :\n"
           "- **État** : ce qui manque, puis la frise en direct ;\n"
           "- **Joueurs** : pions, étoiles et pièces ;\n"
           "- **Programme** : le catalogue et 24 emplacements de cartes ;\n"
           "- **Gains** : ce que rapporte chaque place ;\n"
-          "- **Réglages** : tours (1 à 50) et manche d'essai."),
+          "- **Réglages** : tours, manche d'essai, bonus maximum, **Restreindre les dés**."),
+        T("**Restrict dice**: off, every die is allowed. On, only the dice in its slots may be thrown during the party "
+          "(by default the Default Die and its power-up version). Click a slot with a die to add a copy, with an "
+          "empty hand to remove it; the arrow shows the whole list.",
+          "**Restreindre les dés** : désactivé, tous les dés sont autorisés. Activé, seuls les dés de ses emplacements "
+          "peuvent être lancés pendant la partie (par défaut le dé par défaut et sa version bonus). Clique un "
+          "emplacement avec un dé pour en ajouter une copie, main vide pour le retirer ; la flèche montre toute la liste.",
+          "Restrict Dice", "Restreindre les dés"),
         T("It takes the pawns bound to a start space within 100 blocks. Press *Start party*, or send it a rising "
           "redstone edge.\n\nA comparator reads the phase: 0 idle, 1 setup, 2 turn, 3 mini-game, 4 waiting for "
           "a bell, 5 end.",
