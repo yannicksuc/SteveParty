@@ -39,6 +39,10 @@ import net.minecraft.util.Formatting;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
@@ -98,6 +102,14 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
      * die rolls: once its result is shown, any hit makes it go away as usual.
      */
     public static final int THROW_GRACE_TICKS = 10;
+
+    /** Untargeted die: how much its upward speed drops each tick (blocks per tick²). */
+    private static final double FREE_GRAVITY = 0.04;
+    /** Untargeted die: the least height it floats at above the ground (blocks). */
+    private static final double HOVER_ABOVE_GROUND = 1.0;
+    private static final double GROUND_SEARCH = 6.0;
+    /** Untargeted die: the height it settles at (its throw height), NaN until it flies. */
+    private double hoverY = Double.NaN;
 
     private int secondsSinceRolled = 0;
     /** Loaded already rolled: its roll is over (it is not run again). */
@@ -339,10 +351,47 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                     }
                 }
             }
-            simulation.tick();
+            escapeTerrain();
+            if (simulation.hasTarget()) simulation.tick();
+            else freeFlight();
             if (!this.isRemoved() && !rollWasLoadedFinished && lead() == this) sequence().tick();
         }
         super.tick();
+    }
+
+    /**
+     * A die with no one to float to: tossed up, it slows down and falls back a little ({@link #FREE_GRAVITY}), then
+     * settles, floating at the height it was thrown from (at least {@link #HOVER_ABOVE_GROUND} above the ground under
+     * it), within reach.
+     */
+    private void freeFlight() {
+        if (Double.isNaN(hoverY)) hoverY = this.getY();
+        Vec3d velocity = this.getVelocity();
+        double vy = velocity.y;
+        if (vy > 0) {
+            vy -= FREE_GRAVITY;
+        } else {
+            double floor = this.getY() - groundDistance();
+            double target = Math.max(hoverY, floor + HOVER_ABOVE_GROUND);
+            // A damped spring toward the hovering height: no bounce, no endless fall
+            vy = vy * 0.8 + (target - this.getY()) * 0.04;
+        }
+        this.setVelocity(velocity.x, vy, velocity.z);
+    }
+
+    /** Blocks between the bottom of the die and the ground under it (searched {@link #GROUND_SEARCH} blocks down). */
+    private double groundDistance() {
+        Vec3d bottom = this.getPos();
+        BlockHitResult hit = this.getWorld().raycast(new RaycastContext(bottom, bottom.subtract(0, GROUND_SEARCH, 0),
+                RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, this));
+        return hit.getType() == HitResult.Type.MISS ? GROUND_SEARCH : bottom.y - hit.getPos().y;
+    }
+
+    /** A die caught inside blocks (pushed in, loaded in a changed world) rises out of them instead of staying stuck. */
+    private void escapeTerrain() {
+        if (this.getWorld().isSpaceEmpty(this, this.getBoundingBox().contract(0.05))) return;
+        this.setPosition(this.getX(), this.getY() + 0.25, this.getZ());
+        if (!Double.isNaN(hoverY)) hoverY = Math.max(hoverY, this.getY());
     }
 
     /**

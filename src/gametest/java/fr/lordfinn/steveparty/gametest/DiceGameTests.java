@@ -198,4 +198,39 @@ public class DiceGameTests implements FabricGameTest {
             context.complete();
         });
     }
+
+    // ---------------------------------------------------------------- how a thrown die flies
+
+    /** Thrown at the floor, the die does not dig into it: it starts in the air and is tossed upward. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    public void aDieThrownAtTheFloorGoesUpInsteadOfIntoIt(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), 90, false);
+        player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.assertTrue(context.getWorld().isSpaceEmpty(dice), "the die appears in the air, not in the floor");
+        context.assertTrue(dice.getVelocity().y > 0, "it is tossed upward");
+        context.waitAndRun(60, () -> {
+            context.assertTrue(context.getWorld().isSpaceEmpty(dice), "it never went into the floor");
+            context.assertTrue(dice.getY() >= player.getY(), "it floats above the floor its thrower stands on");
+            context.complete();
+        });
+    }
+
+    /** With no one to float to, a die thrown straight up rises a few blocks only, then comes back down a little. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140, batchId = "dice_throws")
+    public void anUntargetedDieThrownUpComesBackDown(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), -90, false);
+        player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.assertTrue(dice.getTarget().isEmpty(), "no mob around: no target");
+        double[] highest = {dice.getY()};
+        context.runAtEveryTick(() -> highest[0] = Math.max(highest[0], dice.getY()));
+        context.waitAndRun(100, () -> {
+            double eyes = player.getEyeY();
+            context.assertTrue(highest[0] - eyes < 7, "it rose a few blocks only: " + (highest[0] - eyes));
+            context.assertTrue(dice.getY() < highest[0] - 2, "then came back down");
+            context.assertTrue(dice.getY() - eyes < 2.5, "it floats within reach: " + (dice.getY() - eyes));
+            context.complete();
+        });
+    }
 }

@@ -17,7 +17,7 @@ public class AttractionSimulation {
     }
 
     public void tick() {
-        if (target == null) {
+        if (!hasTarget()) {
             return;
         }
         if (dice == null) {
@@ -46,6 +46,11 @@ public class AttractionSimulation {
         // Update dice entity position using move() method
         Vec3d moveDelta = velocity.multiply(deltaTime);
         dice.move(MovementType.SELF, moveDelta);
+    }
+
+    /** True while it pulls the dice toward a living target. */
+    public boolean hasTarget() {
+        return target != null && target.isAlive();
     }
 
     public void setTarget(LivingEntity target) {
