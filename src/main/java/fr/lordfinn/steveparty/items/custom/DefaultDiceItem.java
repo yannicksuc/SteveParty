@@ -44,6 +44,9 @@ public class DefaultDiceItem extends Item {
         // A power-up of the turn still at work (a player being picked, a warp): the roll waits
         if (isServerWorld(world) && fr.lordfinn.steveparty.powerups.PowerUpService.refusesRoll(player))
             return TypedActionResult.fail(player.getStackInHand(hand));
+        // A party listing its allowed dice refuses the others
+        if (isServerWorld(world) && fr.lordfinn.steveparty.dice.AllowedDice.refusesThrow(player, player.getStackInHand(hand)))
+            return TypedActionResult.fail(player.getStackInHand(hand));
         if (isServerWorld(world)) {
             Vec3d spawnPosition = calculateSpawnPosition(player);
             DiceEntity diceEntity = spawnDiceEntity(world, spawnPosition);

@@ -16,6 +16,7 @@ import fr.lordfinn.steveparty.client.gui.ConsolePaint.Ramp;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.party.HudPaint;
+import fr.lordfinn.steveparty.dice.AllowedDice;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.PartyCardItem;
 import fr.lordfinn.steveparty.screen_handlers.custom.PartyControllerScreenHandler;
@@ -65,7 +66,9 @@ import static fr.lordfinn.steveparty.sounds.ModSounds.OPEN_TILE_GUI_SOUND_EVENT;
  *     {@link BasicGameGeneratorStep#defaultProgram}) and, under them, the timeline of what it will play.</li>
  *     <li><b>Gains</b>: the bank's Inventory Cartridge, the Coin and Star items above their columns (click with an item to
  *     pick it, with an empty hand to go back to the default one), what each place earns.</li>
- *     <li><b>Settings</b>: the rounds, the practice round.</li>
+ *     <li><b>Settings</b>: the rounds, the practice round, the power-ups a player may carry, « Restrict dice » (a switch,
+ *     a row of ghost slots, its toggle opening a panel of all of them over the other settings; the places after the first
+ *     free one greyed, all of them while the switch is off).</li>
  * </ul>
  * Everything shown comes from the server ({@link PartyDashboardData}), every action is checked there.
  */
@@ -94,6 +97,10 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     private static final int GAINS_Y = CY + 21, GAINS_ROW = 17, GAINS_FIELD = GAINS_COLUMN - 2 * STEP - 4;
     /** Settings: a row per setting. */
     private static final int SETTINGS_Y = CY + 18, SETTINGS_ROW = 22;
+    /** Settings: the « Restrict dice » row (the 4th): its switch, its slots, the toggle of its panel. */
+    private static final int DICE_Y = SETTINGS_Y + 3 * SETTINGS_ROW, DICE_TOGGLE_X = CX + CW - STEP, DICE_SWITCH_X = DICE_ROW_X - 1 - 4 - 24;
+    /** The colours of a greyed dice slot (not usable yet). */
+    private static final int SLOT_OFF_BODY = 0xFF15122C, SLOT_OFF_LOW = 0xFF2C2858;
     private static final int TOOLTIP_WIDTH = 236;
 
     // The colours of the mock-up: the block's yellows, its dark screen
@@ -179,6 +186,7 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     private void showPage(Page page) {
         if (page == page()) return;
         handler.setPage(page);
+        handler.setDiceOpen(false);
         playersScroll = 0;
         clearAndInit();
     }
@@ -336,6 +344,21 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
     }
 
     private void addSettingsButtons(PartyDashboardData data) {
+        // Restrict dice: its switch, the toggle of its panel (open, it takes the place of the other settings)
+        PracticeSwitch restrict = addDrawableChild(new PracticeSwitch(x + DICE_SWITCH_X, y + DICE_Y, 24, BTN_H, Text.empty(), data.restrictDice(),
+                BUTTON_RESTRICT_DICE));
+        restrict.active = data.canEdit();
+        restrict.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.allowed_dice.switch." + (data.restrictDice() ? "on" : "off"))
+                : Text.translatable(KEY + "locked")));
+        boolean open = handler.isDiceOpen();
+        ConsoleButton toggle = addDrawableChild(new ConsoleButton(x + DICE_TOGGLE_X, y + DICE_Y + 1, STEP, STEP, Text.empty(),
+                ConsoleButton.Kind.SCREEN, null, () -> {
+                    handler.setDiceOpen(!handler.isDiceOpen());
+                    clearAndInit();
+                }).decoration((context, button) -> chevron(context, button, !open)));
+        toggle.setTooltip(Tooltip.of(open ? Text.translatable(KEY + "settings.allowed_dice.close")
+                : Text.translatable(KEY + "settings.allowed_dice.open", handler.allowedDiceCount(), PartyControllerEntity.MAX_ALLOWED_DICE)));
+        if (open) return;
         int rowY = y + SETTINGS_Y + 1, sx = x + CX + CW - 68;
         boolean editable = data.canEdit() && data.phase() != Phase.RUNNING;
         Text why = !data.canEdit() ? Text.translatable(KEY + "locked") : Text.translatable(KEY + "settings.rounds.running");
@@ -350,7 +373,8 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         // A practice round before each mini-game: a switch, its state on its left
         Text state = Text.translatable(KEY + (data.practiceRound() ? "settings.practice.on" : "settings.practice.off"));
         int width = textRenderer.getWidth(state) - 1 + 4 + 24;
-        PracticeSwitch practice = addDrawableChild(new PracticeSwitch(x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H, state, data.practiceRound()));
+        PracticeSwitch practice = addDrawableChild(new PracticeSwitch(x + CX + CW - width, y + SETTINGS_Y + SETTINGS_ROW, width, BTN_H, state, data.practiceRound(),
+                BUTTON_PRACTICE));
         practice.active = data.canEdit();
         practice.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.practice.tooltip") : Text.translatable(KEY + "locked")));
         // The power-ups a player may carry (0: no limit)
@@ -363,6 +387,16 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         more.active = data.canEdit() && data.maxPowerUps() < fr.lordfinn.steveparty.powerups.PowerUpLimit.MAX;
         fewer.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.max_powerups.less") : Text.translatable(KEY + "locked")));
         more.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.max_powerups.more") : Text.translatable(KEY + "locked")));
+    }
+
+    /** The toggle's chevron: down to open the panel, up to close it. */
+    private static void chevron(DrawContext context, ConsoleButton button, boolean down) {
+        int cx = button.getX() + 4, cy = button.getY() + 6;
+        int colour = button.isHovered() ? WHITE : INK;
+        for (int row = 0; row < 4; row++) {
+            int r = down ? row : 3 - row;
+            context.fill(cx + r, cy + row, cx + 7 - r, cy + row + 1, colour);
+        }
     }
 
     private void addGainsButtons(PartyDashboardData data) {
@@ -404,8 +438,21 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
                 SCREEN, SCREEN_EDGE);
         ConsolePaint.bezel(context, x, y + INVENTORY_Y, WIDTH, INVENTORY_PANEL_HEIGHT, BEZEL, FRAME, SCREEN, SCREEN_EDGE);
         drawTabLabels(context);
+        // The open « Allowed dice » panel: sunk into the screen, around its slots
+        if (page() == Page.SETTINGS && handler.isDiceOpen())
+            ConsolePaint.inset(context, x + DICE_PANEL_X - 5, y + DICE_PANEL_Y - 5, DICE_COLUMNS * 18 + 8, 3 * 18 + 8, SCREEN_EDGE, SLOT_EDGE, SLOT_BODY);
         for (Slot slot : handler.slots) {
-            if (slot.isEnabled()) ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, SLOT_BODY, SLOT_EDGE, SLOT_LOW);
+            if (!slot.isEnabled()) continue;
+            // The dice places after the first free one are greyed (not usable yet)
+            boolean off = isDiceSlot(slot.id) && !handler.isDiceSlotUsable(slot.id);
+            ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, off ? SLOT_OFF_BODY : SLOT_BODY, SLOT_EDGE, off ? SLOT_OFF_LOW : SLOT_LOW);
+        }
+        // The first free dice place shows, faded, a die
+        if (page() == Page.SETTINGS) {
+            int free = handler.allowedDiceCount();
+            int first = handler.isDiceOpen() ? DICE_PANEL_FIRST_SLOT : DICE_FIRST_SLOT;
+            if (handler.isRestrictDice() && free < (handler.isDiceOpen() ? PartyControllerEntity.MAX_ALLOWED_DICE : DICE_ROW))
+                ghostItem(context, handler.getSlot(first + free), ModItems.DEFAULT_DICE);
         }
         // The empty catalogue and bank slots show, faded, the item they take (the currency slots are never empty)
         ghostItem(context, handler.getSlot(SLOT_CATALOGUE), ModItems.MINI_GAMES_CATALOGUE);
@@ -442,6 +489,16 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             case PROGRAM -> drawProgram(context, data, mx, my);
             case GAINS -> drawGains(context, data);
             case SETTINGS -> drawSettings(context, data);
+        }
+        // Dice not restricted: the listed dice dimmed with their greyed slots
+        if (page() == Page.SETTINGS && !data.restrictDice()) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 250);
+            for (Slot slot : handler.slots) {
+                if (isDiceSlot(slot.id) && slot.isEnabled() && slot.hasStack())
+                    context.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, 0xA6000000 | (SLOT_OFF_BODY & 0xFFFFFF));
+            }
+            context.getMatrices().pop();
         }
         infoButton(context, INFO_X, infoY());
         if (flash != null && Util.getMeasuringTimeMs() < flashUntil) {
@@ -1076,6 +1133,16 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
 
     private void drawSettings(DrawContext context, PartyDashboardData data) {
         header(context, Text.translatable(KEY + "tab.settings"), !data.canEdit());
+        // Restrict dice: its label (its switch, its row: widgets and slots) or, the panel open, how many it lists
+        context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.allowed_dice"), DICE_SWITCH_X - 4 - CX), CX, DICE_Y + 5, WHITE, true);
+        if (handler.isDiceOpen()) {
+            int count = handler.allowedDiceCount();
+            Text value = count == 0 ? Text.translatable(KEY + "settings.allowed_dice.all")
+                    : Text.translatable(KEY + "settings.allowed_dice.count", count, PartyControllerEntity.MAX_ALLOWED_DICE);
+            context.drawText(textRenderer, value, DICE_TOGGLE_X - 4 - textRenderer.getWidth(value), DICE_Y + 5,
+                    !data.restrictDice() ? INK_DIM : count == 0 ? INK_SOFT : WHITE, true);
+            return;
+        }
         int room = CW - 72;
         context.drawText(textRenderer, fit(Text.translatable(KEY + "settings.rounds"), room), CX, SETTINGS_Y + 5, WHITE, true);
         String value = Integer.toString(data.roundsSetting());
@@ -1090,18 +1157,20 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         light(context, Text.literal(limit), fieldX + (32 - textRenderer.getWidth(limit) + 1) / 2, limitY + 5, WHITE);
     }
 
-    /** The practice round: its state, then a switch (green and to the right when on). */
+    /** A switch (the practice round, Restrict dice): its state, then the switch (green and to the right when on). */
     private final class PracticeSwitch extends PressableWidget {
         private final boolean on;
+        private final int button;
 
-        PracticeSwitch(int x, int y, int width, int height, Text message, boolean on) {
+        PracticeSwitch(int x, int y, int width, int height, Text message, boolean on, int button) {
             super(x, y, width, height, message);
             this.on = on;
+            this.button = button;
         }
 
         @Override
         public void onPress() {
-            click(BUTTON_PRACTICE);
+            click(button);
         }
 
         @Override
@@ -1181,6 +1250,24 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             tooltip(context, catalogueTooltip(data, catalogue), mouseX, mouseY);
             return;
         }
+        // An allowed die (its own tooltip, how to take it off), a free place, a greyed one
+        if (focusedSlot != null && isDiceSlot(focusedSlot.id) && emptyHand && data != null) {
+            List<Text> lines = new ArrayList<>();
+            if (focusedSlot.hasStack()) {
+                lines.addAll(getTooltipFromItem(focusedSlot.getStack()));
+                lines.add(Text.translatable(KEY + (data.restrictDice() ? "settings.allowed_dice.remove" : "settings.allowed_dice.off")).formatted(Formatting.GRAY));
+            } else if (!data.restrictDice()) {
+                lines.add(Text.translatable(KEY + "settings.allowed_dice.off").formatted(Formatting.GRAY));
+            } else if (handler.isDiceSlotUsable(focusedSlot.id)) {
+                lines.add(Text.translatable(KEY + "settings.allowed_dice").formatted(Formatting.GOLD));
+                lines.add(Text.translatable(KEY + "settings.allowed_dice.slot").formatted(Formatting.GRAY));
+            } else {
+                lines.add(Text.translatable(KEY + "settings.allowed_dice.locked").formatted(Formatting.GRAY));
+            }
+            if (!data.canEdit()) lines.add(Text.translatable(KEY + "locked").formatted(Formatting.RED));
+            tooltip(context, lines, mouseX, mouseY);
+            return;
+        }
         if (focusedSlot != null && isProgramSlot(focusedSlot.id) && !focusedSlot.hasStack() && emptyHand && data != null) {
             List<ItemStack> ghosts = ghosts(data);
             int index = focusedSlot.id - PROGRAM_FIRST_SLOT;
@@ -1211,8 +1298,9 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
         // The label of a setting: what it does
         if (data != null && page() == Page.SETTINGS && emptyHand && mx >= CX && mx < CX + CW - 72) {
             int row = Math.floorDiv(my - SETTINGS_Y, SETTINGS_ROW);
-            if (my >= SETTINGS_Y && row >= 0 && row < 3 && my < SETTINGS_Y + row * SETTINGS_ROW + 18) {
-                String key = row == 0 ? "settings.rounds" : row == 1 ? "settings.practice" : "settings.max_powerups";
+            if (my >= SETTINGS_Y && row >= (handler.isDiceOpen() ? 3 : 0) && row < 4 && my < SETTINGS_Y + row * SETTINGS_ROW + 18
+                    && (row < 3 || mx < DICE_SWITCH_X - 2)) {
+                String key = row == 0 ? "settings.rounds" : row == 1 ? "settings.practice" : row == 2 ? "settings.max_powerups" : "settings.allowed_dice";
                 tooltip(context, List.of(Text.translatable(KEY + key + ".tooltip").formatted(Formatting.GRAY)), mouseX, mouseY);
                 return;
             }
@@ -1284,6 +1372,34 @@ public class PartyControllerScreen extends HandledScreen<PartyControllerScreenHa
             if (!cursor.isEmpty() && ItemStack.areItemsAndComponentsEqual(cursor, other)) {
                 flash(Text.translatable(KEY + "settings.same_item"));
                 return;
+            }
+        }
+        if (slot != null && isDiceSlot(slot.id)) {
+            // Checked here too, to say why at once (the server checks again)
+            PartyDashboardData data = data();
+            if (actionType != SlotActionType.PICKUP) return;
+            if (data == null || !data.canEdit()) {
+                flash(Text.translatable(KEY + "read_only"));
+                return;
+            }
+            ItemStack cursor = handler.getCursorStack();
+            if (!data.restrictDice()) {
+                flash(Text.translatable(KEY + "settings.allowed_dice.off"));
+                return;
+            }
+            if (!handler.isDiceSlotUsable(slot.id)) {
+                if (!cursor.isEmpty()) flash(Text.translatable(KEY + "settings.allowed_dice.locked"));
+                return;
+            }
+            if (!cursor.isEmpty() && !AllowedDice.isDie(cursor)) {
+                flash(Text.translatable(KEY + "settings.allowed_dice.not_a_die"));
+                return;
+            }
+            for (int i = 0; i < handler.allowedDiceCount() && !cursor.isEmpty(); i++) {
+                if (AllowedDice.sameDie(handler.getSlot(DICE_PANEL_FIRST_SLOT + i).getStack(), cursor)) {
+                    flash(Text.translatable(KEY + "settings.allowed_dice.listed"));
+                    return;
+                }
             }
         }
         if (slot != null && slot.id == SLOT_CATALOGUE && slot.hasStack() && handler.isCatalogueLocked()) {
