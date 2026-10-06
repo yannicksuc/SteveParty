@@ -19,6 +19,11 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
 
@@ -37,6 +42,11 @@ import static fr.lordfinn.steveparty.effect.ModEffects.SQUISHED;
  */
 public class SquishEffect extends StatusEffect implements StatusEffectExtension {
     private static final double SCALE_EPSILON = 1.0E-3;
+    /** While {@link #squishToSize(MobEntity, float, int, ServerPlayerEntity, boolean)} runs: who cast it, and whether the others hear it. */
+    private static @Nullable ServerPlayerEntity castBy;
+    private static boolean othersHear = true;
+    /** Entities whose current squish is a quiet one: its end makes no sound either. */
+    private static final Set<UUID> QUIET_ENDS = new HashSet<>();
 
     public SquishEffect() {
         super(StatusEffectCategory.HARMFUL, 0xc150eb);
@@ -48,6 +58,28 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
      * squishing (resize): the animation restarts from its current scale. Server side.
      */
     public static void squishToSize(MobEntity mob, float sizeInBlocks, int duration) {
+        squishToSize(mob, sizeInBlocks, duration, null, true);
+    }
+
+    /**
+     * Same, cast by {@code caster}: when {@code heardByOthers} is false, only the caster hears the transformation's
+     * sounds (the others still see it).
+     */
+    public static void squishToSize(MobEntity mob, float sizeInBlocks, int duration, @Nullable ServerPlayerEntity caster,
+                                    boolean heardByOthers) {
+        castBy = caster;
+        othersHear = heardByOthers;
+        if (heardByOthers) QUIET_ENDS.remove(mob.getUuid());
+        else QUIET_ENDS.add(mob.getUuid());
+        try {
+            squish(mob, sizeInBlocks, duration);
+        } finally {
+            castBy = null;
+            othersHear = true;
+        }
+    }
+
+    private static void squish(MobEntity mob, float sizeInBlocks, int duration) {
         ((TokenizedEntityInterface) mob).steveparty$setTokenSize(sizeInBlocks);
         int amplifier = amplifierForSize(sizeInBlocks);
         StatusEffectInstance instance = new StatusEffectInstance(SQUISHED, duration, amplifier);
@@ -106,7 +138,7 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         scaleAttribute.setBaseValue(targetScale);
 
         if (duration > 0) {
-            sendAnimation(entity, new SquishAnimationPayload(entity.getId(), (float) startScale, (float) targetScale, duration, amplifier));
+            sendAnimation(entity, (float) startScale, (float) targetScale, duration, amplifier);
         }
     }
 
@@ -127,13 +159,15 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
         return maxHeight / initialHeight;
     }
 
-    private static void sendAnimation(LivingEntity entity, SquishAnimationPayload payload) {
+    private static void sendAnimation(LivingEntity entity, float startScale, float targetScale, int duration, int amplifier) {
+        SquishAnimationPayload heard = new SquishAnimationPayload(entity.getId(), startScale, targetScale, duration, amplifier, false);
+        SquishAnimationPayload quiet = new SquishAnimationPayload(entity.getId(), startScale, targetScale, duration, amplifier, true);
         for (ServerPlayerEntity player : PlayerLookup.tracking(entity)) {
-            ServerPlayNetworking.send(player, payload);
+            ServerPlayNetworking.send(player, othersHear || player == castBy ? heard : quiet);
         }
         // A player does not track itself
         if (entity instanceof ServerPlayerEntity self) {
-            ServerPlayNetworking.send(self, payload);
+            ServerPlayNetworking.send(self, heard);
         }
     }
 
@@ -154,6 +188,7 @@ public class SquishEffect extends StatusEffect implements StatusEffectExtension 
     @Override
     public void steveparty$onRemoved(LivingEntity livingEntity) {
         livingEntity.setGlowing(false);
+        if (QUIET_ENDS.remove(livingEntity.getUuid())) return;
         livingEntity.getWorld().playSound(livingEntity, livingEntity.getBlockPos(),
                 SoundEvent.of(Identifier.ofVanilla("entity.zombie_villager.converted")),
                 SoundCategory.PLAYERS, 0.6F, 2.0F);

@@ -981,9 +981,10 @@ public class BoxedTraderEntity extends MerchantEntity implements GeoEntity {
     }
 
     private PlayState idleAnimController(AnimationState<BoxedTraderEntity> event) {
-        // A board token: no animation at all (a random one is cut too), the model rests in its default pose
-        if (TokenBase.isToken(this)) return PlayState.STOP;
         AnimationController<BoxedTraderEntity> controller = event.getController();
+        // A board token: out of his box, standing in his idle (no walk, no new random animation). Stopping the
+        // controller would leave the model in its bind pose: box shut and arms in a T.
+        if (TokenBase.isToken(this)) return event.setAndContinue(IDLE_ANIM);
         if (!hidden) {
             // A little random animation: let it play, "idle" resumes after it (it ends on idle's first frame)
             if (controller.isPlayingTriggeredAnimation()) return PlayState.CONTINUE;

@@ -347,15 +347,9 @@ public class TokenMovementService {
         mob.setHeadYaw(yaw);
     }
 
+    /** At the tile, heard by the players around it (16 blocks, fading with the distance), not across the map. */
     private static void playSound(MobEntity mob, BlockPos targetPos, SoundEvent soundEvent) {
         Vec3d at = BoardSpaces.standPos(mob.getWorld(), targetPos); // where the tile is seen
-        mob.getWorld().playSound(
-                null, // Null plays sound to all nearby players
-                at.x, at.y, at.z,
-                soundEvent,
-                SoundCategory.PLAYERS,
-                100,
-                1.0F
-        );
+        mob.getWorld().playSound(null, at.x, at.y, at.z, soundEvent, SoundCategory.PLAYERS, 1.0F, 1.0F);
     }
 }
