@@ -13,6 +13,9 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleFactory;
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
+import net.minecraft.world.GameRules;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
@@ -274,8 +277,14 @@ public class TokenizerWandItem extends Item {
         }
     }
 
+    /** Lets the wand take bosses too (off by default: shrinking or controlling them can be exploited). */
+    public static final GameRules.Key<GameRules.BooleanRule> TOKENIZE_BOSSES = GameRuleRegistry.register(
+            "stevepartyTokenizeBosses", GameRules.Category.MISC, GameRuleFactory.createBooleanRule(false));
+
+    /** @return whether {@code mob} is a boss the wand must refuse (the Ender Dragon or the Wither, unless the game rule allows them). */
     public static boolean isBoss(MobEntity mob) {
-        return mob instanceof EnderDragonEntity || mob instanceof WitherEntity;
+        return (mob instanceof EnderDragonEntity || mob instanceof WitherEntity)
+                && !mob.getWorld().getGameRules().getBoolean(TOKENIZE_BOSSES);
     }
 
     private static void tokenizeEntity(MobEntity mob, PlayerEntity user, float size, int color) {

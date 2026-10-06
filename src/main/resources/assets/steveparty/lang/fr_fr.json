@@ -1424,6 +1424,7 @@
   "message.steveparty.board.check.no_shop": "%s cases boutique sans marchand autour :",
   "message.steveparty.board.summary.no_shop": "%s cases boutique sans marchand",
   "gamerule.stevepartyShopStopSeconds": "SteveParty : secondes pour faire ses achats à un arrêt boutique",
+  "gamerule.stevepartyTokenizeBosses": "SteveParty : la baguette de pions peut prendre l'Ender Dragon et le Wither",
   "gui.steveparty.party_controller.tab.state": "État",
   "gui.steveparty.party_controller.tab.state.tooltip": "La partie, et de quoi la lancer",
   "gui.steveparty.party_controller.tab.players": "Joueurs",
