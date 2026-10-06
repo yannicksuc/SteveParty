@@ -33,9 +33,11 @@ import java.util.UUID;
  * </ul>
  * Blocks of shops without owner (trader never claimed, or not linked at all) keep the vanilla behaviour for these.
  * <p>
- * Automation is free: hoppers, hopper minecarts and droppers fill and empty the stock containers and the cash
- * registers of any shop, owned or not, so that a shop can be supplied and its till emptied by machines. The trading
- * stall keeps them off its own way ({@code TradingStallBlockEntity}: its slots are the offers, not stock).
+ * Automation may fill a shop, never empty it: hoppers, hopper minecarts and droppers insert into the stock containers
+ * of any shop (owned or not), but hoppers and hopper minecarts never pull from them ({@link #isShopStock},
+ * {@code ShopStockHopperMixin}): a hopper under a stock chest would empty the shop. The cash register is no stock:
+ * machines may still empty its till. The trading stall keeps them off its own way ({@code TradingStallBlockEntity}:
+ * its slots are the offers, not stock).
  */
 public final class ShopProtection {
     private ShopProtection() {
@@ -93,6 +95,22 @@ public final class ShopProtection {
     public static boolean isProtected(World world, BlockPos pos) {
         if (world.isClient || !world.getBlockState(pos).hasBlockEntity()) return false;
         return !getShopOwners(world, pos).isEmpty();
+    }
+
+    /**
+     * @return true if the block at this position is a stock container of a shop (owned or not): a container linked to
+     * a trader with a Shopkeeper Key, or the other half of a linked double chest. Stalls and registers are not stock.
+     * Cheap when nothing is linked there (hoppers ask it every few ticks).
+     */
+    public static boolean isShopStock(World world, BlockPos pos) {
+        if (world.isClient || world.getServer() == null) return false;
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+        if (!(blockEntity instanceof Inventory) || isShopGuiBlock(blockEntity)) return false;
+        VendorLinkPersistentState state = VendorLinkPersistentState.get(world.getServer());
+        if (state == null || state.hasNoLinks()) return false;
+        if (state.isLinked(GlobalPos.create(world.getRegistryKey(), pos))) return true;
+        BlockPos other = getOtherChestHalf(blockEntity.getCachedState(), pos);
+        return other != null && state.isLinked(GlobalPos.create(world.getRegistryKey(), other));
     }
 
     private static BlockPos getOtherChestHalf(BlockState state, BlockPos pos) {
