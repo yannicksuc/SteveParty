@@ -48,6 +48,8 @@ public class BoxedTraderEntityRenderer extends GeoEntityRenderer<BoxedTraderEnti
     @Override
     public void renderCubesOfBone(MatrixStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, int renderColor) {
         if (bone.getName().startsWith(CUBE_BONE_ID)) return;
+        if (this.animatable != null && !this.animatable.isBoxGlitched()
+                && BlockTexturedBones.isHiddenInside(bone, this.animatable.getBlockState())) return;
         super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, renderColor);
     }
 }
