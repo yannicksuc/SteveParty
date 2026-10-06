@@ -637,12 +637,12 @@ public class ModBlocks {
 
     public static final Block GRAVITY_CORE = register(GravityCoreBlock::new,
             Block.Settings.create()
-                    .strength(50.0f, 80000)
+                    // Broken by hand in a second and a half, and dropped (an orbiting player must get it back)
+                    .strength(1.0f, 1200)
                     .sounds(BlockSoundGroup.AMETHYST_CLUSTER)
                     .nonOpaque()
                     .luminance(state -> 15)
-                    .emissiveLighting((state, world, pos) -> true)
-                    .requiresTool(),
+                    .emissiveLighting((state, world, pos) -> true),
             "gravity_core", true, EpicWithGlintBlockItem::new);
 
     public static final Block DICE_FORGE = register(DiceForgeBlock::new,

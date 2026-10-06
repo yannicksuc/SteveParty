@@ -9,6 +9,8 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -36,6 +38,8 @@ public final class GravityPull {
     private static final double ARRIVE_GAIN = 0.15, MAX_SPEED = 1.5;
     /** Speed along the orbit (blocks per tick), counterclockwise seen from above. */
     private static final double ORBIT_SPEED = 0.3;
+    /** A player pulled by a lone gravity core is reminded how to break free this often (ticks). */
+    private static final int HINT_TICKS = 40;
 
     private GravityPull() {
     }
@@ -49,10 +53,25 @@ public final class GravityPull {
      * @param orbit    radius of the orbit the entities end up circling on (blocks)
      */
     public static void pullAround(World world, Vec3d core, double range, double strength, boolean falloff, double orbit) {
+        pullAround(world, core, range, strength, falloff, orbit, false);
+    }
+
+    /**
+     * @param sneakFrees true: a sneaking player is not pulled (it drops out of the orbit), and a player pulled is told
+     *                   so on its action bar, with how to break free
+     * @see #pullAround(World, Vec3d, double, double, boolean, double)
+     */
+    public static void pullAround(World world, Vec3d core, double range, double strength, boolean falloff, double orbit,
+                                  boolean sneakFrees) {
         if (range <= 0 || strength <= 0) return;
         Box area = new Box(core, core).expand(range);
-        for (Entity entity : world.getOtherEntities(null, area, e -> isPulledHere(e, world.isClient))) {
-            pull(entity, core, range, strength, falloff, orbit);
+        for (Entity entity : world.getOtherEntities(null, area, e -> isPulledHere(e, world.isClient)
+                && !(sneakFrees && e instanceof PlayerEntity && e.isSneaking()))) {
+            boolean pulled = pull(entity, core, range, strength, falloff, orbit);
+            // Only the local player is pulled on the client: the hint stays on its action bar while it is pulled
+            if (pulled && sneakFrees && entity instanceof PlayerEntity player && entity.age % HINT_TICKS == 0) {
+                player.sendMessage(Text.translatable("message.steveparty.gravity_core.pulled").formatted(Formatting.LIGHT_PURPLE), true);
+            }
         }
     }
 
@@ -68,12 +87,13 @@ public final class GravityPull {
         return !client;
     }
 
-    private static void pull(Entity entity, Vec3d core, double range, double strength, boolean falloff, double orbit) {
+    /** @return true if the entity was pulled (within reach and not too heavy) */
+    private static boolean pull(Entity entity, Vec3d core, double range, double strength, boolean falloff, double orbit) {
         Vec3d toCore = core.subtract(entity.getBoundingBox().getCenter());
         double distance = toCore.length();
-        if (distance > range) return;
+        if (distance > range) return false;
         double free = 1 - resistance(entity);
-        if (free <= 0) return;
+        if (free <= 0) return false;
         double near = 1 - distance / range; // 1 at the core, 0 at the edge of its reach
         double k = strength * free * (falloff ? near : 1);
         Vec3d velocity = entity.getVelocity();
@@ -95,6 +115,7 @@ public final class GravityPull {
         // Floating in its field is not falling
         if (near * free > 0.5) entity.fallDistance = 0;
         if (!entity.getWorld().isClient) entity.velocityModified = true;
+        return true;
     }
 
     /**

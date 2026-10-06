@@ -7,11 +7,14 @@ import fr.lordfinn.steveparty.entities.custom.ForgeCoreEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.utils.GravityPull;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.passive.CowEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.test.GameTest;
@@ -20,6 +23,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 
 import java.util.List;
 
@@ -161,5 +165,29 @@ public class GravityGameTests implements FabricGameTest {
                 removeAndComplete(context, corePos);
             });
         });
+    }
+
+    /**
+     * A lone gravity core must never trap anyone: it breaks by hand (not instantly, about a second and a half), as fast
+     * from its orbit (in the air) as on the ground, and drops itself.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "gravity_block_break")
+    public void theGravityCoreBlockBreaksByHand(TestContext context) {
+        BlockPos corePos = new BlockPos(1, 2, 1);
+        context.setBlockState(corePos, ModBlocks.GRAVITY_CORE.getDefaultState());
+        BlockPos absolute = context.getAbsolutePos(corePos);
+        BlockState state = context.getWorld().getBlockState(absolute);
+        PlayerEntity player = context.createMockPlayer(GameMode.SURVIVAL);
+        context.assertTrue(player.canHarvest(state), "harvested by hand");
+        player.setOnGround(true);
+        float ground = state.calcBlockBreakingDelta(player, context.getWorld(), absolute);
+        player.setOnGround(false);
+        float air = state.calcBlockBreakingDelta(player, context.getWorld(), absolute);
+        context.assertTrue(ground < 1f && 1f / ground <= 40f, "broken by hand in at most 2 s, not instantly: " + (1f / ground) + " ticks");
+        context.assertTrue(Math.abs(air - ground) < 1.0E-6f, "as fast from its orbit as on the ground");
+        List<ItemStack> drops = Block.getDroppedStacks(state, context.getWorld(), absolute,
+                context.getWorld().getBlockEntity(absolute), player, ItemStack.EMPTY);
+        context.assertTrue(drops.stream().anyMatch(stack -> stack.isOf(ModBlocks.GRAVITY_CORE.asItem())), "drops itself: " + drops);
+        removeAndComplete(context, corePos);
     }
 }
