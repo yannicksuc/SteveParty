@@ -23,7 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Dynamic 16x16 textures of stencil shapes, one per shape and {@link Kind}, created on first use.
+ * Dynamic textures of stencil shapes, one per shape and {@link Kind}, created on first use: 16x16, plus the kind's
+ * {@link Kind#margin() margin} on every side (the metal stencil's frame, never cut).
  * <p>
  * Keyed by the shape CONTENT (callers build a new array every frame). LRU bounded: evicted textures are destroyed.
  * Cleared on resource reload, so that a resource pack changing the base textures is taken into account.
@@ -32,19 +33,36 @@ import java.util.Optional;
 public class StencilResourceManager {
     /** How the shape is drawn. */
     public enum Kind {
-        /** The stencil itself: metal plate with the shape cut out (items, stencil maker). */
-        METAL(Steveparty.id("textures/item/stencil.png"), true),
+        /** The stencil itself: 18x18 metal plate, the shape cut out inside its 1 px frame (items, stencil maker). */
+        METAL(Steveparty.id("textures/item/stencil.png"), true, 1),
         /** Painted wood grain in the shape (wooden signs, as they always were). */
-        WOOD(Steveparty.id("textures/block/easel_sign_overlay_base.png"), false),
+        WOOD(Steveparty.id("textures/block/easel_sign_overlay_base.png"), false, 0),
         /** Plain white shape, tinted by the paint colour (rock, plastic, sprayed paint, engravings). */
-        FLAT(null, false);
+        FLAT(null, false, 0);
 
         private final @Nullable Identifier base;
         private final boolean cutOut;
+        private final int margin;
 
-        Kind(@Nullable Identifier base, boolean cutOut) {
+        Kind(@Nullable Identifier base, boolean cutOut, int margin) {
             this.base = base;
             this.cutOut = cutOut;
+            this.margin = margin;
+        }
+
+        /** Pixels around the 16x16 shape. */
+        public int margin() {
+            return margin;
+        }
+
+        /** Side of the texture: 16 + 2 margins. */
+        public int size() {
+            return StencilShape.SIDE + 2 * margin;
+        }
+
+        /** How much bigger than a 16x16 texture the quad must be to keep the same pixel size. */
+        public float scale() {
+            return size() / (float) StencilShape.SIDE;
         }
     }
 
@@ -130,9 +148,9 @@ public class StencilResourceManager {
                 Steveparty.LOGGER.error("Can't read stencil base texture {}", kind.base, e);
                 return null;
             }
-            if (image.getWidth() != StencilShape.SIDE || image.getHeight() != StencilShape.SIDE) {
+            if (image.getWidth() != kind.size() || image.getHeight() != kind.size()) {
                 image.close();
-                Steveparty.LOGGER.error("Stencil base texture {} must be 16x16", kind.base);
+                Steveparty.LOGGER.error("Stencil base texture {} must be {}x{}", kind.base, kind.size(), kind.size());
                 return null;
             }
         }
@@ -140,9 +158,10 @@ public class StencilResourceManager {
         for (int x = 0; x < StencilShape.SIDE; x++) {
             for (int y = 0; y < StencilShape.SIDE; y++) {
                 boolean set = shape[StencilShape.index(x, y)] != 0;
-                int color = ColorHelper.Abgr.toAbgr(image.getColor(x, y));
+                int px = x + kind.margin, py = y + kind.margin;
+                int color = ColorHelper.Abgr.toAbgr(image.getColor(px, py));
                 int alpha = set != kind.cutOut ? 0xFF : 0;
-                image.setColor(x, y, ColorHelper.Abgr.toAbgr((alpha << 24) | (color & 0x00FFFFFF)));
+                image.setColor(px, py, ColorHelper.Abgr.toAbgr((alpha << 24) | (color & 0x00FFFFFF)));
             }
         }
         String name = "stencil_" + kind.name().toLowerCase() + "_" + Integer.toHexString(java.util.Arrays.hashCode(shape));

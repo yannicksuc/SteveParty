@@ -68,6 +68,12 @@ public class StencilItemRenderer implements DynamicItemRenderer {
                         default -> {
                         }
                     }
+                    // In a slot the 18x18 plate keeps the pixel size of the 16x16 items (one texel, one GUI pixel) and
+                    // fills the slot; in hand, on the ground and in frames it keeps the size of a 16x16 item
+                    if (mode == ModelTransformationMode.GUI) {
+                        float scale = StencilResourceManager.Kind.METAL.scale();
+                        matrix.scale(scale, 1, scale);
+                    }
 
                 }
         );
