@@ -12,10 +12,12 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.fabricmc.loader.api.FabricLoader;
 
 /**
  * The Steve Party Maker title screen background, drawn in place of the vanilla panorama (TitleScreenBackgroundMixin)
- * when textures/gui/title/sky.png exists: the poster layers back to front with a smooth mouse parallax, then the
+ * when FancyMenu is loaded (the modpack's title screen; the mod alone keeps the vanilla one) and
+ * textures/gui/title/sky.png exists: the poster layers back to front with a smooth mouse parallax, then the
  * animated logo (the 72 frames of art/logo/steve_party_maker_animated.gif) laid out on its own at the top centre.
  * Textures: the art sources, linear filtering (.mcmeta) so the sub-pixel motion never shimmers.
  * FancyMenu keeps the buttons, panel and texts on top (modpack layout steveparty_title_screen.txt, no background).
@@ -83,7 +85,8 @@ public final class TitleScreenBackground {
 
     public static boolean isAvailable() {
         if (available == null) {
-            available = MinecraftClient.getInstance().getResourceManager().getResource(LAYERS[0].texture).isPresent();
+            available = FabricLoader.getInstance().isModLoaded("fancymenu")
+                    && MinecraftClient.getInstance().getResourceManager().getResource(LAYERS[0].texture).isPresent();
         }
         return available;
     }
