@@ -317,7 +317,7 @@
   "book.steveparty.guide.pawns_dice.dice.page0.title": "Dés",
   "book.steveparty.guide.pawns_dice.dice.page1.text": "- **Dé par défaut** : 1 à 10.\n- **Dé double** : deux dés liés, 2 à 20.\n- **Dé triple** : trois, 3 à 30.\n- **Dé forgé** : ses propres faces, sorti de la forge à dés.\n\nUn dé lancé disparaît 2 s après son résultat.",
   "book.steveparty.guide.pawns_dice.dice.page1.title": "Les dés",
-  "book.steveparty.guide.pawns_dice.dice.page2.text": "8 lingots de fer autour d'une charge de vent. Combine des dés pour en faire de plus gros ; ils se défont.",
+  "book.steveparty.guide.pawns_dice.dice.page2.text": "Les dés sortent de la **forge à dés**. Combine-les pour en faire de plus gros ; ils se défont.",
   "book.steveparty.guide.pawns_dice.faces.description": "De quoi graver des dés",
   "book.steveparty.guide.pawns_dice.faces.name": "Faces de dé",
   "book.steveparty.guide.pawns_dice.faces.page0.text": "Les faces ne servent que dans la **forge à dés**. 2 lingots de fer + 2 quartz du Nether donnent 4 **faces de dé vierges** ; le **tailleur de pierre** change une face vierge en n'importe quel nombre (0 à 10, premium ou maudit) et inversement.\n\nSur un dé forgé, une face vierge vaut 0.",

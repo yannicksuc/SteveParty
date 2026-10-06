@@ -317,7 +317,7 @@
   "book.steveparty.guide.pawns_dice.dice.page0.title": "Dice",
   "book.steveparty.guide.pawns_dice.dice.page1.text": "- **Default Die**: 1 to 10.\n- **Double Dice**: two linked dice, 2 to 20.\n- **Triple Dice**: three, 3 to 30.\n- **Forged Die**: its own faces, from the Dice Forge.\n\nA thrown die vanishes 2 s after its result.",
   "book.steveparty.guide.pawns_dice.dice.page1.title": "The Dice",
-  "book.steveparty.guide.pawns_dice.dice.page2.text": "8 iron ingots around a wind charge. Combine dice for bigger ones; they split back.",
+  "book.steveparty.guide.pawns_dice.dice.page2.text": "Dice come out of the **Dice Forge**. Combine them for bigger ones; they split back.",
   "book.steveparty.guide.pawns_dice.faces.description": "Material for custom dice",
   "book.steveparty.guide.pawns_dice.faces.name": "Die Faces",
   "book.steveparty.guide.pawns_dice.faces.page0.text": "Faces are only used in the **Dice Forge**. 2 iron ingots + 2 nether quartz give 4 **Blank Dice Faces**; the **stonecutter** turns a blank face into any number (0 to 10, premium or cursed) and back.\n\nOn a forged die, a blank face is a 0.",

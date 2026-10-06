@@ -18,6 +18,7 @@ import me.shedaniel.rei.api.common.entry.EntryStack;
 import me.shedaniel.rei.api.common.util.EntryIngredients;
 import me.shedaniel.rei.api.common.util.EntryStacks;
 import net.minecraft.block.Block;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.util.ArrayList;
@@ -27,16 +28,19 @@ import java.util.Optional;
 
 /**
  * Optional REI plugin (entrypoint {@code rei_client}, only loaded by REI): every tile in each size and with each role in
- * the list, the « Cartridge application » category (see {@link CartridgeApplications}), and the crafts of the dice
- * modules (special recipes: shown as ordinary crafting recipes).
+ * the list, the « Cartridge application » category (see {@link CartridgeApplications}), the « Dice Forge » category,
+ * and the crafts of the dice modules (special recipes: shown as ordinary crafting recipes).
  */
 public class SteveReiPlugin implements REIClientPlugin {
     public static final CategoryIdentifier<CartridgeApplicationDisplay> CARTRIDGE_APPLICATION =
             CategoryIdentifier.of(Steveparty.MOD_ID, "cartridge_application");
+    public static final CategoryIdentifier<DiceForgeDisplay> DICE_FORGE = CategoryIdentifier.of(Steveparty.MOD_ID, "dice_forge");
 
     @Override
     public void registerCategories(CategoryRegistry registry) {
         registry.add(new CartridgeApplicationCategory());
+        registry.add(new DiceForgeCategory());
+        registry.addWorkstations(DICE_FORGE, EntryStacks.of(ModBlocks.DICE_FORGE));
         for (Block tile : CartridgeApplications.tiles()) {
             registry.addWorkstations(CARTRIDGE_APPLICATION, EntryStacks.of(tile));
         }
@@ -54,6 +58,29 @@ public class SteveReiPlugin implements REIClientPlugin {
         }
         Steveparty.LOGGER.info("REI: {} cartridge application displays", count);
         registerDiceDisplays(registry);
+        registerDiceForgeDisplay(registry);
+    }
+
+    /**
+     * The Dice Forge (no recipe type REI could read): any die faces, their blank faces, 5 fragments of different colours
+     * (each slot cycles through the colours, offset so that they never match), any module, the Gravity Core; out come
+     * forged dice, and the plain Default Die so that its recipe lookup lands here.
+     */
+    private static void registerDiceForgeDisplay(DisplayRegistry registry) {
+        List<ItemStack> faces = ModItems.DICE_FACES.subList(1, ModItems.DICE_FACES.size()).stream().map(ItemStack::new).toList();
+        List<Item> colours = ModItems.STAR_FRAGMENTS;
+        List<EntryIngredient> fragments = new ArrayList<>();
+        for (int slot = 0; slot < 5; slot++) {
+            List<ItemStack> cycle = new ArrayList<>();
+            for (int i = 0; i < colours.size(); i++) cycle.add(new ItemStack(colours.get((i + slot * 3) % colours.size())));
+            fragments.add(EntryIngredients.ofItemStacks(cycle));
+        }
+        List<ItemStack> dice = new ArrayList<>();
+        dice.add(DiceFacesComponent.createDie(List.of(new ItemStack(ModItems.DICE_FACES.get(2)), new ItemStack(ModItems.DICE_FACES.get(7)))));
+        dice.add(new ItemStack(ModItems.DEFAULT_DICE));
+        registry.add(new DiceForgeDisplay(EntryIngredients.ofItemStacks(faces), EntryIngredients.of(ModItems.blankDiceFace()),
+                fragments, EntryIngredients.ofItemStacks(ModItems.DICE_MODULES.stream().map(ItemStack::new).toList()), EntryIngredients.of(ModBlocks.GRAVITY_CORE),
+                EntryIngredients.ofItemStacks(dice)));
     }
 
     /**

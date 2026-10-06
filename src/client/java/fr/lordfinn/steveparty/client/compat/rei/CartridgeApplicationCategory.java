@@ -72,7 +72,7 @@ public class CartridgeApplicationCategory implements DisplayCategory<CartridgeAp
     }
 
     /** Adds {@code text} as lines of at most {@code width} pixels (a REI label doesn't wrap). */
-    private static void wrap(Text text, int width, List<Text> lines) {
+    static void wrap(Text text, int width, List<Text> lines) {
         TextRenderer font = MinecraftClient.getInstance().textRenderer;
         StringBuilder line = new StringBuilder();
         for (String word : text.getString().split(" ")) {

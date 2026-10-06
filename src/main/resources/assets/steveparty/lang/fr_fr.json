@@ -1500,6 +1500,8 @@
   "rei.steveparty.cartridge_application": "Application de cartouche",
   "rei.steveparty.cartridge_application.how": "Clic droit sur la tuile avec la cartouche, ou pose-la dans son emplacement",
   "rei.steveparty.cartridge_application.advanced": "La Tuile avancée en contient jusqu'à 16 : la puissance de redstone choisit l'active",
+  "rei.steveparty.dice_forge": "Forge à dés",
+  "rei.steveparty.dice_forge.how": "Réveille la forge avec un noyau de gravité. Chaque face pèse la taille de sa pile et consomme une face vierge. Cinq fragments de couleurs différentes, modules facultatifs. Clique sur la flèche.",
   "block.steveparty.party_bell": "Cloche de partie",
   "block.steveparty.podium": "Podium",
   "block.steveparty.piggy_bank": "Tirelire",
