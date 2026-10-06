@@ -41,6 +41,7 @@
     "ZoneBubbleExplosionMixin",
     "ZoneBubbleFluidRandomTickMixin",
     "ZoneBubbleHopperMixin",
+    "ShopStockHopperMixin",
     "ZoneBubbleInteractionManagerMixin",
     "ZoneBubbleItemEntityMixin",
     "ZoneBubbleLivingEntityMixin",
