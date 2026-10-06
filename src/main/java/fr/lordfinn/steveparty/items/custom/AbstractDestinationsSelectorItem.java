@@ -66,7 +66,9 @@ public abstract class AbstractDestinationsSelectorItem extends Item {
         updateDestinations(destinations, clickedPos, player);
 
         DestinationsComponent updatedComponent = new DestinationsComponent(destinations, getWorldName(serverWorld));
-        stack.set(ModComponents.DESTINATIONS_COMPONENT, updatedComponent);
+        // No destination left: no component at all, so the stack is the same as a new one again (it stacks with them)
+        if (destinations.isEmpty()) stack.remove(ModComponents.DESTINATIONS_COMPONENT);
+        else stack.set(ModComponents.DESTINATIONS_COMPONENT, updatedComponent);
 
         return updatedComponent;
     }
