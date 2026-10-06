@@ -622,18 +622,18 @@ public final class WrenchActions {
                 WrenchMode mode = state.mode().cycle(direction);
                 wrench.set(ModComponents.WRENCH_STATE, state.withMode(mode));
                 say(player, Text.translatable("message.steveparty.wrench.mode", mode.displayName()));
-                playSound(world, player, SoundEvents.UI_BUTTON_CLICK.value(), 1.4f);
+                playSoundToUser(player, SoundEvents.UI_BUTTON_CLICK.value(), 1.4f);
             }
             case UNDO, REDO -> {
                 if (LinkHistory.undo(player, action == WrenchActionPayload.Action.UNDO, wrench)) {
-                    playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, action == WrenchActionPayload.Action.UNDO ? 0.8f : 1.2f);
+                    playSoundToUser(player, ModSounds.CANCEL_SOUND_EVENT, action == WrenchActionPayload.Action.UNDO ? 0.8f : 1.2f);
                 }
             }
             case AUTO_LINK -> {
                 boolean autoLink = !state.autoLink();
                 wrench.set(ModComponents.WRENCH_STATE, state.withAutoLink(autoLink));
                 say(player, Text.translatable(autoLink ? "message.steveparty.wrench.auto_link.on" : "message.steveparty.wrench.auto_link.off"));
-                playSound(world, player, SoundEvents.UI_BUTTON_CLICK.value(), autoLink ? 1.6f : 1.0f);
+                playSoundToUser(player, SoundEvents.UI_BUTTON_CLICK.value(), autoLink ? 1.6f : 1.0f);
             }
             case SLOT -> {
                 BlockPos origin = origin(wrench, world);
@@ -644,7 +644,7 @@ public final class WrenchActions {
                 int slot = Math.floorMod(state.slot() + 1 + direction, container.size() + 1) - 1;
                 wrench.set(ModComponents.WRENCH_STATE, state.withSlot(slot));
                 say(player, slotText(container, slot));
-                playSound(world, player, SoundEvents.UI_BUTTON_CLICK.value(), 1.2f + slot * 0.04f);
+                playSoundToUser(player, SoundEvents.UI_BUTTON_CLICK.value(), 1.2f + slot * 0.04f);
             }
         }
     }
@@ -697,6 +697,11 @@ public final class WrenchActions {
         for (float pitch : new float[]{1.0F, 1.26F, 1.5F}) {
             world.playSound(null, player.getBlockPos(), SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.PLAYERS, 0.4F, pitch);
         }
+    }
+
+    /** The wrench's own controls (wheel, keys): a click for its user only, like the Stencil Hammer's wheel. */
+    private static void playSoundToUser(ServerPlayerEntity player, SoundEvent sound, float pitch) {
+        player.playSoundToPlayer(sound, SoundCategory.PLAYERS, 0.6f, pitch);
     }
 
     private static void playSound(World world, ServerPlayerEntity player, SoundEvent sound, float pitch) {
