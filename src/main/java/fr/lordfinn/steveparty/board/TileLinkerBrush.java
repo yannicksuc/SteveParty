@@ -28,7 +28,8 @@ import java.util.UUID;
 /**
  * What the Tile Linker Brush does, server side: links are painted. Holding the use button (the brush held in use, see
  * {@link TileLinkerBrushItem#usageTick}), every board space the player's look sweeps over (up to {@link WrenchActions#LONG_REACH} blocks, found by what is seen: see {@link BrushAim})
- * is linked from the previous one of the stroke; going over a link again (either way) erases it. The stroke ends when
+ * is linked from the previous one of the stroke; going over a link again the same way erases it (the other way adds
+ * the way back, both kept). The stroke ends when
  * the button is released. Between two ticks, the look is followed step by step: a quick sweep skips no tile.
  * <p>
  * The brush remembers its <b>anchor</b>, the last board space it painted (on the item, never shown: the brush selects
@@ -225,16 +226,10 @@ public final class TileLinkerBrush {
                              CartridgeContainerBlockEntity origin, BlockPos to, CartridgeContainerBlockEntity target) {
         int level = level(brush);
         int slot = BoardLinks.slotOf(origin, level);
-        // Over a link again (either way): erased
+        // Over a link again the same way: erased (the other way, the way back is added: both are kept)
         if (BoardLinks.links(origin, slot).contains(to)) {
             WrenchActions.removeLink(player, world, origin, slot, to);
             erased(player, world, from, to);
-            return;
-        }
-        int back = BoardLinks.slotOf(target, level);
-        if (BoardLinks.links(target, back).contains(from)) {
-            WrenchActions.removeLink(player, world, target, back, from);
-            erased(player, world, to, from);
             return;
         }
         if (!(target instanceof BoardSpaceBlockEntity)) {

@@ -619,7 +619,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- the Tile Linker Brush
 
-    /** A stroke links each painted tile to the next; going over a link again, either way, erases it. */
+    /** A stroke links each painted tile to the next; going over a link again the same way erases it, the other way adds the way back. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theBrushPaintsLinksAndErasesThemWhenRepainted(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE,
@@ -632,11 +632,11 @@ public class BoardLinkingGameTests implements FabricGameTest {
             paint(player, brush, context, t.get(0), t.get(1));
             context.assertEquals(links(context, t.get(0)), List.of(), "repainted the same way: erased");
             paint(player, brush, context, t.get(3), t.get(2));
-            context.assertEquals(links(context, t.get(2)), List.of(), "repainted the other way: erased");
-            context.assertEquals(links(context, t.get(3)), List.of(), "and not linked back");
+            context.assertEquals(links(context, t.get(2)), List.of(t.get(3)), "repainted the other way: kept");
+            context.assertEquals(links(context, t.get(3)), List.of(t.get(2)), "and the way back added");
             context.assertEquals(links(context, t.get(1)), List.of(t.get(2)), "the link in between kept");
             context.assertTrue(fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, null), "undone");
-            context.assertEquals(links(context, t.get(2)), List.of(t.get(3)), "the erased link is back");
+            context.assertEquals(links(context, t.get(3)), List.of(), "the way back undone");
         });
     }
 
