@@ -1,0 +1,45 @@
+{
+  "category": "gadgets",
+  "name": "book.steveparty.guide.gadgets.glandouille.name",
+  "description": "book.steveparty.guide.gadgets.glandouille.description",
+  "icon": {
+    "item": "steveparty:glandouille_spawn_egg"
+  },
+  "x": 0,
+  "y": 3,
+  "sort_number": 3,
+  "hide_while_locked": false,
+  "show_when_any_parent_unlocked": false,
+  "pages": [
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.glandouille.page0.text",
+      "title": "book.steveparty.guide.gadgets.glandouille.page0.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.glandouille.page1.text",
+      "title": "book.steveparty.guide.gadgets.glandouille.page1.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.glandouille.page2.text",
+      "title": "book.steveparty.guide.gadgets.glandouille.page2.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.glandouille.page3.text",
+      "title": "book.steveparty.guide.gadgets.glandouille.page3.title"
+    },
+    {
+      "type": "modonomicon:text",
+      "text": "book.steveparty.guide.gadgets.glandouille.page4.text",
+      "title": "book.steveparty.guide.gadgets.glandouille.page4.title"
+    },
+    {
+      "type": "modonomicon:crafting_recipe",
+      "recipe_id_1": "steveparty:glandouille_cartridge",
+      "text": "book.steveparty.guide.gadgets.glandouille.page5.text"
+    }
+  ]
+}
