@@ -478,7 +478,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** The poles above get the total pushed at once: no waiting for a tick. */
+    /** The poles above get the total pushed at once: no waiting for a tick (a pole counting everyone's total). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void polesFollowTheTotalAtOnce(TestContext context) {
         GoalPoleBaseBlockEntity base = placeBase(context, base());
@@ -486,6 +486,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.setBlockState(BASE.up(2), pole(false, true));
         GoalPoleNetwork.processPending();
         GoalPoleBlockEntity low = poleEntity(context, BASE.up()), high = poleEntity(context, BASE.up(2));
+        low.applyCount(GoalPoleBlockEntity.Count.TOTAL);
         low.update(GoalPoleBlockEntity.Comparator.EQUAL, 3);
         high.update(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2);
         base.credit("Alex", 2, null);
@@ -572,6 +573,46 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.assertTrue(sourceObjective(context) == null && !base.isSourceInvalid(), "landings: no source objective");
         context.assertTrue(objective(context) != null, "the mirror stays");
         removeBase(context);
+        context.complete();
+    }
+
+    /**
+     * An objective of the server typed as the goal (playtest #73, offered as you type): the base follows it as it is
+     * (no objective of its own), each increase for a followed player is a point, and the screen is told the objectives.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player")
+    public void anObjectiveOfTheServerCanBeTheGoal(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        String name = player.getGameProfile().getName();
+        var scoreboard = context.getWorld().getScoreboard();
+        String objectiveName = "jumps" + context.getAbsolutePos(BASE).getX();
+        ScoreboardObjective jumps = scoreboard.addObjective(objectiveName, net.minecraft.scoreboard.ScoreboardCriterion.DUMMY, Text.literal("Jumps"),
+                net.minecraft.scoreboard.ScoreboardCriterion.RenderType.INTEGER, true, null);
+        try {
+            GoalPoleBaseBlockEntity base = placeBase(context, base());
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.SELECTOR, 16);
+            base.setSelector(name);
+            scoreboard.getOrCreateScore(player, jumps).setScore(4);
+            base.setSource(GoalPoleBaseBlockEntity.Source.CRITERION, objectiveName);
+            context.assertTrue(!base.isSourceInvalid() && sourceObjective(context) == null, "followed as it is: no objective of its own");
+            context.assertTrue(base.getPoints(name) == 0, "the score it had is no point");
+            scoreboard.getOrCreateScore(player, jumps).setScore(7);
+            context.assertTrue(base.getPoints(name) == 3, "+3 counted, got " + base.getPoints(name));
+            boolean listed = false;
+            for (net.minecraft.nbt.NbtElement element : base.writeSettings().getList("Objectives", net.minecraft.nbt.NbtElement.COMPOUND_TYPE)) {
+                net.minecraft.nbt.NbtCompound entry = (net.minecraft.nbt.NbtCompound) element;
+                listed |= entry.getString("Name").equals(objectiveName) && entry.getString("Criterion").equals("dummy");
+                context.assertTrue(!entry.getString("Name").startsWith("steveparty_"), "the bases' own objectives are not offered");
+            }
+            context.assertTrue(listed, "the screen is told the objectives of the server");
+            scoreboard.removeObjective(jumps);
+            GoalPoleNetwork.processPending();
+            context.assertTrue(base.isSourceInvalid(), "the objective removed: the goal is unknown");
+            removeBase(context);
+        } finally {
+            if (scoreboard.getNullableObjective(objectiveName) != null) scoreboard.removeObjective(scoreboard.getNullableObjective(objectiveName));
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
         context.complete();
     }
 
@@ -912,7 +953,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         context.complete();
     }
 
-    /** Reaching the goal is sent to clients (met, and when), and rings one chime for the whole pole. */
+    /** Reaching the goal is sent to clients (met, and when), and rings one chime for the whole pole (counting the total). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void reachingTheGoalIsSyncedAndRingsOnce(TestContext context) {
         var registries = context.getWorld().getRegistryManager();
@@ -920,6 +961,7 @@ public class GoalPoleGameTests implements FabricGameTest {
         for (int y = 1; y <= 3; y++) context.setBlockState(BASE.up(y), pole(y == 1, y == 3).with(GoalPoleBlock.FLAG, true));
         GoalPoleNetwork.processPending();
         poleEntity(context, BASE.up()).applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 2, false);
+        poleEntity(context, BASE.up()).applyCount(GoalPoleBlockEntity.Count.TOTAL);
         int chimes = base.getGoalChimes();
         base.credit("Alex", 1, null);
         context.assertTrue(base.getGoalChimes() == chimes, "not reached: no chime");
@@ -1081,7 +1123,7 @@ public class GoalPoleGameTests implements FabricGameTest {
             NbtCompound settings = base.writeSettings();
             settings.putString("Selector", "Someone");
             settings.putBoolean("Reset", true);
-            GoalPolePayload goal = new GoalPolePayload(polePos, GoalPoleBlockEntity.Comparator.EQUAL, 7, false, false, false);
+            GoalPolePayload goal = new GoalPolePayload(polePos, GoalPoleBlockEntity.Comparator.EQUAL, 7, false, false, GoalPoleBlockEntity.Count.SIDES);
 
             player.changeGameMode(GameMode.ADVENTURE);
             base.openScreen(player);
