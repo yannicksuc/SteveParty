@@ -67,8 +67,17 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     private static final int ARROW_X0 = DiceForgeScreenHandler.BLANK_X + 18, ARROW_X1 = DiceForgeScreenHandler.OUTPUT_X - 5,
             ARROW_Y = DiceForgeScreenHandler.BLANK_Y + 8;
     private static final int[][] ARROW_PIXELS = arrowPixels();
-    private static final int BUTTON_X0 = DiceForgeScreenHandler.BLANK_X + 17, BUTTON_X1 = DiceForgeScreenHandler.OUTPUT_X - 1,
-            BUTTON_Y0 = DiceForgeScreenHandler.BLANK_Y, BUTTON_Y1 = DiceForgeScreenHandler.BLANK_Y + 16;
+    /**
+     * The FORGE button is the whole capsule (its slots aside: hovering a slot is hovering the slot). Its hovered frame
+     * and its pressed inside are sprites of the atlas, at their place on the screen (see the texture script).
+     */
+    private static final int CAPSULE_CX = DiceForgeScreenHandler.BLANK_X + 23, CAPSULE_CY = DiceForgeScreenHandler.BLANK_Y + 8;
+    private static final int BUTTON_X0 = CAPSULE_CX - 31, BUTTON_X1 = CAPSULE_CX + 32,
+            BUTTON_Y0 = CAPSULE_CY - 13, BUTTON_Y1 = CAPSULE_CY + 14;
+    private static final int FRAME_U = 40, FRAME_V = 336, FRAME_X = CAPSULE_CX - 32, FRAME_Y = CAPSULE_CY - 14,
+            FRAME_W = 65, FRAME_H = 29;
+    private static final int SUNK_U = 40, SUNK_V = 366, SUNK_X = CAPSULE_CX - 28, SUNK_Y = CAPSULE_CY - 10,
+            SUNK_W = 57, SUNK_H = 21;
     /**
      * The arrow: pale gold at rest, white when hovered, lilac while forging (the part still to fill), muted violet
      * when it cannot be pressed.
@@ -78,8 +87,6 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /** While forging it fills from the left through a smooth gradient of these colours, violet to gold; orange when blocked. */
     private static final int[] GAUGE_COLORS = {0xFF8A3FFC, 0xFFD23CF0, 0xFFFF4FA3, 0xFFFF8A3D, 0xFFFFD35A};
     private static final int GAUGE_BLOCKED = 0xFFE0703A;
-    /** The button's frame: white when hovered (like a vanilla button), and its sunken look while held down. */
-    private static final int BUTTON_HOVER_FRAME = 0xFFFFFFFF, BUTTON_PRESSED_FILL = 0x70000000, BUTTON_PRESSED_SHADOW = 0xC0000000;
     /** Ready to forge, the resting arrow pulses towards white once per PULSE_MS, by at most PULSE_AMOUNT. */
     private static final long PULSE_MS = 1200;
     private static final float PULSE_AMOUNT = 0.55f;
@@ -232,7 +239,14 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     private boolean isOverButton(double mouseX, double mouseY) {
         double px = mouseX - this.x, py = mouseY - this.y;
-        return px >= BUTTON_X0 && px < BUTTON_X1 && py >= BUTTON_Y0 && py < BUTTON_Y1;
+        if (px < BUTTON_X0 || px >= BUTTON_X1 || py < BUTTON_Y0 || py >= BUTTON_Y1) return false;
+        // Its two slots are slots
+        return !isOverSlot(px, py, DiceForgeScreenHandler.BLANK_X, DiceForgeScreenHandler.BLANK_Y)
+                && !isOverSlot(px, py, DiceForgeScreenHandler.OUTPUT_X, DiceForgeScreenHandler.OUTPUT_Y);
+    }
+
+    private static boolean isOverSlot(double px, double py, int slotX, int slotY) {
+        return px >= slotX - 1 && px < slotX + 17 && py >= slotY - 1 && py < slotY + 17;
     }
 
     private float getSmoothProgress(float delta) {
@@ -243,22 +257,19 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     }
 
     /**
-     * The FORGE button, the arrow from the blank faces to the die: white when hovered, muted when it cannot be
-     * pressed; while forging it fills from the left as the die is built (orange when the forge is blocked). Only the
-     * gap between the two slots is the button: hovering a slot is hovering the slot.
+     * The FORGE button, the capsule with its arrow from the blank faces to the die: framed in white when hovered (the
+     * whole capsule), the arrow muted when it cannot be pressed; held down, and as long as it forges, the capsule
+     * stays sunken; while forging the arrow fills from the left as the die is built (orange when the forge is blocked).
      */
     private void drawArrowButton(DrawContext context, int x, int y, int mouseX, int mouseY, float delta) {
         boolean enabled = isButtonEnabled();
         boolean hovered = isOverButton(mouseX, mouseY);
-        boolean pressed = enabled && hovered && buttonPressed;
-        int left = x + BUTTON_X0, top = y + BUTTON_Y0, right = x + BUTTON_X1, bottom = y + BUTTON_Y1;
-        if (pressed) {
-            // Sunken: darker inside, a shadow along its top and left edges, the arrow one pixel lower
-            context.fill(left, top, right, bottom, BUTTON_PRESSED_FILL);
-            context.fill(left, top, right, top + 1, BUTTON_PRESSED_SHADOW);
-            context.fill(left, top + 1, left + 1, bottom, BUTTON_PRESSED_SHADOW);
-        }
-        if (hovered && enabled) context.drawBorder(left - 1, top - 1, right - left + 2, bottom - top + 2, BUTTON_HOVER_FRAME);
+        boolean pressed = enabled && (hovered && buttonPressed || handler.isRunning());
+        RenderSystem.enableBlend();
+        // Sunken: darker inside, a shadow along its top and left edges, the arrow one pixel lower
+        if (pressed) context.drawTexture(TEXTURE, x + SUNK_X, y + SUNK_Y, SUNK_U, SUNK_V, SUNK_W, SUNK_H, ATLAS_SIZE, ATLAS_SIZE);
+        if (hovered && enabled) context.drawTexture(TEXTURE, x + FRAME_X, y + FRAME_Y, FRAME_U, FRAME_V, FRAME_W, FRAME_H, ATLAS_SIZE, ATLAS_SIZE);
+        RenderSystem.disableBlend();
 
         int base = hovered ? (enabled ? ARROW_HOVERED : ARROW_OFF_HOVERED) : !enabled ? ARROW_OFF
                 : handler.isRunning() ? ARROW_RUNNING : ARROW_IDLE;
