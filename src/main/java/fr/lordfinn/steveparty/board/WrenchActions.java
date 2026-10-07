@@ -115,15 +115,15 @@ public final class WrenchActions {
     private static final long WARNING_REPEAT_MS = 3000;
 
     /**
-     * Why a link could not be made: in the chat (the action bar is under the tools' HUD), the same reason not again
-     * within a few seconds (a stroke meets it at every tile).
+     * An error (why a link could not be made): in the chat, in red, unlike the other messages (action bar); the same
+     * one not again within a few seconds (a stroke meets it at every tile).
      */
     public static void warn(ServerPlayerEntity player, Text text) {
         long now = net.minecraft.util.Util.getMeasuringTimeMs();
         if (text.equals(LAST_WARNINGS.get(player.getUuid())) && now - LAST_WARNING_AT.getOrDefault(player.getUuid(), 0L) < WARNING_REPEAT_MS) return;
         LAST_WARNINGS.put(player.getUuid(), text);
         LAST_WARNING_AT.put(player.getUuid(), now);
-        player.sendMessage(text.copy().formatted(net.minecraft.util.Formatting.GOLD), false);
+        player.sendMessage(text.copy().formatted(net.minecraft.util.Formatting.RED), false);
     }
 
     /** The board space (or router) the player aims at, up to {@link #LONG_REACH} blocks away, or null (see {@link BrushAim}). */
