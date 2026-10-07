@@ -29,11 +29,31 @@ public final class ToolHud {
     private ToolHud() {
     }
 
-    /** Top of the boxes: right above the hotbar, or above the health / hunger rows when they are shown. */
+    /**
+     * Top of the boxes: above where vanilla writes the held item's name (shown a moment when an item is taken in hand),
+     * so the two never overlap, and above the health, armour and air rows when they climb higher (absorption, more
+     * health).
+     */
     public static int top(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
-        return context.getScaledWindowHeight() - (statusBars ? 50 : 26) - BOX;
+        int above = statusBars ? ITEM_NAME_TOP : ITEM_NAME_TOP - 14;
+        if (statusBars && client.player != null) above = Math.max(above, statusRowsTop(client.player));
+        return context.getScaledWindowHeight() - above - 2 - BOX;
+    }
+
+    /** The top of the held item's name above the screen's bottom (with the status rows; 14 lower without). */
+    private static final int ITEM_NAME_TOP = 59;
+
+    /** How high the status rows reach above the screen's bottom: hearts (several rows), armour, air. */
+    private static int statusRowsTop(net.minecraft.entity.player.PlayerEntity player) {
+        float health = Math.max((float) player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.GENERIC_MAX_HEALTH), player.getHealth());
+        int absorption = net.minecraft.util.math.MathHelper.ceil(player.getAbsorptionAmount());
+        int lines = net.minecraft.util.math.MathHelper.ceil((health + absorption) / 2.0F / 10.0F);
+        int rowHeight = Math.max(10 - (lines - 2), 3);
+        int left = 39 + (lines - 1) * rowHeight + (player.getArmor() > 0 ? 10 : 0);
+        int right = player.getAir() < player.getMaxAir() || player.isSubmergedInWater() ? 49 : 39;
+        return Math.max(left, right);
     }
 
     /** A plate (nine-slice) over (x, y, width, height). */
@@ -68,8 +88,7 @@ public final class ToolHud {
     public static void hint(DrawContext context, Text hint, int centerX, int boxesTop) {
         var textRenderer = MinecraftClient.getInstance().textRenderer;
         var lines = textRenderer.wrapLines(hint, available(context));
-        occupiedTop = boxesTop - 10 * lines.size();
-        framesSinceDrawn = 0;
+        occupy(boxesTop - 10 * lines.size());
         for (int i = 0; i < lines.size(); i++) {
             var line = lines.get(i);
             int y = boxesTop - 10 * (lines.size() - i);
@@ -85,8 +104,8 @@ public final class ToolHud {
 
     /**
      * How far up a vanilla HUD text whose bottom is {@code bottomFromScreenBottom} pixels above the screen's bottom
-     * must go to clear the tool HUD (0 when none is shown). Called by the action bar and held item name renderers,
-     * before the tool HUDs of the frame: the previous frame's layout is used.
+     * must go to clear the tool HUD (0 when none is shown). Called by the action bar renderer, before the tool HUDs of
+     * the frame: the previous frame's layout is used.
      */
     public static int liftFor(DrawContext context, int bottomFromScreenBottom) {
         if (framesSinceDrawn != Integer.MAX_VALUE) framesSinceDrawn++;
@@ -94,16 +113,15 @@ public final class ToolHud {
         return Math.max(0, context.getScaledWindowHeight() - bottomFromScreenBottom - (occupiedTop - 2));
     }
 
+    /** A tool HUD reaching up to {@code top} is drawn this frame (the action bar goes above it). */
+    public static void occupy(int top) {
+        occupiedTop = top;
+        framesSinceDrawn = 0;
+    }
+
     /** Top of the tool HUD drawn in the last frames (its hint included), -1 when none is shown. */
     public static int occupiedTop() {
         return framesSinceDrawn <= 4 ? occupiedTop : -1;
-    }
-
-    /** Bottom of the held item's name, as vanilla places it. */
-    public static int itemNameBottom() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
-        return statusBars ? 50 : 36;
     }
 
     // ---------------------------------------------------------------- layout
