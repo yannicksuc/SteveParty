@@ -155,21 +155,22 @@ public class TilePartBlock extends Block {
     }
 
     /**
-     * Breaking a part breaks the tile (which drops itself, like when broken directly: with Silk Touch, one item holding
-     * its cartridges).
+     * Breaking a part breaks the tile (which drops itself, like when broken directly: one item holding its cartridges,
+     * their links kept with Silk Touch).
      */
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
         BlockState tile = world.isClient ? null : tileOf(world, state, pos);
         if (tile != null) {
             BlockPos master = master(state, pos);
-            if (ATileBlock.keepsContents(world, tile, player)
-                    && world.getBlockEntity(master) instanceof BoardSpaceBlockEntity boardSpace) {
+            if (!player.isCreative() && world.getBlockEntity(master) instanceof BoardSpaceBlockEntity boardSpace) {
+                // Dropped with the player's tool (Silk Touch keeps the links), then removed without a second drop
                 boardSpace.keepContents();
                 Block.dropStacks(tile, world, master, boardSpace, player, player.getMainHandStack());
                 world.breakBlock(master, false, player);
             } else {
-                world.breakBlock(master, !player.isCreative(), player);
+                if (world.getBlockEntity(master) instanceof BoardSpaceBlockEntity boardSpace) boardSpace.keepContents();
+                world.breakBlock(master, false, player);
             }
         }
         return super.onBreak(world, pos, state, player);

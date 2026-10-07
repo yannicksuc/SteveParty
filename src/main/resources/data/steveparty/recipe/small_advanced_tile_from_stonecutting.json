@@ -1,7 +1,13 @@
 {
   "type": "minecraft:stonecutting",
   "ingredient": {
-    "item": "steveparty:advanced_tile"
+    "fabric:type": "fabric:components",
+    "base": {
+      "item": "steveparty:advanced_tile"
+    },
+    "components": {
+      "!minecraft:container": {}
+    }
   },
   "result": {
     "id": "steveparty:advanced_tile",

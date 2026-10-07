@@ -72,8 +72,8 @@ public class TileLinkerBrushItem extends Item {
         tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.level",
                 TileLinkerBrush.levelText(TileLinkerBrush.level(stack))).formatted(Formatting.WHITE));
         net.minecraft.item.Item cartridge = TileLinkerBrush.cartridge(stack);
-        tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge", new ItemStack(cartridge != null ? cartridge
-                : fr.lordfinn.steveparty.items.ModItems.BOARD_SPACE_BEHAVIOR).getName()).formatted(Formatting.WHITE));
+        tooltip.add((cartridge == null ? Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge.keep")
+                : Text.translatable("tooltip.steveparty.tile_linker_brush.cartridge", new ItemStack(cartridge).getName())).formatted(Formatting.WHITE));
         tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
         for (String control : List.of("paint", "erase", "wheel", "chest", "shop", "offhand")) {
             tooltip.add(Text.translatable("tooltip.steveparty.tile_linker_brush.controls." + control).formatted(Formatting.GRAY));

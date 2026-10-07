@@ -204,13 +204,14 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.POWER_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
 
         ItemStack carpet = new ItemStack(Items.RED_CARPET);
-        ItemStack pellets = new ItemStack(ModItems.PLASTIC_PELLETS);
+        // Two tiles, each holding a plain Cartridge
         ItemStack tile = result(context, 3, 2, carpet, new ItemStack(Items.BLUE_CARPET), carpet,
-                pellets, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), pellets);
-        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 2, "two tiles, got " + tile);
+                cartridge, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), cartridge);
+        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 2
+                && fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.cartridges(tile).size() == 1, "two equipped tiles, got " + tile);
         ItemStack gold = new ItemStack(Items.GOLD_INGOT);
         ItemStack advanced = result(context, 3, 3, e, new ItemStack(Items.COMPARATOR), e,
-                gold, new ItemStack(ModBlocks.TILE), gold, gold, new ItemStack(Items.CHEST), gold);
+                gold, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), gold, gold, new ItemStack(Items.CHEST), gold);
         context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
 
         // Mini-game pages: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)

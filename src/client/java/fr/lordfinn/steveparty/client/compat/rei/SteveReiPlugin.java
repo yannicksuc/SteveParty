@@ -59,6 +59,30 @@ public class SteveReiPlugin implements REIClientPlugin {
         Steveparty.LOGGER.info("REI: {} cartridge application displays", count);
         registerDiceDisplays(registry);
         registerDiceForgeDisplay(registry);
+        registerTileCartridgeDisplays(registry);
+    }
+
+    /**
+     * The crafts of TileCartridgeRecipe (a special recipe REI can't read): a Tile + a cartridge (its old one back, said
+     * by the tooltips), and an Advanced Tile filled with Tiles (slot 0, then 15).
+     */
+    private static void registerTileCartridgeDisplays(DisplayRegistry registry) {
+        ItemStack plain = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        ItemStack tile = CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), plain);
+        List<ItemStack> cartridges = CartridgeApplications.cartridges();
+        List<ItemStack> results = new ArrayList<>();
+        for (ItemStack cartridge : cartridges) results.add(CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), cartridge));
+        registry.add(DefaultCustomShapelessDisplay.simple(
+                List.of(EntryIngredients.of(tile), EntryIngredients.ofItemStacks(cartridges)),
+                List.of(EntryIngredients.ofItemStacks(results)),
+                Optional.of(Steveparty.id("tile_cartridge/tile"))));
+        ItemStack stop = CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
+        ItemStack filled = fr.lordfinn.steveparty.recipes.TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
+                List.of(plain, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP)));
+        if (filled != null) registry.add(DefaultCustomShapelessDisplay.simple(
+                List.of(EntryIngredients.of(ModBlocks.ADVANCED_TILE), EntryIngredients.of(tile), EntryIngredients.of(stop)),
+                List.of(EntryIngredients.of(filled)),
+                Optional.of(Steveparty.id("tile_cartridge/advanced_tile"))));
     }
 
     /**

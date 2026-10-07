@@ -1,6 +1,16 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
+    "has_board_space_behavior": {
+      "conditions": {
+        "items": [
+          {
+            "items": "steveparty:board_space_behavior"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
     "has_light_weighted_pressure_plate": {
       "conditions": {
         "items": [
@@ -32,6 +42,7 @@
     [
       "has_the_recipe",
       "has_plastic_pellets",
+      "has_board_space_behavior",
       "has_light_weighted_pressure_plate"
     ]
   ],

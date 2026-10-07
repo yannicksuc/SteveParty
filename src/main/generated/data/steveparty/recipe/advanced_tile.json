@@ -8,16 +8,16 @@
     "G": {
       "item": "minecraft:gold_ingot"
     },
+    "P": {
+      "item": "minecraft:light_weighted_pressure_plate"
+    },
     "R": {
       "item": "minecraft:comparator"
-    },
-    "T": {
-      "item": "steveparty:tile"
     }
   },
   "pattern": [
     " R ",
-    "GTG",
+    "GPG",
     "GCG"
   ],
   "result": {

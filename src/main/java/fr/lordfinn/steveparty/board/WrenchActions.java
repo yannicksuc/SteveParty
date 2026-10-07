@@ -130,20 +130,44 @@ public final class WrenchActions {
      */
     private static boolean swapCartridge(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
                                          CartridgeContainerBlockEntity container, int requestedSlot) {
-        ItemStack offHand = player.getOffHandStack();
-        if (!(offHand.getItem() instanceof CartridgeItem)) return false;
-        int slot = BoardLinks.slotOf(container, requestedSlot);
+        if (!(player.getOffHandStack().getItem() instanceof CartridgeItem)) return false;
+        return swapCartridge(player, world, pos, container, BoardLinks.slotOf(container, requestedSlot), false);
+    }
+
+    /**
+     * Swaps the cartridge in {@code slot} of a board space for one of the kind the player supplies (see
+     * {@link BoardLinks#cartridgeSource}: the off hand, else the kind picked on the brush), which takes its links; the
+     * replaced cartridge goes back to the inventory, except in creative. Nothing when the slot is empty or already
+     * holds that kind.
+     *
+     * @param tellMissing whether to say so when the player has none of the kind left
+     * @return true if the cartridge was swapped
+     */
+    public static boolean swapCartridge(ServerPlayerEntity player, ServerWorld world, BlockPos pos,
+                                        CartridgeContainerBlockEntity container, int slot, boolean tellMissing) {
         ItemStack current = container.getStack(slot);
-        if (current.isEmpty() || current.getItem() == offHand.getItem()) return false;
-        ItemStack replacement = offHand.copyWithCount(1);
+        if (current.isEmpty()) return false;
+        net.minecraft.item.Item kind = player.getOffHandStack().getItem() instanceof CartridgeItem
+                ? player.getOffHandStack().getItem() : BoardLinks.cartridgeKind(player);
+        if (current.getItem() == kind) return false;
+        ItemStack source = BoardLinks.cartridgeSource(player);
+        if (source.isEmpty()) {
+            if (tellMissing) say(player, Text.translatable("message.steveparty.tile_linker_brush.cartridge.none_left",
+                    new ItemStack(kind).getName(), BoardText.pos(pos)));
+            return false;
+        }
+        ItemStack replacement = source.copyWithCount(1);
         BoardLinks.setLinks(replacement, BoardLinks.links(current), world);
         boolean creative = player.getAbilities().creativeMode;
-        if (!creative) offHand.decrement(1);
+        if (!creative) source.decrement(1);
         ItemStack removed = container.removeStack(slot);
         container.setStack(slot, replacement);
         BoardLinks.sync(container);
         BoardLinks.linkNearestChest(player, container, slot);
-        if (!creative && !removed.isEmpty()) player.getInventory().offerOrDrop(removed);
+        if (!creative && !removed.isEmpty()) {
+            removed.remove(ModComponents.DESTINATIONS_COMPONENT); // its links stay with the space
+            player.getInventory().offerOrDrop(removed);
+        }
         say(player, Text.translatable("message.steveparty.wrench.cartridge_swapped", BoardText.pos(pos),
                 current.getName(), replacement.getName()));
         playSound(world, player, ModSounds.SELECT_SOUND_EVENT, 1.3f);

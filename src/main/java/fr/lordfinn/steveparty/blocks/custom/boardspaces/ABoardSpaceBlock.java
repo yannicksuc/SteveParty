@@ -64,7 +64,7 @@ public abstract class ABoardSpaceBlock extends CartridgeContainer {
         return BlockRenderType.MODEL;
     }
 
-    /** Broken with Silk Touch: the cartridges stay in the tile's item (the others spill out, see the parent). */
+    /** Broken for its item: the cartridges stay in the tile's item (the others spill out, see the parent). */
     @Override
     protected boolean keepsContents(CartridgeContainerBlockEntity blockEntity) {
         return blockEntity instanceof BoardSpaceBlockEntity tile && tile.keepsContents();
