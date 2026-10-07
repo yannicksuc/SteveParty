@@ -37,7 +37,7 @@ public class StencilGunScreenHandler extends ScreenHandler {
     public static final float HEADER = 36;
     /** Top of the player's inventory (its title), its slots 14 lower, its hotbar 72 lower. */
     public static final int INVENTORY_Y = 254, INVENTORY_X = (WIDTH - 176) / 2;
-    public static final int HEIGHT = INVENTORY_Y + 102;
+    public static final int HEIGHT = INVENTORY_Y + 98;
     /** First slot of the player's inventory. */
     public static final int PLAYER_START = StencilGunItem.SIZE;
 

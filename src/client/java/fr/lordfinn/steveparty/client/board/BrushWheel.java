@@ -34,8 +34,8 @@ final class BrushWheel implements ToolWheel.Provider {
     /** Different kinds of Cartridges shown at most. */
     private static final int MAX_CARTRIDGES = 10;
     /** The plates: the grey of vanilla slots, the cartridge page in the board's teal. */
-    /** One neutral plate, the paper of the mod's screens (the gold frame marks the setting in use; red only on the level page). */
-    private static final int PLATE = ToolWheel.PAPER & 0xFFFFFF;
+    /** One neutral plate, a vanilla container's grey (the gold frame marks the setting in use; red only on the level page). */
+    private static final int PLATE = ToolWheel.PANEL & 0xFFFFFF;
     private static final List<ToolWheel.Ring> MAIN_RING = List.of(new ToolWheel.Ring(28, 80));
     private static final List<ToolWheel.Ring> LEVEL_RING = List.of(new ToolWheel.Ring(26, 92));
     private static final List<ToolWheel.Ring> CARTRIDGE_RING = List.of(new ToolWheel.Ring(26, 80));

@@ -31,8 +31,8 @@ import java.util.List;
  */
 public final class HammerWheel implements ToolWheel.Provider {
     private static final List<ToolWheel.Ring> RINGS = List.of(new ToolWheel.Ring(30, 92));
-    /** The mod's neutral teal; stencils on paper, dyes in their colour. */
-    private static final int PAPER = 0xFFFFFF, PLATE = ToolWheel.PAPER & 0xFFFFFF;
+    /** A vanilla container's grey for the plates and the stencils, the dyes in their colour. */
+    private static final int PAPER = ToolWheel.PANEL & 0xFFFFFF, PLATE = ToolWheel.PANEL & 0xFFFFFF;
     /** Degrees the refill button takes either side of the top. */
     private static final float PLUS = 24;
 

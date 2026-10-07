@@ -30,12 +30,10 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     private static final int SELECTED_DYE = 0xFF5FD3FF;
     /** The plates: the mod's teal, the titles a shade darker. */
     /** The mini-game page's colours: its paper, its punched holes, its teal rules and tabs, its ink. */
-    private static final ConsolePaint.Ramp PAPER_RAMP = ConsolePaint.Ramp.of(0x7e9192, 0xffffff, 0xe6f3f4, 0xc7dbdc);
-    private static final ConsolePaint.Ramp HOLE = ConsolePaint.Ramp.of(0x7e9192, 0x9fb4b6, 0xb9cacb, 0x9fb4b6);
-    private static final int PAPER = ToolWheel.PAPER & 0xFFFFFF, TEAL = 0xFF00B3BD, TEAL2 = 0xFF008C95, ORANGE = 0xFDA757;
-    private static final int INK = 0xFF1E3A40, EDGE = 0xFF7E9192, SLOT_BODY = 0xFFF7FBFB, WHITE = 0xFFFFFFFF;
-    /** The punched holes down the left edge, as on the mini-game page. */
-    private static final int[] HOLES = {20, 70, 120, 170, 220, 270, 320};
+    /** A vanilla container: its panel (black outline, white and dark grey bevels, light grey), its slots, its text. */
+    private static final ConsolePaint.Ramp PANEL_RAMP = ConsolePaint.Ramp.of(0x000000, 0xffffff, 0xc6c6c6, 0x555555);
+    private static final int PANEL = ToolWheel.PANEL & 0xFFFFFF, TEXT = 0xFF404040;
+    private static final int SLOT_BODY = 0xFF8B8B8B, SLOT_DARK = 0xFF373737, SLOT_LIGHT = 0xFFFFFFFF;
     private static final ToolWheel.Layout WHEEL = layout();
     /** Free GUI pixels kept around the screen; with less room (large GUI scales) it is all drawn shrunk to fit. */
     private static final int FIT_MARGIN = 4;
@@ -47,7 +45,7 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         this.backgroundWidth = StencilGunScreenHandler.WIDTH;
         this.backgroundHeight = StencilGunScreenHandler.HEIGHT;
         this.playerInventoryTitleX = StencilGunScreenHandler.INVENTORY_X + 8;
-        this.playerInventoryTitleY = StencilGunScreenHandler.INVENTORY_Y + 4;
+        this.playerInventoryTitleY = StencilGunScreenHandler.INVENTORY_Y + 3;
     }
 
     /**
@@ -90,11 +88,11 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         Runnable none = () -> {
         };
         List<ToolWheel.Sector> dyes = new ArrayList<>(), stencils = new ArrayList<>();
-        for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) dyes.add(new ToolWheel.Sector(Text.empty(), null, PAPER, null, false, true, none));
-        for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) stencils.add(new ToolWheel.Sector(Text.empty(), null, PAPER, null, false, true, none));
-        // The titles in the colours of the page's tabs: orange (dyes), teal (stencils)
-        ToolWheel.Sector dyeTitle = new ToolWheel.Sector(Text.empty(), null, ORANGE, null, false, true, none);
-        ToolWheel.Sector stencilTitle = new ToolWheel.Sector(Text.empty(), null, TEAL & 0xFFFFFF, null, false, true, none);
+        for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) dyes.add(new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none));
+        for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) stencils.add(new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none));
+        // The titles: plates of the same grey, their name in the containers' dark grey
+        ToolWheel.Sector dyeTitle = new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none);
+        ToolWheel.Sector stencilTitle = new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none);
         return new ToolWheel.Layout(List.of(new ToolWheel.Ring(StencilGunScreenHandler.RING_INNER, StencilGunScreenHandler.RING_OUTER)),
                 List.of(new ToolWheel.Arc(0, -header, 0, List.of(dyeTitle)), new ToolWheel.Arc(0, 0, header, List.of(stencilTitle)),
                         new ToolWheel.Arc(0, header, 180, stencils), new ToolWheel.Arc(0, 180, 360 - header, dyes)),
@@ -105,21 +103,15 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int cx = x + StencilGunScreenHandler.CENTER_X, cy = y + StencilGunScreenHandler.CENTER_Y;
         int w = StencilGunScreenHandler.WIDTH, h = StencilGunScreenHandler.HEIGHT;
-        // One sheet of the mini-game page's paper: its drop shadow, punched holes, two teal rules at the top and the bottom
-        context.fill(x + 2, y + h, x + w, y + h + 1, 0x69000000);
-        context.fill(x + 2, y + h + 1, x + w, y + h + 2, 0x32000000);
-        ConsolePaint.box(context, x, y, w, h, PAPER_RAMP, 1, 1);
-        for (int hy : HOLES) ConsolePaint.disc(context, x + 2, y + hy, 6, HOLE);
-        for (int ry : new int[]{3, h - 7}) {
-            context.fill(x + 10, y + ry, x + w - 10, y + ry + 1, TEAL);
-            context.fill(x + 10, y + ry + 2, x + w - 10, y + ry + 3, TEAL2);
-        }
+        // One vanilla container panel
+        ConsolePaint.box(context, x, y, w, h, PANEL_RAMP, 2, 2);
         boolean hub = hub(mouseX, mouseY);
         for (ToolWheel.WheelRaster.Run run : ToolWheel.WheelRaster.runs(WHEEL, null, -1, hub, 1f, false, false)) {
             context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
         }
-        // Light slots with their outline, on the wheel's sectors and in the inventory under it
-        for (Slot slot : handler.slots) ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, SLOT_BODY, EDGE, WHITE);
+        // Vanilla slots: on the wheel's sectors, and the player's inventory and hotbar under it, as the hammer's old
+        // loader had them
+        for (Slot slot : handler.slots) ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, SLOT_BODY, SLOT_DARK, SLOT_LIGHT);
         // Back, in the middle
         RenderSystem.enableBlend();
         context.drawGuiTexture(BACK, cx - 16, cy - 16, 32, 32);
@@ -135,11 +127,11 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         int dx = (int) Math.round(Math.sin(a) * r);
         title(context, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.CENTER_X - dx, ty);
         title(context, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.CENTER_X + dx, ty);
-        context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, INK, false);
+        context.drawText(textRenderer, playerInventoryTitle, playerInventoryTitleX, playerInventoryTitleY, TEXT, false);
     }
 
     private void title(DrawContext context, Text text, int centerX, int y) {
-        context.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, 0xFFFFFFFF, true);
+        context.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, TEXT, false);
     }
 
     private boolean hub(double mouseX, double mouseY) {
