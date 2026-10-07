@@ -27,6 +27,19 @@ final class PaintLayers extends RenderLayer {
                     .writeMaskState(COLOR_MASK)
                     .build(false)));
 
+    /** The same paint, its depth alone (drawn after its colour). */
+    private static final Function<Identifier, RenderLayer> DEPTH = Util.memoize(texture -> RenderLayer.of(
+            "steveparty_brush_paint_depth", VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, VertexFormat.DrawMode.QUADS,
+            1536, false, false, MultiPhaseParameters.builder()
+                    .program(ENTITY_CUTOUT_NONULL_PROGRAM)
+                    .texture(new Texture(texture, false, false))
+                    .transparency(NO_TRANSPARENCY)
+                    .cull(DISABLE_CULLING)
+                    .lightmap(ENABLE_LIGHTMAP)
+                    .overlay(ENABLE_OVERLAY_COLOR)
+                    .writeMaskState(DEPTH_MASK)
+                    .build(false)));
+
     private PaintLayers(String name, VertexFormat format, VertexFormat.DrawMode mode, int size, boolean crumbling,
                         boolean translucent, Runnable begin, Runnable end) {
         super(name, format, mode, size, crumbling, translucent, begin, end);
@@ -34,5 +47,9 @@ final class PaintLayers extends RenderLayer {
 
     static RenderLayer paint(Identifier texture) {
         return PAINT.apply(texture);
+    }
+
+    static RenderLayer depth(Identifier texture) {
+        return DEPTH.apply(texture);
     }
 }

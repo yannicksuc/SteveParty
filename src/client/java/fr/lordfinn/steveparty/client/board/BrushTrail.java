@@ -114,7 +114,7 @@ final class BrushTrail {
         ClientTickEvents.END_CLIENT_TICK.register(BrushTrail::tick);
         WorldRenderEvents.LAST.register(BrushTrail::render);
         // Last of the world, after the see-through blocks (stained glass, ice...) even composited apart (Fabulous
-        // graphics): the paint writes no depth, they would be drawn over it
+        // graphics): the paint writes its depth only after its colour, see paint()
         WorldRenderEvents.LAST.register(BrushTrail::renderPaint);
     }
 
@@ -346,8 +346,9 @@ final class BrushTrail {
      */
     private static void paint(VertexConsumerProvider.Immediate consumers, MatrixStack.Entry entry, Vec3d cam, float now) {
         if (DABS.isEmpty()) return;
-        for (int step = 0; step < DRY_STEPS; step++) {
-            RenderLayer streakLayer = PaintLayers.paint(STREAK_TEXTURES[step]);
+        // The colour, then its depth alone: blocks drawn after (Sodium's see-through ones) stay under the paint
+        for (boolean depth : new boolean[]{false, true}) for (int step = 0; step < DRY_STEPS; step++) {
+            RenderLayer streakLayer = depth ? PaintLayers.depth(STREAK_TEXTURES[step]) : PaintLayers.paint(STREAK_TEXTURES[step]);
             VertexConsumer streaks = consumers.getBuffer(streakLayer);
             for (int i = 1; i < DABS.size(); i++) {
                 if (continues(i) && dryStep(DABS.get(i), now) == step) {
@@ -355,7 +356,7 @@ final class BrushTrail {
                 }
             }
             consumers.draw(streakLayer);
-            RenderLayer dabLayer = PaintLayers.paint(DAB_TEXTURES[step]);
+            RenderLayer dabLayer = depth ? PaintLayers.depth(DAB_TEXTURES[step]) : PaintLayers.paint(DAB_TEXTURES[step]);
             VertexConsumer dabs = consumers.getBuffer(dabLayer);
             for (int i = 0; i < DABS.size(); i++) {
                 Dab dab = DABS.get(i);
