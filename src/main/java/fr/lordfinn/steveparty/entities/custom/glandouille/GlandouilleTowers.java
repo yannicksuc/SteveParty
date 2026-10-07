@@ -28,8 +28,9 @@ import java.util.List;
  *     bottom one rides the player, above the head). Right click with an empty hand on another tower: the carried one
  *     goes on top of it; on a block: it is put down there. Built that way, a tower has no height limit but the
  *     server's safety one ({@link ServerConfig#glandouilleMaxStack}).</li>
- *     <li><b>Flick</b>: hitting one inside a tower (not the bottom one) shoots it out like a missile along the blow;
- *     the ones above it come down one place.</li>
+ *     <li><b>Flick</b>: hitting one inside a tower (not the bottom one) shoots it out like a missile along the blow,
+ *     alone: the ones above it hop straight up and come back down onto the one below ({@link #hopOff}). The bottom one
+ *     hit goes alone too, its tower hopping off it and landing on the ground.</li>
  *     <li><b>Collapse</b>: only when the bottom one charges into a wall: everyone falls, fanned out, dizzy.</li>
  * </ul>
  */
@@ -186,20 +187,30 @@ public final class GlandouilleTowers {
     // ---------------------------------------------------------------- flick, collapse
 
     /**
-     * {@code hit} (inside a tower, not its bottom one) is shot out along {@code dir}; the one above it (and its own
-     * riders) comes down onto the one below.
+     * {@code hit} (inside a tower, not its bottom one) is shot out alone along {@code dir}; the ones above it hop off
+     * and come back down onto the one below.
      */
     public static boolean flick(GlandouilleEntity hit, Vec3d dir) {
         if (!(hit.getVehicle() instanceof GlandouilleEntity below)) return false;
-        GlandouilleEntity above = rider(hit);
+        hit.leaveTower();
+        hopOff(hit, below);
         hit.stopRiding();
-        if (above != null) {
-            above.stopRiding();
-            above.startRiding(below, true);
-        }
         Vec3d flat = new Vec3d(dir.x, 0, dir.z);
         if (flat.lengthSquared() < 1.0E-6) flat = Vec3d.fromPolar(0, hit.getYaw());
         hit.launch(flat.normalize());
+        return true;
+    }
+
+    /**
+     * The ones above {@code hit} let go of it (it is hit away, alone): they hop straight up together and land back on
+     * the tower of {@code onto} (the one that was under {@code hit}), or on the ground when there is none. False if
+     * nobody rides {@code hit}.
+     */
+    public static boolean hopOff(GlandouilleEntity hit, @Nullable GlandouilleEntity onto) {
+        GlandouilleEntity above = rider(hit);
+        if (above == null) return false;
+        above.stopRiding();
+        above.hop(onto);
         return true;
     }
 

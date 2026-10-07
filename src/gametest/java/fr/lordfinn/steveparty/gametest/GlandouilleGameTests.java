@@ -266,7 +266,10 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
-    /** A flick on one inside a tower shoots it out along the blow; the ones above come down one place. */
+    /**
+     * A flick on one inside a tower shoots it out along the blow, alone: the ones above hop straight up and come back
+     * down onto the one below; the one below is not pushed.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
     public void aFlickShootsOneOutOfTheTower(TestContext context) {
         floor(context);
@@ -274,16 +277,58 @@ public class GlandouilleGameTests implements FabricGameTest {
         GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2), d = members.get(3);
         a.setAiDisabled(true);
         ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
-        double startX = b.getX();
-        b.onHit(player, player);
-        context.assertTrue(b.getVehicle() == null, "b is out");
-        context.assertEquals(b.getMood(), Mood.FLYING, "b flies");
-        context.assertTrue(c.getVehicle() == a && d.getVehicle() == c, "c and d came down onto a");
-        context.assertEquals(GlandouilleTowers.height(a), 3, "a tower of 3 now");
-        context.waitAndRun(40, () -> {
-            context.assertTrue(b.getX() - startX > 2, "b flew along the blow: " + (b.getX() - startX));
-            context.assertEquals(b.getMood(), Mood.STUNNED, "b landed dizzy");
-            context.complete();
+        context.waitAndRun(2, () -> {
+            double startX = b.getX();
+            Vec3d aStart = a.getPos(), cStart = c.getPos();
+            b.onHit(player, player);
+            context.assertTrue(b.getVehicle() == null, "b is out");
+            context.assertEquals(b.getMood(), Mood.FLYING, "b flies");
+            context.assertTrue(c.getVehicle() == null && d.getVehicle() == c, "c (with d on it) let go of b");
+            context.assertEquals(c.getMood(), Mood.HOPPING, "c hops");
+            context.assertTrue(c.hopOnto() == a, "c comes back down onto a");
+            context.assertFalse(GlandouilleTowers.hasRider(a), "nobody on a for now");
+            double[] highest = {c.getY()};
+            double[] drift = {0};
+            context.runAtEveryTick(() -> {
+                highest[0] = Math.max(highest[0], c.getY());
+                drift[0] = Math.max(drift[0], horizontal(c.getPos(), cStart));
+            });
+            context.waitAndRun(40, () -> {
+                context.assertTrue(b.getX() - startX > 2, "b flew along the blow: " + (b.getX() - startX));
+                context.assertEquals(b.getMood(), Mood.STUNNED, "b landed dizzy");
+                context.assertTrue(highest[0] - cStart.y > 0.5, "c hopped up: " + (highest[0] - cStart.y));
+                context.assertTrue(drift[0] < 0.1, "straight up and down: " + drift[0]);
+                context.assertTrue(c.getVehicle() == a && d.getVehicle() == c, "c and d back on a");
+                context.assertEquals(GlandouilleTowers.height(a), 3, "a tower of 3 now");
+                context.assertTrue(horizontal(a.getPos(), aStart) < 0.05, "a was not pushed: " + horizontal(a.getPos(), aStart));
+                context.complete();
+            });
+        });
+    }
+
+    /** The bottom one hit goes alone too: the tower on it hops off and lands on the ground, still stacked. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aHitBottomOneLeavesItsTowerBehind(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.FROSTY, 3, new BlockPos(2, 1, 3));
+        GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2);
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        context.waitAndRun(2, () -> {
+            Vec3d start = a.getPos();
+            a.onHit(player, player);
+            context.assertEquals(a.getMood(), Mood.SLIDING, "a slides away");
+            context.assertTrue(b.getVehicle() == null && c.getVehicle() == b, "b (with c on it) let go of a");
+            context.assertEquals(b.getMood(), Mood.HOPPING, "b hops");
+            context.assertTrue(b.hopOnto() == null, "nothing below: b comes down on the ground");
+            context.waitAndRun(40, () -> {
+                context.assertTrue(a.getX() - start.x > 1.5, "a slid off alone: " + (a.getX() - start.x));
+                context.assertTrue(b.getVehicle() == null && b.isOnGround(), "b on the ground");
+                context.assertTrue(horizontal(b.getPos(), start) < 0.1, "b where the tower was: " + horizontal(b.getPos(), start));
+                context.assertTrue(c.getVehicle() == b, "c still on b");
+                context.assertEquals(b.getMood(), Mood.CALM, "b calm again");
+                context.assertFalse(GlandouilleTowers.hasRider(a), "nobody on a");
+                context.complete();
+            });
         });
     }
 
