@@ -112,7 +112,7 @@ final class BrushTrail {
 
     static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(BrushTrail::tick);
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(BrushTrail::render);
+        WorldRenderEvents.LAST.register(BrushTrail::render);
         // Last of the world, after the see-through blocks (stained glass, ice...) even composited apart (Fabulous
         // graphics): the paint writes no depth, they would be drawn over it
         WorldRenderEvents.LAST.register(BrushTrail::renderPaint);

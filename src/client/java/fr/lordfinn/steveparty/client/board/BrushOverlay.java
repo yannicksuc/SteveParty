@@ -46,7 +46,8 @@ final class BrushOverlay {
     static void initialize() {
         // After the block entities (where the vanilla block outline is drawn), not AFTER_ENTITIES: the see-through
         // frame writes depth, and drawn before them it hid what a tile's renderer draws under it
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(BrushOverlay::render);
+        // After the translucent blocks: drawn before, the ghosts would hide the stained glass behind them
+        WorldRenderEvents.LAST.register(BrushOverlay::render);
         ClientTickEvents.END_CLIENT_TICK.register(BrushOverlay::tick);
     }
 
