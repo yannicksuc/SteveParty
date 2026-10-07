@@ -55,6 +55,11 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     private static final float LIGHTS_Y = 0f;
     /** How far the inner lights wander from the centre (model pixels), sideways and up / down (the body is 8 wide). */
     private static final float LIGHTS_REACH_X = 2.6f, LIGHTS_REACH_Y = 1.6f;
+    /**
+     * Farther than this from the camera (blocks) the little stars of its inner lights are not drawn: a pixel or two
+     * each there, they were up to 16 quads per Mula. The soft heart glow stays.
+     */
+    private static final double WISPS_RANGE = 24;
 
     public MulaEntityRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new MulaModel());
@@ -101,7 +106,12 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     @Override
     public void actuallyRender(MatrixStack poseStack, MulaEntity animatable, BakedGeoModel model, @Nullable RenderLayer renderType, VertexConsumerProvider bufferSource, @Nullable VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, int renderColor) {
         if (!isReRender) {
-            animatable.getEffects().lastRenderAge = animatable.age;
+            MulaEffects effects = animatable.getEffects();
+            effects.lastRenderAge = animatable.age;
+            if (!ShaderPacks.renderingShadows()) {
+                effects.cameraDistanceSq = MinecraftClient.getInstance().gameRenderer.getCamera().getPos()
+                        .squaredDistanceTo(animatable.getX(), animatable.getY(), animatable.getZ());
+            }
             spawnParticles(animatable);
             renderFloatingItem(poseStack, animatable, bufferSource, partialTick);
         }
@@ -144,7 +154,8 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     /**
      * Sparkles, only for a Mula that is drawn (off screen or too far: nothing) and at most once per tick: the old
      * ambient twinkle, plus a trail of star dust in its colour while it flies. Follows the particle setting (none on
-     * Minimal, fewer on Decreased).
+     * Minimal, fewer on Decreased). Far from the camera, they share a small budget per tick with the other far Mulas
+     * (MulaEffects#mayAddEverydayParticle): a crowd stays sparkling without thousands of particles.
      */
     private static void spawnParticles(MulaEntity mula) {
         if (mula.isToken()) return; // a board token is a still pawn: no ambient sparkles
@@ -158,14 +169,15 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
         // at night they twinkle like little stars: twice as often
         long day = Math.floorMod(world.getTimeOfDay(), 24000L);
         int every = (fewer ? 10 : 5) / (day >= 13000 && day < 23000 ? 2 : 1);
-        if (mula.age % every == 0) {
+        MulaEffects effects = mula.getEffects();
+        if (mula.age % every == 0 && effects.mayAddEverydayParticle()) {
             double offsetX = (random.nextDouble() - 0.5) * 0.9;
             double offsetY = random.nextDouble() * 0.8 + 0.2;
             double offsetZ = (random.nextDouble() - 0.5) * 0.9;
             world.addParticle(ParticleTypes.WAX_OFF, mula.getX() + offsetX, mula.getY() + offsetY, mula.getZ() + offsetZ,
                     0, 0, 0);
         }
-        if (mula.getMotion().speed() > TRAIL_SPEED && mula.age % (fewer ? 4 : 2) == 0) {
+        if (mula.getMotion().speed() > TRAIL_SPEED && mula.age % (fewer ? 4 : 2) == 0 && effects.mayAddEverydayParticle()) {
             // behind it: where it was a tick ago, a little below its centre
             world.addParticle(mula.starDust(), mula.prevX + (random.nextDouble() - 0.5) * 0.25,
                     mula.prevY + mula.getHeight() * 0.3 + (random.nextDouble() - 0.5) * 0.2,
@@ -194,6 +206,8 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                            @Nullable RenderLayer renderType, VertexConsumerProvider bufferSource,
                            @Nullable net.minecraft.client.render.VertexConsumer buffer, float partialTick,
                            int packedLight, int packedOverlay) {
+            // the shader pack's shadow map: glows cast no shadow (their quads were thrown away, after a ray each)
+            if (ShaderPacks.renderingShadows()) return;
             var bodyBone = bakedModel.getBone("head");
             if (bodyBone.isPresent()) {
                 var client = MinecraftClient.getInstance();
@@ -214,8 +228,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 }
                 matrices.translate(bonePos.x / ratio, bonePos.y / ratio, bonePos.z / ratio);
                 boolean shaderPack = ShaderPacks.inUse();
-                boolean behindTranslucent = shaderPack && DeferredGlows.behindTranslucent(entity.getWorld(), camera.getPos(),
-                        entity.getLerpedPos(partialTick).add(0, entity.getHeight() * MulaEntity.CENTER, 0));
+                boolean behindTranslucent = shaderPack && behindTranslucent(entity, camera, partialTick);
                 renderInnerLights(matrices, entity, bodyBone.get(), camera, bufferSource, partialTick, full, warm,
                         shaderPack, behindTranslucent);
                 matrices.multiply(rotation);
@@ -232,6 +245,17 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
                 drawQuad(matrices, glowBuffer(bufferSource, texture, shaderPack, behindTranslucent), packedLight, r, g, b, alpha);
                 matrices.pop();
             }
+        }
+
+        /** Whether its glow is seen through a translucent block: one ray per Mula and per tick, not per frame. */
+        private static boolean behindTranslucent(MulaEntity mula, Camera camera, float partialTick) {
+            MulaEffects effects = mula.getEffects();
+            if (effects.behindTranslucentAge != mula.age) {
+                effects.behindTranslucentAge = mula.age;
+                effects.behindTranslucent = DeferredGlows.behindTranslucent(mula.getWorld(), camera.getPos(),
+                        mula.getLerpedPos(partialTick).add(0, mula.getHeight() * MulaEntity.CENTER, 0));
+            }
+            return effects.behindTranslucent;
         }
 
         /**
@@ -279,7 +303,7 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
             wisp(vertices, entry, 0, LIGHTS_Y * px, z, heart, r, g, b, heartAlpha);
             // only while it is on edge (a player very close, a meal just taken): a calm full Mula's lights just drift
             float tremble = mula.getMotion().tremble(partialTick);
-            int count = Math.min(MAX_WISPS, MathHelper.ceil(lights));
+            int count = mula.getEffects().cameraDistanceSq < WISPS_RANGE * WISPS_RANGE ? Math.min(MAX_WISPS, MathHelper.ceil(lights)) : 0;
             for (int i = 0; i < count; i++) {
                 float shown = MathHelper.clamp(lights - i, 0f, 1f);
                 float a = t * (0.035f + 0.05f * full) + i * 2.39996f;
