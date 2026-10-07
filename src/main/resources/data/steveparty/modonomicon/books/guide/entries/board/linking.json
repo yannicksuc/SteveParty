@@ -5,7 +5,7 @@
   "icon": {
     "item": "steveparty:tile_linker_brush"
   },
-  "x": 2,
+  "x": 0,
   "y": -4,
   "sort_number": 5,
   "hide_while_locked": false,

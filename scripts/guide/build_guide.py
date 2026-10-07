@@ -328,6 +328,26 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Les opérateurs ont aussi `/steveparty board copy`, `paste` et `template loop|line`.",
           "Diagnosis", "Diagnostic"),
     ], parents=["linking"], gate="lay_the_board"),
+    E("explorer_helmet", "steveparty:explorer_helmet", ("Explorer's Helmet", "Casque d'explorateur"),
+      ("The board view, hands free", "La vue du plateau, mains libres"), [
+        T("Wear the **Explorer's Helmet** and the board view stays on, whatever you hold.\n\n"
+          "Within 8 blocks, each space adds its cartridge (a square in its colour) and its links: **→** out, "
+          "**←** in. The space you look at tells everything: slot and redstone power, cartridges, checkpoint, "
+          "chests, shop. Its destinations are framed in green, the spaces leading to it in blue, its chests in gold.",
+          "Avec le **casque d'explorateur**, la vue du plateau reste affichée.\n\n"
+          "À moins de 8 blocs, chaque case ajoute sa cartouche (un carré à sa couleur) et ses liens : **→** "
+          "sortants, **←** entrants. La case que tu regardes dit tout : emplacement et puissance redstone, "
+          "cartouches, point de déclenchement, coffres, boutique. Ses destinations sont encadrées en vert, les "
+          "cases qui y mènent en bleu, ses coffres en or."),
+        T("Its **headlamp** is the switch: press **G** by default (Controls, *Steve Party*) to put it out and hide the board, "
+          "again to light it. Everyone sees whether it is lit. The helmet gives no armour.",
+          "Sa **lampe frontale** sert d'interrupteur : appuie sur **G** par défaut (Commandes, *Steve Party*) pour l'éteindre "
+          "et masquer le plateau, encore pour la rallumer. Tout le monde voit si elle est allumée. Le casque ne "
+          "protège pas.",
+          "The Headlamp", "La lampe frontale"),
+        C("steveparty:explorer_helmet", None, "4 leather, a glowstone dust and a copper ingot.",
+          "4 cuirs, une poudre de glowstone et un lingot de cuivre."),
+    ], parents=["board_view"], gate="lay_the_board"),
     E("active_slot", "steveparty:advanced_tile", ("The Active Cartridge", "La cartouche active"), ("Redstone picks the role", "La redstone choisit le rôle"), [
         T("The redstone power a space receives (0-15) picks its active slot: power 0 = slot 1, power 1 = slot 2…\n\n"
           "Role, colour and destinations follow the active cartridge: one space can be blue, then red, then a "

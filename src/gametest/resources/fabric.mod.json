@@ -27,6 +27,7 @@
       "fr.lordfinn.steveparty.gametest.GoldenPipeGameTests",
       "fr.lordfinn.steveparty.gametest.CartridgeMenuGameTests",
       "fr.lordfinn.steveparty.gametest.BoardLinkingGameTests",
+      "fr.lordfinn.steveparty.gametest.ExplorerHelmetGameTests",
       "fr.lordfinn.steveparty.gametest.TileSupportGameTests",
       "fr.lordfinn.steveparty.gametest.TileSizeGameTests",
       "fr.lordfinn.steveparty.gametest.CartridgeApplicationsGameTests",
