@@ -9,9 +9,6 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.component.EnchantmentEffectComponentTypes;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
@@ -22,9 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The hammer's slots beside the player's inventory (opened with the inventory key or from its wheel, hammer in hand):
- * the player's inventory as usual (armour, off hand, inventory, hotbar) with its 9 dye slots on the left and its 9
- * stencil slots on the right, each in a 3 x 3 grid. The gun is found again in its inventory slot at every change (never held as a stale copy) and
+ * The hammer's refill (from its wheel, hammer in hand): its 18 slots laid out in a wheel, the 9 dye slots down the
+ * left and the 9 stencil slots down the right, real slots (click, drag, shift-click), with the player's inventory and
+ * hotbar under it. The gun is found again in its inventory slot at every change (never held as a stale copy) and
  * cannot be moved while the screen is open; the screen closes if it goes away.
  * <p>
  * Server side, only the very stack the screen was opened on counts as the gun: another gun swapped into that slot
@@ -33,19 +30,28 @@ import java.util.List;
 public class StencilGunScreenHandler extends ScreenHandler {
     /** {@link #gunSlot} value of a gun held in the off hand. */
     public static final int OFF_HAND_SLOT = PlayerInventory.OFF_HAND_SLOT;
-    /** Width of a side panel (3 slots and the borders), and the gap between it and the inventory. */
-    public static final int SIDE = 68, GAP = 2;
-    /** Top of the hammer's 3 x 3 grids, under their title. */
-    public static final int SLOTS_Y = 18;
-    /** Where the player's inventory (the vanilla one, 176 x 166) starts. */
-    public static final int INVENTORY_X = SIDE + GAP;
-    public static final int WIDTH = INVENTORY_X + 176 + GAP + SIDE;
-    /** First slot of the player's inventory, of its armour (head first) and its off hand. */
-    public static final int PLAYER_START = StencilGunItem.SIZE, ARMOR_START = PLAYER_START + 36, OFF_HAND = ARMOR_START + 4;
-    private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
-    private static final Identifier[] ARMOR_SILHOUETTES = {PlayerScreenHandler.EMPTY_HELMET_SLOT_TEXTURE,
-            PlayerScreenHandler.EMPTY_CHESTPLATE_SLOT_TEXTURE, PlayerScreenHandler.EMPTY_LEGGINGS_SLOT_TEXTURE,
-            PlayerScreenHandler.EMPTY_BOOTS_SLOT_TEXTURE};
+    /** The screen: the wheel of the hammer's slots, the player's inventory under it. */
+    public static final int WIDTH = 244, CENTER_X = 122, CENTER_Y = 122;
+    /** The wheel's ring (its slots on the middle circle), and the degrees of each title half at its top. */
+    public static final int RING_INNER = 74, RING_OUTER = 118, SLOT_RADIUS = 96;
+    public static final float HEADER = 36;
+    /** Top of the player's inventory panel (vanilla's bottom part of a chest), its slots 14 lower. */
+    public static final int INVENTORY_Y = 244, INVENTORY_X = (WIDTH - 176) / 2;
+    public static final int HEIGHT = INVENTORY_Y + 96;
+    /** First slot of the player's inventory. */
+    public static final int PLAYER_START = StencilGunItem.SIZE;
+
+    /**
+     * The angle (degrees, 0: top, clockwise) of the middle of a hammer slot: the stencils down the right from under
+     * their title, the dyes down the left from under theirs.
+     */
+    public static double angle(int slot) {
+        boolean stencil = slot < StencilGunItem.STENCIL_SLOTS;
+        int index = stencil ? slot : slot - StencilGunItem.STENCIL_SLOTS;
+        int count = stencil ? StencilGunItem.STENCIL_SLOTS : StencilGunItem.DYE_SLOTS;
+        double step = (180 - HEADER) / count;
+        return stencil ? HEADER + step * (index + 0.5) : 360 - HEADER - step * (index + 0.5);
+    }
 
     private final PlayerInventory playerInventory;
     private final int gunSlot;
@@ -71,33 +77,22 @@ public class StencilGunScreenHandler extends ScreenHandler {
         }
         loaded.addListener(inventory -> save());
 
-        // Dyes on the left, stencils on the right (as on the wheel)
-        int stencilsX = INVENTORY_X + 176 + GAP + 8;
-        for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) {
-            addSlot(new FilteredSlot(loaded, i, stencilsX + i % 3 * 18, SLOTS_Y + i / 3 * 18, true));
-        }
-        for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) {
-            addSlot(new FilteredSlot(loaded, StencilGunItem.STENCIL_SLOTS + i, 8 + i % 3 * 18, SLOTS_Y + i / 3 * 18, false));
+        // The hammer's slots around the wheel: dyes on the left, stencils on the right (as on its wheel)
+        for (int i = 0; i < StencilGunItem.SIZE; i++) {
+            double angle = Math.toRadians(angle(i));
+            int x = CENTER_X + (int) Math.round(Math.sin(angle) * SLOT_RADIUS) - 8;
+            int y = CENTER_Y - (int) Math.round(Math.cos(angle) * SLOT_RADIUS) - 8;
+            addSlot(new FilteredSlot(loaded, i, x, y, i < StencilGunItem.STENCIL_SLOTS));
         }
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
                 int index = column + row * 9 + 9;
-                addSlot(new LockableSlot(playerInventory, index, INVENTORY_X + 8 + column * 18, 84 + row * 18));
+                addSlot(new LockableSlot(playerInventory, index, INVENTORY_X + 8 + column * 18, INVENTORY_Y + 14 + row * 18));
             }
         }
         for (int column = 0; column < 9; column++) {
-            addSlot(new LockableSlot(playerInventory, column, INVENTORY_X + 8 + column * 18, 142));
+            addSlot(new LockableSlot(playerInventory, column, INVENTORY_X + 8 + column * 18, INVENTORY_Y + 72));
         }
-        // Armour and off hand, where the vanilla inventory has them
-        for (int i = 0; i < 4; i++) {
-            addSlot(new ArmorSlot(playerInventory, 39 - i, INVENTORY_X + 8, 8 + i * 18, ARMOR[i], ARMOR_SILHOUETTES[i]));
-        }
-        addSlot(new LockableSlot(playerInventory, PlayerInventory.OFF_HAND_SLOT, INVENTORY_X + 77, 62) {
-            @Override
-            public Pair<Identifier, Identifier> getBackgroundSprite() {
-                return Pair.of(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, PlayerScreenHandler.EMPTY_OFFHAND_ARMOR_SLOT);
-            }
-        });
     }
 
     /**
@@ -153,8 +148,8 @@ public class StencilGunScreenHandler extends ScreenHandler {
         ItemStack stack = slot.getStack();
         ItemStack original = stack.copy();
         int gunEnd = StencilGunItem.SIZE;
-        if (slotIndex < gunEnd || slotIndex >= ARMOR_START) {
-            if (!insertItem(stack, PLAYER_START, ARMOR_START, true)) return ItemStack.EMPTY;
+        if (slotIndex < gunEnd) {
+            if (!insertItem(stack, PLAYER_START, this.slots.size(), true)) return ItemStack.EMPTY;
         } else if (stack.getItem() instanceof StencilItem) {
             if (!insertItem(stack, 0, StencilGunItem.STENCIL_SLOTS, false)) return ItemStack.EMPTY;
         } else if (stack.getItem() instanceof DyeItem) {
@@ -189,41 +184,6 @@ public class StencilGunScreenHandler extends ScreenHandler {
         public Pair<Identifier, Identifier> getBackgroundSprite() {
             return Pair.of(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE,
                     fr.lordfinn.steveparty.Steveparty.id(stencils ? "item/empty_slot_stencil" : "item/empty_slot_dye"));
-        }
-    }
-
-    /** An armour slot of the player: only what goes there, one at a time, a cursed piece stays on (out of creative). */
-    private class ArmorSlot extends LockableSlot {
-        private final EquipmentSlot equipment;
-        private final Identifier silhouette;
-
-        ArmorSlot(PlayerInventory inventory, int index, int x, int y, EquipmentSlot equipment, Identifier silhouette) {
-            super(inventory, index, x, y);
-            this.equipment = equipment;
-            this.silhouette = silhouette;
-        }
-
-        @Override
-        public int getMaxItemCount() {
-            return 1;
-        }
-
-        @Override
-        public boolean canInsert(ItemStack stack) {
-            return playerInventory.player.getPreferredEquipmentSlot(stack) == equipment && super.canInsert(stack);
-        }
-
-        @Override
-        public boolean canTakeItems(PlayerEntity player) {
-            ItemStack stack = getStack();
-            if (!stack.isEmpty() && !player.isCreative()
-                    && EnchantmentHelper.hasAnyEnchantmentsWith(stack, EnchantmentEffectComponentTypes.PREVENT_ARMOR_CHANGE)) return false;
-            return super.canTakeItems(player);
-        }
-
-        @Override
-        public Pair<Identifier, Identifier> getBackgroundSprite() {
-            return Pair.of(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE, silhouette);
         }
     }
 
