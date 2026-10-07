@@ -817,21 +817,29 @@ category("party", "steveparty:party_controller", ("Running a Party", "Mener une 
         C("steveparty:piggy_bank"),
     ], parents=["controller"], gate="party_time"),
     E("goal_pole", "steveparty:goal_pole", ("Goal Pole", "Mât d'arrivée"), ("Jump to the top and score", "Sauter au sommet et marquer"), [
-        T("Place a **Goal Pole Base**, stack **Goal Pole** segments on it and hang **Flags**. Land on top of a "
-          "segment: **1up**, a golden heart, no fall damage, and a point for the base.\n\n"
+        T("Place a **Goal Pole Base**, stack **Goal Pole** segments on it and hang one **Flag**: it goes to the "
+          "top. Land on top of the pole: **1up**, a golden heart, no fall damage, and a point for the base.\n\n"
           "The base counts landings (or any scoreboard criterion) for the party players, everyone, nearby players "
           "or a selector. Set it up with the Wrench.",
-          "Pose un **socle de mât d'arrivée**, empile des segments de **mât d'arrivée** et accroche des "
-          "**drapeaux**. Atterris au sommet : **1up**, un cœur doré, pas de dégâts de chute, et un point pour "
-          "le socle.\n\nLe socle compte les arrivées (ou un critère de scoreboard) pour les joueurs de la partie, "
-          "tous, ceux à proximité ou un sélecteur. Réglage à la clé."),
-        T("Set a goal on a segment with the Wrench (at least 1 by default). Reached: the flag slides down and the "
-          "gold ball lights up. A comparator on a segment gives 15 once reached; on the base, a pulse per point "
-          "or the progress 0-15.\n\nWith *Goal: per player*, each player who reaches it takes the best free podium place.",
-          "Règle un but sur un segment à la clé (au moins 1 par défaut). Atteint : le drapeau descend et la boule "
-          "s'allume. Un comparateur sur un segment donne 15 une fois le but atteint ; sur le socle, une impulsion "
-          "par point ou la progression 0-15.\n\nAvec *But : par joueur*, chacun prend la meilleure place libre des podiums.",
-          "Goals & Redstone", "Buts et redstone"),
+          "Pose un **socle de mât d'arrivée**, empile des segments de **mât d'arrivée** et accroche un "
+          "**drapeau** : il se place en haut. Atterris au sommet : **1up**, un cœur doré, pas de dégâts de chute, "
+          "et un point pour le socle.\n\nLe socle compte les arrivées (ou un critère de scoreboard) pour les joueurs "
+          "de la partie, tous, ceux à proximité ou un sélecteur. Réglage à la clé."),
+        T("Right-click the pole: its goal (at least 1 by default). The flag stays up until it is reached, then "
+          "comes down, or a notch per point. No flag: no goal shown.\n\n"
+          "Empty hand on a side: the flag turns that way. A dye colours it, shears take it off, a flag hangs it back.",
+          "Clic droit sur le mât : son objectif (au moins 1 par défaut). Le drapeau reste en haut jusqu'à l'objectif, "
+          "puis descend, ou d'un cran par point. Pas de drapeau : pas d'objectif affiché.\n\n"
+          "Main vide sur une face : le drapeau s'y tourne. Une teinture le colore, les cisailles le retirent, un "
+          "drapeau le remet.",
+          "The Flag", "Le drapeau"),
+        T("A comparator on the base: a pulse per point. Against any pole segment: the progress, 0 to 15 (15 only "
+          "once reached).\n\nA signal into the base pauses it (1 to 14); 15 also puts the points back to 0. "
+          "With *Goal: per player*, each player who reaches it takes the best free podium place.",
+          "Un comparateur sur le socle : une impulsion par point. Contre un segment du mât : la progression, de 0 à "
+          "15 (15 seulement une fois atteint).\n\nUn signal dans le socle le met en pause (1 à 14) ; 15 remet aussi "
+          "les points à 0. Avec *But : par joueur*, chacun prend la meilleure place libre des podiums.",
+          "Redstone", "Redstone"),
         C("steveparty:goal_pole_base", "steveparty:goal_pole"),
         SP("steveparty:flag",
            "Three wool in a corner shape; the wool sets the colour, 1-8 dyes retint it. Shears take it back.",

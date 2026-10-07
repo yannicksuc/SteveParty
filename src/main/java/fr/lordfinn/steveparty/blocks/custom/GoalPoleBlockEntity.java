@@ -41,15 +41,18 @@ import static fr.lordfinn.steveparty.utils.FloatingTextParticleHelper.spawnFloat
 
 /**
  * A goal pole segment. It never ticks: its base pushes it the total ({@link #acceptTotal}), and it compares it with
- * its goal to set its comparator output. A landing on it is recognised with a timestamp per player (the block is told
- * every tick while a player stands on it), and handed to its base through {@link GoalPoleNetwork}.
+ * its goal; a comparator against it reads the progress (0 to 15, 15 only once the goal is reached). A landing on it is
+ * recognised with a timestamp per player (the block is told every tick while a player stands on it), and handed to
+ * its base through {@link GoalPoleNetwork}. A pole has at most one flag, on its top segment (see
+ * {@link GoalPoleBlock#settleFlag}): its colour is kept here.
  */
 public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<GoalPolePayload> {
     // --- Cached base ---
     private GoalPoleBaseBlockEntity cachedBase;
     /** Whether {@link #cachedBase} was looked up (null then means "no base under this pole"). */
     private boolean baseResolved = false;
-    private int redstoneOutput = 0;
+    /** The progress comparators last read (they are told when it changes). */
+    private int comparatorLevel = 0;
     private int flagColor = FlagItem.NO_COLOR;
     /** Total of the base below, as last pushed (0 without a base). */
     private long total = 0;
@@ -130,14 +133,12 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
     /** How the pole's flags show the progress (a setting of the whole pole). */
     private boolean flagSteps = false;
     /**
-     * The goal is each player's own: a player whose own points reach it fires the pole once (a comparator pulse, and
-     * the highest free place of the linked podiums: see {@code Podiums}). A setting of the whole pole.
+     * The goal is each player's own: a player whose own points reach it fires the pole once (a chime, and the highest
+     * free place of the linked podiums: see {@code Podiums}). A setting of the whole pole.
      */
     private Count count = Count.SIDES;
     /** The holders who reached this segment's per-player goal since the last reset. */
     private final java.util.Set<String> reached = new java.util.LinkedHashSet<>();
-    /** Game ticks of the comparator pulse of a per-player goal reached. */
-    public static final int PLAYER_GOAL_PULSE_TICKS = 4;
     /** Loaded from before the column setting: its column decides once whether its goals were all the same. */
     private boolean legacyGoal = false;
     /** Placed, not loaded: takes the settings of the column it joins. */
@@ -180,6 +181,12 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
             }
         }
         consolidate(column);
+        // One flag per pole, at its top: a flag lower down (saved with several flags per pole) settles there
+        BlockState state = getCachedState();
+        if (state.contains(GoalPoleBlock.FLAG) && state.get(GoalPoleBlock.FLAG)
+                && world.getBlockState(pos.up()).getBlock() instanceof GoalPoleBlock) {
+            GoalPoleBlock.settleFlag(world, pos);
+        }
         refreshFromBase();
     }
 
@@ -248,14 +255,14 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
     }
 
     /**
-     * How the flags of this pole move: false, a flag slides down once its goal is met; true, it steps down one notch
-     * per point towards its goal (the progress shows on the pole). A setting of the whole pole.
+     * How the flag of this pole moves: false, it slides down once the goal is met; true, it steps down one notch per
+     * point towards the goal (the progress shows on the pole). A setting of the whole pole.
      */
     public boolean isFlagSteps() {
         return flagSteps;
     }
 
-    /** Sets how the flags move, for the whole pole. */
+    /** Sets how the flag moves, for the whole pole. */
     public void applyFlagSteps(boolean steps) {
         if (world == null || world.isClient) {
             flagSteps = steps;
@@ -310,10 +317,6 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
             if (segment.count == each) continue;
             segment.count = each;
             segment.reached.clear();
-            if (segment.redstoneOutput != 0) {
-                segment.redstoneOutput = 0;
-                world.updateComparators(segment.pos, segment.getCachedState().getBlock());
-            }
             segment.markDirty();
             segment.sync();
             segment.recompare();
@@ -323,8 +326,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
     /**
      * The own points of a holder changed (per-player goal).
      *
-     * @return true when this makes him reach the goal, the first time since the last reset: the pole fires (a chime, a
-     * comparator pulse)
+     * @return true when this makes him reach the goal, the first time since the last reset: the pole fires (a chime)
      */
     public boolean acceptPlayerPoints(String holder, int points) {
         if (world == null || world.isClient || !isPerPlayer()) return false;
@@ -334,9 +336,6 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         }
         if (!reached.add(holder)) return false;
         markDirty();
-        redstoneOutput = 15;
-        world.updateComparators(pos, getCachedState().getBlock());
-        world.scheduleBlockTick(pos, getCachedState().getBlock(), PLAYER_GOAL_PULSE_TICKS);
         world.playSound(null, pos, net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 1f, 1.19f);
         return true;
     }
@@ -351,13 +350,6 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         if (reached.isEmpty()) return;
         reached.clear();
         markDirty();
-    }
-
-    /** End of the comparator pulse of a per-player goal. */
-    public void endPlayerGoalPulse() {
-        if (!isPerPlayer() || redstoneOutput == 0 || world == null) return;
-        redstoneOutput = 0;
-        world.updateComparators(pos, getCachedState().getBlock());
     }
 
     /**
@@ -427,7 +419,6 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         boolean perPlayer = isPerPlayer();
         long newTotal = base == null ? 0 : base.shownScore(count);
         boolean met = base != null && compare(comparator, (int) Math.clamp(newTotal, Integer.MIN_VALUE, Integer.MAX_VALUE), value);
-        int output = perPlayer ? redstoneOutput : met ? 15 : 0;
         boolean changed = newTotal != total || met != goalMet || linked != (base != null);
         // Clients see the total only above the top segment and on flags going down point by point: other segments
         // send nothing when only the total changed
@@ -439,8 +430,8 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
             goalMet = met;
             goalMetTick = world.getTime();
         }
-        if (output != redstoneOutput) {
-            redstoneOutput = output;
+        if (progressLevel() != comparatorLevel) {
+            comparatorLevel = progressLevel();
             world.updateComparators(pos, getCachedState().getBlock());
         }
         if (changed) markDirty();
@@ -546,8 +537,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         linked = nbt.contains("Linked") ? nbt.getBoolean("Linked") : total != 0;
         goalMet = nbt.getBoolean("GoalMet");
         goalMetTick = nbt.getLong("GoalMetTick");
-        // Same signal as before the chunk was unloaded: no spurious comparator pulse on load
-        redstoneOutput = goalMet && !isPerPlayer() ? 15 : 0;
+        comparatorLevel = progressLevel();
     }
 
     // --- Client sync (the flag colour) ---
@@ -591,10 +581,10 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         };
     }
 
-    public void setRedstoneOutput(int value) {
-        redstoneOutput = value;
+    /** What a comparator against this segment reads: the progress towards its goal, 15 only once reached. */
+    public int getRedstoneOutput() {
+        return progressLevel();
     }
-    public int getRedstoneOutput() { return redstoneOutput; }
 
     // --- Getters & setters ---
     public Comparator getComparator() { return comparator; }
