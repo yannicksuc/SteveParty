@@ -1,11 +1,18 @@
 package fr.lordfinn.steveparty.entities.custom.glandouille;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.config.ServerConfig;
 import fr.lordfinn.steveparty.entities.custom.MulaEntity;
 import fr.lordfinn.steveparty.sounds.ModSounds;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -25,10 +32,12 @@ import java.util.List;
  * charges with it.
  * <ul>
  *     <li><b>Spontaneous</b>: two calm Glandouilles meeting may climb on each other, up to {@link #SPONTANEOUS_MAX}.</li>
- *     <li><b>Carried</b>: sneak + right click with an empty hand on any one of a tower picks the whole tower up (its
- *     bottom one rides the player, above the head). Right click with an empty hand on another tower: the carried one
- *     goes on top of it; on a block: it is put down there. Built that way, a tower has no height limit but the
- *     server's safety one ({@link ServerConfig#glandouilleMaxStack}).</li>
+ *     <li><b>Carried</b>: right click with an empty hand on one of a tower picks it up with everyone above it, the ones
+ *     below staying where they are (a lone one is picked up alone). The stack is held in front of the player's chest,
+ *     arms forward ({@link #heldPos}). Right click with an empty hand on another tower: the carried one goes on top of
+ *     it; on a block: it is put down there. A left click throws the bottom one of the stack forward, shot like a
+ *     flicked one ({@link #throwCarried}). A carrier hit by anyone drops it in front of him ({@link #drop}). Built that
+ *     way, a tower has no height limit but the server's safety one ({@link ServerConfig#glandouilleMaxStack}).</li>
  *     <li><b>Flick</b>: hitting one inside a tower (not the bottom one) shoots it out like a missile along the blow,
  *     alone: the ones above it hop straight up and come back down onto the one below ({@link #hopOff}). The bottom one
  *     hit goes alone too, its tower hopping off it and landing on the ground.</li>
@@ -41,6 +50,8 @@ import java.util.List;
 public final class GlandouilleTowers {
     /** Highest tower Glandouilles build by themselves. */
     public static final int SPONTANEOUS_MAX = 5;
+    /** A carried stack stands this high up the player (his chest), this far in front of him (blocks). */
+    public static final double HOLD_HEIGHT = 0.5, HOLD_GAP = 0.2;
 
     private GlandouilleTowers() {
     }
@@ -136,15 +147,63 @@ public final class GlandouilleTowers {
         return null;
     }
 
-    /** {@code player} picks up the whole tower {@code any} is in (it rides the player's head). */
-    public static boolean pickUp(PlayerEntity player, GlandouilleEntity any) {
-        if (carried(player) != null || any.isBoardActor()) return false;
-        GlandouilleEntity bottom = bottom(any);
-        if (bottom.getVehicle() != null) return false;
-        if (!bottom.startRiding(player, true)) return false;
-        bottom.getNavigation().stop();
+    /**
+     * {@code player} picks up {@code clicked} with everyone above it (it rides the player, held in front of him); the
+     * ones below it stay standing where they are.
+     */
+    public static boolean pickUp(PlayerEntity player, GlandouilleEntity clicked) {
+        if (carried(player) != null || clicked.isBoardActor() || bottom(clicked).getVehicle() != null) return false;
+        Entity below = clicked.getVehicle();
+        if (below != null) clicked.stopRiding();
+        if (!clicked.startRiding(player, true)) {
+            if (below != null) clicked.startRiding(below, true);
+            return false;
+        }
+        clicked.getNavigation().stop();
+        clicked.setVelocity(Vec3d.ZERO);
         player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.GLANDOUILLE_CLIMB,
                 SoundCategory.PLAYERS, 1f, 0.8f);
+        return true;
+    }
+
+    /** Where a carried stack stands: in front of {@code player}'s chest, at arm's length, the way he looks. */
+    public static Vec3d heldPos(PlayerEntity player, GlandouilleEntity carried) {
+        Vec3d front = Vec3d.fromPolar(0, player.getYaw()).multiply(player.getWidth() * 0.5 + carried.getWidth() * 0.5 + HOLD_GAP);
+        return player.getPos().add(front.x, player.getHeight() * HOLD_HEIGHT, front.z);
+    }
+
+    /** {@code at} if {@code glandouille} fits there, else {@code fallback}. */
+    private static Vec3d freeOr(GlandouilleEntity glandouille, Vec3d at, Vec3d fallback) {
+        Box box = glandouille.getDimensions(glandouille.getPose()).getBoxAt(at);
+        return glandouille.getWorld().isSpaceEmpty(glandouille, box) ? at : fallback;
+    }
+
+    /** {@code player} was hit: the stack he carries falls on the ground in front of him, still stacked. */
+    public static boolean drop(PlayerEntity player) {
+        GlandouilleEntity carried = carried(player);
+        if (carried == null) return false;
+        Vec3d front = Vec3d.fromPolar(0, player.getYaw()).multiply(player.getWidth() * 0.5 + carried.getWidth() * 0.5 + HOLD_GAP);
+        Vec3d at = freeOr(carried, player.getPos().add(front.x, 0, front.z), player.getPos());
+        return putDown(player, at, player.getYaw());
+    }
+
+    /**
+     * Left click with a stack in hand: its bottom one is thrown forward, shot like a flicked one (it lands on a tower
+     * it hits, dazes a player); the ones above stay in hand. False if nothing is carried.
+     */
+    public static boolean throwCarried(PlayerEntity player) {
+        GlandouilleEntity thrown = carried(player);
+        if (thrown == null) return false;
+        GlandouilleEntity above = rider(thrown);
+        if (above != null) above.stopRiding();
+        thrown.stopRiding();
+        if (above != null) above.startRiding(player, true);
+        Vec3d held = heldPos(player, thrown);
+        Vec3d at = freeOr(thrown, held, player.getPos().add(0, player.getHeight() * HOLD_HEIGHT, 0));
+        thrown.refreshPositionAndAngles(at.x, at.y, at.z, player.getYaw(), 0);
+        thrown.thrownBy(player);
+        thrown.launch(Vec3d.fromPolar(0, player.getYaw()));
+        player.swingHand(Hand.MAIN_HAND, true);
         return true;
     }
 
@@ -175,8 +234,18 @@ public final class GlandouilleTowers {
         return true;
     }
 
-    /** Right click on a block with an empty hand while carrying a tower: it is put down against that face. */
+    /**
+     * Right click on a block with an empty hand while carrying a tower: it is put down against that face. A carrier hit
+     * by anyone drops it; his left click throws one ({@link ThrowCarried}, sent by the client).
+     */
     public static void initialize() {
+        PayloadTypeRegistry.playC2S().register(ThrowCarried.ID, ThrowCarried.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(ThrowCarried.ID, (payload, context) -> throwCarried(context.player()));
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
+            if (entity instanceof PlayerEntity player && !blocked && (source.getAttacker() != null || source.getSource() != null)) {
+                drop(player);
+            }
+        });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (hand != Hand.MAIN_HAND || !player.getMainHandStack().isEmpty() || player.isSpectator()) return ActionResult.PASS;
             if (carried(player) == null) return ActionResult.PASS;
@@ -186,6 +255,17 @@ public final class GlandouilleTowers {
             putDown(player, at, player.getYaw() + 180f);
             return ActionResult.SUCCESS;
         });
+    }
+
+    /** The client's left click with a stack in hand: throw its bottom one. */
+    public record ThrowCarried() implements CustomPayload {
+        public static final Id<ThrowCarried> ID = new Id<>(Steveparty.id("glandouille_throw"));
+        public static final PacketCodec<PacketByteBuf, ThrowCarried> CODEC = PacketCodec.unit(new ThrowCarried());
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
     }
 
     // ---------------------------------------------------------------- impacts: a shot one, a sliding one

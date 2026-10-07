@@ -171,6 +171,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     private @Nullable GlandouilleEntity hopOnto;
     /** Its old tower mates, left alone (never shoved) until {@link #sparedUntil}. */
     private List<GlandouilleEntity> spared = List.of();
+    /** Thrown by a player: that player and the tower still in his hands, left alone until {@link #sparedUntil}. */
+    private @Nullable Entity thrower;
     private long sparedUntil;
     /** The height of the players around it last tick, to see them come down on its cap. */
     private final Map<UUID, Double> playerY = new HashMap<>(2);
@@ -350,6 +352,19 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         return new Vec3d(0, dimensions.height() - 0.05 * scaleFactor, 0);
     }
 
+    /** Carried by a player: held in front of the chest, not on the head (the ones above stand on it as usual). */
+    @Override
+    public void tickRiding() {
+        super.tickRiding();
+        if (getVehicle() instanceof PlayerEntity player) setPosition(GlandouilleTowers.heldPos(player, this));
+    }
+
+    /** A carried tower can't be aimed at: the carrier's clicks go through it (to the block or the tower behind). */
+    @Override
+    public boolean canHit() {
+        return super.canHit() && !(GlandouilleTowers.bottom(this).getVehicle() instanceof PlayerEntity);
+    }
+
     @Override
     public boolean isPushable() {
         return !isAnchored() && !boardActor && super.isPushable();
@@ -373,8 +388,8 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         super.tick();
         Entity vehicle = getVehicle();
         if (vehicle != null) {
-            // a tower faces the way its bottom one does; a carried one faces with the player
-            float yaw = vehicle instanceof LivingEntity living ? living.bodyYaw : vehicle.getYaw();
+            // a tower faces the way its bottom one does; a carried one faces where the player looks
+            float yaw = vehicle instanceof LivingEntity living && !(vehicle instanceof PlayerEntity) ? living.bodyYaw : vehicle.getYaw();
             setYaw(yaw);
             this.bodyYaw = yaw;
             this.headYaw = yaw;
@@ -836,12 +851,23 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
         List<GlandouilleEntity> mates = new ArrayList<>(GlandouilleTowers.members(this));
         mates.remove(this);
         this.spared = mates;
+        this.thrower = null;
+        this.sparedUntil = getWorld().getTime() + SPARE_TICKS;
+    }
+
+    /** Thrown out of {@code player}'s hands: its flight spares him and the tower he still carries for a moment. */
+    public void thrownBy(PlayerEntity player) {
+        this.spared = List.of();
+        this.thrower = player;
         this.sparedUntil = getWorld().getTime() + SPARE_TICKS;
     }
 
     /** One of its old tower mates, left alone a moment after it was hit out of the tower. */
     private boolean spares(Entity other) {
-        return getWorld().getTime() < sparedUntil && other instanceof GlandouilleEntity mate && spared.contains(mate);
+        if (getWorld().getTime() >= sparedUntil) return false;
+        if (thrower != null && (other == thrower
+                || other instanceof GlandouilleEntity held && GlandouilleTowers.bottom(held).getVehicle() == thrower)) return true;
+        return other instanceof GlandouilleEntity mate && spared.contains(mate);
     }
 
     /**
@@ -1054,10 +1080,9 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
                 if (!world.isClient) GlandouilleTowers.stackCarriedOn(player, this);
                 return ActionResult.success(world.isClient);
             }
-            if (player.isSneaking()) {
-                if (!world.isClient) GlandouilleTowers.pickUp(player, this);
-                return ActionResult.success(world.isClient);
-            }
+            // picked up with everyone above it (sneaking or not): the ones below stay standing
+            if (!world.isClient) GlandouilleTowers.pickUp(player, this);
+            return ActionResult.success(world.isClient);
         }
         return super.interactMob(player, hand);
     }
