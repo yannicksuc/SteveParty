@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "steveparty:acorn"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "steveparty:blocks/acorn_crop"
+}

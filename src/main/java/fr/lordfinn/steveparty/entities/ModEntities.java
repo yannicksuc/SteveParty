@@ -100,6 +100,19 @@ public class ModEntities {
                     .build(PIPE_CARRIER_KEY.getValue().toString())
     );
 
+    /** The Glandouille, a grumpy little acorn (see GlandouilleEntity). Its hitbox scales with its variant. */
+    public static final RegistryKey<EntityType<?>> GLANDOUILLE_KEY = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Steveparty.id("glandouille"));
+    public static final EntityType<fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity> GLANDOUILLE = Registry.register(Registries.ENTITY_TYPE,
+            Steveparty.id("glandouille"),
+            EntityType.Builder
+                    .<fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity>create(fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.MODEL_WIDTH,
+                            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.MODEL_HEIGHT)
+                    .eyeHeight(0.55f)
+                    .maxTrackingRange(10)
+                    .build(GLANDOUILLE_KEY.getValue().toString())
+    );
+
     public static void initialize() {
         // The Boxed Trader was the Hiding Trader: worlds saved before the rename keep their merchants and spawn eggs
         fr.lordfinn.steveparty.registry.RegistryAliases.add(Steveparty.id("hiding_trader"), Steveparty.id("boxed_trader"));
@@ -108,5 +121,6 @@ public class ModEntities {
         FabricDefaultAttributeRegistry.register(ModEntities.DICE_ENTITY, DiceEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.BOXED_TRADER_ENTITY, BoxedTraderEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(ModEntities.MULA_ENTITY, MulaEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(ModEntities.GLANDOUILLE, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.setAttributes());
     }
 }

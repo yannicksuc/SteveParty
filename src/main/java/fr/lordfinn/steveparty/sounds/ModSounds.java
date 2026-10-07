@@ -74,6 +74,36 @@ public class ModSounds {
     public static final SoundEvent VILLAGER_BLOCK_SIGH = register("villager_block.sigh");
     /** Pulled out by a sticky piston: back to being a villager. */
     public static final SoundEvent VILLAGER_BLOCK_FREED = register("villager_block.freed");
+    // Glandouille: vanilla sounds re-pitched and layered in assets/steveparty/sounds.json (wood, slime for the
+    // "pouic"...), under the mod's own events so they can be replaced later.
+    public static final SoundEvent GLANDOUILLE_AMBIENT = register("glandouille.ambient");
+    public static final SoundEvent GLANDOUILLE_HURT = register("glandouille.hurt");
+    public static final SoundEvent GLANDOUILLE_DEATH = register("glandouille.death");
+    public static final SoundEvent GLANDOUILLE_STEP = register("glandouille.step");
+    /** The two stomps of its telegraph, and its growl. */
+    public static final SoundEvent GLANDOUILLE_STOMP = register("glandouille.stomp");
+    public static final SoundEvent GLANDOUILLE_GROWL = register("glandouille.growl");
+    /** Its charge hits something (no damage: a shove). */
+    public static final SoundEvent GLANDOUILLE_RAM = register("glandouille.ram");
+    /** Its charge ends in a wall. */
+    public static final SoundEvent GLANDOUILLE_BONK = register("glandouille.bonk");
+    /** Stomped flat: "pouic". */
+    public static final SoundEvent GLANDOUILLE_SQUASH = register("glandouille.squash");
+    public static final SoundEvent GLANDOUILLE_REINFLATE = register("glandouille.reinflate");
+    public static final SoundEvent GLANDOUILLE_SULK = register("glandouille.sulk");
+    public static final SoundEvent GLANDOUILLE_SNORE = register("glandouille.snore");
+    public static final SoundEvent GLANDOUILLE_HAT_POP = register("glandouille.hat_pop");
+    public static final SoundEvent GLANDOUILLE_HAT_ON = register("glandouille.hat_on");
+    /** Flicked out of a tower. */
+    public static final SoundEvent GLANDOUILLE_FLICK = register("glandouille.flick");
+    /** The frosty one sliding like a curling stone. */
+    public static final SoundEvent GLANDOUILLE_SLIDE = register("glandouille.slide");
+    public static final SoundEvent GLANDOUILLE_COLLAPSE = register("glandouille.collapse");
+    public static final SoundEvent GLANDOUILLE_CLIMB = register("glandouille.climb");
+    /** The board's Glandouilles leaving in a little cloud. */
+    public static final SoundEvent GLANDOUILLE_POOF = register("glandouille.poof");
+    /** A ripe acorn hatching into a young Glandouille. */
+    public static final SoundEvent GLANDOUILLE_HATCH = register("glandouille.hatch");
     @SuppressWarnings("EmptyMethod")
     public static void initialize() {
     }

@@ -16,7 +16,9 @@ public enum BoardSpaceType implements StringIdentifiable {
     /** « Téléportation »: a token landing here is sent to one of the tile's teleport targets (see TileTeleport). */
     TILE_TELEPORT("tile_teleport"),
     /** « Étoile »: a star space, where the party's star may stand and be bought (see fr.lordfinn.steveparty.service.PartyStars). */
-    TILE_STAR("tile_star");
+    TILE_STAR("tile_star"),
+    /** « Glandouille »: a tower of Glandouilles pushes the tokens some spaces on (see GlandouilleTileBehavior). */
+    TILE_GLANDOUILLE("tile_glandouille");
 
     private final String name;
 
