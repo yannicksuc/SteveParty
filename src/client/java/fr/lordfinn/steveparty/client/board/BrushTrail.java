@@ -23,6 +23,8 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.Identifier;
@@ -253,6 +255,10 @@ final class BrushTrail {
         paint(client.getBufferBuilders().getEntityVertexConsumers(), matrices.peek(), context.camera().getPos(), now);
     }
 
+    /** A rub of the brush every so many blocks painted; where the last one was (along its stroke). */
+    private static final double SOUND_EVERY = 0.7;
+    private static double soundAlong;
+
     /**
      * Every frame: a point of paint where the crosshair meets a surface (the brush's reach), on a tile's slab where it
      * is drawn (see BoardSpaces#tileHit), a little apart from the previous one. From one surface to another (a floor
@@ -299,6 +305,12 @@ final class BrushTrail {
         double width = WIDTH * (0.9 + 0.2 * SPLASH.nextDouble());
         lastDab = new Dab(at, normal, width, light, along, 0.9f + 0.12f * SPLASH.nextFloat(), joined, false, current);
         add(lastDab);
+        // The bristles on the surface: a soft rub now and then along the stroke
+        if (!joined || along - soundAlong >= SOUND_EVERY || along < soundAlong) {
+            soundAlong = along;
+            client.world.playSound(at.x, at.y, at.z, SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS,
+                    0.22f, 1.25f + 0.35f * SPLASH.nextFloat(), false);
+        }
         if (joined && SPLASH.nextFloat() < 0.1f) {
             Vec3d[] axes = axes(normal);
             double angle = SPLASH.nextDouble() * Math.PI * 2, reach = width * (0.7 + 0.8 * SPLASH.nextDouble());
