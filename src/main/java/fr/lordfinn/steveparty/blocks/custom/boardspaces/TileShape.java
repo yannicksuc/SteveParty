@@ -87,12 +87,15 @@ public final class TileShape {
         BlockHitResult hit = Box.raycast(List.of(local), toLocal(start), toLocal(end), BlockPos.ORIGIN);
         if (hit == null) return null;
         Vec3d at = toWorld(hit.getPos().x, hit.getPos().y, hit.getPos().z);
-        Vector3f normal = toBlock.transformDirection(new Vector3f(hit.getSide().getUnitVector()));
-        return new Hit(this, at, Direction.getFacing(normal.x, normal.y, normal.z));
+        Vector3f normal = toBlock.transformDirection(new Vector3f(hit.getSide().getUnitVector())).normalize();
+        return new Hit(this, at, Direction.getFacing(normal.x, normal.y, normal.z), new Vec3d(normal.x, normal.y, normal.z));
     }
 
-    /** A ray meeting a tile: where (world coordinates) and through which side (the nearest axis to its face's normal). */
-    public record Hit(TileShape tile, Vec3d pos, Direction side) {
+    /**
+     * A ray meeting a tile: where (world coordinates), through which side (the nearest axis to its face's normal) and
+     * that face's exact normal (tilted on a slope).
+     */
+    public record Hit(TileShape tile, Vec3d pos, Direction side, Vec3d normal) {
         /**
          * As a block hit: on the block of the tile under the point (a large tile's part there, else the tile's own), the
          * point kept within a block of that block's middle (what the server accepts from a click).
