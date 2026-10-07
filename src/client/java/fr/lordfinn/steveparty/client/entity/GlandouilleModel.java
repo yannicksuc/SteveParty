@@ -19,19 +19,24 @@ import java.util.Map;
  * the stem) is gone while it has lost it. Nothing allocated per frame.
  */
 public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity> {
-    /** How far up the brows hide (pixels): inside the cap, whose brim is 1 px above them at rest. */
-    private static final float BROW_HIDE = 3.2f;
     private static final Map<GlandouilleVariant, Identifier> TEXTURES = new EnumMap<>(GlandouilleVariant.class);
+    private static final Map<GlandouilleVariant, Identifier> MODELS = new EnumMap<>(GlandouilleVariant.class);
 
     static {
         for (GlandouilleVariant variant : GlandouilleVariant.values()) {
-            TEXTURES.put(variant, Steveparty.id(variant == GlandouilleVariant.CLASSIC
-                    ? "textures/entity/glandouille.png" : "textures/entity/glandouille_" + variant.asString() + ".png"));
+            TEXTURES.put(variant, Steveparty.id("textures/entity/" + variant.modelName() + ".png"));
+            MODELS.put(variant, Steveparty.id("geo/entity/" + variant.modelName() + ".geo.json"));
         }
     }
 
     public GlandouilleModel() {
         super(Steveparty.id("glandouille"));
+    }
+
+    /** Each variant its own model (same bones: the animations, glandouille.animation.json, are shared). */
+    @Override
+    public Identifier getModelResource(GlandouilleEntity animatable) {
+        return MODELS.get(animatable.getVariant());
     }
 
     @Override
@@ -44,15 +49,17 @@ public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity>
         super.setCustomAnimations(glandouille, instanceId, animationState);
         AnimationProcessor<GlandouilleEntity> processor = getAnimationProcessor();
         float brows = MathHelper.lerp(animationState.getPartialTick(), glandouille.prevBrows, glandouille.brows);
-        brow(processor.getBone("left_brow"), brows);
-        brow(processor.getBone("right_brow"), brows);
+        float hide = glandouille.getVariant().browHidePx;
+        brow(processor.getBone("left_brow"), brows, hide);
+        brow(processor.getBone("right_brow"), brows, hide);
         GeoBone cap = processor.getBone("cap");
         if (cap != null) cap.setHidden(!glandouille.hasHat());
     }
 
-    private static void brow(GeoBone brow, float out) {
+    /** {@code hide}: how far up (pixels) the brows go inside the cap, its variant's. */
+    private static void brow(GeoBone brow, float out, float hide) {
         if (brow == null) return;
         brow.setHidden(out < 0.03f);
-        brow.setPosY((1 - out) * BROW_HIDE); // absolute: no animation moves the brows
+        brow.setPosY((1 - out) * hide); // absolute: no animation moves the brows
     }
 }

@@ -166,6 +166,27 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
+    // ---------------------------------------------------------------- sizes
+
+    /** Each variant its model's hitbox; in a tower each one stands on the cap of the one below, at its height. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 20)
+    public void eachVariantHasItsModelsSize(TestContext context) {
+        floor(context);
+        GlandouilleEntity young = glandouille(context, GlandouilleVariant.YOUNG, new BlockPos(1, 1, 1));
+        GlandouilleEntity mossy = glandouille(context, GlandouilleVariant.MOSSY, new BlockPos(5, 1, 5));
+        GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 5));
+        context.assertTrue(young.getHeight() < 0.75f && young.getWidth() < 0.6f, "the young one is small: " + young.getHeight());
+        context.assertTrue(mossy.getWidth() > 0.9f, "the mossy one is wide: " + mossy.getWidth());
+        context.assertTrue(frosty.getHeight() >= 1.0f, "the frosty one is tall: " + frosty.getHeight());
+        context.assertTrue(GlandouilleTowers.climb(young, mossy, false), "the young one on the mossy one");
+        context.assertTrue(GlandouilleTowers.climb(frosty, mossy, false), "the frosty one on top");
+        context.waitAndRun(2, () -> {
+            context.assertTrue(Math.abs(young.getY() - (mossy.getY() + mossy.getHeight())) < 0.1, "on the mossy cap");
+            context.assertTrue(Math.abs(frosty.getY() - (young.getY() + young.getHeight())) < 0.1, "on the young cap");
+            context.complete();
+        });
+    }
+
     // ---------------------------------------------------------------- towers
 
     /** Glandouilles build towers by themselves up to 5, not higher. */

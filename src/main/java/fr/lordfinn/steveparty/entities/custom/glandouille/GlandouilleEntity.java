@@ -77,7 +77,7 @@ import java.util.UUID;
  * saved.
  */
 public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
-    /** The model's size (a 12 px wide cap, 15 px up to the top of the cap), before the variant's scale. */
+    /** The classic model's size (a 12 px wide cap, 15 px up to the top of the cap); each variant has its own. */
     public static final float MODEL_WIDTH = 0.75f, MODEL_HEIGHT = 0.9375f;
     /** A player closer than this gets charged. */
     public static final double ZONE = 4.0;
@@ -268,6 +268,12 @@ public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
     @Override
     public float getScaleFactor() {
         return getVariant().scale;
+    }
+
+    /** Its variant's model: its own width, height and eyes (a tower's floors stand on the cap of the one below). */
+    @Override
+    public EntityDimensions getBaseDimensions(net.minecraft.entity.EntityPose pose) {
+        return getVariant().dimensions().scaled(getScaleFactor());
     }
 
     @Override
