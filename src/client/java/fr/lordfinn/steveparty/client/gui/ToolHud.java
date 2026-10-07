@@ -30,20 +30,18 @@ public final class ToolHud {
     }
 
     /**
-     * Top of the boxes: above where vanilla writes the held item's name (shown a moment when an item is taken in hand),
-     * so the two never overlap, and above the health, armour and air rows when they climb higher (absorption, more
-     * health).
+     * Top of the boxes: where vanilla writes the held item's name, which is not shown while a tool HUD is (see
+     * InGameHudToolHudMixin): just above the hotbar, or the health, armour and air rows (as high as they climb).
      */
     public static int top(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         boolean statusBars = client.interactionManager != null && client.interactionManager.hasStatusBars();
-        int above = statusBars ? ITEM_NAME_TOP : ITEM_NAME_TOP - 14;
-        if (statusBars && client.player != null) above = Math.max(above, statusRowsTop(client.player));
+        int above = statusBars && client.player != null ? statusRowsTop(client.player) : HOTBAR_TOP;
         return context.getScaledWindowHeight() - above - 2 - BOX;
     }
 
-    /** The top of the held item's name above the screen's bottom (with the status rows; 14 lower without). */
-    private static final int ITEM_NAME_TOP = 59;
+    /** The top of the hotbar above the screen's bottom. */
+    private static final int HOTBAR_TOP = 23;
 
     /** How high the status rows reach above the screen's bottom: hearts (several rows), armour, air. */
     private static int statusRowsTop(net.minecraft.entity.player.PlayerEntity player) {
