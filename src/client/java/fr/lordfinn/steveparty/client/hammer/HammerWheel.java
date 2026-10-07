@@ -31,8 +31,9 @@ import java.util.List;
  */
 public final class HammerWheel implements ToolWheel.Provider {
     private static final List<ToolWheel.Ring> RINGS = List.of(new ToolWheel.Ring(30, 92));
-    /** A vanilla container's grey for the plates and the stencils, the dyes in their colour. */
-    private static final int PAPER = ToolWheel.PANEL & 0xFFFFFF, PLATE = ToolWheel.PANEL & 0xFFFFFF;
+    /** The hammer's own wood for the panel, the plates and the stencils, the dyes in their colour. */
+    private static final ToolWheel.Theme THEME = ToolWheel.WOOD;
+    private static final int PAPER = THEME.body() & 0xFFFFFF, PLATE = THEME.body() & 0xFFFFFF;
     /** Degrees the refill button takes either side of the top. */
     private static final float PLUS = 24;
 
@@ -81,7 +82,7 @@ public final class HammerWheel implements ToolWheel.Provider {
         arcs.add(new ToolWheel.Arc(0, -PLUS, PLUS, List.of(refill)));
         if (!stencils.isEmpty()) arcs.add(new ToolWheel.Arc(0, PLUS, 180, stencils));
         if (!dyes.isEmpty()) arcs.add(new ToolWheel.Arc(0, 180, 360 - PLUS, dyes));
-        return new ToolWheel.Layout(RINGS, arcs, item(hammer.copy()), null, stencils.isEmpty() && dyes.isEmpty() ? refill : null, null);
+        return new ToolWheel.Layout(RINGS, arcs, item(hammer.copy()), null, stencils.isEmpty() && dyes.isEmpty() ? refill : null, null, THEME);
     }
 
     private static ToolWheel.Icon big(ItemStack stack) {

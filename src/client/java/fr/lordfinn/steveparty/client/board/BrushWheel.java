@@ -34,8 +34,9 @@ final class BrushWheel implements ToolWheel.Provider {
     /** Different kinds of Cartridges shown at most. */
     private static final int MAX_CARTRIDGES = 10;
     /** The plates: the grey of vanilla slots, the cartridge page in the board's teal. */
-    /** One neutral plate, a vanilla container's grey (the gold frame marks the setting in use; red only on the level page). */
-    private static final int PLATE = ToolWheel.PANEL & 0xFFFFFF;
+    /** The brush's own red, as each block screen of the mod has its colour (the gold frame marks the setting in use). */
+    private static final ToolWheel.Theme THEME = ToolWheel.RED;
+    private static final int PLATE = THEME.body() & 0xFFFFFF;
     private static final List<ToolWheel.Ring> MAIN_RING = List.of(new ToolWheel.Ring(28, 80));
     private static final List<ToolWheel.Ring> LEVEL_RING = List.of(new ToolWheel.Ring(26, 92));
     private static final List<ToolWheel.Ring> CARTRIDGE_RING = List.of(new ToolWheel.Ring(26, 80));
@@ -79,7 +80,7 @@ final class BrushWheel implements ToolWheel.Provider {
         // (bottom left), the level (top left)
         List<ToolWheel.Arc> arcs = List.of(new ToolWheel.Arc(0, -36, 324, List.of(normal, cartridges, redo, undo, levels)));
         return new ToolWheel.Layout(MAIN_RING, arcs, big(brush.copy(), 1.5f), null, normal,
-                Text.translatable("wheel.steveparty.brush.powered.first"));
+                Text.translatable("wheel.steveparty.brush.powered.first"), THEME);
     }
 
     private static ToolWheel.Layout levels(ItemStack brush) {
@@ -92,7 +93,7 @@ final class BrushWheel implements ToolWheel.Provider {
                     () -> send(ToolWheelPayload.Action.BRUSH_LEVEL, value)));
         }
         float half = 360f / 16 / 2;
-        return new ToolWheel.Layout(LEVEL_RING, List.of(new ToolWheel.Arc(0, -half, 360 - half, sectors)), sprite(BACK, 1), back(), null, null);
+        return new ToolWheel.Layout(LEVEL_RING, List.of(new ToolWheel.Arc(0, -half, 360 - half, sectors)), sprite(BACK, 1), back(), null, null, THEME);
     }
 
     private static ToolWheel.Layout cartridges(ClientPlayerEntity player, ItemStack brush) {
@@ -110,7 +111,7 @@ final class BrushWheel implements ToolWheel.Provider {
                     () -> send(ToolWheelPayload.Action.BRUSH_CARTRIDGE, Registries.ITEM.getRawId(item))));
         }
         float half = 360f / sectors.size() / 2;
-        return new ToolWheel.Layout(CARTRIDGE_RING, List.of(new ToolWheel.Arc(0, -half, 360 - half, sectors)), sprite(BACK, 1), back(), null, null);
+        return new ToolWheel.Layout(CARTRIDGE_RING, List.of(new ToolWheel.Arc(0, -half, 360 - half, sectors)), sprite(BACK, 1), back(), null, null, THEME);
     }
 
     private static ToolWheel.Sector back() {

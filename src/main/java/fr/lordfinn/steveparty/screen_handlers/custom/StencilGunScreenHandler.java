@@ -31,13 +31,17 @@ public class StencilGunScreenHandler extends ScreenHandler {
     /** {@link #gunSlot} value of a gun held in the off hand. */
     public static final int OFF_HAND_SLOT = PlayerInventory.OFF_HAND_SLOT;
     /** The screen, one sheet of the mod's paper: the wheel of the hammer's slots, the player's inventory under it. */
-    public static final int WIDTH = 264, CENTER_X = 132, CENTER_Y = 132;
+    public static final int WIDTH = 264, CENTER_X = 132, CENTER_Y = 128;
     /** The wheel's ring (its slots on the middle circle), and the degrees of each title half at its top. */
     public static final int RING_INNER = 74, RING_OUTER = 118, SLOT_RADIUS = 96;
     public static final float HEADER = 36;
-    /** Top of the player's inventory (its title), its slots 14 lower, its hotbar 72 lower. */
-    public static final int INVENTORY_Y = 254, INVENTORY_X = (WIDTH - 176) / 2;
-    public static final int HEIGHT = INVENTORY_Y + 98;
+    /**
+     * Top of the player's inventory panel (the mod's shared one, its tab fitting under the hammer's panel 7 pixels up:
+     * see gui/inventory_panel.png), its slots 15 lower, its hotbar 73 lower.
+     */
+    public static final int INVENTORY_Y = 249, INVENTORY_X = (WIDTH - 176) / 2;
+    /** The hammer's panel (the wheel) above it, and the whole screen. */
+    public static final int TOP_HEIGHT = INVENTORY_Y + 7, HEIGHT = INVENTORY_Y + 97;
     /** First slot of the player's inventory. */
     public static final int PLAYER_START = StencilGunItem.SIZE;
 
@@ -87,11 +91,11 @@ public class StencilGunScreenHandler extends ScreenHandler {
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
                 int index = column + row * 9 + 9;
-                addSlot(new LockableSlot(playerInventory, index, INVENTORY_X + 8 + column * 18, INVENTORY_Y + 14 + row * 18));
+                addSlot(new LockableSlot(playerInventory, index, INVENTORY_X + 8 + column * 18, INVENTORY_Y + 15 + row * 18));
             }
         }
         for (int column = 0; column < 9; column++) {
-            addSlot(new LockableSlot(playerInventory, column, INVENTORY_X + 8 + column * 18, INVENTORY_Y + 72));
+            addSlot(new LockableSlot(playerInventory, column, INVENTORY_X + 8 + column * 18, INVENTORY_Y + 73));
         }
     }
 
