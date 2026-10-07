@@ -12,6 +12,11 @@ import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
 import me.shedaniel.rei.api.client.registry.entry.EntryRegistry;
+import me.shedaniel.rei.api.client.registry.screen.DisplayBoundsProvider;
+import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
+import fr.lordfinn.steveparty.client.screens.DiceForgeScreen;
+import me.shedaniel.math.Rectangle;
+import net.minecraft.client.gui.screen.Screen;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.entry.EntryStack;
@@ -138,6 +143,31 @@ public class SteveReiPlugin implements REIClientPlugin {
                 List.of(EntryIngredients.of(DiceModules.set(new ItemStack(ModItems.TRIPLE_DICE), both))),
                 Optional.of(Steveparty.id("multi_dice/triple"))));
         Steveparty.LOGGER.info("REI: {} die module displays", DiceModules.all().size() + 2);
+    }
+
+    /**
+     * The Dice Forge screen is drawn shrunk at large GUI scales (DiceForgeScreen#init): REI gets its bounds as drawn, so
+     * that its panels lay out around the forge and not around its unshrunk layout.
+     */
+    @Override
+    public void registerScreens(ScreenRegistry registry) {
+        registry.registerDecider(new DisplayBoundsProvider<DiceForgeScreen>() {
+            @Override
+            public Rectangle getScreenBounds(DiceForgeScreen screen) {
+                int[] bounds = screen.getFittedBounds();
+                return new Rectangle(bounds[0], bounds[1], bounds[2], bounds[3]);
+            }
+
+            @Override
+            public <R extends Screen> boolean isHandingScreen(Class<R> screen) {
+                return DiceForgeScreen.class.isAssignableFrom(screen);
+            }
+
+            @Override
+            public double getPriority() {
+                return 10;
+            }
+        });
     }
 
     @Override

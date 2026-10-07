@@ -123,7 +123,8 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
     /**
      * At a large GUI scale the forge (330 px tall) does not fit in the window: the screen is then laid out on a larger
      * virtual screen and drawn shrunk ({@link #fit}), mouse coordinates converted, so the star and the whole inventory
-     * stay visible and usable.
+     * stay visible and usable. The screen's size stays the real one afterwards: other mods laying out around it (REI's
+     * panel) see the window as it is, and the forge's real bounds ({@link #getFittedBounds}).
      */
     @Override
     protected void init() {
@@ -137,6 +138,25 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
         this.width = MathHelper.ceil(realWidth / fit);
         this.height = MathHelper.ceil(realHeight / fit);
         super.init();
+        this.width = realWidth;
+        this.height = realHeight;
+    }
+
+    /** The forge as drawn in the window (shrunk at large GUI scales): x, y, width, height in GUI pixels. */
+    public int[] getFittedBounds() {
+        int left = MathHelper.floor(this.x * fit), top = MathHelper.floor(this.y * fit);
+        return new int[]{left, top, MathHelper.ceil((this.x + backgroundWidth) * fit) - left,
+                MathHelper.ceil((this.y + backgroundHeight) * fit) - top};
+    }
+
+    /** The darkened world behind the screen covers the whole window, not just its shrunk part. */
+    @Override
+    public void renderInGameBackground(DrawContext context) {
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.scale(1f / fit, 1f / fit, 1f);
+        super.renderInGameBackground(context);
+        matrices.pop();
     }
 
     private double toScreen(double coordinate) {
@@ -145,8 +165,7 @@ public class DiceForgeScreen extends HandledScreen<DiceForgeScreenHandler> {
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        int x = (this.width - this.backgroundWidth) / 2;
-        int y = (this.height - this.backgroundHeight) / 2;
+        int x = this.x, y = this.y;
         RenderSystem.enableBlend();
         context.drawTexture(TEXTURE, x, y, 0, 0, this.backgroundWidth, this.backgroundHeight, ATLAS_SIZE, ATLAS_SIZE);
         drawGalaxy(context, x + GALAXY_CENTER_X, y + GALAXY_CENTER_Y);
