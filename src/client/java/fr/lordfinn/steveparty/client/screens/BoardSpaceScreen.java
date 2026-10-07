@@ -137,11 +137,19 @@ public class BoardSpaceScreen extends CartridgeContainerScreen<BoardSpaceScreenH
         return true;
     }
 
-    /** The pipette's button: top right of the tile part. */
+    /** The pipette's button: right of the tile's square, in the corner just above the inventory's right end. */
     @Override
-    protected int pipetteRight() {
-        return x + BoardSpaceScreenHandler.TILE_W;
+    protected int pipetteX() {
+        return x + PIPETTE_RIGHT - 18;
     }
+
+    @Override
+    protected int pipetteY() {
+        return y + INVENTORY_TOP - 2 - 18;
+    }
+
+    /** In tile.png: the inventory panel's right end (shadow included) and its top edge (on the right of the tab). */
+    private static final int PIPETTE_RIGHT = 176, INVENTORY_TOP = 95;
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {

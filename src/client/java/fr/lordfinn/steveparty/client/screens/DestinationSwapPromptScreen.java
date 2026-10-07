@@ -1,13 +1,15 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.config.ClientOptions;
-import net.minecraft.client.font.MultilineText;
+import fr.lordfinn.steveparty.client.gui.PartyButton;
+import fr.lordfinn.steveparty.client.gui.PartyGui;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * Asked the first time a cartridge is clicked on another one (see DestinationSwap): what will happen, and whether to
@@ -16,13 +18,14 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DestinationSwapPromptScreen extends Screen {
     private static final int PANEL_W = 300;
-    private static final int GOLD = 0xFFFFC52E;
+    private static final int PAD = 12;
+    /** Above everything the screen behind draws (its items and their counts). */
+    private static final float Z = 500;
 
     private final @Nullable Screen parent;
-    private MultilineText body = MultilineText.EMPTY;
+    private List<OrderedText> body = List.of();
     private int panelTop;
     private int panelHeight;
-    private ButtonWidget yes;
 
     public DestinationSwapPromptScreen(@Nullable Screen parent) {
         super(Text.translatable("screen.steveparty.destination_swap.title"));
@@ -32,16 +35,17 @@ public class DestinationSwapPromptScreen extends Screen {
     @Override
     protected void init() {
         if (parent != null) parent.resize(client, width, height);
-        body = MultilineText.create(textRenderer, Text.translatable("screen.steveparty.destination_swap.body"), PANEL_W - 24);
-        int textHeight = body.count() * textRenderer.fontHeight;
-        panelHeight = 24 + textHeight + 12 + 20 + 6 + 20 + 12;
+        body = textRenderer.wrapLines(Text.translatable("screen.steveparty.destination_swap.body"), PANEL_W - 2 * PAD);
+        int textHeight = body.size() * textRenderer.fontHeight;
+        panelHeight = 18 + textHeight + 10 + 20 + 4 + 20 + PAD;
         panelTop = (height - panelHeight) / 2;
-        int buttonsTop = panelTop + 24 + textHeight + 12;
-        int left = (width - (PANEL_W - 24)) / 2;
-        yes = addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.destination_swap.yes").formatted(Formatting.GOLD, Formatting.BOLD),
-                button -> choose(true)).dimensions(left, buttonsTop, PANEL_W - 24, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.steveparty.destination_swap.no"),
-                button -> choose(false)).dimensions(left, buttonsTop + 26, PANEL_W - 24, 20).build());
+        int buttonsTop = panelTop + 18 + textHeight + 10;
+        int left = (width - PANEL_W) / 2 + PAD;
+        PartyButton yes = addDrawableChild(new PartyButton(left, buttonsTop, PANEL_W - 2 * PAD, 20,
+                Text.translatable("screen.steveparty.destination_swap.yes"), button -> choose(true))
+                .style(PartyButton.Style.PRIMARY));
+        addDrawableChild(new PartyButton(left, buttonsTop + 24, PANEL_W - 2 * PAD, 20,
+                Text.translatable("screen.steveparty.destination_swap.no"), button -> choose(false)));
         setInitialFocus(yes);
     }
 
@@ -56,19 +60,23 @@ public class DestinationSwapPromptScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // The screen it was opened over, dimmed, then the panel
+        // The screen it was opened over, dimmed, then the panel above all of it
         if (parent != null) parent.render(context, -1, -1, delta);
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, Z);
         context.fill(0, 0, width, height, 0xA0000000);
         int left = (width - PANEL_W) / 2;
-        context.fill(left, panelTop, left + PANEL_W, panelTop + panelHeight, 0xF0201810);
-        context.drawBorder(left, panelTop, PANEL_W, panelHeight, GOLD);
-        context.drawCenteredTextWithShadow(textRenderer, title.copy().formatted(Formatting.GOLD), width / 2, panelTop + 9, 0xFFFFFF);
-        body.drawCenterWithShadow(context, width / 2, panelTop + 24);
-        // The call to action: a gold glow around « Yes »
-        context.drawBorder(yes.getX() - 2, yes.getY() - 2, yes.getWidth() + 4, yes.getHeight() + 4, GOLD);
-        for (var child : children()) {
-            if (child instanceof ButtonWidget button) button.render(context, mouseX, mouseY, delta);
+        PartyGui.panel(context, left, panelTop, PANEL_W, panelHeight, PartyGui.PANEL);
+        PartyGui.titlePlate(context, textRenderer, width / 2, panelTop - 11, 0, title, PartyGui.BUTTON_SELECTED);
+        int y = panelTop + 18;
+        for (OrderedText line : body) {
+            context.drawText(textRenderer, line, width / 2 - textRenderer.getWidth(line) / 2, y, PartyGui.TEXT_DARK, false);
+            y += textRenderer.fontHeight;
         }
+        for (var child : children()) {
+            if (child instanceof PartyButton button) button.render(context, mouseX, mouseY, delta);
+        }
+        context.getMatrices().pop();
     }
 
     @Override
