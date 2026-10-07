@@ -46,8 +46,8 @@ import java.util.Objects;
  *     <li>Stencil Hammer: strikes its selected stencil in its selected colour ({@link StencilHammerStrike}).</li>
  * </ul>
  * On a cut-out panel ({@link StencilCanvasBlock#usesSilhouette()}) a stencil and an axe (one in each hand) cut the
- * board along the stencil, using the axe; a wet sponge gives it back its whole board. The hammer needs no tool on the
- * other signs, but can't cut a panel.
+ * board along the stencil, using the axe; a wet sponge gives it back its whole board. The hammer needs no tool: it
+ * cuts a panel along its selected stencil, and engraves or paints the other signs.
  * When the tool is missing, the player is told what to hold (action bar).
  * Nothing is used up when nothing changes (same symbol, same colour...).
  */
@@ -67,12 +67,6 @@ public final class StencilInteractions {
         boolean silhouette = state.getBlock() instanceof StencilCanvasBlock block && block.usesSilhouette();
         // One interaction per click: handled on the pass of the hand holding the leading item
         Hand acting = isTool(main, silhouette) ? Hand.MAIN_HAND : isTool(off, silhouette) ? Hand.OFF_HAND : null;
-        if (acting == null && silhouette && hand == Hand.MAIN_HAND
-                && (main.getItem() instanceof StencilGunItem || off.getItem() instanceof StencilGunItem)) {
-            // The hammer stamps, it doesn't cut
-            hint(world, player, "message.steveparty.stencil.cutout_needs_axe");
-            return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
         if (acting != hand) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
 
         ItemStack leading = acting == Hand.MAIN_HAND ? main : off;
@@ -82,7 +76,7 @@ public final class StencilInteractions {
             return ItemActionResult.SUCCESS;
         }
 
-        boolean hammer = !silhouette && leading.getItem() instanceof StencilGunItem;
+        boolean hammer = leading.getItem() instanceof StencilGunItem;
         // A strike at a time: the hammer is still swinging
         if (hammer && StencilHammerStrike.isCoolingDown(player, acting)) return ItemActionResult.CONSUME;
         // What the hammer stamps (read before the dye is used up)
@@ -109,7 +103,7 @@ public final class StencilInteractions {
 
     public static boolean isTool(ItemStack stack, boolean silhouette) {
         if (stack.getItem() instanceof StencilItem || stack.isOf(Items.WET_SPONGE)) return true;
-        if (silhouette) return stack.getItem() instanceof AxeItem;
+        if (silhouette) return stack.getItem() instanceof AxeItem || stack.getItem() instanceof StencilGunItem;
         return stack.getItem() instanceof DyeItem || stack.getItem() instanceof StencilGunItem || stack.isOf(Items.BRUSH)
                 || stack.isOf(Items.GLOW_INK_SAC) || stack.isOf(Items.SPONGE);
     }
@@ -187,7 +181,13 @@ public final class StencilInteractions {
                     play(world, pos, SoundEvents.BLOCK_WOOD_PLACE, 0.8F);
                 };
             }
-            // Cutting needs the stencil and an axe
+            // The hammer cuts along its selected stencil, no axe needed
+            if (leading.getItem() instanceof StencilGunItem) {
+                byte[] cut = StencilGunItem.selectedLoad(leading).shape();
+                if (cut == null || StencilShape.isBlank(cut) || sameShape(canvas, cut)) return null;
+                return () -> canvas.setSymbol(cut, canvas.getColor());
+            }
+            // Otherwise cutting needs the stencil and an axe
             Hand axeHand = main.getItem() instanceof AxeItem ? Hand.MAIN_HAND : off.getItem() instanceof AxeItem ? Hand.OFF_HAND : null;
             if (stencil.isEmpty() || axeHand == null) return null;
             byte[] shape = StencilItem.getShape(stencil);
