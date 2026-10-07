@@ -360,8 +360,10 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
                 }
             }
             escapeTerrain();
-            if (simulation.hasTarget()) simulation.tick();
-            else freeFlight();
+            if (simulation.hasTarget()) {
+                riseSlowly();
+                simulation.tick();
+            } else freeFlight();
             if (!this.isRemoved() && !rollWasLoadedFinished && lead() == this) sequence().tick();
         }
         super.tick();
@@ -385,6 +387,37 @@ public class DiceEntity extends LivingEntity implements GeoEntity {
             vy = vy * 0.8 + (target - this.getY()) * 0.04;
         }
         this.setVelocity(velocity.x, vy, velocity.z);
+    }
+
+    /**
+     * A die floating to someone: the toss of its throw slows down like an untargeted die's ({@link #FREE_GRAVITY})
+     * instead of carrying it far up (a living entity without gravity barely slows down vertically).
+     */
+    private void riseSlowly() {
+        Vec3d velocity = this.getVelocity();
+        if (velocity.y > 0) this.setVelocity(velocity.x, Math.max(0, velocity.y - FREE_GRAVITY), velocity.z);
+    }
+
+    /** A die is not a falling body: landing makes no fall sound, no crash particles, no fall damage. */
+    @Override
+    protected void fall(double heightDifference, boolean onGround, net.minecraft.block.BlockState state, net.minecraft.util.math.BlockPos landedPosition) {
+        this.fallDistance = 0;
+    }
+
+    @Override
+    public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
+        return false;
+    }
+
+    /** Silent when it touches the ground: no step sounds, no hurt sound. */
+    @Override
+    protected Entity.MoveEffect getMoveEffect() {
+        return Entity.MoveEffect.NONE;
+    }
+
+    @Override
+    protected @Nullable net.minecraft.sound.SoundEvent getHurtSound(DamageSource source) {
+        return null;
     }
 
     /** Blocks between the bottom of the die and the ground under it (searched {@link #GROUND_SEARCH} blocks down). */

@@ -37,6 +37,8 @@ public class DefaultDiceItem extends Item {
     protected static final float VELOCITY_MULTIPLIER = 0.6F;
     /** The least upward speed of a throw (blocks per tick). */
     private static final double MIN_UPWARD_VELOCITY = 0.2;
+    /** Thrown at the floor: share of the downward speed given back upward, and of the speed kept forward (a soft bounce). */
+    private static final double FLOOR_BOUNCE = 0.35, FLOOR_FORWARD = 0.5;
     /** How far in front of the eyes the die appears, at most (blocks). */
     private static final double SPAWN_DISTANCE = 1.5;
     private static final float SOUND_VOLUME_1 = 0.2F;
@@ -116,12 +118,15 @@ public class DefaultDiceItem extends Item {
     }
 
     /**
-     * The die is tossed upward: thrown at the floor it bounces up instead of digging in, thrown straight ahead it
-     * still rises a little (an untargeted die then falls back on its own, see DiceEntity).
+     * The die is tossed upward: thrown at the floor it bounces up softly (a small part of its speed, forward and up)
+     * instead of digging in, thrown straight ahead it still rises a little; it then slows down and falls back on its
+     * own (see DiceEntity).
      */
     protected Vec3d throwVelocity(PlayerEntity player) {
         Vec3d velocity = player.getRotationVec(1.0F).multiply(VELOCITY_MULTIPLIER);
-        return new Vec3d(velocity.x, Math.max(MIN_UPWARD_VELOCITY, Math.abs(velocity.y)), velocity.z);
+        if (velocity.y >= 0) return new Vec3d(velocity.x, Math.max(MIN_UPWARD_VELOCITY, velocity.y), velocity.z);
+        return new Vec3d(velocity.x * FLOOR_FORWARD, Math.max(MIN_UPWARD_VELOCITY, -velocity.y * FLOOR_BOUNCE),
+                velocity.z * FLOOR_FORWARD);
     }
 
     protected void playSounds(World world, DiceEntity diceEntity) {

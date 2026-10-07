@@ -216,6 +216,30 @@ public class DiceGameTests implements FabricGameTest {
         });
     }
 
+    /**
+     * Thrown at the floor toward someone (sneaking: its thrower), the die bounces softly: it never shoots far up or
+     * away, and it lands like a die, with no fall (no fall distance, so no fall sound nor crash).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "dice_throws")
+    public void aDieThrownAtTheFloorBouncesSoftly(TestContext context) {
+        ServerPlayerEntity player = thrower(context, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), 60, true);
+        player.getMainHandStack().use(context.getWorld(), player, net.minecraft.util.Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.assertTrue(dice.getVelocity().y > 0 && dice.getVelocity().y < 0.3, "a soft upward bounce, not a strong one");
+        double[] highest = {dice.getY()};
+        for (int t = 1; t <= 40; t++) {
+            context.runAtTick(t, () -> {
+                highest[0] = Math.max(highest[0], dice.getY());
+                context.assertTrue(dice.fallDistance == 0, "a die never builds up a fall");
+            });
+        }
+        context.runAtTick(41, () -> {
+            context.assertTrue(highest[0] < player.getEyeY() + 2.5, "it never shoots far up (highest " + highest[0] + ")");
+            context.assertTrue(dice.squaredDistanceTo(player) < 16, "nor far away");
+            context.complete();
+        });
+    }
+
     /** With no one to float to, a die thrown straight up rises a few blocks only, then comes back down a little. */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140, batchId = "dice_throws")
     public void anUntargetedDieThrownUpComesBackDown(TestContext context) {
