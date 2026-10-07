@@ -167,13 +167,13 @@ category("getting_started", "steveparty:power_star", ("Getting Started", "Bien d
     E("first_party", "steveparty:default_dice", ("Your First Party", "Ta première partie"),
       ("Six steps to a working board", "Six étapes pour un plateau qui marche"), [
         T("1. Craft **Tiles** and lay out a path.\n"
-          "2. Link them with the **Wrench**.\n"
+          "2. Link them with the **Tile Linker Brush**.\n"
           "3. Put a **Start Cartridge** in the first Tile.\n"
           "4. Turn a mob into a pawn with the **Tokenizer Wand** and set it on the start.\n"
           "5. Place a **Party Controller** and press *Start party*.\n"
           "6. Roll a die!",
           "1. Fabrique des **tuiles** et trace un chemin.\n"
-          "2. Relie-les avec la **clé**.\n"
+          "2. Relie-les avec le **pinceau lieur**.\n"
           "3. Mets une **cartouche de départ** dans la première tuile.\n"
           "4. Change un mob en pion avec la **baguette de pions** et pose-le sur le départ.\n"
           "5. Pose un **contrôleur de fête** et clique sur *Lancer la partie*.\n"
@@ -207,11 +207,17 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Un cube de verre flottant, sans collision : les pions le traversent gratuitement, pratique pour "
           "les virages et les bifurcations."),
     ]),
-    E("wrench", "steveparty:wrench", ("Wrench", "Clé"), ("The board builder's tool", "L'outil du bâtisseur"), [
-        T("The **Wrench** links spaces, shows the board, opens cartridge blocks (**sneak** + right-click on a space "
-          "or a router) and breaks any plastic block in one hit.",
-          "La **clé** relie les cases, montre le plateau, ouvre les blocs à cartouches (**accroupi** + clic droit "
-          "sur une case ou un routeur) et casse tout bloc de plastique en un coup."),
+    E("wrench", "steveparty:wrench", ("Wrench", "Clé"), ("Opens what is locked", "Ouvre ce qui est fermé"), [
+        T("The **Wrench** opens what other hands can't: a **right-click** on a space or a router opens its "
+          "cartridges (no sneaking), and with another kind of cartridge in your off hand it swaps the space's "
+          "cartridge, links kept.\n\n"
+          "It also checks the board on the **Party Controller**, shows the board, sets podiums and goal poles, and "
+          "breaks any plastic block in one hit.",
+          "La **clé** ouvre ce qui est fermé aux autres : un **clic droit** sur une case ou un routeur ouvre ses "
+          "cartouches (sans s'accroupir), et avec une autre cartouche en main secondaire elle échange celle de la "
+          "case, liens gardés.\n\n"
+          "Elle diagnostique aussi le plateau sur le **contrôleur de fête**, montre le plateau, règle podiums et "
+          "mâts d'arrivée, et casse tout bloc de plastique en un coup."),
         C("steveparty:wrench"),
     ], parents=["spaces"]),
     E("placing", "steveparty:tile", ("Placing Tiles", "Poser une tuile"), ("Slopes and directions", "Pentes et directions"), [
@@ -256,33 +262,35 @@ category("board", "steveparty:tile", ("The Board", "Le plateau"), [
           "Coût : 1 teinture.\n\nAvec une cartouche, c'est la cartouche active qui est tamponnée ; elle garde son "
           "look une fois retirée. Une **éponge mouillée** efface le tampon."),
     ], parents=["placing"], gate="lay_the_board"),
-    E("linking", "steveparty:wrench", ("Linking Spaces", "Relier les cases"), ("Trace the path with the Wrench", "Tracer le chemin à la clé"), [
-        T("The Wrench has 3 modes (**R** or sneak + scroll):\n"
-          "- **Trace**: click spaces one after another to link them; click the first one again to close the loop.\n"
-          "- **Edit**: pick an origin, then add or remove links from it.\n"
-          "- **Cut**: removes every outgoing link.\n\n"
-          "Hold right-click and sweep to link a whole path (up to 32 blocks).",
-          "La clé a 3 modes (**R** ou accroupi + molette) :\n"
-          "- **Tracé** : clique les cases l'une après l'autre pour les relier ; reclique la première pour "
-          "fermer la boucle.\n"
-          "- **Éditer** : choisis une origine, puis ajoute ou retire des liens depuis elle.\n"
-          "- **Couper** : retire tous les liens sortants.\n\n"
-          "Maintiens le clic droit en balayant pour relier tout un chemin (jusqu'à 32 blocs)."),
-        T("Missing cartridges are taken from your inventory (free in creative); a cartridge in your off hand "
-          "sets the type of new spaces.\n\n"
-          "Left-click in the air to **undo** (sneak: redo), 32 steps. Tiles turn to face their destination. "
-          "With the Wrench in your off hand, each Tile you place is linked to the previous one.",
-          "Les cartouches manquantes sont prises dans ton inventaire (gratuites en créatif) ; une cartouche en "
-          "main secondaire choisit le type des nouvelles cases.\n\n"
-          "Clic gauche dans le vide pour **annuler** (accroupi : rétablir), 32 actions. Les tuiles se tournent "
-          "vers leur destination. Clé en main secondaire, chaque tuile posée est reliée à la précédente.",
-          "Handy Tricks", "Astuces"),
+    E("linking", "steveparty:tile_linker_brush", ("Linking Spaces", "Relier les cases"), ("Paint the path with the brush", "Peindre le chemin au pinceau"), [
+        T("Hold **right-click** with the **Tile Linker Brush** and sweep over the spaces, in the order tokens walk "
+          "them: each is linked to the next (up to 32 blocks, the spaces as you see them). Sweep back over a link "
+          "to **erase** it.\n\n"
+          "**Left-click** opens its wheel: hold and release on a sector, or click then click a sector. Hover a "
+          "sector to read what it does.",
+          "Maintiens le **clic droit** avec le **pinceau lieur** en balayant les cases, dans l'ordre où les pions "
+          "les parcourent : chacune est reliée à la suivante (jusqu'à 32 blocs, les cases telles que tu les vois). "
+          "Repasse sur un lien pour l'**effacer**.\n\n"
+          "Le **clic gauche** ouvre sa roue : maintiens et relâche sur un secteur, ou clique puis clique un "
+          "secteur. Survole un secteur pour lire ce qu'il fait."),
+        T("Outer ring: the **level** (0-15, the slot of an Advanced Tile or a check point that gets the link; "
+          "*powered* by default). Inner ring: the **Cartridge** new spaces get, **undo / redo** (32 steps).\n\n"
+          "The last space painted is the anchor: right-click a **chest** to link it to an inventory space, a "
+          "**trader**, stall or cash register to pick a shop. Brush in the off hand: each Tile placed is linked.",
+          "Anneau extérieur : le **niveau** (0-15, l'emplacement d'une tuile avancée ou d'un point de passage qui "
+          "reçoit le lien ; *alimenté* par défaut). Anneau intérieur : la **cartouche** des nouvelles cases, "
+          "**annuler / rétablir**.\n\n"
+          "Dernière case peinte = ancre : clic droit sur un **coffre** pour le lier (case d'inventaire), sur un "
+          "**marchand**, un étal ou une caisse pour la boutique. Pinceau en main secondaire : chaque tuile posée "
+          "est reliée.",
+          "The Wheel", "La roue"),
+        C("steveparty:tile_linker_brush"),
     ], parents=["wrench"], gate="lay_the_board"),
     E("board_view", "steveparty:wrench", ("Board View & Check", "Vue et diagnostic"), ("Spot dead ends and mistakes", "Repérer impasses et erreurs"), [
-        T("With the Wrench in hand (48 blocks), each link shows as moving chevrons. Each space wears a plate: "
+        T("With the Wrench or the Tile Linker Brush in hand (48 blocks), each link shows as moving chevrons. Each space wears a plate: "
           "steps from the start, **Start**, a gold **?** at forks, a red **!** at dead ends, an orange **!** "
           "when unreachable. Only you can see it.",
-          "Clé en main (48 blocs), chaque lien devient un chemin de chevrons qui défilent. Chaque case porte une "
+          "Clé ou pinceau lieur en main (48 blocs), chaque lien devient un chemin de chevrons qui défilent. Chaque case porte une "
           "plaque : nombre de pas depuis le départ, **Départ**, **?** doré aux bifurcations, **!** rouge aux "
           "impasses, **!** orange aux cases injoignables. Toi seul la vois."),
         T("Click the **Party Controller** with the Wrench, or run `/steveparty board check`, for a full "
@@ -1033,10 +1041,12 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
     ], parents=["fragments"], gate="stardust"),
     E("gravity_core", "steveparty:gravity_core", ("Gravity Core", "Noyau de gravité"), ("A tiny planet", "Une petite planète"), [
         T("Placed, it glows and **pulls** everything within 8 blocks into an orbit, without fall damage; full "
-          "iron armour (or heavier) resists. Mulas and pawns are never pulled.\n\n"
+          "iron armour (or heavier) resists. Mulas and pawns are never pulled. **Sneak** to drop out of its orbit; "
+          "it breaks by hand and drops itself.\n\n"
           "Its real job: waking up the **Dice Forge**.",
           "Posé, il brille et **attire** tout ce qui est à 8 blocs en orbite, sans dégâts de chute ; une armure "
-          "complète en fer (ou plus lourde) résiste. Mulas et pions ne sont jamais attirés.\n\n"
+          "complète en fer (ou plus lourde) résiste. Mulas et pions ne sont jamais attirés. **Accroupis-toi** pour "
+          "sortir de son orbite ; il se casse à la main et se récupère.\n\n"
           "Son vrai rôle : réveiller la **forge à dés**."),
         C("steveparty:gravity_core", None, "Crying obsidian, 4 black star fragments and a heavy core.",
           "Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd."),
@@ -1182,13 +1192,15 @@ category("decoration", "steveparty:white_plastic_block", ("Decoration", "Décora
           "La peinture sur murs, sols et plafonds est une fine couche que les coups ne cassent pas."),
     ], parents=["stencils"]),
     E("hammer", "steveparty:stencil_gun", ("Stencil Hammer", "Marteau à pochoirs"), ("Stamp in one hit", "Tamponner d'un coup"), [
-        T("A wooden drum hammer loaded with **9 stencils and 9 dyes** (sneak + right-click). Sneak + scroll "
-          "changes the stencil or the colour (**G** switches which). Right-click to **stamp**: a drum thud, a "
-          "paint splash and the pattern printed, 1 dye per hit.\n\nThe last colour, *Engrave*, uses no paint.",
-          "Un marteau-tambour en bois chargé de **9 pochoirs et 9 colorants** (accroupi + clic droit). Accroupi + "
-          "molette change de pochoir ou de couleur (**G** choisit lequel). Clic droit pour **tamponner** : bruit "
-          "de tambour, éclaboussure et motif imprimé, 1 colorant par coup.\n\nLa dernière couleur, *Graver*, ne "
-          "consomme rien."),
+        T("A wooden drum hammer loaded with **9 stencils and 9 dyes**. **Left-click** opens its wheel: colours on "
+          "one side, stencils on the other, *Engrave* (no paint, signs only) and, at the top, its **inventory** "
+          "to load them. A pick applies at once.\n\n"
+          "**Right-click** to **stamp**: a drum thud, a paint splash and the pattern printed, 1 dye per hit.",
+          "Un marteau-tambour en bois chargé de **9 pochoirs et 9 colorants**. Le **clic gauche** ouvre sa roue : "
+          "couleurs d'un côté, pochoirs de l'autre, *Graver* (sans peinture, panneaux seulement) et, en haut, son "
+          "**inventaire** pour les charger. Un choix s'applique aussitôt.\n\n"
+          "**Clic droit** pour **tamponner** : bruit de tambour, éclaboussure et motif imprimé, 1 colorant par "
+          "coup."),
         C("steveparty:stencil_gun"),
     ], parents=["stencils"]),
     E("signs", "steveparty:oak_easel_sign", ("Signs", "Panneaux"), ("Five signs for your symbols", "Cinq panneaux pour tes symboles"), [
