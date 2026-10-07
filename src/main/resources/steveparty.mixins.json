@@ -30,6 +30,7 @@
     "TokenMerchantMixin",
     "TokenCreeperMixin",
     "TokenVanillaActionsMixin",
+    "TokenWitherBossBarMixin",
     "TokenLightningMixin",
     "TokenLightningTargetMixin",
     "MixinPistonBlock",

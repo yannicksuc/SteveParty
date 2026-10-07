@@ -13,7 +13,9 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.CowEntity;
@@ -36,7 +38,9 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
@@ -260,6 +264,56 @@ public class TokenSpellGameTests implements FabricGameTest {
             wither.discard();
         }
         context.complete();
+    }
+
+    /**
+     * Bosses allowed by the game rule: the Wither becomes a pawn and hides its boss bar until it is a mob again; the
+     * Ender Dragon is still refused, clicked on any of its parts. The rule is only on during this tick's checks (the
+     * other tests, run at the same time, expect the default).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void bossesAllowedByTheGameRule(TestContext context) {
+        GameRules.BooleanRule rule = context.getWorld().getGameRules().get(TokenizerWandItem.TOKENIZE_BOSSES);
+        boolean before = rule.get();
+        rule.set(true, context.getWorld().getServer());
+        WitherEntity wither = spawn(context, EntityType.WITHER);
+        ServerPlayerEntity player = wandHolder(context);
+        try {
+            EnderDragonEntity dragon = EntityType.ENDER_DRAGON.create(context.getWorld());
+            context.assertTrue(dragon != null, "dragon created");
+            context.assertTrue(TokenizerWandItem.isBoss(dragon), "the Ender Dragon is refused even when bosses are allowed");
+            context.assertTrue(player.interact(dragon.getBodyParts()[0], Hand.MAIN_HAND) == ActionResult.FAIL,
+                    "the wand on a part of the dragon is refused, not ignored");
+            context.assertTrue(!token(dragon).steveparty$isTokenized(), "dragon not tokenized");
+
+            context.assertTrue(TokenizerWandItem.castSpell(player, wither.getId(), 0.5F, BLUE) == SpellResult.TOKENIZED,
+                    "the Wither is taken when bosses are allowed");
+        } finally {
+            rule.set(before, context.getWorld().getServer());
+            disconnect(context, player);
+        }
+        context.runAtTick(5, () -> {
+            context.assertFalse(bossBar(wither).isVisible(), "a Wither token has no boss bar");
+            token(wither).steveparty$setTokenized(false);
+        });
+        context.runAtTick(10, () -> {
+            context.assertTrue(bossBar(wither).isVisible(), "the boss bar is back once it is a mob again");
+            wither.discard();
+            context.complete();
+        });
+    }
+
+    private static ServerBossBar bossBar(WitherEntity wither) {
+        for (Field field : WitherEntity.class.getDeclaredFields()) {
+            if (field.getType() != ServerBossBar.class) continue;
+            try {
+                field.setAccessible(true);
+                return (ServerBossBar) field.get(wither);
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        throw new IllegalStateException("no boss bar on the Wither");
     }
 
     /** A mob that wandered off while the circle was drawn still gets the spell (the client casts it at once). */

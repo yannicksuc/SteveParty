@@ -121,7 +121,10 @@ public class TokenizerWandItem extends Item {
         if (!(entity instanceof MobEntity mob)) return super.useOnEntity(stack, user, entity, hand);
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         // Bosses can't become tokens (exploit: shrinking/controlling them)
-        if (!token.steveparty$isTokenized() && isBoss(mob)) return ActionResult.FAIL;
+        if (!token.steveparty$isTokenized() && isBoss(mob)) {
+            sendBossRefused(user, mob);
+            return ActionResult.FAIL;
+        }
         // The server decides (it knows the token owner) and tells the client to open the spell screen
         if (user.getWorld().isClient) return ActionResult.SUCCESS;
         if (token.steveparty$isTokenized() && !canControlToken(user, stack, mob)) {
@@ -256,7 +259,10 @@ public class TokenizerWandItem extends Item {
         }
         TokenizedEntityInterface token = (TokenizedEntityInterface) mob;
         boolean resize = token.steveparty$isTokenized();
-        if (!resize && isBoss(mob)) return SpellResult.BOSS;
+        if (!resize && isBoss(mob)) {
+            sendBossRefused(player, mob);
+            return SpellResult.BOSS;
+        }
         if (resize && !canControlToken(player, wand, mob)) {
             sendNotYourToken(player);
             return SpellResult.NOT_ALLOWED;
@@ -314,14 +320,28 @@ public class TokenizerWandItem extends Item {
         }
     }
 
-    /** Lets the wand take bosses too (off by default: shrinking or controlling them can be exploited). */
+    /** Lets the wand take the Wither too (off by default: shrinking or controlling it can be exploited). */
     public static final GameRules.Key<GameRules.BooleanRule> TOKENIZE_BOSSES = GameRuleRegistry.register(
             "stevepartyTokenizeBosses", GameRules.Category.MISC, GameRuleFactory.createBooleanRule(false));
 
-    /** @return whether {@code mob} is a boss the wand must refuse (the Ender Dragon or the Wither, unless the game rule allows them). */
+    /**
+     * @return whether {@code mob} is a boss the wand must refuse: the Wither unless the game rule allows it, and always
+     * the Ender Dragon (a flying body made of parts, steered by its fight phases: it can't stand still on a board).
+     */
     public static boolean isBoss(MobEntity mob) {
-        return (mob instanceof EnderDragonEntity || mob instanceof WitherEntity)
-                && !mob.getWorld().getGameRules().getBoolean(TOKENIZE_BOSSES);
+        return mob instanceof EnderDragonEntity
+                || (mob instanceof WitherEntity && !mob.getWorld().getGameRules().getBoolean(TOKENIZE_BOSSES));
+    }
+
+    /** Tells {@code user} (server side) why the boss {@code mob} can't become a pawn. */
+    public static void sendBossRefused(PlayerEntity user, MobEntity mob) {
+        if (!(user instanceof ServerPlayerEntity player)) return;
+        Text message = mob instanceof EnderDragonEntity
+                ? Text.translatableWithFallback("message.steveparty.token_dragon_refused",
+                        "The Ender Dragon is far too big for the spell: it can't become a pawn.")
+                : Text.translatableWithFallback("message.steveparty.token_boss_refused",
+                        "The spell can't take a boss (game rule stevepartyTokenizeBosses).");
+        MessageUtils.sendToPlayer(player, message, MessageUtils.MessageType.ACTION_BAR);
     }
 
     private static void tokenizeEntity(MobEntity mob, PlayerEntity user, float size, int color) {

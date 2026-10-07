@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.items.custom.TokenItem;
 import fr.lordfinn.steveparty.items.custom.TokenizerWandItem;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.boss.dragon.EnderDragonPart;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -22,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>
  * Same for the Token item when it has something to do with that mob (storing a token, placing one): a llama's chest
  * screen or mounting must not win. When the Token has nothing to do with it, the mob's own interaction runs as usual.
+ * <p>
+ * Clicking the Ender Dragon hits one of its parts (not a mob): the wand gets the dragon itself (and refuses it).
  */
 @Mixin(PlayerEntity.class)
 public class PlayerWandInteractMixin {
@@ -29,8 +32,9 @@ public class PlayerWandInteractMixin {
     @Inject(method = "interact", at = @At("HEAD"), cancellable = true)
     private void steveparty$wandFirst(Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         PlayerEntity player = (PlayerEntity) (Object) this;
-        if (player.isSpectator() || !(entity instanceof MobEntity mob)) return;
         ItemStack stack = player.getStackInHand(hand);
+        if (entity instanceof EnderDragonPart part && stack.getItem() instanceof TokenizerWandItem) entity = part.owner;
+        if (player.isSpectator() || !(entity instanceof MobEntity mob)) return;
         if (stack.getItem() instanceof TokenItem token) {
             // The client can't run the capture, but must not start the mob's own interaction either
             if (player.getWorld().isClient && stack.get(ModComponents.ENTITY_DATA_COMPONENT) == null && TokenBase.isToken(mob)) {
