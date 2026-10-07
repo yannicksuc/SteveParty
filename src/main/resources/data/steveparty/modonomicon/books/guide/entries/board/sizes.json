@@ -5,7 +5,7 @@
   "icon": {
     "item": "steveparty:tile"
   },
-  "x": 2,
+  "x": 0,
   "y": -2,
   "sort_number": 3,
   "hide_while_locked": false,

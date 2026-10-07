@@ -5,9 +5,9 @@
   "icon": {
     "item": "steveparty:board_space_redstone_router"
   },
-  "x": 2,
+  "x": 0,
   "y": 2,
-  "sort_number": 8,
+  "sort_number": 9,
   "hide_while_locked": false,
   "show_when_any_parent_unlocked": false,
   "parents": [
