@@ -1,0 +1,472 @@
+package fr.lordfinn.steveparty.gametest;
+
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
+import fr.lordfinn.steveparty.blocks.custom.glandouille.AcornCropBlock;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.entities.ModEntities;
+import fr.lordfinn.steveparty.entities.TokenStatus;
+import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.Mood;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers;
+import fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant;
+import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.service.GlandouillePushes;
+import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.state.property.Properties;
+import net.minecraft.test.GameTest;
+import net.minecraft.test.TestContext;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.function.Consumer;
+
+/**
+ * The Glandouille: it never hurts (it shoves), stomps flatten then finish it (the mossy one takes one more), towers
+ * (spontaneous ones stop at 5, carried ones go higher, they only fall when the bottom one charges into a wall, a
+ * flick shoots one out), the mossy one anchored and never charging, the frosty one sliding off a wall, the cap never
+ * lost under a tower, the planted acorn hatching, and the Glandouille board space.
+ */
+public class GlandouilleGameTests implements FabricGameTest {
+
+    // ---------------------------------------------------------------- set-up
+
+    /** A stone floor (y 0) over the whole test area: the Glandouilles walk at y 1. */
+    private static void floor(TestContext context) {
+        for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) context.setBlockState(new BlockPos(x, 0, z), Blocks.STONE);
+    }
+
+    private static GlandouilleEntity glandouille(TestContext context, GlandouilleVariant variant, BlockPos at) {
+        GlandouilleEntity one = context.spawnEntity(ModEntities.GLANDOUILLE, at);
+        one.setVariant(variant);
+        one.setHat(true);
+        return one;
+    }
+
+    /** A tower of {@code count} at {@code at}, bottom first, built by hand (no height limit but the server's). */
+    private static List<GlandouilleEntity> tower(TestContext context, GlandouilleVariant bottom, int count, BlockPos at) {
+        List<GlandouilleEntity> members = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            GlandouilleEntity one = glandouille(context, i == 0 ? bottom : GlandouilleVariant.CLASSIC, at);
+            if (i > 0) context.assertTrue(GlandouilleTowers.climb(one, members.getFirst(), false), "climbs " + i);
+            members.add(one);
+        }
+        return members;
+    }
+
+    private static ServerPlayerEntity player(TestContext context, BlockPos at, float yaw) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        BlockPos abs = context.getAbsolutePos(at);
+        player.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, yaw, 0);
+        atEnd(context, () -> context.getWorld().getServer().getPlayerManager().remove(player));
+        return player;
+    }
+
+    // ---------------------------------------------------------------- no damage, only shoves
+
+    /** Its charge shoves a pig hard and hurts it not; a blow pushes it but hurts it not either. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void itNeverHurtsItShoves(TestContext context) {
+        floor(context);
+        GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1, 1, 3));
+        PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(4, 1, 3));
+        double pigX = pig.getX();
+        float pigHealth = pig.getHealth();
+        context.assertTrue(glandouille.startCharge(new Vec3d(1, 0, 0)), "charges");
+        context.waitAndRun(40, () -> {
+            context.assertTrue(pig.getX() - pigX > 0.6, "the pig was shoved: " + (pig.getX() - pigX));
+            context.assertEquals(pig.getHealth(), pigHealth, "the pig is not hurt");
+            // hit by a player: pushed, not hurt
+            ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f);
+            float health = glandouille.getHealth();
+            boolean damaged = glandouille.damage(context.getWorld().getDamageSources().playerAttack(player), 5f);
+            context.assertFalse(damaged, "a blow does no damage");
+            context.assertEquals(glandouille.getHealth(), health, "not hurt by a blow");
+            context.assertTrue(glandouille.getVelocity().horizontalLengthSquared() > 0.01, "pushed");
+            context.assertTrue(player.getUuid().equals(glandouille.grudge()), "it holds a grudge against the player");
+            context.complete();
+        });
+    }
+
+    // ---------------------------------------------------------------- stomps
+
+    /** A stomp flattens it ("pouic"), the stomper bounces; the second one finishes it, and it drops an acorn. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void twoStompsFinishIt(TestContext context) {
+        floor(context);
+        GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(3, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(3, 3, 3), 0f);
+        context.assertTrue(glandouille.squash(player), "stomped");
+        context.assertEquals(glandouille.getMood(), Mood.FLAT, "flattened");
+        context.assertTrue(player.getVelocity().y > 0.3, "the player bounces");
+        context.assertTrue(glandouille.isAlive(), "still alive");
+        context.waitAndRun(10, () -> {
+            context.assertTrue(glandouille.squash(player), "stomped again");
+            context.assertTrue(glandouille.isDead() || glandouille.isRemoved(), "done for");
+            context.waitAndRun(2, () -> {
+                Box around = new Box(context.getAbsolutePos(BlockPos.ORIGIN)).expand(8);
+                context.assertTrue(!context.getWorld().getEntitiesByClass(ItemEntity.class, around,
+                        item -> item.getStack().isOf(ModItems.ACORN)).isEmpty(), "an acorn dropped");
+                context.complete();
+            });
+        });
+    }
+
+    /** The old mossy one: dented by the first stomp, flattened by the second, done for at the third. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100)
+    public void theMossyOneTakesThreeStomps(TestContext context) {
+        floor(context);
+        GlandouilleEntity mossy = glandouille(context, GlandouilleVariant.MOSSY, new BlockPos(3, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(3, 3, 3), 0f);
+        context.assertTrue(mossy.squash(player), "first stomp");
+        context.assertTrue(mossy.getMood() != Mood.FLAT && mossy.isAlive(), "only dented");
+        context.waitAndRun(10, () -> {
+            mossy.squash(player);
+            context.assertEquals(mossy.getMood(), Mood.FLAT, "flattened at the second");
+            context.assertTrue(mossy.isAlive(), "alive after two");
+            context.waitAndRun(10, () -> {
+                mossy.squash(player);
+                context.assertTrue(mossy.isDead() || mossy.isRemoved(), "done for at the third");
+                context.complete();
+            });
+        });
+    }
+
+    /** A player coming down on its cap is seen (no call from the test): flattened. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void aPlayerLandingOnItsCapFlattensIt(TestContext context) {
+        floor(context);
+        GlandouilleEntity glandouille = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(3, 1, 3));
+        glandouille.setAiDisabled(true);
+        ServerPlayerEntity player = player(context, new BlockPos(3, 1, 3), 0f);
+        double top = glandouille.getBoundingBox().maxY;
+        player.setPosition(glandouille.getX(), top + 0.1, glandouille.getZ());
+        context.waitAndRun(2, () -> {
+            player.setPosition(glandouille.getX(), top - 0.2, glandouille.getZ());
+            context.waitAndRun(2, () -> {
+                context.assertEquals(glandouille.getMood(), Mood.FLAT, "flattened by the landing");
+                context.assertEquals(glandouille.stomps(), 1, "one stomp");
+                context.complete();
+            });
+        });
+    }
+
+    // ---------------------------------------------------------------- towers
+
+    /** Glandouilles build towers by themselves up to 5, not higher. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void spontaneousTowersStopAtFive(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> all = new ArrayList<>();
+        for (int i = 0; i < 7; i++) all.add(glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(1 + i % 4, 1, 2 + i / 4)));
+        GlandouilleEntity base = all.getFirst();
+        for (int i = 1; i < 7; i++) {
+            boolean climbed = GlandouilleTowers.climb(all.get(i), base, true);
+            context.assertEquals(climbed, i < GlandouilleTowers.SPONTANEOUS_MAX, "climb " + i);
+        }
+        context.assertEquals(GlandouilleTowers.height(base), GlandouilleTowers.SPONTANEOUS_MAX, "a tower of 5");
+        context.assertEquals(GlandouilleTowers.top(base), all.get(4), "the 5th on top");
+        context.complete();
+    }
+
+    /** A carried tower put on another one makes it higher than 5; put down on a block, it stands there. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aCarriedTowerGoesOnTop(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> first = tower(context, GlandouilleVariant.CLASSIC, 5, new BlockPos(1, 1, 1));
+        List<GlandouilleEntity> second = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(5, 1, 5));
+        ServerPlayerEntity player = player(context, new BlockPos(5, 1, 3), 0f);
+        context.assertTrue(GlandouilleTowers.pickUp(player, second.get(1)), "picks up the whole tower");
+        context.assertEquals(GlandouilleTowers.carried(player), second.getFirst(), "its bottom one rides the player");
+        context.assertTrue(GlandouilleTowers.stackCarriedOn(player, first.get(2)), "stacked on the other tower");
+        context.assertEquals(GlandouilleTowers.height(first.getFirst()), 8, "a tower of 8");
+        context.assertTrue(GlandouilleTowers.carried(player) == null, "nothing carried any more");
+        // and back: picked up again, put down on the ground
+        context.assertTrue(GlandouilleTowers.pickUp(player, GlandouilleTowers.top(first.getFirst())), "picks up the tower of 8");
+        Vec3d ground = Vec3d.ofBottomCenter(context.getAbsolutePos(new BlockPos(6, 1, 1)));
+        context.assertTrue(GlandouilleTowers.putDown(player, ground, 0f), "puts it down");
+        context.assertTrue(first.getFirst().getVehicle() == null && first.getFirst().getPos().distanceTo(ground) < 0.01, "standing there");
+        context.assertEquals(GlandouilleTowers.height(first.getFirst()), 8, "still 8 high");
+        context.complete();
+    }
+
+    /** A tower holds while it walks; it falls apart, all dizzy, only when its bottom one charges into a wall. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
+    public void aTowerOnlyFallsWhenItsBottomChargesIntoAWall(TestContext context) {
+        floor(context);
+        for (int z = 0; z < 8; z++) for (int y = 1; y < 4; y++) context.setBlockState(new BlockPos(7, y, z), Blocks.STONE);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 3, new BlockPos(2, 1, 3));
+        GlandouilleEntity bottom = members.getFirst();
+        // shoved and walking around: it holds
+        bottom.takeKnockback(0.8, 0, 1);
+        context.waitAndRun(40, () -> {
+            context.assertEquals(GlandouilleTowers.height(bottom), 3, "still a tower of 3");
+            BlockPos abs = context.getAbsolutePos(new BlockPos(3, 1, 3));
+            bottom.refreshPositionAndAngles(abs.getX() + 0.5, abs.getY(), abs.getZ() + 0.5, 0, 0);
+            context.assertTrue(bottom.startCharge(new Vec3d(1, 0, 0)), "the bottom one charges");
+            context.waitAndRun(30, () -> {
+                for (GlandouilleEntity one : members) {
+                    context.assertTrue(one.getVehicle() == null, "fallen off");
+                    context.assertEquals(one.getMood(), Mood.STUNNED, "dizzy");
+                }
+                context.complete();
+            });
+        });
+    }
+
+    /** A flick on one inside a tower shoots it out along the blow; the ones above come down one place. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 80)
+    public void aFlickShootsOneOutOfTheTower(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 4, new BlockPos(1, 1, 3));
+        GlandouilleEntity a = members.get(0), b = members.get(1), c = members.get(2), d = members.get(3);
+        a.setAiDisabled(true);
+        ServerPlayerEntity player = player(context, new BlockPos(0, 1, 3), -90f); // facing +x
+        double startX = b.getX();
+        b.onHit(player, player);
+        context.assertTrue(b.getVehicle() == null, "b is out");
+        context.assertEquals(b.getMood(), Mood.FLYING, "b flies");
+        context.assertTrue(c.getVehicle() == a && d.getVehicle() == c, "c and d came down onto a");
+        context.assertEquals(GlandouilleTowers.height(a), 3, "a tower of 3 now");
+        context.waitAndRun(40, () -> {
+            context.assertTrue(b.getX() - startX > 2, "b flew along the blow: " + (b.getX() - startX));
+            context.assertEquals(b.getMood(), Mood.STUNNED, "b landed dizzy");
+            context.complete();
+        });
+    }
+
+    // ---------------------------------------------------------------- variants
+
+    /** The old mossy one never charges, and a tower on it stays where it is. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
+    public void theMossyOneIsAnAnchor(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.MOSSY, 3, new BlockPos(3, 1, 3));
+        GlandouilleEntity mossy = members.getFirst();
+        Vec3d start = mossy.getPos();
+        context.assertFalse(mossy.startCharge(new Vec3d(1, 0, 0)), "never charges");
+        PigEntity pig = context.spawnMob(EntityType.PIG, new BlockPos(5, 1, 3));
+        context.assertFalse(mossy.startTelegraph(pig), "never even warns");
+        mossy.takeKnockback(1.5, 1, 0);
+        context.waitAndRun(100, () -> {
+            context.assertTrue(mossy.getPos().distanceTo(start) < 0.05, "it did not move: " + mossy.getPos().distanceTo(start));
+            context.assertEquals(GlandouilleTowers.height(mossy), 3, "the tower is there");
+            context.complete();
+        });
+    }
+
+    /** The frosty one, hit, slides like a curling stone, bounces off a wall and goes back the other way. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120)
+    public void theFrostyOneSlidesAndBouncesOffWalls(TestContext context) {
+        floor(context);
+        for (int z = 0; z < 8; z++) for (int y = 1; y < 3; y++) context.setBlockState(new BlockPos(6, y, z), Blocks.STONE);
+        GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(2, 1, 3));
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        double startX = frosty.getX();
+        frosty.onHit(player, player);
+        context.assertEquals(frosty.getMood(), Mood.SLIDING, "slides");
+        double[] farthest = {startX};
+        context.runAtEveryTick(() -> farthest[0] = Math.max(farthest[0], frosty.getX()));
+        context.waitAndRun(60, () -> {
+            context.assertTrue(farthest[0] - startX > 2, "slid to the wall: " + (farthest[0] - startX));
+            context.assertTrue(frosty.getX() < farthest[0] - 0.3 || frosty.slideVelocity().x < 0,
+                    "went back from the wall: " + frosty.getX() + " / " + farthest[0]);
+            context.complete();
+        });
+    }
+
+    // ---------------------------------------------------------------- hat
+
+    /** Its cap never flies off while it carries a tower; alone, it does (the Acorn Hat drops). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 60)
+    public void neverLosesItsCapUnderATower(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(2, 1, 2));
+        GlandouilleEntity bottom = members.getFirst();
+        GlandouilleEntity alone = glandouille(context, GlandouilleVariant.CLASSIC, new BlockPos(5, 1, 5));
+        bottom.popHat();
+        alone.popHat();
+        context.waitAndRun(20, () -> {
+            context.assertTrue(bottom.hasHat(), "kept its cap under the tower");
+            context.assertFalse(alone.hasHat(), "lost its cap when alone");
+            Box around = new Box(context.getAbsolutePos(BlockPos.ORIGIN)).expand(8);
+            context.assertTrue(!context.getWorld().getEntitiesByClass(ItemEntity.class, around,
+                    item -> item.getStack().isOf(ModItems.ACORN_HAT)).isEmpty(), "the Acorn Hat dropped");
+            context.complete();
+        });
+    }
+
+    // ---------------------------------------------------------------- the acorn
+
+    /** An acorn planted on farmland grows, and ripe, hatches into a young Glandouille. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aPlantedAcornHatchesIntoAYoungOne(TestContext context) {
+        floor(context);
+        BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
+        context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
+        BlockState planted = ModBlocks.ACORN_CROP.getDefaultState();
+        context.assertTrue(planted.canPlaceAt(context.getWorld(), context.getAbsolutePos(crop)), "plants on farmland");
+        context.assertFalse(planted.canPlaceAt(context.getWorld(), context.getAbsolutePos(new BlockPos(5, 1, 5))), "not on stone");
+        context.setBlockState(crop, planted.with(AcornCropBlock.AGE, AcornCropBlock.MAX_AGE));
+        BlockPos abs = context.getAbsolutePos(crop);
+        for (int i = 0; i < 64 && context.getWorld().getBlockState(abs).isOf(ModBlocks.ACORN_CROP); i++) {
+            context.getWorld().getBlockState(abs).randomTick(context.getWorld(), abs, context.getWorld().random);
+        }
+        context.assertTrue(context.getWorld().getBlockState(abs).isAir(), "the acorn hatched");
+        List<GlandouilleEntity> born = context.getWorld().getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true);
+        context.assertEquals(born.size(), 1, "one Glandouille");
+        context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.YOUNG, "a young one");
+        context.complete();
+    }
+
+    // ---------------------------------------------------------------- the board space
+
+    private static final List<BlockPos> PATH = List.of(new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1),
+            new BlockPos(5, 1, 3));
+
+    /** The path's tiles, each linked to the next; the first holds {@code first}. */
+    private static BoardSpaceBlockEntity path(TestContext context, ItemStack first) {
+        BoardSpaceBlockEntity start = null;
+        for (int i = 0; i < PATH.size(); i++) {
+            BlockPos pos = PATH.get(i);
+            context.setBlockState(pos.down(), Blocks.STONE);
+            context.setBlockState(pos, ModBlocks.TILE);
+            ItemStack cartridge = i == 0 ? first : new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+            List<BlockPos> next = new ArrayList<>();
+            if (i + 1 < PATH.size()) next.add(context.getAbsolutePos(PATH.get(i + 1)));
+            cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(next, ""));
+            BoardSpaceBlockEntity tile = context.getBlockEntity(pos);
+            tile.setStack(0, cartridge);
+            if (i == 0) start = tile;
+        }
+        return start;
+    }
+
+    private static PigEntity token(TestContext context, BlockPos on) {
+        PigEntity pig = context.spawnMob(EntityType.PIG, on);
+        TokenizedEntityInterface token = (TokenizedEntityInterface) pig;
+        token.steveparty$setTokenized(true);
+        token.steveparty$setStatus(TokenStatus.IN_GAME);
+        atEnd(context, () -> token.steveparty$setTokenized(false));
+        return pig;
+    }
+
+    private static ItemStack cartridge(int distance, boolean lone) {
+        ItemStack stack = new ItemStack(ModItems.GLANDOUILLE_CARTRIDGE);
+        stack.set(ModComponents.GLANDOUILLE_DISTANCE, distance);
+        stack.set(ModComponents.GLANDOUILLE_LONE, lone);
+        return stack;
+    }
+
+    private static List<GlandouilleEntity> spawned(TestContext context) {
+        List<GlandouilleEntity> list = new ArrayList<>();
+        Consumer<GlandouilleEntity> listener = list::add;
+        GlandouillePushes.SPAWN_LISTENERS.add(listener);
+        atEnd(context, () -> GlandouillePushes.SPAWN_LISTENERS.remove(listener));
+        return list;
+    }
+
+    private static List<GlandouilleEntity> around(TestContext context) {
+        return context.getWorld().getEntitiesByClass(GlandouilleEntity.class,
+                new Box(context.getAbsolutePos(BlockPos.ORIGIN)).expand(10), e -> true);
+    }
+
+    /** A cartridge without destination (0 spaces): nothing happens, no Glandouille. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aSpaceWithoutDestinationDoesNothing(TestContext context) {
+        BoardSpaceBlockEntity tile = path(context, cartridge(0, false));
+        List<GlandouilleEntity> spawned = spawned(context);
+        PigEntity pig = token(context, PATH.getFirst());
+        context.waitAndRun(2, () -> {
+            Vec3d before = pig.getPos();
+            tile.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), tile.getPos(), pig, tile, null);
+            context.assertFalse(GlandouillePushes.isRunning(pig), "nothing running");
+            context.waitAndRun(10, () -> {
+                context.assertTrue(spawned.isEmpty(), "no Glandouille");
+                context.assertTrue(pig.getPos().distanceTo(before) < 0.3, "the token did not move");
+                context.complete();
+            });
+        });
+    }
+
+    /** With a destination 2 spaces on: the tower pushes the token and the one it meets there; then it is gone. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
+    public void theTowerPushesTheTokensToItsDestination(TestContext context) {
+        BoardSpaceBlockEntity tile = path(context, cartridge(2, false));
+        List<GlandouilleEntity> spawned = spawned(context);
+        PigEntity lander = token(context, PATH.get(0));
+        PigEntity met = token(context, PATH.get(1));
+        PigEntity beyond = token(context, PATH.get(3));
+        context.waitAndRun(2, () -> {
+            Vec3d beyondBefore = beyond.getPos();
+            tile.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), tile.getPos(), lander, tile, null);
+            context.assertTrue(GlandouillePushes.isRunning(lander), "the tower is pushing");
+            context.assertTrue(tile.getBoardSpaceBehavior().keepsTurn(lander), "the turn waits for it");
+            context.assertTrue(spawned.size() > 1 && spawned.stream().allMatch(GlandouilleEntity::isBoardActor), "a tower of board actors");
+            context.assertTrue(spawned.stream().allMatch(GlandouilleEntity::isInvulnerable), "invulnerable");
+            int ticks = GlandouillePushes.SETUP_TICKS + 2 * GlandouillePushes.STEP_TICKS + 10;
+            context.waitAndRun(ticks, () -> {
+                Vec3d destination = BoardSpaces.standPos(context.getWorld(), context.getAbsolutePos(PATH.get(2)));
+                context.assertFalse(GlandouillePushes.isRunning(lander), "over");
+                context.assertTrue(horizontal(lander.getPos(), destination) < 0.5, "the token is on the destination: " + lander.getPos());
+                context.assertTrue(horizontal(met.getPos(), destination) < 0.5, "the token met on the way too: " + met.getPos());
+                context.assertTrue(beyond.getPos().distanceTo(beyondBefore) < 0.3, "not the one beyond the destination");
+                context.assertTrue(spawned.stream().allMatch(GlandouilleEntity::isRemoved), "the Glandouilles are gone");
+                context.assertTrue(around(context).isEmpty(), "none left in the world");
+                context.complete();
+            });
+        });
+    }
+
+    /** The lone one: it tries, can't, sulks and goes; the token stays. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 140)
+    public void theLoneOneCannotPush(TestContext context) {
+        BoardSpaceBlockEntity tile = path(context, cartridge(2, true));
+        List<GlandouilleEntity> spawned = spawned(context);
+        PigEntity lander = token(context, PATH.get(0));
+        context.waitAndRun(2, () -> {
+            Vec3d before = lander.getPos();
+            tile.getBoardSpaceBehavior().onDestinationReached(context.getWorld(), tile.getPos(), lander, tile, null);
+            context.assertEquals(spawned.size(), 1, "a lone Glandouille");
+            context.waitAndRun(GlandouillePushes.LONE_TICKS + 10, () -> {
+                context.assertTrue(lander.getPos().distanceTo(before) < 0.3, "the token stayed");
+                context.assertTrue(around(context).isEmpty(), "gone");
+                context.complete();
+            });
+        });
+    }
+
+    private static double horizontal(Vec3d a, Vec3d b) {
+        double dx = a.x - b.x, dz = a.z - b.z;
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    /** What to undo when the test ends (a test has one final task: they are run together). */
+    private static final Map<TestContext, List<Runnable>> AT_END = new WeakHashMap<>();
+
+    private static void atEnd(TestContext context, Runnable task) {
+        List<Runnable> tasks = AT_END.get(context);
+        if (tasks == null) {
+            List<Runnable> created = new ArrayList<>();
+            AT_END.put(context, created);
+            context.addFinalTask(() -> created.forEach(Runnable::run));
+            tasks = created;
+        }
+        tasks.add(task);
+    }
+}

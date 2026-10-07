@@ -18,7 +18,8 @@ import java.util.List;
  * The Glandouille Cartridge: a token stopping on its tile is pushed {@link #distance} spaces on along the path by a
  * tower of Glandouilles, with every token the tower meets on the way (see GlandouilleTileBehavior). Its destination is
  * that number of spaces ahead: 0 is no destination, and nothing happens. Its menu also has the crew: the tower, or a
- * lone Glandouille that tries to push, can't, and sulks (the tokens stay put).
+ * lone Glandouille that tries to push, can't, and sulks (the tokens stay put). Its tile is brown; a dye on it changes
+ * that.
  */
 public class GlandouilleCartridgeItem extends CartridgeItem {
     /** Its tile's brown. */
@@ -36,8 +37,7 @@ public class GlandouilleCartridgeItem extends CartridgeItem {
             new ChoiceModule("crew", K + "crew",
                     List.of(new ChoiceModule.Option(K + "tower"), new ChoiceModule.Option(K + "lone")),
                     stack -> lone(stack) ? 1 : 0,
-                    (edit, value) -> edit.stack().set(ModComponents.GLANDOUILLE_LONE, value == 1)),
-            colorModule(COLOR));
+                    (edit, value) -> edit.stack().set(ModComponents.GLANDOUILLE_LONE, value == 1)));
 
     public GlandouilleCartridgeItem(Settings settings) {
         super(settings);
