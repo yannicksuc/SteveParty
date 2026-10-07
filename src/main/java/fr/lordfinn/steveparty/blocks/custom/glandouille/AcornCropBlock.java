@@ -80,6 +80,38 @@ public class AcornCropBlock extends CropBlock {
         return 0.12f;
     }
 
+    /** A crop stops ticking once ripe; this one goes on: ripe, it hatches. */
+    @Override
+    protected boolean hasRandomTicks(BlockState state) {
+        return true;
+    }
+
+    /** One dose of bone meal in three hatches a ripe acorn (each dose is used up all the same). */
+    public static final int HATCH_DOSES = 3;
+
+    /** Bone meal always takes: one stage per dose while it grows; ripe, it may hatch. */
+    @Override
+    public boolean isFertilizable(net.minecraft.world.WorldView world, BlockPos pos, BlockState state) {
+        return true;
+    }
+
+    @Override
+    public boolean canGrow(net.minecraft.world.World world, Random random, BlockPos pos, BlockState state) {
+        return !isMature(state) || random.nextInt(HATCH_DOSES) == 0;
+    }
+
+    /** Exactly one stage per dose of bone meal (no jump to ripe). */
+    @Override
+    protected int getGrowthAmount(net.minecraft.world.World world) {
+        return 1;
+    }
+
+    @Override
+    public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
+        if (isMature(state)) hatch(world, pos);
+        else super.grow(world, random, pos, state);
+    }
+
     /** Ripe: it hatches (one random tick in two); else it grows like any crop. */
     @Override
     protected void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {

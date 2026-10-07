@@ -758,6 +758,8 @@ public class GlandouilleGameTests implements FabricGameTest {
         context.assertFalse(planted.canPlaceAt(context.getWorld(), context.getAbsolutePos(new BlockPos(5, 1, 5))), "not on stone");
         context.setBlockState(crop, planted.with(AcornCropBlock.AGE, AcornCropBlock.MAX_AGE));
         BlockPos abs = context.getAbsolutePos(crop);
+        // The world only ticks blocks that ask for it: a ripe crop must still ask
+        context.assertTrue(context.getWorld().getBlockState(abs).hasRandomTicks(), "ripe, it still ticks");
         for (int i = 0; i < 64 && context.getWorld().getBlockState(abs).isOf(ModBlocks.ACORN_CROP); i++) {
             context.getWorld().getBlockState(abs).randomTick(context.getWorld(), abs, context.getWorld().random);
         }
@@ -765,6 +767,27 @@ public class GlandouilleGameTests implements FabricGameTest {
         List<GlandouilleEntity> born = context.getWorld().getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true);
         context.assertEquals(born.size(), 1, "one Glandouille");
         context.assertEquals(born.getFirst().getVariant(), GlandouilleVariant.YOUNG, "a young one");
+        context.complete();
+    }
+
+    /** Bone meal: one stage per dose; ripe, a dose in three hatches it (here, doses until it does). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void boneMealOnARipeAcornHatchesIt(TestContext context) {
+        floor(context);
+        BlockPos farmland = new BlockPos(3, 1, 3), crop = farmland.up();
+        context.setBlockState(farmland, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
+        context.setBlockState(crop, ModBlocks.ACORN_CROP.getDefaultState());
+        BlockPos abs = context.getAbsolutePos(crop);
+        var world = context.getWorld();
+        for (int age = 1; age <= AcornCropBlock.MAX_AGE; age++) {
+            context.assertTrue(net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs), "bone meal takes");
+            context.assertEquals(world.getBlockState(abs).get(AcornCropBlock.AGE), age, "one stage per dose");
+        }
+        for (int i = 0; i < 64 && world.getBlockState(abs).isOf(ModBlocks.ACORN_CROP); i++) {
+            net.minecraft.item.BoneMealItem.useOnFertilizable(new net.minecraft.item.ItemStack(net.minecraft.item.Items.BONE_MEAL), world, abs);
+        }
+        context.assertTrue(world.getBlockState(abs).isAir(), "the acorn hatched");
+        context.assertEquals(context.getWorld().getEntitiesByClass(GlandouilleEntity.class, new Box(abs).expand(1), e -> true).size(), 1, "one Glandouille");
         context.complete();
     }
 
