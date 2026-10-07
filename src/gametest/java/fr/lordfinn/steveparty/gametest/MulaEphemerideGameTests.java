@@ -109,4 +109,23 @@ public class MulaEphemerideGameTests implements FabricGameTest {
         }
         context.complete();
     }
+    /** The stars fly well above the ground, and clear a tall pillar on their way. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void starsFlyAboveTheTrees(TestContext context) {
+        ServerWorld world = context.getWorld();
+        BlockPos at = context.getAbsolutePos(new BlockPos(1, 1, 1));
+        double ground = world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, at.getX(), at.getZ());
+        double open = MulaEphemeride.altitude(world, at.getX() + 0.5, at.getZ() + 0.5, 1, 0, ground);
+        context.assertTrue(open >= ground + MulaEphemeride.MIN_ABOVE_GROUND && open <= ground + MulaEphemeride.MAX_ABOVE_GROUND,
+                "high above the ground: " + open + " over " + ground);
+        BlockPos pillar = new BlockPos(at.getX() + 6, (int) ground, at.getZ()); // a sampled column (every 8 blocks from -90)
+        for (int i = 0; i < 24; i++) world.setBlockState(pillar.up(i), net.minecraft.block.Blocks.OAK_LEAVES.getDefaultState());
+        try {
+            double y = MulaEphemeride.altitude(world, at.getX() + 0.5, at.getZ() + 0.5, 1, 0, ground);
+            context.assertTrue(y >= ground + 24 + MulaEphemeride.CLEARANCE, "clears the pillar: " + y);
+        } finally {
+            for (int i = 0; i < 24; i++) world.setBlockState(pillar.up(i), net.minecraft.block.Blocks.AIR.getDefaultState());
+        }
+        context.complete();
+    }
 }
