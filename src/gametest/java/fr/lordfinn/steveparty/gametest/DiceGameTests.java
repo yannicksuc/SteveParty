@@ -293,4 +293,53 @@ public class DiceGameTests implements FabricGameTest {
         context.assertTrue(!pig.isAlive() || pig.getVelocity().x > 0.1, "and thrown back, away from the die");
         context.complete();
     }
+
+    /**
+     * The whole Firecracker chain, as played: the module crafted, set on a die at the crafting table, the die thrown
+     * by a survival player (the die goes back to them), stopped, then hit away: its burst hurts and throws back.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 120, batchId = "dice_throws")
+    public void aCraftedFirecrackerDieThrownInSurvivalBlastsWhenItGoesAway(TestContext context) {
+        ServerWorld world = context.getWorld();
+        var recipes = world.getServer().getRecipeManager();
+        net.minecraft.item.ItemStack f = new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.PINK_STAR_FRAGMENT);
+        net.minecraft.recipe.input.CraftingRecipeInput moduleGrid = net.minecraft.recipe.input.CraftingRecipeInput.create(3, 3, java.util.List.of(
+                f, new net.minecraft.item.ItemStack(net.minecraft.item.Items.TNT), f,
+                f, new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.BLANK_DICE_MODULE), f,
+                f, f, f));
+        net.minecraft.item.ItemStack module = recipes.getFirstMatch(net.minecraft.recipe.RecipeType.CRAFTING, moduleGrid, world)
+                .map(e -> e.value().craft(moduleGrid, world.getRegistryManager())).orElseThrow();
+        context.assertTrue(module.isOf(fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER.item()), "the Firecracker module is crafted, got " + module);
+        net.minecraft.recipe.input.CraftingRecipeInput dieGrid = net.minecraft.recipe.input.CraftingRecipeInput.create(2, 1, java.util.List.of(
+                new net.minecraft.item.ItemStack(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE), module));
+        net.minecraft.item.ItemStack die = recipes.getFirstMatch(net.minecraft.recipe.RecipeType.CRAFTING, dieGrid, world)
+                .map(e -> e.value().craft(dieGrid, world.getRegistryManager())).orElseThrow();
+        context.assertTrue(fr.lordfinn.steveparty.dice.DiceModules.has(die, fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER), "and set on a die");
+
+        ServerPlayerEntity player = thrower(context, die, 0, false);
+        player.changeGameMode(net.minecraft.world.GameMode.SURVIVAL);
+        net.minecraft.entity.passive.PigEntity pig = context.spawnEntity(net.minecraft.entity.EntityType.PIG, new Vec3d(4.5, 2, 7.5));
+        pig.setAiDisabled(true);
+        pig.setNoGravity(true);
+        player.getMainHandStack().use(world, player, net.minecraft.util.Hand.MAIN_HAND);
+        DiceEntity dice = diceOf(context, player).getFirst();
+        context.assertTrue(player.getMainHandStack().isEmpty(), "a survival throw spends the die from the hand");
+        context.waitAndRun(30, () -> {
+            dice.damage(world.getDamageSources().playerAttack(player), 1F);
+            context.assertTrue(dice.isRollFinished(), "the hit stops the die");
+            dice.damage(world.getDamageSources().playerAttack(player), 1F);
+            context.assertTrue(dice.isRemoved(), "the next hit makes it go away");
+            context.assertTrue(!pig.isAlive() || pig.getHealth() < pig.getMaxHealth(), "its burst hurts the pig under it");
+            context.assertTrue(player.getVelocity().horizontalLength() > 0.05, "and throws back its thrower nearby");
+            boolean back = false;
+            for (int slot = 0; slot < player.getInventory().size(); slot++) {
+                net.minecraft.item.ItemStack stack = player.getInventory().getStack(slot);
+                back |= stack.isOf(fr.lordfinn.steveparty.items.ModItems.DEFAULT_DICE)
+                        && fr.lordfinn.steveparty.dice.DiceModules.has(stack, fr.lordfinn.steveparty.dice.DiceModules.FIRECRACKER);
+            }
+            context.assertTrue(back, "the die, still a Firecracker, is back with its thrower");
+            pig.discard();
+            context.complete();
+        });
+    }
 }
