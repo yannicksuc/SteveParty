@@ -149,8 +149,11 @@ final class BrushWheel implements ToolWheel.Provider {
             context.getMatrices().scale(scale, scale, 1);
             context.getMatrices().push();
             context.getMatrices().translate(1, 1, -50);
+            // Items are drawn in batches: flushed before and after, so that the darkening applies to the shadow only
+            context.draw();
             com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.16f, 0.06f, 0.08f, 1f);
             context.drawItem(stack, -8, -8);
+            context.draw();
             com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             context.getMatrices().pop();
             context.drawItem(stack, -8, -8);

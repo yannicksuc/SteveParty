@@ -42,7 +42,7 @@ import java.util.List;
  * erased), and the links already leaving the aimed tile flow in white. The paint fades away once the button is released.
  */
 final class BrushTrail {
-    private static final int FADE_TICKS = 40;
+    private static final int FADE_TICKS = 60;
     private static final int MAX_MARKS = 512;
     private static final double LIFT = 0.03;
     static final int LINKED = 0x4CFF4C, ERASED = 0xFF4040, NOTHING = 0xF0F0F0;
@@ -72,8 +72,19 @@ final class BrushTrail {
                        boolean drop, Stroke stroke) {
     }
 
-    private static final Identifier DAB_TEXTURE = Steveparty.id("textures/misc/brush_dab.png");
-    private static final Identifier STREAK_TEXTURE = Steveparty.id("textures/misc/brush_streak.png");
+    /**
+     * The paint's textures, one per step of drying (0: wet): each step has a few more of its texels gone, the edges
+     * first, then here and there (a cut-out layer can't fade: see PaintLayers).
+     */
+    private static final int DRY_STEPS = 8;
+    private static final Identifier[] DAB_TEXTURES = new Identifier[DRY_STEPS], STREAK_TEXTURES = new Identifier[DRY_STEPS];
+
+    static {
+        for (int i = 0; i < DRY_STEPS; i++) {
+            DAB_TEXTURES[i] = Steveparty.id("textures/misc/brush_dab_" + i + ".png");
+            STREAK_TEXTURES[i] = Steveparty.id("textures/misc/brush_streak_" + i + ".png");
+        }
+    }
     private static final int MAX_DABS = 4096;
     private static final double WIDTH = 0.36, DAB_SPACING = 0.04, MAX_JOIN = 1.2;
     /** Blocks of stroke per repeat of the streak texture. */
@@ -95,6 +106,8 @@ final class BrushTrail {
     static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(BrushTrail::tick);
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register(BrushTrail::render);
+        // After the see-through blocks (stained glass, ice...): the paint writes no depth, they would be drawn over it
+        WorldRenderEvents.AFTER_TRANSLUCENT.register(BrushTrail::renderPaint);
     }
 
     /** Whether the local player is painting: the brush held in use. */
@@ -188,8 +201,15 @@ final class BrushTrail {
         float now = client.world.getTime() + context.tickCounter().getTickDelta(true);
         Vec3d cam = context.camera().getPos();
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
-        paint(consumers, matrices.peek(), cam, now);
         if (current != null) arrows(context, client, consumers, now);
+    }
+
+    private static void renderPaint(WorldRenderContext context) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        MatrixStack matrices = context.matrixStack();
+        if (client.world == null || matrices == null || DABS.isEmpty()) return;
+        float now = client.world.getTime() + context.tickCounter().getTickDelta(true);
+        paint(client.getBufferBuilders().getEntityVertexConsumers(), matrices.peek(), context.camera().getPos(), now);
     }
 
     /**
@@ -285,27 +305,32 @@ final class BrushTrail {
      */
     private static void paint(VertexConsumerProvider.Immediate consumers, MatrixStack.Entry entry, Vec3d cam, float now) {
         if (DABS.isEmpty()) return;
-        RenderLayer streakLayer = PaintLayers.paint(STREAK_TEXTURE);
-        VertexConsumer streaks = consumers.getBuffer(streakLayer);
-        for (int i = 1; i < DABS.size(); i++) {
-            if (continues(i)) strip(streaks, entry, cam, DABS.get(i - 1), DABS.get(i), side(i - 1), side(i), now);
+        for (int step = 0; step < DRY_STEPS; step++) {
+            RenderLayer streakLayer = PaintLayers.paint(STREAK_TEXTURES[step]);
+            VertexConsumer streaks = consumers.getBuffer(streakLayer);
+            for (int i = 1; i < DABS.size(); i++) {
+                if (continues(i) && dryStep(DABS.get(i), now) == step) {
+                    strip(streaks, entry, cam, DABS.get(i - 1), DABS.get(i), side(i - 1), side(i));
+                }
+            }
+            consumers.draw(streakLayer);
+            RenderLayer dabLayer = PaintLayers.paint(DAB_TEXTURES[step]);
+            VertexConsumer dabs = consumers.getBuffer(dabLayer);
+            for (int i = 0; i < DABS.size(); i++) {
+                Dab dab = DABS.get(i);
+                if (!dab.drop && continues(i) && continues(i + 1) || dryStep(dab, now) != step) continue;
+                Vec3d direction = dab.drop ? axes(dab.normal)[0] : direction(i);
+                dab(dabs, entry, cam, dab, direction, dab.drop ? dab.width : dab.width * 1.15);
+            }
+            consumers.draw(dabLayer);
         }
-        consumers.draw(streakLayer);
-        RenderLayer dabLayer = PaintLayers.paint(DAB_TEXTURE);
-        VertexConsumer dabs = consumers.getBuffer(dabLayer);
-        for (int i = 0; i < DABS.size(); i++) {
-            Dab dab = DABS.get(i);
-            if (!dab.drop && continues(i) && continues(i + 1)) continue;
-            Vec3d direction = dab.drop ? axes(dab.normal)[0] : direction(i);
-            dab(dabs, entry, cam, dab, direction, dab.drop ? dab.width : dab.width * 1.15, alpha(dab, now));
-        }
-        consumers.draw(dabLayer);
     }
 
-    /** Wet: full; once released it dries up (its thinner texels go first, see PaintLayers). */
-    private static float alpha(Dab dab, float now) {
-        if (dab.stroke.ended < 0) return 1f;
-        return 1 - MathHelper.clamp((now - dab.stroke.ended) / FADE_TICKS, 0, 1);
+    /** How dry {@code dab} is: 0 while its stroke is held, then up to {@link #DRY_STEPS} - 1 as it fades away. */
+    private static int dryStep(Dab dab, float now) {
+        if (dab.stroke.ended < 0) return 0;
+        float dried = MathHelper.clamp((now - dab.stroke.ended) / FADE_TICKS, 0, 0.999f);
+        return (int) (dried * DRY_STEPS);
     }
 
     /** The stroke's direction at point {@code i} (from its neighbours in the same run), on its surface. */
@@ -326,35 +351,31 @@ final class BrushTrail {
 
     /** The strip from point {@code a} to point {@code b}, sharing its sides with the next and previous ones. */
     private static void strip(VertexConsumer consumer, MatrixStack.Entry entry, Vec3d cam, Dab a, Dab b, Vec3d sideA,
-                              Vec3d sideB, float now) {
-        float alphaA = alpha(a, now), alphaB = alpha(b, now);
-        if (alphaA < 0.02f && alphaB < 0.02f) return;
+                              Vec3d sideB) {
         Vec3d pa = a.at.subtract(cam), pb = b.at.subtract(cam);
         float va = (float) (a.along / STREAK_LENGTH), vb = (float) (b.along / STREAK_LENGTH);
-        vertex(consumer, entry, pa.add(sideA), 0, va, a, alphaA);
-        vertex(consumer, entry, pa.subtract(sideA), 1, va, a, alphaA);
-        vertex(consumer, entry, pb.subtract(sideB), 1, vb, b, alphaB);
-        vertex(consumer, entry, pb.add(sideB), 0, vb, b, alphaB);
+        vertex(consumer, entry, pa.add(sideA), 0, va, a);
+        vertex(consumer, entry, pa.subtract(sideA), 1, va, a);
+        vertex(consumer, entry, pb.subtract(sideB), 1, vb, b);
+        vertex(consumer, entry, pb.add(sideB), 0, vb, b);
     }
 
     /** A round dab on {@code dab}'s surface, {@code size} wide, its bristle grooves along {@code direction}. */
-    private static void dab(VertexConsumer consumer, MatrixStack.Entry entry, Vec3d cam, Dab dab, Vec3d direction,
-                            double size, float alpha) {
-        if (alpha < 0.02f) return;
+    private static void dab(VertexConsumer consumer, MatrixStack.Entry entry, Vec3d cam, Dab dab, Vec3d direction, double size) {
         Vec3d u = direction.multiply(size / 2), v = direction.crossProduct(dab.normal).normalize().multiply(size / 2);
         Vec3d p = dab.at.subtract(cam);
-        vertex(consumer, entry, p.subtract(u).subtract(v), 0, 0, dab, alpha);
-        vertex(consumer, entry, p.add(u).subtract(v), 1, 0, dab, alpha);
-        vertex(consumer, entry, p.add(u).add(v), 1, 1, dab, alpha);
-        vertex(consumer, entry, p.subtract(u).add(v), 0, 1, dab, alpha);
+        vertex(consumer, entry, p.subtract(u).subtract(v), 0, 0, dab);
+        vertex(consumer, entry, p.add(u).subtract(v), 1, 0, dab);
+        vertex(consumer, entry, p.add(u).add(v), 1, 1, dab);
+        vertex(consumer, entry, p.subtract(u).add(v), 0, 1, dab);
     }
 
-    private static void vertex(VertexConsumer consumer, MatrixStack.Entry entry, Vec3d p, float u, float v, Dab dab, float alpha) {
+    private static void vertex(VertexConsumer consumer, MatrixStack.Entry entry, Vec3d p, float u, float v, Dab dab) {
         int rgb = dab.stroke.rgb;
         float shade = dab.shade;
         consumer.vertex(entry, (float) p.x, (float) p.y, (float) p.z)
                 .color(Math.min(1f, ((rgb >> 16) & 0xFF) / 255f * shade), Math.min(1f, ((rgb >> 8) & 0xFF) / 255f * shade),
-                        Math.min(1f, (rgb & 0xFF) / 255f * shade), alpha)
+                        Math.min(1f, (rgb & 0xFF) / 255f * shade), 1f)
                 .texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(dab.light)
                 .normal(entry, (float) dab.normal.x, (float) dab.normal.y, (float) dab.normal.z);
     }

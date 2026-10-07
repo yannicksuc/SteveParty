@@ -11,8 +11,8 @@ import java.util.function.Function;
 /**
  * The layer the brush's paint is drawn in: opaque with cut-out edges (overlapping strokes keep one colour, never darker
  * where they cross), lit like the world, tested against the world's depth but never writing it, so that its own pieces
- * lying in the same plane are simply drawn one over the other, in order, without flickering. Fading, the vertex alpha
- * drops under the cut-out threshold texel by texel: the paint dries up rather than turning see-through.
+ * lying in the same plane are simply drawn one over the other, in order, without flickering. The cut-out test is on
+ * the texture alone: drying, the paint switches to textures with fewer texels (see BrushTrail) instead of fading.
  */
 final class PaintLayers extends RenderLayer {
     private static final Function<Identifier, RenderLayer> PAINT = Util.memoize(texture -> RenderLayer.of(
