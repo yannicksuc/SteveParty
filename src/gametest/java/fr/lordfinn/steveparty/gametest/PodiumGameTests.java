@@ -605,6 +605,45 @@ public class PodiumGameTests implements FabricGameTest {
     }
 
     /**
+     * Whose points a pole's goal is about (playtest #73): by default each side's own, a team's players added up (each
+     * player's own without teams), not everyone's total; or each team's best player; or the total.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPoleCountsEachTeamOrEachPlayerByDefault(TestContext context) {
+        ServerPlayerEntity a1 = player(context, "a1", 0.5, 1, 0.5), a2 = player(context, "a2", 1.5, 1, 0.5), b1 = player(context, "b1", 2.5, 1, 0.5);
+        try {
+            context.setBlockState(BASE, ModBlocks.GOAL_POLE_BASE.getDefaultState().with(GoalPoleBaseBlock.FACING, Direction.NORTH));
+            context.setBlockState(BASE.up(), ModBlocks.GOAL_POLE.getDefaultState().with(GoalPoleBlock.ON_BASE, true).with(GoalPoleBlock.TOP, true));
+            GoalPoleNetwork.processPending();
+            GoalPoleBaseBlockEntity base = context.getBlockEntity(BASE);
+            GoalPoleBlockEntity pole = context.getBlockEntity(BASE.up());
+            context.assertEquals(pole.getCount(), GoalPoleBlockEntity.Count.SIDES, "a new pole counts each side");
+            pole.applyGoal(GoalPoleBlockEntity.Comparator.GREATER_OR_EQUAL, 10, false);
+            String n1 = a1.getNameForScoreboard(), n2 = a2.getNameForScoreboard(), n3 = b1.getNameForScoreboard();
+            base.credit(n1, 6, a1);
+            base.credit(n2, 4, a2);
+            base.credit(n3, 7, b1);
+            context.assertEquals(base.getTotal(), 17L, "17 points in all");
+            // No mini-game played: everyone for himself, the flag shows the best player's points, not 17
+            context.assertEquals(pole.getTotal(), 7L, "each player's own: the best is 7");
+            context.assertTrue(!pole.isGoalMet(), "nobody has 10 of his own");
+            TeamDisposition teams = new TeamDisposition(Set.of(a1.getUuid(), a2.getUuid()), Set.of(b1.getUuid()));
+            Map<String, Long> sides = base.sideScores(GoalPoleBlockEntity.Count.SIDES, teams);
+            context.assertEquals(sides.get(GoalPoleBaseBlockEntity.TEAM_SIDE + 0), 10L, "team A: 6 + 4");
+            context.assertEquals(sides.get(GoalPoleBaseBlockEntity.TEAM_SIDE + 1), 7L, "team B: 7");
+            Map<String, Long> best = base.sideScores(GoalPoleBlockEntity.Count.TEAM_BEST, teams);
+            context.assertEquals(best.get(GoalPoleBaseBlockEntity.TEAM_SIDE + 0), 6L, "team A's best player: 6");
+            context.assertEquals(base.shownScore(GoalPoleBlockEntity.Count.TOTAL), 17L, "the total, when asked");
+            pole.applyCount(GoalPoleBlockEntity.Count.TOTAL);
+            context.assertTrue(pole.getTotal() == 17L && pole.isGoalMet(), "everyone's total: 17, the goal is met");
+        } finally {
+            context.setBlockState(BASE, Blocks.AIR);
+            remove(context, a1, a2, b1);
+        }
+        context.complete();
+    }
+
+    /**
      * « The first player to reach 10 jumps is 1st, the second 2nd, the third 3rd »: a base counting jumps, a pole with
      * a per-player goal, and a podium staircase touching the base.
      */
@@ -636,7 +675,7 @@ public class PodiumGameTests implements FabricGameTest {
 
             // Resetting the base empties the podiums; the goals can be reached again
             NbtCompound saved = pole.createNbt(context.getWorld().getRegistryManager());
-            context.assertTrue(saved.getBoolean("PerPlayer") && saved.getList("Reached", 8).size() == 3, "the per-player goal is saved");
+            context.assertTrue(saved.getString("Count").equals("SIDES") && saved.getList("Reached", 8).size() == 3, "the per-player goal is saved");
             base.reset();
             context.assertEquals(base.getTotal(), 0L, "points back to 0");
             context.assertTrue(occupant(context, first) == null && occupant(context, second) == null && occupant(context, third) == null,

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity.Comparator;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -46,8 +47,11 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     private boolean perSegment;
     /** The flags step down one notch per point, instead of sliding down once the goal is met. */
     private boolean flagSteps;
-    /** The goal is each player's own points: the pole fires once per player (and fills the podiums linked to it). */
-    private boolean perPlayer;
+    /**
+     * Whose points the goal is about: each side's (a team's added up, or a player's: the default), each team's best
+     * player's, or everybody's total. Clicking the button goes through them (Shift: backwards).
+     */
+    private GoalPoleBlockEntity.Count count;
     private int modeY, flagY, playerY;
     private TextFieldWidget valueField;
     private PartyButton doneButton;
@@ -61,7 +65,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         this.comparator = handler.getComparator();
         this.perSegment = handler.isPerSegment();
         this.flagSteps = handler.isFlagSteps();
-        this.perPlayer = handler.isPerPlayer();
+        this.count = handler.getCount();
     }
 
     @Override
@@ -124,7 +128,8 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         flag.setMessage(flagText());
         flag.setTooltip(Tooltip.of(flagTooltip()));
         PartyButton each = addDrawableChild(new PartyButton(x + 16, y + playerY, WIDTH - 32, 18, Text.empty(), b -> {
-            perPlayer = !perPlayer;
+            GoalPoleBlockEntity.Count[] counts = GoalPoleBlockEntity.Count.values();
+            count = counts[Math.floorMod(count.ordinal() + (Screen.hasShiftDown() ? -1 : 1), counts.length)];
             b.setMessage(playerText());
             b.setTooltip(Tooltip.of(playerTooltip()));
         }));
@@ -188,7 +193,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     private void submit() {
         Integer value = parsedValue();
         if (value == null) return;
-        ClientPlayNetworking.send(new GoalPolePayload(handler.getPos(), comparator, value, perSegment, flagSteps, perPlayer));
+        ClientPlayNetworking.send(new GoalPolePayload(handler.getPos(), comparator, value, perSegment, flagSteps, count));
         close();
     }
 
@@ -226,12 +231,13 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     }
 
     private Text playerText() {
-        return Text.translatable(KEY + (perPlayer ? "who.each" : "who.total"));
+        return Text.translatable(KEY + "who." + count.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     private Text playerTooltip() {
         return Text.empty().append(Text.translatable(KEY + "who").formatted(Formatting.GOLD)).append("\n")
-                .append(Text.translatable(KEY + (perPlayer ? "who.each.details" : "who.total.details")).formatted(Formatting.GRAY));
+                .append(Text.translatable(KEY + "who." + count.name().toLowerCase(java.util.Locale.ROOT) + ".details").formatted(Formatting.GRAY))
+                .append("\n").append(Text.translatable("gui.steveparty.goal_pole_base.cycle_hint").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
     }
 
     private Text flagText() {

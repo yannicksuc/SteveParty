@@ -133,7 +133,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
      * The goal is each player's own: a player whose own points reach it fires the pole once (a comparator pulse, and
      * the highest free place of the linked podiums: see {@code Podiums}). A setting of the whole pole.
      */
-    private boolean perPlayer = false;
+    private Count count = Count.SIDES;
     /** The holders who reached this segment's per-player goal since the last reset. */
     private final java.util.Set<String> reached = new java.util.LinkedHashSet<>();
     /** Game ticks of the comparator pulse of a per-player goal reached. */
@@ -173,7 +173,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
                     value = other.value;
                     perSegment = other.perSegment;
                     flagSteps = other.flagSteps;
-                    perPlayer = other.perPlayer;
+                    count = other.count;
                     markDirty();
                     break;
                 }
@@ -269,20 +269,46 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         }
     }
 
-    /** Whether the goal is each player's own (see {@link #perPlayer}). A setting of the whole pole. */
-    public boolean isPerPlayer() {
-        return perPlayer;
+    /**
+     * Whose points the goal is about, a setting of the whole pole: each side's (a team, or a player for himself: the
+     * default), each team's best player's, or everybody's total.
+     */
+    public enum Count {
+        /**
+         * Each side's own: in a team mini-game the points of a team's players added up, else each player's. The pole
+         * fires once per side reaching the goal (a comparator pulse, the highest free place of the linked podiums), and
+         * shows the best side's score.
+         */
+        SIDES,
+        /** As {@link #SIDES}, a team's score being its best player's points (not added up). */
+        TEAM_BEST,
+        /** Everybody's points added up: the pole's signal stays on once the total meets the goal. */
+        TOTAL
     }
 
-    /** Sets whose points the goal is about (each player's own, or everybody's total), for the whole pole. */
+    public Count getCount() {
+        return count;
+    }
+
+    /** Whether the goal is each side's own (a player or a team: see {@link Count}), not everybody's total. */
+    public boolean isPerPlayer() {
+        return count != Count.TOTAL;
+    }
+
+    /** Sets whose points the goal is about: each side's own ({@link Count#SIDES}) or everybody's total. */
     public void applyPerPlayer(boolean each) {
+        applyCount(each ? Count.SIDES : Count.TOTAL);
+    }
+
+    /** Sets whose points the goal is about ({@link Count}), for the whole pole. */
+    public void applyCount(Count each) {
         if (world == null || world.isClient) {
-            perPlayer = each;
+            count = each;
             return;
         }
         for (GoalPoleBlockEntity segment : column(world, pos)) {
-            if (segment.perPlayer == each) continue;
-            segment.perPlayer = each;
+            if (segment.count == each) continue;
+            segment.count = each;
             segment.reached.clear();
             if (segment.redstoneOutput != 0) {
                 segment.redstoneOutput = 0;
@@ -301,7 +327,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
      * comparator pulse)
      */
     public boolean acceptPlayerPoints(String holder, int points) {
-        if (world == null || world.isClient || !perPlayer) return false;
+        if (world == null || world.isClient || !isPerPlayer()) return false;
         if (!compare(comparator, points, value)) {
             if (reached.remove(holder)) markDirty();
             return false;
@@ -329,7 +355,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
 
     /** End of the comparator pulse of a per-player goal. */
     public void endPlayerGoalPulse() {
-        if (!perPlayer || redstoneOutput == 0 || world == null) return;
+        if (!isPerPlayer() || redstoneOutput == 0 || world == null) return;
         redstoneOutput = 0;
         world.updateComparators(pos, getCachedState().getBlock());
     }
@@ -396,8 +422,10 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         if (world == null || world.isClient) return false;
         cachedBase = base;
         baseResolved = true;
-        // A per-player goal shows the best player's own points, and only pulses its comparator when a player reaches it
-        long newTotal = base == null ? 0 : perPlayer ? base.getBestPoints() : base.getTotal();
+        // A goal per side shows the best side's score (a player's or a team's), and only pulses its comparator when a
+        // side reaches it
+        boolean perPlayer = isPerPlayer();
+        long newTotal = base == null ? 0 : base.shownScore(count);
         boolean met = base != null && compare(comparator, (int) Math.clamp(newTotal, Integer.MIN_VALUE, Integer.MAX_VALUE), value);
         int output = perPlayer ? redstoneOutput : met ? 15 : 0;
         boolean changed = newTotal != total || met != goalMet || linked != (base != null);
@@ -479,7 +507,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         nbt.putInt("Value", value);
         nbt.putBoolean("PerSegment", perSegment);
         nbt.putBoolean("FlagSteps", flagSteps);
-        nbt.putBoolean("PerPlayer", perPlayer);
+        nbt.putString("Count", count.name());
         if (!reached.isEmpty()) {
             net.minecraft.nbt.NbtList list = new net.minecraft.nbt.NbtList();
             reached.forEach(holder -> list.add(net.minecraft.nbt.NbtString.of(holder)));
@@ -499,7 +527,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         fresh = false;
         perSegment = nbt.getBoolean("PerSegment");
         flagSteps = nbt.getBoolean("FlagSteps");
-        perPlayer = nbt.getBoolean("PerPlayer");
+        count = GoalPoleBaseBlockEntity.readEnum(nbt, "Count", Count.values(), Count.SIDES);
         reached.clear();
         net.minecraft.nbt.NbtList reachedNbt = nbt.getList("Reached", NbtElement.STRING_TYPE);
         for (int i = 0; i < reachedNbt.size(); i++) reached.add(reachedNbt.getString(i));
@@ -519,7 +547,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
         goalMet = nbt.getBoolean("GoalMet");
         goalMetTick = nbt.getLong("GoalMetTick");
         // Same signal as before the chunk was unloaded: no spurious comparator pulse on load
-        redstoneOutput = goalMet && !perPlayer ? 15 : 0;
+        redstoneOutput = goalMet && !isPerPlayer() ? 15 : 0;
     }
 
     // --- Client sync (the flag colour) ---
@@ -583,7 +611,7 @@ public class GoalPoleBlockEntity extends SyncedBlockEntity implements ExtendedSc
     @Override
     public GoalPolePayload getScreenOpeningData(ServerPlayerEntity player) {
         if (world != null && !world.isClient) consolidate(column(world, pos));
-        return new GoalPolePayload(this.getPos(), this.comparator, this.value, this.perSegment, this.flagSteps, this.perPlayer);
+        return new GoalPolePayload(this.getPos(), this.comparator, this.value, this.perSegment, this.flagSteps, this.count);
     }
 
     @Override

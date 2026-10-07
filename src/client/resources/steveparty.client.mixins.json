@@ -15,6 +15,7 @@
     "LivingEntityRendererPipePoseMixin",
     "FallingBlockEntityRendererVillagerMixin",
     "GameRendererFovMixin",
+    "GameRendererGoalPoleRollMixin",
     "GameRendererStencilHammerShakeMixin",
     "GameRendererTelescopeMixin",
     "KeyboardInputTelescopeMixin",
