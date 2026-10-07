@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.items.custom;
 
+import fr.lordfinn.steveparty.entities.TokenBase;
 import fr.lordfinn.steveparty.particles.KamekShapeEffect;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -87,6 +88,7 @@ public final class TokenizerFlare {
             }
         }
         if (nearest != null) {
+            if (!TokenBase.isToken(nearest) && TokenizerWandItem.isBoss(nearest)) TokenizerWandItem.sendBossRefused(player, nearest);
             return new Hit(TokenizerWandItem.isSpellTarget(player, wand, nearest) ? nearest : null, nearestAt, true);
         }
         return block.getType() == HitResult.Type.MISS ? Hit.NOTHING : new Hit(null, end, true);
