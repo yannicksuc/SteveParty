@@ -2021,7 +2021,6 @@
   "screen.steveparty.party_hud_layout.anchor": "Anchor of « %s »: click a point",
   "gui.steveparty.mini_game_page.podiums.heading": "Linked blocks",
   "gui.steveparty.mini_game_page.pipes.heading": "Linked pipes, by role",
-  "gui.steveparty.mini_game_page.pipes.legend": "A pipe's colour is its column · hover a title: what it is for",
   "gui.steveparty.mini_game_page.pipes.empty": "+ a %s pipe",
   "gui.steveparty.mini_game_page.pipes.colour.glass": "plain glass",
   "gui.steveparty.mini_game_page.pipes.colour.or": "or",

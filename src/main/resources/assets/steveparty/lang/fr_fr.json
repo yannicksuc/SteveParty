@@ -2021,7 +2021,6 @@
   "screen.steveparty.party_hud_layout.anchor": "Ancrage de « %s » : clique un point",
   "gui.steveparty.mini_game_page.podiums.heading": "Blocs liés",
   "gui.steveparty.mini_game_page.pipes.heading": "Tuyaux liés, par rôle",
-  "gui.steveparty.mini_game_page.pipes.legend": "La couleur d'un tuyau donne sa colonne · survolez un titre : à quoi elle sert",
   "gui.steveparty.mini_game_page.pipes.empty": "+ un tuyau %s",
   "gui.steveparty.mini_game_page.pipes.colour.glass": "verre simple",
   "gui.steveparty.mini_game_page.pipes.colour.or": "ou",
