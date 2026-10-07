@@ -8,6 +8,7 @@
     "tile_type=tile_advance_back": { "model": "steveparty:block/check_point" },
     "tile_type=tile_replay": { "model": "steveparty:block/check_point" },
     "tile_type=tile_teleport": { "model": "steveparty:block/check_point" },
-    "tile_type=tile_star": { "model": "steveparty:block/check_point_star" }
+    "tile_type=tile_star": { "model": "steveparty:block/check_point_star" },
+    "tile_type=tile_glandouille": { "model": "steveparty:block/check_point" }
   }
 }

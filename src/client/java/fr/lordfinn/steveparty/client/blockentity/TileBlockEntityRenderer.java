@@ -160,6 +160,8 @@ public class TileBlockEntityRenderer implements BlockEntityRenderer<BoardSpaceBl
         else if (tileType == BoardSpaceType.TILE_TELEPORT) face = TileStampTextures.teleportFace(color, small);
         // A star space: a star in the cartridge's yellow
         else if (tileType == BoardSpaceType.TILE_STAR) face = TileStampTextures.starFace(color, small);
+        // A Glandouille space: an acorn in the cartridge's brown
+        else if (tileType == BoardSpaceType.TILE_GLANDOUILLE) face = TileStampTextures.glandouilleFace(color, small);
         // The neutral face in the cartridge's colour (dyes), white by default
         else face = TileStampTextures.face(textureNeutral, color, small);
         return face;

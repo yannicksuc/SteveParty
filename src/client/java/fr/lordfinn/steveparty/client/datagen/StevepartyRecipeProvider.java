@@ -348,6 +348,8 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         offerCartridge(ModItems.TELEPORT_CARTRIDGE, Items.ENDER_PEARL);
         // A Power Star: the star the space sells
         offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.POWER_STAR);
+        // An acorn: the Glandouilles that push the tokens on
+        offerCartridge(ModItems.GLANDOUILLE_CARTRIDGE, ModItems.ACORN);
 
         // The Tile: a cloth face (carpets) on the pressure plate that feels the tokens landing on it, and a
         // Cartridge each (its plastic is the board): two at a time, each holding its plain Cartridge, ready to link.

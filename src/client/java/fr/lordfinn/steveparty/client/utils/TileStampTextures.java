@@ -445,6 +445,42 @@ public final class TileStampTextures {
                 key -> register(glyphValues(small ? SMALL_STAR : STAR, small, FEATURE, -0.6f), rgb, small));
     }
 
+    // ---------------------------------------------------------------- the Glandouille face
+
+    /** An acorn, by hand for each size: '#' its cap and stem (the ramp's darkest shade), 'o' its nut (a middle shade). */
+    private static final String[] ACORN = {
+            "......#.......",
+            "......##......",
+            "..##########..",
+            ".############.",
+            "##############",
+            ".############.",
+            "..oooooooooo..",
+            "..oooooooooo..",
+            "..oooooooooo..",
+            "...oooooooo...",
+            "...oooooooo...",
+            "....oooooo....",
+            ".....oooo.....",
+            "......oo......"};
+    private static final String[] SMALL_ACORN = {
+            "....#.....",
+            "..######..",
+            ".########.",
+            "##########",
+            ".oooooooo.",
+            ".oooooooo.",
+            "..oooooo..",
+            "..oooooo..",
+            "...oooo...",
+            "....oo...."};
+
+    /** The Glandouille space's face: an acorn on the blank tile face, in the ramp of {@code rgb} (brown). */
+    public static Identifier glandouilleFace(int rgb, boolean small) {
+        return TEXTURES.computeIfAbsent(new Key("glandouille", rgb, small),
+                key -> register(glyphValues(small ? SMALL_ACORN : ACORN, small, Map.of('#', FEATURE, 'o', 0.3f)), rgb, small));
+    }
+
     // ---------------------------------------------------------------- the Teleport face
 
     /** Images of the portal's drift (its rings one pixel further in at each) and how long each one shows. */

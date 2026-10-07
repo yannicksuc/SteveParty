@@ -82,6 +82,10 @@ public class ModItems {
     public static final Item STAR_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.class, "star_cartridge",
             new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
                     fr.lordfinn.steveparty.items.custom.cartridges.StarCartridgeItem.COLOR));
+    /** Its tile's face is brown until dyed; pushes 3 spaces on by default. */
+    public static final Item GLANDOUILLE_CARTRIDGE = register(fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.class, "glandouille_cartridge",
+            new Item.Settings().component(fr.lordfinn.steveparty.components.ModComponents.COLOR,
+                    fr.lordfinn.steveparty.items.custom.cartridges.GlandouilleCartridgeItem.COLOR));
     public static final Item MINI_GAME_PAGE = register(MiniGamePageItem.class, "mini_game_page");
     public static final Item MINI_GAME_REMOTE = registerUnstackable(fr.lordfinn.steveparty.items.custom.MiniGameRemoteItem.class, "mini_game_remote");
     public static final Item SHOPKEEPER_KEY = registerUnstackable(ShopkeeperKeyItem.class, "shopkeeper_key");
@@ -89,6 +93,21 @@ public class ModItems {
     public static final TripleJumpShoesItem TRIPLE_JUMP_SHOES = register(TripleJumpShoesItem.class, "triple_jump_shoes");
     public static final Item MULA_SPAWN_EGG = register(MulaSpawnEggItem.class, "mula_spawn_egg");
     public static final Item BOXED_TRADER_SPAWN_EGG = register(fr.lordfinn.steveparty.items.custom.BoxedTraderSpawnEggItem.class, "boxed_trader_spawn_egg");
+    // The Glandouille: its acorn (planted on farmland, it hatches into a young one), its lost cap (worn on the head),
+    // a spawn egg per variant (the egg sets the variant)
+    public static final Item ACORN = Registry.register(Registries.ITEM, Steveparty.id("acorn"),
+            new net.minecraft.item.AliasedBlockItem(ModBlocks.ACORN_CROP, new Item.Settings()));
+    public static final Item ACORN_HAT = registerUnstackable(fr.lordfinn.steveparty.items.custom.glandouille.AcornHatItem.class, "acorn_hat");
+    public static final Item GLANDOUILLE_SPAWN_EGG = glandouilleEgg("glandouille_spawn_egg",
+            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.CLASSIC, 0xB86C30, 0x5A3A22);
+    public static final Item YOUNG_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("young_glandouille_spawn_egg",
+            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.YOUNG, 0x8DB84A, 0x4E6B2A);
+    public static final Item MOSSY_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("mossy_glandouille_spawn_egg",
+            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.MOSSY, 0x7A5A3A, 0x5E8E38);
+    public static final Item FROSTY_GLANDOUILLE_SPAWN_EGG = glandouilleEgg("frosty_glandouille_spawn_egg",
+            fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant.FROSTY, 0xA8BCD8, 0xF4F8FF);
+    public static final Item[] GLANDOUILLE_SPAWN_EGGS = {GLANDOUILLE_SPAWN_EGG, YOUNG_GLANDOUILLE_SPAWN_EGG,
+            MOSSY_GLANDOUILLE_SPAWN_EGG, FROSTY_GLANDOUILLE_SPAWN_EGG};
     public static final Item BLUE_STAR_FRAGMENT = register(Item.class, "blue_star_fragment");
     public static final Item PURPLE_STAR_FRAGMENT = register(Item.class, "purple_star_fragment");
     public static final Item RED_STAR_FRAGMENT = register(Item.class, "red_star_fragment");
@@ -157,6 +176,18 @@ public class ModItems {
      */
     public static <T extends Item> T registerUnstackable(Class<T> itemClass, String id) {
         return register(itemClass, id, new Item.Settings().maxCount(1));
+    }
+
+    /** A Glandouille spawn egg giving {@code variant} (its entity data), in its two colours. */
+    private static Item glandouilleEgg(String id, fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleVariant variant,
+                                       int primary, int secondary) {
+        net.minecraft.nbt.NbtCompound data = new net.minecraft.nbt.NbtCompound();
+        data.putString("id", fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE_KEY.getValue().toString());
+        data.putInt("Variant", variant.ordinal());
+        Item egg = new net.minecraft.item.SpawnEggItem(fr.lordfinn.steveparty.entities.ModEntities.GLANDOUILLE, primary, secondary,
+                new Item.Settings().component(net.minecraft.component.DataComponentTypes.ENTITY_DATA,
+                        net.minecraft.component.type.NbtComponent.of(data)));
+        return Registry.register(Registries.ITEM, Steveparty.id(id), egg);
     }
 
     public static <T extends Item> T register(Class<T> itemClass, String id, Item.Settings settings) {
@@ -245,6 +276,7 @@ public class ModItems {
                 itemGroup.add(fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem.withNetwork(new ItemStack(TELEPORT_CARTRIDGE), network));
             }
             itemGroup.add(STAR_CARTRIDGE);
+            itemGroup.add(GLANDOUILLE_CARTRIDGE);
             itemGroup.add(TOKENIZER_WAND);
             itemGroup.add(TOKEN);
             itemGroup.add(PLUNGER);
@@ -363,6 +395,9 @@ public class ModItems {
             itemGroup.add(LOOTING_BOX);
             itemGroup.add(MULA_SPAWN_EGG);
             itemGroup.add(BOXED_TRADER_SPAWN_EGG);
+            for (Item egg : GLANDOUILLE_SPAWN_EGGS) itemGroup.add(egg);
+            itemGroup.add(ACORN);
+            itemGroup.add(ACORN_HAT);
             // The 16 colours, in dye order: the blocks, then the fragments
             for (Block block : STAR_FRAGMENTS_BLOCKS) itemGroup.add(block);
             for (Item fragment : STAR_FRAGMENTS) itemGroup.add(fragment);

@@ -50,6 +50,7 @@ public class Steveparty implements ModInitializer {
         // Before the party / movement listeners of TileReachedEvent (a movement going on stops the chain)
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback.initialize();
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileTeleport.initialize();
+        fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.GlandouilleTileBehavior.initialize();
         fr.lordfinn.steveparty.blocks.custom.boardspaces.TileMigration.initialize();
         fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents.initialize();
         ModComponents.initialize();
@@ -108,6 +109,8 @@ public class Steveparty implements ModInitializer {
         fr.lordfinn.steveparty.service.ShopStops.initialize();
         fr.lordfinn.steveparty.powerups.effects.TrapEffect.initialize();
         fr.lordfinn.steveparty.service.PartyStars.initialize();
+        fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleSpawns.initialize();
+        fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleTowers.initialize();
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             for (ServerPlayerEntity player : world.getPlayers()) {
