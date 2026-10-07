@@ -193,14 +193,8 @@ public final class WrenchActions {
         List<BlockPos> links = new ArrayList<>(BoardLinks.links(cartridge));
         if (links.contains(target)) return true;
         links.add(target);
+        // The tile keeps the way it was placed: a link never turns it
         writeLinks(player, world, originContainer, slot, links);
-        if (BoardLinks.boardSpaceLinks(world, links) == 1) {
-            int before = BoardLinks.orient(world, origin, target);
-            if (before >= 0) {
-                LinkHistory.record(player, new LinkHistory.RotationChange(origin, before,
-                        world.getBlockState(origin).get(fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock.ROTATION_8)));
-            }
-        }
         BoardLinks.trail(world, origin, target, BoardLinks.LINK_COLOR);
         starPop(world, target);
         return true;

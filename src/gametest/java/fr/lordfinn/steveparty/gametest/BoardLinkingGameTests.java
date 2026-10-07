@@ -106,10 +106,9 @@ public class BoardLinkingGameTests implements FabricGameTest {
                 context.assertEquals(links(context, t.get(i)), List.of(t.get((i + 1) % 4)), "tile " + i + " links to the next one");
             }
             context.assertEquals(TileLinkerBrush.anchor(brush, context.getWorld()), t.get(0), "the anchor: the last tile painted");
-            // Each tile faces its next one: east, south, west, north
-            int[] rotations = {2, 4, 6, 0};
+            // Each tile keeps the way it was placed: linking never turns it
             for (int i = 0; i < 4; i++) {
-                context.assertEquals(context.getWorld().getBlockState(t.get(i)).get(ATileBlock.ROTATION_8), rotations[i], "rotation of tile " + i);
+                context.assertEquals(context.getWorld().getBlockState(t.get(i)).get(ATileBlock.ROTATION_8), 0, "rotation of tile " + i);
             }
         });
     }
@@ -532,9 +531,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void diagonalsAreOriented(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 4));
         withPlayer(context, true, player -> {
-            paint(player, brush(player), context, t.get(0), t.get(1));
-            context.assertEquals(context.getWorld().getBlockState(t.get(0)).get(ATileBlock.ROTATION_8), 3, "south-east");
             ServerWorld world = context.getWorld();
+            context.assertEquals(BoardLinks.rotationToward(world, t.get(0), t.get(1)), 3, "south-east");
             context.assertEquals(BoardLinks.rotationToward(world, t.get(1), t.get(0)), 7, "north-west");
         });
     }
