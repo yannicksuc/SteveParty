@@ -2,6 +2,9 @@ package fr.lordfinn.steveparty.client.screens;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.client.gui.PartyButton;
+import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.utils.StencilResourceManager;
 import fr.lordfinn.steveparty.items.custom.StencilItem;
 import fr.lordfinn.steveparty.payloads.custom.SaveStencilPayload;
@@ -10,13 +13,13 @@ import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import fr.lordfinn.steveparty.stencil.StencilLibrary;
 import fr.lordfinn.steveparty.payloads.custom.StencilMakerActionPayload;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.tooltip.Tooltip;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Formatting;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.sound.SoundEvents;
@@ -31,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /**
@@ -41,32 +45,40 @@ import java.util.function.UnaryOperator;
  * The library ({@link StencilLibrary}) holds the patterns the player found, and the ones they saved; favourites
  * (right click) come first, framed in gold. In creative mode the built-in patterns are listed too.
  * The stencil is saved with the Save button and when the screen is closed.
+ * <p>
+ * Drawn in the mod's GUI style ({@link PartyGui}): one light panel under a steel title plate, the library and the
+ * plate in sunken boxes, the tools as {@link PartyButton}s (the shape tools as icons, named in their tooltip).
  */
 public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler> {
-    private static final Identifier BACKGROUND_TEXTURE = Steveparty.id("textures/gui/stencil_maker.png");
     private static final Identifier STENCIL_TEXTURE = Steveparty.id("textures/item/stencil.png");
-    private static final Identifier BUTTONS = Steveparty.id("textures/gui/stencil_maker_buttons.png");
     private static final Identifier ICONS = Steveparty.id("textures/gui/stencil_maker_icons.png");
+    private static final ItemStack TITLE_ICON = new ItemStack(ModBlocks.STENCIL_MAKER);
     private static final int ICON_SIZE = 12, ICON_COUNT = 12;
     private static final int ICON_CLEAR = 0, ICON_FILL = 1, ICON_INVERT = 2, ICON_MIRROR_H = 3, ICON_MIRROR_V = 4, ICON_ROTATE = 5,
-            ICON_UNDO = 6, ICON_REDO = 7, ICON_SAVE = 8, ICON_DELETE = 9, ICON_TAKE_OUT = 10, ICON_FAVORITE = 11;
+            ICON_UNDO = 6, ICON_REDO = 7, ICON_SAVE = 8, ICON_DELETE = 9, ICON_TAKE_OUT = 10;
     private static final int FAVORITE_FRAME = 0xFFFFC21E;
+    /** Sunken boxes' body: the dark slate of the mod's fields; the library's thumbnails on it. */
+    private static final int BOX_BODY = 0xFF3B4247;
+    private static final int THUMB_BODY = 0xFF2B3237, THUMB_HOVER = 0xFF56636C, THUMB_PIXEL = 0xFFE8E8E8;
 
     private static final int PIXEL_SIZE = 8;
-    private static final int WIDTH_UNIT = 32;
-    private static final int FRAME = PIXEL_SIZE * WIDTH_UNIT;
-    private static final int CANVAS = FRAME / 2;
     private static final int HISTORY = 64;
     /** Library thumbnails: 16x16 at one screen pixel per stencil pixel, in cells of this size. */
     private static final int CELL = 20;
-    private static final int TOOL_WIDTH = 104;
-    /** Width of the help lines under the title, inside the frame's border. */
-    private static final int HELP_WIDTH = FRAME - 40;
+    /** Panel padding, space between its columns, top of the columns (under the title plate and the labels). */
+    private static final int PAD = 8, GAP = 8, TOP = 28;
+    private static final int TOOLS_WIDTH = 92, BUTTON_HEIGHT = 20;
+    /** Shape tools (2 rows of 3 icons), undo / redo, library and take out, save: 6 rows and their gaps. */
+    private static final int TOOLS_HEIGHT = 6 * BUTTON_HEIGHT + 4 + 8 + 8 + 4 + 8;
+    /** The library box around the thumbnails: its 2 px border, and room for the scroll bar on its right. */
+    private static final int LIBRARY_EXTRA = 2 + 6;
     private static final long SOUND_INTERVAL_MS = 45;
 
     private int stencilX, stencilY; // Position of the stencil
-    private int bgX, bgY;
+    private int canvasBoxX, canvasBoxY, canvasBox, contentHeight;
+    private int libraryBoxX, libraryBoxY, libraryBoxWidth;
     private int libraryX, libraryY, libraryColumns, libraryRows, libraryScroll;
+    private List<OrderedText> help = List.of();
 
     private byte[] shape = StencilShape.blank();
     private byte[] savedShape = StencilShape.blank();
@@ -79,7 +91,8 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private byte[] strokeStart;
     private long lastSoundTime;
     private long savedMessageUntil;
-    private IconButton libraryButton;
+    private PartyButton libraryButton, undoButton, redoButton, saveButton;
+    private int libraryIcon = ICON_SAVE;
     /** {@link #libraryItems()} is asked for several times a frame: rebuilt only when the library or the game mode changes. */
     private StencilLibrary cachedLibrary;
     private boolean cachedCreative;
@@ -91,74 +104,109 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     public StencilMakerScreen(StencilMakerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.backgroundWidth = FRAME;
-        this.backgroundHeight = FRAME;
     }
 
     @Override
     protected void init() {
-        super.init();
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
-        bgX = centerX - FRAME / 2;
-        bgY = centerY - FRAME / 2;
-        stencilX = bgX + FRAME / 4;
-        stencilY = bgY + FRAME / 4;
         if (undo.isEmpty() && redo.isEmpty()) {
             shape = StencilItem.getShape(handler.getBlockEntity().getStencil());
             savedShape = shape.clone();
         }
+        // The plate (the 16x16 canvas and its frame) in a sunken box; the columns as tall as the tallest of them
+        canvasBox = StencilResourceManager.Kind.METAL.size() * PIXEL_SIZE + 4;
+        contentHeight = Math.max(canvasBox, TOOLS_HEIGHT);
+        int fixedWidth = PAD + GAP + canvasBox + GAP + TOOLS_WIDTH + PAD;
+        // Library on the left, as many columns as fit (5 at most)
+        libraryColumns = Math.clamp((this.width - 8 - fixedWidth - LIBRARY_EXTRA) / CELL, 1, 5);
+        libraryBoxWidth = libraryColumns * CELL + LIBRARY_EXTRA;
+        backgroundWidth = fixedWidth + libraryBoxWidth;
+        help = textRenderer.wrapLines(Text.translatable("gui.steveparty.stencil_maker.help_draw"), backgroundWidth - 2 * PAD);
+        backgroundHeight = TOP + contentHeight + 6 + help.size() * 10 + 4;
+        super.init();
+        // Centred with the title plate, which sticks out 11 px above the panel
+        y = Math.max(12, (this.height - backgroundHeight + 11) / 2);
 
-        // Library on the left of the frame, as many columns as fit (5 at most)
-        libraryColumns = Math.max(1, Math.min(5, (bgX - 8) / CELL));
-        libraryX = bgX - 6 - libraryColumns * CELL;
-        libraryY = Math.max(bgY + 18, 14);
-        // Rows that fit on screen; the mouse wheel scrolls the rest
-        libraryRows = Math.max(1, (this.height - libraryY - 4) / CELL);
+        libraryBoxX = x + PAD;
+        libraryBoxY = y + TOP;
+        libraryX = libraryBoxX + 2;
+        libraryY = libraryBoxY + 2;
+        libraryRows = Math.max(1, (contentHeight - 2) / CELL);
         libraryScroll = Math.clamp(libraryScroll, 0, maxLibraryScroll());
 
-        // Tools on the right of the frame
-        int toolX = Math.min(bgX + FRAME + 6, this.width - TOOL_WIDTH - 2);
-        int toolY = Math.max(bgY + 18, 4);
-        addTool(toolX, toolY, "clear", ICON_CLEAR, s -> StencilShape.blank());
-        addTool(toolX, toolY += 21, "fill", ICON_FILL, s -> StencilShape.full());
-        addTool(toolX, toolY += 21, "invert", ICON_INVERT, StencilShape::invert);
-        addTool(toolX, toolY += 21, "mirror_horizontal", ICON_MIRROR_H, StencilShape::mirrorHorizontal);
-        addTool(toolX, toolY += 21, "mirror_vertical", ICON_MIRROR_V, StencilShape::mirrorVertical);
-        addTool(toolX, toolY += 21, "rotate", ICON_ROTATE, StencilShape::rotateClockwise);
-        addDrawableChild(new IconButton(toolX, toolY += 27, Text.translatable("gui.steveparty.stencil_maker.undo"), ICON_UNDO, b -> undo()));
-        addDrawableChild(new IconButton(toolX, toolY += 21, Text.translatable("gui.steveparty.stencil_maker.redo"), ICON_REDO, b -> redo()));
-        libraryButton = addDrawableChild(new IconButton(toolX, toolY += 27, Text.empty(), ICON_SAVE, b -> toggleInLibrary()));
-        addDrawableChild(new IconButton(toolX, toolY += 21, Text.translatable("gui.steveparty.stencil_maker.take_out"), ICON_TAKE_OUT,
+        canvasBoxX = libraryBoxX + libraryBoxWidth + GAP;
+        canvasBoxY = y + TOP + (contentHeight - canvasBox) / 2;
+        int margin = StencilResourceManager.Kind.METAL.margin();
+        stencilX = canvasBoxX + 2 + margin * PIXEL_SIZE;
+        stencilY = canvasBoxY + 2 + margin * PIXEL_SIZE;
+
+        // Tools on the right: the shape tools as icons, three a row
+        int toolX = canvasBoxX + canvasBox + GAP;
+        int toolY = y + TOP;
+        int small = (TOOLS_WIDTH - 8) / 3;
+        addTool(toolX, toolY, small, "clear", ICON_CLEAR, s -> StencilShape.blank());
+        addTool(toolX + small + 4, toolY, small, "fill", ICON_FILL, s -> StencilShape.full());
+        addTool(toolX + 2 * (small + 4), toolY, small, "invert", ICON_INVERT, StencilShape::invert);
+        toolY += BUTTON_HEIGHT + 4;
+        addTool(toolX, toolY, small, "mirror_horizontal", ICON_MIRROR_H, StencilShape::mirrorHorizontal);
+        addTool(toolX + small + 4, toolY, small, "mirror_vertical", ICON_MIRROR_V, StencilShape::mirrorVertical);
+        addTool(toolX + 2 * (small + 4), toolY, small, "rotate", ICON_ROTATE, StencilShape::rotateClockwise);
+        toolY += BUTTON_HEIGHT + 8;
+        int half = (TOOLS_WIDTH - 4) / 2;
+        undoButton = addDrawableChild(iconButton(toolX, toolY, half, ICON_UNDO, b -> undo()));
+        undoButton.setTooltip(Tooltip.of(shortcut("undo", "Ctrl+Z")));
+        redoButton = addDrawableChild(iconButton(toolX + half + 4, toolY, half, ICON_REDO, b -> redo()));
+        redoButton.setTooltip(Tooltip.of(shortcut("redo", "Ctrl+Y")));
+        toolY += BUTTON_HEIGHT + 8;
+        libraryButton = addDrawableChild(labelledButton(toolX, toolY, Text.empty(), -1, b -> toggleInLibrary()));
+        toolY += BUTTON_HEIGHT + 4;
+        addDrawableChild(labelledButton(toolX, toolY, Text.translatable("gui.steveparty.stencil_maker.take_out"), ICON_TAKE_OUT,
                 b -> takeOut()));
-        updateLibraryButton();
+        toolY += BUTTON_HEIGHT + 8;
+        saveButton = addDrawableChild(new PartyButton(toolX, toolY, TOOLS_WIDTH, BUTTON_HEIGHT,
+                Text.translatable("gui.steveparty.stencil_save"), b -> {
+            save();
+            savedMessageUntil = Util.getMeasuringTimeMs() + 1500;
+            playClickSound();
+        }).style(PartyButton.Style.PRIMARY));
+        updateButtons();
     }
 
-    private void addTool(int x, int y, String name, int icon, UnaryOperator<byte[]> tool) {
-        addDrawableChild(new IconButton(x, y, Text.translatable("gui.steveparty.stencil_maker." + name), icon, b -> apply(tool.apply(shape))));
+    private static Text shortcut(String name, String keys) {
+        return Text.translatable("gui.steveparty.stencil_maker." + name).append(Text.literal("  " + keys).formatted(Formatting.GRAY));
     }
 
-    /** Button with an icon on its left (all the editor's tools share the same look). */
-    private static final class IconButton extends ButtonWidget {
-        private int icon;
+    private void addTool(int x, int y, int width, String name, int icon, UnaryOperator<byte[]> tool) {
+        addDrawableChild(iconButton(x, y, width, icon, b -> apply(tool.apply(shape))))
+                .setTooltip(Tooltip.of(Text.translatable("gui.steveparty.stencil_maker." + name)));
+    }
 
-        IconButton(int x, int y, Text message, int icon, PressAction onPress) {
-            super(x, y, TOOL_WIDTH, 20, message, onPress, DEFAULT_NARRATION_SUPPLIER);
-            this.icon = icon;
-        }
+    /** A button showing only its icon (its name in the tooltip). */
+    private static PartyButton iconButton(int x, int y, int width, int icon, Consumer<PartyButton> onPress) {
+        return new PartyButton(x, y, width, BUTTON_HEIGHT, Text.empty(), onPress)
+                .content((context, textRenderer, centerX, centerY, color) ->
+                        drawIcon(context, icon, centerX - ICON_SIZE / 2, centerY - ICON_SIZE / 2, color));
+    }
 
-        void setIcon(int icon) {
-            this.icon = icon;
-        }
+    /** A full width button: its icon (-1: the library button's current one), then its text, cut with « … » if too long. */
+    private PartyButton labelledButton(int x, int y, Text message, int icon, Consumer<PartyButton> onPress) {
+        PartyButton button = new PartyButton(x, y, TOOLS_WIDTH, BUTTON_HEIGHT, message, onPress);
+        return button.content((context, textRenderer, centerX, centerY, color) -> {
+            String text = button.getMessage().getString();
+            int room = TOOLS_WIDTH - 8 - ICON_SIZE - 4;
+            if (textRenderer.getWidth(text) > room) text = textRenderer.trimToWidth(text, room - textRenderer.getWidth("…")).stripTrailing() + "…";
+            int left = centerX - (ICON_SIZE + 4 + textRenderer.getWidth(text)) / 2;
+            drawIcon(context, icon < 0 ? libraryIcon : icon, left, centerY - ICON_SIZE / 2, color);
+            context.drawText(textRenderer, text, left + ICON_SIZE + 4, centerY - 4, color, false);
+        });
+    }
 
-        @Override
-        public void drawMessage(DrawContext context, TextRenderer textRenderer, int color) {
-            RenderSystem.enableBlend();
-            context.drawTexture(ICONS, getX() + 4, getY() + (height - ICON_SIZE) / 2,
-                    icon * ICON_SIZE, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE * ICON_COUNT, ICON_SIZE);
-            RenderSystem.disableBlend();
-            drawScrollableText(context, textRenderer, getMessage(), getX() + 20, getY(), getX() + getWidth() - 3, getY() + getHeight(), color);
-        }
+    /** One of the editor's icons (white in the texture), tinted with the button's text colour. */
+    private static void drawIcon(DrawContext context, int icon, int x, int y, int color) {
+        RenderSystem.enableBlend();
+        context.setShaderColor(((color >> 16) & 0xFF) / 255F, ((color >> 8) & 0xFF) / 255F, (color & 0xFF) / 255F, 1F);
+        context.drawTexture(ICONS, x, y, icon * ICON_SIZE, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE * ICON_COUNT, ICON_SIZE);
+        context.setShaderColor(1F, 1F, 1F, 1F);
+        RenderSystem.disableBlend();
     }
 
     // ---------------------------------------------------------------- library
@@ -200,12 +248,16 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         playEditSound();
     }
 
-    private void updateLibraryButton() {
+    private void updateButtons() {
         if (libraryButton == null) return;
         boolean in = inLibrary();
-        libraryButton.setIcon(in ? ICON_DELETE : ICON_SAVE);
+        libraryIcon = in ? ICON_DELETE : ICON_SAVE;
         libraryButton.setMessage(Text.translatable(in ? "gui.steveparty.stencil_maker.library_remove" : "gui.steveparty.stencil_maker.library_save"));
         libraryButton.active = in || !StencilShape.isBlank(shape);
+        undoButton.active = !undo.isEmpty();
+        redoButton.active = !redo.isEmpty();
+        boolean justSaved = Util.getMeasuringTimeMs() < savedMessageUntil;
+        saveButton.setMessage(Text.translatable(justSaved ? "gui.steveparty.stencil_maker.saved" : "gui.steveparty.stencil_save"));
     }
 
     private static void send(StencilMakerActionPayload.Action action, byte[] shape) {
@@ -308,12 +360,6 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
             playEditSound();
             return true;
         }
-        if (isSaveButtonHovered(mouseX, mouseY)) {
-            save();
-            savedMessageUntil = Util.getMeasuringTimeMs() + 1500;
-            playClickSound();
-            return true;
-        }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -395,9 +441,13 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
+        PartyGui.panel(context, x, y, backgroundWidth, backgroundHeight, PartyGui.PANEL);
+        PartyGui.titlePlate(context, textRenderer, x + backgroundWidth / 2, y - 11, 18, title, PartyGui.STEEL);
+        context.drawItem(TITLE_ICON, PartyGui.titlePlateIconX(textRenderer, x + backgroundWidth / 2, 18, title), y - 8);
+
+        // The plate: its frame around the canvas, the shape cut out of the 16x16 inside
+        PartyGui.inset(context, canvasBoxX, canvasBoxY, canvasBox, canvasBox, BOX_BODY, false, false);
         RenderSystem.enableBlend();
-        context.drawTexture(BACKGROUND_TEXTURE, bgX, bgY, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight, backgroundWidth, backgroundHeight);
-        // The 18x18 plate: its 1 px frame around the canvas, the shape cut out of the 16x16 inside
         int plate = StencilResourceManager.Kind.METAL.size() * PIXEL_SIZE, margin = StencilResourceManager.Kind.METAL.margin();
         for (int i = -margin; i < 16 + margin; i++) {
             for (int j = -margin; j < 16 + margin; j++) {
@@ -406,22 +456,21 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
                         (i + margin) * PIXEL_SIZE, (j + margin) * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE, plate, plate);
             }
         }
+        RenderSystem.disableBlend();
         if (isInsideStencil(mouseX, mouseY)) {
-            int x = stencilX + pixelX(mouseX) * PIXEL_SIZE, y = stencilY + pixelY(mouseY) * PIXEL_SIZE;
-            context.fill(x, y, x + PIXEL_SIZE, y + PIXEL_SIZE, 0x60FFFFFF);
+            int px = stencilX + pixelX(mouseX) * PIXEL_SIZE, py = stencilY + pixelY(mouseY) * PIXEL_SIZE;
+            context.fill(px, py, px + PIXEL_SIZE, py + PIXEL_SIZE, 0x60FFFFFF);
+            context.drawBorder(px, py, PIXEL_SIZE, PIXEL_SIZE, 0xFFFFC52E);
         }
 
-        int buttonX = this.width / 2 - 32;
-        int buttonY = saveButtonY();
-        boolean isHovering = isSaveButtonHovered(mouseX, mouseY);
-        context.drawTexture(BUTTONS, buttonX, buttonY, 0, isHovering ? 16 : 0, 64, 16, 64, 64);
-        RenderSystem.disableBlend();
-        boolean justSaved = Util.getMeasuringTimeMs() < savedMessageUntil;
-        Text text = Text.translatable(justSaved ? "gui.steveparty.stencil_maker.saved" : "gui.steveparty.stencil_save");
-        int textWidth = textRenderer.getWidth(text);
-        context.drawText(textRenderer, text, this.width / 2 - textWidth / 2, buttonY + 4, 0xFFFFFFFF, true);
-
         drawLibrary(context, mouseX, mouseY);
+
+        // How to draw, along the bottom of the panel
+        int helpY = y + TOP + contentHeight + 6;
+        for (OrderedText line : help) {
+            context.drawText(textRenderer, line, x + (backgroundWidth - textRenderer.getWidth(line)) / 2, helpY, PartyGui.TEXT_SOFT, false);
+            helpY += 10;
+        }
     }
 
     private int maxLibraryScroll() {
@@ -431,7 +480,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (mouseX >= libraryX && mouseX < libraryX + libraryColumns * CELL && mouseY >= libraryY) {
+        if (mouseX >= libraryBoxX && mouseX < libraryBoxX + libraryBoxWidth && mouseY >= libraryBoxY && mouseY < libraryBoxY + contentHeight) {
             libraryScroll = Math.clamp(libraryScroll - (int) Math.signum(verticalAmount), 0, maxLibraryScroll());
             return true;
         }
@@ -441,32 +490,36 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private void drawLibrary(DrawContext context, int mouseX, int mouseY) {
         List<LibraryItem> items = libraryItems();
         libraryScroll = Math.clamp(libraryScroll, 0, maxLibraryScroll());
-        context.drawText(textRenderer, Text.translatable("gui.steveparty.stencil_maker.library"), libraryX, libraryY - 11, 0xFFFFFFFF, true);
+        context.drawText(textRenderer, Text.translatable("gui.steveparty.stencil_maker.library"), libraryBoxX + 1, libraryBoxY - 11,
+                PartyGui.TEXT_DARK, false);
+        PartyGui.inset(context, libraryBoxX, libraryBoxY, libraryBoxWidth, contentHeight, BOX_BODY, false, false);
         if (items.isEmpty()) {
-            context.drawTextWrapped(textRenderer, Text.translatable("gui.steveparty.stencil_maker.library_empty"), libraryX, libraryY,
-                    libraryColumns * CELL - 2, 0xFFB0B0B0);
+            context.drawTextWrapped(textRenderer, Text.translatable("gui.steveparty.stencil_maker.library_empty"), libraryX + 2, libraryY + 2,
+                    libraryBoxWidth - 8, 0xFFB8C2C8);
         }
         int first = libraryScroll * libraryColumns;
         int last = Math.min(items.size(), first + libraryRows * libraryColumns);
         if (maxLibraryScroll() > 0) {
-            // Scroll bar on the left of the thumbnails
-            int barHeight = libraryRows * CELL;
-            int thumb = Math.max(8, barHeight * libraryRows / (libraryRows + maxLibraryScroll()));
-            int thumbY = libraryY + (barHeight - thumb) * libraryScroll / maxLibraryScroll();
-            context.fill(libraryX - 4, libraryY, libraryX - 2, libraryY + barHeight, 0xFF2A2A2A);
-            context.fill(libraryX - 4, thumbY, libraryX - 2, thumbY + thumb, 0xFFB0B0B0);
+            // The scroll bar on the right of the thumbnails, like the cartridges'
+            int top = libraryY + 1, bottom = libraryBoxY + contentHeight - 3, track = bottom - top;
+            int thumb = Math.max(8, track * libraryRows / (libraryRows + maxLibraryScroll()));
+            int thumbY = top + (track - thumb) * libraryScroll / maxLibraryScroll();
+            int barX = libraryBoxX + libraryBoxWidth - 5;
+            context.fill(barX, top, barX + 2, bottom, 0xFF2B2B2B);
+            context.fill(barX, thumbY, barX + 2, thumbY + thumb, 0xFFC9A227);
         }
         for (int i = first; i < last; i++) {
-            int x = libraryX + (i % libraryColumns) * CELL;
-            int y = libraryY + (i / libraryColumns - libraryScroll) * CELL;
-            boolean hovered = mouseX >= x && mouseX < x + CELL && mouseY >= y && mouseY < y + CELL;
+            int cellX = libraryX + (i % libraryColumns) * CELL, cellY = libraryY + (i / libraryColumns - libraryScroll) * CELL;
+            boolean hovered = mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL;
             LibraryItem item = items.get(i);
-            context.fill(x, y, x + CELL - 2, y + CELL - 2, hovered ? 0xFF6A6A6A : 0xFF3A3A3A);
-            if (item.favorite()) context.drawBorder(x - 1, y - 1, CELL, CELL, FAVORITE_FRAME);
+            int cx = cellX + 1, cy = cellY + 1;
+            context.fill(cx, cy, cx + CELL - 2, cy + CELL - 2, hovered ? THUMB_HOVER : THUMB_BODY);
+            if (item.favorite()) context.drawBorder(cellX, cellY, CELL, CELL, FAVORITE_FRAME);
+            else if (hovered) context.drawBorder(cellX, cellY, CELL, CELL, 0xFFFFFFFF);
             byte[] pattern = item.shape();
             for (int px = 0; px < 16; px++) {
                 for (int py = 0; py < 16; py++) {
-                    if (StencilShape.get(pattern, px, py)) context.fill(x + 1 + px, y + 1 + py, x + 2 + px, y + 2 + py, 0xFFE8E8E8);
+                    if (StencilShape.get(pattern, px, py)) context.fill(cx + 1 + px, cy + 1 + py, cx + 2 + px, cy + 2 + py, THUMB_PIXEL);
                 }
             }
         }
@@ -474,18 +527,12 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        // No inventory here: only the title and how to draw, inside the frame
-        context.drawCenteredTextWithShadow(textRenderer, this.title, FRAME / 2, 28, 0xFFFFFFFF);
-        // Wrapped inside the frame: on one line it ran over the library and the tools
-        List<OrderedText> help = textRenderer.wrapLines(Text.translatable("gui.steveparty.stencil_maker.help_draw"), HELP_WIDTH);
-        for (int i = 0; i < Math.min(2, help.size()); i++) {
-            context.drawCenteredTextWithShadow(textRenderer, help.get(i), FRAME / 2, 40 + i * 10, 0xFFE0E0E0);
-        }
+        // No inventory here: the title is on its plate, the labels are drawn with the background
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        updateLibraryButton();
+        updateButtons();
         super.render(context, mouseX, mouseY, delta);
         LibraryItem item = itemAt(mouseX, mouseY);
         if (item != null) {
@@ -507,26 +554,16 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         return index >= 0 && index < items.size() ? items.get(index) : null;
     }
 
-    private int saveButtonY() {
-        return bgY + (FRAME / 4) * 3 + PIXEL_SIZE * 3;
-    }
-
-    private boolean isSaveButtonHovered(double mouseX, double mouseY) {
-        int buttonX = this.width / 2 - 32;
-        int buttonY = saveButtonY();
-        return mouseX >= buttonX && mouseX < buttonX + 64 && mouseY >= buttonY && mouseY < buttonY + 16;
-    }
-
     private int pixelX(double mouseX) {
-        return (int) Math.floor((mouseX - stencilX) * 16 / CANVAS);
+        return (int) Math.floor((mouseX - stencilX) / PIXEL_SIZE);
     }
 
     private int pixelY(double mouseY) {
-        return (int) Math.floor((mouseY - stencilY) * 16 / CANVAS);
+        return (int) Math.floor((mouseY - stencilY) / PIXEL_SIZE);
     }
 
     private boolean isInsideStencil(double mouseX, double mouseY) {
-        return mouseX >= stencilX && mouseX < stencilX + CANVAS && mouseY >= stencilY && mouseY < stencilY + CANVAS;
+        return mouseX >= stencilX && mouseX < stencilX + 16 * PIXEL_SIZE && mouseY >= stencilY && mouseY < stencilY + 16 * PIXEL_SIZE;
     }
 
     // ---------------------------------------------------------------- sounds
