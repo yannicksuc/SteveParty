@@ -429,7 +429,7 @@
   "book.steveparty.guide.stars_mula.power_star.page0.title": "Power Star",
   "book.steveparty.guide.stars_mula.rising_core.description": "Orbits and explosions",
   "book.steveparty.guide.stars_mula.rising_core.name": "The Rising Core",
-  "book.steveparty.guide.stars_mula.rising_core.page0.text": "The core rises with the fragments inside: 16 blocks × fragments / 320 (a black one counts as 64). With all 5 slots full, it is at the top: the forge is at **max level** and guarantees an Ephemeride on full moon nights.\n\nThe raised core pulls things into orbit (up to 32 blocks). Hit it and it **explodes**: no block broken, but the core is lost. Sneak with an empty hand to take it back safely.",
+  "book.steveparty.guide.stars_mula.rising_core.page0.text": "The core rises with the fragments inside: 16 blocks × fragments / 320 (a black one counts as 64). With all 5 slots full, it is at the top: the forge is at **max level** and guarantees an Ephemeride on full moon nights.\n\nThe raised core pulls things into orbit (up to 32 blocks). Once 2 blocks up, out of the way of the punches aimed at the forge, hit it and it **explodes**: no block broken, but the core is lost. Sneak with an empty hand to take it back safely.",
   "book.steveparty.guide.stars_mula.rising_core.page0.title": "The Rising Core",
   "book.steveparty.guide.stars_mula.taming.description": "A Mula of your own",
   "book.steveparty.guide.stars_mula.taming.name": "Taming",

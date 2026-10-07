@@ -14,7 +14,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The hitbox of the dice forge core floating in the sky (the core itself is drawn by the forge): hitting it (hand,
  * arrow, explosion...) makes the core blow up, see {@link DiceForgeBlockEntity#explodeCore}. Invisible, it neither
- * moves, collides nor gets saved: the forge spawns it and keeps it on its core.
+ * moves, collides nor gets saved: the forge spawns it and keeps it on its core, once risen out of reach of a
+ * player hitting the forge itself ({@link DiceForgeBlockEntity#CORE_HIT_ALTITUDE}).
  */
 public class ForgeCoreEntity extends Entity {
     @Nullable
