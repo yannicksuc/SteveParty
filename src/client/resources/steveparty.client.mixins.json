@@ -10,6 +10,7 @@
     "InGameHudAccessor",
     "ChatHudAccessor",
     "CameraPipeViewMixin",
+    "ClientPlayerInteractionManagerStencilPaintMixin",
     "ClientPlayerInteractionManagerVillagerPunchMixin",
     "EntityRenderDispatcherPipePoseMixin",
     "LivingEntityRendererPipePoseMixin",
