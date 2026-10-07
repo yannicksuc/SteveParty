@@ -16,8 +16,8 @@ import java.util.Map;
 /**
  * The Glandouille's model (geo/entity/glandouille.geo.json, from the art sources). On top of the keyframed
  * animations: its brows always show, gently frowning when calm (a little up, a few degrees inward), lowered to the
- * model's full frown as it gets angry, and its cap (with the stem) is gone while it has lost it. Nothing allocated per
- * frame.
+ * model's full frown as it gets angry, its eyes and brows gone while it sleeps (a plain face), and its cap (with the
+ * stem) gone while it has lost it. Nothing allocated per frame.
  */
 public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity> {
     private static final Map<GlandouilleVariant, Identifier> TEXTURES = new EnumMap<>(GlandouilleVariant.class);
@@ -51,11 +51,18 @@ public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity>
         AnimationProcessor<GlandouilleEntity> processor = getAnimationProcessor();
         float brows = MathHelper.lerp(animationState.getPartialTick(), glandouille.prevBrows, glandouille.brows);
         float hide = glandouille.getVariant().browHidePx;
-        brow(processor.getBone("left_brow"), brows, hide);
-        brow(processor.getBone("right_brow"), brows, hide);
+        boolean asleep = glandouille.isSleeping();
+        brow(processor.getBone("left_brow"), brows, hide, asleep);
+        brow(processor.getBone("right_brow"), brows, hide, asleep);
+        for (String eye : EYES) {
+            GeoBone bone = processor.getBone(eye);
+            if (bone != null) bone.setHidden(asleep);
+        }
         GeoBone cap = processor.getBone("cap");
         if (cap != null) cap.setHidden(!glandouille.hasHat());
     }
+
+    private static final String[] EYES = {"left_eye", "right_eye", "left_pupil", "right_pupil"};
 
     /** How much of the model's frown (its brows' rotation) they keep when calm: a few degrees, grumpy, not angry. */
     private static final float CALM_FROWN = 0.35f;
@@ -63,9 +70,9 @@ public class GlandouilleModel extends DefaultedEntityGeoModel<GlandouilleEntity>
     private static final float CALM_LIFT = 0.2f;
 
     /** {@code out}: 0 calm, 1 angry; {@code hide}: how far up (pixels) the brows can go under the cap, its variant's. */
-    private static void brow(GeoBone brow, float out, float hide) {
+    private static void brow(GeoBone brow, float out, float hide, boolean asleep) {
         if (brow == null) return;
-        brow.setHidden(false);
+        brow.setHidden(asleep);
         // absolute: no animation moves the brows
         brow.setPosY((1 - out) * CALM_LIFT * hide);
         if (brow.getInitialSnapshot() != null) {
