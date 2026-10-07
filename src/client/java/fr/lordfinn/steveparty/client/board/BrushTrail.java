@@ -106,8 +106,9 @@ final class BrushTrail {
     static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(BrushTrail::tick);
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register(BrushTrail::render);
-        // After the see-through blocks (stained glass, ice...): the paint writes no depth, they would be drawn over it
-        WorldRenderEvents.AFTER_TRANSLUCENT.register(BrushTrail::renderPaint);
+        // Last of the world, after the see-through blocks (stained glass, ice...) even composited apart (Fabulous
+        // graphics): the paint writes no depth, they would be drawn over it
+        WorldRenderEvents.LAST.register(BrushTrail::renderPaint);
     }
 
     /** Whether the local player is painting: the brush held in use. */
