@@ -9,19 +9,31 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The built-in stencil library: patterns offered by the stencil maker and found in structure chests.
  * Each pattern is 16 rows of 16 characters, {@code #} for a cut-out (painted) pixel.
+ * <p>
+ * In survival, only the {@link #FREE free} patterns are offered from the start: the others are unlocked by finding
+ * them in chests ({@link StencilUnlocks}).
  */
 public final class StencilPatterns {
     public enum Category { SIGNS, MINECRAFT, MARIO }
+
+    /** Always offered by the stencil maker, in survival too: the plain arrows, the cross and the check. */
+    private static final Set<String> FREE = Set.of("up_arrow", "right_arrow", "down_arrow", "left_arrow", "cross", "check");
 
     public record Pattern(String id, Category category, byte[] shape) {
         /** @return a copy of the shape (the pattern itself must never change). */
         @Override
         public byte[] shape() {
             return shape.clone();
+        }
+
+        /** @return true if it is offered from the start, false if it must be found in a chest to be unlocked. */
+        public boolean free() {
+            return FREE.contains(id);
         }
 
         public Text name() {
@@ -45,6 +57,11 @@ public final class StencilPatterns {
         return List.copyOf(BY_ID.values());
     }
 
+    /** @return the patterns to find in chests, in the library's order. */
+    public static List<Pattern> lockable() {
+        return BY_ID.values().stream().filter(pattern -> !pattern.free()).toList();
+    }
+
     public static @Nullable Pattern byId(String id) {
         return BY_ID.get(id);
     }
@@ -55,9 +72,11 @@ public final class StencilPatterns {
         return BY_SHAPE.get(ByteBuffer.wrap(shape));
     }
 
+    /** @return a random pattern to find in a chest: never a free one (unless every pattern is free). */
     public static Pattern random(Random random) {
-        List<Pattern> all = all();
-        return all.get(random.nextInt(all.size()));
+        List<Pattern> lockable = lockable();
+        List<Pattern> pool = lockable.isEmpty() ? all() : lockable;
+        return pool.get(random.nextInt(pool.size()));
     }
 
     static {

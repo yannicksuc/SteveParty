@@ -12,6 +12,7 @@ import fr.lordfinn.steveparty.screen_handlers.custom.StencilMakerScreenHandler;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import fr.lordfinn.steveparty.stencil.StencilLibrary;
+import fr.lordfinn.steveparty.stencil.StencilUnlocks;
 import fr.lordfinn.steveparty.payloads.custom.StencilMakerActionPayload;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.item.ItemStack;
@@ -43,7 +44,8 @@ import java.util.function.UnaryOperator;
  * mirrors, rotation, undo / redo with Ctrl+Z / Ctrl+Y, save to / remove from the library, take the stencil out).
  * <p>
  * The library ({@link StencilLibrary}) holds the patterns the player found, and the ones they saved; favourites
- * (right click) come first, framed in gold. In creative mode the built-in patterns are listed too.
+ * (right click) come first, framed in gold, then the built-in patterns: all of them in creative mode; in survival the
+ * free ones and the ones unlocked ({@link StencilUnlocks}), then the locked ones as padlocked cells hiding their drawing.
  * The stencil is saved with the Save button and when the screen is closed.
  * <p>
  * Drawn in the mod's GUI style ({@link PartyGui}): one light panel under a steel title plate, the library and the
@@ -53,13 +55,15 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     private static final Identifier STENCIL_TEXTURE = Steveparty.id("textures/item/stencil.png");
     private static final Identifier ICONS = Steveparty.id("textures/gui/stencil_maker_icons.png");
     private static final ItemStack TITLE_ICON = new ItemStack(ModBlocks.STENCIL_MAKER);
-    private static final int ICON_SIZE = 12, ICON_COUNT = 12;
+    private static final int ICON_SIZE = 12, ICON_COUNT = 13;
     private static final int ICON_CLEAR = 0, ICON_FILL = 1, ICON_INVERT = 2, ICON_MIRROR_H = 3, ICON_MIRROR_V = 4, ICON_ROTATE = 5,
-            ICON_UNDO = 6, ICON_REDO = 7, ICON_SAVE = 8, ICON_DELETE = 9, ICON_TAKE_OUT = 10, ICON_FAVORITE = 11;
+            ICON_UNDO = 6, ICON_REDO = 7, ICON_SAVE = 8, ICON_DELETE = 9, ICON_TAKE_OUT = 10, ICON_FAVORITE = 11, ICON_LOCKED = 12;
     private static final int FAVORITE_FRAME = 0xFFFFC21E;
     /** Sunken boxes' body: the dark slate of the mod's fields; the library's thumbnails on it. */
     private static final int BOX_BODY = 0xFF3B4247;
     private static final int THUMB_BODY = 0xFF2B3237, THUMB_HOVER = 0xFF56636C, THUMB_PIXEL = 0xFFE8E8E8;
+    /** Locked patterns: a darker cell, a dim padlock. */
+    private static final int LOCKED_BODY = 0xFF1F2427, LOCKED_HOVER = 0xFF2E363B, LOCKED_ICON = 0xFF6B767D;
 
     private static final int PIXEL_SIZE = 8;
     private static final int HISTORY = 64;
@@ -96,10 +100,11 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
     /** {@link #libraryItems()} is asked for several times a frame: rebuilt only when the library or the game mode changes. */
     private StencilLibrary cachedLibrary;
     private boolean cachedCreative;
+    private StencilUnlocks cachedUnlocks;
     private List<LibraryItem> cachedItems = List.of();
 
     /** A pattern shown in the library. */
-    private record LibraryItem(byte[] shape, boolean favorite, boolean own, Text name) {
+    private record LibraryItem(byte[] shape, boolean favorite, boolean own, boolean locked, Text name) {
     }
 
     public StencilMakerScreen(StencilMakerScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -218,24 +223,32 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     // ---------------------------------------------------------------- library
 
-    /** Favourites first, then the rest of the player's library, then (creative) the built-in patterns. */
+    /**
+     * Favourites first, then the rest of the player's library, then the built-in patterns (in survival the free and
+     * unlocked ones), then (survival) the locked ones.
+     */
     private List<LibraryItem> libraryItems() {
-        StencilLibrary library = client == null || client.player == null ? StencilLibrary.EMPTY : StencilLibrary.of(client.player);
-        boolean creative = client != null && client.player != null && client.player.isCreative();
-        // The library is immutable: a change is a new instance
-        if (library == cachedLibrary && creative == cachedCreative) return cachedItems;
+        boolean hasPlayer = client != null && client.player != null;
+        StencilLibrary library = hasPlayer ? StencilLibrary.of(client.player) : StencilLibrary.EMPTY;
+        StencilUnlocks unlocks = hasPlayer ? StencilUnlocks.of(client.player) : StencilUnlocks.EMPTY;
+        boolean creative = hasPlayer && client.player.isCreative();
+        // The library and the unlocks are immutable: a change is a new instance
+        if (library == cachedLibrary && unlocks == cachedUnlocks && creative == cachedCreative) return cachedItems;
         List<LibraryItem> items = new ArrayList<>();
         for (boolean favorites : new boolean[]{true, false}) {
             for (StencilLibrary.Entry entry : library.entries()) {
                 if (entry.favorite() == favorites) items.add(item(entry.shapeArray(), entry.favorite(), true));
             }
         }
-        if (creative) {
-            for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
-                if (!library.contains(pattern.shape())) items.add(item(pattern.shape(), false, false));
-            }
+        List<LibraryItem> locked = new ArrayList<>();
+        for (StencilPatterns.Pattern pattern : StencilPatterns.all()) {
+            if (library.contains(pattern.shape())) continue;
+            if (creative || unlocks.isUnlocked(pattern)) items.add(item(pattern.shape(), false, false));
+            else locked.add(new LibraryItem(StencilShape.blank(), false, false, true, Text.translatable("gui.steveparty.stencil_maker.locked")));
         }
+        items.addAll(locked);
         cachedLibrary = library;
+        cachedUnlocks = unlocks;
         cachedCreative = creative;
         cachedItems = List.copyOf(items);
         return cachedItems;
@@ -243,7 +256,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
 
     private static LibraryItem item(byte[] shape, boolean favorite, boolean own) {
         StencilPatterns.Pattern pattern = StencilPatterns.byShape(shape);
-        return new LibraryItem(shape, favorite, own, pattern != null ? pattern.name() : Text.translatable("tooltip.steveparty.stencil.custom"));
+        return new LibraryItem(shape, favorite, own, false, pattern != null ? pattern.name() : Text.translatable("tooltip.steveparty.stencil.custom"));
     }
 
     private boolean inLibrary() {
@@ -371,6 +384,7 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
             return true;
         }
         LibraryItem item = itemAt(mouseX, mouseY);
+        if (item != null && item.locked()) return true; // to find in a chest first
         if (item != null && button == 0) {
             apply(item.shape());
             return true;
@@ -533,6 +547,12 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
             boolean hovered = mouseX >= cellX && mouseX < cellX + CELL && mouseY >= cellY && mouseY < cellY + CELL;
             LibraryItem item = items.get(i);
             int cx = cellX + 1, cy = cellY + 1;
+            if (item.locked()) {
+                // Its drawing hidden: only a padlock, to show there is more to find
+                context.fill(cx, cy, cx + CELL - 2, cy + CELL - 2, hovered ? LOCKED_HOVER : LOCKED_BODY);
+                drawIcon(context, ICON_LOCKED, cellX + (CELL - ICON_SIZE) / 2, cellY + (CELL - ICON_SIZE) / 2, LOCKED_ICON);
+                continue;
+            }
             context.fill(cx, cy, cx + CELL - 2, cy + CELL - 2, hovered ? THUMB_HOVER : THUMB_BODY);
             if (item.favorite()) context.drawBorder(cellX, cellY, CELL, CELL, FAVORITE_FRAME);
             else if (hovered) context.drawBorder(cellX, cellY, CELL, CELL, 0xFFFFFFFF);
@@ -555,7 +575,9 @@ public class StencilMakerScreen extends HandledScreen<StencilMakerScreenHandler>
         updateButtons();
         super.render(context, mouseX, mouseY, delta);
         LibraryItem item = itemAt(mouseX, mouseY);
-        if (item != null) {
+        if (item != null && item.locked()) {
+            context.drawOrderedTooltip(textRenderer, textRenderer.wrapLines(item.name(), 180), mouseX, mouseY);
+        } else if (item != null) {
             context.drawTooltip(textRenderer, List.of(item.name(), Text.translatable(item.favorite()
                     ? "gui.steveparty.stencil_maker.favorite_remove" : "gui.steveparty.stencil_maker.favorite_add").formatted(Formatting.GRAY)), mouseX, mouseY);
         }
