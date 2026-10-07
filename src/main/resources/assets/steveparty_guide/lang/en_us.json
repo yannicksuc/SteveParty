@@ -152,7 +152,7 @@
   "book.steveparty.guide.decoration.pipes.page1.text": "6 plastic blocks, or 4 + 2 glass for a windowed pipe. Glass pipes: 6 glass.",
   "book.steveparty.guide.decoration.plastic_blocks.description": "Toy blocks in 16 colours",
   "book.steveparty.guide.decoration.plastic_blocks.name": "Plastic Blocks",
-  "book.steveparty.guide.decoration.plastic_blocks.page0.text": "4 Plastic Pellets + 1 dye + 1 amethyst shard give 4 blocks. Neighbouring blocks of the same colour merge into a single piece (up to 4×2×4).\n\nThe Wrench breaks plastic in one hit; shears are fast too.",
+  "book.steveparty.guide.decoration.plastic_blocks.page0.text": "4 Plastic Pellets + 1 dye give 4 blocks. Neighbouring blocks of the same colour merge into a single piece (up to 4×2×4).\n\nThe Wrench breaks plastic in one hit; shears are fast too.",
   "book.steveparty.guide.decoration.plastic_blocks.page0.title": "Plastic Blocks",
   "book.steveparty.guide.decoration.plastic_shapes.description": "Every plastic shape",
   "book.steveparty.guide.decoration.plastic_shapes.name": "Studs, Slabs & Fences",
