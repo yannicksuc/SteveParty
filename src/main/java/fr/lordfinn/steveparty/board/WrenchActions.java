@@ -110,6 +110,22 @@ public final class WrenchActions {
         player.sendMessage(text, true);
     }
 
+    private static final Map<UUID, Text> LAST_WARNINGS = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final Map<UUID, Long> LAST_WARNING_AT = fr.lordfinn.steveparty.utils.ServerMemory.forgetOnStop(new HashMap<>());
+    private static final long WARNING_REPEAT_MS = 3000;
+
+    /**
+     * Why a link could not be made: in the chat (the action bar is under the tools' HUD), the same reason not again
+     * within a few seconds (a stroke meets it at every tile).
+     */
+    public static void warn(ServerPlayerEntity player, Text text) {
+        long now = net.minecraft.util.Util.getMeasuringTimeMs();
+        if (text.equals(LAST_WARNINGS.get(player.getUuid())) && now - LAST_WARNING_AT.getOrDefault(player.getUuid(), 0L) < WARNING_REPEAT_MS) return;
+        LAST_WARNINGS.put(player.getUuid(), text);
+        LAST_WARNING_AT.put(player.getUuid(), now);
+        player.sendMessage(text.copy().formatted(net.minecraft.util.Formatting.GOLD), false);
+    }
+
     /** The board space (or router) the player aims at, up to {@link #LONG_REACH} blocks away, or null (see {@link BrushAim}). */
     public static @Nullable BlockPos aimedBoardSpace(net.minecraft.entity.player.PlayerEntity player, World world) {
         return BrushAim.aimed(player, world, 1f);
@@ -152,7 +168,7 @@ public final class WrenchActions {
         if (current.getItem() == kind) return false;
         ItemStack source = BoardLinks.cartridgeSource(player);
         if (source.isEmpty()) {
-            if (tellMissing) say(player, Text.translatable("message.steveparty.tile_linker_brush.cartridge.none_left",
+            if (tellMissing) warn(player, Text.translatable("message.steveparty.tile_linker_brush.cartridge.none_left",
                     new ItemStack(kind).getName(), BoardText.pos(pos)));
             return false;
         }
@@ -186,7 +202,7 @@ public final class WrenchActions {
                                    CartridgeContainerBlockEntity originContainer, int slot, BlockPos target) {
         ItemStack cartridge = BoardLinks.ensureCartridge(player, originContainer, slot);
         if (cartridge.isEmpty()) {
-            say(player, Text.translatable("message.steveparty.wrench.no_cartridge"));
+            warn(player, Text.translatable("message.steveparty.wrench.no_cartridge"));
             playSound(world, player, ModSounds.CANCEL_SOUND_EVENT, 0.7f);
             return false;
         }
@@ -243,7 +259,7 @@ public final class WrenchActions {
             }
             double distance = Math.sqrt(anchor.getSquaredDistance(pos));
             if (distance > AUTO_LINK_DISTANCE) {
-                say(player, Text.translatable("message.steveparty.tile_linker_brush.too_far", (int) Math.round(distance), (int) AUTO_LINK_DISTANCE));
+                warn(player, Text.translatable("message.steveparty.tile_linker_brush.too_far", (int) Math.round(distance), (int) AUTO_LINK_DISTANCE));
                 return;
             }
             int slot = BoardLinks.slotOf(anchorContainer, TileLinkerBrush.level(brush));

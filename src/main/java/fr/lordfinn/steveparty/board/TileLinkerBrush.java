@@ -255,7 +255,7 @@ public final class TileLinkerBrush {
             return;
         }
         if (!(target instanceof BoardSpaceBlockEntity)) {
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.not_board_space"));
+            WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.not_board_space"));
             return;
         }
         if (WrenchActions.addLink(player, world, from, origin, slot, to)) {
