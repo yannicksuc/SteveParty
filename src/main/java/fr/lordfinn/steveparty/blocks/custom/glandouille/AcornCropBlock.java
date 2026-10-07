@@ -33,10 +33,10 @@ public class AcornCropBlock extends CropBlock {
     public static final int MAX_AGE = 3;
     public static final IntProperty AGE = Properties.AGE_3;
     private static final VoxelShape[] SHAPES = {
-            Block.createCuboidShape(5, 0, 5, 11, 6, 11),
-            Block.createCuboidShape(5, 0, 5, 11, 10, 11),
+            Block.createCuboidShape(5, 0, 5, 11, 5, 11),
+            Block.createCuboidShape(5, 0, 5, 11, 9, 11),
             Block.createCuboidShape(4, 0, 4, 12, 13, 12),
-            Block.createCuboidShape(4, 0, 4, 12, 10, 12)};
+            Block.createCuboidShape(3, 0, 3, 13, 11, 13)};
 
     public AcornCropBlock(Settings settings) {
         super(settings);
@@ -69,7 +69,15 @@ public class AcornCropBlock extends CropBlock {
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return SHAPES[Math.min(MAX_AGE, state.get(AGE))];
+        // Shifted a little within its block, like grass and flowers (see the block's offset settings)
+        net.minecraft.util.math.Vec3d offset = state.getModelOffset(world, pos);
+        return SHAPES[Math.min(MAX_AGE, state.get(AGE))].offset(offset.x, offset.y, offset.z);
+    }
+
+    /** Planted acorns stand a little off the middle of their block, less than flowers do. */
+    @Override
+    public float getMaxHorizontalModelOffset() {
+        return 0.12f;
     }
 
     /** Ripe: it hatches (one random tick in two); else it grows like any crop. */
@@ -82,7 +90,10 @@ public class AcornCropBlock extends CropBlock {
         super.randomTick(state, world, pos, random);
     }
 
-    /** The ripe acorn at {@code pos} becomes a young Glandouille (with its cap). Returns it, or null if it failed. */
+    /**
+     * The ripe acorn at {@code pos} becomes a young Glandouille (with its cap), asleep (by itself or after the last bone
+     * meal). Returns it, or null if it failed.
+     */
     public static @Nullable GlandouilleEntity hatch(ServerWorld world, BlockPos pos) {
         GlandouilleEntity young = ModEntities.GLANDOUILLE.create(world);
         if (young == null) return null;
@@ -93,6 +104,7 @@ public class AcornCropBlock extends CropBlock {
         young.setHat(true);
         young.setPersistent();
         world.spawnEntity(young);
+        young.hatchAsleep();
         world.playSound(null, pos, ModSounds.GLANDOUILLE_HATCH, SoundCategory.BLOCKS, 1f, 1f);
         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0);
         return young;

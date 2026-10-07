@@ -724,6 +724,7 @@ public class ModBlocks {
             new fr.lordfinn.steveparty.blocks.custom.glandouille.AcornCropBlock(AbstractBlock.Settings.create()
                     .mapColor(MapColor.BROWN)
                     .noCollision()
+                    .offset(AbstractBlock.OffsetType.XZ)
                     .ticksRandomly()
                     .breakInstantly()
                     .sounds(BlockSoundGroup.CROP)
