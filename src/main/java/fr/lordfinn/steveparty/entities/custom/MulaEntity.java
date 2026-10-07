@@ -1012,9 +1012,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 			return ActionResult.SUCCESS;
 		}
 
-		// Sit / stand: the owner right-clicks a tamed Mula with an empty hand or anything it doesn't eat (a fragment
-		// included: it is not used up); its food keeps feeding it. Anyone else gets the "no".
-		if (this.isTamed() && this.isOwner(player) && !isMulaFood(stack)) {
+		// Sit / stand: the owner right-clicks a tamed Mula with an empty hand or anything no Mula eats (a fragment
+		// included: it is not used up); its food keeps feeding it, another colour's food is refused (said why). Anyone
+		// else gets the "no".
+		if (this.isTamed() && this.isOwner(player) && !isMulaFood(stack) && MulaFood.eatenBy(stack) == null) {
 			if (!this.getWorld().isClient) {
 				toggleSitting();
 			}
@@ -1025,7 +1026,7 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		// too, then again when the server's order came back, which restarted it halfway (a visible hiccup).
 		if (eatCooldown > 0 || !isMulaFood(stack)) {
 			if (!this.getWorld().isClient) {
-				playSpecial("no", NO_TICKS);
+				refuse(player, stack);
 			}
 			return ActionResult.SUCCESS;
 		}
@@ -1076,6 +1077,52 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 		}
 
 		return ActionResult.SUCCESS;
+	}
+
+	/** A player told why it refuses gets no new "no" before this many ticks (clicking on and on). */
+	public static final int REFUSAL_GAP_TICKS = 20;
+	private @Nullable UUID lastRefused;
+	private int lastRefusalAge = -REFUSAL_GAP_TICKS;
+	private int refusals;
+
+	/** How many times it said "no" (for the tests). */
+	public int refusals() {
+		return refusals;
+	}
+
+	/**
+	 * Server: "no" to what this player holds out. It shakes its head (its clients float the item up and back down, puff
+	 * a little grey cloud) and, when something was held out, says why in the player's action bar: food of another
+	 * colour (and whose), or something no Mula eats. Still taking in its last meal, it only shakes its head. At most
+	 * once per {@value #REFUSAL_GAP_TICKS} ticks for the same player.
+	 */
+	private void refuse(PlayerEntity player, ItemStack stack) {
+		if (player.getUuid().equals(lastRefused) && this.age - lastRefusalAge < REFUSAL_GAP_TICKS) return;
+		lastRefused = player.getUuid();
+		lastRefusalAge = this.age;
+		refusals++;
+		playSpecial("no", NO_TICKS);
+		Text reason = refusalReason(getVariant(), stack);
+		if (reason != null) player.sendMessage(reason, true);
+	}
+
+	/**
+	 * Why a Mula of this colour refuses this stack (action bar), null when it would eat it or nothing is held out: food
+	 * of another colour (its colour, the item, the colour that eats it), or anything no Mula eats.
+	 */
+	public static @Nullable Text refusalReason(MulaVariant variant, ItemStack stack) {
+		if (stack.isEmpty() || MulaFood.value(variant, stack) > 0) return null;
+		MulaVariant eater = MulaFood.eatenBy(stack);
+		Text message = eater != null
+				? Text.translatable("message.steveparty.mula.refuse.colour", colourName(variant), stack.getName(), colourName(eater))
+				: Text.translatable("message.steveparty.mula.refuse.inedible", stack.getName());
+		return message.copy().formatted(net.minecraft.util.Formatting.GRAY);
+	}
+
+	/** A Mula colour's name, in that colour (lightened: the black one stays readable). */
+	private static Text colourName(MulaVariant variant) {
+		return Text.translatable("mula.steveparty.colour." + variant.name().toLowerCase(Locale.ROOT))
+				.styled(style -> style.withColor(variant.getHaloColor()));
 	}
 
 	/** Every animation the server can start ({@code /mula <mulas> play <animation>}). */

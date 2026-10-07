@@ -321,6 +321,14 @@ public final class MulaEffects {
      */
     private void refuse() {
         allay(SoundEvents.ENTITY_ALLAY_ITEM_THROWN, 0.3f, 0.75f);
+        // a little grey cloud over its head, like a villager saying no
+        World world = mula.getWorld();
+        Random random = mula.getRandom();
+        double top = mula.getY() + mula.getHeight() + 0.1;
+        for (int i = 0; i < 4; i++) {
+            world.addParticle(ParticleTypes.SMOKE, mula.getX() + random.nextGaussian() * 0.1, top + random.nextDouble() * 0.15,
+                    mula.getZ() + random.nextGaussian() * 0.1, 0, 0.015, 0);
+        }
         PlayerEntity player = mula.getWorld().getClosestPlayer(mula, 8);
         ItemStack held = player == null ? ItemStack.EMPTY : player.getMainHandStack();
         if (held.isEmpty()) {
