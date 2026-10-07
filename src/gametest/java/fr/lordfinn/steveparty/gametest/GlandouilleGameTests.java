@@ -177,7 +177,7 @@ public class GlandouilleGameTests implements FabricGameTest {
         GlandouilleEntity frosty = glandouille(context, GlandouilleVariant.FROSTY, new BlockPos(1, 1, 5));
         context.assertTrue(young.getHeight() < 0.75f && young.getWidth() < 0.6f, "the young one is small: " + young.getHeight());
         context.assertTrue(mossy.getWidth() > 0.9f, "the mossy one is wide: " + mossy.getWidth());
-        context.assertTrue(frosty.getHeight() >= 1.0f, "the frosty one is tall: " + frosty.getHeight());
+        context.assertTrue(frosty.getWidth() > 0.75f && frosty.getWidth() < mossy.getWidth(), "the frosty one a little bigger: " + frosty.getWidth());
         context.assertTrue(GlandouilleTowers.climb(young, mossy, false), "the young one on the mossy one");
         context.assertTrue(GlandouilleTowers.climb(frosty, mossy, false), "the frosty one on top");
         context.waitAndRun(2, () -> {
