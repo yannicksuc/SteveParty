@@ -36,9 +36,9 @@ public final class ExplorerHelmetRenderer {
     public static final Identifier TEXTURE = Steveparty.id("textures/models/armor/explorer_helmet.png");
     /** The lamp's front, its middle (head pixels, the face toward -z), and the beam: length, half-sizes at both ends. */
     private static final float LAMP_FRONT = -5.85f, LAMP_Y = -8.2f;
-    private static final float BEAM_LENGTH = 44, BEAM_START = 1.7f, BEAM_END = 13, CORE_START = 0.9f, CORE_END = 6.5f;
+    private static final float BEAM_LENGTH = 20, BEAM_START = 1.6f, BEAM_END = 6, CORE_START = 0.8f, CORE_END = 3;
     private static final int BEAM_RGB = 0xFFE29A;
-    private static final float BEAM_ALPHA = 0.30f, CORE_ALPHA = 0.32f;
+    private static final float BEAM_ALPHA = 0.22f, CORE_ALPHA = 0.24f;
     private static ModelPart helmet, lampOff, lampOn;
 
     private ExplorerHelmetRenderer() {
