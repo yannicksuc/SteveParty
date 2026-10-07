@@ -9,6 +9,7 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
@@ -37,6 +38,9 @@ import java.util.List;
  * The pick runs the sector's action (client side: it sends its packet to the server).
  */
 public final class ToolWheel {
+    /** A sector's explanation under its name wraps at this width (pixels). */
+    private static final int HINT_WIDTH = 200;
+
     /** Held longer than this (ms), the button picks on release; shorter, the wheel stays open. */
     private static final long LONG_PRESS_MS = 220;
     /** Half the gap between two sectors (pixels): the gap is as wide everywhere. */
@@ -376,24 +380,24 @@ public final class ToolWheel {
 
         // A vanilla tooltip: the hovered sector in a few words (or, the first times, the one put forward)
         Sector hovered = hovered();
-        List<Text> lines = new ArrayList<>();
+        List<OrderedText> lines = new ArrayList<>();
         int tipX = dotX, tipY = dotY;
         if (hovered != null) {
-            lines.add(hovered.label().copy().formatted(hovered.enabled() ? Formatting.WHITE : Formatting.GRAY));
+            lines.add(hovered.label().copy().formatted(hovered.enabled() ? Formatting.WHITE : Formatting.GRAY).asOrderedText());
             Text hint = cta && layout.featured() == hovered && layout.featuredHint() != null ? layout.featuredHint() : hovered.hint();
-            if (hint != null) lines.add(hint.copy().formatted(Formatting.GRAY));
+            if (hint != null) lines.addAll(client.textRenderer.wrapLines(hint.copy().formatted(Formatting.GRAY), HINT_WIDTH));
         } else if (cta) {
             Sector featured = layout.featured();
-            lines.add(featured.label().copy().formatted(Formatting.YELLOW));
+            lines.add(featured.label().copy().formatted(Formatting.YELLOW).asOrderedText());
             Text hint = layout.featuredHint() != null ? layout.featuredHint() : featured.hint();
-            if (hint != null) lines.add(hint.copy().formatted(Formatting.GRAY));
+            if (hint != null) lines.addAll(client.textRenderer.wrapLines(hint.copy().formatted(Formatting.GRAY), HINT_WIDTH));
             int[] at = centreOf(layout, featured, fit);
             if (at != null) {
                 tipX = cx + at[0];
                 tipY = cy + at[1];
             }
         }
-        if (!lines.isEmpty()) context.drawTooltip(client.textRenderer, lines, tipX, tipY);
+        if (!lines.isEmpty()) context.drawOrderedTooltip(client.textRenderer, lines, tipX, tipY);
     }
 
     /** Where the middle of {@code sector} is drawn (from the centre), or null. */

@@ -71,16 +71,14 @@ public final class BrushClient {
         if (client.options.hudHidden || client.currentScreen != null || client.player == null || client.world == null || !holdsBrush(client)
                 || ToolWheel.isOpen()) return;
         ItemStack brush = client.player.getMainHandStack();
-        Text level = Text.translatable("hud.steveparty.tile_linker_brush.panel", TileLinkerBrush.levelText(TileLinkerBrush.level(brush)));
+        int brushLevel = TileLinkerBrush.level(brush);
+        Text level = brushLevel == TileLinkerBrush.POWERED ? Text.translatable("wheel.steveparty.brush.powered")
+                : Text.translatable("wheel.steveparty.brush.levels.current", brushLevel);
         ItemStack cartridge = BoardLinks.cartridgeSource(client.player);
         int left = BoardLinks.cartridgesLeft(client.player);
         // A cartridge is only needed for a kind picked on the wheel (swapped in), or for an aimed space left empty
         boolean needed = TileLinkerBrush.cartridge(brush) != null || aimsAtEmptySpace(client, brush);
         List<ToolHud.Element> tool = new ArrayList<>();
-        tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> {
-            ToolHud.box(context, x, y, true);
-            context.drawItem(brush, x + INSET, y + INSET);
-        }));
         if (needed) tool.add(ToolHud.element(ToolHud.BOX, (x, y) -> cartridgeBox(context, x, y, cartridge, left)));
         if (needed && cartridge.isEmpty()) {
             Text none = BoardText.Plate.DEAD_END.of(Text.translatable("hud.steveparty.wrench.no_cartridge"));
