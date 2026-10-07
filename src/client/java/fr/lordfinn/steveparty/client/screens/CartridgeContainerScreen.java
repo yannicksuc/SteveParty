@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.board.Pipette;
 import fr.lordfinn.steveparty.client.gui.HandCursor;
+import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.payloads.custom.PipettePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.CartridgeContainerScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -73,11 +74,11 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
         return x + backgroundWidth;
     }
 
-    private int pipetteX() {
+    protected int pipetteX() {
         return pipetteRight() - PIPETTE_BUTTON - 4;
     }
 
-    private int pipetteY() {
+    protected int pipetteY() {
         return y + 4;
     }
 
@@ -177,10 +178,12 @@ public abstract class CartridgeContainerScreen<T extends CartridgeContainerScree
     private void drawPipetteButton(DrawContext context, int mouseX, int mouseY) {
         int bx = pipetteX(), by = pipetteY();
         boolean hover = overPipetteButton(mouseX, mouseY);
-        int frame = pipetteOn ? COPY_COLOR : hover ? 0xFFFFFFFF : 0xFF373737;
-        context.fill(bx, by, bx + PIPETTE_BUTTON, by + PIPETTE_BUTTON, pipetteOn ? 0xFF2B4A2B : 0xFF8B8B8B);
-        context.drawBorder(bx, by, PIPETTE_BUTTON, PIPETTE_BUTTON, frame);
-        context.drawTexture(PIPETTE_ICON, bx + 1, by + 1, 0, 0, 16, 16, 16, 16);
+        // A button of the mod (PartyGui): gold and pushed in while the pipette is on
+        PartyGui.Theme theme = pipetteOn ? PartyGui.BUTTON_SELECTED : hover ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON;
+        PartyGui.button(context, bx, by, PIPETTE_BUTTON, PIPETTE_BUTTON, theme, pipetteOn);
+        if (hover) context.drawBorder(bx, by, PIPETTE_BUTTON, PIPETTE_BUTTON, 0xFFFFFFFF);
+        int push = pipetteOn ? 1 : 0;
+        context.drawTexture(PIPETTE_ICON, bx + 1 + push, by + 1 + push, 0, 0, 16, 16, 16, 16);
     }
 
     /** The slot copied: outlined in the link colour. */
