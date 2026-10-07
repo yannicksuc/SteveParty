@@ -1041,6 +1041,8 @@
   "gui.steveparty.dice_forge.missing": "Missing: %s",
   "gui.steveparty.dice_forge.preview": "Preview of the forged die",
   "gui.steveparty.dice_forge.insert_core": "Gravity core slot",
+  "gui.steveparty.dice_forge.core_in_place": "Wakes the forge up",
+  "gui.steveparty.dice_forge.core_take": "Take it out to put the forge to sleep",
   "gui.steveparty.dice_forge.status.not_activated": "Insert a gravity core first (right-click the forge with it or use the center slot)",
   "gui.steveparty.dice_forge.status.not_enough_faces": "Place at least %s die faces",
   "gui.steveparty.dice_forge.status.missing_fragment": "Put star fragments in the 5 slots around the core",
