@@ -117,6 +117,8 @@ processResources {
 }
 
 apply from: 'gradle/dev-server.gradle'
+// Machine-local additions to the dev build (not in git)
+if (file('local.gradle').exists()) apply from: 'local.gradle'
 
 def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
