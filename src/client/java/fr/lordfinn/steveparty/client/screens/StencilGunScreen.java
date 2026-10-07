@@ -16,7 +16,7 @@ import net.minecraft.util.Identifier;
 import java.util.List;
 
 /**
- * The player's inventory with the Stencil Hammer's slots on its sides: its stencils on the left, its dyes on the
+ * The player's inventory with the Stencil Hammer's slots on its sides: its dyes on the left, its stencils on the
  * right, 3 x 3 each, an empty slot showing the silhouette of what it takes. Where the vanilla inventory crafts, the
  * hammer. The stencil and the colour it strikes with are framed; an empty hammer slot names what it takes.
  */
@@ -86,8 +86,8 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
         // A title above each grid of the hammer; the inventory has none, as vanilla's
-        title(context, Text.translatable("screen.steveparty.stencil_gun.stencils"), 0);
-        title(context, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.INVENTORY_X + 176 + StencilGunScreenHandler.GAP);
+        title(context, Text.translatable("screen.steveparty.stencil_gun.dyes"), 0);
+        title(context, Text.translatable("screen.steveparty.stencil_gun.stencils"), StencilGunScreenHandler.INVENTORY_X + 176 + StencilGunScreenHandler.GAP);
     }
 
     private void title(DrawContext context, Text text, int panelX) {

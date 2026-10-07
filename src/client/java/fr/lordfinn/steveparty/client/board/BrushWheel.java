@@ -75,8 +75,9 @@ final class BrushWheel implements ToolWheel.Provider {
                 false, true, () -> send(ToolWheelPayload.Action.BRUSH_REDO, 0));
         ToolWheel.Sector undo = new ToolWheel.Sector(Text.translatable("wheel.steveparty.brush.undo"), null, TEAL, sprite(UNDO, 2),
                 false, true, () -> send(ToolWheelPayload.Action.BRUSH_UNDO, 0));
-        // Clockwise from the top: the normal link, the level, the cartridge, then redo and undo (undo on the left)
-        List<ToolWheel.Arc> arcs = List.of(new ToolWheel.Arc(0, -36, 324, List.of(normal, levels, cartridges, redo, undo)));
+        // Fixed places, clockwise from the top: the normal link, the cartridge (top right), redo (bottom right), undo
+        // (bottom left), the level (top left)
+        List<ToolWheel.Arc> arcs = List.of(new ToolWheel.Arc(0, -36, 324, List.of(normal, cartridges, redo, undo, levels)));
         return new ToolWheel.Layout(MAIN_RING, arcs, big(brush.copy(), 1.5f), null, normal,
                 Text.translatable("wheel.steveparty.brush.powered.first"));
     }
