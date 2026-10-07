@@ -48,6 +48,12 @@ public final class BoardSpaces {
      * each one (and above and below: lowered and sloped tiles); the nearest slab met first wins.
      */
     public static HitResult preferTile(BlockView world, Vec3d start, Vec3d end, HitResult hit) {
+        TileShape.Hit tile = tileHit(world, start, end, hit);
+        return tile != null ? tile.toBlockHit(world) : hit;
+    }
+
+    /** The tile slab {@link #preferTile} finds in front of {@code hit}, exactly where it is met, or null. */
+    public static @Nullable TileShape.Hit tileHit(BlockView world, Vec3d start, Vec3d end, HitResult hit) {
         Vec3d until = hit.getType() == HitResult.Type.MISS ? end : hit.getPos();
         // The cell outline of a tile stands a little above its slab: the slab just behind that hit is still this hit
         boolean onTile = hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK
@@ -77,7 +83,7 @@ public final class BoardSpaces {
             }
             return null;
         }, view -> null);
-        return best[0] != null ? best[0].toBlockHit(world) : hit;
+        return best[0];
     }
 
     private static boolean isTileBlock(BlockState state) {
