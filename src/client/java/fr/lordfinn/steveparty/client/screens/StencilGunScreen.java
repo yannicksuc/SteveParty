@@ -11,7 +11,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import java.util.List;
@@ -28,7 +27,9 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     /** The vanilla panel colours. */
     private static final int PANEL = 0xFFC6C6C6, LIGHT = 0xFFFFFFFF, SHADOW = 0xFF555555, OUTLINE = 0xFF000000;
     private static final int SLOT_DARK = 0xFF373737, SLOT = 0xFF8B8B8B;
-    private static final int SIDE_HEIGHT = 7 + 3 * 18 + 7;
+    private static final int SIDE_HEIGHT = StencilGunScreenHandler.SLOTS_Y - 1 + 3 * 18 + 8;
+    /** The vanilla title grey. */
+    private static final int TITLE = 0xFF404040;
 
     public StencilGunScreen(StencilGunScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -84,7 +85,13 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        // No titles: the silhouettes and the tooltips tell what goes where
+        // A title above each grid of the hammer; the inventory has none, as vanilla's
+        title(context, Text.translatable("screen.steveparty.stencil_gun.stencils"), 0);
+        title(context, Text.translatable("screen.steveparty.stencil_gun.dyes"), StencilGunScreenHandler.INVENTORY_X + 176 + StencilGunScreenHandler.GAP);
+    }
+
+    private void title(DrawContext context, Text text, int panelX) {
+        context.drawText(textRenderer, text, panelX + (StencilGunScreenHandler.SIDE - textRenderer.getWidth(text)) / 2, 6, TITLE, false);
     }
 
     @Override
@@ -95,10 +102,8 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         // An empty slot of the hammer: what it takes
         if (focusedSlot instanceof StencilGunScreenHandler.FilteredSlot slot && !slot.hasStack() && handler.getCursorStack().isEmpty()) {
             boolean stencils = slot.takesStencils();
-            context.drawTooltip(textRenderer, List.of(
-                    Text.translatable(stencils ? "wheel.steveparty.hammer.empty_stencil" : "wheel.steveparty.hammer.empty_dye"),
-                    Text.translatable(stencils ? "screen.steveparty.stencil_gun.stencil_hint" : "screen.steveparty.stencil_gun.dye_hint")
-                            .formatted(Formatting.GRAY)), mouseX, mouseY);
+            context.drawTooltip(textRenderer,
+                    Text.translatable(stencils ? "screen.steveparty.stencil_gun.stencil_hint" : "screen.steveparty.stencil_gun.dye_hint"), mouseX, mouseY);
         }
     }
 
