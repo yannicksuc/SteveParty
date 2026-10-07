@@ -21,20 +21,18 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * What the Tile Linker Brush does, server side: links are painted. Holding the use button, every board space the
- * player's look sweeps over (up to {@link WrenchActions#LONG_REACH} blocks, found by what is seen: see {@link BrushAim})
+ * What the Tile Linker Brush does, server side: links are painted. Holding the use button (the brush held in use, see
+ * {@link TileLinkerBrushItem#usageTick}), every board space the player's look sweeps over (up to {@link WrenchActions#LONG_REACH} blocks, found by what is seen: see {@link BrushAim})
  * is linked from the previous one of the stroke; going over a link again (either way) erases it. The stroke ends when
  * the button is released. Between two ticks, the look is followed step by step: a quick sweep skips no tile.
  * <p>
- * The brush remembers its <b>anchor</b>, the last board space it painted (on the item): a chest clicked then joins the
+ * The brush remembers its <b>anchor</b>, the last board space it painted (on the item, never shown: the brush selects
+ * nothing, it paints as it sweeps): a chest clicked then joins the
  * anchor's inventory tile, a trading stall, cash register or Boxed Trader becomes its shop (see
  * {@link WrenchActions#initialize}), and with the brush in the off hand, each placed board space is linked from it.
  * <p>
@@ -44,7 +42,7 @@ import java.util.UUID;
  * redo. A board space with a single slot ignores the level.
  */
 public final class TileLinkerBrush {
-    /** Vanilla repeats the use every 4 ticks while the button is held: longer without one, the stroke has ended. */
+    /** The held brush paints every tick: longer without a use, the stroke has ended. */
     private static final int STROKE_GAP = 6;
     /** No level: the slot powered at the time (the active one). */
     public static final int POWERED = -1;
@@ -66,26 +64,17 @@ public final class TileLinkerBrush {
     }
 
     public static void initialize() {
-        // Between two repeated uses, the sweep is painted every tick
+        // The strokes left without an end (brush put away, player gone) are forgotten
         ServerTickEvents.END_SERVER_TICK.register(TileLinkerBrush::tick);
     }
 
     private static void tick(MinecraftServer server) {
         if (STROKES.isEmpty()) return;
-        Iterator<Map.Entry<UUID, Stroke>> it = STROKES.entrySet().iterator();
-        List<Runnable> paints = new ArrayList<>();
-        while (it.hasNext()) {
-            Map.Entry<UUID, Stroke> entry = it.next();
+        STROKES.entrySet().removeIf(entry -> {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entry.getKey());
-            if (player == null || !isBrush(player.getMainHandStack())
-                    || player.getServerWorld().getTime() - entry.getValue().lastUse > STROKE_GAP) {
-                it.remove();
-                continue;
-            }
-            Stroke stroke = entry.getValue();
-            paints.add(() -> sweep(player, player.getMainHandStack(), player.getServerWorld(), stroke));
-        }
-        paints.forEach(Runnable::run);
+            return player == null || !isBrush(player.getMainHandStack())
+                    || player.getServerWorld().getTime() - entry.getValue().lastUse > STROKE_GAP;
+        });
     }
 
     public static boolean isBrush(ItemStack stack) {
@@ -162,7 +151,7 @@ public final class TileLinkerBrush {
 
     // ---------------------------------------------------------------- strokes
 
-    /** A use of the brush (the button pressed, or repeated while held): the stroke goes on, or a new one starts. */
+    /** A use of the brush (the button pressed, then each tick while held): the stroke goes on, or a new one starts. */
     public static void use(ServerPlayerEntity player, ItemStack brush, ServerWorld world) {
         Stroke stroke = STROKES.get(player.getUuid());
         long now = world.getTime();
@@ -221,9 +210,9 @@ public final class TileLinkerBrush {
             WrenchActions.swapCartridge(player, world, pos, target, BoardLinks.slotOf(target, level(brush)), true);
         }
         if (origin == null || target == null) {
+            // The first tile of a stroke: only the brush touching it (nothing selected, nothing said)
             if (target != null) setAnchor(brush, world, pos);
-            say(player, Text.translatable("message.steveparty.tile_linker_brush.start", BoardText.pos(pos)));
-            world.playSound(null, player.getBlockPos(), ModSounds.SELECT_SOUND_EVENT, SoundCategory.PLAYERS, 0.5f, 1.4f);
+            world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
             return;
         }
         WrenchActions.recorded(player, world, brush, () -> {

@@ -19,14 +19,14 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 /**
- * What the Tile Linker Brush shows its holder (and only them: everything is drawn client side): its anchor (the last
- * tile painted) framed in gold, the tile aimed at, found the way the player sees it (see {@link BrushAim}), framed, and
- * the ghost path from the anchor to it: green, a link the stroke would paint; red, one it would erase.
+ * What the Tile Linker Brush shows its holder (and only them: everything is drawn client side): the tile aimed at,
+ * found the way the player sees it (see {@link BrushAim}), framed. Nothing is ever selected: while a stroke is held,
+ * the frame tells what reaching that tile does (green, a link painted; red, one erased), and the paint left behind is
+ * {@link BrushTrail}.
  */
 final class BrushOverlay {
     static final int GREEN = 0xFF4CFF4C;
     static final int RED = 0xFFFF4040;
-    static final int GOLD = 0xFFFFD83D;
     static final int WHITE = 0xFFFFFFFF;
 
     private BrushOverlay() {
@@ -48,23 +48,17 @@ final class BrushOverlay {
         if (!TileLinkerBrush.isBrush(brush) || fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.isOpen()) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         Camera camera = context.camera();
-        BlockPos anchor = TileLinkerBrush.anchor(brush, world);
-        if (anchor != null && BoardLinks.container(world, anchor) == null) anchor = null;
-        if (anchor != null) frame(matrices, consumers, camera, world, anchor, GOLD);
         BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true));
-        if (aimed != null && !aimed.equals(anchor)) {
-            int color = WHITE;
-            if (anchor != null) {
-                color = linked(world, brush, anchor, aimed) ? RED : GREEN;
-                ghostPath(matrices, consumers, camera, world, anchor, aimed, color);
-            }
+        if (aimed != null) {
+            BlockPos last = BrushTrail.lastTile();
+            int color = last == null || last.equals(aimed) ? WHITE : linked(world, brush, last, aimed) ? RED : GREEN;
             frame(matrices, consumers, camera, world, aimed, color);
         }
         consumers.draw();
     }
 
     /** A link between the two, either way, in the slot of the brush's level: the stroke would erase it. */
-    private static boolean linked(ClientWorld world, ItemStack brush, BlockPos a, BlockPos b) {
+    static boolean linked(ClientWorld world, ItemStack brush, BlockPos a, BlockPos b) {
         CartridgeContainerBlockEntity from = BoardLinks.container(world, a), to = BoardLinks.container(world, b);
         int level = TileLinkerBrush.level(brush);
         return from != null && BoardLinks.links(from, BoardLinks.slotOf(from, level)).contains(b)
@@ -81,13 +75,5 @@ final class BrushOverlay {
         float pulse = 0.25f + 0.15f * (float) Math.sin(world.getTime() / 3.0);
         GlowingCuboidRenderer.drawBlockBox(matrices, consumers, pos,
                 ((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, pulse);
-    }
-
-    /** The path the click would make: chevrons of the board view, bigger and faster, in the colour of what it does. */
-    private static void ghostPath(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world,
-                                  BlockPos from, BlockPos to, int color) {
-        double phase = (world.getTime() + MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(true)) / 20.0 * 3.0;
-        WorldDraw.path(matrices, consumers, camera, anchor(world, from).add(0, 0.05, 0), anchor(world, to).add(0, 0.05, 0),
-                color, 0.55, 0.5, phase, 0.4, 0);
     }
 }
