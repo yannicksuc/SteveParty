@@ -129,6 +129,28 @@ public class RecipeGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /** Plastic blocks: 4 pellets and a dye, nothing else (no amethyst shard). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void plasticBlocksAreMouldedFromPelletsAndADye(TestContext context) {
+        ItemStack pellets = new ItemStack(ModItems.PLASTIC_PELLETS);
+        ItemStack blocks = result(context, 3, 2, pellets, pellets, pellets, pellets, new ItemStack(Items.RED_DYE), ItemStack.EMPTY);
+        context.assertTrue(blocks.isOf(ModBlocks.PLASTIC_BLOCKS[java.util.Arrays.asList(ModBlocks.COLORS).indexOf("red")].asItem())
+                && blocks.getCount() == 4, "4 red plastic blocks, got " + blocks);
+        context.complete();
+    }
+
+    /** The Gravity Core takes star fragments of any colour, mixed: not only the rare black ones. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theGravityCoreTakesAnyStarFragments(TestContext context) {
+        ItemStack c = new ItemStack(Items.CRYING_OBSIDIAN);
+        ItemStack core = result(context, 3, 3,
+                c, new ItemStack(ModItems.BLUE_STAR_FRAGMENT), c,
+                new ItemStack(ModItems.RED_STAR_FRAGMENT), new ItemStack(Items.HEAVY_CORE), new ItemStack(ModItems.YELLOW_STAR_FRAGMENT),
+                c, new ItemStack(ModItems.BLACK_STAR_FRAGMENT), c);
+        context.assertTrue(core.isOf(ModBlocks.GRAVITY_CORE.asItem()), "a gravity core from mixed fragments, got " + core);
+        context.complete();
+    }
+
     /** A gold nugget mints one coin (never the other way round), and that coin is what a fresh party counts as Pièce. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aGoldNuggetMintsTheCoinOfAFreshParty(TestContext context) {
