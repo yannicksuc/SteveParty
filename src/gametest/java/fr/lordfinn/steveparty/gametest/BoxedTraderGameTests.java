@@ -113,6 +113,37 @@ public class BoxedTraderGameTests implements FabricGameTest {
         });
     }
 
+    /** Shorn of his bandana, then of his box's look: each time he hides for the theft, then comes out by himself. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 2 * (BoxedTraderEntity.SHOCK_TICKS + BoxedTraderEntity.THEFT_HIDE_TICKS) + 100)
+    public void afterEachTheftHeComesOutByHimself(TestContext context) {
+        floor(context);
+        BoxedTraderEntity trader = trader(context);
+        ServerPlayerEntity player = playerNear(context, trader);
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.SHEARS));
+        int window = BoxedTraderEntity.SHOCK_TICKS + BoxedTraderEntity.THEFT_HIDE_TICKS;
+        context.waitAndRun(3, () -> {
+            try {
+                trader.interact(player, Hand.MAIN_HAND);
+                context.assertFalse(trader.hasBandana(), "the bandana taken");
+            } catch (RuntimeException e) {
+                disconnect(context, player);
+                throw e;
+            }
+            context.waitAndRun(window + 5, () -> {
+                try {
+                    context.assertFalse(trader.isHidden(), "out again after the first theft");
+                    trader.interact(player, Hand.MAIN_HAND);
+                    context.assertTrue(trader.isBoxGlitched(), "the look of his box taken");
+                } catch (RuntimeException e) {
+                    disconnect(context, player);
+                    throw e;
+                }
+                context.waitAndRun(window + 5, () -> checks(context, player,
+                        () -> context.assertFalse(trader.isHidden(), "out again after the second theft")));
+            });
+        });
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void shearsDoNothingOnAClosedOrGlitchedMerchant(TestContext context) {
         floor(context);
