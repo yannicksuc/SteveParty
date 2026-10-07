@@ -325,6 +325,80 @@ public class GlandouilleGameTests implements FabricGameTest {
         });
     }
 
+    /** Two in hand, both thrown one after the other: the second (back in the hands after the first went) flies too. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void theOneLeftInHandAfterAThrowFliesToo(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
+        GlandouilleEntity second = members.get(1);
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        context.assertTrue(GlandouilleTowers.pickUp(player, members.getFirst()), "carried");
+        context.waitAndRun(2, () -> {
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "first thrown");
+            context.waitAndRun(4, () -> {
+                double startX = second.getX();
+                context.assertTrue(GlandouilleTowers.throwCarried(player), "second thrown");
+                context.assertEquals(second.getMood(), Mood.FLYING, "it flies: " + second.getMood());
+                context.waitAndRun(5, () -> {
+                    context.assertTrue(second.getX() - startX > 2, "flew forward: " + (second.getX() - startX) + " "
+                            + second.getMood() + " vehicle " + second.getVehicle() + " noGravity " + second.hasNoGravity());
+                    context.waitAndRun(120, () -> {
+                        context.assertFalse(second.hasNoGravity(), "falls again");
+                        context.complete();
+                    });
+                });
+            });
+        });
+    }
+
+    /** Thrown the same way after the first one landed (dizzy), the second does not climb on it. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200)
+    public void aSecondThrowDoesNotStackOnTheDizzyFirst(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 2, new BlockPos(1, 1, 1));
+        GlandouilleEntity first = members.getFirst(), second = members.get(1);
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        context.assertTrue(GlandouilleTowers.pickUp(player, first), "carried");
+        context.waitAndRun(2, () -> {
+            GlandouilleTowers.throwCarried(player);
+            context.waitAndRun(40, () -> {
+                context.assertEquals(first.getMood(), Mood.STUNNED, "the first landed dizzy: " + first.getMood());
+                // the second right next to it, thrown at it
+                second.stopRiding();
+                second.refreshPositionAndAngles(first.getX() - 0.6, first.getY() + 0.2, first.getZ(), -90f, 0);
+                second.launch(new Vec3d(1, 0, 0));
+                context.waitAndRun(6, () -> {
+                    context.assertTrue(second.getVehicle() == null && !GlandouilleTowers.hasRider(first), "not stacked on the dizzy one");
+                    context.complete();
+                });
+            });
+        });
+    }
+
+    /** The last one in hand, alone, is thrown like the others: it flies forward, lands, and walks again. */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 160)
+    public void theLastOneInHandIsThrownToo(TestContext context) {
+        floor(context);
+        List<GlandouilleEntity> members = tower(context, GlandouilleVariant.CLASSIC, 1, new BlockPos(1, 1, 1));
+        GlandouilleEntity one = members.getFirst();
+        ServerPlayerEntity player = player(context, new BlockPos(1, 1, 3), -90f); // facing +x
+        context.assertTrue(GlandouilleTowers.pickUp(player, one), "carried");
+        context.waitAndRun(2, () -> {
+            double startX = player.getX();
+            context.assertTrue(GlandouilleTowers.throwCarried(player), "thrown");
+            context.assertTrue(one.getVehicle() == null, "out of the hands");
+            context.assertEquals(one.getMood(), Mood.FLYING, "it flies: " + one.getMood());
+            context.waitAndRun(5, () -> {
+                context.assertTrue(one.getX() - startX > 2, "flew forward: " + (one.getX() - startX) + " " + one.getMood());
+                context.waitAndRun(120, () -> {
+                    context.assertFalse(one.hasNoGravity(), "falls again");
+                    context.assertTrue(one.getMood() != Mood.FLYING && one.getMood() != Mood.STUNNED, "over it: " + one.getMood());
+                    context.complete();
+                });
+            });
+        });
+    }
+
     /**
      * A left click with a stack in hand throws its bottom one forward, shot like a flicked one; the rest stays in hand,
      * one shorter, and the thrower is never hit by it.
