@@ -12,7 +12,7 @@
       "item": "minecraft:redstone_block"
     },
     "W": {
-      "item": "minecraft:nether_star"
+      "item": "steveparty:power_star"
     }
   },
   "result": {

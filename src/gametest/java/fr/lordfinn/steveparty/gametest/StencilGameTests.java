@@ -698,11 +698,18 @@ public class StencilGameTests implements FabricGameTest {
         ItemStack token = result(context, 3, 3,
                 empty, pellets, empty,
                 empty, pellets, empty,
-                pellets, new ItemStack(Items.SHULKER_BOX), pellets);
-        context.assertTrue(token.isOf(ModItems.TOKEN), "token from plastic pellets and a shulker box: " + token);
+                pellets, new ItemStack(Items.CHEST), pellets);
+        context.assertTrue(token.isOf(ModItems.TOKEN), "token from plastic pellets and a chest: " + token);
         ItemStack iron = new ItemStack(Items.IRON_INGOT);
-        context.assertTrue(result(context, 3, 3, empty, iron, empty, empty, iron, empty, iron, new ItemStack(Items.SHULKER_BOX), iron).isEmpty(),
+        context.assertTrue(result(context, 3, 3, empty, iron, empty, empty, iron, empty, iron, new ItemStack(Items.CHEST), iron).isEmpty(),
                 "no more token from iron");
+        context.assertTrue(result(context, 3, 3, empty, pellets, empty, empty, pellets, empty, pellets, new ItemStack(Items.SHULKER_BOX), pellets).isEmpty(),
+                "no more token from a shulker box");
+        ItemStack redstone = new ItemStack(Items.REDSTONE_BLOCK);
+        context.assertTrue(result(context, 3, 3, empty, redstone, empty, redstone, new ItemStack(ModItems.POWER_STAR), redstone, empty, redstone, empty)
+                .isOf(ModItems.GARNET_CRYSTAL_BALL), "the crystal ball of the Tokenizer Wand is made with a Power Star");
+        context.assertTrue(result(context, 3, 3, empty, redstone, empty, redstone, new ItemStack(Items.NETHER_STAR), redstone, empty, redstone, empty)
+                .isEmpty(), "no more crystal ball from a Nether Star");
         context.complete();
     }
 
