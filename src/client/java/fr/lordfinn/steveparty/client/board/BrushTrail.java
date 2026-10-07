@@ -40,6 +40,8 @@ import java.util.List;
  * looks, on any surface and over the edges between them, with bristle streaks, ragged ends and a few drops. While the
  * stroke is held, arrows flow along each link it makes or erases, the way they lead (green, a link made; red, a link
  * erased), and the links already leaving the aimed tile flow in white. The paint fades away once the button is released.
+ * A blob (the look lingering on one spot without board space, as the server finds it: see BrushAim.Blob) leaves a big
+ * splat of paint there and an arrow to the cell it links.
  */
 final class BrushTrail {
     private static final int FADE_TICKS = 60;
@@ -90,6 +92,11 @@ final class BrushTrail {
     /** Blocks of stroke per repeat of the streak texture. */
     private static final double STREAK_LENGTH = 0.6;
     private static final java.util.Random SPLASH = new java.util.Random();
+    /** How wide a blob's splat is. */
+    private static final double BLOB_WIDTH = 1.1;
+    private static final BrushAim.Blob BLOB = new BrushAim.Blob();
+    /** The cells blobbed or whose ghost was erased in the held stroke: neither again before it ends (as on the server). */
+    private static final java.util.Set<BlockPos> CELLS = new java.util.HashSet<>();
 
     private static final List<Mark> MARKS = new ArrayList<>();
     private static @Nullable Dab lastDab;
@@ -146,8 +153,11 @@ final class BrushTrail {
                 lastDab = null;
                 pitch = player.getPitch();
                 yaw = player.getYaw();
+                CELLS.clear();
             }
-            sweep(world, player);
+            BlockPos aimed = sweep(world, player);
+            BlockHitResult surface = aimed == null ? BrushAim.surface(player, world) : null;
+            if (BLOB.tick(surface == null ? null : surface.getPos())) blob(world, player, surface);
         } else if (current != null) {
             current.ended = now;
             current = null;
@@ -156,27 +166,57 @@ final class BrushTrail {
         if (!DABS.isEmpty()) DABS.removeIf(dab -> dab.stroke.ended >= 0 && now - dab.stroke.ended > FADE_TICKS);
     }
 
-    private static void sweep(ClientWorld world, ClientPlayerEntity player) {
+    /** Follows the look since the last tick (as the server does); the board space or ghost aimed now, or null. */
+    private static @Nullable BlockPos sweep(ClientWorld world, ClientPlayerEntity player) {
         float toPitch = player.getPitch(), toYaw = player.getYaw();
         float turned = Math.max(Math.abs(toPitch - pitch), Math.abs(MathHelper.wrapDegrees(toYaw - yaw)));
         int steps = MathHelper.clamp(MathHelper.ceil(turned / SWEEP_STEP), 1, MAX_SWEEP_STEPS);
+        BlockPos aimed = null;
         for (int i = 1; i <= steps; i++) {
             float t = (float) i / steps;
-            BlockPos aimed = BrushAim.aimed(player, world, MathHelper.lerp(t, pitch, toPitch),
-                    yaw + MathHelper.wrapDegrees(toYaw - yaw) * t);
+            aimed = BrushAim.aimed(player, world, MathHelper.lerp(t, pitch, toPitch),
+                    yaw + MathHelper.wrapDegrees(toYaw - yaw) * t, BrushOverlay.ghosts());
             if (aimed != null && !aimed.equals(last)) reach(world, player, aimed);
         }
         pitch = toPitch;
         yaw = toYaw;
+        return aimed;
     }
 
     /** The stroke reaches a tile: a blot on it, and the band from the previous one (pale over a link it erases). */
     private static void reach(ClientWorld world, ClientPlayerEntity player, BlockPos tile) {
         Vec3d at = BoardSpaces.standPos(world, tile).add(0, LIFT, 0);
-        MARKS.add(new Mark(last, tile.toImmutable(), lastAt == null ? at : lastAt, at, outcome(world, player.getActiveItem(), last, tile), current));
+        boolean ghost = BoardLinks.container(world, tile) == null;
+        // A ghost is only a target (reached once): the stroke goes on from the last tile
+        if (ghost && (last == null || inStroke(last, tile))) return;
+        int outcome = outcome(world, player.getActiveItem(), last, tile);
+        MARKS.add(new Mark(last, tile.toImmutable(), lastAt == null ? at : lastAt, at, outcome, current));
         if (MARKS.size() > MAX_MARKS) MARKS.removeFirst();
+        if (ghost) {
+            if (outcome == ERASED) CELLS.add(tile.toImmutable());
+            return;
+        }
         last = tile.toImmutable();
         lastAt = at;
+    }
+
+    /**
+     * A blob made on {@code surface}: a big splat of paint there, and (as the server links it) an arrow from the last
+     * tile of the stroke to the cell it links.
+     */
+    private static void blob(ClientWorld world, ClientPlayerEntity player, BlockHitResult surface) {
+        Vec3d normal = Vec3d.of(surface.getSide().getVector());
+        Vec3d at = surface.getPos().add(normal.multiply(0.01));
+        add(new Dab(at, normal, BLOB_WIDTH, WorldRenderer.getLightmapCoordinates(world, BlockPos.ofFloored(at)), 0, 1f,
+                false, true, current));
+        lastDab = null;
+        if (last == null || BoardLinks.container(world, last) == null) return;
+        BlockPos cell = BrushAim.blobCell(world, surface.getBlockPos());
+        if (cell.equals(last) || CELLS.contains(cell) || BrushOverlay.linked(world, player.getActiveItem(), last, cell)) return;
+        CELLS.add(cell);
+        Vec3d to = BoardSpaces.standPos(world, cell).add(0, LIFT, 0);
+        MARKS.add(new Mark(last, cell, lastAt == null ? to : lastAt, to, LINKED, current));
+        if (MARKS.size() > MAX_MARKS) MARKS.removeFirst();
     }
 
     /** Whether the held stroke went from {@code from} to {@code to} (its own arrows show it). */
@@ -187,7 +227,7 @@ final class BrushTrail {
 
     /** What going from {@code from} to {@code to} does (as the server will): erase their link, make one, or nothing. */
     static int outcome(ClientWorld world, ItemStack brush, @Nullable BlockPos from, BlockPos to) {
-        if (from == null || from.equals(to)) return NOTHING;
+        if (from == null || from.equals(to) || CELLS.contains(to)) return NOTHING;
         if (BrushOverlay.linked(world, brush, from, to)) return ERASED;
         return BoardLinks.container(world, from) != null && BoardLinks.container(world, to) instanceof BoardSpaceBlockEntity
                 ? LINKED : NOTHING;
@@ -393,13 +433,14 @@ final class BrushTrail {
             WorldDraw.path(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0xF0000000 | mark.outcome,
                     0.45, 0.45, phase, 0.3, 0);
         }
-        BlockPos aimed = BrushAim.aimed(player, client.world, context.tickCounter().getTickDelta(true));
+        BlockPos aimed = BrushAim.aimed(player, client.world, context.tickCounter().getTickDelta(true), BrushOverlay.ghosts());
         CartridgeContainerBlockEntity container = aimed == null ? null : BoardLinks.container(client.world, aimed);
         if (container != null) {
             ItemStack brush = player.getActiveItem();
             Vec3d from = BoardSpaces.standPos(client.world, aimed).add(0, LIFT, 0).add(up);
             for (BlockPos to : BoardLinks.links(container, BoardLinks.slotOf(container, TileLinkerBrush.level(brush)))) {
-                if (inStroke(aimed, to)) continue;
+                // The ghosts' links are drawn by BrushOverlay
+                if (inStroke(aimed, to) || BoardLinks.container(client.world, to) == null) continue;
                 WorldDraw.path(matrices, consumers, context.camera(), from, BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up),
                         0xC0000000 | NOTHING, 0.4, 0.45, phase, 0.3, 0);
             }
