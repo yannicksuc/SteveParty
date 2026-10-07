@@ -4,6 +4,7 @@
   "package": "fr.lordfinn.steveparty.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "EntityLookToolWheelMixin",
     "BipedEntityModelPipeSwimMixin",
     "BossBarHudAccessor",
     "CapeFeatureRendererBoxCostumeMixin",

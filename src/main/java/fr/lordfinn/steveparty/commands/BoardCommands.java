@@ -98,14 +98,15 @@ public final class BoardCommands {
                         .executes(context -> template(context, template, IntegerArgumentType.getInteger(context, "spacing")))));
     }
 
-    private static @Nullable ItemStack heldWrench(ServerPlayerEntity player) {
+    /** The Tile Linker Brush in hand, whose anchor follows the undo. */
+    private static @Nullable ItemStack heldBrush(ServerPlayerEntity player) {
         ItemStack held = player.getMainHandStack();
-        return WrenchActions.isWrench(held) ? held : null;
+        return fr.lordfinn.steveparty.board.TileLinkerBrush.isBrush(held) ? held : null;
     }
 
     private static int undo(ServerCommandSource source, boolean undo) throws CommandSyntaxException {
         ServerPlayerEntity player = source.getPlayerOrThrow();
-        return LinkHistory.undo(player, undo, heldWrench(player)) ? 1 : 0;
+        return LinkHistory.undo(player, undo, heldBrush(player)) ? 1 : 0;
     }
 
     private static int check(ServerCommandSource source, @Nullable BlockPos pos) {
