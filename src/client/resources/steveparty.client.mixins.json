@@ -31,6 +31,7 @@
     "HeldItemRendererStencilHammerMixin",
     "HeldItemRendererTokenSpellMixin",
     "InGameHudToolHudMixin",
+    "InGameHudWheelCrosshairMixin",
     "InGameHudTelescopeMixin",
     "EntityRendererBoxCostumeShadowMixin",
     "EntityRendererNameTagMixin",
