@@ -33,10 +33,10 @@ public class AcornCropBlock extends CropBlock {
     public static final int MAX_AGE = 3;
     public static final IntProperty AGE = Properties.AGE_3;
     private static final VoxelShape[] SHAPES = {
-            Block.createCuboidShape(6, 0, 6, 10, 3, 10),
-            Block.createCuboidShape(5.5, 0, 5.5, 10.5, 6, 10.5),
-            Block.createCuboidShape(5, 0, 5, 11, 8, 11),
-            Block.createCuboidShape(4, 0, 4, 12, 11, 12)};
+            Block.createCuboidShape(5, 0, 5, 11, 6, 11),
+            Block.createCuboidShape(5, 0, 5, 11, 10, 11),
+            Block.createCuboidShape(4, 0, 4, 12, 13, 12),
+            Block.createCuboidShape(4, 0, 4, 12, 10, 12)};
 
     public AcornCropBlock(Settings settings) {
         super(settings);
