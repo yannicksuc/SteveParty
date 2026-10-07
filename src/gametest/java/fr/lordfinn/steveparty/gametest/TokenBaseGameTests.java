@@ -18,6 +18,8 @@ public class TokenBaseGameTests implements FabricGameTest {
     private static final float EPSILON = 1.0E-4F;
     private static final float PIG_HEIGHT = EntityType.PIG.getDimensions().height();
     private static final float PIG_EYE_HEIGHT = EntityType.PIG.getDimensions().eyeHeight();
+    /** Base under a pig token of its natural size (0.9 block): a bit thinner than under a 1-block pawn. */
+    private static final float PIG_BASE = TokenBase.BASE_HEIGHT * Math.max(EntityType.PIG.getDimensions().width(), PIG_HEIGHT);
 
     private static void assertClose(TestContext context, double actual, double expected, String message) {
         context.assertTrue(Math.abs(actual - expected) < EPSILON, message + ": expected " + expected + ", got " + actual);
@@ -38,14 +40,14 @@ public class TokenBaseGameTests implements FabricGameTest {
             TokenizedEntityInterface token = (TokenizedEntityInterface) pig;
 
             token.steveparty$setTokenized(true);
-            assertClose(context, pig.getHeight(), PIG_HEIGHT + TokenBase.BASE_HEIGHT, "token height");
+            assertClose(context, pig.getHeight(), PIG_HEIGHT + PIG_BASE, "token height");
             assertClose(context, TokenBase.getBodyHeight(pig), PIG_HEIGHT, "body height");
-            assertClose(context, pig.getStandingEyeHeight(), PIG_EYE_HEIGHT + TokenBase.BASE_HEIGHT, "eye height");
+            assertClose(context, pig.getStandingEyeHeight(), PIG_EYE_HEIGHT + PIG_BASE, "eye height");
             assertClose(context, pig.getY(), feetY, "feet stay on the ground");
             assertClose(context, pig.getBoundingBox().minY, feetY, "hitbox starts at the bottom of the base");
-            assertClose(context, pig.getBoundingBox().getLengthY(), PIG_HEIGHT + TokenBase.BASE_HEIGHT, "hitbox height");
+            assertClose(context, pig.getBoundingBox().getLengthY(), PIG_HEIGHT + PIG_BASE, "hitbox height");
             assertClose(context, pig.getAttachments().getPoint(EntityAttachmentType.NAME_TAG, 0, 0.0F).y,
-                    nameTagY + TokenBase.BASE_HEIGHT, "name tag raised");
+                    nameTagY + PIG_BASE, "name tag raised");
 
             token.steveparty$setTokenized(false);
             assertClose(context, pig.getHeight(), PIG_HEIGHT, "height restored");
@@ -58,14 +60,20 @@ public class TokenBaseGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void baseDoesNotScaleWithTheMob(TestContext context) {
-        PigEntity pig = spawnPig(context);
-        ((TokenizedEntityInterface) pig).steveparty$setTokenized(true);
-        pig.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(0.5);
+    public void baseFollowsTheSizeOfThePawn(TestContext context) {
+        PigEntity half = spawnPig(context), big = spawnPig(context), tiny = spawnPig(context);
+        for (PigEntity pig : new PigEntity[]{half, big, tiny}) ((TokenizedEntityInterface) pig).steveparty$setTokenized(true);
+        half.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(0.5);
+        big.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(2.0);
+        tiny.getAttributeInstance(EntityAttributes.GENERIC_SCALE).setBaseValue(0.1);
         // Dirty attributes (and so the scale) are applied in LivingEntity#tick
         context.waitAndRun(2, () -> {
-            assertClose(context, TokenBase.getBodyHeight(pig), PIG_HEIGHT * 0.5F, "scaled body");
-            assertClose(context, pig.getHeight(), PIG_HEIGHT * 0.5F + TokenBase.BASE_HEIGHT, "scaled body + full base");
+            assertClose(context, TokenBase.getBodyHeight(half), PIG_HEIGHT * 0.5F, "scaled body");
+            assertClose(context, half.getHeight(), PIG_HEIGHT * 0.5F + PIG_BASE * 0.5F, "half the pawn, half the base");
+            assertClose(context, big.getHeight(), PIG_HEIGHT * 2.0F + PIG_BASE * 2.0F, "twice the pawn, twice the base");
+            assertClose(context, tiny.getHeight() - TokenBase.getBodyHeight(tiny), TokenBase.MIN_BASE_HEIGHT,
+                    "a tiny pawn still stands on a one-pixel base");
+            assertClose(context, big.getBoundingBox().minY, big.getY(), "feet on the ground");
             context.complete();
         });
     }
@@ -81,8 +89,8 @@ public class TokenBaseGameTests implements FabricGameTest {
         context.assertTrue(reloaded != null, "pig created");
         reloaded.readNbt(nbt);
         context.assertTrue(((TokenizedEntityInterface) reloaded).steveparty$isTokenized(), "still a token");
-        assertClose(context, reloaded.getHeight(), PIG_HEIGHT + TokenBase.BASE_HEIGHT, "reloaded token height");
-        assertClose(context, reloaded.getBoundingBox().getLengthY(), PIG_HEIGHT + TokenBase.BASE_HEIGHT, "reloaded hitbox");
+        assertClose(context, reloaded.getHeight(), PIG_HEIGHT + PIG_BASE, "reloaded token height");
+        assertClose(context, reloaded.getBoundingBox().getLengthY(), PIG_HEIGHT + PIG_BASE, "reloaded hitbox");
         assertClose(context, reloaded.getBoundingBox().minY, reloaded.getY(), "reloaded feet on the ground");
         reloaded.discard();
         context.complete();

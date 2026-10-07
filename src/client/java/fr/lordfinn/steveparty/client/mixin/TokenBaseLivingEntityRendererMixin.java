@@ -38,8 +38,8 @@ public abstract class TokenBaseLivingEntityRendererMixin {
                                             VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
         TokenBaseRenderState tokenState = (TokenBaseRenderState) entity;
         if (TokenBase.isToken(entity)) {
-            tokenState.steveparty$setTokenBase(true, TokenBaseRenderer.colorOf(entity), TokenBase.BASE_HEIGHT,
-                    TokenBaseRenderer.radiusFor(entity.getWidth()));
+            tokenState.steveparty$setTokenBase(true, TokenBaseRenderer.colorOf(entity), TokenBase.baseHeight(entity),
+                    TokenBaseRenderer.radiusFor(entity));
         } else {
             tokenState.steveparty$setTokenBase(false, 0, 0.0F, 0.0F);
         }
