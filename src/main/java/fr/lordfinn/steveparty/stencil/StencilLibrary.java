@@ -22,7 +22,8 @@ import java.util.List;
  * A player's stencil library, shown in the stencil maker: every stencil pattern the player came across (stencils
  * found or carried are learnt as they go through their inventory), plus the ones they saved from the editor.
  * Favourites are listed first. Kept on the player (and after death), synced to their own client only.
- * In creative mode the editor also lists the whole built-in library ({@link StencilPatterns}).
+ * The editor also lists the built-in library ({@link StencilPatterns}): all of it in creative mode, the free and
+ * unlocked patterns in survival ({@link StencilUnlocks}).
  */
 public record StencilLibrary(List<Entry> entries) {
     public static final int MAX_ENTRIES = 128;
@@ -75,6 +76,7 @@ public record StencilLibrary(List<Entry> entries) {
     }
 
     public static void initialize() {
+        StencilUnlocks.TYPE.identifier(); // registered before any player's data is read
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTicks() % LEARN_INTERVAL != 0) return;
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) learnFromInventory(player);
@@ -90,17 +92,26 @@ public record StencilLibrary(List<Entry> entries) {
         player.setAttached(TYPE, library);
     }
 
-    /** Adds the patterns of the stencils the player carries. */
+    /**
+     * Adds the patterns of the stencils the player carries, and unlocks the built-in ones among them
+     * ({@link StencilUnlocks}; the built-in patterns already in the library count as found too).
+     */
     public static void learnFromInventory(ServerPlayerEntity player) {
         StencilLibrary library = of(player);
         StencilLibrary learnt = library;
+        StencilUnlocks unlocks = StencilUnlocks.of(player);
+        StencilUnlocks unlocked = unlocks;
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
             if (!(stack.getItem() instanceof StencilItem)) continue;
             byte[] shape = StencilItem.getShape(stack);
-            if (!StencilShape.isBlank(shape)) learnt = learnt.with(shape);
+            if (StencilShape.isBlank(shape)) continue;
+            learnt = learnt.with(shape);
+            unlocked = unlocked.with(shape);
         }
         if (learnt != library) set(player, learnt);
+        for (Entry entry : learnt.entries) unlocked = unlocked.with(entry.shapeArray());
+        StencilUnlocks.update(player, unlocks, unlocked);
     }
 
     public boolean contains(byte[] shape) {

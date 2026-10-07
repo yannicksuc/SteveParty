@@ -1,0 +1,32 @@
+{
+  "parent": "steveparty:workshop/signs/stencil_maker",
+  "display": {
+    "icon": {
+      "id": "steveparty:stencil_maker",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.steveparty.workshop.signs.all_stencil_patterns.title"
+    },
+    "description": {
+      "translate": "advancements.steveparty.workshop.signs.all_stencil_patterns.description"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "unlocked_all": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlocked_all"
+    ]
+  ],
+  "rewards": {
+    "experience": 100,
+    "loot": [
+      "steveparty:advancement_reward/coins_25"
+    ]
+  }
+}

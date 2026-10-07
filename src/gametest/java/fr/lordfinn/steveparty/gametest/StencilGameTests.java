@@ -20,6 +20,7 @@ import fr.lordfinn.steveparty.stencil.StencilLibrary;
 import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import net.minecraft.server.network.ServerPlayerEntity;
 import fr.lordfinn.steveparty.stencil.StencilShape;
+import fr.lordfinn.steveparty.stencil.StencilUnlocks;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -684,6 +685,15 @@ public class StencilGameTests implements FabricGameTest {
             player.getInventory().insertStack(stencil("crown"));
             StencilLibrary.learnFromInventory(player);
             context.assertTrue(StencilLibrary.of(player).contains(pattern("crown")), "found stencils are learnt");
+            StencilUnlocks unlocks = StencilUnlocks.of(player);
+            context.assertTrue(unlocks.isUnlocked(StencilPatterns.byId("crown")), "found patterns are unlocked");
+            context.assertTrue(unlocks.isUnlocked(StencilPatterns.byId("up_arrow")), "free patterns are always unlocked");
+            context.assertTrue(!unlocks.isUnlocked(StencilPatterns.byId("ghost")), "the others stay locked");
+            player.getInventory().clear();
+            library = StencilLibrary.of(player).without(pattern("crown"));
+            StencilLibrary.set(player, library);
+            StencilLibrary.learnFromInventory(player);
+            context.assertTrue(StencilUnlocks.of(player).isUnlocked(StencilPatterns.byId("crown")), "still unlocked after removing it from the library");
         } finally {
             context.getWorld().getServer().getPlayerManager().remove(player);
         }
@@ -1160,15 +1170,16 @@ public class StencilGameTests implements FabricGameTest {
         LootContextParameterSet loot = new LootContextParameterSet.Builder(world)
                 .add(LootContextParameters.ORIGIN, Vec3d.ofCenter(context.getAbsolutePos(BlockPos.ORIGIN)))
                 .build(LootContextTypes.CHEST);
-        int found = 0;
+        int count = 0;
         for (long seed = 0; seed < 200; seed++) {
             for (ItemStack stack : table.generateLoot(loot, seed)) {
                 if (!stack.isOf(ModItems.STENCIL)) continue;
-                context.assertTrue(StencilPatterns.byShape(StencilItem.getShape(stack)) != null, "a library pattern");
-                found++;
+                StencilPatterns.Pattern found = StencilPatterns.byShape(StencilItem.getShape(stack));
+                context.assertTrue(found != null && !found.free(), "a library pattern to unlock, never a free one");
+                count++;
             }
         }
-        context.assertTrue(found > 20, "stencils in cartographer chests (" + found + " in 200 chests)");
+        context.assertTrue(count > 20, "stencils in cartographer chests (" + count + " in 200 chests)");
         context.complete();
     }
 

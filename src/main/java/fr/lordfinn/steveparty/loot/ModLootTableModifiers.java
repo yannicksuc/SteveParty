@@ -40,8 +40,12 @@ public final class ModLootTableModifiers {
     /** Illusioners are rare (never spawn naturally in vanilla survival). */
     private static final float ILLUSIONER_CHANCE = 0.25F;
 
-    /** Chest → chance to find 1 or 2 patterned stencils in it. */
+    /**
+     * Chest → chance to find 1 or 2 patterned stencils in it: (nearly) every structure chest, the rarer and harder
+     * to reach, the likelier. Left out: the bonus chest, the jungle temple's dispensers, the vaults' sub-tables.
+     */
     private static final Map<RegistryKey<LootTable>, Float> STENCIL_CHESTS = Map.ofEntries(
+            // Villages: the houses and every workshop
             Map.entry(LootTables.VILLAGE_PLAINS_CHEST, 0.25F),
             Map.entry(LootTables.VILLAGE_DESERT_HOUSE_CHEST, 0.25F),
             Map.entry(LootTables.VILLAGE_SAVANNA_HOUSE_CHEST, 0.25F),
@@ -49,25 +53,52 @@ public final class ModLootTableModifiers {
             Map.entry(LootTables.VILLAGE_TAIGA_HOUSE_CHEST, 0.25F),
             Map.entry(LootTables.VILLAGE_CARTOGRAPHER_CHEST, 0.5F),
             Map.entry(LootTables.VILLAGE_MASON_CHEST, 0.35F),
+            Map.entry(LootTables.VILLAGE_WEAPONSMITH_CHEST, 0.2F),
+            Map.entry(LootTables.VILLAGE_TOOLSMITH_CHEST, 0.2F),
+            Map.entry(LootTables.VILLAGE_ARMORER_CHEST, 0.2F),
+            Map.entry(LootTables.VILLAGE_SHEPARD_CHEST, 0.3F),
+            Map.entry(LootTables.VILLAGE_BUTCHER_CHEST, 0.2F),
+            Map.entry(LootTables.VILLAGE_FLETCHER_CHEST, 0.2F),
+            Map.entry(LootTables.VILLAGE_FISHER_CHEST, 0.2F),
+            Map.entry(LootTables.VILLAGE_TANNERY_CHEST, 0.25F),
+            Map.entry(LootTables.VILLAGE_TEMPLE_CHEST, 0.3F),
+            // Overworld structures
             Map.entry(LootTables.SIMPLE_DUNGEON_CHEST, 0.3F),
             Map.entry(LootTables.ABANDONED_MINESHAFT_CHEST, 0.3F),
             Map.entry(LootTables.DESERT_PYRAMID_CHEST, 0.35F),
             Map.entry(LootTables.JUNGLE_TEMPLE_CHEST, 0.35F),
+            Map.entry(LootTables.IGLOO_CHEST_CHEST, 0.4F),
+            Map.entry(LootTables.PILLAGER_OUTPOST_CHEST, 0.3F),
+            Map.entry(LootTables.WOODLAND_MANSION_CHEST, 0.3F),
             Map.entry(LootTables.STRONGHOLD_LIBRARY_CHEST, 0.4F),
             Map.entry(LootTables.STRONGHOLD_CORRIDOR_CHEST, 0.2F),
-            Map.entry(LootTables.WOODLAND_MANSION_CHEST, 0.3F),
-            Map.entry(LootTables.PILLAGER_OUTPOST_CHEST, 0.3F),
+            Map.entry(LootTables.STRONGHOLD_CROSSING_CHEST, 0.2F),
+            Map.entry(LootTables.RUINED_PORTAL_CHEST, 0.2F),
+            Map.entry(LootTables.ANCIENT_CITY_CHEST, 0.3F),
+            Map.entry(LootTables.ANCIENT_CITY_ICE_BOX_CHEST, 0.15F),
+            // The sea
             Map.entry(LootTables.SHIPWRECK_MAP_CHEST, 0.35F),
             Map.entry(LootTables.SHIPWRECK_SUPPLY_CHEST, 0.25F),
+            Map.entry(LootTables.SHIPWRECK_TREASURE_CHEST, 0.25F),
             Map.entry(LootTables.BURIED_TREASURE_CHEST, 0.3F),
             Map.entry(LootTables.UNDERWATER_RUIN_SMALL_CHEST, 0.2F),
             Map.entry(LootTables.UNDERWATER_RUIN_BIG_CHEST, 0.3F),
-            Map.entry(LootTables.IGLOO_CHEST_CHEST, 0.4F),
-            Map.entry(LootTables.RUINED_PORTAL_CHEST, 0.2F),
-            Map.entry(LootTables.ANCIENT_CITY_CHEST, 0.3F),
-            Map.entry(LootTables.BASTION_OTHER_CHEST, 0.2F),
+            // Trial chambers, and their vaults
             Map.entry(LootTables.TRIAL_CHAMBERS_SUPPLY_CHEST, 0.25F),
-            Map.entry(LootTables.TRIAL_CHAMBERS_CORRIDOR_CHEST, 0.25F));
+            Map.entry(LootTables.TRIAL_CHAMBERS_CORRIDOR_CHEST, 0.25F),
+            Map.entry(LootTables.TRIAL_CHAMBERS_INTERSECTION_CHEST, 0.25F),
+            Map.entry(LootTables.TRIAL_CHAMBERS_INTERSECTION_BARREL_CHEST, 0.2F),
+            Map.entry(LootTables.TRIAL_CHAMBERS_ENTRANCE_CHEST, 0.2F),
+            Map.entry(LootTables.TRIAL_CHAMBERS_REWARD_CHEST, 0.3F),
+            Map.entry(LootTables.TRIAL_CHAMBERS_REWARD_OMINOUS_CHEST, 0.4F),
+            // The Nether
+            Map.entry(LootTables.NETHER_BRIDGE_CHEST, 0.3F),
+            Map.entry(LootTables.BASTION_OTHER_CHEST, 0.2F),
+            Map.entry(LootTables.BASTION_BRIDGE_CHEST, 0.25F),
+            Map.entry(LootTables.BASTION_HOGLIN_STABLE_CHEST, 0.25F),
+            Map.entry(LootTables.BASTION_TREASURE_CHEST, 0.5F),
+            // The End
+            Map.entry(LootTables.END_CITY_TREASURE_CHEST, 0.5F));
 
     private ModLootTableModifiers() {
     }
