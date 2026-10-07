@@ -124,9 +124,7 @@ run-server/
 run2/
 .dev-launch/
 
-# Mula preview videos (the art sources, rendered locally)
-the art sources/
-
-# Local-only dev mods
+# Local-only dev mods and build additions
 dev-mods/
+local.gradle
 __pycache__/
