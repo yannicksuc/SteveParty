@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.recipes.TileShapedRecipe;
+
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -76,23 +78,104 @@ public class TileCartridgeGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- recipes
 
-    /** The Tile is crafted holding a plain Cartridge (two at a time, they stack); the Advanced Tile comes empty. */
+    private static ItemStack slab(net.minecraft.util.DyeColor colour) {
+        return new ItemStack(ModBlocks.PLASTIC_SLABS[colour.getId()]);
+    }
+
+    /**
+     * The Tile: white plastic slabs, an iron pressure plate and a cartridge, which it holds as it is (colour, links,
+     * settings); one Tile. The recipe shows it holding a plain Cartridge. Nothing in the bottom row.
+     */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void aCraftedTileHoldsAPlainCartridge(TestContext context) {
+    public void aCraftedTileHoldsTheCartridgeOfItsRecipe(TestContext context) {
         var manager = context.getWorld().getServer().getRecipeManager();
-        ItemStack tile = manager.get(Steveparty.id("tile")).orElseThrow().value().getResult(context.getWorld().getRegistryManager());
-        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 2, "two tiles: " + tile);
-        List<TileContents.Slot> held = TileContents.cartridges(tile);
+        ItemStack shown = manager.get(Steveparty.id("tile")).orElseThrow().value().getResult(context.getWorld().getRegistryManager());
+        context.assertTrue(shown.isOf(ModBlocks.TILE.asItem()) && shown.getCount() == 1, "one tile: " + shown);
+        List<TileContents.Slot> held = TileContents.cartridges(shown);
         context.assertTrue(held.size() == 1 && held.getFirst().cartridge().isOf(ModItems.BOARD_SPACE_BEHAVIOR)
-                && held.getFirst().cartridge().getComponentChanges().isEmpty(), "each holding a plain Cartridge: " + held);
-        // Crafted from the grid
-        CraftingRecipeInput grid = CraftingRecipeInput.create(3, 2, List.of(
-                new ItemStack(Items.WHITE_CARPET), new ItemStack(Items.WHITE_CARPET), new ItemStack(Items.WHITE_CARPET),
-                plain(), new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), plain()));
-        ItemStack crafted = craft(context, grid);
-        context.assertTrue(ItemStack.areItemsAndComponentsEqual(crafted, tile), "the grid gives them: " + crafted);
-        ItemStack advanced = manager.get(Steveparty.id("advanced_tile")).orElseThrow().value().getResult(context.getWorld().getRegistryManager());
-        context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()) && TileContents.cartridges(advanced).isEmpty(), "an empty Advanced Tile");
+                && held.getFirst().cartridge().getComponentChanges().isEmpty(), "shown holding a plain Cartridge: " + held);
+
+        ItemStack p = slab(net.minecraft.util.DyeColor.WHITE), iron = new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE);
+        CraftingRecipeInput grid = CraftingRecipeInput.create(3, 2, List.of(p, iron, p, p, plain(), p));
+        context.assertTrue(match(context, grid).orElseThrow().value() instanceof TileShapedRecipe, "the tile recipe");
+        context.assertTrue(ItemStack.areItemsAndComponentsEqual(craft(context, grid), shown), "a plain Cartridge: the tile shown");
+
+        // Any cartridge, kept as it is: its colour, its links, its settings
+        BlockPos somewhere = context.getAbsolutePos(new BlockPos(1, 1, 1));
+        ItemStack shop = linked(new ItemStack(ModItems.SHOP_CARTRIDGE), somewhere);
+        shop.set(ModComponents.COLOR, 0x3355FF);
+        ItemStack back = fr.lordfinn.steveparty.items.custom.cartridges.AdvanceBackCartridgeItem.withSteps(-5);
+        for (ItemStack cartridge : List.of(shop, back)) {
+            ItemStack tile = craft(context, CraftingRecipeInput.create(3, 2, List.of(p, iron, p, p, cartridge, p)));
+            List<TileContents.Slot> in = TileContents.cartridges(tile);
+            context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1 && in.size() == 1
+                    && ItemStack.areItemsAndComponentsEqual(in.getFirst().cartridge(), cartridge), "the Tile holds " + cartridge + ": " + in);
+        }
+        context.assertTrue(!BoardLinks.links(TileContents.cartridges(craft(context, CraftingRecipeInput.create(3, 2,
+                List.of(p, iron, p, p, shop, p)))).getFirst().cartridge()).isEmpty(), "with its links");
+
+        // Not without a cartridge, not with another slab colour, not with something under it
+        context.assertTrue(match(context, CraftingRecipeInput.create(3, 2, List.of(p, iron, p, p, EMPTY, p))).isEmpty(), "a cartridge is needed");
+        ItemStack y = slab(net.minecraft.util.DyeColor.YELLOW);
+        context.assertTrue(match(context, CraftingRecipeInput.create(3, 2, List.of(y, iron, y, y, plain(), y))).isEmpty(), "white slabs");
+        context.assertTrue(match(context, CraftingRecipeInput.create(3, 3, List.of(p, iron, p, p, plain(), p, EMPTY, plain(), EMPTY))).isEmpty(),
+                "nothing under a Tile's recipe");
+        ItemStack carpet = new ItemStack(Items.WHITE_CARPET);
+        context.assertTrue(match(context, CraftingRecipeInput.create(3, 2, List.of(carpet, carpet, carpet,
+                plain(), new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), plain()))).isEmpty(), "no longer from carpets");
+        context.complete();
+    }
+
+    /**
+     * The Advanced Tile: yellow plastic slabs, a gold pressure plate, a trapped chest and two cartridges, loaded in
+     * slots 0 and 15 (left, right); cartridges in the bottom row, optional, come next (14, 13, 12), as they are.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aCraftedAdvancedTileHoldsTheCartridgesOfItsRecipe(TestContext context) {
+        var manager = context.getWorld().getServer().getRecipeManager();
+        ItemStack shown = manager.get(Steveparty.id("advanced_tile")).orElseThrow().value().getResult(context.getWorld().getRegistryManager());
+        context.assertTrue(shown.isOf(ModBlocks.ADVANCED_TILE.asItem()) && shown.getCount() == 1 && slots(shown).equals(List.of(0, 15)),
+                "shown holding two Cartridges, slots 0 and 15: " + slots(shown));
+
+        ItemStack p = slab(net.minecraft.util.DyeColor.YELLOW), gold = new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE),
+                chest = new ItemStack(Items.TRAPPED_CHEST);
+        ItemStack start = new ItemStack(ModItems.TILE_BEHAVIOR_START), stop = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP);
+        CraftingRecipeInput grid = CraftingRecipeInput.create(3, 2, List.of(p, gold, p, start, chest, stop));
+        context.assertTrue(match(context, grid).orElseThrow().value() instanceof TileShapedRecipe, "the tile recipe");
+        ItemStack two = craft(context, grid);
+        List<TileContents.Slot> held = TileContents.cartridges(two);
+        context.assertTrue(two.isOf(ModBlocks.ADVANCED_TILE.asItem()) && two.getCount() == 1 && slots(two).equals(List.of(0, 15))
+                && held.get(0).cartridge().isOf(ModItems.TILE_BEHAVIOR_START) && held.get(1).cartridge().isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP),
+                "left in 0, right in 15: " + held);
+
+        BlockPos somewhere = context.getAbsolutePos(new BlockPos(1, 1, 1));
+        ItemStack shop = linked(new ItemStack(ModItems.SHOP_CARTRIDGE), somewhere);
+        ItemStack teleport = new ItemStack(ModItems.TELEPORT_CARTRIDGE);
+        ItemStack more = craft(context, CraftingRecipeInput.create(3, 3, List.of(p, gold, p, start, chest, stop, shop, EMPTY, teleport)));
+        context.assertTrue(slots(more).equals(List.of(0, 13, 14, 15)), "the extra ones in 14 then 13: " + slots(more));
+        java.util.Map<Integer, ItemStack> bySlot = new java.util.HashMap<>();
+        for (TileContents.Slot slot : TileContents.cartridges(more)) bySlot.put(slot.slot(), slot.cartridge());
+        context.assertTrue(ItemStack.areItemsAndComponentsEqual(bySlot.get(14), shop), "the Shop Cartridge, links kept, in 14");
+        context.assertTrue(bySlot.get(13).isOf(ModItems.TELEPORT_CARTRIDGE), "the Teleport one in 13");
+        ItemStack three = craft(context, CraftingRecipeInput.create(3, 3, List.of(p, gold, p, start, chest, stop, plain(), plain(), plain())));
+        context.assertTrue(slots(three).equals(List.of(0, 12, 13, 14, 15)), "a full bottom row: 14, 13, 12: " + slots(three));
+
+        // The bottom row takes cartridges only; the two of the pattern are needed
+        context.assertTrue(match(context, CraftingRecipeInput.create(3, 3, List.of(p, gold, p, start, chest, stop, EMPTY, new ItemStack(Items.STONE), EMPTY))).isEmpty(),
+                "only cartridges under it");
+        context.assertTrue(match(context, CraftingRecipeInput.create(3, 2, List.of(p, gold, p, start, chest, EMPTY))).isEmpty(), "two cartridges needed");
+        context.assertTrue(match(context, CraftingRecipeInput.create(3, 2, List.of(p, gold, p, start, new ItemStack(Items.CHEST), stop))).isEmpty(),
+                "a trapped chest, not a chest");
+        context.complete();
+    }
+
+    /** Every cartridge is in the tag the tile recipes take. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void everyCartridgeIsInTheCartridgesTag(TestContext context) {
+        net.minecraft.registry.tag.TagKey<net.minecraft.item.Item> tag =
+                net.minecraft.registry.tag.TagKey.of(net.minecraft.registry.RegistryKeys.ITEM, Steveparty.id("cartridges"));
+        for (ItemStack cartridge : fr.lordfinn.steveparty.compat.CartridgeApplications.cartridges())
+            context.assertTrue(cartridge.isIn(tag), cartridge.getItem() + " is in #steveparty:cartridges");
         context.complete();
     }
 

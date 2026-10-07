@@ -7,7 +7,13 @@ import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
+import me.shedaniel.rei.plugin.common.displays.crafting.DefaultCustomShapedDisplay;
 import me.shedaniel.rei.plugin.common.displays.crafting.DefaultCustomShapelessDisplay;
+import dev.architectury.event.EventResult;
+import fr.lordfinn.steveparty.recipes.TileCartridgeRecipe;
+import net.minecraft.item.Items;
+import net.minecraft.util.DyeColor;
+import net.minecraft.util.Identifier;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
@@ -65,6 +71,45 @@ public class SteveReiPlugin implements REIClientPlugin {
         registerDiceDisplays(registry);
         registerDiceForgeDisplay(registry);
         registerTileCartridgeDisplays(registry);
+        registerTileRecipeDisplays(registry);
+    }
+
+    /**
+     * The Tile and Advanced Tile recipes (TileShapedRecipe): the tile crafted holds the cartridges of the grid, which REI
+     * can't tell from the recipe alone. Their plain displays are replaced by ones whose cartridge cycles along with the
+     * tile it gives; the Advanced Tile's also shown with an optional cartridge in the row under it.
+     */
+    private static void registerTileRecipeDisplays(DisplayRegistry registry) {
+        Identifier tileId = Steveparty.id("tile"), advancedId = Steveparty.id("advanced_tile");
+        registry.registerVisibilityPredicate((category, display) -> display.getDisplayLocation()
+                .filter(id -> id.equals(tileId) || id.equals(advancedId)).isPresent()
+                && !(display instanceof DefaultCustomShapedDisplay) ? EventResult.interruptFalse() : EventResult.pass());
+        List<ItemStack> cartridges = CartridgeApplications.cartridges();
+        EntryIngredient cycle = EntryIngredients.ofItemStacks(cartridges);
+        EntryIngredient none = EntryIngredient.empty();
+
+        EntryIngredient white = EntryIngredients.of(ModBlocks.PLASTIC_SLABS[DyeColor.WHITE.getId()]);
+        List<ItemStack> tiles = new ArrayList<>();
+        for (ItemStack cartridge : cartridges) tiles.add(CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), cartridge));
+        registry.add(DefaultCustomShapedDisplay.simple(
+                List.of(white, EntryIngredients.of(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), white, white, cycle, white),
+                List.of(EntryIngredients.ofItemStacks(tiles)), 3, 2, Optional.of(tileId)));
+
+        EntryIngredient yellow = EntryIngredients.of(ModBlocks.PLASTIC_SLABS[DyeColor.YELLOW.getId()]);
+        EntryIngredient gold = EntryIngredients.of(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), chest = EntryIngredients.of(Items.TRAPPED_CHEST);
+        EntryIngredient plain = EntryIngredients.of(ModItems.BOARD_SPACE_BEHAVIOR);
+        List<ItemStack> two = new ArrayList<>(), three = new ArrayList<>();
+        for (ItemStack cartridge : cartridges) {
+            ItemStack basic = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+            two.add(TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE), List.of(cartridge, basic)));
+            three.add(TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE), List.of(cartridge, basic, cartridge)));
+        }
+        registry.add(DefaultCustomShapedDisplay.simple(
+                List.of(yellow, gold, yellow, cycle, chest, plain),
+                List.of(EntryIngredients.ofItemStacks(two)), 3, 2, Optional.of(advancedId)));
+        registry.add(DefaultCustomShapedDisplay.simple(
+                List.of(yellow, gold, yellow, cycle, chest, plain, cycle, none, none),
+                List.of(EntryIngredients.ofItemStacks(three)), 3, 3, Optional.of(advancedId)));
     }
 
     /**

@@ -23,7 +23,8 @@ LANG = MAIN / "resources" / "assets" / "steveparty_guide" / "lang"
 VANILLA_OK = {"minecraft:clock", "minecraft:armor_stand", "minecraft:enchanted_book", "minecraft:barrier",
               "minecraft:glow_ink_sac", "minecraft:book"}
 RECIPE_TYPES = {
-    "modonomicon:crafting_recipe": {"minecraft:crafting_shaped", "minecraft:crafting_shapeless"},
+    # steveparty:tile_shaped is a ShapedRecipe subclass (TileShapedRecipe): drawn like a shaped recipe
+    "modonomicon:crafting_recipe": {"minecraft:crafting_shaped", "minecraft:crafting_shapeless", "steveparty:tile_shaped"},
     "modonomicon:smelting_recipe": {"minecraft:smelting"},
     "modonomicon:stonecutting_recipe": {"minecraft:stonecutting"},
 }

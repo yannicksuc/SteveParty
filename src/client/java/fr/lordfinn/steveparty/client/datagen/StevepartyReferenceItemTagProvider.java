@@ -22,6 +22,10 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
     public static final TagKey<Item> STAR_FRAGMENTS_TAG =
             TagKey.of(RegistryKeys.ITEM, Steveparty.id("star_fragments"));
 
+    /** Every cartridge (the C of the Tile and Advanced Tile recipes). */
+    public static final TagKey<Item> CARTRIDGES_TAG =
+            TagKey.of(RegistryKeys.ITEM, Steveparty.id("cartridges"));
+
     public StevepartyReferenceItemTagProvider(FabricDataOutput output, CompletableFuture<RegistryWrapper.WrapperLookup> registriesFuture) {
         super(output, RegistryKeys.ITEM, registriesFuture);
     }
@@ -30,6 +34,11 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
     protected void configure(RegistryWrapper.WrapperLookup wrapperLookup) {
         for (Item diceFace : ModItems.DICE_FACES)
             getOrCreateTagBuilder(DICE_FACES_TAG).add(diceFace);
+        for (Item item : net.minecraft.registry.Registries.ITEM) {
+            if (item instanceof fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem
+                    && Steveparty.MOD_ID.equals(net.minecraft.registry.Registries.ITEM.getId(item).getNamespace()))
+                getOrCreateTagBuilder(CARTRIDGES_TAG).add(item);
+        }
         for (Item fragment : ModItems.STAR_FRAGMENTS)
             getOrCreateTagBuilder(STAR_FRAGMENTS_TAG).add(fragment);
         for (net.minecraft.block.Block fence : fr.lordfinn.steveparty.blocks.ModBlocks.PLASTIC_FENCES)

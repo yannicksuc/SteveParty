@@ -203,15 +203,14 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.ENDER_PEARL)).isOf(ModItems.TELEPORT_CARTRIDGE), "teleport cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.POWER_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
 
-        ItemStack carpet = new ItemStack(Items.RED_CARPET);
-        // Two tiles, each holding a plain Cartridge
-        ItemStack tile = result(context, 3, 2, carpet, new ItemStack(Items.BLUE_CARPET), carpet,
-                cartridge, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), cartridge);
-        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 2
-                && fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.cartridges(tile).size() == 1, "two equipped tiles, got " + tile);
-        ItemStack gold = new ItemStack(Items.GOLD_INGOT);
-        ItemStack advanced = result(context, 3, 3, e, new ItemStack(Items.COMPARATOR), e,
-                gold, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), gold, gold, new ItemStack(Items.CHEST), gold);
+        // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
+        ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.WHITE.getId()]);
+        ItemStack tile = result(context, 3, 2, white, new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), white, white, cartridge, white);
+        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1
+                && fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents.cartridges(tile).size() == 1, "an equipped tile, got " + tile);
+        ItemStack yellow = new ItemStack(ModBlocks.PLASTIC_SLABS[net.minecraft.util.DyeColor.YELLOW.getId()]);
+        ItemStack advanced = result(context, 3, 2, yellow, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), yellow,
+                cartridge, new ItemStack(Items.TRAPPED_CHEST), cartridge);
         context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
 
         // Mini-game pages: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)

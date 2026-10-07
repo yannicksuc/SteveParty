@@ -7,6 +7,7 @@ import fr.lordfinn.steveparty.dice.DiceModule;
 import fr.lordfinn.steveparty.dice.DiceModules;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.recipes.DiceModuleRecipe;
+import fr.lordfinn.steveparty.recipes.TileShapedRecipe;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import fr.lordfinn.steveparty.blocks.custom.tiles.PolishedTilesBlock;
@@ -349,37 +350,43 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
         // A Power Star: the star the space sells
         offerCartridge(ModItems.STAR_CARTRIDGE, ModItems.POWER_STAR);
 
-        // The Tile: a cloth face (carpets) on the pressure plate that feels the tokens landing on it, and a
-        // Cartridge each (its plastic is the board): two at a time, each holding its plain Cartridge, ready to link.
-        // Same price as a Tile filled by hand before, a pellet less (the cartridges' plastic is the board).
+        // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
+        // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)
         Identifier tile = Steveparty.id("tile");
-        ItemStack equipped = TileContents.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
-        equipped.setCount(2);
-        exporter.accept(tile, new ShapedRecipe("", CraftingRecipeCategory.REDSTONE, RawShapedRecipe.create(Map.of(
-                        'W', Ingredient.fromTag(ItemTags.WOOL_CARPETS),
-                        'K', Ingredient.ofItems(ModItems.BOARD_SPACE_BEHAVIOR),
-                        'P', Ingredient.ofItems(Items.LIGHT_WEIGHTED_PRESSURE_PLATE)), "WWW", "KPK"), equipped, true),
+        Ingredient cartridges = Ingredient.fromTag(StevepartyReferenceItemTagProvider.CARTRIDGES_TAG);
+        Item whiteSlab = ModBlocks.PLASTIC_SLABS[DyeColor.WHITE.getId()].asItem();
+        exporter.accept(tile, new TileShapedRecipe("", CraftingRecipeCategory.REDSTONE, RawShapedRecipe.create(Map.of(
+                        'P', Ingredient.ofItems(whiteSlab),
+                        'I', Ingredient.ofItems(Items.HEAVY_WEIGHTED_PRESSURE_PLATE),
+                        'C', cartridges), "PIP", "PCP"),
+                        TileContents.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR)), true),
                 exporter.getAdvancementBuilder()
                         .criterion("has_the_recipe", RecipeUnlockedCriterion.create(tile))
                         .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
                         .criterion(hasItem(ModItems.BOARD_SPACE_BEHAVIOR), conditionsFromItem(ModItems.BOARD_SPACE_BEHAVIOR))
-                        .criterion(hasItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.LIGHT_WEIGHTED_PRESSURE_PLATE))
+                        .criterion(hasItem(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.HEAVY_WEIGHTED_PRESSURE_PLATE))
                         .rewards(AdvancementRewards.Builder.recipe(tile))
                         .criteriaMerger(AdvancementRequirements.CriterionMerger.OR)
                         .build(tile.withPrefixedPath("recipes/redstone/")));
 
-        // The Advanced Tile, empty: a pressure plate in a gold frame, a chest for its 16 cartridges and a
-        // comparator reading the redstone power that picks the active one. Tiles crafted with it fill it.
-        ShapedRecipeJsonBuilder.create(RecipeCategory.REDSTONE, ModBlocks.ADVANCED_TILE)
-                .pattern(" R ")
-                .pattern("GPG")
-                .pattern("GCG")
-                .input('R', Items.COMPARATOR)
-                .input('G', Items.GOLD_INGOT)
-                .input('P', Items.LIGHT_WEIGHTED_PRESSURE_PLATE)
-                .input('C', Items.CHEST)
-                .criterion(hasItem(ModBlocks.TILE), conditionsFromItem(ModBlocks.TILE))
-                .offerTo(exporter);
+        // The Advanced Tile: yellow plastic slabs, a gold pressure plate, a trapped chest for its 16 cartridges and
+        // two cartridges (slots 0 and 15); more cartridges may go in the row under it (TileShapedRecipe)
+        Identifier advanced = Steveparty.id("advanced_tile");
+        Item yellowSlab = ModBlocks.PLASTIC_SLABS[DyeColor.YELLOW.getId()].asItem();
+        ItemStack shownAdvanced = fr.lordfinn.steveparty.recipes.TileCartridgeRecipe.fill(new ItemStack(ModBlocks.ADVANCED_TILE),
+                List.of(new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR)));
+        exporter.accept(advanced, new TileShapedRecipe("", CraftingRecipeCategory.REDSTONE, RawShapedRecipe.create(Map.of(
+                        'P', Ingredient.ofItems(yellowSlab),
+                        'G', Ingredient.ofItems(Items.LIGHT_WEIGHTED_PRESSURE_PLATE),
+                        'B', Ingredient.ofItems(Items.TRAPPED_CHEST),
+                        'C', cartridges), "PGP", "CBC"), shownAdvanced, true),
+                exporter.getAdvancementBuilder()
+                        .criterion("has_the_recipe", RecipeUnlockedCriterion.create(advanced))
+                        .criterion(hasItem(ModBlocks.TILE), conditionsFromItem(ModBlocks.TILE))
+                        .criterion(hasItem(Items.TRAPPED_CHEST), conditionsFromItem(Items.TRAPPED_CHEST))
+                        .rewards(AdvancementRewards.Builder.recipe(advanced))
+                        .criteriaMerger(AdvancementRequirements.CriterionMerger.OR)
+                        .build(advanced.withPrefixedPath("recipes/redstone/")));
 
         // Pages for the catalogue: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)
         ShapedRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.MINI_GAME_PAGE, 4)

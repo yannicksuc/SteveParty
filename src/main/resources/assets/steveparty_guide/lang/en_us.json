@@ -65,7 +65,7 @@
   "book.steveparty.guide.board.spaces.name": "Tiles & Checkpoints",
   "book.steveparty.guide.board.spaces.page0.text": "A board is made of spaces. Each space holds **cartridges** that give it a role and its next destinations.\n\n- **Tile** (grey rim): 1 cartridge, counts as a step.\n- **Advanced Tile** (gold rim): 16 cartridges, redstone picks the active one.\n- **Checkpoint**: 16 cartridges, does **not** count as a step.",
   "book.steveparty.guide.board.spaces.page0.title": "Tiles & Checkpoints",
-  "book.steveparty.guide.board.spaces.page1.text": "Tiles come two at a time, each holding a plain Cartridge: placed, ready to link. Any carpet colour works. The Advanced Tile comes empty.",
+  "book.steveparty.guide.board.spaces.page1.text": "A Tile keeps its recipe's cartridge as is (colour, links, settings). Advanced Tile: its two in slots 0 and 15, optional extra ones (bottom row) in 14, 13, 12.",
   "book.steveparty.guide.board.spaces.page2.text": "At the crafting grid (2x2 or table):\n\n- **Tile + a cartridge**: the Tile holds that one, its old one comes back.\n- **A Tile alone**: emptied, its cartridge back.\n- **Advanced Tile + Tiles or cartridges**: they fill its free slots, in the order 0, 15, 14… 1; the Tiles are used up. More than free slots: no craft.",
   "book.steveparty.guide.board.spaces.page2.title": "Changing Cartridges",
   "book.steveparty.guide.board.spaces.page3.text": "A floating glass cube without collision: pawns cross it for free, handy for turns and forks.",
