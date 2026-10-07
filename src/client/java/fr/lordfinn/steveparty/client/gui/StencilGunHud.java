@@ -38,14 +38,6 @@ public final class StencilGunHud {
 
     public static void initialize() {
         HudRenderCallback.EVENT.register(StencilGunHud::render);
-        // The inventory key, hammer in hand: the inventory with the hammer's slots on its sides
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.START_CLIENT_TICK.register(client -> {
-            if (client.currentScreen != null || !isHoldingGun(client) || client.player.isSpectator()) return;
-            boolean pressed = false;
-            while (client.options.inventoryKey.wasPressed()) pressed = true;
-            if (pressed) net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
-                    new fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload(fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload.Action.HAMMER_OPEN, 0));
-        });
         fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.register(new fr.lordfinn.steveparty.client.hammer.HammerWheel());
     }
 

@@ -11,11 +11,9 @@ import fr.lordfinn.steveparty.stencil.StencilPatterns;
 import fr.lordfinn.steveparty.stencil.StencilShape;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
@@ -26,17 +24,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Stencil Hammer's wheel: its slots themselves, as cases to pick. On the right its 9 stencil slots, on the left
- * Engrave (bottom) and its 9 dye slots going up; an empty slot shows the silhouette of what it takes, and a click on
- * it opens the hammer's slots beside the inventory to fill it, as the chest on top does. Engrave is a netherite
- * pickaxe, or an axe when the player looks at a cut-out panel (the hammer cuts it). A pick applies at once.
+ * The Stencil Hammer's wheel: what it holds and nothing else. At the top one button, its refill (its slots in a
+ * wheel of their own, see StencilGunScreen), its loaded stencils on the right, its loaded dyes on the left. No paint
+ * (engrave) is the selected dye clicked again, or no dye at all: the HUD then shows a netherite pickaxe (an axe at a
+ * cut-out panel). A pick applies at once.
  */
 public final class HammerWheel implements ToolWheel.Provider {
-    private static final List<ToolWheel.Ring> RINGS = List.of(new ToolWheel.Ring(34, 116));
-    private static final float TOP = 12;
-    private static final int PAPER = 0xC9B48C, GREY = 0x8B8B8B, WOOD = 0x9C7A4C;
-    public static final Identifier EMPTY_STENCIL = Steveparty.id("item/empty_slot_stencil");
-    public static final Identifier EMPTY_DYE = Steveparty.id("item/empty_slot_dye");
+    private static final List<ToolWheel.Ring> RINGS = List.of(new ToolWheel.Ring(30, 92));
+    /** The mod's neutral teal; stencils on paper, dyes in their colour. */
+    private static final int PAPER = 0xC9B48C, TEAL = 0x7FA3A9;
+    /** Degrees the refill button takes either side of the top. */
+    private static final float PLUS = 24;
 
     @Override
     public boolean handles(ItemStack stack) {
@@ -50,21 +48,11 @@ public final class HammerWheel implements ToolWheel.Provider {
         StencilGunItem.Load load = StencilGunItem.selectedLoad(hammer);
         int paint = load.color() != null ? 0xFF000000 | load.color().getEntityColor() : 0xFF6A6A6A;
 
-        // Top: its slots beside the inventory
-        ToolWheel.Sector inventory = new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.inventory"),
-                Text.translatable("wheel.steveparty.hammer.inventory.hint"), WOOD,
-                item(new ItemStack(Items.CHEST)), false, true, () -> send(ToolWheelPayload.Action.HAMMER_OPEN, 0));
-
-        // Right: the stencil slots
+        // Right: the loaded stencils
         List<ToolWheel.Sector> stencils = new ArrayList<>();
-        boolean anyStencil = false;
         for (int slot = 0; slot < StencilGunItem.STENCIL_SLOTS; slot++) {
             ItemStack stencil = contents.get(slot);
-            if (stencil.isEmpty()) {
-                stencils.add(empty("wheel.steveparty.hammer.empty_stencil", EMPTY_STENCIL));
-                continue;
-            }
-            anyStencil = true;
+            if (stencil.isEmpty()) continue;
             byte[] shape = stencil.getItem() instanceof StencilItem ? StencilItem.getShape(stencil) : null;
             StencilPatterns.Pattern pattern = shape == null ? null : StencilPatterns.byShape(shape);
             Text name = pattern != null ? pattern.name() : Text.translatable("tooltip.steveparty.stencil.custom");
@@ -73,38 +61,37 @@ public final class HammerWheel implements ToolWheel.Provider {
                     !StencilShape.isBlank(shape), () -> send(ToolWheelPayload.Action.HAMMER_STENCIL, value)));
         }
 
-        // Left: Engrave (bottom), then the dye slots going up
-        List<ToolWheel.Sector> colors = new ArrayList<>();
-        boolean cuts = looksAtCutOutPanel(client);
-        colors.add(new ToolWheel.Sector(Text.translatable(cuts ? "wheel.steveparty.hammer.cut" : "wheel.steveparty.hammer.engrave"),
-                Text.translatable(cuts ? "wheel.steveparty.hammer.cut.hint" : "wheel.steveparty.hammer.engrave.hint"), GREY,
-                item(engraveIcon(client)), selection.dye() == StencilGunSelection.ENGRAVE, true,
-                () -> send(ToolWheelPayload.Action.HAMMER_DYE, StencilGunSelection.ENGRAVE)));
+        // Left: the loaded dyes; the selected one clicked again is let go of (no paint: engraved)
+        List<ToolWheel.Sector> dyes = new ArrayList<>();
         for (int slot = 0; slot < StencilGunItem.DYE_SLOTS; slot++) {
             ItemStack dye = contents.get(StencilGunItem.STENCIL_SLOTS + slot);
-            if (!(dye.getItem() instanceof DyeItem dyeItem)) {
-                colors.add(empty("wheel.steveparty.hammer.empty_dye", EMPTY_DYE));
-                continue;
-            }
+            if (!(dye.getItem() instanceof DyeItem dyeItem)) continue;
             DyeColor color = dyeItem.getColor();
-            int value = slot;
-            colors.add(new ToolWheel.Sector(Text.translatable("color.minecraft." + color.getName()),
-                    Text.translatable("wheel.steveparty.hammer.color.hint", dye.getCount()), color.getEntityColor(), stack(dye),
-                    selection.dye() == slot, true, () -> send(ToolWheelPayload.Action.HAMMER_DYE, value)));
+            boolean selected = selection.dye() == slot;
+            int value = selected ? StencilGunSelection.ENGRAVE : slot;
+            dyes.add(new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.color",
+                    Text.translatable("color.minecraft." + color.getName()), dye.getCount()), null, color.getEntityColor(), stack(dye),
+                    selected, true, () -> send(ToolWheelPayload.Action.HAMMER_DYE, value)));
         }
 
-        List<ToolWheel.Arc> arcs = List.of(
-                new ToolWheel.Arc(0, -TOP, TOP, List.of(inventory)),
-                new ToolWheel.Arc(0, TOP, 180, stencils),
-                new ToolWheel.Arc(0, 180, 360 - TOP, colors));
-        return new ToolWheel.Layout(RINGS, arcs, item(hammer.copy()), null, anyStencil ? null : inventory,
-                Text.translatable("wheel.steveparty.hammer.inventory.first"));
+        // Top centre: one button, its refill
+        ToolWheel.Sector refill = new ToolWheel.Sector(Text.translatable("wheel.steveparty.hammer.refill"), null, TEAL,
+                big(new ItemStack(Items.BUNDLE)), false, true, () -> send(ToolWheelPayload.Action.HAMMER_OPEN, 0));
+        List<ToolWheel.Arc> arcs = new ArrayList<>();
+        arcs.add(new ToolWheel.Arc(0, -PLUS, PLUS, List.of(refill)));
+        if (!stencils.isEmpty()) arcs.add(new ToolWheel.Arc(0, PLUS, 180, stencils));
+        if (!dyes.isEmpty()) arcs.add(new ToolWheel.Arc(0, 180, 360 - PLUS, dyes));
+        return new ToolWheel.Layout(RINGS, arcs, item(hammer.copy()), null, stencils.isEmpty() && dyes.isEmpty() ? refill : null, null);
     }
 
-    /** An empty slot: the silhouette of what it takes; a click opens the slots to fill it. */
-    private static ToolWheel.Sector empty(String key, Identifier silhouette) {
-        return new ToolWheel.Sector(Text.translatable(key), Text.translatable("wheel.steveparty.hammer.empty.hint"), GREY,
-                atlas(silhouette), false, true, () -> send(ToolWheelPayload.Action.HAMMER_OPEN, 0));
+    private static ToolWheel.Icon big(ItemStack stack) {
+        return (context, x, y) -> {
+            context.getMatrices().push();
+            context.getMatrices().translate(x, y, 0);
+            context.getMatrices().scale(2, 2, 1);
+            context.drawItem(stack, -8, -8);
+            context.getMatrices().pop();
+        };
     }
 
     /** Whether the player looks at a cut-out panel: the hammer cuts it rather than engraves. */
@@ -120,17 +107,6 @@ public final class HammerWheel implements ToolWheel.Provider {
 
     private static ToolWheel.Icon item(ItemStack stack) {
         return (context, x, y) -> context.drawItem(stack, x - 8, y - 8);
-    }
-
-    /** A sprite of the block atlas (the slot silhouettes). */
-    public static ToolWheel.Icon atlas(Identifier sprite) {
-        return (context, x, y) -> drawAtlas(context, sprite, x - 8, y - 8);
-    }
-
-    public static void drawAtlas(DrawContext context, Identifier sprite, int x, int y) {
-        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-        context.drawSprite(x, y, 0, 16, 16, MinecraftClient.getInstance().getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE).apply(sprite));
-        com.mojang.blaze3d.systems.RenderSystem.disableBlend();
     }
 
     /** A dye stack, with its count. */
