@@ -14,9 +14,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** First person, carrying Glandouilles: both bare arms forward (whatever the hands hold), none of the items. */
+/** First person, carrying Glandouilles: both bare arms forward and close together (whatever the hands hold), no item. */
 @Mixin(HeldItemRenderer.class)
 public class HeldItemRendererGlandouilleCarryMixin {
+    /** How far each arm comes in toward the middle (screen units), and turns in (degrees). */
+    private static final float INWARD = 0.28f, TURN_IN = 8f;
+
     @Shadow
     private void renderArmHoldingItem(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
                                       float equipProgress, float swingProgress, Arm arm) {
@@ -32,6 +35,10 @@ public class HeldItemRendererGlandouilleCarryMixin {
         if (player.isInvisible()) return;
         Arm arm = hand == Hand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
         matrices.push();
+        // Closer together than the vanilla arms, each a little turned in, as around a box held in front
+        float side = arm == Arm.RIGHT ? 1f : -1f;
+        matrices.translate(-side * INWARD, 0f, 0f);
+        matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(side * TURN_IN));
         renderArmHoldingItem(matrices, vertexConsumers, light, equipProgress, hand == Hand.MAIN_HAND ? swingProgress : 0f, arm);
         matrices.pop();
     }
