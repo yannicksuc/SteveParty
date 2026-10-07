@@ -1,18 +1,13 @@
 package fr.lordfinn.steveparty.client.board;
 
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.board.BoardLinks;
+import fr.lordfinn.steveparty.board.BrushAim;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
-import fr.lordfinn.steveparty.board.WrenchActions;
-import fr.lordfinn.steveparty.board.WrenchMode;
-import fr.lordfinn.steveparty.board.WrenchState;
-import fr.lordfinn.steveparty.items.custom.WrenchItem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
@@ -20,35 +15,27 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /**
- * What the Wrench shows its holder (and only them: everything is drawn client side): the origin framed, and the ghost
- * line from the origin to the board space aimed at, coloured by what a click would do, with a label (« Link 7 → 8 »,
- * « Close the loop »...).
+ * What the Tile Linker Brush shows its holder (and only them: everything is drawn client side): its anchor (the last
+ * tile painted) framed in gold, the tile aimed at, found the way the player sees it (see {@link BrushAim}), framed, and
+ * the ghost path from the anchor to it: green, a link the stroke would paint; red, one it would erase.
  */
-final class WrenchOverlay {
+final class BrushOverlay {
     static final int GREEN = 0xFF4CFF4C;
     static final int RED = 0xFFFF4040;
-    static final int BLUE = 0xFF4CA6FF;
     static final int GOLD = 0xFFFFD83D;
-    private static final float LABEL_SCALE = 1f / 32f;
+    static final int WHITE = 0xFFFFFFFF;
 
-    private WrenchOverlay() {
+    private BrushOverlay() {
     }
 
     static void initialize() {
         // After the block entities (where the vanilla block outline is drawn), not AFTER_ENTITIES: the see-through
-        // frame writes depth, and drawn before them it hid what a tile's renderer draws under it (its stamped or role
-        // face, leaving the bare face of the block model; the whole tile when it is small, large or not level)
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(WrenchOverlay::render);
+        // frame writes depth, and drawn before them it hid what a tile's renderer draws under it
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(BrushOverlay::render);
     }
 
     private static void render(WorldRenderContext context) {
@@ -57,30 +44,31 @@ final class WrenchOverlay {
         ClientWorld world = client.world;
         MatrixStack matrices = context.matrixStack();
         if (player == null || world == null || matrices == null) return;
-        ItemStack main = player.getMainHandStack();
-        ItemStack wrench = main.getItem() instanceof WrenchItem ? main
-                : player.getOffHandStack().getItem() instanceof WrenchItem ? player.getOffHandStack() : null;
-        if (wrench == null) return;
+        ItemStack brush = player.getMainHandStack();
+        if (!TileLinkerBrush.isBrush(brush) || fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.isOpen()) return;
         VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
         Camera camera = context.camera();
-        WrenchState state = WrenchState.of(wrench);
-        BlockPos origin = WrenchActions.origin(wrench, world);
-        if (origin != null && BoardLinks.container(world, origin) == null) origin = null;
-
-        if (origin != null) frame(matrices, consumers, camera, world, origin,
-                state.mode() == WrenchMode.TRACE ? GREEN : BLUE);
-        if (wrench == main) {
-            BlockPos aimed = aimed(player, world, context.tickCounter().getTickDelta(true));
-            if (aimed != null) ghost(matrices, consumers, camera, world, state, origin, aimed);
+        BlockPos anchor = TileLinkerBrush.anchor(brush, world);
+        if (anchor != null && BoardLinks.container(world, anchor) == null) anchor = null;
+        if (anchor != null) frame(matrices, consumers, camera, world, anchor, GOLD);
+        BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true));
+        if (aimed != null && !aimed.equals(anchor)) {
+            int color = WHITE;
+            if (anchor != null) {
+                color = linked(world, brush, anchor, aimed) ? RED : GREEN;
+                ghostPath(matrices, consumers, camera, world, anchor, aimed, color);
+            }
+            frame(matrices, consumers, camera, world, aimed, color);
         }
         consumers.draw();
     }
 
-    private static @Nullable BlockPos aimed(ClientPlayerEntity player, ClientWorld world, float tickDelta) {
-        HitResult hit = player.raycast(WrenchActions.LONG_REACH, tickDelta, false);
-        if (!(hit instanceof BlockHitResult blockHit) || hit.getType() != HitResult.Type.BLOCK) return null;
-        BlockPos pos = BoardSpaces.resolve(world, blockHit.getBlockPos());
-        return BoardLinks.container(world, pos) != null ? pos : null;
+    /** A link between the two, either way, in the slot of the brush's level: the stroke would erase it. */
+    private static boolean linked(ClientWorld world, ItemStack brush, BlockPos a, BlockPos b) {
+        CartridgeContainerBlockEntity from = BoardLinks.container(world, a), to = BoardLinks.container(world, b);
+        int level = TileLinkerBrush.level(brush);
+        return from != null && BoardLinks.links(from, BoardLinks.slotOf(from, level)).contains(b)
+                || to != null && BoardLinks.links(to, BoardLinks.slotOf(to, level)).contains(a);
     }
 
     /** Where links start and end on a board space: a little above the middle of its surface. */
@@ -95,84 +83,11 @@ final class WrenchOverlay {
                 ((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, pulse);
     }
 
-    private static void ghost(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, Camera camera, ClientWorld world,
-                              WrenchState state, @Nullable BlockPos origin, BlockPos aimed) {
-        CartridgeContainerBlockEntity target = BoardLinks.container(world, aimed);
-        if (target == null) return;
-        Vec3d labelPos = anchor(world, aimed).add(0, 1.35, 0);
-        if (state.mode() == WrenchMode.CUT) {
-            List<BlockPos> links = BoardLinks.links(target, BoardLinks.slotOf(target, WrenchState.ACTIVE_SLOT));
-            for (BlockPos link : links) ghostPath(matrices, consumers, camera, world, aimed, link, RED);
-            label(matrices, consumers, camera, labelPos, links.isEmpty()
-                    ? Text.translatable("hud.steveparty.wrench.ghost.cut_none")
-                    : Text.translatable("hud.steveparty.wrench.ghost.cut", links.size()), links.isEmpty() ? 0xFFAAAAAA : RED, LABEL_SCALE);
-            return;
-        }
-        if (origin == null) {
-            int existing = BoardLinks.links(target, BoardLinks.slotOf(target, WrenchState.ACTIVE_SLOT)).size();
-            Text text = state.mode() == WrenchMode.EDIT ? Text.translatable("hud.steveparty.wrench.ghost.bind")
-                    : existing > 0 ? Text.translatable("hud.steveparty.wrench.ghost.fork", existing)
-                    : Text.translatable("hud.steveparty.wrench.ghost.start");
-            frame(matrices, consumers, camera, world, aimed, 0xFFFFFFFF);
-            label(matrices, consumers, camera, labelPos, text, 0xFFFFFFFF, LABEL_SCALE);
-            return;
-        }
-        if (aimed.equals(origin)) {
-            Text text = Text.translatable(state.mode() == WrenchMode.TRACE ? "hud.steveparty.wrench.ghost.end" : "hud.steveparty.wrench.ghost.unbind");
-            label(matrices, consumers, camera, labelPos, text, 0xFFAAAAAA, LABEL_SCALE);
-            return;
-        }
-        CartridgeContainerBlockEntity from = BoardLinks.container(world, origin);
-        if (from == null) return;
-        boolean linked = BoardLinks.links(from, BoardLinks.slotOf(from, state.slot())).contains(aimed);
-        boolean boardSpace = target instanceof BoardSpaceBlockEntity;
-        int n = Math.max(1, state.chainLength());
-        int color;
-        Text text;
-        if (state.mode() == WrenchMode.EDIT) {
-            color = linked ? RED : boardSpace ? GREEN : RED;
-            text = linked ? Text.translatable("hud.steveparty.wrench.ghost.remove")
-                    : boardSpace ? Text.translatable("hud.steveparty.wrench.ghost.add")
-                    : Text.translatable("hud.steveparty.wrench.ghost.not_board_space");
-        } else if (!boardSpace) {
-            color = RED;
-            text = Text.translatable("hud.steveparty.wrench.ghost.not_board_space");
-        } else if (linked) {
-            color = BLUE;
-            text = Text.translatable("hud.steveparty.wrench.ghost.walk", n + 1);
-        } else if (state.chainStart().map(aimed::equals).orElse(false)) {
-            color = GOLD;
-            text = Text.translatable("hud.steveparty.wrench.ghost.loop", n);
-        } else if (!BoardLinks.links(target, BoardLinks.slotOf(target, WrenchState.ACTIVE_SLOT)).isEmpty()) {
-            color = GOLD;
-            text = Text.translatable("hud.steveparty.wrench.ghost.join", n, n + 1);
-        } else {
-            color = GREEN;
-            text = Text.translatable("hud.steveparty.wrench.ghost.link", n, n + 1);
-        }
-        ghostPath(matrices, consumers, camera, world, origin, aimed, color);
-        frame(matrices, consumers, camera, world, aimed, color);
-        label(matrices, consumers, camera, labelPos, text, color, LABEL_SCALE);
-    }
-
     /** The path the click would make: chevrons of the board view, bigger and faster, in the colour of what it does. */
     private static void ghostPath(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, ClientWorld world,
                                   BlockPos from, BlockPos to, int color) {
         double phase = (world.getTime() + MinecraftClient.getInstance().getRenderTickCounter().getTickDelta(true)) / 20.0 * 3.0;
         WorldDraw.path(matrices, consumers, camera, anchor(world, from).add(0, 0.05, 0), anchor(world, to).add(0, 0.05, 0),
                 color, 0.55, 0.5, phase, 0.4, 0);
-    }
-
-    /** A label on a plate framed in the colour of what the click would do. */
-    private static void label(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d pos, Text text, int color, float scale) {
-        WorldDraw.Plate plate = switch (color) {
-            case GREEN -> WorldDraw.Plate.GREEN;
-            case GOLD -> WorldDraw.Plate.GOLD;
-            case RED -> WorldDraw.Plate.RED;
-            default -> WorldDraw.Plate.TEAL;
-        };
-        // Readable from afar, like the board view's numbers
-        float grow = (float) Math.clamp(Math.sqrt(pos.squaredDistanceTo(camera.getPos())) / 7.0, 1.0, 3.0);
-        WorldDraw.plateLabel(matrices, consumers, camera, pos, text, plate, WorldDraw.PLATE_TEXT, scale * grow);
     }
 }

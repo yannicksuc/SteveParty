@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The board view: while the Wrench is held (either hand), the links of the board spaces around are drawn like the
+ * The board view: while the Wrench or the Tile Linker Brush is held (either hand), the links of the board spaces around are drawn like the
  * paths of a Mario Party board: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
  * start on a green one), forks get a gold « ? », dead ends a red « ! » and spaces no start leads to an orange « ! »,
@@ -197,9 +197,9 @@ public final class BoardView {
         int deadEnds = 0, unreachable = 0;
         boolean hasStart = built.hasStart();
         for (BoardGraph.Node node : built.nodes()) {
-            Vec3d from = anchors.computeIfAbsent(node.pos(), pos -> WrenchOverlay.anchor(world, pos));
+            Vec3d from = anchors.computeIfAbsent(node.pos(), pos -> BrushOverlay.anchor(world, pos));
             for (BoardGraph.Edge edge : node.edges()) {
-                Vec3d to = anchors.computeIfAbsent(edge.to(), pos -> WrenchOverlay.anchor(world, pos));
+                Vec3d to = anchors.computeIfAbsent(edge.to(), pos -> BrushOverlay.anchor(world, pos));
                 // Other cartridges of an Advanced Tile: a little higher, dimmed, not moving
                 double lift = edge.active() ? 0 : 0.06 * (1 + edge.slot() % 4);
                 Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
@@ -211,7 +211,7 @@ public final class BoardView {
                 int index = network.indexOf(node.pos());
                 if (index >= 0 && network.size() >= 2 && (index + 1 < network.size() || network.size() >= 3)) {
                     BlockPos next = network.get((index + 1) % network.size());
-                    Vec3d to = anchors.computeIfAbsent(next, pos -> WrenchOverlay.anchor(world, pos));
+                    Vec3d to = anchors.computeIfAbsent(next, pos -> BrushOverlay.anchor(world, pos));
                     drawnArcs.add(new DrawnArc(new WorldDraw.Arc(from, to, arcHeight(from.distanceTo(to))),
                             0xE0000000 | node.teleportNetwork().color()));
                 }
@@ -252,7 +252,7 @@ public final class BoardView {
     }
 
     /**
-     * Where the merchant of each shop space stands: the one chosen with the Wrench (or where he was chosen), else the
+     * Where the merchant of each shop space stands: the one chosen with the Tile Linker Brush (or where he was chosen), else the
      * nearest Boxed Trader around (the client doesn't know which stalls are whose: an estimate).
      */
     /** How high the arc between two teleport tiles {@code length} blocks apart goes. */
@@ -281,14 +281,15 @@ public final class BoardView {
         }
     }
 
-    /** The current graph (null when the Wrench is not held). */
+    /** The current graph (null when neither the Wrench nor the brush is held). */
     static @Nullable BoardGraph graph() {
         return graph;
     }
 
     static boolean holdsWrench(ClientPlayerEntity player) {
         return player.getMainHandStack().getItem() instanceof WrenchItem || player.getOffHandStack().getItem() instanceof WrenchItem
-                || player.getMainHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
+                || player.getMainHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem
+                || player.getOffHandStack().getItem() instanceof fr.lordfinn.steveparty.items.custom.TileLinkerBrushItem;
     }
 
     /**

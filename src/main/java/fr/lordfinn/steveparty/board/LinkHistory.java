@@ -27,7 +27,7 @@ import java.util.UUID;
 /**
  * Undo / redo of the link edits, per player (by UUID), in memory, the last {@link #MAX} actions. An action is what one
  * click (or placement, or command) changed: links of a cartridge, a tile's rotation, the chest of an inventory tile,
- * and the wrench's origin and chain. A change whose board space was edited since (by someone else, the interface...)
+ * and the anchor of the tool. A change whose board space was edited since (by someone else, the interface...)
  * is skipped, with a message.
  */
 public final class LinkHistory {
@@ -123,33 +123,30 @@ public final class LinkHistory {
         }
     }
 
-    /** The wrench's origin and state around an action (restored on the wrench in hand). */
-    public record WrenchSnapshot(@Nullable BlockOriginComponent origin, WrenchState state) {
-        static WrenchSnapshot of(ItemStack wrench) {
-            return new WrenchSnapshot(wrench.get(ModComponents.BLOCK_ORIGIN_COMPONENT), WrenchState.of(wrench));
+    /** The anchor of the tool (the Tile Linker Brush) around an action, restored on the tool in hand. */
+    public record ToolSnapshot(@Nullable BlockOriginComponent anchor) {
+        static ToolSnapshot of(ItemStack tool) {
+            return new ToolSnapshot(tool.get(ModComponents.BLOCK_ORIGIN_COMPONENT));
         }
 
-        void restore(ItemStack wrench) {
-            if (origin == null) wrench.remove(ModComponents.BLOCK_ORIGIN_COMPONENT);
-            else wrench.set(ModComponents.BLOCK_ORIGIN_COMPONENT, origin);
-            // The mode and auto link are settings, not history: only the chain and slot come back
-            WrenchState current = WrenchState.of(wrench);
-            wrench.set(ModComponents.WRENCH_STATE, current.withChain(state.chainStart(), state.chainLength()).withSlot(state.slot()));
+        void restore(ItemStack tool) {
+            if (anchor == null) tool.remove(ModComponents.BLOCK_ORIGIN_COMPONENT);
+            else tool.set(ModComponents.BLOCK_ORIGIN_COMPONENT, anchor);
         }
     }
 
     public record Action(RegistryKey<World> world, Text label, List<Change> changes,
-                         @Nullable WrenchSnapshot wrenchBefore, @Nullable WrenchSnapshot wrenchAfter) {
+                         @Nullable ToolSnapshot toolBefore, @Nullable ToolSnapshot toolAfter) {
     }
 
     private static final class Pending {
         final RegistryKey<World> world;
         final List<Change> changes = new ArrayList<>();
-        final @Nullable WrenchSnapshot wrenchBefore;
+        final @Nullable ToolSnapshot toolBefore;
 
-        Pending(RegistryKey<World> world, @Nullable WrenchSnapshot wrenchBefore) {
+        Pending(RegistryKey<World> world, @Nullable ToolSnapshot toolBefore) {
             this.world = world;
-            this.wrenchBefore = wrenchBefore;
+            this.toolBefore = toolBefore;
         }
     }
 
@@ -162,9 +159,9 @@ public final class LinkHistory {
 
     // ---------------------------------------------------------------- recording
 
-    /** Starts recording what {@code player} changes (the wrench, if any, is snapshotted to be restored on undo). */
-    public static void begin(ServerPlayerEntity player, World world, @Nullable ItemStack wrench) {
-        PENDING.put(player.getUuid(), new Pending(world.getRegistryKey(), wrench == null ? null : WrenchSnapshot.of(wrench)));
+    /** Starts recording what {@code player} changes (the tool, if any, is snapshotted to be restored on undo). */
+    public static void begin(ServerPlayerEntity player, World world, @Nullable ItemStack tool) {
+        PENDING.put(player.getUuid(), new Pending(world.getRegistryKey(), tool == null ? null : ToolSnapshot.of(tool)));
     }
 
     /** Records a change of the action being recorded (nothing if none). */
@@ -175,11 +172,11 @@ public final class LinkHistory {
     }
 
     /** Ends the action being recorded: kept (and the redo stack emptied) if it changed something. */
-    public static void commit(ServerPlayerEntity player, Text label, @Nullable ItemStack wrench) {
+    public static void commit(ServerPlayerEntity player, Text label, @Nullable ItemStack tool) {
         Pending pending = PENDING.remove(player.getUuid());
         if (pending == null || pending.changes.isEmpty()) return;
-        push(UNDO, player.getUuid(), new Action(pending.world, label, List.copyOf(pending.changes), pending.wrenchBefore,
-                wrench == null ? null : WrenchSnapshot.of(wrench)));
+        push(UNDO, player.getUuid(), new Action(pending.world, label, List.copyOf(pending.changes), pending.toolBefore,
+                tool == null ? null : ToolSnapshot.of(tool)));
         REDO.remove(player.getUuid());
     }
 
@@ -197,11 +194,11 @@ public final class LinkHistory {
     }
 
     /**
-     * Undoes (or redoes) the last action of {@code player}, restoring the chain of the wrench in {@code wrench} if given.
+     * Undoes (or redoes) the last action of {@code player}, restoring the anchor of the tool in {@code tool} if given.
      *
      * @return false if there was nothing to undo / redo
      */
-    public static boolean undo(ServerPlayerEntity player, boolean undo, @Nullable ItemStack wrench) {
+    public static boolean undo(ServerPlayerEntity player, boolean undo, @Nullable ItemStack tool) {
         // Changing the board again takes the right to build: not a spectator, not in adventure mode (a party started
         // since), and only where the player may build (checked change by change, they may be far apart)
         if (player.isSpectator() || !player.canModifyBlocks()) return false;
@@ -219,8 +216,8 @@ public final class LinkHistory {
         for (Change change : changes) {
             if (!world.canPlayerModifyAt(player, change.pos()) || !change.apply(world, undo)) skipped++;
         }
-        WrenchSnapshot snapshot = undo ? action.wrenchBefore() : action.wrenchAfter();
-        if (wrench != null && snapshot != null && world == player.getWorld()) snapshot.restore(wrench);
+        ToolSnapshot snapshot = undo ? action.toolBefore() : action.toolAfter();
+        if (tool != null && snapshot != null && world == player.getWorld()) snapshot.restore(tool);
         push(undo ? REDO : UNDO, player.getUuid(), action);
         Text message = Text.translatable(undo ? "message.steveparty.wrench.undo" : "message.steveparty.wrench.redo", action.label());
         if (skipped > 0) message = message.copy().append(Text.translatable("message.steveparty.wrench.undo.skipped", skipped));

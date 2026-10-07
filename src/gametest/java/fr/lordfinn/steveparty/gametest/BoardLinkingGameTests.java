@@ -8,12 +8,11 @@ import fr.lordfinn.steveparty.board.BoardGraph;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BoardValidator;
 import fr.lordfinn.steveparty.board.WrenchActions;
-import fr.lordfinn.steveparty.board.WrenchMode;
-import fr.lordfinn.steveparty.board.WrenchState;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
-import fr.lordfinn.steveparty.payloads.custom.WrenchActionPayload;
+import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -31,7 +30,10 @@ import java.util.function.Consumer;
 
 import static fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock.TILE_TYPE;
 
-/** Linking board spaces with the Wrench: chains, loops, forks, joins, modes, cartridges supplied and links kept. */
+/**
+ * Linking board spaces: painted with the Tile Linker Brush (chains, loops, forks, joins, levels, cartridges supplied,
+ * its wheel's picks), the Wrench opening the spaces and swapping their cartridge, links kept.
+ */
 public class BoardLinkingGameTests implements FabricGameTest {
 
     /** Tiles on a stone floor at y = 1, returned in absolute positions. */
@@ -60,8 +62,25 @@ public class BoardLinkingGameTests implements FabricGameTest {
         return player.getMainHandStack();
     }
 
+    static ItemStack brush(ServerPlayerEntity player) {
+        player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.TILE_LINKER_BRUSH));
+        return player.getMainHandStack();
+    }
+
+    /** A Wrench right click on a block (the Wrench's own action). */
     static void click(ServerPlayerEntity player, ItemStack wrench, TestContext context, BlockPos absolute) {
         WrenchActions.useOnBlock(player, wrench, context.getWorld(), absolute);
+    }
+
+    /** One stroke of the brush over {@code stroke}, in order, then the button released. */
+    static void paint(ServerPlayerEntity player, ItemStack brush, TestContext context, BlockPos... stroke) {
+        for (BlockPos pos : stroke) TileLinkerBrush.paint(player, brush, context.getWorld(), pos);
+        TileLinkerBrush.endStroke(player);
+    }
+
+    /** A sector picked on the wheel of the tool in hand, as the client sends it. */
+    static boolean pick(ServerPlayerEntity player, ToolWheelPayload.Action action, int value) {
+        return new ToolWheelPayload(action, value).handle(player);
     }
 
     /** Runs {@code test} with a mock player, always removed afterwards. */
@@ -77,19 +96,16 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void traceLinksAChainAndClosesTheLoop(TestContext context) {
+    public void theBrushLinksAChainAndClosesTheLoop(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE,
                 new BlockPos(1, 1, 1), new BlockPos(4, 1, 1), new BlockPos(4, 1, 4), new BlockPos(1, 1, 4));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            for (BlockPos pos : t) click(player, wrench, context, pos);
-            context.assertEquals(WrenchActions.origin(wrench, context.getWorld()), t.get(3), "the last tile is the origin");
-            context.assertEquals(WrenchState.of(wrench).chainLength(), 4, "chain of 4");
-            click(player, wrench, context, t.getFirst()); // close the loop
+            ItemStack brush = brush(player);
+            paint(player, brush, context, t.get(0), t.get(1), t.get(2), t.get(3), t.get(0));
             for (int i = 0; i < 4; i++) {
                 context.assertEquals(links(context, t.get(i)), List.of(t.get((i + 1) % 4)), "tile " + i + " links to the next one");
             }
-            context.assertTrue(WrenchActions.origin(wrench, context.getWorld()) == null, "closing the loop ends the chain");
+            context.assertEquals(TileLinkerBrush.anchor(brush, context.getWorld()), t.get(0), "the anchor: the last tile painted");
             // Each tile faces its next one: east, south, west, north
             int[] rotations = {2, 4, 6, 0};
             for (int i = 0; i < 4; i++) {
@@ -99,15 +115,12 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void holdingTheButtonOverTheOriginDoesNotEndTheChain(TestContext context) {
+    public void holdingTheBrushOverATileDoesNotRepaintIt(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            click(player, wrench, context, t.get(0));
-            click(player, wrench, context, t.get(1));
-            click(player, wrench, context, t.get(1)); // the vanilla repeat while the button is held, same tick
-            context.assertEquals(WrenchActions.origin(wrench, context.getWorld()), t.get(1), "still tracing from the second tile");
-            click(player, wrench, context, t.get(2));
+            ItemStack brush = brush(player);
+            paint(player, brush, context, t.get(0), t.get(1), t.get(1), t.get(2)); // the same tile on two ticks
+            context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "first link");
             context.assertEquals(links(context, t.get(1)), List.of(t.get(2)), "the sweep goes on");
         });
     }
@@ -119,44 +132,28 @@ public class BoardLinkingGameTests implements FabricGameTest {
                 new BlockPos(5, 1, 1), new BlockPos(7, 1, 1), new BlockPos(3, 1, 4));
         BlockPos a = t.get(0), b = t.get(1), c = t.get(2), d = t.get(3), e = t.get(4);
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            for (BlockPos pos : List.of(a, b, c, d)) click(player, wrench, context, pos);
-            player.setSneaking(true);
-            WrenchActions.use(player, wrench, context.getWorld()); // sneak + right click in the air: end
-            player.setSneaking(false);
-            context.assertTrue(WrenchActions.origin(wrench, context.getWorld()) == null, "chain ended");
+            ItemStack brush = brush(player);
+            paint(player, brush, context, a, b, c, d);
             int facing = context.getWorld().getBlockState(a).get(ATileBlock.ROTATION_8);
-
-            click(player, wrench, context, a); // fork
-            click(player, wrench, context, e);
-            click(player, wrench, context, c); // join
+            paint(player, brush, context, a, e, c);
             context.assertEquals(links(context, a), List.of(b, e), "a forks toward b and e");
             context.assertEquals(links(context, e), List.of(c), "the branch joins c");
             context.assertEquals(links(context, c), List.of(d), "c unchanged");
-            context.assertTrue(WrenchActions.origin(wrench, context.getWorld()) == null, "joining ends the chain");
             context.assertEquals(context.getWorld().getBlockState(a).get(ATileBlock.ROTATION_8), facing, "a fork keeps the first direction");
         });
     }
 
+    /** #65: the Wrench opens a board space with a plain right click, no sneaking. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void editTogglesAndCutClears(TestContext context) {
-        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(3, 1, 3));
+    public void theWrenchOpensABoardSpaceWithoutSneaking(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1));
         withPlayer(context, true, player -> {
             ItemStack wrench = wrench(player);
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1);
-            context.assertEquals(WrenchState.of(wrench).mode(), WrenchMode.EDIT, "Trace → Edit");
-            click(player, wrench, context, t.get(0));
-            click(player, wrench, context, t.get(1));
-            click(player, wrench, context, t.get(2));
-            context.assertEquals(links(context, t.get(0)), List.of(t.get(1), t.get(2)), "Edit adds from a fixed origin");
-            click(player, wrench, context, t.get(1));
-            context.assertEquals(links(context, t.get(0)), List.of(t.get(2)), "a second click removes");
-            context.assertEquals(WrenchActions.origin(wrench, context.getWorld()), t.get(0), "the origin stays");
-
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1);
-            context.assertEquals(WrenchState.of(wrench).mode(), WrenchMode.CUT, "Edit → Cut");
-            click(player, wrench, context, t.get(0));
-            context.assertTrue(links(context, t.get(0)).isEmpty(), "Cut removes the outgoing links");
+            player.setSneaking(false);
+            click(player, wrench, context, t.getFirst());
+            context.assertTrue(player.currentScreenHandler != player.playerScreenHandler, "its interface is open");
+            context.assertTrue(links(context, t.getFirst()).isEmpty(), "and nothing linked");
+            player.closeHandledScreen();
         });
     }
 
@@ -164,19 +161,16 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void survivalTakesCartridgesFromTheInventoryWithoutTheirLinks(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
         withPlayer(context, false, player -> {
-            ItemStack wrench = wrench(player);
+            ItemStack brush = brush(player);
             ItemStack cartridges = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR, 1);
             // A stack already used as a selector: its links must not end up in the tiles
             cartridges.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(List.of(new BlockPos(0, 0, 0))), ""));
             player.getInventory().setStack(20, cartridges);
-            click(player, wrench, context, t.get(0));
-            click(player, wrench, context, t.get(1));
+            paint(player, brush, context, t.get(0), t.get(1), t.get(2));
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "first link, with the inventory's cartridge");
             context.assertTrue(player.getInventory().getStack(20).isEmpty(), "the cartridge was taken");
-            click(player, wrench, context, t.get(2));
             context.assertTrue(links(context, t.get(1)).isEmpty(), "no cartridge left: no link");
             context.assertTrue(boardSpace(context, t.get(1)).getStack(0).isEmpty(), "and no cartridge inserted");
-            context.assertTrue(WrenchActions.origin(wrench, context.getWorld()) == null, "the chain stops");
         });
     }
 
@@ -184,12 +178,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void replacingTheCartridgeKeepsTheLinks(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            click(player, wrench, context, t.get(0));
-            click(player, wrench, context, t.get(1));
-            player.setSneaking(true);
-            WrenchActions.use(player, wrench, context.getWorld());
-            player.setSneaking(false);
+            paint(player, brush(player), context, t.get(0), t.get(1));
 
             // From the interface (or a hopper): take the cartridge out, put another type in
             BoardSpaceBlockEntity first = boardSpace(context, t.get(0));
@@ -199,11 +188,12 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "links kept through the interface");
 
             // With the Wrench: another cartridge in the off hand, one click
+            ItemStack wrench = wrench(player);
             player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.INVENTORY_CARTRIDGE));
             click(player, wrench, context, t.get(0));
             context.assertEquals(context.getWorld().getBlockState(t.get(0)).get(TILE_TYPE), BoardSpaceType.TILE_INVENTORY_INTERACTOR, "swapped");
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "links kept through the Wrench");
-            context.assertTrue(WrenchActions.origin(wrench, context.getWorld()) == null, "a swap does not start a chain");
+            context.assertTrue(player.currentScreenHandler == player.playerScreenHandler, "a swap opens nothing");
         });
     }
 
@@ -267,34 +257,32 @@ public class BoardLinkingGameTests implements FabricGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void undoAndRedoFollowTheChain(TestContext context) {
+    public void undoAndRedoFollowTheAnchor(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            for (BlockPos pos : t) click(player, wrench, context, pos);
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.UNDO, 1);
+            ItemStack brush = brush(player);
+            paint(player, brush, context, t.get(0), t.get(1), t.get(2));
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_UNDO, 0), "the wheel's undo");
             context.assertTrue(links(context, t.get(1)).isEmpty(), "the last link is undone");
-            context.assertEquals(WrenchActions.origin(wrench, context.getWorld()), t.get(1), "the chain is back on the second tile");
-            context.assertEquals(WrenchState.of(wrench).chainLength(), 2, "chain of 2 again");
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.REDO, 1);
+            context.assertEquals(TileLinkerBrush.anchor(brush, context.getWorld()), t.get(1), "the anchor is back on the second tile");
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_REDO, 0), "the wheel's redo");
             context.assertEquals(links(context, t.get(1)), List.of(t.get(2)), "redone");
-            context.assertEquals(WrenchActions.origin(wrench, context.getWorld()), t.get(2), "the chain is on the third tile again");
+            context.assertEquals(TileLinkerBrush.anchor(brush, context.getWorld()), t.get(2), "the anchor is on the third tile again");
 
             // Edited since (another player, the interface...): skipped
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.UNDO, 1);
+            pick(player, ToolWheelPayload.Action.BRUSH_UNDO, 0);
             BoardSpaceBlockEntity first = boardSpace(context, t.get(0));
             BoardLinks.setLinks(context.getWorld(), first, 0, List.of(t.get(2)));
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.UNDO, 1);
+            pick(player, ToolWheelPayload.Action.BRUSH_UNDO, 0);
             context.assertEquals(links(context, t.get(0)), List.of(t.get(2)), "a change made since is kept");
         });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void placingTilesWithTheWrenchInTheOffHandLinksThem(TestContext context) {
+    public void placingTilesWithTheBrushInTheOffHandLinksThem(TestContext context) {
         for (int x = 0; x < 9; x++) context.setBlockState(new BlockPos(x, 0, 1), Blocks.STONE);
         withPlayer(context, true, player -> {
-            ItemStack wrench = new ItemStack(ModItems.WRENCH);
-            player.setStackInHand(Hand.OFF_HAND, wrench);
+            player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.TILE_LINKER_BRUSH));
             List<BlockPos> placed = new ArrayList<>();
             for (int x = 1; x <= 7; x += 3) {
                 ItemStack tile = new ItemStack(ModBlocks.TILE);
@@ -304,13 +292,13 @@ public class BoardLinkingGameTests implements FabricGameTest {
                         new net.minecraft.util.hit.BlockHitResult(ground.toCenterPos().add(0, 0.5, 0), net.minecraft.util.math.Direction.UP, ground, false)));
                 placed.add(ground.up());
             }
-            ItemStack offHand = player.getOffHandStack();
             context.assertEquals(links(context, placed.get(0)), List.of(placed.get(1)), "first → second");
             context.assertEquals(links(context, placed.get(1)), List.of(placed.get(2)), "second → third");
-            context.assertEquals(WrenchActions.origin(offHand, context.getWorld()), placed.get(2), "the last placed tile is the origin");
+            context.assertEquals(TileLinkerBrush.anchor(player.getOffHandStack(), context.getWorld()), placed.get(2), "the last placed tile is the anchor");
         });
     }
 
+    /** Moved from the Wrench's origin to the brush's anchor: the chests of an inventory tile. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void inventoryTilesTakeTheNearestChestOrTheClickedOne(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
@@ -318,18 +306,15 @@ public class BoardLinkingGameTests implements FabricGameTest {
         context.setBlockState(new BlockPos(6, 1, 3), Blocks.CHEST);
         BlockPos near = context.getAbsolutePos(new BlockPos(1, 1, 3)), far = context.getAbsolutePos(new BlockPos(6, 1, 3));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
+            ItemStack brush = brush(player);
             player.setStackInHand(Hand.OFF_HAND, new ItemStack(ModItems.INVENTORY_CARTRIDGE));
-            click(player, wrench, context, t.get(0)); // starts the chain, no cartridge yet
-            click(player, wrench, context, t.get(1)); // links: the inventory cartridge goes in the first tile
+            paint(player, brush, context, t.get(0), t.get(1)); // the inventory cartridge goes in the first tile
             ItemStack cartridge = boardSpace(context, t.get(0)).getStack(0);
             context.assertEquals(fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(cartridge, context.getWorld()), List.of(near), "the nearest chest");
 
-            // Origin back on the first tile (Edit), click the far chest
+            // The anchor back on the first tile (a stroke on it alone), click the far chest
             player.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1);
-            WrenchActions.endChain(player, wrench, context.getWorld(), false);
-            click(player, wrench, context, t.get(0));
+            paint(player, brush, context, t.get(0));
             net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
                     new net.minecraft.util.hit.BlockHitResult(far.toCenterPos(), net.minecraft.util.math.Direction.UP, far, false));
             context.assertEquals(fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(boardSpace(context, t.get(0)).getStack(0), context.getWorld()),
@@ -339,20 +324,22 @@ public class BoardLinkingGameTests implements FabricGameTest {
                     new net.minecraft.util.hit.BlockHitResult(near.toCenterPos(), net.minecraft.util.math.Direction.UP, near, false));
             context.assertEquals(fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers.in(boardSpace(context, t.get(0)).getStack(0), context.getWorld()),
                     List.of(far), "the near one clicked again: removed");
+            // The Wrench no longer links chests: the chest's own use goes on
+            ItemStack wrench = wrench(player);
+            net.minecraft.util.ActionResult withWrench = net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
+                    new net.minecraft.util.hit.BlockHitResult(near.toCenterPos(), net.minecraft.util.math.Direction.UP, near, false));
+            context.assertEquals(withWrench, net.minecraft.util.ActionResult.PASS, "the Wrench leaves the chest alone " + wrench);
         });
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void theWheelPicksTheEditedSlotOfAnAdvancedTile(TestContext context) {
+    public void theWheelPicksTheSlotOfAnAdvancedTile(TestContext context) {
         List<BlockPos> advanced = tiles(context, ModBlocks.ADVANCED_TILE, new BlockPos(1, 1, 1));
         List<BlockPos> next = tiles(context, ModBlocks.TILE, new BlockPos(4, 1, 1));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1); // Edit
-            click(player, wrench, context, advanced.getFirst());
-            for (int i = 0; i < 4; i++) WrenchActions.control(player, wrench, WrenchActionPayload.Action.SLOT, 1);
-            context.assertEquals(WrenchState.of(wrench).slot(), 3, "4 notches: slot 3 (the 4th)");
-            click(player, wrench, context, next.getFirst());
+            ItemStack brush = brush(player);
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, 3), "level 3 picked");
+            paint(player, brush, context, advanced.getFirst(), next.getFirst());
             BoardSpaceBlockEntity tile = boardSpace(context, advanced.getFirst());
             context.assertEquals(BoardLinks.links(tile, 3), List.of(next.getFirst()), "linked in slot 3");
             context.assertTrue(tile.getStack(0).isEmpty(), "the active slot (0, no redstone) untouched");
@@ -376,7 +363,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
             context.assertEquals(links(context, a), List.of(b), "a' → b'");
             context.assertEquals(links(context, b), List.of(c), "b' → c', the link leaving the copy is cut");
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "the original is untouched");
-            WrenchActions.control(player, wrench(player), WrenchActionPayload.Action.UNDO, 1);
+            fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, null);
             context.assertTrue(world.getBlockState(a).isAir() && world.getBlockState(c).isAir(), "undo removes the paste");
         });
     }
@@ -482,9 +469,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
     public void aPoweredAdvancedTileIsLinkedInItsPoweredSlot(TestContext context) {
         poweredAdvancedTile(context, (advanced, next) -> withLatePlayer(context, player -> {
-            ItemStack wrench = wrench(player);
-            click(player, wrench, context, advanced);
-            click(player, wrench, context, next);
+            paint(player, brush(player), context, advanced, next);
             BoardSpaceBlockEntity tile = boardSpace(context, advanced);
             context.assertEquals(BoardLinks.links(tile, 5), List.of(next), "linked in slot 5");
             context.assertTrue(tile.getStack(5).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "the cartridge was supplied in slot 5");
@@ -522,30 +507,22 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void aChosenSlotOverridesThePowerAndThePowerIsFollowedOtherwise(TestContext context) {
         poweredAdvancedTile(context, (advanced, next) -> withLatePlayer(context, player -> {
             tiles(context, ModBlocks.TILE, new BlockPos(6, 1, 4));
-            ItemStack wrench = wrench(player);
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1); // Edit: a fixed origin
-            click(player, wrench, context, advanced);
-            for (int i = 0; i < 8; i++) WrenchActions.control(player, wrench, WrenchActionPayload.Action.SLOT, 1);
-            context.assertEquals(WrenchState.of(wrench).slot(), 7, "slot 7 chosen");
-            click(player, wrench, context, next);
+            ItemStack brush = brush(player);
+            pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, 7);
+            paint(player, brush, context, advanced, next);
             BoardSpaceBlockEntity tile = boardSpace(context, advanced);
             context.assertEquals(BoardLinks.links(tile, 7), List.of(next), "the chosen slot 7, not the powered 5");
             context.assertTrue(tile.getStack(5).isEmpty(), "slot 5 untouched");
-
-            // Back to the powered slot (after slot 15), then the power changes: the next link follows it
-            for (int i = 0; i < 9; i++) WrenchActions.control(player, wrench, WrenchActionPayload.Action.SLOT, 1);
-            context.assertEquals(WrenchState.of(wrench).slot(), WrenchState.ACTIVE_SLOT, "back to the powered slot");
             context.removeBlock(new BlockPos(2, 1, 1)); // no more comparator: power 0
         }));
         context.waitAndRun(14, () -> withLatePlayer(context, player -> {
-            // A new player (same wrench state rebuilt): Edit origin on the advanced tile, powered slot
+            // Back to the powered slot: the link follows the power, now 0
             BlockPos advanced = context.getAbsolutePos(new BlockPos(3, 1, 1));
             BlockPos third = context.getAbsolutePos(new BlockPos(6, 1, 4));
             context.assertEquals(boardSpace(context, advanced).getActiveSlot(), 0, "no power: slot 0");
-            ItemStack wrench = wrench(player);
-            WrenchActions.control(player, wrench, WrenchActionPayload.Action.MODE, 1);
-            click(player, wrench, context, advanced);
-            click(player, wrench, context, third);
+            ItemStack brush = brush(player);
+            pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, TileLinkerBrush.POWERED);
+            paint(player, brush, context, advanced, third);
             context.assertEquals(BoardLinks.links(boardSpace(context, advanced), 0), List.of(third), "the link follows the new power: slot 0");
             context.complete();
         }));
@@ -555,9 +532,7 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void diagonalsAreOriented(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 4));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            click(player, wrench, context, t.get(0));
-            click(player, wrench, context, t.get(1));
+            paint(player, brush(player), context, t.get(0), t.get(1));
             context.assertEquals(context.getWorld().getBlockState(t.get(0)).get(ATileBlock.ROTATION_8), 3, "south-east");
             ServerWorld world = context.getWorld();
             context.assertEquals(BoardLinks.rotationToward(world, t.get(1), t.get(0)), 7, "north-west");
@@ -572,8 +547,8 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void undoTakesTheRightToBuild(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            for (BlockPos pos : t) click(player, wrench, context, pos);
+            ItemStack wrench = brush(player);
+            paint(player, wrench, context, t.toArray(BlockPos[]::new));
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "linked");
             player.changeGameMode(net.minecraft.world.GameMode.ADVENTURE);
             context.assertTrue(!fr.lordfinn.steveparty.board.LinkHistory.undo(player, true, wrench), "adventure: nothing undone");
@@ -592,16 +567,14 @@ public class BoardLinkingGameTests implements FabricGameTest {
     public void anUnlinkedCartridgeStacksWithNewOnes(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(4, 1, 1));
         withPlayer(context, true, player -> {
-            ItemStack wrench = wrench(player);
-            for (BlockPos pos : t) click(player, wrench, context, pos);
+            ItemStack brush = brush(player);
+            paint(player, brush, context, t.get(0), t.get(1));
             context.assertEquals(links(context, t.get(0)), List.of(t.get(1)), "linked");
-            WrenchActions.endChain(player, wrench, context.getWorld(), false);
-            wrench.set(ModComponents.WRENCH_STATE, WrenchState.of(wrench).withMode(WrenchMode.CUT));
-            click(player, wrench, context, t.get(0));
+            paint(player, brush, context, t.get(0), t.get(1)); // erased
             BoardSpaceBlockEntity boardSpace = boardSpace(context, t.get(0));
             ItemStack cut = boardSpace.getStack(boardSpace.getActiveSlot());
             ItemStack fresh = new ItemStack(cut.getItem());
-            context.assertTrue(ItemStack.areItemsAndComponentsEqual(cut, fresh), "cut in its tile: like a new one " + cut.getComponentChanges());
+            context.assertTrue(ItemStack.areItemsAndComponentsEqual(cut, fresh), "erased in its tile: like a new one " + cut.getComponentChanges());
 
             ItemStack held = new ItemStack(ModItems.TILE_BEHAVIOR_START);
             var item = (fr.lordfinn.steveparty.items.custom.AbstractDestinationsSelectorItem) held.getItem();
@@ -646,19 +619,13 @@ public class BoardLinkingGameTests implements FabricGameTest {
 
     // ---------------------------------------------------------------- the Tile Linker Brush
 
-    static void paint(ServerPlayerEntity player, ItemStack brush, TestContext context, BlockPos... stroke) {
-        for (BlockPos pos : stroke) fr.lordfinn.steveparty.board.TileLinkerBrush.paint(player, brush, context.getWorld(), pos);
-        fr.lordfinn.steveparty.board.TileLinkerBrush.endStroke(player);
-    }
-
     /** A stroke links each painted tile to the next; going over a link again, either way, erases it. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theBrushPaintsLinksAndErasesThemWhenRepainted(TestContext context) {
         List<BlockPos> t = tiles(context, ModBlocks.TILE,
                 new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1), new BlockPos(7, 1, 1));
         withPlayer(context, true, player -> {
-            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
-            player.setStackInHand(Hand.MAIN_HAND, brush);
+            ItemStack brush = brush(player);
             paint(player, brush, context, t.get(0), t.get(1), t.get(2), t.get(3));
             for (int i = 0; i < 3; i++) context.assertEquals(links(context, t.get(i)), List.of(t.get(i + 1)), "tile " + i + " linked to the next");
             context.assertEquals(links(context, t.get(3)), List.of(), "the last one leads nowhere yet");
@@ -673,21 +640,121 @@ public class BoardLinkingGameTests implements FabricGameTest {
         });
     }
 
-    /** The brush's level is the slot of a 16-slot board space whose cartridge gets the link. */
+    /** The level picked on the wheel: kept on the brush, invalid values and other tools ignored. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void theBrushLevelPicksTheSlotOfAnAdvancedTile(TestContext context) {
-        List<BlockPos> advanced = tiles(context, ModBlocks.ADVANCED_TILE, new BlockPos(1, 1, 1));
-        List<BlockPos> next = tiles(context, ModBlocks.TILE, new BlockPos(4, 1, 1));
+    public void theWheelSetsTheBrushLevel(TestContext context) {
         withPlayer(context, true, player -> {
-            ItemStack brush = new ItemStack(ModItems.TILE_LINKER_BRUSH);
-            player.setStackInHand(Hand.MAIN_HAND, brush);
-            for (int i = 0; i < 8; i++) fr.lordfinn.steveparty.board.TileLinkerBrush.cycleLevel(player, brush, 1);
-            context.assertEquals(fr.lordfinn.steveparty.board.TileLinkerBrush.level(brush), 7, "powered, 0... 7");
-            paint(player, brush, context, advanced.getFirst(), next.getFirst());
-            BoardSpaceBlockEntity tile = boardSpace(context, advanced.getFirst());
-            context.assertEquals(BoardLinks.links(tile, 7), List.of(next.getFirst()), "linked in slot 7");
-            for (int i = 0; i < 9; i++) fr.lordfinn.steveparty.board.TileLinkerBrush.cycleLevel(player, brush, 1);
-            context.assertTrue(!brush.contains(ModComponents.LINK_LEVEL), "back to the powered slot: no component left");
+            ItemStack brush = brush(player);
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, 12), "level 12");
+            context.assertEquals(TileLinkerBrush.level(brush), 12, "kept on the brush");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, 16), "no level 16");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, -2), "no level -2");
+            context.assertEquals(TileLinkerBrush.level(brush), 12, "still 12");
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, TileLinkerBrush.POWERED), "the powered slot");
+            context.assertTrue(!brush.contains(ModComponents.LINK_LEVEL), "the default: no component left");
+            context.assertTrue(!new ToolWheelPayload(99, 0).handle(player), "an unknown action");
+            // Not the brush in hand: nothing
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(ModItems.WRENCH));
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, 3), "the Wrench has no level");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.HAMMER_OPEN, 0), "nor a hammer inventory");
+        });
+    }
+
+    /** The kind of Cartridge picked on the wheel goes in the tiles the brush links (from the inventory in survival). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theWheelPicksTheCartridgeOfNewTiles(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
+        withPlayer(context, false, player -> {
+            ItemStack brush = brush(player);
+            player.getInventory().setStack(10, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP, 2));
+            player.getInventory().setStack(11, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR, 5));
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
+                    net.minecraft.registry.Registries.ITEM.getRawId(net.minecraft.item.Items.STONE)), "stone is no cartridge");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE, -1), "no item -1");
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
+                    net.minecraft.registry.Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "the stop cartridge");
+            context.assertTrue(TileLinkerBrush.cartridge(brush) == ModItems.BOARD_SPACE_BEHAVIOR_STOP, "kept on the brush");
+            paint(player, brush, context, t.get(0), t.get(1), t.get(2));
+            context.assertTrue(boardSpace(context, t.get(0)).getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "a stop cartridge went in");
+            context.assertTrue(boardSpace(context, t.get(1)).getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "and another");
+            context.assertTrue(player.getInventory().getStack(10).isEmpty(), "both taken from the inventory");
+            context.assertEquals(player.getInventory().getStack(11).getCount(), 5, "the plain ones untouched");
+            // Back to the plain Cartridge: nothing stored
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
+                    net.minecraft.registry.Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR)), "the plain cartridge");
+            context.assertTrue(!brush.contains(ModComponents.LINK_CARTRIDGE), "the default: no component left");
+        });
+    }
+
+    /** The anchor of the brush picks the shop of a shop space, as the Wrench's origin did (see ShopStopGameTests). */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theWrenchNoLongerKeepsAnOrigin(TestContext context) {
+        withPlayer(context, true, player -> {
+            ItemStack wrench = wrench(player);
+            wrench.set(ModComponents.BLOCK_ORIGIN_COMPONENT, new fr.lordfinn.steveparty.components.BlockOriginComponent(
+                    context.getAbsolutePos(new BlockPos(1, 1, 1)), ""));
+            wrench.set(ModComponents.WRENCH_STATE, new net.minecraft.nbt.NbtCompound());
+            wrench.inventoryTick(context.getWorld(), player, 0, true);
+            context.assertTrue(!wrench.contains(ModComponents.BLOCK_ORIGIN_COMPONENT) && !wrench.contains(ModComponents.WRENCH_STATE),
+                    "an old wrench's origin and mode are dropped");
+        });
+    }
+
+    /**
+     * The brush finds tiles the way they are seen: a ray grazing just above a flat tile, or hitting the ground right
+     * next to it, is on it; a ray hitting a wall before the tile is not.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theBrushAimsAtTilesAsTheyAreSeen(TestContext context) {
+        for (int x = 0; x < 8; x++) context.setBlockState(new BlockPos(x, 0, 2), Blocks.STONE);
+        BlockPos tile = tiles(context, ModBlocks.TILE, new BlockPos(5, 1, 2)).getFirst();
+        withPlayer(context, true, player -> {
+            ServerWorld world = context.getWorld();
+            // Level with the ground plus 0.2: over the thin tile's shape (0.125 high), under what is drawn of it
+            net.minecraft.util.math.Vec3d eye = context.getAbsolute(new net.minecraft.util.math.Vec3d(1.5, 1.2, 2.5));
+            net.minecraft.util.math.Vec3d east = new net.minecraft.util.math.Vec3d(1, 0, 0);
+            context.assertEquals(fr.lordfinn.steveparty.board.BrushAim.along(world, player, eye, east), tile, "grazing over it");
+            // Down onto the ground just before it
+            net.minecraft.util.math.Vec3d high = context.getAbsolute(new net.minecraft.util.math.Vec3d(1.5, 4, 2.5));
+            net.minecraft.util.math.Vec3d target = context.getAbsolute(new net.minecraft.util.math.Vec3d(4.95, 1.0, 2.5));
+            context.assertEquals(fr.lordfinn.steveparty.board.BrushAim.along(world, player, high, target.subtract(high)), tile, "the ground at its edge");
+            // A wall in between
+            context.setBlockState(new BlockPos(3, 1, 2), Blocks.STONE);
+            context.setBlockState(new BlockPos(3, 2, 2), Blocks.STONE);
+            context.assertTrue(fr.lordfinn.steveparty.board.BrushAim.along(world, player, eye, east) == null, "behind a wall: nothing");
+        });
+    }
+
+    /** The Stencil Hammer's wheel: loaded stencils and dyes only, Engrave, its inventory. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theHammerWheelPicksStencilAndColour(TestContext context) {
+        withPlayer(context, true, player -> {
+            ItemStack hammer = new ItemStack(ModItems.STENCIL_GUN);
+            List<ItemStack> contents = new ArrayList<>(fr.lordfinn.steveparty.items.custom.StencilGunItem.contents(hammer));
+            ItemStack stencil = new ItemStack(ModItems.STENCIL);
+            fr.lordfinn.steveparty.items.custom.StencilItem.setShape(fr.lordfinn.steveparty.stencil.StencilShape.full(), stencil);
+            contents.set(0, stencil.copy());
+            contents.set(4, stencil.copy());
+            contents.set(fr.lordfinn.steveparty.items.custom.StencilGunItem.STENCIL_SLOTS + 2, new ItemStack(net.minecraft.item.Items.RED_DYE, 8));
+            fr.lordfinn.steveparty.items.custom.StencilGunItem.setContents(hammer, contents);
+            player.setStackInHand(Hand.MAIN_HAND, hammer);
+            ItemStack held = player.getMainHandStack();
+
+            context.assertTrue(pick(player, ToolWheelPayload.Action.HAMMER_STENCIL, 4), "the stencil of slot 4");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.HAMMER_STENCIL, 1), "slot 1 is empty");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.HAMMER_STENCIL, 9), "no slot 9");
+            context.assertEquals(fr.lordfinn.steveparty.items.custom.StencilGunItem.selection(held).stencil(), 4, "slot 4 stamped");
+            context.assertTrue(pick(player, ToolWheelPayload.Action.HAMMER_DYE, 2), "the red dye");
+            context.assertTrue(fr.lordfinn.steveparty.items.custom.StencilGunItem.selectedLoad(held).color() == net.minecraft.util.DyeColor.RED, "paints red");
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.HAMMER_DYE, 3), "no dye in slot 3");
+            context.assertTrue(pick(player, ToolWheelPayload.Action.HAMMER_DYE, fr.lordfinn.steveparty.components.StencilGunSelection.ENGRAVE), "Engrave");
+            context.assertTrue(fr.lordfinn.steveparty.items.custom.StencilGunItem.selectedLoad(held).color() == null, "no paint");
+            context.assertEquals(fr.lordfinn.steveparty.items.custom.StencilGunItem.selection(held).stencil(), 4, "the stencil kept");
+            context.assertTrue(pick(player, ToolWheelPayload.Action.HAMMER_OPEN, 0), "its inventory");
+            context.assertTrue(player.currentScreenHandler instanceof fr.lordfinn.steveparty.screen_handlers.custom.StencilGunScreenHandler, "open");
+            player.closeHandledScreen();
+            // The brush's picks do nothing to a hammer
+            context.assertTrue(!pick(player, ToolWheelPayload.Action.BRUSH_LEVEL, 3), "no level on a hammer");
         });
     }
 }
