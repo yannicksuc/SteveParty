@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceType;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.compat.CartridgeApplications;
@@ -40,6 +41,27 @@ public class CartridgeApplicationsGameTests implements FabricGameTest {
                 context.assertTrue(CartridgeApplications.heldCartridge(tile).isEmpty(), "the input tile holds nothing");
             }
         }
+
+        // The order of the creative tab and REI: Tile, Advanced Tile, the Tiles per cartridge, the Advanced Tiles per
+        // cartridge, then the 1x1 sizes and the 2x2 ones
+        List<ItemStack> entries = CartridgeApplications.tileEntries();
+        int n = cartridges.size();
+        context.assertTrue(entries.size() == 2 + 2 * n + 4, "every tile entry once, got " + entries.size());
+        context.assertTrue(entries.get(0).isOf(ModBlocks.TILE.asItem()) && CartridgeApplications.heldCartridge(entries.get(0)).isEmpty()
+                && entries.get(1).isOf(ModBlocks.ADVANCED_TILE.asItem()) && CartridgeApplications.heldCartridge(entries.get(1)).isEmpty(),
+                "the Tile, then the Advanced Tile");
+        for (int i = 0; i < n; i++) {
+            ItemStack tile = entries.get(2 + i), advanced = entries.get(2 + n + i);
+            context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && TileSize.of(tile) == TileSize.STANDARD
+                    && ItemStack.areItemsAndComponentsEqual(CartridgeApplications.heldCartridge(tile), cartridges.get(i)), "then a Tile per cartridge");
+            context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()) && TileSize.of(advanced) == TileSize.STANDARD
+                    && ItemStack.areItemsAndComponentsEqual(CartridgeApplications.heldCartridge(advanced), cartridges.get(i)), "then an Advanced Tile per cartridge");
+        }
+        List<ItemStack> sizes = entries.subList(2 + 2 * n, entries.size());
+        context.assertTrue(TileSize.of(sizes.get(0)) == TileSize.SMALL && sizes.get(0).isOf(ModBlocks.TILE.asItem())
+                && TileSize.of(sizes.get(1)) == TileSize.SMALL && sizes.get(1).isOf(ModBlocks.ADVANCED_TILE.asItem())
+                && TileSize.of(sizes.get(2)) == TileSize.LARGE && sizes.get(2).isOf(ModBlocks.TILE.asItem())
+                && TileSize.of(sizes.get(3)) == TileSize.LARGE && sizes.get(3).isOf(ModBlocks.ADVANCED_TILE.asItem()), "then the 1x1 sizes, then the 2x2");
 
         List<ItemStack> roleTiles = CartridgeApplications.roleTiles();
         for (int i = 0; i < roleTiles.size(); i++) for (int j = i + 1; j < roleTiles.size(); j++) {

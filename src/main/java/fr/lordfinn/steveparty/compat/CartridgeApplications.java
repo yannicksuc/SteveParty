@@ -84,6 +84,20 @@ public final class CartridgeApplications {
         return applications;
     }
 
+    /**
+     * The tile items in the order of the creative tab and of REI's list: the Tile, the Advanced Tile, a Tile per
+     * cartridge, an Advanced Tile per cartridge, then the small (1x1) sizes, then the large (2x2) ones.
+     */
+    public static List<ItemStack> tileEntries() {
+        List<ItemStack> entries = new ArrayList<>();
+        for (Block tile : tiles()) entries.add(new ItemStack(tile));
+        entries.addAll(roleTiles());
+        for (TileSize size : List.of(TileSize.SMALL, TileSize.LARGE)) {
+            for (Block tile : tiles()) entries.add(TileSize.with(new ItemStack(tile), size));
+        }
+        return entries;
+    }
+
     /** A tile per role for the viewer's list: each tile (standard size) holding each cartridge. */
     public static List<ItemStack> roleTiles() {
         List<ItemStack> tiles = new ArrayList<>();

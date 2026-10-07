@@ -217,24 +217,31 @@ public class SteveReiPlugin implements REIClientPlugin {
 
     @Override
     public void registerEntries(EntryRegistry registry) {
-        // Each tile: its small and large sizes, then one per role, after its standard item
-        int count = 0;
-        for (Block tile : CartridgeApplications.tiles()) {
-            List<EntryStack<?>> entries = new ArrayList<>();
-            List<ItemStack> sizes = CartridgeApplications.sizes(tile);
-            for (ItemStack size : sizes.subList(1, sizes.size())) entries.add(EntryStacks.of(size));
-            for (ItemStack cartridge : CartridgeApplications.cartridges()) {
-                entries.add(roleTile(CartridgeApplications.holding(new ItemStack(tile), cartridge)));
-            }
-            registry.addEntriesAfter(EntryStacks.of(tile), entries);
-            count += entries.size();
+        // The tiles in the creative tab's order (CartridgeApplications#tileEntries), where the first one was
+        List<EntryStack<?>> entries = new ArrayList<>();
+        for (ItemStack tile : CartridgeApplications.tileEntries()) entries.add(roleTile(tile));
+        List<EntryStack<?>> listed = registry.getEntryStacks().toList();
+        EntryStack<?> before = null;
+        for (EntryStack<?> entry : listed) {
+            if (isTileEntry(entry)) break;
+            before = entry;
         }
+        registry.removeEntryIf(SteveReiPlugin::isTileEntry);
+        if (before != null) registry.addEntriesAfter(before, entries);
+        else registry.addEntries(entries);
+        int count = entries.size();
         // Technical blocks never show (a large tile's parts have no item; kept in case one gets one)
         registry.removeEntry(EntryStacks.of(ModBlocks.TILE_PART));
         Steveparty.LOGGER.info("REI: {} extra tile entries", count);
         // Each die: its power-up version (carrying the Power-up module) after the plain one
         for (Item die : List.of(ModItems.DEFAULT_DICE, ModItems.DOUBLE_DICE, ModItems.TRIPLE_DICE))
             registry.addEntriesAfter(EntryStacks.of(die), List.of(EntryStacks.of(powerUp(new ItemStack(die)))));
+    }
+
+    /** Any Tile or Advanced Tile item, whatever it holds and whatever its size. */
+    private static boolean isTileEntry(EntryStack<?> entry) {
+        return entry.getValue() instanceof ItemStack stack
+                && (stack.isOf(ModBlocks.TILE.asItem()) || stack.isOf(ModBlocks.ADVANCED_TILE.asItem()));
     }
 
     /** {@code die} carrying the Power-up module (on top of its own modules). */
