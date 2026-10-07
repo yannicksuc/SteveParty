@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.components.ShopLinkComponent;
@@ -38,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The board view: while the Wrench or the Tile Linker Brush is held (either hand), or the Explorer's Helmet is worn
+ * The board view: while the Tile Linker Brush is held (either hand), or the Explorer's Helmet is worn
  * with its lamp lit (see {@link ExplorerHelmet}; the details it adds are {@link HelmetView}'s), the links of the board spaces around are drawn like the
  * paths of a Mario Party board: chevrons (the mod's arrow particle) scrolling toward the next space, one colour per
  * branch. Each space shows its distance in steps from the nearest start on a plate cut like the mod's screens (the
@@ -142,6 +143,8 @@ public final class BoardView {
     private static int[] counts = {0, 0, 0};
     private static @Nullable BlockPos builtAt;
     private static long builtRevision = -1;
+    /** The brush level the links were drawn for ({@link TileLinkerBrush#POWERED}: the links as they are). */
+    private static int builtLevel = TileLinkerBrush.POWERED;
     private static int age;
     /** What the player sees (updated each tick). */
     private static ExplorerHelmet.View view = ExplorerHelmet.View.NONE;
@@ -157,9 +160,10 @@ public final class BoardView {
                 return;
             }
             BlockPos at = client.player.getBlockPos();
-            if (graph == null || builtRevision != BoardRevision.client() || builtAt == null
+            int level = level(client.player.getMainHandStack());
+            if (graph == null || builtRevision != BoardRevision.client() || builtAt == null || level != builtLevel
                     || builtAt.getManhattanDistance(at) >= MOVE_REBUILD || ++age >= SAFETY_REFRESH_TICKS) {
-                build(client.world, at);
+                build(client.world, at, level);
             } else if (!shops.isEmpty() && ++shopAge >= SHOP_REFRESH_TICKS) {
                 refreshShops(client.world);
             }
@@ -186,8 +190,27 @@ public final class BoardView {
         builtAt = null;
     }
 
-    private static void build(ClientWorld world, BlockPos at) {
+    /**
+     * The level the links are shown for: the Tile Linker Brush's, when it is set to one (each board space then shows
+     * the links it would follow receiving that power); else {@link TileLinkerBrush#POWERED}, the links as they are.
+     */
+    private static int level(ItemStack held) {
+        return TileLinkerBrush.isBrush(held) ? TileLinkerBrush.level(held) : TileLinkerBrush.POWERED;
+    }
+
+    /**
+     * Whether {@code edge} is drawn for the brush's {@code level}: all of them for no level; for a level, only those of
+     * that slot on the board spaces with several (Advanced Tiles, check points): a board space with a single slot
+     * follows no level, its links are left out.
+     */
+    private static boolean shownAtLevel(ClientWorld world, BoardGraph.Edge edge, int level) {
+        if (level == TileLinkerBrush.POWERED) return true;
+        return edge.slot() == level && world.getBlockEntity(edge.from()) instanceof BoardSpaceBlockEntity space && space.size() > 1;
+    }
+
+    private static void build(ClientWorld world, BlockPos at, int level) {
         age = 0;
+        builtLevel = level;
         builtAt = at.toImmutable();
         builtRevision = BoardRevision.client();
         BoardGraph built = BoardGraph.collect(world, at, RADIUS);
@@ -202,11 +225,16 @@ public final class BoardView {
         for (BoardGraph.Node node : built.nodes()) {
             Vec3d from = anchors.computeIfAbsent(node.pos(), pos -> BrushOverlay.anchor(world, pos));
             for (BoardGraph.Edge edge : node.edges()) {
+                if (!shownAtLevel(world, edge, level)) continue;
                 Vec3d to = anchors.computeIfAbsent(edge.to(), pos -> BrushOverlay.anchor(world, pos));
+                // A level picked: its links as if powered that much, in the colour of redstone at that power
+                boolean followed = level != TileLinkerBrush.POWERED || edge.active();
+                int color = level == TileLinkerBrush.POWERED || edge.target() == BoardGraph.Target.BROKEN ? color(edge, colors)
+                        : 0xFF000000 | net.minecraft.block.RedstoneWireBlock.getWireColor(Math.max(level, 4));
                 // Other cartridges of an Advanced Tile: a little higher, dimmed, not moving
-                double lift = edge.active() ? 0 : 0.06 * (1 + edge.slot() % 4);
+                double lift = followed ? 0 : 0.06 * (1 + edge.slot() % 4);
                 Box bounds = new Box(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z).expand(0.5);
-                drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color(edge, colors), edge.active(), bounds));
+                drawnEdges.add(new DrawnEdge(from.x, from.y + lift, from.z, to.x, to.y + lift, to.z, color, followed, bounds));
             }
             if (node.teleportNetwork() != null) {
                 // Each tile of a network to the next one (the last back to the first when they are 3 or more)

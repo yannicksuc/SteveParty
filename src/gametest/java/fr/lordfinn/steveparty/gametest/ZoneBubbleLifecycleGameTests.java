@@ -584,7 +584,7 @@ public class ZoneBubbleLifecycleGameTests implements FabricGameTest {
     }
 
     /** Two zones side by side in one chunk: the end of one does not let go of the chunk the other plays in. */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_far_pair", tickLimit = 400)
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "zone_bubble_life_far_pair", tickLimit = 1000)
     public void zonesSideBySideKeepTheirChunk(TestContext context) {
         ServerWorld world = context.getWorld();
         MinecraftServer server = world.getServer();

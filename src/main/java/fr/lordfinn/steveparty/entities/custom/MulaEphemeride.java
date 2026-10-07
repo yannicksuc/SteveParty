@@ -22,8 +22,8 @@ import java.util.Map;
  * its highest level ({@link DiceForgeBlockEntity#isMaxLevel}).
  * <p>
  * During the night, {@value #WAVES} waves, one every {@value #WAVE_TICKS} ticks: over each player (at most
- * {@value #MAX_PLAYERS}), {@value #STARS_PER_WAVE} shooting stars cross the sky in a straight line, low over the ground
- * with sparkling trails (MulaStarEntity, flat: its path is a formula from a few synced numbers, particles only on the
+ * {@value #MAX_PLAYERS}), {@value #STARS_PER_WAVE} shooting stars cross the sky in a straight line, well above the
+ * trees and nearby hills ({@link #altitude}) with sparkling trails (MulaStarEntity, flat: its path is a formula from a few synced numbers, particles only on the
  * clients near it). After a player's first wave, a group of Mulas is recorded where the stars went, 150 to 600 blocks
  * on (MulaSpawnSites), appearing when that place is loaded: at most one group per player per event, and at most
  * MulaSpawnSites#maxSites sites in the dimension (one more retires the oldest, with its wild Mulas).
@@ -41,6 +41,11 @@ public final class MulaEphemeride {
     public static final double FORGE_RANGE = 16;
     /** Where the Mulas come down: this far along the stars' way (blocks); how many in a group. */
     public static final int MIN_SITE = 150, MAX_SITE = 600, MIN_GROUP = 3, MAX_GROUP = 5;
+
+    /** The stars fly at least this high above the player's ground, and this far above the highest block on their way. */
+    public static final int MIN_ABOVE_GROUND = 28, CLEARANCE = 14;
+    /** ...but never more than this above the player's ground, so a far mountain doesn't lift them out of sight. */
+    public static final int MAX_ABOVE_GROUND = 64;
 
     private static final class Event {
         long day;
@@ -130,12 +135,13 @@ public final class MulaEphemeride {
         double dirX = Math.cos(angle), dirZ = Math.sin(angle);
         double sideX = -dirZ, sideZ = dirX;
         double ground = world.getTopY(Heightmap.Type.MOTION_BLOCKING, player.getBlockX(), player.getBlockZ());
+        double base = altitude(world, player.getX(), player.getZ(), dirX, dirZ, ground);
         for (int i = 0; i < STARS_PER_WAVE; i++) {
             double side = (random.nextDouble() - 0.5) * 24, back = 60 + random.nextDouble() * 30;
             double x = player.getX() - dirX * back + sideX * side, z = player.getZ() - dirZ * back + sideZ * side;
-            double y = ground + 5 + random.nextDouble() * 5;
+            double y = base + random.nextDouble() * 8;
             MulaStarEntity star = new MulaStarEntity(ModEntities.MULA_STAR, world);
-            // flat: a straight, low, grazing flight across and past the player
+            // flat: a straight flight across and past the player, high in the sky
             star.launch(x, y, z, MulaEntity.MulaVariant.byId(random.nextInt(6)), dirX, dirZ,
                     150 + random.nextDouble() * 40, 0, 0);
             world.spawnEntity(star);
@@ -145,6 +151,25 @@ public final class MulaEphemeride {
             BlockPos site = BlockPos.ofFloored(player.getX() + dirX * d, ground, player.getZ() + dirZ * d);
             MulaSpawnSites.get(world).add(site, world.getTime(), e.day, group(random));
         }
+    }
+
+    /**
+     * The height the stars of a wave fly at: the highest block (leaves included) in the loaded columns of their
+     * corridor (from 90 blocks behind the player to 100 ahead, 12 on each side) plus {@link #CLEARANCE}, at least
+     * {@link #MIN_ABOVE_GROUND} above the player's ground, at most {@link #MAX_ABOVE_GROUND}, below the build limit.
+     */
+    public static double altitude(World world, double px, double pz, double dirX, double dirZ, double ground) {
+        int highest = (int) ground;
+        for (int along = -90; along <= 100; along += 8) {
+            for (int side = -12; side <= 12; side += 6) {
+                int x = MathHelper.floor(px + dirX * along - dirZ * side), z = MathHelper.floor(pz + dirZ * along + dirX * side);
+                if (!world.isChunkLoaded(x >> 4, z >> 4)) continue;
+                highest = Math.max(highest, world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z));
+            }
+        }
+        double y = Math.max(ground + MIN_ABOVE_GROUND, highest + CLEARANCE);
+        y = Math.min(y, ground + MAX_ABOVE_GROUND);
+        return Math.min(y, world.getTopY() - 10);
     }
 
     /** A little flock: mostly one colour, sometimes a friend of another (black stays rare). */

@@ -38,6 +38,14 @@ public final class StencilGunHud {
 
     public static void initialize() {
         HudRenderCallback.EVENT.register(StencilGunHud::render);
+        // The inventory key, hammer in hand: the inventory with the hammer's slots on its sides
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.START_CLIENT_TICK.register(client -> {
+            if (client.currentScreen != null || !isHoldingGun(client) || client.player.isSpectator()) return;
+            boolean pressed = false;
+            while (client.options.inventoryKey.wasPressed()) pressed = true;
+            if (pressed) net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
+                    new fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload(fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload.Action.HAMMER_OPEN, 0));
+        });
         fr.lordfinn.steveparty.client.gui.wheel.ToolWheel.register(new fr.lordfinn.steveparty.client.hammer.HammerWheel());
     }
 
@@ -96,12 +104,17 @@ public final class StencilGunHud {
             context.getMatrices().pop();
             context.drawItemInSlot(client.textRenderer, dye, colorX + INSET, y + INSET);
         } else {
-            Text engrave = Text.translatable("hud.steveparty.stencil_gun.engrave");
-            context.getMatrices().push();
-            context.getMatrices().translate(colorX + BOX / 2F, y + BOX / 2F - 2, 0);
-            context.getMatrices().scale(0.5F, 0.5F, 1);
-            context.drawText(client.textRenderer, engrave, -client.textRenderer.getWidth(engrave) / 2, 0, ToolHud.TEXT, false);
-            context.getMatrices().pop();
+            // No paint: a netherite pickaxe (engrave), or an axe on a cut-out panel (cut)
+            context.drawItem(fr.lordfinn.steveparty.client.hammer.HammerWheel.engraveIcon(client), colorX + INSET, y + INSET);
         }
+
+        // What the mouse buttons do, above the boxes
+        Text controls = Text.translatable("hud.steveparty.stencil_gun.controls");
+        context.getMatrices().push();
+        context.getMatrices().translate(width / 2F, y - 7, 0);
+        ToolHud.occupy(y - 8);
+        context.getMatrices().scale(0.75F, 0.75F, 1);
+        context.drawTextWithShadow(client.textRenderer, controls, -client.textRenderer.getWidth(controls) / 2, 0, ToolHud.TEXT);
+        context.getMatrices().pop();
     }
 }

@@ -178,9 +178,11 @@ public final class HelmetView {
         BoardSpaceBlockEntity space = world.getBlockEntity(node.pos()) instanceof BoardSpaceBlockEntity s ? s : null;
         ItemStack cartridge = space != null ? space.getActiveCartridgeItemStack() : ItemStack.EMPTY;
         boolean slots = space != null && space.size() > 1;
-        // The active cartridge, a square in its colour
-        WorldDraw.Plate namePlate = slots ? WorldDraw.Plate.GOLD : WorldDraw.Plate.TEAL;
-        if (cartridge.getItem() instanceof CartridgeItem item) {
+        // The active cartridge, a square in its colour: a plain tile's one is already on the board view's plate
+        WorldDraw.Plate namePlate = WorldDraw.Plate.GOLD;
+        if (!slots) {
+            // nothing: the board view names it
+        } else if (cartridge.getItem() instanceof CartridgeItem item) {
             lines.add(new Line(Text.literal("■ ").withColor(visible(item.menuColor(cartridge))).append(cartridge.getName()), namePlate));
         } else {
             lines.add(new Line(BoardText.Plate.MUTED.of(Text.translatable("hud.steveparty.explorer_helmet.no_cartridge")), namePlate));
@@ -190,7 +192,7 @@ public final class HelmetView {
             lines.add(new Line(Text.translatable(routed.contains(node.pos()) ? "hud.steveparty.explorer_helmet.slot.router"
                     : "hud.steveparty.explorer_helmet.slot", slot + 1, space.size(), slot), WorldDraw.Plate.GOLD));
         }
-        if (full) lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.cartridges", node.cartridges()), WorldDraw.Plate.TEAL));
+        if (full && slots) lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.cartridges", node.cartridges()), WorldDraw.Plate.TEAL));
         long out = node.activeBoardSpaceLinks();
         int in = incoming.getOrDefault(node.pos(), List.of()).size();
         lines.add(new Line(Text.translatable("hud.steveparty.explorer_helmet.links",

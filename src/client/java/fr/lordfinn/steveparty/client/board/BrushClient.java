@@ -38,6 +38,7 @@ public final class BrushClient {
         HudRenderCallback.EVENT.register(BrushClient::renderBrushHud);
         ClientTickEvents.END_CLIENT_TICK.register(BrushClient::strokeTrail);
         BrushOverlay.initialize();
+        BrushTrail.initialize();
         BoardView.initialize();
         HelmetView.initialize();
     }
@@ -46,16 +47,17 @@ public final class BrushClient {
         return client.player != null && client.player.getMainHandStack().getItem() instanceof TileLinkerBrushItem;
     }
 
-    /** While painting: redstone dust where the brush is, on the tile it paints (the stroke drawn freely). */
+    /** While painting: a little dust of the paint's colour where the brush is, on the tile it paints. */
     private static void strokeTrail(MinecraftClient client) {
-        if (client.player == null || client.world == null || client.currentScreen != null || !holdsBrush(client)
-                || !client.options.useKey.isPressed() || ToolWheel.isOpen()) return;
+        if (client.world == null || !BrushTrail.painting(client.player)) return;
         BlockPos aimed = BrushAim.aimed(client.player, client.world, 1f);
         if (aimed == null) return;
         Vec3d at = BrushOverlay.anchor(client.world, aimed);
         var random = client.world.getRandom();
+        int rgb = BrushTrail.color(client.player.getActiveItem());
+        var color = new org.joml.Vector3f(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
         for (int i = 0; i < 2; i++) {
-            client.world.addParticle(new DustParticleEffect(new org.joml.Vector3f(1f, 0.1f, 0.05f), 1.2f),
+            client.world.addParticle(new DustParticleEffect(color, 1.2f),
                     at.x + (random.nextDouble() - 0.5) * 0.6, at.y - 0.1, at.z + (random.nextDouble() - 0.5) * 0.6, 0, 0.02, 0);
         }
     }
@@ -86,11 +88,6 @@ public final class BrushClient {
         }
         tool.add(ToolHud.element(ToolHud.textPlateWidth(level), (x, y) -> ToolHud.textPlate(context, x, y, level, ToolHud.Plate.GREEN)));
         List<List<ToolHud.Element>> groups = new ArrayList<>(List.of(tool));
-        Text board = boardSummary();
-        if (board != null) {
-            ToolHud.Plate boardPlate = BoardView.counts()[1] + BoardView.counts()[2] > 0 ? ToolHud.Plate.ORANGE : ToolHud.Plate.GREEN;
-            groups.add(List.of(ToolHud.element(ToolHud.textPlateWidth(board), (x, y) -> ToolHud.textPlate(context, x, y, board, boardPlate))));
-        }
         int y = ToolHud.rows(context, groups, 4);
         ToolHud.hint(context, Text.translatable("hud.steveparty.tile_linker_brush.hint"), context.getScaledWindowWidth() / 2, y);
     }
@@ -102,19 +99,6 @@ public final class BrushClient {
         var container = BoardLinks.container(client.world, aimed);
         return container instanceof fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity
                 && container.getStack(BoardLinks.slotOf(container, TileLinkerBrush.level(brush))).isEmpty();
-    }
-
-    /** The board around, summed up (null: no board space around). */
-    private static @org.jetbrains.annotations.Nullable Text boardSummary() {
-        int[] counts = BoardView.counts();
-        if (counts[0] == 0) return null;
-        if (counts[1] + counts[2] == 0) {
-            return BoardText.Plate.OK.of(Text.translatable("hud.steveparty.board.summary.ok", Text.translatable("hud.steveparty.board.spaces", counts[0])));
-        }
-        return Text.translatable("hud.steveparty.board.summary.problems",
-                BoardText.Plate.NUMBER.of(Text.translatable("hud.steveparty.board.spaces", counts[0])),
-                (counts[1] > 0 ? BoardText.Plate.DEAD_END : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.dead_ends", counts[1])),
-                (counts[2] > 0 ? BoardText.Plate.UNREACHABLE : BoardText.Plate.MUTED).of(Text.translatable("hud.steveparty.board.unreachable", counts[2])));
     }
 
     /**

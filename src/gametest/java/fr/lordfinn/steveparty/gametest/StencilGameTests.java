@@ -895,6 +895,43 @@ public class StencilGameTests implements FabricGameTest {
         context.complete();
     }
 
+    /**
+     * The hammer's slots open beside the whole inventory: its stencils on the left, its dyes on the right, the armour
+     * and the off hand where vanilla has them, no two slots in one place; a dye shift-clicked goes into the hammer.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void stencilHammerSlotsSitBesideTheInventory(TestContext context) {
+        ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();
+        try {
+            ItemStack gun = loadedGun();
+            player.getInventory().selectedSlot = 0;
+            player.setStackInHand(Hand.MAIN_HAND, gun);
+            StencilGunScreenHandler handler = new StencilGunScreenHandler(1, player.getInventory(), 0);
+            context.assertEquals(handler.slots.size(), StencilGunItem.SIZE + 36 + 5, "hammer, inventory, armour and off hand");
+            java.util.Set<Long> places = new java.util.HashSet<>();
+            for (var slot : handler.slots) context.assertTrue(places.add(((long) slot.x << 32) | slot.y), "one slot per place: " + slot.x + ", " + slot.y);
+            for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) {
+                context.assertTrue(handler.slots.get(i).x < StencilGunScreenHandler.INVENTORY_X, "stencils on the left");
+            }
+            for (int i = StencilGunItem.STENCIL_SLOTS; i < StencilGunItem.SIZE; i++) {
+                context.assertTrue(handler.slots.get(i).x > StencilGunScreenHandler.INVENTORY_X + 176, "dyes on the right");
+            }
+            var head = handler.slots.get(StencilGunScreenHandler.ARMOR_START);
+            context.assertTrue(head.canInsert(new ItemStack(Items.DIAMOND_HELMET)) && !head.canInsert(new ItemStack(Items.DIAMOND_BOOTS)),
+                    "the head slot takes a helmet only");
+            context.assertEquals(handler.slots.get(StencilGunScreenHandler.OFF_HAND).getIndex(), net.minecraft.entity.player.PlayerInventory.OFF_HAND_SLOT, "the off hand");
+            player.getInventory().setStack(9, new ItemStack(Items.LIME_DYE, 4));
+            handler.quickMove(player, StencilGunScreenHandler.PLAYER_START);
+            context.assertTrue(StencilGunItem.contents(gun).stream().anyMatch(stack -> stack.isOf(Items.LIME_DYE) && stack.getCount() == 4),
+                    "the dye went into the hammer: " + StencilGunItem.contents(gun));
+            context.assertTrue(!handler.slots.get(0).getBackgroundSprite().getSecond().equals(handler.slots.get(StencilGunItem.STENCIL_SLOTS).getBackgroundSprite().getSecond()),
+                    "a stencil and a dye silhouette");
+        } finally {
+            context.getWorld().getServer().getPlayerManager().remove(player);
+        }
+        context.complete();
+    }
+
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void stencilGunLoaderOnlyFillsTheGunItWasOpenedOn(TestContext context) {
         ServerPlayerEntity player = context.createMockCreativeServerPlayerInWorld();

@@ -734,9 +734,6 @@ public class MiniGamePageEditorScreen extends Screen {
             } else {
                 context.drawText(textRenderer, fit(status, FULL - 124 - 6), lx, y + BOTTOM_Y + 4, colour, false);
             }
-        } else if (tab == Tab.PIPES) {
-            // The legend: a pipe's colour is its column; the titles say more
-            context.drawText(textRenderer, fit(Text.translatable(KEY + "pipes.legend"), FULL - 124 - 6), lx, y + BOTTOM_Y + 4, INK2, false);
         }
     }
 
