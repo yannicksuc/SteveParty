@@ -21,12 +21,10 @@ import net.minecraft.util.math.Vec3d;
 /**
  * What the Tile Linker Brush shows its holder (and only them: everything is drawn client side): the tile aimed at,
  * found the way the player sees it (see {@link BrushAim}), framed. Nothing is ever selected: while a stroke is held,
- * the frame tells what reaching that tile does (green, a link painted; red, one erased), and the paint left behind is
- * {@link BrushTrail}.
+ * the frame tells what reaching that tile does (green, a link painted; red, one erased; white, nothing), and the paint
+ * left behind and the arrows of the stroke are {@link BrushTrail}.
  */
 final class BrushOverlay {
-    static final int GREEN = 0xFF4CFF4C;
-    static final int RED = 0xFFFF4040;
     static final int WHITE = 0xFFFFFFFF;
 
     private BrushOverlay() {
@@ -51,7 +49,7 @@ final class BrushOverlay {
         BlockPos aimed = BrushAim.aimed(player, world, context.tickCounter().getTickDelta(true));
         if (aimed != null) {
             BlockPos last = BrushTrail.lastTile();
-            int color = last == null || last.equals(aimed) ? WHITE : linked(world, brush, last, aimed) ? RED : GREEN;
+            int color = last == null || last.equals(aimed) ? WHITE : 0xFF000000 | BrushTrail.outcome(world, brush, last, aimed);
             frame(matrices, consumers, camera, world, aimed, color);
         }
         consumers.draw();
