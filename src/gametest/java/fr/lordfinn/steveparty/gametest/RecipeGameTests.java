@@ -79,6 +79,12 @@ public class RecipeGameTests implements FabricGameTest {
             Map.entry("villager_block", "a villager pushed down by a piston"),
             Map.entry("mula_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             Map.entry("boxed_trader_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("acorn", "dropped by the Glandouille (and by bone meal on it)"),
+            Map.entry("acorn_hat", "flies off a Glandouille's head in a crash"),
+            Map.entry("glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("young_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("mossy_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
+            Map.entry("frosty_glandouille_spawn_egg", "spawn eggs are creative-only, like vanilla ones"),
             // The 10 fixed-wood easel signs are kept for the worlds that have them: the material easel sign replaced them
             Map.entry("oak_easel_sign", "legacy"), Map.entry("spruce_easel_sign", "legacy"),
             Map.entry("birch_easel_sign", "legacy"), Map.entry("jungle_easel_sign", "legacy"),
@@ -202,6 +208,7 @@ public class RecipeGameTests implements FabricGameTest {
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.REPEATER)).isOf(ModItems.REPLAY_CARTRIDGE), "roll again cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(Items.ENDER_PEARL)).isOf(ModItems.TELEPORT_CARTRIDGE), "teleport cartridge");
         context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.POWER_STAR)).isOf(ModItems.STAR_CARTRIDGE), "star cartridge");
+        context.assertTrue(result(context, 2, 1, cartridge, new ItemStack(ModItems.ACORN)).isOf(ModItems.GLANDOUILLE_CARTRIDGE), "glandouille cartridge");
 
         ItemStack carpet = new ItemStack(Items.RED_CARPET);
         // Two tiles, each holding a plain Cartridge

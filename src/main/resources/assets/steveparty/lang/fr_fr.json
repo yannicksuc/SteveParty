@@ -2603,7 +2603,7 @@
   "tooltip.steveparty.glandouille_cartridge.lone": "Un Glandouille seul : il essaie de pousser, sans y arriver",
   "gui.steveparty.cartridge_menu.name.glandouille_cartridge": "Glandouille",
   "gui.steveparty.cartridge_menu.desc.glandouille_cartridge": "Une tour de Glandouilles pousse le pion qui s'arrête ici, et tous les pions sur son chemin, jusqu'à sa destination.",
-  "gui.steveparty.cartridge_menu.glandouille.distance": "Destination (cases plus loin)",
+  "gui.steveparty.cartridge_menu.glandouille.distance": "Destination (cases)",
   "gui.steveparty.cartridge_menu.glandouille.hint": "0 : pas de destination, rien ne se passe",
   "gui.steveparty.cartridge_menu.glandouille.crew": "Qui pousse",
   "gui.steveparty.cartridge_menu.glandouille.tower": "Une tour",

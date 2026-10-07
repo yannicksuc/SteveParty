@@ -2603,7 +2603,7 @@
   "tooltip.steveparty.glandouille_cartridge.lone": "A lone Glandouille: it tries to push, and can't",
   "gui.steveparty.cartridge_menu.name.glandouille_cartridge": "Glandouille",
   "gui.steveparty.cartridge_menu.desc.glandouille_cartridge": "A tower of Glandouilles pushes the token that stops here, and every token on its way, to its destination.",
-  "gui.steveparty.cartridge_menu.glandouille.distance": "Destination (spaces ahead)",
+  "gui.steveparty.cartridge_menu.glandouille.distance": "Destination (spaces)",
   "gui.steveparty.cartridge_menu.glandouille.hint": "0: no destination, nothing happens",
   "gui.steveparty.cartridge_menu.glandouille.crew": "Who pushes",
   "gui.steveparty.cartridge_menu.glandouille.tower": "A tower",
