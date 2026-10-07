@@ -71,7 +71,7 @@ public final class ShopProtection {
     /** Action-bar message sent to a player denied the breaking or the opening of a protected shop block. */
     public static void sendDenied(PlayerEntity player) {
         player.sendMessage(Text.translatableWithFallback("message.steveparty.shop.protected_block",
-                "This block belongs to another player's shop."), true);
+                "This block belongs to another player's shop: to buy, right-click its trader."), true);
     }
 
     /**
