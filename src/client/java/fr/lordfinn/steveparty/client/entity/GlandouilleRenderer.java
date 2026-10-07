@@ -11,7 +11,7 @@ import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 /**
- * Draws a Glandouille at its variant's size. A tower sways as a whole while its bottom one walks: every one above the
+ * Draws a Glandouille (its variant's own model, see GlandouilleModel), its shadow as wide as it is. A tower sways as a whole while its bottom one walks: every one above the
  * bottom is turned about the bottom one's feet, by an angle that grows with the tower's height and its bottom one's
  * pace (the young one's towers sway the most), so the top moves the most. Only a look: the riders stay where riding
  * puts them.
@@ -35,7 +35,7 @@ public class GlandouilleRenderer extends GeoEntityRenderer<GlandouilleEntity> {
     @Override
     public void render(GlandouilleEntity glandouille, float entityYaw, float partialTick, MatrixStack poseStack,
                        VertexConsumerProvider bufferSource, int packedLight) {
-        this.shadowRadius = 0.35f * glandouille.getScaleFactor();
+        this.shadowRadius = 0.45f * glandouille.getWidth();
         GlandouilleEntity bottom = glandouille.getVehicle() instanceof GlandouilleEntity ? GlandouilleTowers.bottom(glandouille) : null;
         if (bottom == null) {
             super.render(glandouille, entityYaw, partialTick, poseStack, bufferSource, packedLight);
