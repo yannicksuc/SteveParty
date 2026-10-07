@@ -1270,6 +1270,7 @@
   "tooltip.steveparty.telescope.wheel": "Molette : remonter nuit après nuit",
   "tooltip.steveparty.telescope.track": "Gardez le viseur sur une étoile filante jusqu'à remplir la jauge",
   "tooltip.steveparty.telescope.guide": "Une étoile guide brille alors dans votre ciel, au-dessus des Mulas : basse quand ils sont loin, haute quand ils sont proches",
+  "tooltip.steveparty.telescope.take": "Accroupi, clic droit main vide pour le reprendre, ou cassez-le simplement",
   "message.steveparty.telescope.need_night_sky": "Il faut un ciel nocturne dégagé",
   "message.steveparty.telescope.busy": "Quelqu'un regarde déjà dans ce télescope",
   "message.steveparty.telescope.guide_gone": "Une étoile guide s'est éteinte : ses Mulas sont repartis",
