@@ -36,12 +36,19 @@ public class ModComponents {
             registerComponent("teleport-targets", TeleportSettingsComponent.CODEC);
     public static final ComponentType<BlockOriginComponent> BLOCK_ORIGIN_COMPONENT =
             registerComponent("block-origin-component", BlockOriginComponent.CODEC);
-    /** Mode, chain, edited slot and auto link of a Wrench (see WrenchState). */
-    public static final ComponentType<fr.lordfinn.steveparty.board.WrenchState> WRENCH_STATE =
-            registerComponent("wrench-state", fr.lordfinn.steveparty.board.WrenchState.CODEC);
+    /**
+     * Legacy: mode and chain of the Wrench when it linked board spaces (the Tile Linker Brush does now). No longer
+     * written; kept registered so wrenches saved with it still load (an unknown component would drop the item), and
+     * stripped from them by {@code WrenchItem#inventoryTick}.
+     */
+    public static final ComponentType<net.minecraft.nbt.NbtCompound> WRENCH_STATE =
+            registerComponent("wrench-state", net.minecraft.nbt.NbtCompound.CODEC);
     /** The level (0-15) of a Tile Linker Brush: the slot its links go in; absent: the powered one (see TileLinkerBrush). */
     public static final ComponentType<Integer> LINK_LEVEL =
             registerComponent("link-level", Codec.INT);
+    /** The kind of Cartridge a Tile Linker Brush puts in the tiles it links; absent: the plain Cartridge. */
+    public static final ComponentType<net.minecraft.item.Item> LINK_CARTRIDGE =
+            registerComponent("link-cartridge", net.minecraft.registry.Registries.ITEM.getCodec());
     /**
      * Legacy: token selected by the Tokenizer Wand when it could move tokens. No longer written; kept registered so
      * wands saved by older versions still load (an unknown component would drop the item), and stripped from them

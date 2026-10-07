@@ -29,7 +29,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -44,10 +43,10 @@ import java.util.List;
  * stencils and 9 dye stacks and stamps the selected stencil in the selected colour with a hammer strike, on stencil
  * signs like a stencil + dye, and on the face of any full block (see {@link StencilHammerStrike}).
  * <ul>
- *     <li>sneak + use: opens the gun to load / unload stencils and dyes;</li>
- *     <li>sneak + mouse wheel: picks the next / previous stencil, or colour (the "stencil gun mode" key switches
- *     which one the wheel picks, see the HUD);</li>
- *     <li>the colour list ends with "no paint": the stencil is then only engraved.</li>
+ *     <li>right click (sneaking or not): strikes;</li>
+ *     <li>left click: its wheel (client side), the loaded colours on one side, the stencils on the other, "Engrave" (no
+ *     paint: the stencil is only engraved on signs) and, on top, the hammer's inventory to load / unload stencils and
+ *     dyes. A pick applies at once.</li>
  * </ul>
  */
 public class StencilGunItem extends Item {
@@ -142,15 +141,24 @@ public class StencilGunItem extends Item {
         return engraveEntry ? StencilGunSelection.ENGRAVE : 0;
     }
 
-    /** Mouse wheel: moves the stencil (or colour) selection by one loaded slot. */
-    public static void scroll(ItemStack gun, boolean colors, int direction) {
-        if (direction == 0) return;
+    /** Wheel: stamps the stencil of {@code slot} (0-8, a loaded one). */
+    public static boolean selectStencil(ServerPlayerEntity player, ItemStack gun, int slot) {
         List<ItemStack> contents = contents(gun);
+        if (slot < 0 || slot >= STENCIL_SLOTS || contents.get(slot).isEmpty()) return false;
         StencilGunSelection selection = validSelection(contents, selection(gun));
-        StencilGunSelection next = colors
-                ? new StencilGunSelection(selection.stencil(), step(contents, STENCIL_SLOTS, DYE_SLOTS, selection.dye(), direction, true))
-                : new StencilGunSelection(step(contents, 0, STENCIL_SLOTS, selection.stencil(), direction, false), selection.dye());
-        gun.set(ModComponents.STENCIL_GUN_SELECTION, next);
+        gun.set(ModComponents.STENCIL_GUN_SELECTION, new StencilGunSelection(slot, selection.dye()));
+        player.playSoundToPlayer(SoundEvents.UI_BUTTON_CLICK.value(), SoundCategory.PLAYERS, 0.5F, 1.9F);
+        return true;
+    }
+
+    /** Wheel: paints with the dye of {@code slot} (0-8, a loaded one), or {@link StencilGunSelection#ENGRAVE}. */
+    public static boolean selectDye(ServerPlayerEntity player, ItemStack gun, int slot) {
+        List<ItemStack> contents = contents(gun);
+        if (slot != StencilGunSelection.ENGRAVE && (slot < 0 || slot >= DYE_SLOTS || contents.get(STENCIL_SLOTS + slot).isEmpty())) return false;
+        StencilGunSelection selection = validSelection(contents, selection(gun));
+        gun.set(ModComponents.STENCIL_GUN_SELECTION, new StencilGunSelection(selection.stencil(), slot));
+        player.playSoundToPlayer(SoundEvents.UI_BUTTON_CLICK.value(), SoundCategory.PLAYERS, 0.5F, 1.6F);
+        return true;
     }
 
     /** Burnt in lava, pricked by a cactus...: the loaded stencils and dyes spill out, like a bundle's contents. */
@@ -165,31 +173,24 @@ public class StencilGunItem extends Item {
 
     // ---------------------------------------------------------------- use
 
-    @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
-        if (player.isSneaking()) {
-            if (!world.isClient) openLoader(player, hand);
-            return TypedActionResult.success(player.getStackInHand(hand), world.isClient());
-        }
-        return TypedActionResult.pass(player.getStackInHand(hand));
-    }
-
     /**
-     * Sneaking always opens the hammer (the block is skipped); otherwise strikes the face of a full block and stamps
-     * the stencil on it in the selected paint (see {@link StencilHammerStrike}).
+     * Strikes the face of a full block and stamps the stencil on it in the selected paint (see
+     * {@link StencilHammerStrike}), sneaking or not. Its inventory opens from its wheel.
      */
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         PlayerEntity player = context.getPlayer();
         if (player == null) return ActionResult.PASS;
         World world = context.getWorld();
-        if (player.isSneaking()) {
-            if (!world.isClient) openLoader(player, context.getHand());
-            return ActionResult.SUCCESS;
-        }
         ItemStack gun = context.getStack();
         Load load = selectedLoad(gun);
-        if (load.shape() == null) return ActionResult.PASS;
+        if (load.shape() == null) {
+            // Nothing to stamp yet: where to load it
+            if (StencilItem.canTakePaint(world, context)) {
+                StencilInteractions.hint(world, player, "message.steveparty.stencil_gun.empty");
+            }
+            return ActionResult.PASS;
+        }
         if (load.color() == null) {
             // "Engrave" is for signs: a block face takes paint
             if (StencilItem.canTakePaint(world, context)) {
@@ -216,8 +217,9 @@ public class StencilGunItem extends Item {
         return false;
     }
 
-    private static void openLoader(PlayerEntity player, Hand hand) {
-        int slot = hand == Hand.MAIN_HAND ? player.getInventory().selectedSlot : StencilGunScreenHandler.OFF_HAND_SLOT;
+    /** Opens the hammer in the main hand to load / unload its stencils and dyes (its wheel's top sector). */
+    public static boolean openLoader(PlayerEntity player) {
+        int slot = player.getInventory().selectedSlot;
         player.openHandledScreen(new ExtendedScreenHandlerFactory<Integer>() {
             @Override
             public Integer getScreenOpeningData(ServerPlayerEntity serverPlayer) {
@@ -234,6 +236,7 @@ public class StencilGunItem extends Item {
                 return new StencilGunScreenHandler(syncId, inventory, slot);
             }
         });
+        return true;
     }
 
     /** Spray hiss and a puff of paint. */

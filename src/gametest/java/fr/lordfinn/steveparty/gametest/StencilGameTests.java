@@ -817,19 +817,18 @@ public class StencilGameTests implements FabricGameTest {
         return gun;
     }
 
+    /** A selection on an emptied slot falls back on the next loaded stencil, and on "no paint" without dye left. */
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void stencilGunWheelSkipsEmptySlots(TestContext context) {
+    public void stencilGunSelectionSkipsEmptySlots(TestContext context) {
         ItemStack gun = loadedGun();
-        StencilGunItem.scroll(gun, false, 1);
-        context.assertEquals(StencilGunItem.selection(gun).stencil(), 2, "next stencil skips the empty slot");
-        StencilGunItem.scroll(gun, false, 1);
-        context.assertEquals(StencilGunItem.selection(gun).stencil(), 0, "wraps around");
-        StencilGunItem.scroll(gun, true, 1);
-        context.assertEquals(StencilGunItem.selection(gun).dye(), 3, "next colour");
-        StencilGunItem.scroll(gun, true, 1);
-        context.assertEquals(StencilGunItem.selection(gun).dye(), StencilGunSelection.ENGRAVE, "then no paint");
-        StencilGunItem.scroll(gun, true, 1);
-        context.assertEquals(StencilGunItem.selection(gun).dye(), 0, "then back to the first colour");
+        List<ItemStack> contents = StencilGunItem.contents(gun);
+        StencilGunSelection valid = StencilGunItem.validSelection(contents, new StencilGunSelection(1, 1));
+        context.assertEquals(valid.stencil(), 2, "an empty stencil slot: the next loaded one");
+        context.assertEquals(valid.dye(), 3, "an empty dye slot: the next loaded one");
+        contents.set(StencilGunItem.STENCIL_SLOTS, ItemStack.EMPTY);
+        contents.set(StencilGunItem.STENCIL_SLOTS + 3, ItemStack.EMPTY);
+        context.assertEquals(StencilGunItem.validSelection(contents, new StencilGunSelection(0, 0)).dye(), StencilGunSelection.ENGRAVE,
+                "no dye left: no paint");
         context.complete();
     }
 
@@ -862,7 +861,7 @@ public class StencilGameTests implements FabricGameTest {
         ItemActionResult first = context.getBlockState(SIGN).onUseWithItem(gun, context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
         context.assertEquals(first, ItemActionResult.CONSUME, "the strike plays its own swing");
         // Straight away, with the blue dye: the hammer is still swinging
-        StencilGunItem.scroll(player.getMainHandStack(), true, 1);
+        player.getMainHandStack().set(ModComponents.STENCIL_GUN_SELECTION, new StencilGunSelection(0, 3));
         context.getBlockState(SIGN).onUseWithItem(player.getMainHandStack(), context.getWorld(), player, Hand.MAIN_HAND, hit(context, SIGN, Direction.NORTH));
         StencilCanvasBlockEntity sign = at(context, SIGN);
         context.assertTrue(sign.getColor() == DyeColor.RED, "no second strike while the first one swings");

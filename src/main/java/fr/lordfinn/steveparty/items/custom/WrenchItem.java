@@ -1,10 +1,7 @@
 package fr.lordfinn.steveparty.items.custom;
 
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
-import fr.lordfinn.steveparty.board.BoardText;
 import fr.lordfinn.steveparty.board.WrenchActions;
-import fr.lordfinn.steveparty.board.WrenchMode;
-import fr.lordfinn.steveparty.board.WrenchState;
 import fr.lordfinn.steveparty.components.ModComponents;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -21,23 +18,20 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.List;
 
 /**
- * The Wrench (« Clé »): links board spaces, with modes (see {@link WrenchMode}) and a chain (see {@link WrenchActions}).
- * Everything it remembers (origin, mode, chain) is on the item: each player has their own.
+ * The Wrench (« Clé »): opens and works what is otherwise locked (board spaces and routers, the blocks that answer
+ * only to it), checks the board on the Party Controller, and takes plastic apart in one hit. Links are painted with
+ * the Tile Linker Brush. See {@link WrenchActions}.
  */
 public class WrenchItem extends AbstractDestinationsSelectorItem implements CartridgeContainerOpener {
 
     // Instant break needs speed / hardness / 30 >= 1, even when the /5 airborne or underwater penalty applies
     private static final float PLASTIC_MINING_SPEED = 1000f;
     private static final int CONTROLS_COLOR = 0xfcb017;
-    /** Translation key of the key binding that switches the mode (registered by the client). */
-    public static final String MODE_KEY = "key.steveparty.wrench_mode";
 
     public WrenchItem(Settings settings) {
         super(settings);
@@ -51,8 +45,8 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
     }
 
     /**
-     * Right click on a block. The client predicts a success (the hand swings, and the off hand item is not used
-     * instead); the server decides.
+     * Right click on a block. The client predicts a success on the blocks the Wrench works (the hand swings, and the
+     * off hand item is not used instead); the server decides.
      */
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
@@ -62,19 +56,6 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
                 (ServerWorld) context.getWorld(), context.getBlockPos());
     }
 
-    /** Right click in the air: a board space aimed at from afar, or (sneaking) the end of the chain. */
-    @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
-        if (hand != Hand.MAIN_HAND) return TypedActionResult.pass(player.getStackInHand(hand));
-        ItemStack stack = player.getStackInHand(hand);
-        if (world.isClient) {
-            boolean acts = player.isSneaking() ? WrenchActions.origin(stack, world) != null : WrenchActions.aimedBoardSpace(player, world) != null;
-            return acts ? TypedActionResult.success(stack) : TypedActionResult.pass(stack);
-        }
-        return new TypedActionResult<>(WrenchActions.use((ServerPlayerEntity) player, stack, (ServerWorld) world), stack);
-    }
-
-    /** The mode, origin and chain change at every click: no re-equip animation of the hand. */
     @Override
     public boolean allowComponentsUpdateAnimation(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
         return false;
@@ -83,39 +64,22 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
     @Override
     public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
         super.inventoryTick(stack, world, entity, slot, selected);
-        // Wrenches of older versions mirrored the links of their tile on themselves: the board view shows them now
-        if (!world.isClient && stack.contains(ModComponents.DESTINATIONS_COMPONENT)) stack.remove(ModComponents.DESTINATIONS_COMPONENT);
-    }
-
-    /** "Wrench (Trace)". */
-    @Override
-    public Text getName(ItemStack stack) {
-        return super.getName(stack).copy().append(Text.literal(" (").formatted(Formatting.GRAY))
-                .append(WrenchState.of(stack).mode().displayName()).append(Text.literal(")").formatted(Formatting.GRAY));
+        if (world.isClient) return;
+        // Wrenches of older versions mirrored the links of their tile, or remembered an origin and a mode for linking
+        // (the Tile Linker Brush links now): none of it is used any more
+        if (stack.contains(ModComponents.DESTINATIONS_COMPONENT)) stack.remove(ModComponents.DESTINATIONS_COMPONENT);
+        if (stack.contains(ModComponents.WRENCH_STATE)) stack.remove(ModComponents.WRENCH_STATE);
+        if (stack.contains(ModComponents.BLOCK_ORIGIN_COMPONENT)) stack.remove(ModComponents.BLOCK_ORIGIN_COMPONENT);
     }
 
     @Environment(EnvType.CLIENT)
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        WrenchState state = WrenchState.of(stack);
-        tooltip.add(Text.translatable("tooltip.steveparty.wrench.mode", state.mode().displayName()).formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("tooltip.steveparty.wrench.mode." + state.mode().asString()).formatted(Formatting.DARK_GRAY));
-        Entity holder = stack.getHolder();
-        BlockPos origin = holder == null ? null : WrenchActions.origin(stack, holder.getWorld());
-        if (origin != null) {
-            tooltip.add(state.mode() == WrenchMode.TRACE && state.chainLength() > 0
-                    ? Text.translatable("tooltip.steveparty.wrench.chain", BoardText.pos(origin), state.chainLength()).formatted(Formatting.WHITE)
-                    : Text.translatable("tooltip.steveparty.wrench.origin", BoardText.pos(origin)).formatted(Formatting.WHITE));
-        }
+        fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem.addWrapped(tooltip,
+                Text.translatable("tooltip.steveparty.wrench"), Formatting.GRAY);
         tooltip.add(Text.translatable("tooltip.steveparty.controls").setStyle(Style.EMPTY.withBold(true).withColor(CONTROLS_COLOR)));
-        tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls.click." + state.mode().asString()).formatted(Formatting.GRAY));
-        if (state.mode() == WrenchMode.TRACE) {
-            tooltip.add(Text.translatable("tooltip.steveparty.wrench.auto_link",
-                    Text.translatable(state.autoLink() ? "hud.steveparty.wrench.auto_link.on" : "hud.steveparty.wrench.auto_link.off")).formatted(Formatting.GRAY));
-        }
-        for (String control : List.of("sweep", "far", "sneak_click", "sneak_air", "undo", "place", "offhand", "chest", "shop", "controller", "podium")) {
+        for (String control : List.of("open", "offhand", "controller", "podium", "plastic")) {
             tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls." + control).formatted(Formatting.GRAY));
         }
-        tooltip.add(Text.translatable("tooltip.steveparty.wrench.controls.mode", Text.keybind(MODE_KEY)).formatted(Formatting.GRAY));
     }
 }

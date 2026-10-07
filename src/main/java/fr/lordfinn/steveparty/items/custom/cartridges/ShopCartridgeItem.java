@@ -26,7 +26,7 @@ import java.util.List;
  *     <li>in a tile: the shop opens when a token ends its move there (passing tokens are not stopped).</li>
  * </ul>
  * The shop is the nearest merchant (a Boxed Trader, or the trader of the nearest trading stall), or the one chosen
- * with the Wrench. The cartridge sets how many items may be bought per stop ({@link #purchases}): its menu, or sneak +
+ * with the Tile Linker Brush. The cartridge sets how many items may be bought per stop ({@link #purchases}): its menu, or sneak +
  * mouse wheel with it in the main hand.
  */
 public class ShopCartridgeItem extends CartridgeItem {
@@ -73,7 +73,7 @@ public class ShopCartridgeItem extends CartridgeItem {
         else stack.set(ModComponents.SHOP_PURCHASES, purchases);
     }
 
-    /** The shop: the nearest merchant, or the one chosen with the Wrench; how to choose it. */
+    /** The shop: the nearest merchant, or the one chosen with the Tile Linker Brush; how to choose it. */
     private static List<InfoModule.Line> merchant(InfoModule.Context context) {
         ShopLinkComponent link = context.stack().get(ModComponents.SHOP_LINK);
         return List.of(InfoModule.Line.of(link != null

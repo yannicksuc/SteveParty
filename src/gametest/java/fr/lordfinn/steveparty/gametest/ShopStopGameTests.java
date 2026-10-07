@@ -50,7 +50,7 @@ import java.util.function.Consumer;
 
 /**
  * Shop stops (Shop Cartridge): a check point stops the tokens passing through, a tile opens the shop on landing only;
- * the nearest merchant is the shop (or the one chosen with the Wrench); the purchases allowed are enforced; « Buy
+ * the nearest merchant is the shop (or the one chosen with the Tile Linker Brush); the purchases allowed are enforced; « Buy
  * nothing », closing, the time running out or the owner leaving end the stop and the token goes on.
  * <p>
  * Each test runs in a batch of its own: the shop is the nearest merchant within {@link ShopStops#SHOP_RADIUS} blocks,
@@ -453,7 +453,7 @@ public class ShopStopGameTests implements FabricGameTest {
 
     /**
      * The nearest merchant is the shop, the distance counted to him or to his nearest stall; a trader without stall
-     * sells nothing and is ignored; the Wrench's choice wins.
+     * sells nothing and is ignored; the brush's choice wins.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40, batchId = "shop_stop_nearestMerchantIsTheShop")
     public void nearestMerchantIsTheShop(TestContext context) {
@@ -467,24 +467,27 @@ public class ShopStopGameTests implements FabricGameTest {
             context.assertTrue(found == byStall, "the merchant whose stall is nearest");
             context.assertTrue(found != noStall, "a trader without stall is no shop");
             board.cartridge().set(ModComponents.SHOP_LINK, new ShopLinkComponent(board.trader().getUuid(), board.trader().getBlockPos()));
-            context.assertTrue(ShopStops.findShop(context.getWorld(), shop, board.cartridge()) == board.trader(), "the Wrench's choice wins");
+            context.assertTrue(ShopStops.findShop(context.getWorld(), shop, board.cartridge()) == board.trader(), "the brush's choice wins");
             finish(context, board, player);
         });
     }
 
-    /** The Wrench chooses the shop: origin on the shop space, click a stall (again: back to the nearest) or a trader. */
-    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40, batchId = "shop_stop_wrenchChoosesTheShop")
-    public void wrenchChoosesTheShop(TestContext context) {
+    /**
+     * The Tile Linker Brush chooses the shop: its anchor (last tile painted) on the shop space, click a stall (again:
+     * back to the nearest) or a trader.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40, batchId = "shop_stop_brushChoosesTheShop")
+    public void brushChoosesTheShop(TestContext context) {
         withPlayer(context, player -> {
             Board board = board(context, player, ModBlocks.CHECK_POINT);
-            ItemStack wrench = new ItemStack(ModItems.WRENCH);
+            ItemStack wrench = new ItemStack(ModItems.TILE_LINKER_BRUSH);
             wrench.set(ModComponents.BLOCK_ORIGIN_COMPONENT, new BlockOriginComponent(context.getAbsolutePos(SHOP),
                     context.getWorld().getRegistryKey().getValue().toString()));
             player.setStackInHand(Hand.MAIN_HAND, wrench);
             BlockPos stall = context.getAbsolutePos(STALL);
             ActionResult result = UseBlockCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND,
                     new BlockHitResult(stall.toCenterPos(), Direction.UP, stall, false));
-            context.assertEquals(result, ActionResult.SUCCESS, "the click is the Wrench's");
+            context.assertEquals(result, ActionResult.SUCCESS, "the click is the brush's");
             ShopLinkComponent link = board.cartridge().get(ModComponents.SHOP_LINK);
             context.assertTrue(link != null && link.trader().equals(board.trader().getUuid()), "the stall's merchant is the shop");
             context.assertEquals(link.anchor(), stall, "shown at the stall");
@@ -493,7 +496,7 @@ public class ShopStopGameTests implements FabricGameTest {
                         new BlockHitResult(stall.toCenterPos(), Direction.UP, stall, false));
                 context.assertTrue(board.cartridge().get(ModComponents.SHOP_LINK) == null, "the same shop again: back to the nearest");
                 ActionResult onTrader = UseEntityCallback.EVENT.invoker().interact(player, context.getWorld(), Hand.MAIN_HAND, board.trader(), null);
-                context.assertEquals(onTrader, ActionResult.SUCCESS, "a click on the trader is the Wrench's");
+                context.assertEquals(onTrader, ActionResult.SUCCESS, "a click on the trader is the brush's");
                 ShopLinkComponent direct = board.cartridge().get(ModComponents.SHOP_LINK);
                 context.assertTrue(direct != null && direct.trader().equals(board.trader().getUuid()), "the clicked trader is the shop");
                 finish(context, board, player);

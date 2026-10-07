@@ -42,7 +42,7 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(PartyLivePayload.ID, PartyLivePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PartyDashboardPayload.ID, PartyDashboardPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveStencilPayload.ID, SaveStencilPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(StencilGunScrollPayload.ID, StencilGunScrollPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(ToolWheelPayload.ID, ToolWheelPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ShopCartridgeScrollPayload.ID, ShopCartridgeScrollPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(PageZonePayload.ID, PageZonePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(AdvanceBackScrollPayload.ID, AdvanceBackScrollPayload.CODEC);
@@ -58,7 +58,6 @@ public class ModPayloads {
         PayloadTypeRegistry.playS2C().register(OpenTokenSpellPayload.ID, OpenTokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(TokenSpellPayload.ID, TokenSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(VillagerBlockPunchPayload.ID, VillagerBlockPunchPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(WrenchActionPayload.ID, WrenchActionPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(CartridgeSettingPayload.ID, CartridgeSettingPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(DicePromptPayload.ID, DicePromptPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(DicePromptAnswerPayload.ID, DicePromptAnswerPayload.CODEC);
@@ -69,11 +68,6 @@ public class ModPayloads {
         });
 
         ServerPlayNetworking.registerGlobalReceiver(CartridgeSettingPayload.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
-            runInPacketOrder(player, () -> payload.handle(player));
-        });
-
-        ServerPlayNetworking.registerGlobalReceiver(WrenchActionPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> payload.handle(player));
         });
@@ -117,7 +111,7 @@ public class ModPayloads {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> payload.handle(player));
         });
-        ServerPlayNetworking.registerGlobalReceiver(StencilGunScrollPayload.ID, (payload, context) -> {
+        ServerPlayNetworking.registerGlobalReceiver(ToolWheelPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             runInPacketOrder(player, () -> payload.handle(player));
         });
