@@ -77,8 +77,10 @@ import java.util.UUID;
  * saved.
  */
 public class GlandouilleEntity extends PathAwareEntity implements GeoEntity {
-    /** The classic model's size (a 12 px wide cap, 15 px up to the top of the cap); each variant has its own. */
-    public static final float MODEL_WIDTH = 0.75f, MODEL_HEIGHT = 0.9375f;
+    /** Every Glandouille's size relative to its model (hitbox and drawing): a little thing. */
+    public static final float SIZE = 0.6f;
+    /** The classic one's hitbox (its model's 12 px wide cap, 15 px up to the top of the cap, at {@link #SIZE}); each variant has its own. */
+    public static final float MODEL_WIDTH = 0.75f * SIZE, MODEL_HEIGHT = 0.9375f * SIZE;
     /** A player closer than this gets charged. */
     public static final double ZONE = 4.0;
     /** The player it holds a grudge against gets charged from this far. */

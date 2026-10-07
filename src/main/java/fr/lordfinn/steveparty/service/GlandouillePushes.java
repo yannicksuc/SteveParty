@@ -52,7 +52,7 @@ public final class GlandouillePushes {
     private static final GlandouilleVariant[] TOWER = {GlandouilleVariant.CLASSIC, GlandouilleVariant.YOUNG,
             GlandouilleVariant.FROSTY, GlandouilleVariant.CLASSIC};
     /** How far behind the token (and the tokens ahead of it) the tower stands. */
-    private static final double BEHIND = 0.85;
+    private static final double BEHIND = 0.7;
 
     /** The running shows, by the UUID of the token that landed. */
     private static final Map<UUID, Show> RUNNING = ServerMemory.forgetOnStop(new HashMap<>());

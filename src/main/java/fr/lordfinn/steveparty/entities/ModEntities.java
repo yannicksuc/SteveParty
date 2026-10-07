@@ -108,7 +108,7 @@ public class ModEntities {
                     .<fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity>create(fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity::new, SpawnGroup.CREATURE)
                     .dimensions(fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.MODEL_WIDTH,
                             fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.MODEL_HEIGHT)
-                    .eyeHeight(0.55f)
+                    .eyeHeight(0.55f * fr.lordfinn.steveparty.entities.custom.glandouille.GlandouilleEntity.SIZE)
                     .maxTrackingRange(10)
                     .build(GLANDOUILLE_KEY.getValue().toString())
     );
