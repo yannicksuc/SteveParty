@@ -346,7 +346,9 @@ public final class MulaGoals {
         public boolean canStart() {
             PlayerEntity owner = owner();
             return owner != null && mula.isTamed() && !mula.isSitting() && mula.getMulaBrain().isActive()
-                    && mula.getMulaBrain().ownerStillTicks() >= STILL_TICKS && owner.squaredDistanceTo(mula) < 36;
+                    && mula.getMulaBrain().ownerStillTicks() >= STILL_TICKS && owner.squaredDistanceTo(mula) < 36
+                    // (one of its followers: the Mulas past the followers' limit stay where they are)
+                    && fr.lordfinn.steveparty.entities.custom.MulaEscorts.isFollower(owner.getUuid(), mula);
         }
 
         @Override

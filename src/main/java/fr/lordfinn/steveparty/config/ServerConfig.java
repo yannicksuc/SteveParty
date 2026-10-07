@@ -68,6 +68,11 @@ public final class ServerConfig {
      */
     public int mulaMaxSites = 10;
     /**
+     * The most tamed Mulas following one player at a time (MulaEscorts): the others stay where they are until a place
+     * frees up (one sits down, is given away, is left in another dimension...).
+     */
+    public int mulaMaxFollowers = 16;
+    /**
      * Extra blocks the hop switch can make disappear, besides the block tag {@code steveparty:switchable}: block ids
      * ({@code "minecraft:stone"}) or block tags ({@code "#minecraft:wool"}). Blocks with a block entity are ignored.
      * See {@code SwitchableConfig}.
@@ -168,6 +173,7 @@ public final class ServerConfig {
         if (miniGameBubbleForbiddenEntities == null) miniGameBubbleForbiddenEntities = new ArrayList<>();
         if (switchableBlocks == null) switchableBlocks = new ArrayList<>();
         mulaMaxSites = Math.max(1, mulaMaxSites);
+        mulaMaxFollowers = Math.max(1, mulaMaxFollowers);
         return this;
     }
 }

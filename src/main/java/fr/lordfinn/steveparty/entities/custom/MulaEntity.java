@@ -832,6 +832,32 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	}
 
 	/**
+	 * Server: it pushes nothing. Each tick the vanilla code looked through every entity in its box (in a crowd, all
+	 * the Mulas around) to push the others, and Mulas never push each other. The clients still nudge their player.
+	 * Players and mobs still push it (their own cramming).
+	 */
+	@Override
+	protected void tickCramming() {
+		if (this.getWorld().isClient) super.tickCramming();
+	}
+
+	/**
+	 * What it bumps into among the entities (MulaCollisionMixin): only a player turned into a solid block (Box Costume).
+	 * The vanilla query looked through every entity around its path at each move, the other Mulas of a crowd included
+	 * (it passes through them anyway); a boat or a shulker no longer stops it.
+	 */
+	public static List<net.minecraft.util.shape.VoxelShape> entityCollisions(World world, Entity mula, net.minecraft.util.math.Box box) {
+		List<net.minecraft.util.shape.VoxelShape> shapes = null;
+		for (PlayerEntity player : world.getPlayers()) {
+			if (player.isCollidable() && mula.collidesWith(player) && box.intersects(player.getBoundingBox())) {
+				if (shapes == null) shapes = new ArrayList<>(1);
+				shapes.add(net.minecraft.util.shape.VoxelShapes.cuboid(player.getBoundingBox()));
+			}
+		}
+		return shapes == null ? List.of() : shapes;
+	}
+
+	/**
 	 * On a lead: pulled gently towards the holder, like a balloon on a string (the vanilla pull, made for walking mobs,
 	 * flung it down and slammed it into the ground): a pull growing with how far it is, capped, never fast downwards.
 	 */
@@ -854,12 +880,25 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	private static final double LEASH_SLACK = 4, LEASH_PULL = 0.02, LEASH_PULL_MAX = 0.08, LEASH_SPEED_MAX = 0.45,
 			LEASH_DOWN_MAX = 0.12;
 
+	/**
+	 * The box last found free of blocks (keepOutOfBlocks): looked at again only once it moved or changed size. A block
+	 * placed into a Mula hovering still is noticed when it next moves.
+	 */
+	private @Nullable Box lastFreeBox;
+
 	/** Server: it has grown (a meal) or moved on its own into blocks: it gently rises out instead of suffocating. */
 	private void keepOutOfBlocks() {
-		if (this.getWorld().isSpaceEmpty(this)) return;
-		net.minecraft.util.math.Box box = this.getBoundingBox();
+		Box box = this.getBoundingBox();
+		// still where it was found free, the same size: nothing to look at (most Mulas hover in place). Blocks only: the
+		// entities round it were looked through too, in a crowd all the other Mulas.
+		if (box.equals(lastFreeBox)) return;
+		if (this.getWorld().isBlockSpaceEmpty(this, box)) {
+			lastFreeBox = box;
+			return;
+		}
+		lastFreeBox = null;
 		for (int i = 1; i <= 12; i++) {
-			if (this.getWorld().isSpaceEmpty(this, box.offset(0, i * 0.25, 0))) {
+			if (this.getWorld().isBlockSpaceEmpty(this, box.offset(0, i * 0.25, 0))) {
 				this.setPosition(this.getX(), this.getY() + Math.min(i * 0.25, 0.25), this.getZ());
 				return;
 			}
@@ -1213,6 +1252,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity {
 	public void tameAttempt(PlayerEntity player, boolean success) {
 		if (success) {
 			this.setOwner(player);
+			// as many Mulas follow them as they may: this one will wait where it is
+			if (this.getWorld() instanceof ServerWorld world && MulaEscorts.isFull(world, player.getUuid())) {
+				player.sendMessage(Text.translatable("message.steveparty.mula.escort_full", MulaEscorts.max())
+						.formatted(net.minecraft.util.Formatting.GRAY), true);
+			}
 			this.navigation.stop();
 			this.getWorld().sendEntityStatus(this, EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES);
 			playSpecial("tame_joy", TAME_JOY_TICKS);
