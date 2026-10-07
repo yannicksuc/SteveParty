@@ -69,7 +69,7 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
  * Nothing is saved: a server stopping brings the players back.
  */
 public final class MiniGameTest implements MiniGameSession {
-    public static final double RECRUIT_RADIUS = 5;
+    public static final double RECRUIT_RADIUS = 10;
     public static final int COUNTDOWN_SECONDS = 3;
     private static final int EMERGE_GAP_TICKS = 8;
     private static final int WATCH_INTERVAL_TICKS = 20;
@@ -170,7 +170,8 @@ public final class MiniGameTest implements MiniGameSession {
             for (MiniGamePipeLink link : page.pipeLinks()) {
                 if (!link.role().isArrival() || !link.mouth().dimension().equals(player.getWorld().getRegistryKey())) continue;
                 double distance = player.squaredDistanceTo(Vec3d.ofCenter(link.mouth().pos()));
-                if (distance <= best) {
+                // The nearest pipe is his side; at equal distance, the first linked
+                if (distance < best || (role == null && distance <= best)) {
                     best = distance;
                     role = link.role();
                 }
