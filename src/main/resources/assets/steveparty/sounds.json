@@ -587,255 +587,158 @@
   "glandouille.ambient": {
     "subtitle": "subtitles.steveparty.glandouille.ambient",
     "sounds": [
-      {
-        "name": "minecraft:entity.villager.no",
-        "type": "event",
-        "volume": 0.35,
-        "pitch": 1.9
-      },
-      {
-        "name": "minecraft:entity.villager.ambient",
-        "type": "event",
-        "volume": 0.3,
-        "pitch": 2.0
-      },
-      {
-        "name": "minecraft:block.bamboo_wood.hit",
-        "type": "event",
-        "volume": 0.5,
-        "pitch": 1.3
-      }
+      "steveparty:glandouille/ambient1",
+      "steveparty:glandouille/ambient2",
+      "steveparty:glandouille/ambient3",
+      "steveparty:glandouille/ambient4",
+      "steveparty:glandouille/ambient5",
+      "steveparty:glandouille/ambient6"
     ]
   },
   "glandouille.hurt": {
     "subtitle": "subtitles.steveparty.glandouille.hurt",
     "sounds": [
-      {
-        "name": "minecraft:block.wood.hit",
-        "type": "event",
-        "volume": 0.9,
-        "pitch": 1.3
-      },
-      {
-        "name": "minecraft:entity.villager.hurt",
-        "type": "event",
-        "volume": 0.35,
-        "pitch": 1.9
-      }
+      "steveparty:glandouille/hurt1",
+      "steveparty:glandouille/hurt2",
+      "steveparty:glandouille/hurt3",
+      "steveparty:glandouille/hurt4"
     ]
   },
   "glandouille.death": {
     "subtitle": "subtitles.steveparty.glandouille.death",
     "sounds": [
-      {
-        "name": "minecraft:entity.slime.death_small",
-        "type": "event",
-        "volume": 1.0,
-        "pitch": 1.5
-      }
+      "steveparty:glandouille/death1",
+      "steveparty:glandouille/death2",
+      "steveparty:glandouille/death3"
     ]
   },
   "glandouille.step": {
     "sounds": [
-      {
-        "name": "minecraft:block.wood.step",
-        "type": "event",
-        "volume": 0.25,
-        "pitch": 1.5
-      }
-    ]
+      "steveparty:glandouille/step1",
+      "steveparty:glandouille/step2",
+      "steveparty:glandouille/step3",
+      "steveparty:glandouille/step4"
+    ],
+    "subtitle": "subtitles.steveparty.glandouille.step"
   },
   "glandouille.stomp": {
     "subtitle": "subtitles.steveparty.glandouille.stomp",
     "sounds": [
-      {
-        "name": "minecraft:block.wood.step",
-        "type": "event",
-        "volume": 0.9,
-        "pitch": 0.7
-      },
-      {
-        "name": "minecraft:block.bamboo_wood.step",
-        "type": "event",
-        "volume": 0.9,
-        "pitch": 0.8
-      }
+      "steveparty:glandouille/stomp1",
+      "steveparty:glandouille/stomp2",
+      "steveparty:glandouille/stomp3"
     ]
   },
   "glandouille.growl": {
     "subtitle": "subtitles.steveparty.glandouille.growl",
     "sounds": [
-      {
-        "name": "minecraft:entity.goat.prepare_ram",
-        "type": "event",
-        "volume": 0.8,
-        "pitch": 1.7
-      }
+      "steveparty:glandouille/growl1",
+      "steveparty:glandouille/growl2",
+      "steveparty:glandouille/growl3"
     ]
   },
   "glandouille.ram": {
     "subtitle": "subtitles.steveparty.glandouille.ram",
     "sounds": [
-      {
-        "name": "minecraft:entity.goat.ram_impact",
-        "type": "event",
-        "volume": 0.9,
-        "pitch": 1.5
-      }
+      "steveparty:glandouille/ram1",
+      "steveparty:glandouille/ram2",
+      "steveparty:glandouille/ram3"
     ]
   },
   "glandouille.bonk": {
     "subtitle": "subtitles.steveparty.glandouille.bonk",
     "sounds": [
-      {
-        "name": "minecraft:block.bamboo_wood.break",
-        "type": "event",
-        "volume": 1.0,
-        "pitch": 1.2
-      },
-      {
-        "name": "minecraft:block.wood.break",
-        "type": "event",
-        "volume": 1.0,
-        "pitch": 1.4
-      }
+      "steveparty:glandouille/bonk1",
+      "steveparty:glandouille/bonk2",
+      "steveparty:glandouille/bonk3"
     ]
   },
   "glandouille.squash": {
     "subtitle": "subtitles.steveparty.glandouille.squash",
     "sounds": [
-      {
-        "name": "minecraft:entity.slime.squish_small",
-        "type": "event",
-        "volume": 1.0,
-        "pitch": 1.7
-      }
+      "steveparty:glandouille/squash1",
+      "steveparty:glandouille/squash2",
+      "steveparty:glandouille/squash3"
     ]
   },
   "glandouille.reinflate": {
     "subtitle": "subtitles.steveparty.glandouille.reinflate",
     "sounds": [
-      {
-        "name": "minecraft:entity.slime.jump_small",
-        "type": "event",
-        "volume": 0.9,
-        "pitch": 1.8
-      }
+      "steveparty:glandouille/reinflate1",
+      "steveparty:glandouille/reinflate2"
     ]
   },
   "glandouille.sulk": {
     "subtitle": "subtitles.steveparty.glandouille.sulk",
     "sounds": [
-      {
-        "name": "minecraft:entity.villager.no",
-        "type": "event",
-        "volume": 0.5,
-        "pitch": 1.6
-      }
+      "steveparty:glandouille/sulk1",
+      "steveparty:glandouille/sulk2",
+      "steveparty:glandouille/sulk3"
     ]
   },
   "glandouille.snore": {
     "subtitle": "subtitles.steveparty.glandouille.snore",
     "sounds": [
-      {
-        "name": "minecraft:entity.fox.sleep",
-        "type": "event",
-        "volume": 0.5,
-        "pitch": 1.5
-      }
+      "steveparty:glandouille/snore1",
+      "steveparty:glandouille/snore2"
     ]
   },
   "glandouille.hat_pop": {
     "subtitle": "subtitles.steveparty.glandouille.hat_pop",
     "sounds": [
-      {
-        "name": "minecraft:entity.chicken.egg",
-        "type": "event",
-        "volume": 1.0,
-        "pitch": 1.4
-      }
+      "steveparty:glandouille/hat_pop1",
+      "steveparty:glandouille/hat_pop2"
     ]
   },
   "glandouille.hat_on": {
     "subtitle": "subtitles.steveparty.glandouille.hat_on",
     "sounds": [
-      {
-        "name": "minecraft:item.armor.equip_leather",
-        "type": "event",
-        "volume": 0.9,
-        "pitch": 1.4
-      }
+      "steveparty:glandouille/hat_on1",
+      "steveparty:glandouille/hat_on2"
     ]
   },
   "glandouille.flick": {
     "subtitle": "subtitles.steveparty.glandouille.flick",
     "sounds": [
-      {
-        "name": "minecraft:item.trident.throw",
-        "type": "event",
-        "volume": 0.7,
-        "pitch": 1.7
-      }
+      "steveparty:glandouille/flick1",
+      "steveparty:glandouille/flick2"
     ]
   },
   "glandouille.slide": {
     "subtitle": "subtitles.steveparty.glandouille.slide",
     "sounds": [
-      {
-        "name": "minecraft:block.glass.step",
-        "type": "event",
-        "volume": 0.6,
-        "pitch": 1.6
-      }
+      "steveparty:glandouille/slide1",
+      "steveparty:glandouille/slide2",
+      "steveparty:glandouille/slide3"
     ]
   },
   "glandouille.collapse": {
     "subtitle": "subtitles.steveparty.glandouille.collapse",
     "sounds": [
-      {
-        "name": "minecraft:block.scaffolding.break",
-        "type": "event",
-        "volume": 1.0,
-        "pitch": 0.9
-      },
-      {
-        "name": "minecraft:block.wood.fall",
-        "type": "event",
-        "volume": 1.0,
-        "pitch": 1.2
-      }
+      "steveparty:glandouille/collapse1",
+      "steveparty:glandouille/collapse2"
     ]
   },
   "glandouille.climb": {
     "sounds": [
-      {
-        "name": "minecraft:block.bamboo_wood.step",
-        "type": "event",
-        "volume": 0.6,
-        "pitch": 1.6
-      }
-    ]
+      "steveparty:glandouille/climb1",
+      "steveparty:glandouille/climb2",
+      "steveparty:glandouille/climb3"
+    ],
+    "subtitle": "subtitles.steveparty.glandouille.climb"
   },
   "glandouille.poof": {
     "subtitle": "subtitles.steveparty.glandouille.poof",
     "sounds": [
-      {
-        "name": "minecraft:entity.puffer_fish.blow_out",
-        "type": "event",
-        "volume": 0.8,
-        "pitch": 1.4
-      }
+      "steveparty:glandouille/poof1",
+      "steveparty:glandouille/poof2"
     ]
   },
   "glandouille.hatch": {
     "subtitle": "subtitles.steveparty.glandouille.hatch",
     "sounds": [
-      {
-        "name": "minecraft:block.sniffer_egg.hatch",
-        "type": "event",
-        "volume": 0.9,
-        "pitch": 1.5
-      }
+      "steveparty:glandouille/hatch1",
+      "steveparty:glandouille/hatch2"
     ]
   }
 }
