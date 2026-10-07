@@ -28,12 +28,11 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     private static final Identifier BACK = Steveparty.id("wheel/back");
     private static final int SELECTED_STENCIL = 0xFFFFD83D;
     private static final int SELECTED_DYE = 0xFF5FD3FF;
-    /** The plates: the mod's teal, the titles a shade darker. */
-    /** The mini-game page's colours: its paper, its punched holes, its teal rules and tabs, its ink. */
-    /** A vanilla container: its panel (black outline, white and dark grey bevels, light grey), its slots, its text. */
-    private static final ConsolePaint.Ramp PANEL_RAMP = ConsolePaint.Ramp.of(0x000000, 0xffffff, 0xc6c6c6, 0x555555);
-    private static final int PANEL = ToolWheel.PANEL & 0xFFFFFF, TEXT = 0xFF404040;
-    private static final int SLOT_BODY = 0xFF8B8B8B, SLOT_DARK = 0xFF373737, SLOT_LIGHT = 0xFFFFFFFF;
+    /** The hammer's own colour, its wood: the top panel and its sunk slots, as each block screen of the mod has its own. */
+    private static final ToolWheel.Theme THEME = ToolWheel.WOOD;
+    private static final int BODY = THEME.body() & 0xFFFFFF, TEXT = 0xFF404040;
+    /** The player's inventory panel shared by the mod's block screens (cut from them, same pixels). */
+    private static final Identifier INVENTORY = Steveparty.id("textures/gui/inventory_panel.png");
     private static final ToolWheel.Layout WHEEL = layout();
     /** Free GUI pixels kept around the screen; with less room (large GUI scales) it is all drawn shrunk to fit. */
     private static final int FIT_MARGIN = 4;
@@ -45,7 +44,7 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         this.backgroundWidth = StencilGunScreenHandler.WIDTH;
         this.backgroundHeight = StencilGunScreenHandler.HEIGHT;
         this.playerInventoryTitleX = StencilGunScreenHandler.INVENTORY_X + 8;
-        this.playerInventoryTitleY = StencilGunScreenHandler.INVENTORY_Y + 3;
+        this.playerInventoryTitleY = StencilGunScreenHandler.INVENTORY_Y + 4;
     }
 
     /**
@@ -88,34 +87,53 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
         Runnable none = () -> {
         };
         List<ToolWheel.Sector> dyes = new ArrayList<>(), stencils = new ArrayList<>();
-        for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) dyes.add(new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none));
-        for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) stencils.add(new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none));
-        // The titles: plates of the same grey, their name in the containers' dark grey
-        ToolWheel.Sector dyeTitle = new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none);
-        ToolWheel.Sector stencilTitle = new ToolWheel.Sector(Text.empty(), null, PANEL, null, false, true, none);
+        for (int i = 0; i < StencilGunItem.DYE_SLOTS; i++) dyes.add(new ToolWheel.Sector(Text.empty(), null, BODY, null, false, true, none));
+        for (int i = 0; i < StencilGunItem.STENCIL_SLOTS; i++) stencils.add(new ToolWheel.Sector(Text.empty(), null, BODY, null, false, true, none));
+        // The titles: plates of the panel's wood, a little lighter
+        int titleColour = THEME.light() & 0xFFFFFF;
+        ToolWheel.Sector dyeTitle = new ToolWheel.Sector(Text.empty(), null, titleColour, null, false, true, none);
+        ToolWheel.Sector stencilTitle = new ToolWheel.Sector(Text.empty(), null, titleColour, null, false, true, none);
         return new ToolWheel.Layout(List.of(new ToolWheel.Ring(StencilGunScreenHandler.RING_INNER, StencilGunScreenHandler.RING_OUTER)),
                 List.of(new ToolWheel.Arc(0, -header, 0, List.of(dyeTitle)), new ToolWheel.Arc(0, 0, header, List.of(stencilTitle)),
                         new ToolWheel.Arc(0, header, 180, stencils), new ToolWheel.Arc(0, 180, 360 - header, dyes)),
-                null, null, null, null);
+                null, null, null, null, THEME);
     }
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int cx = x + StencilGunScreenHandler.CENTER_X, cy = y + StencilGunScreenHandler.CENTER_Y;
         int w = StencilGunScreenHandler.WIDTH, h = StencilGunScreenHandler.HEIGHT;
-        // One vanilla container panel
-        ConsolePaint.box(context, x, y, w, h, PANEL_RAMP, 2, 2);
+        // The hammer's panel in its wood, as the top part of the mod's block screens
+        panel(context, x, y, w, StencilGunScreenHandler.TOP_HEIGHT);
         boolean hub = hub(mouseX, mouseY);
         for (ToolWheel.WheelRaster.Run run : ToolWheel.WheelRaster.runs(WHEEL, null, -1, hub, 1f, false, false)) {
             context.fill(cx + run.x0(), cy + run.y(), cx + run.x1(), cy + run.y() + 1, run.color());
         }
-        // Vanilla slots: on the wheel's sectors, and the player's inventory and hotbar under it, as the hammer's old
-        // loader had them
-        for (Slot slot : handler.slots) ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, SLOT_BODY, SLOT_DARK, SLOT_LIGHT);
+        // Its slots sunk into the wood, as the block screens' slots in their panel's colour
+        for (int i = 0; i < StencilGunItem.SIZE; i++) {
+            Slot slot = handler.slots.get(i);
+            ConsolePaint.inset(context, x + slot.x - 1, y + slot.y - 1, 17, 17, THEME.slot(), THEME.rim(), THEME.rim());
+        }
+        // The player's inventory under it: the panel every block screen of the mod has, its tab under the wood
+        RenderSystem.enableBlend();
+        context.drawTexture(INVENTORY, x + StencilGunScreenHandler.INVENTORY_X, y + StencilGunScreenHandler.INVENTORY_Y, 0, 0, 176, 97, 176, 97);
+        RenderSystem.disableBlend();
         // Back, in the middle
         RenderSystem.enableBlend();
         context.drawGuiTexture(BACK, cx - 16, cy - 16, 32, 32);
         RenderSystem.disableBlend();
+    }
+
+    /**
+     * A panel as the block screens draw their top part (the cash register's): a dark outline (corners cut), a 2-pixel
+     * rim of the dark tint, a light line along the top and the left inside it, the body.
+     */
+    private static void panel(DrawContext context, int x, int y, int w, int h) {
+        context.fill(x + 1, y, x + w - 1, y + h, THEME.outline());
+        context.fill(x, y + 1, x + w, y + h - 1, THEME.outline());
+        context.fill(x + 1, y + 1, x + w - 1, y + h - 1, THEME.rim());
+        context.fill(x + 3, y + 3, x + w - 3, y + h - 3, THEME.light());
+        context.fill(x + 4, y + 4, x + w - 3, y + h - 3, THEME.body());
     }
 
     @Override
@@ -131,7 +149,7 @@ public class StencilGunScreen extends HandledScreen<StencilGunScreenHandler> {
     }
 
     private void title(DrawContext context, Text text, int centerX, int y) {
-        context.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, TEXT, false);
+        context.drawText(textRenderer, text, centerX - textRenderer.getWidth(text) / 2, y, 0xFFFFFFFF, true);
     }
 
     private boolean hub(double mouseX, double mouseY) {

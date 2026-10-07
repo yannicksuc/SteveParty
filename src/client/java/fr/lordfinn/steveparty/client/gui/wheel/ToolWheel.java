@@ -19,9 +19,10 @@ import java.util.List;
 
 /**
  * A radial wheel shared by the tools held in hand (the Tile Linker Brush, the Stencil Hammer: each gives its
- * {@link Layout} through a {@link Provider}), drawn in pixel art like a vanilla container (a chest's light grey panel:
- * black outline, white bevel top left, dark grey bottom right): each sector a plate of its colour, the panel's grey when
- * it has none of its own, the same 2-pixel gap between any two, no smoothing.
+ * {@link Layout} through a {@link Provider}), drawn in pixel art like the top part of the mod's block screens (the
+ * cash register's blue, the party controller's purple...): a panel in the tool's own colour ({@link Theme}), its sectors
+ * plates of that colour with a dark outline and a light bevel top left, the same 2-pixel gap between any two, a
+ * coloured sector (a dye, a redstone level) in its own colour; no smoothing.
  * <ul>
  *     <li>A left click with the tool opens it, centred on the screen. The mouse then moves a cursor on the wheel, not
  *     the camera; the player keeps walking and sneaking (no screen opens, no key is released).</li>
@@ -43,14 +44,28 @@ public final class ToolWheel {
     /** How much a hovered sector grows outward (pixels). */
     private static final int HOVER_GROW = 3;
 
-    /** A vanilla container's panel (a chest's): outline, highlight, body, shadow. */
-    public static final int PANEL_EDGE = 0xFF000000, PANEL_LIGHT = 0xFFFFFFFF, PANEL = 0xFFC6C6C6, PANEL_SHADOW = 0xFF555555;
-    /** Hovered: the panel a little lighter. */
-    private static final int PANEL_HOVER = 0xFFDBDBDB;
-    private static final int HUB_OUTLINE = PANEL_EDGE, HUB_LIGHT = PANEL_LIGHT, HUB_SHADOW = PANEL_SHADOW, HUB_FILL = PANEL;
     private static final int GOLD_OUTLINE = 0xFF5B2E00, GOLD_LIGHT = 0xFFFFF87E, GOLD = 0xFFFFD83D;
-    /** Between the sectors and around them: the panel's grey, its outline all round. */
-    private static final int BACKDROP = PANEL;
+
+    /**
+     * The colours of a tool's panel, as the mod's block screens build theirs (the cash register: outline 001f40, rim
+     * 0064b5, body 45a1cf, light 69c2f1, its slots 007cad in a 0064b5 edge).
+     *
+     * @param outline the darkest line, all round
+     * @param rim     the dark tint: between the sectors, the panel's border, a slot's edge
+     * @param body    the panel and its plates
+     * @param light   the bevel top left
+     * @param slot    a slot sunk into the panel
+     */
+    public record Theme(int outline, int rim, int body, int light, int slot) {
+        public static Theme of(int outline, int rim, int body, int light, int slot) {
+            return new Theme(0xFF000000 | outline, 0xFF000000 | rim, 0xFF000000 | body, 0xFF000000 | light, 0xFF000000 | slot);
+        }
+    }
+
+    /** The Stencil Hammer's wood (its handle). */
+    public static final Theme WOOD = Theme.of(0x2a180c, 0x6e482c, 0x9c6b3f, 0xc4925a, 0x7a5232);
+    /** The Tile Linker Brush's red (its bristles' paint). */
+    public static final Theme RED = Theme.of(0x3a0508, 0x8a1a20, 0xc8333b, 0xe86a6f, 0x9e2229);
 
     /** Something drawn at the middle of a sector (an item, a number, a stencil...). */
     @FunctionalInterface
@@ -99,7 +114,7 @@ public final class ToolWheel {
      * @param featuredHint the tooltip line of the featured sector while it is put forward (null: its own hint)
      */
     public record Layout(List<Ring> rings, List<Arc> arcs, @Nullable Icon hubIcon, @Nullable Sector hub,
-                         @Nullable Sector featured, @Nullable Text featuredHint) {
+                         @Nullable Sector featured, @Nullable Text featuredHint, Theme theme) {
     }
 
     /** A tool with a wheel. */
@@ -425,7 +440,7 @@ public final class ToolWheel {
 
         private static String key(Layout layout, @Nullable Arc hoverArc, int hoverIndex, boolean hubHovered, float fit, boolean cta, boolean blink) {
             StringBuilder key = new StringBuilder();
-            key.append(fit).append('|').append(hubHovered).append('|').append(cta).append(blink).append('|');
+            key.append(layout.theme()).append('|').append(fit).append('|').append(hubHovered).append('|').append(cta).append(blink).append('|');
             for (Ring ring : layout.rings()) key.append(ring.inner()).append(',').append(ring.outer()).append(';');
             for (Arc arc : layout.arcs()) {
                 key.append('[').append(arc.ring()).append(',').append(arc.from()).append(',').append(arc.to());
@@ -442,11 +457,13 @@ public final class ToolWheel {
         private static int pixel(Layout layout, @Nullable Arc hoverArc, int hoverIndex, boolean hubHovered, float fit, int hub, int max,
                                  boolean cta, boolean blink, double x, double y) {
             double d = Math.sqrt(x * x + y * y);
+            Theme theme = layout.theme();
+            int backdrop = theme.rim();
             if (d < hub) {
                 double e = hub - d;
-                if (e < 1) return HUB_OUTLINE;
-                if (e < 2) return x + y < 0 ? HUB_LIGHT : HUB_SHADOW;
-                return hubHovered ? PANEL_HOVER : HUB_FILL;
+                if (e < 1) return theme.outline();
+                if (e < 2) return x + y < 0 ? theme.light() : theme.rim();
+                return hubHovered ? mix(theme.body(), 0xFFFFFFFF, 0.2f) : theme.body();
             }
             double angle = Math.toDegrees(Math.atan2(x, -y));
             for (int r = 0; r < layout.rings().size(); r++) {
@@ -464,7 +481,7 @@ public final class ToolWheel {
                     Sector sector = arc.sectors().get(index);
                     boolean hovered = arc == hoverArc && index == hoverIndex && sector.enabled();
                     int out = outer + (hovered ? HOVER_GROW : 0);
-                    if (d >= out) return BACKDROP;
+                    if (d >= out) return backdrop;
                     // The distance to each edge, and the way out of the plate there (for the bevel)
                     double edge = d - inner, nx = -x / d, ny = -y / d;
                     if (out - d < edge) {
@@ -478,7 +495,7 @@ public final class ToolWheel {
                         double b0 = Math.toRadians(arc.from() + step * index), b1 = Math.toRadians(arc.from() + step * (index + 1));
                         double p0 = from >= 90 ? Double.MAX_VALUE : d * Math.sin(Math.toRadians(from));
                         double p1 = to >= 90 ? Double.MAX_VALUE : d * Math.sin(Math.toRadians(to));
-                        if (p0 < HALF_GAP || p1 < HALF_GAP) return BACKDROP;
+                        if (p0 < HALF_GAP || p1 < HALF_GAP) return backdrop;
                         if (p0 - HALF_GAP < edge) {
                             edge = p0 - HALF_GAP;
                             nx = -Math.cos(b0);
@@ -490,26 +507,25 @@ public final class ToolWheel {
                             ny = Math.sin(b1);
                         }
                     }
-                    return plate(sector, hovered, cta && sector == layout.featured(), cta && sector != layout.featured(), blink, edge, nx + ny < 0);
+                    return plate(theme, sector, hovered, cta && sector == layout.featured(), cta && sector != layout.featured(), blink, edge, nx + ny < 0);
                 }
-                return BACKDROP;
+                return backdrop;
             }
             int rim = Math.round((outerRadius(layout) + 2) * fit);
-            return d < rim - 1 ? BACKDROP : d < rim ? PANEL_EDGE : 0;
+            return d < rim - 1 ? backdrop : d < rim ? theme.outline() : 0;
         }
 
         /** A pixel of a sector's plate, {@code edge} pixels in from its nearest edge. */
-        private static int plate(Sector sector, boolean hovered, boolean featured, boolean dimmed, boolean blink, double edge, boolean lit) {
+        private static int plate(Theme theme, Sector sector, boolean hovered, boolean featured, boolean dimmed, boolean blink, double edge, boolean lit) {
             int base = 0xFF000000 | sector.color();
-            if (!sector.enabled()) base = grey(base);
-            else if (dimmed) base = mix(base, PANEL, 0.6f);
-            // Every plate in a vanilla frame: black outline, white bevel top left; the shadow the panel's dark grey, or
-            // a coloured plate's own colour darkened
-            boolean panel = base == PANEL;
-            int outline = PANEL_EDGE;
-            int light = panel ? PANEL_LIGHT : mix(base, 0xFFFFFFFF, 0.5f);
-            int shadow = panel ? PANEL_SHADOW : shade(base, 0.6f);
-            int fill = hovered ? (panel ? PANEL_HOVER : mix(base, 0xFFFFFFFF, 0.25f)) : base;
+            if (!sector.enabled()) base = mix(base, theme.rim(), 0.7f);
+            else if (dimmed) base = mix(base, theme.rim(), 0.55f);
+            // A plate of the panel takes its outline, light bevel and dark rim; a coloured one its own colour's
+            boolean panel = (base & 0xFFFFFF) == (theme.body() & 0xFFFFFF);
+            int outline = panel ? theme.outline() : shade(base, 0.4f);
+            int light = panel ? theme.light() : mix(base, 0xFFFFFFFF, 0.45f);
+            int shadow = panel ? theme.rim() : shade(base, 0.7f);
+            int fill = hovered ? mix(base, 0xFFFFFFFF, 0.2f) : base;
             if (featured) {
                 if (edge < 2) return blink ? GOLD : GOLD_OUTLINE;
                 if (edge < 3) return lit ? light : shadow;
@@ -526,9 +542,6 @@ public final class ToolWheel {
             return fill;
         }
 
-        private static int luminance(int argb) {
-            return (((argb >> 16) & 0xFF) * 3 + ((argb >> 8) & 0xFF) * 6 + (argb & 0xFF)) / 10;
-        }
 
         private static int shade(int argb, float factor) {
             int r = (int) (((argb >> 16) & 0xFF) * factor), g = (int) (((argb >> 8) & 0xFF) * factor), b = (int) ((argb & 0xFF) * factor);
@@ -542,9 +555,5 @@ public final class ToolWheel {
             return 0xFF000000 | r << 16 | g << 8 | b;
         }
 
-        /** A sector that picks nothing: washed out into the panel's grey. */
-        private static int grey(int argb) {
-            return mix(argb, 0xFF8B8B8B, 0.7f);
-        }
     }
 }
