@@ -1096,12 +1096,12 @@ category("stars_mula", "steveparty:power_star", ("Stars & the Mula", "Étoiles e
     ], parents=["fragments"], gate="stardust"),
     E("gravity_core", "steveparty:gravity_core", ("Gravity Core", "Noyau de gravité"), ("A tiny planet", "Une petite planète"), [
         T("Placed, it glows and **pulls** everything within 8 blocks into an orbit, without fall damage; full "
-          "iron armour (or heavier) resists. Mulas and pawns are never pulled. **Sneak** to drop out of its orbit; "
+          "iron armour (or heavier) resists. Mulas and pawns are never pulled. **Sneak** to move slower in its orbit (it does not let go); "
           "it breaks by hand and drops itself.\n\n"
           "Its real job: waking up the **Dice Forge**.",
           "Posé, il brille et **attire** tout ce qui est à 8 blocs en orbite, sans dégâts de chute ; une armure "
           "complète en fer (ou plus lourde) résiste. Mulas et pions ne sont jamais attirés. **Accroupis-toi** pour "
-          "sortir de son orbite ; il se casse à la main et se récupère.\n\n"
+          "ralentir dans son orbite (sans en sortir) ; il se casse à la main et se récupère.\n\n"
           "Son vrai rôle : réveiller la **forge à dés**."),
         C("steveparty:gravity_core", None, "Crying obsidian, 4 black star fragments and a heavy core.",
           "Obsidienne pleureuse, 4 fragments d'étoile noirs et un noyau lourd."),
